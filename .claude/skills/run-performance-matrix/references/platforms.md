@@ -43,6 +43,14 @@ Start Appium 3 only for Appium targets and confirm its driver for the platform i
 capability file for simulators, Android, retained sessions, or hosted providers; do not commit the
 file if it contains IDs or credentials.
 
+**Run one target at a time, and do not chain them on a process check.** Waiting for the previous
+campaign by polling `pgrep` looks obvious and fails twice over: it races at launch, because the
+process being waited for may not be visible yet, and a wait that is still parked when you start
+another run by hand leaves a second campaign armed against the same device — one that may begin by
+deleting the output directory the live run is writing into. Two campaigns on one device invalidate
+both, and nothing in either artifact records the overlap. Start the next target only after the
+previous one has printed its `N/M cells complete` line.
+
 Detach every viewer from the device before capturing. A mirrored or recorded screen is not a passive
 observer: an editor's device panel, a simulator stream, QuickTime recording, or scrcpy encodes video
 continuously and adds host load the measured baseline never had. That makes a run non-comparable

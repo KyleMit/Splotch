@@ -21466,7 +21466,928 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+            "finalProductCommitActionCount": 0,
+            "actionCount": 36,
+            "passedActionCount": 24,
+            "worst": {
+              "firstFrameP95": 99.1,
+              "postActionFrameP95": 33.3,
+              "postActionFrameMax": 66.6
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.9,
+                  "p95": 5.3,
+                  "p99": 5.3,
+                  "max": 5.3
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 16.6,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0.8,
+                  "p95": 1.1,
+                  "p99": 1.1,
+                  "max": 1.1
+                },
+                "ready": {
+                  "p50": 17.1,
+                  "p95": 17.6,
+                  "p99": 17.6,
+                  "max": 17.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.9,
+                  "p95": 2.2,
+                  "p99": 2.2,
+                  "max": 2.2
+                },
+                "ready": {
+                  "p50": 11.8,
+                  "p95": 12.9,
+                  "p99": 12.9,
+                  "max": 12.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.9,
+                  "max": 16.9
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0.4,
+                  "p95": 8.3,
+                  "p99": 8.3,
+                  "max": 8.3
+                },
+                "ready": {
+                  "p50": 20.4,
+                  "p95": 20.8,
+                  "p99": 20.8,
+                  "max": 20.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 15.3,
+                  "p95": 15.5,
+                  "p99": 15.5,
+                  "max": 15.5
+                },
+                "ready": {
+                  "p50": 15,
+                  "p95": 15.3,
+                  "p99": 15.3,
+                  "max": 15.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.3,
+                  "p95": 1.5,
+                  "p99": 1.5,
+                  "max": 1.5
+                },
+                "ready": {
+                  "p50": 144.9,
+                  "p95": 149.9,
+                  "p99": 149.9,
+                  "max": 149.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.3,
+                  "p95": 16.6,
+                  "p99": 16.6,
+                  "max": 16.6
+                },
+                "ready": {
+                  "p50": 16.8,
+                  "p95": 19.8,
+                  "p99": 19.8,
+                  "max": 19.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.9,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "ready": {
+                  "p50": 15.4,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.6,
+                  "p95": 15,
+                  "p99": 15,
+                  "max": 15
+                },
+                "ready": {
+                  "p50": 16.9,
+                  "p95": 17.7,
+                  "p99": 17.7,
+                  "max": 17.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3.8,
+                  "p95": 4,
+                  "p99": 4,
+                  "max": 4
+                },
+                "ready": {
+                  "p50": 17.1,
+                  "p95": 17.3,
+                  "p99": 17.3,
+                  "max": 17.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 15.2,
+                  "p95": 16.4,
+                  "p99": 16.4,
+                  "max": 16.4
+                },
+                "ready": {
+                  "p50": 15.4,
+                  "p95": 17.6,
+                  "p99": 17.6,
+                  "max": 17.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.1,
+                  "p95": 7.4,
+                  "p99": 7.4,
+                  "max": 7.4
+                },
+                "ready": {
+                  "p50": 17.7,
+                  "p95": 19,
+                  "p99": 19,
+                  "max": 19
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.9,
+                  "p95": 2.3,
+                  "p99": 2.3,
+                  "max": 2.3
+                },
+                "ready": {
+                  "p50": 12.9,
+                  "p95": 14.8,
+                  "p99": 14.8,
+                  "max": 14.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3.8,
+                  "p95": 3.9,
+                  "p99": 3.9,
+                  "max": 3.9
+                },
+                "ready": {
+                  "p50": 27.2,
+                  "p95": 29.2,
+                  "p99": 29.2,
+                  "max": 29.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25.2,
+                  "max": 25.2
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "enable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 18.5,
+                  "p95": 29.8,
+                  "p99": 29.8,
+                  "max": 29.8
+                },
+                "ready": {
+                  "p50": 46.1,
+                  "p95": 53.1,
+                  "p99": 53.1,
+                  "max": 53.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 33.4,
+                  "max": 33.4
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "disable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 16.7,
+                  "p95": 19.9,
+                  "p99": 19.9,
+                  "max": 19.9
+                },
+                "ready": {
+                  "p50": 38.8,
+                  "p95": 45.2,
+                  "p99": 45.2,
+                  "max": 45.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "disable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 15.8,
+                  "p95": 16.2,
+                  "p99": 16.2,
+                  "max": 16.2
+                },
+                "ready": {
+                  "p50": 20.7,
+                  "p95": 25.6,
+                  "p99": 25.6,
+                  "max": 25.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 24.9,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "enable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.6,
+                  "p95": 3.4,
+                  "p99": 3.4,
+                  "max": 3.4
+                },
+                "ready": {
+                  "p50": 19.2,
+                  "p95": 21.1,
+                  "p99": 21.1,
+                  "max": 21.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "disable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.5,
+                  "p95": 15.9,
+                  "p99": 15.9,
+                  "max": 15.9
+                },
+                "ready": {
+                  "p50": 27.3,
+                  "p95": 28.5,
+                  "p99": 28.5,
+                  "max": 28.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 17,
+                  "p99": 33.3,
+                  "max": 33.3
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "enable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3.1,
+                  "p95": 3.6,
+                  "p99": 3.6,
+                  "max": 3.6
+                },
+                "ready": {
+                  "p50": 20.1,
+                  "p95": 20.5,
+                  "p99": 20.5,
+                  "max": 20.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.7,
+                  "p95": 14,
+                  "p99": 14,
+                  "max": 14
+                },
+                "ready": {
+                  "p50": 24.9,
+                  "p95": 28.1,
+                  "p99": 28.1,
+                  "max": 28.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.9,
+                  "p99": 16.9,
+                  "max": 16.9
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0.7,
+                  "p95": 2.1,
+                  "p99": 2.1,
+                  "max": 2.1
+                },
+                "ready": {
+                  "p50": 12.5,
+                  "p95": 12.7,
+                  "p99": 12.7,
+                  "max": 12.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.1,
+                  "p95": 6.8,
+                  "p99": 6.8,
+                  "max": 6.8
+                },
+                "ready": {
+                  "p50": 34.7,
+                  "p95": 38.8,
+                  "p99": 38.8,
+                  "max": 38.8
+                },
+                "postActionFrames": {
+                  "p50": 16.6,
+                  "p95": 25.2,
+                  "p99": 25.2,
+                  "max": 25.2
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "scroll coloring pages",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.9,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "ready": {
+                  "p50": 901.5,
+                  "p95": 901.9,
+                  "p99": 901.9,
+                  "max": 901.9
+                },
+                "postActionFrames": {
+                  "p50": 8.4,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.4,
+                  "p95": 15.7,
+                  "p99": 15.7,
+                  "max": 15.7
+                },
+                "ready": {
+                  "p50": 35.6,
+                  "p95": 40.1,
+                  "p99": 40.1,
+                  "max": 40.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2.7,
+                  "p95": 2.8,
+                  "p99": 2.8,
+                  "max": 2.8
+                },
+                "ready": {
+                  "p50": 25.7,
+                  "p95": 27.4,
+                  "p99": 27.4,
+                  "max": 27.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0.8,
+                  "p95": 2.4,
+                  "p99": 2.4,
+                  "max": 2.4
+                },
+                "ready": {
+                  "p50": 122.6,
+                  "p95": 123.8,
+                  "p99": 123.8,
+                  "max": 123.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 33.3
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.7,
+                  "p95": 7.6,
+                  "p99": 7.6,
+                  "max": 7.6
+                },
+                "ready": {
+                  "p50": 15.9,
+                  "p95": 17.6,
+                  "p99": 17.6,
+                  "max": 17.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.9,
+                  "max": 16.9
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.5,
+                  "p95": 16.2,
+                  "p99": 16.2,
+                  "max": 16.2
+                },
+                "ready": {
+                  "p50": 1007,
+                  "p95": 1022.7,
+                  "p99": 1022.7,
+                  "max": 1022.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 24.9,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 62.2,
+                  "p95": 85.8,
+                  "p99": 85.8,
+                  "max": 85.8
+                },
+                "ready": {
+                  "p50": 2568.4,
+                  "p95": 2596.5,
+                  "p99": 2596.5,
+                  "max": 2596.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.3,
+                  "p95": 5.9,
+                  "p99": 5.9,
+                  "max": 5.9
+                },
+                "ready": {
+                  "p50": 9.6,
+                  "p95": 9.9,
+                  "p99": 9.9,
+                  "max": 9.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25.2,
+                  "max": 25.2
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.3,
+                  "p95": 2.2,
+                  "p99": 2.2,
+                  "max": 2.2
+                },
+                "ready": {
+                  "p50": 15.6,
+                  "p95": 16.2,
+                  "p99": 16.2,
+                  "max": 16.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.7,
+                  "p95": 16.4,
+                  "p99": 16.4,
+                  "max": 16.4
+                },
+                "ready": {
+                  "p50": 1000.5,
+                  "p95": 1054.4,
+                  "p99": 1054.4,
+                  "max": 1054.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 24.9,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 29.7,
+                  "p95": 41.3,
+                  "p99": 41.3,
+                  "max": 41.3
+                },
+                "ready": {
+                  "p50": 2550.1,
+                  "p95": 2566.5,
+                  "p99": 2566.5,
+                  "max": 2566.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 50,
+                  "max": 50
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 60.1,
+                  "p95": 99.1,
+                  "p99": 99.1,
+                  "max": 99.1
+                },
+                "ready": {
+                  "p50": 2570.9,
+                  "p95": 2601.1,
+                  "p99": 2601.1,
+                  "max": 2601.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 33.3,
+                  "max": 33.3
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 21.8,
+                  "p95": 28.8,
+                  "p99": 28.8,
+                  "max": 28.8
+                },
+                "ready": {
+                  "p50": 2542.5,
+                  "p95": 2572.8,
+                  "p99": 2572.8,
+                  "max": 2572.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 33.3,
+                  "p99": 66.6,
+                  "max": 66.6
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
@@ -21672,7 +22593,928 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+            "finalProductCommitActionCount": 0,
+            "actionCount": 36,
+            "passedActionCount": 23,
+            "worst": {
+              "firstFrameP95": 92.7,
+              "postActionFrameP95": 33.3,
+              "postActionFrameMax": 75
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.7,
+                  "p95": 6.9,
+                  "p99": 6.9,
+                  "max": 6.9
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.1,
+                  "p95": 1.3,
+                  "p99": 1.3,
+                  "max": 1.3
+                },
+                "ready": {
+                  "p50": 14.2,
+                  "p95": 14.9,
+                  "p99": 14.9,
+                  "max": 14.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.9,
+                  "p95": 15.7,
+                  "p99": 15.7,
+                  "max": 15.7
+                },
+                "ready": {
+                  "p50": 18.2,
+                  "p95": 22.2,
+                  "p99": 22.2,
+                  "max": 22.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.3,
+                  "p95": 15.2,
+                  "p99": 15.2,
+                  "max": 15.2
+                },
+                "ready": {
+                  "p50": 23,
+                  "p95": 23,
+                  "p99": 23,
+                  "max": 23
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.4,
+                  "p95": 14.8,
+                  "p99": 14.8,
+                  "max": 14.8
+                },
+                "ready": {
+                  "p50": 12.8,
+                  "p95": 18.5,
+                  "p99": 18.5,
+                  "max": 18.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.5,
+                  "p95": 1.6,
+                  "p99": 1.6,
+                  "max": 1.6
+                },
+                "ready": {
+                  "p50": 148.3,
+                  "p95": 152.1,
+                  "p99": 152.1,
+                  "max": 152.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 24.9,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 16.5,
+                  "p95": 16.5,
+                  "p99": 16.5,
+                  "max": 16.5
+                },
+                "ready": {
+                  "p50": 19.6,
+                  "p95": 20.4,
+                  "p99": 20.4,
+                  "max": 20.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.8,
+                  "p95": 7.4,
+                  "p99": 7.4,
+                  "max": 7.4
+                },
+                "ready": {
+                  "p50": 22,
+                  "p95": 22.5,
+                  "p99": 22.5,
+                  "max": 22.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.8,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 18.9,
+                  "p95": 20.1,
+                  "p99": 20.1,
+                  "max": 20.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.4,
+                  "p95": 12.6,
+                  "p99": 12.6,
+                  "max": 12.6
+                },
+                "ready": {
+                  "p50": 21.2,
+                  "p95": 27,
+                  "p99": 27,
+                  "max": 27
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5,
+                  "p95": 9.5,
+                  "p99": 9.5,
+                  "max": 9.5
+                },
+                "ready": {
+                  "p50": 10.1,
+                  "p95": 20.7,
+                  "p99": 20.7,
+                  "max": 20.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 15.8,
+                  "p95": 23.3,
+                  "p99": 23.3,
+                  "max": 23.3
+                },
+                "ready": {
+                  "p50": 13.1,
+                  "p95": 14.6,
+                  "p99": 14.6,
+                  "max": 14.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.3,
+                  "p95": 1.6,
+                  "p99": 1.6,
+                  "max": 1.6
+                },
+                "ready": {
+                  "p50": 11.9,
+                  "p95": 13.5,
+                  "p99": 13.5,
+                  "max": 13.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2.9,
+                  "p95": 3.8,
+                  "p99": 3.8,
+                  "max": 3.8
+                },
+                "ready": {
+                  "p50": 28.1,
+                  "p95": 29.4,
+                  "p99": 29.4,
+                  "max": 29.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 17,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "disable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.2,
+                  "p95": 19.7,
+                  "p99": 19.7,
+                  "max": 19.7
+                },
+                "ready": {
+                  "p50": 41.1,
+                  "p95": 44.4,
+                  "p99": 44.4,
+                  "max": 44.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 33.3,
+                  "p99": 33.6,
+                  "max": 33.6
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "enable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 15.6,
+                  "p95": 15.8,
+                  "p99": 15.8,
+                  "max": 15.8
+                },
+                "ready": {
+                  "p50": 38.8,
+                  "p95": 39.5,
+                  "p99": 39.5,
+                  "max": 39.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25.4,
+                  "max": 25.4
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "disable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 21,
+                  "p95": 22.7,
+                  "p99": 22.7,
+                  "max": 22.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 23.3,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "enable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "ready": {
+                  "p50": 18.8,
+                  "p95": 20.4,
+                  "p99": 20.4,
+                  "max": 20.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 24.9,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "disable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.6,
+                  "p95": 3.8,
+                  "p99": 3.8,
+                  "max": 3.8
+                },
+                "ready": {
+                  "p50": 22.2,
+                  "p95": 27,
+                  "p99": 27,
+                  "max": 27
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 33.4,
+                  "max": 33.4
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "enable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.4,
+                  "p95": 6.5,
+                  "p99": 6.5,
+                  "max": 6.5
+                },
+                "ready": {
+                  "p50": 15.8,
+                  "p95": 19.2,
+                  "p99": 19.2,
+                  "max": 19.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.9,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.7,
+                  "p95": 12.7,
+                  "p99": 12.7,
+                  "max": 12.7
+                },
+                "ready": {
+                  "p50": 28.7,
+                  "p95": 29.9,
+                  "p99": 29.9,
+                  "max": 29.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 15.9,
+                  "p99": 15.9,
+                  "max": 15.9
+                },
+                "ready": {
+                  "p50": 12.8,
+                  "p95": 22.7,
+                  "p99": 22.7,
+                  "max": 22.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.3,
+                  "p95": 8.6,
+                  "p99": 8.6,
+                  "max": 8.6
+                },
+                "ready": {
+                  "p50": 33.7,
+                  "p95": 34.9,
+                  "p99": 34.9,
+                  "max": 34.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "scroll coloring pages",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.5,
+                  "p95": 9.9,
+                  "p99": 9.9,
+                  "max": 9.9
+                },
+                "ready": {
+                  "p50": 903.4,
+                  "p95": 910.8,
+                  "p99": 910.8,
+                  "max": 910.8
+                },
+                "postActionFrames": {
+                  "p50": 8.4,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.1,
+                  "p95": 15.8,
+                  "p99": 15.8,
+                  "max": 15.8
+                },
+                "ready": {
+                  "p50": 36.7,
+                  "p95": 46.9,
+                  "p99": 46.9,
+                  "max": 46.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.9,
+                  "p99": 16.9,
+                  "max": 16.9
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3.1,
+                  "p95": 3.5,
+                  "p99": 3.5,
+                  "max": 3.5
+                },
+                "ready": {
+                  "p50": 26.3,
+                  "p95": 26.9,
+                  "p99": 26.9,
+                  "max": 26.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2.3,
+                  "p95": 2.6,
+                  "p99": 2.6,
+                  "max": 2.6
+                },
+                "ready": {
+                  "p50": 125.8,
+                  "p95": 126.6,
+                  "p99": 126.6,
+                  "max": 126.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.3,
+                  "p95": 6.8,
+                  "p99": 6.8,
+                  "max": 6.8
+                },
+                "ready": {
+                  "p50": 15.2,
+                  "p95": 15.7,
+                  "p99": 15.7,
+                  "max": 15.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25.1,
+                  "max": 25.1
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.7,
+                  "p95": 16.6,
+                  "p99": 16.6,
+                  "max": 16.6
+                },
+                "ready": {
+                  "p50": 1033.2,
+                  "p95": 1048.5,
+                  "p99": 1048.5,
+                  "max": 1048.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 24.9,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 53.8,
+                  "p95": 92.7,
+                  "p99": 92.7,
+                  "max": 92.7
+                },
+                "ready": {
+                  "p50": 2560.1,
+                  "p95": 2603,
+                  "p99": 2603,
+                  "max": 2603
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.4,
+                  "p95": 6.4,
+                  "p99": 6.4,
+                  "max": 6.4
+                },
+                "ready": {
+                  "p50": 8.7,
+                  "p95": 10.3,
+                  "p99": 10.3,
+                  "max": 10.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 25,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0.6,
+                  "p95": 0.8,
+                  "p99": 0.8,
+                  "max": 0.8
+                },
+                "ready": {
+                  "p50": 16.5,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.9,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 985.4,
+                  "p95": 1027.6,
+                  "p99": 1027.6,
+                  "max": 1027.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 33.4
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.8,
+                  "p95": 27.2,
+                  "p99": 27.2,
+                  "max": 27.2
+                },
+                "ready": {
+                  "p50": 2540.3,
+                  "p95": 2551.2,
+                  "p99": 2551.2,
+                  "max": 2551.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 41.7,
+                  "max": 41.7
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 28.7,
+                  "p95": 70.1,
+                  "p99": 70.1,
+                  "max": 70.1
+                },
+                "ready": {
+                  "p50": 2580.5,
+                  "p95": 2583.8,
+                  "p99": 2583.8,
+                  "max": 2583.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 75,
+                  "max": 75
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 28.7,
+                  "p95": 62,
+                  "p99": 62,
+                  "max": 62
+                },
+                "ready": {
+                  "p50": 2562,
+                  "p95": 2568.2,
+                  "p99": 2568.2,
+                  "max": 2568.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
+                "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
