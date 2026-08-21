@@ -689,3 +689,52 @@ describe('deployment matrix report', () => {
     });
   });
 });
+
+describe('release gate prose', () => {
+  const gated = (modes) => {
+    const matrix = normalizedMatrix(modes);
+    matrix.targets[0].fidelity = 'physical-safari-gated';
+    return matrix;
+  };
+  const failingDrawing = () => {
+    const brushes = drawing();
+    brushes.crayon.aggregate.blankPassed = false;
+    return brushes;
+  };
+
+  it('reports the gate target as captured and red when its aggregates fail', () => {
+    const matrix = gated(
+      modeSpecs.map((spec) => normalizedMode(spec, { drawing: failingDrawing() }))
+    );
+
+    expect(renderReport(matrix)).toContain(
+      'Android device · web is the calibrated release gate — 4/4 modes captured, 4 of 16 brush aggregates over gate.'
+    );
+  });
+
+  it('reports the gate target as green when no aggregate is over gate', () => {
+    const matrix = gated(modeSpecs.map((spec) => normalizedMode(spec)));
+
+    expect(renderReport(matrix)).toContain(
+      '4/4 modes captured, all 16 brush aggregates inside gate.'
+    );
+  });
+
+  it('calls the gate unavailable only when no mode of it was captured', () => {
+    const matrix = gated(
+      modeSpecs.map((spec) => ({ ...spec, status: 'unavailable', reason: 'No tunnel.' }))
+    );
+
+    expect(renderReport(matrix)).toContain(
+      'Android device · web is the calibrated release gate and is unavailable in this campaign.'
+    );
+  });
+
+  it('says so when no target carries the gate', () => {
+    const matrix = normalizedMatrix(modeSpecs.map((spec) => normalizedMode(spec)));
+
+    expect(renderReport(matrix)).toContain(
+      'No target in this campaign carries the calibrated Safari release gate.'
+    );
+  });
+});
