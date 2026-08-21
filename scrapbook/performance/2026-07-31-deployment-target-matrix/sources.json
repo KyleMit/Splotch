@@ -314,7 +314,7 @@
             ]
           },
           "undoSource": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/pen-real-screen.json",
-          "actionsUnavailableReason": "P1: the discrete-action sweep cannot complete from a landscape start. After the blank landscape-to-portrait rotation, tapping Undo does not restore the cleared drawing within the 30 s readiness budget, and the app's screenshot control stays disabled. Reproduced on four independent attempts; the same step passes in both portrait-start cells, which rotate portrait-to-landscape first. Recorded as unmeasured rather than as a zero-cost pass, and unresolved as of this capture."
+          "actionsUnavailableReason": "P1: blocked by a product defect, not by the harness \u2014 see issue 1192. From a landscape start, the action plan draws, clears, performs a blank landscape-to-portrait rotation, then taps Undo. Undo restores the strokes into the pre-rotation paper geometry instead of letterboxing them into the new orientation, so they fall outside the visible canvas and the canvas continues to report itself empty. Reproduced on four independent attempts; the same step passes from a portrait start, where the blank rotation runs portrait-to-landscape first. Recorded as unmeasured, not as a zero-cost pass."
         },
         {
           "id": "landscape-dark",
@@ -338,7 +338,7 @@
             ]
           },
           "undoSource": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/pen-real-screen.json",
-          "actionsUnavailableReason": "P1: the discrete-action sweep cannot complete from a landscape start. After the blank landscape-to-portrait rotation, tapping Undo does not restore the cleared drawing within the 30 s readiness budget, and the app's screenshot control stays disabled. Reproduced on four independent attempts; the same step passes in both portrait-start cells, which rotate portrait-to-landscape first. Recorded as unmeasured rather than as a zero-cost pass, and unresolved as of this capture."
+          "actionsUnavailableReason": "P1: blocked by a product defect, not by the harness \u2014 see issue 1192. From a landscape start, the action plan draws, clears, performs a blank landscape-to-portrait rotation, then taps Undo. Undo restores the strokes into the pre-rotation paper geometry instead of letterboxing them into the new orientation, so they fall outside the visible canvas and the canvas continues to report itself empty. Reproduced on four independent attempts; the same step passes from a portrait start, where the blank rotation runs portrait-to-landscape first. Recorded as unmeasured, not as a zero-cost pass."
         }
       ]
     },
