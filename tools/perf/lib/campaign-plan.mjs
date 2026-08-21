@@ -29,15 +29,32 @@ const ACTIONS_APPIUM_COMMAND = 'perf:ios:xcuitest:actions';
 const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 
 export const CAMPAIGN_TARGETS = {
-  'ipad-simulator-web': { label: 'iPad Simulator · web', transport: 'appium', runtime: 'web' },
+  'ipad-simulator-web': {
+    label: 'iPad Simulator · web',
+    transport: 'appium',
+    runtime: 'web',
+    deviceClass: 'tablet',
+  },
   'ipad-simulator-native': {
     label: 'iPad Simulator · native',
     transport: 'appium',
     runtime: 'native',
+    deviceClass: 'tablet',
   },
-  'ipad-device-web': { label: 'iPad device · web', transport: 'appium', runtime: 'web' },
-  'ipad-device-native': { label: 'iPad device · native', transport: 'appium', runtime: 'native' },
+  'ipad-device-web': {
+    label: 'iPad device · web',
+    transport: 'appium',
+    runtime: 'web',
+    deviceClass: 'tablet',
+  },
+  'ipad-device-native': {
+    label: 'iPad device · native',
+    transport: 'appium',
+    runtime: 'native',
+    deviceClass: 'tablet',
+  },
   'android-emulator-web': {
+    deviceClass: 'handset',
     label: 'Android emulator · web',
     transport: 'appium',
     runtime: 'web',
@@ -46,12 +63,14 @@ export const CAMPAIGN_TARGETS = {
     webviewClass: 'android.webkit.WebView',
   },
   'android-emulator-native': {
+    deviceClass: 'handset',
     label: 'Android emulator · native',
     transport: 'appium',
     runtime: 'native',
     webviewClass: 'android.webkit.WebView',
   },
   'android-device-web': {
+    deviceClass: 'handset',
     label: 'Android device · web',
     transport: 'appium',
     runtime: 'web',
@@ -59,6 +78,7 @@ export const CAMPAIGN_TARGETS = {
     webviewClass: 'android.webkit.WebView',
   },
   'android-device-native': {
+    deviceClass: 'handset',
     label: 'Android device · native',
     transport: 'appium',
     runtime: 'native',
@@ -182,6 +202,10 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
             `--orientation=${mode.orientation}`,
             `--theme=${mode.theme}`,
             `--repeats=${ACTION_REPEATS}`,
+            // The Appium session exposes no device class for a physical device, so the
+            // gate ledger that is scoped to one cannot infer it. The campaign knows.
+            // Only the Appium runner reads it; the CDP one rejects unknown flags.
+            ...(useCdp ? [] : [`--device-class=${target.deviceClass}`]),
           ]
         : drawingArgs(item, mode);
 
