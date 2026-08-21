@@ -38,6 +38,11 @@ const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js')
 const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
+// The bundle a native capture attaches to is the one Capacitor builds, so it is
+// read from that config rather than restated here.
+const NATIVE_APP_BUNDLE_ID = JSON.parse(
+  readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8')
+).appId;
 const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
 const WEBVIEW_READY_TIMEOUT_MS = 30_000;
 const WEBVIEW_READY_POLL_MS = 250;
@@ -170,9 +175,16 @@ export function appiumCapabilities({
   xcodeConfigFile,
   wdaBundleId,
   allowProvisioning = false,
+  nativeApp = false,
 }) {
   return {
-    browserName: 'Safari',
+    // A native capture attaches to the app's own WebView, so it must open the app.
+    // Asking for Safari here still produces a session and still switches to a web
+    // context — Safari's, sitting on about:blank — and the run only fails a couple
+    // of minutes later with "never showed a sized #drawingCanvas".
+    ...(nativeApp
+      ? { 'appium:bundleId': NATIVE_APP_BUNDLE_ID }
+      : { browserName: 'Safari', 'appium:safariInitialUrl': 'about:blank' }),
     platformName: 'iOS',
     'appium:automationName': 'XCUITest',
     'appium:udid': deviceId,
@@ -180,9 +192,20 @@ export function appiumCapabilities({
     'appium:updatedWDABundleId': wdaBundleId,
     'appium:wdaLaunchTimeout': WDA_LAUNCH_TIMEOUT_MS,
     'appium:wdaStartupRetries': WDA_STARTUP_RETRIES,
-    'appium:safariInitialUrl': 'about:blank',
     ...(allowProvisioning ? { 'appium:allowProvisioningDeviceRegistration': true } : {}),
   };
+}
+
+// A hosted provider is addressed by a capability file and has no local device id,
+// which is what the `cloud` fallback exists for. A local capability-file run —
+// every native-app capture, since `appiumCapabilities` builds a Safari session —
+// has no `--device-id` either, and filing it as `cloud` throws away the hardware
+// identity ADR-0090 provenances a calibrated gate by. The negotiated session
+// names the device it attached to, so read that before falling back.
+export function capturedDeviceId(explicitDeviceId, session) {
+  if (explicitDeviceId) return explicitDeviceId;
+  const capabilities = session?.capabilities ?? session?.value?.capabilities;
+  return capabilities?.udid ?? capabilities?.['appium:udid'] ?? 'cloud';
 }
 
 export function borrowedSessionDescriptor(sessionId, requestedCapabilities) {
@@ -460,6 +483,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           xcodeConfigFile,
           wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
           allowProvisioning: has('allow-provisioning'),
+          nativeApp,
         });
   let server;
   let sessionId = borrowedSessionId;
@@ -804,7 +828,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       device: {
         name: session.capabilities?.deviceName ?? 'iPad',
         os: session.capabilities?.platformVersion ?? 'unknown',
-        id: deviceId,
+        id: capturedDeviceId(deviceId, session),
       },
       appUrl,
       transport: nativeApp ? 'native-capacitor-webview' : 'browser',

@@ -15,6 +15,7 @@ import {
   appiumCapabilities,
   borrowedSessionDescriptor,
   capabilitiesFromFile,
+  capturedDeviceId,
   clearDeviceWebCache,
   createWebDriverClient,
   isWebContext,
@@ -105,7 +106,14 @@ function actionPanelDatasetEquals(key, value) {
   return `${ACTION_PANEL_STATE_TARGET}.dataset[${JSON.stringify(key)}] === ${JSON.stringify(value)}`;
 }
 
-function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProvisioning, file }) {
+function sessionCapabilities({
+  deviceId,
+  xcodeConfigFile,
+  wdaBundleId,
+  allowProvisioning,
+  file,
+  nativeApp,
+}) {
   if (file) return capabilitiesFromFile(file);
   if (!deviceId) fail('Pass --device-id= for a local iPad or --capabilities-file= for a cloud one');
   if (!existsSync(xcodeConfigFile)) {
@@ -119,6 +127,7 @@ function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProv
     xcodeConfigFile,
     wdaBundleId,
     allowProvisioning,
+    nativeApp,
   });
 }
 
@@ -1479,6 +1488,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
     allowProvisioning: has('allow-provisioning'),
     file: capabilitiesFile,
+    nativeApp,
   });
   let server;
   let client;
@@ -1670,7 +1680,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
           session.capabilities?.platformVersion ??
           session.value?.capabilities?.platformVersion ??
           'unknown',
-        id: flag('device-id') ?? 'cloud',
+        id: capturedDeviceId(flag('device-id'), session),
       },
       appUrl,
       transport: nativeApp ? 'native-capacitor-webview' : 'browser',

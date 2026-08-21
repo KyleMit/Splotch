@@ -19,6 +19,14 @@ immediately rather than subtly:
   `sdk.dir=<android-sdk-path>` into it, or export `ANDROID_HOME`.
 * Appium's UiAutomator2 driver reads `ANDROID_HOME` from the **server's** environment, not the
   client's, so start Appium with it exported or every Android session fails to create.
+* `ios/local.xcconfig` does not exist, so every physical-iPad runner stops on "No signing config".
+  Copy it from the main checkout; it holds only a `DEVELOPMENT_TEAM` id.
+
+**Build one runtime at a time.** `cap:sync` writes the static native export over `web/build`, which
+is the same directory `perf:serve` hands the LAN — so a native build silently replaces the bundle
+every web target is being measured against, and nothing in a later artifact records the swap.
+Capture every web cell, then build native and capture every native cell; rerun `npm run perf:build`
+before returning to web targets. Do not interleave them.
 
 Check the worktree and product commit. Stop stale servers on the profiling port before rebuilding.
 Build and serve one marked web bundle when several web targets will share it:
@@ -118,13 +126,19 @@ in scope. A passing engine harness does not approve the real presentation surfac
 
 ## Physical iPad native
 
-Build/install an instrumented native app according to the profiling/mobile skills. Use the app’s
-bundle capabilities and attach to its WebView without navigating to an HTTP page:
+Install an instrumented native app first — the normal command does not carry marks, and an app
+without them reaches the canvas and then measures nothing:
+
+```sh
+PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true npm run ios:run:device
+```
+
+`--native-app` with `--device-id` opens the Capacitor bundle and attaches to its WebView; a
+capability file stays the path for Simulators and hosted providers:
 
 ```sh
 npm run perf:ios:xcuitest:screen --ignore-scripts -- \
-  --appium-url=<appium-url> \
-  --capabilities-file=<capabilities.json> \
+  --device-id=<udid> \
   --native-app \
   --brush=pen \
   --gesture-repeats=10 \
@@ -133,11 +147,12 @@ npm run perf:ios:xcuitest:screen --ignore-scripts -- \
 
 ```sh
 npm run perf:ios:xcuitest:actions --ignore-scripts -- \
-  --appium-url=<appium-url> \
-  --capabilities-file=<capabilities.json> \
+  --device-id=<udid> \
   --native-app \
   --repeats=4
 ```
+
+Do not pass a URL: the runner must not navigate an app-owned WebView.
 
 The native WebView’s coalescing signature is not the MobileSafari calibration. Report it as
 physical/native advisory until separately calibrated.
@@ -237,11 +252,18 @@ context without that check.
 
 ## Physical Android web
 
-Unlock the phone, enable developer mode and USB debugging, accept the Mac’s RSA prompt, and keep the
-screen awake. Verify the exact serial shows `device`, not `unauthorized`:
+Unlock the phone, enable developer mode and USB debugging, and accept the Mac’s RSA prompt. Verify
+the exact serial shows `device`, not `unauthorized`:
 
 ```sh
 npm run adb:devices
+```
+
+Pin the screen awake for the whole campaign rather than trusting the display timeout — a phone that
+locks mid-queue fails every remaining cell:
+
+```sh
+adb -s <serial> shell svc power stayon usb
 ```
 
 If the phone cannot reach the LAN preview running on port 4173, forward that exact preview port with
@@ -255,18 +277,34 @@ the command/log.
 
 ## Physical Android native
 
-Install the app on the verified serial using the repository command appropriate to the registered
-device:
+Install a marked build on the verified serial. `android:run:device` pins one registered handset,
+which is **not** the phone the committed `android-device-*` rows were measured on — check the row's
+`environment` string against `adb:devices` before assuming the script targets it, and address any
+other phone through `ANDROID_SERIAL`:
 
 ```sh
-npm run android:run:device
+PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true ANDROID_SERIAL=<serial> npm run android:run
 ```
 
-For an unregistered/new device, use the mobile guide and explicit `ANDROID_SERIAL` procedure rather
-than editing generated instructions or guessing a target. Build with marks, then use Appium with:
+Then use Appium with a capability file — the Android session is UiAutomator2, which the iOS runner's
+built-in capabilities cannot express:
 
 ```sh
---native-app --native-webview-class=android.webkit.WebView
+--capabilities-file=<capabilities.json> --native-app --native-webview-class=android.webkit.WebView
+```
+
+The file names the platform, the driver, the serial, and the Capacitor package:
+
+```json
+{
+  "platformName": "Android",
+  "appium:automationName": "UiAutomator2",
+  "appium:udid": "<serial>",
+  "appium:appPackage": "art.splotch.app",
+  "appium:appActivity": ".MainActivity",
+  "appium:noReset": true,
+  "appium:newCommandTimeout": 600
+}
 ```
 
 Capture four brushes, pen undo, and the four-repeat action suite. Keep the physical Android

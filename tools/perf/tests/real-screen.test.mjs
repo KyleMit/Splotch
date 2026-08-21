@@ -24,6 +24,7 @@ import {
   appiumCapabilities,
   blockServiceWorkerRegistrationForMeasurement,
   borrowedSessionDescriptor,
+  capturedDeviceId,
   dismissInstallBannerForMeasurement,
   inputFidelity,
   isWebContext,
@@ -130,6 +131,32 @@ describe('borrowedSessionDescriptor', () => {
         platformVersion: '16',
       },
     });
+  });
+});
+
+describe('capturedDeviceId', () => {
+  it('prefers the explicitly requested device', () => {
+    expect(capturedDeviceId('00008103-0006202E3CF1001E', { capabilities: { udid: 'other' } })).toBe(
+      '00008103-0006202E3CF1001E'
+    );
+  });
+
+  it('reads the negotiated session when a capability file supplied the target', () => {
+    expect(capturedDeviceId(undefined, { capabilities: { udid: 'R5CRC3AVCXM' } })).toBe(
+      'R5CRC3AVCXM'
+    );
+  });
+
+  it('accepts the prefixed capability and the unwrapped session envelope', () => {
+    expect(
+      capturedDeviceId(undefined, {
+        value: { capabilities: { 'appium:udid': '00008103-0006202E3CF1001E' } },
+      })
+    ).toBe('00008103-0006202E3CF1001E');
+  });
+
+  it('falls back to cloud only when no session names a device', () => {
+    expect(capturedDeviceId(undefined, { capabilities: { platformName: 'iOS' } })).toBe('cloud');
   });
 });
 
@@ -952,6 +979,24 @@ describe('trusted XCUITest input', () => {
       'appium:allowProvisioningDeviceRegistration',
       true
     );
+  });
+
+  it('opens the app bundle for a native capture and Safari otherwise', () => {
+    const base = {
+      deviceId: 'device',
+      xcodeConfigFile: '/tmp/local.xcconfig',
+      wdaBundleId: 'art.splotch.WebDriverAgentRunner',
+    };
+    const appId = JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8')).appId;
+
+    const web = appiumCapabilities(base);
+    expect(web.browserName).toBe('Safari');
+    expect(web).not.toHaveProperty('appium:bundleId');
+
+    const native = appiumCapabilities({ ...base, nativeApp: true });
+    expect(native['appium:bundleId']).toBe(appId);
+    expect(native).not.toHaveProperty('browserName');
+    expect(native).not.toHaveProperty('appium:safariInitialUrl');
   });
 
   it('accepts the calibrated trusted-touch signature and rejects untrusted input', () => {
