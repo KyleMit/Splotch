@@ -190,10 +190,12 @@ iPad evidence and the 33.5 ms frame gate behind the implementation change.
 ## Amendment (2026-08, issue #1192)
 
 Blank-canvas re-adoption remains the rule, but each drawing or clear undo unit now records the paper
-dimensions and screen angle it began against. When undo changes the canvas from empty to non-empty,
-the engine restores that recorded paper before reconciling it with the live viewport. A changed
-orientation therefore selects the existing upright contain-fit presentation, while the canvas-empty
-callback reports the restored ink immediately.
+dimensions and screen angle it began against. When an idle undo changes the canvas from empty to
+non-empty, the engine restores that recorded paper before reconciling it with the live viewport. A
+changed orientation therefore selects the existing upright contain-fit presentation, while the
+canvas-empty callback reports the restored ink immediately. Undo during an active pointer keeps the
+in-flight stroke's live coordinate space; replacing it mid-stroke would clip or displace those
+pixels.
 
 This state belongs to the undo unit rather than one engine-level "last paper" slot: several cycles
 of draw, clear, rotate, and undo can coexist in history, and each clear or erase must restore the

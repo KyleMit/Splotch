@@ -41,6 +41,7 @@ import {
 
 interface TiledRendererHost {
   paperSize: () => { width: number; height: number } | null;
+  // Optional only so the renderer's own test hosts can omit it; engine.ts always supplies it.
   recordedPaper?: () => RecordedPaperState | null;
   hasActivePointers: () => boolean;
 }
@@ -321,9 +322,7 @@ function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = fal
   const paper = host?.paperSize();
   if (!paper) return;
   clipTilesToPaper(liveTiles, paper);
-  for (const op of command.ops) {
-    renderTiledOpForCommand(op, captureUndo ? command : null);
-  }
+  for (const op of command.ops) renderTiledOpForCommand(op, captureUndo ? command : null);
   restoreTileContexts(liveTiles);
   if (captureUndo) undoPatches.crop(command);
 }
@@ -421,6 +420,10 @@ export function commitTiledCommand() {
   workCounters?.commit();
   scheduleTiledHistoryFold();
   return true;
+}
+
+export function peekTiledUndoPaper(): RecordedPaperState | undefined {
+  return history.at(-1)?.wasEmpty === false ? history.at(-1)?.recordedPaper : undefined;
 }
 
 export function undoTiledCommand(renderScale: number) {

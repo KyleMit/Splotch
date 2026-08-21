@@ -96,6 +96,7 @@ import {
   commitTiledCommand,
   detachTiledRenderer,
   hasRetainedTiledMagicOps,
+  peekTiledUndoPaper,
   recordTiledOp,
   recodeTiledMagicOps,
   repaintTiledRenderer,
@@ -226,8 +227,17 @@ function readoptPaperAfterTiledCanvasHides() {
 }
 
 function setCanvasEmptyState(empty: boolean, recordedPaper?: RecordedPaperState) {
+  // An in-flight stroke already owns the live paper and marks it non-empty; undo must not replace
+  // its coordinate space with metadata from the removed command.
   if (canvasEmpty === empty) return;
-  const restoringPaper = canvasEmpty && !empty && recordedPaper;
+  const paperUnchanged =
+    recordedPaper !== undefined &&
+    paper.pxW === recordedPaper.pxW &&
+    paper.pxH === recordedPaper.pxH &&
+    paper.cssW === recordedPaper.cssW &&
+    paper.cssH === recordedPaper.cssH &&
+    paperAngle === recordedPaper.angle;
+  const restoringPaper = !empty && !paperUnchanged ? recordedPaper : undefined;
   canvasEmpty = empty;
   if (restoringPaper) {
     paper = {
@@ -1047,6 +1057,11 @@ const cancelTouch = (e: TouchEvent) => e.preventDefault();
 export function undo(): Promise<void> {
   if (!canUndo || !canvas || !ctx) return Promise.resolve();
   if (PERF_MARKS) performance.mark('engine.undo:start');
+  const recordedPaper =
+    activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()
+      ? peekTiledUndoPaper()
+      : undefined;
+  if (recordedPaper) setCanvasEmptyState(false, recordedPaper);
   const state = undoTiledCommand(renderScale);
   setCanvasEmptyState(state.empty, state.recordedPaper);
   setCanUndo(state.canUndo);

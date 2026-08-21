@@ -48,6 +48,33 @@ test('clearing the canvas is itself undoable', async ({ page }) => {
   expect((await state(page)).canvasEmpty).toBe(false);
 });
 
+test('undo on an unchanged paper skips the resize path', async ({ page }) => {
+  await page.evaluate(() => {
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 200, y: 200 },
+    ]);
+    window.__engine.clearCanvas();
+  });
+
+  const resizeMeasurements = await page.evaluate(async () => {
+    const canvas = document.querySelector<HTMLCanvasElement>('#drawingCanvas');
+    if (!canvas) throw new Error('canvas not found');
+    const original = canvas.getBoundingClientRect;
+    let measurements = 0;
+    canvas.getBoundingClientRect = () => {
+      measurements++;
+      return original.call(canvas);
+    };
+    await window.__engine.undo();
+    canvas.getBoundingClientRect = original;
+    return measurements;
+  });
+
+  expect(resizeMeasurements).toBe(0);
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+});
+
 test('undo restores the recorded paper after a blank rotation', async ({ page }) => {
   await page.evaluate(async () => {
     await window.__engine.resizeTo(400, 300);
