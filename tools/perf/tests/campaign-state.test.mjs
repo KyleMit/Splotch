@@ -52,6 +52,7 @@ describe('performance campaign state', () => {
           clicked.push(script.match(/querySelector\((".*?")\)/)?.[1]);
           return true;
         }
+        if (script.includes("'#settingsModal') !== null")) return true;
         if (script.includes("'#settingsModal')?.open === true")) return true;
         if (script.includes("'#settingsModal')?.open !== true")) return true;
         if (script.includes("'#themeOption-light') !== null")) return true;
@@ -82,5 +83,41 @@ describe('performance campaign state', () => {
       await expect(setNativeRotationLock(execute, false)).resolves.toBe(true);
       expect(clicked).toContain('"#lockRotationToggle"');
     });
+  });
+});
+describe('opening Settings', () => {
+  // The regression this covers: a sized canvas is not a hydrated shell, so the
+  // first click can land on a button with no handler yet and simply do nothing.
+  function hydratingStub({ clicksBeforeOpen }) {
+    let clicks = 0;
+    const execute = async (script) => {
+      if (script.includes('target.click()')) {
+        clicks += 1;
+        return true;
+      }
+      if (script.includes("'#settingsModal') !== null")) return true;
+      if (script.includes("'#settingsModal')?.open === true")) return clicks > clicksBeforeOpen;
+      if (script.includes("'#settingsModal')?.open !== true")) return true;
+      if (script.includes("'#themeOption-light') !== null")) return true;
+      if (script.includes('return toggle ?')) return null;
+      return null;
+    };
+    return { execute, clickCount: () => clicks };
+  }
+
+  it('re-clicks until the dialog actually opens', async () => {
+    const { execute, clickCount } = hydratingStub({ clicksBeforeOpen: 2 });
+
+    await expect(setNativeRotationLock(execute, false)).resolves.toBe(PLATFORM_OWNS_ROTATION);
+    expect(clickCount()).toBeGreaterThan(2);
+  });
+
+  it('does not click again once the dialog is open', async () => {
+    const { execute, clickCount } = hydratingStub({ clicksBeforeOpen: 0 });
+
+    await setNativeRotationLock(execute, false);
+
+    // One open click, plus the close click that closeSettings sends.
+    expect(clickCount()).toBe(2);
   });
 });

@@ -3,6 +3,8 @@ import { pollUntil, sleep } from '../../lib/proc.mjs';
 const READY_TIMEOUT_MS = 30_000;
 const READY_POLL_MS = 50;
 const SETUP_SETTLE_MS = 1_100;
+// Long enough that a landed click gets to open the dialog before another is sent.
+const SETTINGS_OPEN_RETRY_MS = 400;
 const CAMPAIGN_THEMES = new Set(['light', 'dark']);
 const CAMPAIGN_ORIENTATIONS = new Set(['PORTRAIT', 'LANDSCAPE']);
 
@@ -68,12 +70,28 @@ export async function clickSetupElement(execute, selector) {
 }
 
 async function openAppearanceSettings(execute, hint) {
-  await clickSetupElement(execute, 'button[aria-label="Settings"]');
+  // A sized #drawingCanvas is what callers wait for, and it appears before the
+  // shell finishes hydrating. Clicking Settings in that window is a silent no-op
+  // that only surfaces as a modal which never opened, so wait for the dialog
+  // itself — it mounts closed (ADR-0049 amendment) — and keep re-clicking while
+  // it stays closed rather than trusting one click to land.
   await waitForUi(
     execute,
-    `document.querySelector('#settingsModal')?.open === true`,
-    `Settings for ${hint}`
+    `document.querySelector('#settingsModal') !== null`,
+    `Settings shell for ${hint}`
   );
+  const opened = await pollUntil(
+    async () => {
+      if (await execute(`return document.querySelector('#settingsModal')?.open === true;`)) {
+        return true;
+      }
+      await clickSetupElement(execute, 'button[aria-label="Settings"]').catch(() => {});
+      return false;
+    },
+    READY_TIMEOUT_MS,
+    SETTINGS_OPEN_RETRY_MS
+  );
+  if (!opened) throw new Error(`Timed out waiting for Settings for ${hint}`);
   if (!(await execute(`return document.querySelector('#themeOption-light') !== null;`))) {
     const selector = settingsSectionRow('appearance');
     if (!(await execute(`return document.querySelector(${JSON.stringify(selector)}) !== null;`))) {
