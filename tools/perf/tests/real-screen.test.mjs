@@ -24,6 +24,7 @@ import {
   appiumCapabilities,
   blockServiceWorkerRegistrationForMeasurement,
   borrowedSessionDescriptor,
+  cacheEvictionAcceptable,
   capturedDeviceId,
   dismissInstallBannerForMeasurement,
   inputFidelity,
@@ -131,6 +132,52 @@ describe('borrowedSessionDescriptor', () => {
         platformVersion: '16',
       },
     });
+  });
+});
+
+describe('cacheEvictionAcceptable', () => {
+  it('accepts an eviction that completed', () => {
+    expect(
+      cacheEvictionAcceptable({ ok: true, registrations: 2, controlled: true, cachesCleared: true })
+    ).toBe(true);
+  });
+
+  it('accepts an unreachable CacheStorage when no worker can serve from it', () => {
+    expect(
+      cacheEvictionAcceptable({
+        ok: true,
+        registrations: 0,
+        controlled: false,
+        cachesCleared: false,
+      })
+    ).toBe(true);
+  });
+
+  it('fails closed when the page is controlled and the caches never answered', () => {
+    expect(
+      cacheEvictionAcceptable({
+        ok: true,
+        registrations: 0,
+        controlled: true,
+        cachesCleared: false,
+      })
+    ).toBe(false);
+  });
+
+  it('fails closed when a registration survives and the caches never answered', () => {
+    expect(
+      cacheEvictionAcceptable({
+        ok: true,
+        registrations: 1,
+        controlled: false,
+        cachesCleared: false,
+      })
+    ).toBe(false);
+  });
+
+  it('fails closed when the page could not report at all', () => {
+    expect(cacheEvictionAcceptable({ ok: false, message: 'boom' })).toBe(false);
+    expect(cacheEvictionAcceptable(undefined)).toBe(false);
   });
 });
 

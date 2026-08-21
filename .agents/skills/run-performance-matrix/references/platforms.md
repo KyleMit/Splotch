@@ -325,6 +325,20 @@ built-in capabilities cannot express:
 --capabilities-file=<capabilities.json> --native-app --native-webview-class=android.webkit.WebView
 ```
 
+**CacheStorage can hang in the Capacitor WebView.** Android System WebView 151 accepts
+`caches.keys()` and never settles it, which used to kill every native capture with a bare
+`script timeout` naming neither the API nor the reason. The runner now bounds that call: a page with
+no service worker registrations and no controller cannot be served a stale bundle, so an unreachable
+CacheStorage is recorded and the capture continues; a controlled page still fails closed. If a
+native capture dies on cache eviction, check what the WebView reports before suspecting the app:
+
+```sh
+adb -s <serial> shell dumpsys webviewupdate | grep "Current WebView package"
+```
+
+Record that version — it moves independently of the app and of Chrome, and a row whose cells were
+captured across a WebView update is not internally comparable.
+
 The file names the platform, the driver, the serial, and the Capacitor package:
 
 ```json

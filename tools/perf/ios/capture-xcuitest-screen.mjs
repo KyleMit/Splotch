@@ -346,23 +346,61 @@ function profilingUrl(appUrl) {
   return url.toString();
 }
 
+// CacheStorage can accept a call and never settle it — Android System WebView 151
+// does exactly that for `caches.keys()` inside the Capacitor app. Without a
+// deadline the whole capture dies on a bare WebDriver "script timeout" that names
+// neither the API nor the reason.
+const CACHE_EVICTION_DEADLINE_MS = 5_000;
+
+// What this guard is actually for is a service worker serving an earlier build's
+// assets. That needs a worker: with no registrations and no controller, no cache
+// entry can reach the page, so an unreachable CacheStorage cannot hide a stale
+// bundle and the capture is safe to continue. A page that *is* controlled has to
+// evict, and still fails closed.
+export function cacheEvictionAcceptable(state) {
+  if (!state?.ok) return false;
+  if (state.cachesCleared) return true;
+  return state.registrations === 0 && !state.controlled;
+}
+
 export async function clearDeviceWebCache(executeAsync) {
-  const result = await executeAsync(`
+  const state = await executeAsync(`
     const done = arguments[arguments.length - 1];
-    const unregister = 'serviceWorker' in navigator
-      ? navigator.serviceWorker.getRegistrations().then((registrations) =>
-          Promise.all(registrations.map((registration) => registration.unregister()))
+    const withDeadline = (promise) =>
+      Promise.race([
+        promise.then(() => true),
+        new Promise((resolve) => setTimeout(() => resolve(false), ${CACHE_EVICTION_DEADLINE_MS})),
+      ]);
+    const registrations = 'serviceWorker' in navigator
+      ? navigator.serviceWorker.getRegistrations().catch(() => [])
+      : Promise.resolve([]);
+    registrations.then((found) =>
+      Promise.all(found.map((registration) => registration.unregister().catch(() => false)))
+        .then(() =>
+          'caches' in window
+            ? withDeadline(caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))))
+            : true
         )
-      : Promise.resolve();
-    const clearCaches = 'caches' in window
-      ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-      : Promise.resolve();
-    Promise.all([unregister, clearCaches]).then(
-      () => done({ ok: true }),
-      (error) => done({ ok: false, message: String(error) })
-    );
+        .then((cachesCleared) =>
+          done({
+            ok: true,
+            registrations: found.length,
+            controlled: Boolean(navigator.serviceWorker && navigator.serviceWorker.controller),
+            cachesCleared,
+          })
+        )
+    ).catch((error) => done({ ok: false, message: String(error) }));
   `);
-  if (!result?.ok) throw new Error(`Could not clear the iPad web cache: ${result?.message}`);
+  if (!cacheEvictionAcceptable(state)) {
+    throw new Error(
+      `Could not clear the device web cache: ${
+        state?.ok
+          ? `CacheStorage did not answer within ${CACHE_EVICTION_DEADLINE_MS} ms and the page is controlled by a service worker, so a stale bundle cannot be ruled out`
+          : state?.message
+      }`
+    );
+  }
+  return state;
 }
 
 export async function dismissInstallBannerForMeasurement(execute) {
