@@ -4,6 +4,7 @@
 import { captureMagicSheet, sheetPatternFor, type MagicSheetSnapshot } from './magicBrush';
 import { paintOpShape } from './opGeometry';
 import { flushCrayonBuffer, renderCrayonOp, resetCrayonStateForClear } from './crayonPassBuffer';
+import type { RecordedPaperState } from './undoHistory';
 
 // One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
 interface PathSeg {
@@ -78,10 +79,12 @@ export interface MagicRecodeUndo {
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
-// without re-scanning.
+// without re-scanning. `recordedPaper` restores the coordinate space beneath a
+// clear or erase after a blank-page rotation re-adopted the live viewport.
 export interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
+  recordedPaper?: RecordedPaperState;
   magicRecode?: MagicRecodeUndo;
 }
 

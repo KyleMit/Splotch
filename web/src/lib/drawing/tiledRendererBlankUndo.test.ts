@@ -10,6 +10,7 @@ import {
   clearTiledRenderer,
   commitTiledCommand,
   detachTiledRenderer,
+  peekTiledUndoPaper,
   recordTiledOp,
   renderTiledOp,
   resizeTiledRenderer,
@@ -139,6 +140,27 @@ function adoptSizedRenderer(canvas: HTMLCanvasElement) {
 }
 
 describe('blank tiled undo', () => {
+  it('exposes the paper restored by the next non-empty undo', () => {
+    const { canvas } = rendererElements();
+    const recordedPaper = { pxW: 400, pxH: 400, cssW: 400, cssH: 400, angle: 0 };
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      recordedPaper: () => recordedPaper,
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+
+    draw(WIDE_PATH, true);
+    expect(peekTiledUndoPaper()).toBeUndefined();
+
+    clearTiledRenderer(false);
+    expect(peekTiledUndoPaper()).toEqual(recordedPaper);
+
+    undoTiledCommand(1);
+    undoTiledCommand(1);
+  });
+
   it('restores a blank state after clear without replaying retained history', () => {
     const { host, canvas } = rendererElements();
     adoptSizedRenderer(canvas);

@@ -1,11 +1,11 @@
 # ADR-0050: Lock the "Paper" on Rotation and Present It Upright Through a Contain-Fit View
 
 **Status:** Active — amended by ADR-0066, [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md),
-and [ADR-0099](0099-window-the-paper-under-transient-system-bars.md). The paper lock and upright
-contain-fit view stand unchanged. ADR-0066 changed replay-era margin retention; ADR-0089 moves tiled
-production presentation to CSS and makes those temporary letterbox margins non-drawable; ADR-0099
-narrows the adopt-vs-lock rule so a same-angle viewport shrink windows the paper instead of
-re-adopting it. See the amendments at the end. **Date:** 2026-07
+[ADR-0099](0099-window-the-paper-under-transient-system-bars.md), and the 2026-08 undo amendment
+below. The paper lock and upright contain-fit view stand unchanged. ADR-0066 changed replay-era
+margin retention; ADR-0089 moves tiled production presentation to CSS and makes those temporary
+letterbox margins non-drawable; ADR-0099 narrows the adopt-vs-lock rule so a same-angle viewport
+shrink windows the paper instead of re-adopting it. See the amendments at the end. **Date:** 2026-07
 
 ## Context
 
@@ -125,9 +125,9 @@ Gotchas encoded in the code:
   beyond the paper-square rasters, so an undo pressed while rotated can also remove margin ink older
   than the 10-command retention window. Clearing the canvas reclaims the full new orientation as
   fresh paper.
-* **−** Undoing *back into* content after the paper re-adopted (e.g. undoing a clear after rotating)
-  replays old-space ops into the new space — the pre-ADR behavior (possible partial off-screen),
-  accepted for that corner rather than keeping stale locks on a blank canvas.
+* **+** Undoing *back into* content after the paper re-adopted restores the undo unit's recorded
+  paper before presenting its ink, so a clear → blank rotation → undo sequence letterboxes exactly
+  like rotating with that ink present.
 
 Amends the "rotation coordinate handling is unchanged" note in **ADR-0034** (the baseline square
 remains the preservation mechanism; presentation is new) and the sheet-sizing note in **ADR-0043**
@@ -186,3 +186,20 @@ This changes three production details:
 The original alignment guarantees remain: paper, ink, and coloring art share one matrix; pointer
 input is inverse-mapped; rotating back restores the original pixels. ADR-0089 records the physical
 iPad evidence and the 33.5 ms frame gate behind the implementation change.
+
+## Amendment (2026-08, issue #1192)
+
+Blank-canvas re-adoption remains the rule, but each drawing or clear undo unit now records the paper
+dimensions and screen angle it began against. When an idle undo changes the canvas from empty to
+non-empty, the engine restores that recorded paper before reconciling it with the live viewport. A
+changed orientation therefore selects the existing upright contain-fit presentation, while the
+canvas-empty callback reports the restored ink immediately. Undo during an active pointer keeps the
+in-flight stroke's live coordinate space; replacing it mid-stroke would clip or displace those
+pixels.
+
+This state belongs to the undo unit rather than one engine-level "last paper" slot: several cycles
+of draw, clear, rotate, and undo can coexist in history, and each clear or erase must restore the
+geometry of the ink immediately beneath it. Starting a new stroke on a rotated blank page does not
+consume this metadata, so the blank page still adopts the current orientation. The regression is
+pinned in `web/tests/engine-undo.spec.ts` ("undo restores the recorded paper after a blank
+rotation").
