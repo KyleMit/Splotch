@@ -62,6 +62,39 @@ describe('campaign sources', () => {
     expect(entry.missing).toEqual(['actions']);
   });
 
+  it('records a drawing-complete mode whose action sweep is blocked, when given a reason', () => {
+    const outputRoot = writeCampaign('ipad-device-native', 'native-capacitor-webview', {
+      omit: ['actions'],
+    });
+    const [entry] = campaignModeSources('ipad-device-native', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      actionsUnavailableReason: 'P1: blocked by #1194.',
+    });
+
+    expect(entry.partial).toBe('actions');
+    expect(entry.mode.status).toBe('captured');
+    expect(entry.mode.actionsUnavailableReason).toBe('P1: blocked by #1194.');
+    expect(entry.mode).not.toHaveProperty('actionSources');
+    expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
+  });
+
+  it('still refuses a mode missing a brush, reason or not', () => {
+    const outputRoot = writeCampaign('ipad-device-native', 'native-capacitor-webview', {
+      omit: ['magic', 'actions'],
+    });
+    const [entry] = campaignModeSources('ipad-device-native', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      actionsUnavailableReason: 'P1: blocked by #1194.',
+    });
+
+    expect(entry.mode).toBeUndefined();
+    expect(entry.missing).toEqual(['magic', 'actions']);
+  });
+
   it('refuses a native mode captured through a browser transport', () => {
     const outputRoot = writeCampaign('ipad-device-native', 'browser');
     const [entry] = sourcesFor('ipad-device-native', outputRoot);

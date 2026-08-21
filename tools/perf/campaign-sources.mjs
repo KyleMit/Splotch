@@ -41,7 +41,10 @@ function usableCell(relativePath, runtime) {
   return artifact !== null && artifactMatchesRuntime(artifact, runtime);
 }
 
-export function campaignModeSources(targetId, { outputRoot, productCommit, modes }) {
+export function campaignModeSources(
+  targetId,
+  { outputRoot, productCommit, modes, actionsUnavailableReason }
+) {
   const target = campaignTarget(targetId);
   const selected = modes?.length
     ? CAMPAIGN_MODES.filter((mode) => modes.includes(mode.id))
@@ -61,10 +64,18 @@ export function campaignModeSources(targetId, { outputRoot, productCommit, modes
         .map(([brush]) => brush),
       ...(usableCell(actions, target.runtime) ? [] : ['actions']),
     ];
-    if (missing.length) return { id: mode.id, missing };
+    // A mode whose only gap is the action sweep still carries four scored brushes and an
+    // undo probe. The manifest already has a shape for that — `actionsUnavailableReason`,
+    // which the report renders as no action data — so it is filed as the partial
+    // measurement it is rather than discarded beside genuinely uncaptured modes.
+    const actionsOnly = missing.length === 1 && missing[0] === 'actions';
+    if (missing.length && !(actionsOnly && actionsUnavailableReason)) {
+      return { id: mode.id, missing };
+    }
 
     return {
       id: mode.id,
+      ...(actionsOnly ? { partial: 'actions' } : {}),
       mode: {
         id: mode.id,
         orientation: mode.orientation,
@@ -73,7 +84,9 @@ export function campaignModeSources(targetId, { outputRoot, productCommit, modes
         drawingProductCommit: productCommit,
         drawing: Object.fromEntries(Object.entries(paths).map(([brush, path]) => [brush, [path]])),
         undoSource: paths.pen,
-        actionSources: [{ source: actions, productCommit, kind: 'full' }],
+        ...(actionsOnly
+          ? { actionsUnavailableReason }
+          : { actionSources: [{ source: actions, productCommit, kind: 'full' }] }),
       },
     };
   });
@@ -108,12 +121,22 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
     ?.split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
-  const entries = campaignModeSources(targetId, { outputRoot, productCommit, modes });
+  const entries = campaignModeSources(targetId, {
+    outputRoot,
+    productCommit,
+    modes,
+    actionsUnavailableReason: flag('actions-unavailable'),
+  });
 
   for (const entry of entries.filter((candidate) => candidate.missing)) {
     console.log(`SKIP  ${entry.id} — missing or wrong-transport: ${entry.missing.join(', ')}`);
   }
   const ready = entries.filter((entry) => entry.mode);
+  for (const entry of ready.filter((candidate) => candidate.partial)) {
+    console.log(
+      `PARTIAL ${entry.id} — drawing and undo only; ${entry.partial} recorded unavailable`
+    );
+  }
   console.log(`${targetId}: ${ready.length}/${entries.length} modes ready`);
 
   if (!manifestPath) {
