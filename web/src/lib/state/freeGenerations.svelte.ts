@@ -90,7 +90,7 @@ export function grantRefreshReady(): boolean {
   );
 }
 
-export async function refreshFreeGenerationGrant(): Promise<void> {
+async function refreshFreeGenerationGrant(): Promise<void> {
   try {
     const id = await installationId();
     if (!INSTALLATION_ID_PATTERN.test(id)) throw new Error('Invalid installation identifier');

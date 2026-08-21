@@ -44,7 +44,7 @@
       "tracking": false,
       "privacyPageFacts": [
         "current drawing is sent to our image service",
-        "A confirmed picture report stores the drawing"
+        "confirms a picture report, we store the drawing"
       ],
       "storeListingFacts": {
         "ios": ["**User Content → Other User Content**"],
@@ -115,7 +115,7 @@
         "deleteOnCollection": true
       },
       "privacyPageFacts": [
-        "Collected jobs are deleted immediately.",
+        "we delete our copy immediately",
         "an hourly cleanup removes its remaining files"
       ]
     },
@@ -130,8 +130,8 @@
         "earlyDeletionAvailable": true
       },
       "privacyPageFacts": [
-        "The report bundle is scheduled for deletion after",
-        "by a daily cleanup job."
+        "A daily cleanup deletes the report after",
+        "To ask us to delete one sooner"
       ]
     },
     {
@@ -145,7 +145,7 @@
         "exceptions": ["legal-requirement", "harm-prevention", "potential-csam-review"]
       },
       "privacyPageFacts": [
-        "normally retained for up to 30 days",
+        "normally kept for up to 30 days",
         "where the law requires it",
         "needed to stop harm",
         "possible child sexual abuse material"
@@ -165,7 +165,8 @@
       "privacyPageFacts": [
         "later uses do not extend that deadline",
         "Daily cleanup removes expired tallies",
-        "Retiring an access code requests immediate deletion"
+        "asks for its tally to be deleted right away",
+        "if that request fails, the fixed expiry still removes it"
       ]
     },
     {
@@ -219,7 +220,8 @@
       ],
       "privacyPageFacts": [
         "hosted by Netlify",
-        "automatically download additional packs from our site"
+        "downloads coloring pages from our own site",
+        "each time someone makes or reports an AI picture with it"
       ]
     },
     {
