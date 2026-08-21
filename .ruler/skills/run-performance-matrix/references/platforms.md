@@ -52,7 +52,20 @@ established baseline. Check for stray streams before starting:
 
 ```sh
 pgrep -fl "simctl (io|spawn)|scrcpy|screenrecord"
+xcrun simctl list devices booted
 ```
+
+That first check finds streams, not idle load. A simulator left booted from an earlier phase keeps
+rendering its app and costs real host CPU while a *physical* target is being driven — it is part of
+the established baseline for a simulator cell and background load for a physical one. The second
+command names it. Shut it down before a physical target, or decide deliberately to leave it and keep
+that choice constant for the whole target, because a target measured half each way is comparable to
+neither.
+
+The gate that would catch it is per-cell input fidelity: a starved host shows up as driver cadence
+drifting off the calibrated ~117 moves/second and a rising `gap p95`. Read those across a target's
+cells before trusting them as a set — stable cadence is the evidence that host load stayed out of
+the measurement.
 
 Re-check after any tool offers to show you the device mid-campaign, and treat cells captured while a
 mirror was attached as unmeasured rather than merging them.
