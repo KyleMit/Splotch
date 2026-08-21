@@ -2,8 +2,8 @@
 
 > 2026-08-21 · branch `codex/performance-matrix-2026-08-20` · PR
 > [#1191](https://github.com/KyleMit/Splotch/pull/1191) · Both physical-iPad rows are measured and
-> the matrix is complete for drawing and undo. What remains is the Android landscape action cells
-> and two product defects filed today.
+> the matrix is complete: every device target is measured. What remains is the performance work it
+> surfaced, filed as issues, and one stacked PR already open.
 
 ## Objective & non-goals
 
@@ -24,7 +24,7 @@ iOS session — that breaks a deliberate iPhone exclusion.
 | Branch           | `codex/performance-matrix-2026-08-20` (pushed)                                     |
 | PR               | [#1191](https://github.com/KyleMit/Splotch/pull/1191) (draft)                      |
 | Product measured | `ce88c8e587ac45847c419e05ef7a79d282bc747a` for today's cells; the rest stay pinned |
-| Coverage         | drawing 44/44 modes, undo 44/44, actions 36/44                                     |
+| Coverage         | drawing 44/44 modes, undo 44/44, actions 40/44                                     |
 | Release gate     | **exists and is red** — Safari fails all 16 drawing cells on render starvation     |
 
 ### Commits this session
@@ -89,24 +89,31 @@ those paths, so the report cannot be regenerated without them.
   `docs/PROFILING-IPAD.md`.
 * Green: perf tests (339), `npm run lint`, `npm run format:check`, `npm run ruler:check`,
   `npm run scrapbook:check`.
-* **Not re-run since the last harness change:** the full `npm test` tools tier. One test failed once
-  mid-session under device-capture load and passed on two clean re-runs; the failure was not
-  captured, so run the tier on a quiet host before trusting it.
+* Full tools tier on a quiet host: **2,312 pass**. The single mid-session failure under
+  device-capture load does not reproduce. `npm run lint`, `format:check`, `ruler:check`,
+  `check:skill-refs`, `scrapbook:check` all green.
 
 ## Risks & next 3 steps
 
-1. **Finish the Android landscape action cells.** All four were blocked by a *locked phone* — the
-   keyguard holds portrait, so `user_rotation` is accepted and ignored while portrait cells pass
-   normally. Check `dumpsys trust | grep deviceLocked` first. Run one target at a time: the
-   `pgrep`-based chaining used here raced and ran two campaigns on one device.
+1. **Continue the stack.** [#1200](https://github.com/KyleMit/Splotch/pull/1200) is open on
+   [#1195](https://github.com/KyleMit/Splotch/issues/1195), stacked on this PR because it edits a
+   file this PR rewrites. The product issues —
+   [#1196](https://github.com/KyleMit/Splotch/issues/1196),
+   [#1197](https://github.com/KyleMit/Splotch/issues/1197),
+   [#1198](https://github.com/KyleMit/Splotch/issues/1198),
+   [#1199](https://github.com/KyleMit/Splotch/issues/1199) — branch from `main`, so they are not
+   held behind an unmerged matrix PR.
 2. **Decide what the red release gate means.** Safari fails all 16 drawing cells on render
    starvation alone (2.4–5.4% of in-contact frame time against a 1% budget) while every paint gate
    passes; the native WebView loses under 1% on pen, magic and eraser. Crayon is worst on both and
    the only native failure. This is the ADR-0090 decision the matrix existed to enable, and it is a
    product question, not a harness one.
-3. **Fix [#1194](https://github.com/KyleMit/Splotch/issues/1194).** It reproduces on the iPad
-   Simulator, so no hardware is needed. It blocks 4 action cells and it is a
-   drawing-does-not-come-back bug for a toddler.
+3. **[#1194](https://github.com/KyleMit/Splotch/issues/1194) has a lead, not a fix.** Synthetic
+   input restores correctly; only trusted input fails. The suspect is the
+   `activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()` gate in `undo()`, which silently
+   skips the paper restore. `hasCanvasExit()` is pen-only and these sweeps are touch, so instrument
+   `activePointers.size` at the top of `undo()` and rerun one landscape sweep — two lines, and it
+   confirms or kills the hypothesis. Do not guess past that.
 
 ## Reread first
 
