@@ -33,7 +33,7 @@
   # both the semantics and the enumeration.
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/mobile tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify-functions.mjs copies that one tree up.
