@@ -5,21 +5,21 @@
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
   "limitations": [
-    "All product measurements use 6961e50b685d441e88b37d20d3f38a27136572fb; later commits change only performance harnesses and report generation.",
-    "Physical iPad web and native are P1/unmeasured because iOS 26 XCUITest requires a root-owned RemoteXPC tunnel that could not be started without an administrator credential.",
+    "Cells pinned to 6961e50b685d441e88b37d20d3f38a27136572fb measure a tree whose later commits change only performance harnesses and report generation.",
+    "Physical iPad capture needs a root-owned RemoteXPC tunnel before iOS 26 XCUITest discovery will see the device; the 2026-08-21 physical-iPad rows were captured once that tunnel was running. See docs/PROFILING-IPAD.md.",
     "iPad simulator native landscape drawing and undo were captured on 2026-08-21 once the runner stopped treating an absent in-app rotation lock as an ADR-0090 unavailability: tablets delegate orientation to the OS, so device rotation is the only path the product offers there and no external rotation or profiling-only preference seam was used. Its two landscape action cells remain unmeasured, blocked by a product defect rather than the harness — see issue 1192.",
     "Android landscape action sweeps were captured on 2026-08-21. A landscape phone renders the compact Settings shell, which offers quick toggles and a pointer to portrait instead of the section list, so those modes measure that shell under compact-specific labels and each capture records the settingsShell it measured. Compare a mode against the same shell; a differing action label set between modes is a shell difference, not a regression. Physical Android landscape actions stay unmeasured — no physical device was in scope for this pass.",
     "Resolved campaign-harness P1s: desktop coloring scroll was changed to a trusted wheel path, the WebKit coloring-page readiness race was fixed, and Appium 3 borrowed screen/action sessions were made W3C-safe with explicit provenance. Exact post-fix retries completed; no product result was rerun merely to turn a valid red gate green.",
     "Two Firefox action waits failed once at different labels and passed their exact retries, so they are retained as transient incidents rather than repeated P1s.",
     "Mac Firefox drawing and all mode-aware Mac undo were captured on 2026-08-21 with the same probe, viewports, and gates as the other desktop rows: the frame runner gained Gecko and an undo-response measurement, so one pen capture per mode now carries drawing and undo under the same recorded orientation and theme. Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
     "Desktop captures used exact 1512×982 or 982×1512 CSS viewports at DPR 2. The headed landscape browser window exceeded the physical display height at 100% browser zoom, but Playwright retained the requested page viewport.",
-    "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport, and it was unavailable in this campaign.",
-    "Raw perf-profiles are local scratch evidence. The 2026-08-20 captures are no longer on the workstation, so their cells are carried forward from the published normalized results and each run keeps the raw source path it was captured from; only the 2026-08-21 gap captures are re-readable from raw input.",
+    "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport.",
+    "Raw perf-profiles are local scratch evidence and are not tracked, so every cell is carried forward from the published normalized results and each run keeps the raw source path it was captured from.",
     "The 2026-08-21 physical-iPad cells were captured on ce88c8e587ac45847c419e05ef7a79d282bc747a, which carries the blank-rotation undo fix; every other cell stays pinned to 6961e50b685d441e88b37d20d3f38a27136572fb. Those pinned cells were checked rather than assumed: a fresh mac-safari landscape-light action sweep at the newer commit matched the pinned result on all 50 labels within 5 ms, the three blank-rotation labels included, so the pinned rows are not stale and were not recaptured. The same labels cost 100-106 ms on the iPad, where resizeCanvas spans a 4.7 Mpx canvas rather than a 1512x982 desktop viewport - a device-size effect, not a code regression."
   ],
   "preservedEvidence": {
     "from": "data.json",
-    "reason": "The 2026-08-20 campaign wrote its raw captures to gitignored perf-profiles scratch, and that scratch is no longer on the workstation, so those cells cannot be re-read from raw input. Their normalized results are carried forward from the published report rather than recaptured, which would replace a first valid result — including a red gate — with a different number."
+    "reason": "Raw captures land in gitignored perf-profiles scratch on the capture host, so no campaign's raw input survives in a clean checkout: the 2026-08-20 scratch is gone from the workstation, and the 2026-08-21 scratch was never tracked. Those cells are carried forward from the published normalized results rather than recaptured, which would replace a first valid result — including a red gate — with a different number."
   },
   "candidateActions": [
     {
@@ -1571,7 +1571,12 @@
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -2994,7 +2999,12 @@
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -4442,7 +4452,12 @@
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -5890,7 +5905,12 @@
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -7350,7 +7370,12 @@
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -8798,7 +8823,12 @@
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -9000,7 +9030,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -9202,7 +9236,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         }
       ]
     },
@@ -16439,7 +16477,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         },
         {
@@ -17891,7 +17930,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         },
         {
@@ -18094,7 +18134,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -18296,7 +18340,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         }
       ]
     },
@@ -22390,7 +22438,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         },
         {
@@ -23517,7 +23566,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         }
       ]
@@ -27612,7 +27662,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         },
         {
@@ -28739,7 +28790,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         }
       ]
@@ -32834,7 +32886,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         },
         {
@@ -33961,7 +34014,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         }
       ]
@@ -38056,7 +38110,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         },
         {
@@ -39183,7 +39238,8 @@
           },
           "preservedSections": [
             "drawing",
-            "undo"
+            "undo",
+            "actions"
           ]
         }
       ]
@@ -40963,6 +41019,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -42731,6 +42788,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -44524,6 +44582,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -46317,6 +46376,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         }
@@ -48097,6 +48157,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -49865,6 +49926,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -51658,6 +51720,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -53451,6 +53514,7 @@
           },
           "preservedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         }
@@ -55230,6 +55294,8 @@
             ]
           },
           "preservedSections": [
+            "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -56997,6 +57063,8 @@
             ]
           },
           "preservedSections": [
+            "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -58789,6 +58857,8 @@
             ]
           },
           "preservedSections": [
+            "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -60581,6 +60651,8 @@
             ]
           },
           "preservedSections": [
+            "drawing",
+            "undo",
             "actions"
           ]
         }
