@@ -467,7 +467,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   let originalOrientation;
   let execute;
   let restoreNativeRotationLock = false;
-  let platformOwnsRotation = false;
+  // Three-valued on purpose: null means the rotation path was never exercised
+  // (the device already sat in the requested orientation), which is not the same
+  // claim as the product owning an in-app lock.
+  let platformOwnsRotation = null;
   let cleanupPromise;
   const cleanup = () => {
     cleanupPromise ??= (async () => {
