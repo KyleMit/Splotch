@@ -36,7 +36,7 @@ const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
-const BORROWED_SESSION_CAPABILITIES_ERROR =
+export const BORROWED_SESSION_CAPABILITIES_ERROR =
   '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance';
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
 const UNDO_ACTION_SETTLE_MS = 500;

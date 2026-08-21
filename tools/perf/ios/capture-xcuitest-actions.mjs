@@ -11,7 +11,9 @@ import {
 } from '../lib/action-stats.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import {
+  BORROWED_SESSION_CAPABILITIES_ERROR,
   appiumCapabilities,
+  borrowedSessionDescriptor,
   capabilitiesFromFile,
   clearDeviceWebCache,
   createWebDriverClient,
@@ -120,6 +122,17 @@ function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProv
 
 function resolvedSessionCapabilities(session) {
   return session.capabilities ?? session.value?.capabilities ?? {};
+}
+
+export async function createActionSession(client, sessionId, capabilities) {
+  if (sessionId) return borrowedSessionDescriptor(sessionId, capabilities);
+  return client.request('POST', '/session', {
+    capabilities: { alwaysMatch: capabilities },
+  });
+}
+
+export function validateBorrowedActionSession(sessionId, capabilitiesFile) {
+  if (sessionId && !capabilitiesFile) throw new Error(BORROWED_SESSION_CAPABILITIES_ERROR);
 }
 
 function capabilityValue(capabilities, name) {
@@ -1429,15 +1442,15 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   const actions = selectedActions(flag('actions'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   let sessionId = flag('session-id');
-  const capabilities = sessionId
-    ? null
-    : sessionCapabilities({
-        deviceId: flag('device-id'),
-        xcodeConfigFile: flag('xcode-config', DEFAULT_XCODE_CONFIG),
-        wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
-        allowProvisioning: has('allow-provisioning'),
-        file: flag('capabilities-file'),
-      });
+  const capabilitiesFile = flag('capabilities-file');
+  validateBorrowedActionSession(sessionId, capabilitiesFile);
+  const capabilities = sessionCapabilities({
+    deviceId: flag('device-id'),
+    xcodeConfigFile: flag('xcode-config', DEFAULT_XCODE_CONFIG),
+    wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
+    allowProvisioning: has('allow-provisioning'),
+    file: capabilitiesFile,
+  });
   let server;
   let client;
   let ownsSession = false;
@@ -1484,12 +1497,8 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
     client.webdriverClicks = has('webdriver-clicks');
     await client.request('GET', '/status');
-    if (sessionId) {
-      session = await client.request('GET', `/session/${sessionId}`);
-    } else {
-      session = await client.request('POST', '/session', {
-        capabilities: { alwaysMatch: capabilities },
-      });
+    session = await createActionSession(client, sessionId, capabilities);
+    if (!sessionId) {
       sessionId = session.sessionId;
       ownsSession = true;
     }

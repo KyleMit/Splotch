@@ -17,6 +17,7 @@ import {
   coloringClearActivation,
   coloringScrollTransport,
   coloringSelectionSteps,
+  createActionSession,
   customColorSelectionEventTypes,
   largestNativeRect,
   nativeAccessibilityFallbackWarning,
@@ -27,6 +28,7 @@ import {
   settingsSectionMeasurement,
   settingsSectionSetupReady,
   uiActivationLabel,
+  validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../web/capture-desktop-actions.mjs';
@@ -86,6 +88,37 @@ const action = (postActionFrames, changes = {}) => ({
   canvasMutations: [],
   measures: [],
   ...changes,
+});
+
+describe('createActionSession', () => {
+  it('fails closed when a borrowed session has no capabilities file', async () => {
+    expect(() => validateBorrowedActionSession('borrowed-session')).toThrow(
+      '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance'
+    );
+  });
+
+  it('uses resolved capabilities for borrowed sessions without querying Appium', async () => {
+    const capabilities = {
+      platformName: 'Android',
+      'appium:udid': 'emulator-5554',
+      'appium:deviceName': 'Pixel 7 Pro API 33',
+      'appium:platformVersion': '13',
+    };
+    const client = {
+      request: () => {
+        throw new Error('borrowed sessions must not query Appium for a descriptor');
+      },
+    };
+
+    await expect(createActionSession(client, 'borrowed-session', capabilities)).resolves.toEqual({
+      sessionId: 'borrowed-session',
+      capabilities: {
+        ...capabilities,
+        deviceName: 'Pixel 7 Pro API 33',
+        platformVersion: '13',
+      },
+    });
+  });
 });
 
 describe('actionGateAllowances', () => {
