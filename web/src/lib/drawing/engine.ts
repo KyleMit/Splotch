@@ -367,8 +367,11 @@ function applyPaperView(presentation: PaperPresentation) {
 // An unmeasured rect is refused rather than adopted — see canvasMeasure.ts for
 // why rebuilding from one is unrecoverable — and the rebuild re-arms for the
 // first layout that gives the canvas a box.
-function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
-  if (!measure.accept(rect, resizeCanvas)) return;
+function resizeCanvas(
+  rect: DOMRect = canvas.getBoundingClientRect(),
+  repaintRecoveredPixels = false
+) {
+  if (!measure.accept(rect, (measured) => resizeCanvas(measured, repaintRecoveredPixels))) return;
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = paperPresentationFor({
     canvasEmpty,
@@ -391,7 +394,7 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   applyPaperView(presentation);
 
   resizeMagicSheet(magicActive);
-  if (tiledRendererResized && !canvasEmpty) repaintTiledRenderer();
+  if ((tiledRendererResized || repaintRecoveredPixels) && !canvasEmpty) repaintTiledRenderer();
 
   refreshCanvasRect(rect);
   notifyViewChange();
@@ -430,13 +433,17 @@ function handleResize() {
 // so a plain tab switch doesn't pay the backing-store wipe + repaint.
 function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
-  recoverTiledRendererIfNeeded();
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
   const stale =
     viewport.width !== w || viewport.height !== h || resizedAngle !== currentScreenAngle();
-  if (stale) resizeCanvas(rect);
-  else refreshCanvasRect(rect);
+  if (stale) {
+    const contextsRecovered = recoverTiledRendererIfNeeded(false);
+    resizeCanvas(rect, contextsRecovered);
+  } else {
+    recoverTiledRendererIfNeeded();
+    refreshCanvasRect(rect);
+  }
 }
 
 // --- Stroke rendering -------------------------------------------------------

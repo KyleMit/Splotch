@@ -39,7 +39,7 @@ it('tracks a pen canvas exit before the engine stops its active pointer', () => 
   }
 });
 
-it('resyncs the drawing surface on Capacitor resume', () => {
+it('registers the document resume listener in the native test build', () => {
   const removers: Array<() => void> = [];
   const canvas = document.createElement('canvas');
   const handlers = listenerHandlers([], vi.fn());

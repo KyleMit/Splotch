@@ -1,4 +1,5 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
+import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 
 test('a dense zigzag survives a resize, repainted from tiled history', async ({ page }) => {
   // A resize rebuilds the live tiles from retained history, so the drawing
@@ -247,4 +248,40 @@ test('a resume rebuilds live tiles whose canvas state was reset while hidden', a
     [-150, -225],
     [-225, -225],
   ]);
+});
+
+test('a reset context plus stale resume geometry replays retained history once', async ({
+  page,
+}) => {
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 40, y: 70 },
+      { x: 260, y: 70 },
+    ])
+  );
+  const before = await count(page);
+  expect(before).toBeGreaterThan(0);
+
+  const clearCalls = await page.evaluate(() => {
+    for (const tile of document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')) {
+      const currentWidth = tile.width;
+      tile.width = currentWidth;
+    }
+    const prototype = CanvasRenderingContext2D.prototype;
+    const originalClearRect = prototype.clearRect;
+    let calls = 0;
+    prototype.clearRect = function (...args) {
+      calls++;
+      return originalClearRect.apply(this, args);
+    };
+    try {
+      window.__engine.resumeTo(500, 400);
+      return calls;
+    } finally {
+      prototype.clearRect = originalClearRect;
+    }
+  });
+
+  expect(clearCalls).toBe(LIVE_TILE_COUNT);
+  expect(await count(page)).toBe(before);
 });

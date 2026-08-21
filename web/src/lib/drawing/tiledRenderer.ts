@@ -15,7 +15,7 @@ import {
 import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
 import { createTiledUndoPatches } from './tiledUndoPatches';
 import { createTiledMagicRecode } from './tiledMagicRecode';
-import { createLiveTileContextRecovery } from './tiledContextRecovery';
+import { createTiledContextRecovery } from './tiledContextRecovery';
 import {
   clearTileBacking,
   clipTilesToPaper,
@@ -67,7 +67,10 @@ let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
 let backingMigration = { revision: 0, pending: false };
 const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
 const workCounters = import.meta.env?.DEV || isDevHarness ? createDrawingWorkCounters() : null;
-const liveTileContextRecovery = createLiveTileContextRecovery(() => repaintTiledRenderer());
+const tiledContextRecovery = createTiledContextRecovery(
+  () => repaintTiledRenderer(),
+  () => historyBase
+);
 
 export function adoptTiledRenderer(
   canvasElement: HTMLCanvasElement,
@@ -76,11 +79,11 @@ export function adoptTiledRenderer(
   canvas = canvasElement;
   host = rendererHost;
   liveTiles = createLiveTiles(canvasElement);
-  liveTileContextRecovery.adopt(liveTiles);
+  tiledContextRecovery.adopt(liveTiles);
 }
 
-export function recoverTiledRendererIfNeeded() {
-  return liveTileContextRecovery.recoverIfNeeded();
+export function recoverTiledRendererIfNeeded(repaintRecoveredPixels = true) {
+  return tiledContextRecovery.recoverIfNeeded(repaintRecoveredPixels);
 }
 
 export function tiledSurfaceTopologyDebug() {
@@ -529,7 +532,7 @@ export function detachTiledRenderer() {
   cancelHistoryFold();
   clearCapture.cancel();
   backingMigration = { revision: backingMigration.revision + 1, pending: false };
-  liveTileContextRecovery.detach();
+  tiledContextRecovery.detach();
   canvas = null;
   host = null;
   liveTiles = [];

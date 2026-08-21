@@ -1,34 +1,50 @@
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import {
   applyLiveTileView,
+  historyBaseContextsAreLost,
+  historyBaseContextsNeedRecovery,
   liveTileContextsAreLost,
   liveTileContextsNeedRecovery,
   liveTileSurfaces,
+  rebindHistoryBaseContexts,
   rebindLiveTileContexts,
+  type HistoryBaseTile,
   type LiveTile,
 } from './tiledSurfaces';
 
-export function createLiveTileContextRecovery(repaint: () => void) {
+export function createTiledContextRecovery(
+  repaint: () => void,
+  historyBaseTiles: () => readonly HistoryBaseTile[]
+) {
   let tiles: readonly LiveTile[] = [];
   let pending = false;
   let recoveryFrame: number | null = null;
   let removers: Array<() => void> = [];
 
-  function recoverIfNeeded() {
+  function recoverIfNeeded(repaintRecoveredPixels = true) {
     if (tiles.length === 0) return false;
-    if (liveTileContextsAreLost(tiles)) {
+    const baseTiles = historyBaseTiles();
+    if (liveTileContextsAreLost(tiles) || historyBaseContextsAreLost(baseTiles)) {
       pending = true;
       return false;
     }
-    if (!pending && !liveTileContextsNeedRecovery(tiles)) return false;
-    if (!rebindLiveTileContexts(tiles)) {
+    if (
+      !pending &&
+      !liveTileContextsNeedRecovery(tiles) &&
+      !historyBaseContextsNeedRecovery(baseTiles)
+    ) {
+      return false;
+    }
+    if (!rebindLiveTileContexts(tiles) || !rebindHistoryBaseContexts(baseTiles)) {
       pending = true;
       return false;
     }
     pending = false;
     applyLiveTileView(tiles, IDENTITY_PAPER_VIEW);
-    repaint();
-    applyLiveTileView(tiles, IDENTITY_PAPER_VIEW);
+    if (repaintRecoveredPixels) {
+      repaint();
+      applyLiveTileView(tiles, IDENTITY_PAPER_VIEW);
+    }
     return true;
   }
 

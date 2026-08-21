@@ -52,6 +52,30 @@ export function liveTileContextsNeedRecovery(tiles: readonly LiveTile[]) {
     return (
       tile.ctx.lineCap !== 'round' ||
       tile.ctx.lineJoin !== 'round' ||
+      tile.crayonBottomCtx.lineCap !== 'round' ||
+      tile.crayonBottomCtx.lineJoin !== 'round' ||
+      tile.crayonTopCtx.lineCap !== 'round' ||
+      tile.crayonTopCtx.lineJoin !== 'round' ||
+      transform.a !== 1 ||
+      transform.b !== 0 ||
+      transform.c !== 0 ||
+      transform.d !== 1 ||
+      transform.e !== -tile.x ||
+      transform.f !== -tile.y
+    );
+  });
+}
+
+export function historyBaseContextsAreLost(tiles: readonly HistoryBaseTile[]) {
+  return tiles.some((tile) => contextIsLost(tile.ctx));
+}
+
+export function historyBaseContextsNeedRecovery(tiles: readonly HistoryBaseTile[]) {
+  return tiles.some((tile) => {
+    const transform = tile.ctx.getTransform();
+    return (
+      tile.ctx.lineCap !== 'round' ||
+      tile.ctx.lineJoin !== 'round' ||
       transform.a !== 1 ||
       transform.b !== 0 ||
       transform.c !== 0 ||
@@ -76,6 +100,24 @@ export function rebindLiveTileContexts(tiles: readonly LiveTile[]) {
       surfaceContext.lineJoin = 'round';
     }
     setCrayonBufferForTarget(context, crayonBottomContext, crayonTopContext);
+  }
+  return true;
+}
+
+export function rebindHistoryBaseContexts(tiles: readonly HistoryBaseTile[]) {
+  for (const tile of tiles) {
+    const context = tile.canvas.getContext('2d');
+    if (!context) return false;
+    tile.ctx = context;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.setTransform(1, 0, 0, 1, -tile.x, -tile.y);
+    setMagicPatternRegion(context, {
+      x: tile.x,
+      y: tile.y,
+      width: tile.width,
+      height: tile.height,
+    });
   }
   return true;
 }

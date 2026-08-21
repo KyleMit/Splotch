@@ -37,22 +37,24 @@ The tiled renderer owns progressive recovery for its forty-eight live surfaces:
   canvas. A loss marks recovery pending. Restoration checks are coalesced to one animation frame and
   wait while any supported context still reports `isContextLost()`.
 * Both browser `visibilitychange` re-entry and Capacitor's document-level `resume` event probe the
-  normal contexts. Android's Capacitor WebView can remain `visible` and emit no browser resize while
-  its Activity is backgrounded, so the native signal is required. The canonical state is round caps
-  and joins plus ADR-0089's identity paper view translated by the tile's backing-store origin. This
-  catches silent state resets even when the browser emits no context event.
-* Recovery reacquires all normal and crayon contexts, reapplies their baseline paint state and
-  crayon buffer bindings, restores tile-local transforms, and calls the existing full tiled repaint.
-  That repaint reconstructs settled pixels from the compacted tiled raster base, retained vector
-  tail, and any active command, including open crayon work. The tile transform is applied again
-  after replay so recovery does not depend on an intermediate renderer helper preserving context
-  state.
+  normal, crayon, and retained history-base contexts. Android's Capacitor WebView can remain
+  `visible` and emit no browser resize while its Activity is backgrounded, so the native signal is
+  required. The canonical state is round caps and joins plus each surface's tile-local transform.
+  This catches silent state resets even when the browser emits no context event.
+* Recovery reacquires all normal, crayon, and history-base contexts, reapplies their baseline paint
+  state and buffer bindings, restores tile-local transforms, and calls the existing full tiled
+  repaint. That repaint reconstructs settled pixels from the compacted tiled raster base, retained
+  vector tail, and any active command, including open crayon work. When stale geometry also requires
+  a rebuild, recovery repairs context state and lets resize own the single retained-history replay.
+  The live-tile transform is applied again after a direct recovery replay so recovery does not
+  depend on an intermediate renderer helper preserving context state.
 * A canonical renderer takes the old no-op resume path. No platform or user-agent branch is added.
 
 The recovery guarantee is bounded by the retained history sources already owned by ADR-0085. If a
-graphics failure also destroys a compacted history-base canvas, its folded prefix has no independent
-source and cannot be reconstructed. This decision does not add an unbounded vector log or a
-duplicate full-paper raster merely to cover that distinct failure.
+graphics failure also destroys a compacted history-base canvas's pixels, its folded prefix has no
+independent source and cannot be reconstructed. Its context state is repaired so later folds retain
+the correct tile-local coordinates, but this decision does not add an unbounded vector log or a
+duplicate full-paper raster merely to cover pixel loss.
 
 ## Consequences
 

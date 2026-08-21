@@ -221,11 +221,14 @@ describe('idle tiled canvas visibility', () => {
       context.setTransform(1, 0, 0, 1, 0, 0);
       tile.hidden = true;
     }
+    const crayonBottom = host.querySelector<HTMLCanvasElement>('[data-live-crayon-bottom]')!;
+    crayonBottom.getContext('2d')!.lineCap = 'butt';
 
     expect(recoverTiledRendererIfNeeded()).toBe(true);
     expect(tiles[0].hidden).toBe(false);
     expect(tiles[5].getContext('2d')!.getTransform()).toMatchObject({ e: -100, f: -100 });
     expect(tiles.every((tile) => tile.getContext('2d')!.lineCap === 'round')).toBe(true);
+    expect(crayonBottom.getContext('2d')!.lineCap).toBe('round');
     expect(recoverTiledRendererIfNeeded()).toBe(false);
   });
 
