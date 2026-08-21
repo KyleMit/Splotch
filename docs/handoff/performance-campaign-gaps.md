@@ -97,6 +97,42 @@ The structured rationale, priority, and applicability for all 14 families is alr
 `scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json`; keep that inventory
 instead of creating a second competing list.
 
+## Resumed 2026-08-21 — findings that change the premises
+
+Two of the packet's assumptions below turned out to be wrong. Both are settled; the entries in
+**Unverified assumptions** that they contradict are superseded by this section.
+
+### The gitignored raw captures are gone
+
+All six `perf-profiles/2026-08-2*` directories are absent from the main checkout, from every Codex
+worktree, and from a full-disk search. Only the `/private/tmp` ledgers survived. The matrix
+generator re-reads every raw path in `sources.json`, so it could not run at all.
+
+Resolution: a manifest section may now declare `"preserved"`, which carries the normalized result
+forward from the published `data.json` under an explicit `preservedEvidence` source and reason. 34
+cells are preserved this way. Their measured numbers are byte-identical, and each run keeps the raw
+source path it was captured from, so provenance still resolves. This is what the packet's own
+"preserve the first valid result, do not rerun-to-green" decision requires — recapturing those cells
+would replace red gates with different numbers.
+
+**Do not treat a preserved cell as re-runnable.** Its raw input no longer exists.
+
+### The iPad rotation-lock control is absent by product design, not by simulator limitation
+
+`AppearanceSection.svelte` renders `#lockRotationToggle` behind `supportsOrientationLock()`, which
+is false for native tablets because iPadOS 26 windowing ignores an in-app lock. So the control is
+absent on *every* native iPad, physical included — the simulator was never the variable.
+`capture-xcuitest-screen.mjs` had been treating that absence as an ADR-0090 unavailability.
+
+With no in-app lock to release there is nothing to bypass, and device rotation is the only
+orientation path the product offers there, so ADR-0090's persisted-setting rule is satisfied rather
+than skipped. The harness now names that answer `PLATFORM_OWNS_ROTATION`, rotates the device, skips
+the restore, and records `platformOwnsRotation` in the capture. This unblocks the 12 iPad-simulator
+native cells and would equally have blocked the physical-iPad native cells.
+
+Still to verify empirically on a booted simulator: that the toggle is in fact absent there and the
+rotation completes end to end.
+
 ## Decisions made
 
 * Keep the product fixed at `6961e50b685d441e88b37d20d3f38a27136572fb`; later commits are
