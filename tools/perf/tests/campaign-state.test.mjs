@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   PLATFORM_OWNS_ROTATION,
+  ensureCampaignTheme,
   setNativeRotationLock,
   parseCampaignTheme,
   parseCampaignOrientation,
@@ -119,5 +120,61 @@ describe('opening Settings', () => {
 
     // One open click, plus the close click that closeSettings sends.
     expect(clickCount()).toBe(2);
+  });
+});
+describe('the compact Settings shell', () => {
+  // A landscape phone renders CompactShell, whose theme control is a Night Mode
+  // toggle rather than the three-way picker, and whose rotation lock is a
+  // Portrait/Landscape picker rather than #lockRotationToggle. Both are different
+  // elements, not absent ones — reading them as absent is what stalled every
+  // Android landscape cell.
+  function compactStub({ theme = 'light' } = {}) {
+    const state = { theme, clicked: [] };
+    const execute = async (script) => {
+      if (script.includes('target.click()')) {
+        const selector = script.match(/querySelector\("(.*?)"\)/)?.[1];
+        state.clicked.push(selector);
+        if (selector === '#quickNightToggle') {
+          state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        }
+        return true;
+      }
+      if (script.includes('.quick-toggles')) return true;
+      if (script.includes("'#settingsModal') !== null")) return true;
+      if (script.includes("'#settingsModal')?.open === true")) return true;
+      if (script.includes("'#settingsModal')?.open !== true")) return true;
+      if (script.includes('dataset.theme')) return state.theme;
+      if (script.includes('#quickNightToggle')) {
+        return String(state.theme === 'dark') === script.match(/=== '(\w+)'/)?.[1];
+      }
+      if (script.includes('return toggle ?')) return null;
+      return null;
+    };
+    return { execute, state };
+  }
+
+  it('reaches the requested theme through the Night Mode toggle', async () => {
+    const { execute, state } = compactStub({ theme: 'light' });
+
+    await expect(ensureCampaignTheme(execute, 'dark')).resolves.toBe(true);
+    expect(state.theme).toBe('dark');
+    expect(state.clicked).toContain('#quickNightToggle');
+    expect(state.clicked).not.toContain('#themeOption-dark');
+  });
+
+  it('never navigates to an Appearance section the shell does not have', async () => {
+    const { execute, state } = compactStub({ theme: 'light' });
+
+    await ensureCampaignTheme(execute, 'dark');
+
+    expect(state.clicked.some((selector) => selector?.includes('data-section'))).toBe(false);
+  });
+
+  it('refuses to read a missing toggle as the platform owning rotation', async () => {
+    const { execute } = compactStub();
+
+    await expect(setNativeRotationLock(execute, false)).rejects.toThrow(
+      'Rotation setup cannot run from the compact Settings shell'
+    );
   });
 });

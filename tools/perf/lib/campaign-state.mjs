@@ -10,6 +10,15 @@ const CAMPAIGN_ORIENTATIONS = new Set(['PORTRAIT', 'LANDSCAPE']);
 
 export const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
 
+// A landscape phone gets CompactShell: quick toggles and a pointer to portrait
+// instead of the section list (COMPACT_QUERY in SettingsModal.svelte). Its
+// controls are different elements, not missing ones.
+export const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
+
+export async function settingsShellIsCompact(execute) {
+  return execute(`return document.querySelector('${COMPACT_SHELL_MARKER}') !== null;`);
+}
+
 export const settingsSectionRow = (section) =>
   `#settingsModal button[data-section=${JSON.stringify(section)}]`;
 
@@ -92,6 +101,9 @@ async function openAppearanceSettings(execute, hint) {
     SETTINGS_OPEN_RETRY_MS
   );
   if (!opened) throw new Error(`Timed out waiting for Settings for ${hint}`);
+  // The compact shell has no sections to navigate to — its theme and orientation
+  // controls sit on the one pane that just opened.
+  if (await settingsShellIsCompact(execute)) return true;
   if (!(await execute(`return document.querySelector('#themeOption-light') !== null;`))) {
     const selector = settingsSectionRow('appearance');
     if (!(await execute(`return document.querySelector(${JSON.stringify(selector)}) !== null;`))) {
@@ -104,6 +116,7 @@ async function openAppearanceSettings(execute, hint) {
       `Appearance section for ${hint}`
     );
   }
+  return false;
 }
 
 async function closeSettings(execute, hint) {
@@ -118,9 +131,19 @@ async function closeSettings(execute, hint) {
 
 export async function ensureCampaignTheme(execute, theme) {
   if (!theme || (await readResolvedTheme(execute)) === theme) return false;
-  await openAppearanceSettings(execute, 'theme setup');
+  const compact = await openAppearanceSettings(execute, 'theme setup');
   try {
-    await clickSetupElement(execute, `#themeOption-${theme}`);
+    if (compact) {
+      // CompactShell offers Night Mode as one toggle rather than a three-way
+      // theme picker, so aim at the resolved theme instead of a named option.
+      const wantsDark = theme === 'dark';
+      const alreadySet = await execute(
+        `return document.querySelector('#quickNightToggle')?.getAttribute('aria-checked') === '${wantsDark}';`
+      );
+      if (!alreadySet) await clickSetupElement(execute, '#quickNightToggle');
+    } else {
+      await clickSetupElement(execute, `#themeOption-${theme}`);
+    }
     await waitForUi(
       execute,
       `document.documentElement.dataset.theme === ${JSON.stringify(theme)}`,
@@ -140,8 +163,19 @@ export async function ensureCampaignTheme(execute, theme) {
 export const PLATFORM_OWNS_ROTATION = 'platform-owns-rotation';
 
 export async function setNativeRotationLock(execute, locked) {
-  await openAppearanceSettings(execute, 'rotation setup');
+  const compact = await openAppearanceSettings(execute, 'rotation setup');
   try {
+    // In the compact shell the lock is a Portrait/Landscape picker, so a missing
+    // #lockRotationToggle there means "different control", not "no control" —
+    // reading it as the latter would rotate the device past a lock the product
+    // really does persist. Restoring that picker needs the locked side as well as
+    // the fact of the lock, which this boolean contract cannot carry, so refuse
+    // rather than silently lose it: orientation is prepared before rotating.
+    if (compact) {
+      throw new Error(
+        'Rotation setup cannot run from the compact Settings shell; prepare orientation before rotating into it'
+      );
+    }
     const initial = await execute(`
       const toggle = document.querySelector('#lockRotationToggle');
       return toggle ? toggle.getAttribute('aria-checked') === 'true' : null;
