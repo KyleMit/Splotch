@@ -171,6 +171,41 @@ The one thing worth reverting is a debug override that changes what the device r
 — `adb shell dumpsys battery reset` if the watch ever forced a plugged state. Everything else stays
 up.
 
+## Instruments scope: `--all-processes` is not the perturbation you expect
+
+The intuition is reasonable — sampling every thread in every process should cost more than sampling
+one — so it was measured rather than assumed. Same native crayon gesture, three conditions, scored
+by the app's own probe:
+
+| Condition                            |     Lost % | Late frames | Moves/s | JS per frame |
+| ------------------------------------ | ---------: | ----------: | ------: | -----------: |
+| No trace at all                      | 1.05, 0.96 | 1.90, 1.65% |     116 |   0.26, 0.24 |
+| `Time Profiler --attach` one process | 0.86, 0.92 | 1.62, 1.83% |     116 |         0.25 |
+| `Time Profiler --all-processes`      |       0.97 |       1.53% |     116 |         0.25 |
+
+No measurable difference; every value sits inside the ±0.15 run-to-run spread this device shows at
+three samples. Input cadence and marked JS work are identical across all three, so the app was not
+slowed — the probe would have seen it in either.
+
+**So prefer `--all-processes` for a sampling template**, and not merely because it is free. One
+trace containing every process preserves per-frame correlation *across* processes, which is the
+whole point when the interesting work is split between the app, `com.apple.WebKit.WebContent` and
+`com.apple.WebKit.GPU`. Capturing one layer at a time forces correlation across separate runs with
+separate clocks — statistical at best, never per-frame.
+
+Two limits on that finding, because it does not generalize:
+
+* It covers **sampling** templates. Time Profiler interrupts on a timer; templates that *instrument*
+  rather than sample — Allocations, Leaks, Zombies — hook every call of interest and can be orders
+  of magnitude heavier. Re-measure before trusting scope-independence there.
+* It says nothing about **data volume**, which is real and large. The `--all-processes` Time
+  Profiler run exported to **119 MB** of XML against roughly 44 KB per table from a single-app
+  Animation Hitches trace. That is a cost in export and parse time, not in what the device does.
+
+The general rule this belongs to: when instrumentation might be changing what it measures, measure
+it. The app's own probe scored against a no-trace control answers it in ten minutes, and the same
+technique applies to the in-page probe and `PERF_MARKS`.
+
 ## Never run anything heavy on the host during a capture
 
 The host drives the input dispatch. A test suite, a build, or a second campaign competing for CPU
