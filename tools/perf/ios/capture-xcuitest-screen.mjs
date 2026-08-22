@@ -58,7 +58,7 @@ export const BORROWED_SESSION_CAPABILITIES_ERROR =
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
 const ROTATION_SETTLE_TIMEOUT_MS = 10_000;
 const INSTALL_DISMISSED_STORAGE_KEY = 'splotch-install-dismissed';
-const BRUSH_BUTTON_BY_MODE = {
+export const BRUSH_BUTTON_BY_MODE = {
   pen: '#penBrushButton',
   crayon: '#crayonBrushButton',
   magic: '#magicBrushButton',

@@ -19,7 +19,7 @@
     "tools/*/*.mjs",
     "tools/centerline-tracing/*.mjs",
     "tools/mobile/{android,ios}/*.mjs",
-    "tools/perf/{web,android,ios}/*.mjs",
+    "tools/perf/{web,android,ios,split-capture}/*.mjs",
     "!tools/lib/*.mjs",
     "tools/scrapbook/clear-sound-sheet/*.mjs",
     "tools/*/tests/*.test.mjs",
