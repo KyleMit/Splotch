@@ -20,6 +20,32 @@ and measured on the device, three samples each:
 | Five further deposition reshapings (n2–n6)        |  1.26–1.89% |
 | **Mirror by blit, landed**                        |   **1.23%** |
 
+**Every one of those implementations survives**, so a later attempt can read the diff rather than
+rebuild it. Each rejected branch is pushed and has a closed pull request describing what it tried
+and what it measured; the adopted ones are in the PR that shipped.
+
+| Branch                                     | What it tried                             | Result             | Where          |
+| ------------------------------------------ | ----------------------------------------- | ------------------ | -------------- |
+| `exp/1196-c1-raf-coalesce`                 | Rasterize once per frame, not per event   | Android eraser fix | adopted, #1201 |
+| `exp/1196-c7-mode-frame-beat`              | Beat from the dominant interval           | ADR-0134           | adopted, #1201 |
+| `exp/1196-c8-idle-empty-scan`              | Eraser empty scan once the child stops    | adopted            | adopted, #1201 |
+| `exp/1196-n1-mirror-by-blit`               | Crayon mirror by blit, not re-paint       | 1.23%              | adopted, #1201 |
+| `exp/1196-c2-drop-permanent-promotion`     | Stop permanently promoting the paper view | no change          | #1205          |
+| `exp/1196-c2-single-crayon-plane`          | Collapse crayon's two preview planes      | never implemented  | #1206          |
+| `exp/1196-c3-quiet-halos`                  | No brush ring under a fingertip           | within spread      | #1204          |
+| `exp/1196-c4-adaptive-grid`                | Live grid 4×4 → 3×3                       | worse on iPad      | #1207          |
+| `exp/1196-c5-skip-redundant-crayon-mirror` | Skip the mirror over blank paper          | no gain            | #1208          |
+| `exp/1196-n2-single-pass`                  | One density pass instead of two           | 1.89%              | #1209          |
+| `exp/1196-n3-pattern-phase-cache`          | Skip re-transforming an unmoved phase     | 1.66%              | #1210          |
+| `exp/1196-n4-bounded-anchor-scan`          | Bucket pass anchors to bound reentry      | 1.70%              | #1211          |
+| `exp/1196-n5-no-mirror-blank`              | C5 re-measured after N1                   | 1.73%              | #1212          |
+| `exp/1196-n6-no-darken-blend`              | No `darken` blend at all (diagnostic)     | 1.26%              | #1213          |
+
+N6 is the one to read first. Removing the blend entirely is not shippable — it is what makes wax
+look subtractive — and it only *matched* mirror-by-blit rather than beating it. That is the direct
+evidence that crayon's residual is not the blend, and it is much of why this ADR concludes the cost
+is irreducible without a different deposition model.
+
 Crayon is the one brush whose ops cannot be coalesced. Every other brush paints one shape per op, so
 a frame's worth of pointermoves merges into a single path and the per-op cost disappears. Crayon
 deposits wax through pattern-filled strokes whose texture is built per segment; merging a frame's
@@ -33,6 +59,14 @@ there is no per-op random generation left to hoist out — pre-generating a set 
 cycling them deterministically is, in substance, what the shipped design already does.
 Mirror-by-blit removed the last duplicated work by copying the op's own rect instead of re-running
 the pattern fill to produce byte-identical pixels.
+
+Two independent measurements say the remaining cost is not where an optimization could reach it.
+`xcrun xctrace` against the native build put crayon and pen within noise of each other on the GPU —
+**p50 1.50 ms against 1.53 ms** — so crayon is not GPU-bound compositing, and the top WebCore symbol
+in both was `AXObjectCache::performDeferredCacheUpdate` (59 samples crayon, 72 pen), which is an
+XCUITest accessibility artifact rather than drawing work. And N6 above removed the `darken` blend
+outright and only matched mirror-by-blit. Between them, the blend and the compositor are ruled out,
+which leaves the per-op patterned stroke itself.
 
 Two things follow. Crayon on this target costs more than the gate allows and further reduction needs
 a different deposition model rather than another optimization. And a patterned stroke is inherently
