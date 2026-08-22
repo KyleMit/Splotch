@@ -161,6 +161,60 @@ Android sleeps mid-campaign and locks. `npm run perf:preflight -- --fix` wakes i
 `svc power stayon true`, but **a device with a passcode cannot be unlocked from the host** — the
 preflight blocks and says so. For an overnight run, unlock it first and leave it on the charger.
 
+### An asleep iPad fails as a WebDriverAgent build error
+
+`xcodebuild failed with code 65` from Appium reads like a signing or Xcode problem and is usually
+neither. Run the `xcodebuild` line the Appium log prints and look past the exit code: the build can
+say `** TEST BUILD SUCCEEDED **` and still fail, because what failed is the *launch* —
+
+```
+The application failed to launch.
+Failure Reason: The request was denied by service delegate (SBMainWorkspace) for reason: Unspecified.
+```
+
+SpringBoard refuses to launch the runner while the display is asleep, and no host-side tool can wake
+an iPad. `ideviceinfo -k PasswordProtected` returning `false` does not rule this out — that reports
+whether a passcode is set, not whether the screen is on. The device stays enumerated in
+`idevice_id -l` throughout, so every cheap liveness check passes while every capture fails.
+
+Set Auto-Lock to Never on the iPad before an unattended run, and treat this signature as "someone
+has to touch the device", not as a toolchain problem to debug.
+
+## Recapturing matrix cells
+
+Cells in the performance matrix can be **preserved evidence** — carried forward from the published
+`data.json` because raw captures land in gitignored `perf-profiles/` scratch and do not survive a
+clean checkout. Check `preservedSections` on the mode before concluding anything about a number:
+
+```sh
+node -e "const d=require('./scrapbook/performance/2026-07-31-deployment-target-matrix/data.json');
+  const t=d.targets.find(x=>x.id==='ipad-device-web');
+  for (const m of t.modes) console.log(m.id, JSON.stringify(m.preservedSections))"
+```
+
+A preserved cell is not rescored when the metric changes, so a gate correction lands in the matrix's
+gates block and nowhere else. The cells keep whatever the estimator produced on the day they were
+captured until they are captured again on the capture host. **A matrix number and a fresh capture of
+the same cell can legitimately disagree by more than the gate**; find out which one you are reading
+before treating a difference as a regression.
+
+Three things about `perf:campaign` that each cost a launch:
+
+* **It needs device identity.** Without `--device-id=<hardware UDID>` (or `--capabilities-file=`)
+  every cell fails instantly with `Pass --device-id= for a local iPad`, and 20 cells burn 60
+  attempts in seconds.
+* **The ledger remembers exhausted cells across runs** and will not retry them — the resume message
+  is `3 attempts exhausted in earlier runs, not retried`. That is correct for a real device failure
+  and wrong after a misconfigured launch. Read `ledger.tsv` before clearing it: if every row is
+  `missing-or-invalid-json-exit-1` and no artifact was produced, the attempts recorded nothing and
+  deleting the ledger costs nothing.
+* **Its Android drawing transport is the one ADR-0135 measured at 46.8 moves/s**, below the 100–170
+  fidelity band. Cells captured that way must not be scored. Promoting the split input/measurement
+  transport into `tools/` is the fix; until then an Android recapture through the campaign produces
+  artifacts that parse — so the campaign accepts them — and still fail the fidelity verdict.
+
+`perf:ios:xcuitest:screen` drives Android too, despite the name.
+
 ## Serialize the captures, but keep both devices alive
 
 **Never capture Android and iOS at the same time.** Both campaigns drive input from this host, and
