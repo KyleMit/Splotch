@@ -11,12 +11,23 @@ The physical-device drawing capture bundles two unrelated jobs into one transpor
 touch **and** carries the script channel that injects the probe and reads its tables back. That
 coupling produced two independent failures during issue 1196.
 
-**It makes the capture unavailable when either half is unavailable.** On this host neither existing
-iOS path could run: Appium's XCUITest driver needs a root-owned RemoteXPC tunnel to discover a
-modern device, which an unattended session cannot open, and `ios_webkit_debug_proxy` listed no
-inspectable pages because iPadOS 26.5 exposes no Web Inspector switch — not under Settings → Apps →
-Safari → Advanced, and not under Settings → Developer. Two independent blockers, either of which
-takes out the whole capture.
+**It puts two unrelated prerequisites in series.** Neither existing iOS path ran unattended during
+this campaign, for different reasons and with different weight:
+
+* The XCUITest driver needs a root-owned RemoteXPC tunnel to discover the device. That tunnel is not
+  a new problem and not an unavailable one — `docs/PROFILING-IPAD.md` documents it, including the
+  `osascript … with administrator privileges` recipe that routes its password prompt to the macOS
+  GUI, and the 2026-08-21 physical-iPad matrix rows were captured with it running. What it costs is
+  a human at the keyboard once per host boot, which an overnight run cannot supply.
+* `ios_webkit_debug_proxy` listed the device but zero inspectable pages, and the Web Inspector
+  switch was not present under Settings → Apps → Safari → Advanced or under Settings → Developer on
+  this iPadOS 26.5 device. Those are the two documented locations; this is not proof that no such
+  switch exists anywhere, and a managed or restricted Safari configuration would produce the same
+  symptom. Worth re-checking before treating it as a platform fact.
+
+Neither is a permanent blocker. Together they mean an unattended capture depends on a GUI password
+prompt and on a device setting whose location is uncertain, and that a failure in either one takes
+out the whole capture rather than half of it.
 
 **It lets the input transport corrupt the measurement.** ADR-0092 already established that Appium's
 Android browser path does not preserve frame presentation and moved *action* profiles to direct CDP.
@@ -66,7 +77,11 @@ context switching that this path does not.
 ## Consequences
 
 * \+ A physical-device drawing capture no longer depends on a root-owned tunnel, on a Web Inspector
-  setting, or on Appium being able to see the device.
+  setting, or on Appium being able to see the device — so it can run unattended, which the Appium
+  path cannot while its tunnel needs a GUI password prompt.
+* − That is a convenience, not a capability. The Appium path still works when a human is present, it
+  is the calibrated one (ADR-0084/0090), and its input cadence is better than this transport's. A
+  release-gating capture should still prefer it; this path is for unattended and comparative work.
 * \+ Android browser input reaches a fidelity-passing cadence, so the Android cells measure the
   product rather than the driver.
 * \+ The same host serves both platforms, so the two differ only in how touch is injected.

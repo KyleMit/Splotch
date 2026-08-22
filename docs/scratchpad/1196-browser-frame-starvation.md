@@ -127,12 +127,17 @@ product candidate below is aimed at.
 
 ## Capture transport used for this campaign
 
-Neither existing physical-device path was available on this host:
+Neither existing physical-device path ran unattended on this host. Neither is a permanent blocker,
+and the first is a known, solved problem:
 
-* Appium's XCUITest driver needs a root-owned RemoteXPC tunnel to find the device, and an unattended
-  session cannot answer a sudo prompt.
-* `ios_webkit_debug_proxy` lists no inspectable pages because iPadOS 26.5 has no Web Inspector
-  switch under Settings → Apps → Safari → Advanced, nor under Settings → Developer.
+* Appium's XCUITest driver needs a root-owned RemoteXPC tunnel to find the device.
+  `docs/PROFILING-IPAD.md` already documents both the tunnel and the way to answer its password
+  prompt without a terminal, and the 2026-08-21 physical-iPad matrix rows were captured with it
+  running. It costs a human at the keyboard once, which an overnight run cannot supply.
+* `ios_webkit_debug_proxy` listed the device but no inspectable pages, and the Web Inspector switch
+  was absent from Settings → Apps → Safari → Advanced and from Settings → Developer on this iPadOS
+  26.5 device. Those are the two documented locations; a managed or restricted Safari configuration
+  would look the same, so this is worth re-checking rather than filing as a platform fact.
 
 The campaign therefore split the two channels the Appium runner bundles together. Input is the
 platform's own trusted injection — WebDriverAgent's W3C actions, launched with `devicectl` and
