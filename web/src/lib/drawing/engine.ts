@@ -76,7 +76,7 @@ import {
 import { type HistoryDebug, type RecordedPaperState } from './undoHistory';
 import { createCanvasMeasure, type CanvasRect } from './canvasMeasure';
 import { createPenStreamAdopter } from './penStreamQuirks';
-import { createStrokeRasterQueue } from './strokeRasterQueue';
+import { createStrokeRasterQueue, type RasterBatch } from './strokeRasterQueue';
 import { createIdleEmptyScan } from './idleEmptyScan';
 import type { ExportOptions, ExportSnapshot, TiledExportSnapshot } from './exportDrawing';
 import { getActiveOverlayExportSource } from './overlay';
@@ -730,7 +730,7 @@ interface PointerState {
   // pointermove. Rasterizing them together once a frame is what keeps a
   // digitizer that outruns the display from making the engine paint the same
   // presentable frame several times over.
-  pendingRaster: { points: Point[]; at: number }[];
+  pendingRaster: RasterBatch[];
 }
 
 const activePointers = new Map<number, PointerState>();
