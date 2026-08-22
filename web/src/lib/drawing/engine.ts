@@ -642,6 +642,7 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
     speedSamples: [],
     edgeSwipeGuard: null,
     pendingPoints: [],
+    pendingRaster: [],
   };
 
   renderStrokeStart(pointerState);
@@ -712,6 +713,11 @@ interface PointerState {
   // at startDrawing().
   edgeSwipeGuard: GuardEdge | null;
   pendingPoints: Point[];
+  // Paper points delivered since the last raster flush, one entry per
+  // pointermove. Rasterizing them together once a frame is what keeps a
+  // digitizer that outruns the display from making the engine paint the same
+  // presentable frame several times over.
+  pendingRaster: { points: Point[]; at: number }[];
 }
 
 const activePointers = new Map<number, PointerState>();
@@ -817,6 +823,7 @@ function startDrawing(e: PointerEvent) {
     speedSamples: [],
     edgeSwipeGuard,
     pendingPoints: [],
+    pendingRaster: [],
   };
   resetSpeedWindow(pointerState, now);
   activePointers.set(e.pointerId, pointerState);
@@ -858,6 +865,7 @@ function commitEdgeSwipe(ps: PointerState) {
 // Discarding the last live pointer does end the group here (flag reset
 // included): the discarded id gets no later stopDrawing tail to complete it.
 function discardPointer(e: PointerEvent) {
+  activePointers.get(e.pointerId)?.pendingRaster.splice(0);
   activePointers.delete(e.pointerId);
   releaseCaptureSafe(e.pointerId);
   finishGroupWhenCanvasIdle();
@@ -920,6 +928,66 @@ function strokeSpeed(ps: PointerState, last: Point, now: number): number {
   return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, SPEED_WINDOW_MS);
 }
 
+// A digitizer samples faster than the display presents — measured at 1.9-4.2
+// contact moves per painted frame on the iPad. Rasterizing inside the event
+// handler therefore paints the same presentable frame two to four times over,
+// and every one of those passes pays a stroke per intersecting tile plus the
+// renderer's own per-op bookkeeping. Queuing the points and rasterizing them as
+// one op per frame keeps the ink identical (the op carries every sample as its
+// own quadratic segment, exactly as a coalesced batch already did) while paying
+// the per-op cost once.
+let rasterFrame = 0;
+
+function flushPendingRaster(ps: PointerState) {
+  const queued = ps.pendingRaster;
+  if (queued.length === 0) return;
+  ps.pendingRaster = [];
+  let merged: Point[] = [];
+  let speed = 0;
+  for (const batch of queued) {
+    // A resume is a lift the stream never reported, so the points either side of
+    // it belong to different strokes and must not join into one op.
+    const jump = Math.hypot(batch.points[0].x - ps.x, batch.points[0].y - ps.y);
+    if (
+      merged.length > 0 &&
+      pointerWasResumed(batch.at - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))
+    ) {
+      strokeSegments(ps, merged);
+      merged = [];
+    }
+    restartStrokeIfResumed(ps, batch.points[0], batch.at);
+    speed = strokeSpeed(ps, batch.points[batch.points.length - 1], batch.at);
+    merged.push(...batch.points);
+    ps.lastTime = batch.at;
+  }
+  if (merged.length > 0) strokeSegments(ps, merged);
+  callbacks.onDrawSound?.({ speed, isStrokeStart: false });
+}
+
+function flushAllPendingRaster() {
+  if (rasterFrame !== 0) {
+    cancelAnimationFrame(rasterFrame);
+    rasterFrame = 0;
+  }
+  for (const ps of activePointers.values()) flushPendingRaster(ps);
+}
+
+function scheduleRasterFlush() {
+  if (rasterFrame !== 0) return;
+  rasterFrame = requestAnimationFrame(() => {
+    rasterFrame = 0;
+    if (PERF_MARKS) performance.mark('engine.draw:start');
+    try {
+      for (const ps of activePointers.values()) flushPendingRaster(ps);
+    } finally {
+      if (PERF_MARKS) {
+        performance.mark('engine.draw:end');
+        performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
+      }
+    }
+  });
+}
+
 function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
@@ -933,8 +1001,7 @@ function draw(e: PointerEvent) {
 
   if (!pointerState) return;
 
-  if (PERF_MARKS) performance.mark('engine.draw:start');
-  try {
+  {
     e.preventDefault();
 
     // Browsers coalesce fast input to ~one pointermove per frame but keep the
@@ -952,20 +1019,8 @@ function draw(e: PointerEvent) {
       return;
     }
 
-    const points = screenPoints.map(screenToPaper);
-    restartStrokeIfResumed(pointerState, points[0], now);
-    const speed = strokeSpeed(pointerState, points[points.length - 1], now);
-
-    strokeSegments(pointerState, points);
-
-    pointerState.lastTime = now;
-
-    callbacks.onDrawSound?.({ speed, isStrokeStart: false });
-  } finally {
-    if (PERF_MARKS) {
-      performance.mark('engine.draw:end');
-      performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
-    }
+    pointerState.pendingRaster.push({ points: screenPoints.map(screenToPaper), at: now });
+    scheduleRasterFlush();
   }
 }
 
@@ -974,6 +1029,9 @@ function scanDrawingIsEmpty() {
 }
 
 function stopDrawing(e: PointerEvent) {
+  // Everything below closes the stroke — the crayon pass stamp, the commit, the
+  // eraser's empty scan — so the queued points have to become ink first.
+  flushAllPendingRaster();
   const pointerState = activePointers.get(e.pointerId);
 
   // Not a pointer this engine is tracking: a hovering mouse's pointerout, or a
@@ -1017,6 +1075,7 @@ function finishPenCanvasExit(e: PointerEvent) {
 
 export function releaseAllPointers() {
   if (!ctx) return;
+  flushAllPendingRaster();
 
   // Force-releasing mid-flight crayon strokes closes their open pass so the
   // committed command ends stamped (one flush covers every open pass — the
