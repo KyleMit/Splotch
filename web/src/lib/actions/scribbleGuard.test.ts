@@ -255,6 +255,17 @@ describe('scribbleTap', () => {
     expect(activate).toHaveBeenCalledTimes(1);
   });
 
+  // WKWebView's ios.contentInset shifts PointerEvent client coordinates up by the
+  // top inset while layout is not shifted, so elementFromPoint answers for a point
+  // outside the control the browser targeted (issue #1194).
+  it('activates a release the browser targeted at the control but coordinates miss', () => {
+    const { el, activate } = tapElement();
+    vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientY: 746 }));
+    el.dispatchEvent(pointerEvent('pointerup', 1, { clientY: 746 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
   it('does not activate when the same pointer releases outside the control', () => {
     const { el, activate } = tapElement();
     vi.mocked(document.elementFromPoint).mockReturnValue(document.body);

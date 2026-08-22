@@ -167,6 +167,16 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     return node.contains(hit);
   }
 
+  // WKWebView configured with ios.contentInset reports PointerEvent client
+  // coordinates shifted up by the top content inset while layout, hit-testing
+  // and TouchEvent coordinates are not, so in portrait elementFromPoint answers
+  // for a point above the control the browser itself just targeted — a tap on a
+  // 55px button reads as a release 32px outside it and never activates
+  // (issue #1194). The dispatch target carries no coordinates and cannot skew.
+  function eventTargetsControl(e: PointerEvent): boolean {
+    return e.target instanceof Node && node.contains(e.target);
+  }
+
   function minViewportSide(): number {
     const root = node.ownerDocument.documentElement;
     return Math.min(
@@ -217,7 +227,7 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
 
   function up(e: PointerEvent) {
     if (!press || e.pointerId !== press.pointerId) return;
-    finishPress(!press.dragged && eventHitsControl(e));
+    finishPress(!press.dragged && (eventTargetsControl(e) || eventHitsControl(e)));
   }
 
   function cancel(e: PointerEvent) {
