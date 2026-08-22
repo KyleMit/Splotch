@@ -537,7 +537,14 @@ export function warmCrayonTiles(color: string) {
 // Per-context, per-(colour,pass) repeating pattern. createPattern is bound to one
 // context, so patterns are cached per target (WeakMap) then by colour+pass,
 // exactly like the magic sheet's pattern cache.
-let patternCache = new WeakMap<CanvasRenderingContext2D, Map<string, CanvasPattern>>();
+// The applied phase rides with the pattern so a repeat fill can skip
+// re-transforming one that has not moved.
+interface PhasedPattern {
+  pattern: CanvasPattern;
+  px: number;
+  py: number;
+}
+let patternCache = new WeakMap<CanvasRenderingContext2D, Map<string, PhasedPattern>>();
 
 // Spread a stroke's integer seed to a well-mixed sub-tile phase offset, so two
 // strokes with different seeds punch their tooth pits in different paper spots
@@ -584,15 +591,23 @@ export function crayonPatternFor(
     byKey = new Map();
     patternCache.set(target, byKey);
   }
-  let pattern = byKey.get(key) ?? null;
-  if (!pattern) {
-    pattern = target.createPattern(t, 'repeat');
-    if (!pattern) return null;
-    byKey.set(key, pattern);
+  let entry = byKey.get(key) ?? null;
+  if (!entry) {
+    const created = target.createPattern(t, 'repeat');
+    if (!created) return null;
+    entry = { pattern: created, px: Number.NaN, py: Number.NaN };
+    byKey.set(key, entry);
   }
   const [px, py] = cachedSeedPhase(seed, crayonFields().tile);
-  pattern.setTransform({ e: px, f: py });
-  return pattern;
+  // Only re-transform when the phase actually moved. The phase changes once per
+  // deposition pass, while this runs on every density pass of every op of every
+  // touched tile, and mutating a live CanvasPattern is not free in WebKit.
+  if (entry.px !== px || entry.py !== py) {
+    entry.pattern.setTransform({ e: px, f: py });
+    entry.px = px;
+    entry.py = py;
+  }
+  return entry.pattern;
 }
 
 // --- Mid-stroke pass splitting -----------------------------------------------
