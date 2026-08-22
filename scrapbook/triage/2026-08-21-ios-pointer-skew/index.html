@@ -414,6 +414,27 @@
       figure {
         margin: 0;
       }
+      /* Shrinking a 980px-wide diagram into a phone renders its 11px labels at
+         about 4px. Below that width the diagram scrolls at legible size instead. */
+      .figscroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+      }
+      .swipe {
+        display: none;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        margin: 9px 0 0;
+      }
+      @media (max-width: 780px) {
+        .figscroll svg {
+          min-width: 700px;
+        }
+        .swipe {
+          display: block;
+        }
+      }
       figcaption {
         font-size: 13px;
         color: var(--text-muted);
@@ -513,7 +534,7 @@
           </p>
 
           <figure class="card" style="padding: 26px 24px 20px">
-            <svg viewBox="0 0 980 400" role="img" aria-labelledby="skewTitle skewDesc">
+            <div class="figscroll"><svg viewBox="0 0 980 400" role="img" aria-labelledby="skewTitle skewDesc">
               <title id="skewTitle">
                 Measured vertical positions of one touch versus the button's layout box
               </title>
@@ -771,7 +792,8 @@
                   >screen.height − innerHeight</tspan
                 >: the WebView's top content inset. It exists in portrait, not landscape.
               </text>
-            </svg>
+            </svg></div>
+            <p class="swipe">Swipe the diagram sideways to see all of it.</p>
           </figure>
 
           <h3 style="margin-top: 32px; font-size: 21px">The raw measurement</h3>
@@ -844,7 +866,7 @@ function up(e)   { finishPress(!press.dragged &amp;&amp; <span class="bad">event
           </p>
 
           <figure class="card" style="margin-top: 20px; padding: 26px 24px 18px">
-            <svg viewBox="0 0 980 300" role="img" aria-labelledby="pipeTitle pipeDesc">
+            <div class="figscroll"><svg viewBox="0 0 980 300" role="img" aria-labelledby="pipeTitle pipeDesc">
               <title id="pipeTitle">Where each candidate fix intervenes in the input pipeline</title>
               <desc id="pipeDesc">
                 A five-stage pipeline from finger to activation. Option 4 intervenes at stage 2, the
@@ -1101,7 +1123,8 @@ function up(e)   { finishPress(!press.dragged &amp;&amp; <span class="bad">event
                   one symptom at a time.
                 </text>
               </g>
-            </svg>
+            </svg></div>
+            <p class="swipe">Swipe the diagram sideways to see all of it.</p>
           </figure>
         </section>
 
