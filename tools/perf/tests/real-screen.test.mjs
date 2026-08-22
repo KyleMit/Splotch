@@ -49,7 +49,9 @@ import {
   PAINT_MAX_GATE_MS,
   PAINT_P95_GATE_MS,
   PAINT_P99_GATE_MS,
+  LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
+  lostFrameTimeShareGateFor,
   drawingGateRows,
   scoreDrawingPhase,
   scoreDrawingRun,
@@ -414,6 +416,42 @@ describe('drawing acceptance gates', () => {
     ],
   ])('fails a %s regression', (_name, change) => {
     expect(scoreDrawingPhase(phase(change)).passed).toBe(false);
+  });
+
+  it('scores a cell with no exception at the single gate', () => {
+    expect(lostFrameTimeShareGateFor('android-device-web', 'crayon')).toBe(
+      LOST_FRAME_TIME_SHARE_GATE
+    );
+    expect(lostFrameTimeShareGateFor('ipad-device-web', 'pen')).toBe(LOST_FRAME_TIME_SHARE_GATE);
+  });
+
+  it('holds an excepted cell to its own budget without moving the others', () => {
+    const gateShare = lostFrameTimeShareGateFor('ipad-device-web', 'crayon');
+    expect(gateShare).toBeGreaterThan(LOST_FRAME_TIME_SHARE_GATE);
+
+    const overGate = phase({
+      starvation: { inContact: { lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE + 0.002 } },
+    });
+    expect(scoreDrawingPhase(overGate).passed).toBe(false);
+    expect(scoreDrawingPhase(overGate, gateShare).passed).toBe(true);
+  });
+
+  it('still fails an excepted cell that regresses past its own budget', () => {
+    const gateShare = lostFrameTimeShareGateFor('ipad-device-web', 'crayon');
+    const overException = phase({
+      starvation: { inContact: { lostFrameTimeShare: gateShare + 0.0001 } },
+    });
+
+    expect(scoreDrawingPhase(overException, gateShare).passed).toBe(false);
+  });
+
+  it('names every exception against a target and brush the matrix actually has', () => {
+    for (const cell of Object.keys(LOST_FRAME_TIME_SHARE_EXCEPTIONS)) {
+      const [targetId, brush] = cell.split(':');
+      expect(cell.split(':')).toHaveLength(2);
+      expect(targetId).toBeTruthy();
+      expect(['pen', 'crayon', 'magic', 'eraser']).toContain(brush);
+    }
   });
 
   it('requires every captured phase to pass', () => {
