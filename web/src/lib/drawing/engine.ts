@@ -971,8 +971,20 @@ function flushPendingRaster(ps: PointerState) {
     }
     restartStrokeIfResumed(ps, batch.points[0], batch.at);
     speed = strokeSpeed(ps, batch.points[batch.points.length - 1], batch.at);
-    merged.push(...batch.points);
-    mergedMoves += 1;
+    if (ps.crayon && !ps.erase) {
+      // Crayon alone keeps one op per pointermove. Its wax is deposited per op
+      // through two pattern passes into two surfaces, so a merged op paints a
+      // longer path per stroke() call and lands a larger dirty region on the
+      // preview planes — a cost the checkpoint accounting cannot give back.
+      // Measured on the physical iPad at 2.0 moves per frame, merging cost
+      // crayon 1.57% -> 2.11% of in-contact frame time; counting the checkpoint
+      // in pointermoves recovered it only to 1.85%. Every other brush paints one
+      // shape per op and coalesces cleanly.
+      strokeSegments(ps, batch.points, 1);
+    } else {
+      merged.push(...batch.points);
+      mergedMoves += 1;
+    }
     ps.lastTime = batch.at;
   }
   if (merged.length > 0) strokeSegments(ps, merged, mergedMoves);
