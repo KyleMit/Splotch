@@ -767,6 +767,7 @@ function releaseCaptureSafe(id: number): void {
 // trigger the gesture. Children who want to draw at a guarded edge draw away.
 // The band/decision/inset thresholds and the geometry live in ./strokeMath.
 function startDrawing(e: PointerEvent) {
+  cancelEmptyScan();
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
   if (timeSinceColorChange < requiredDelay) return;
@@ -973,6 +974,36 @@ function scanDrawingIsEmpty() {
   return scanTiledRendererIsEmpty(renderScale);
 }
 
+// The empty scan reads pixels back from every visible tile, and a readback is a
+// GPU-to-CPU sync in the middle of a frame the child is drawing into: on a
+// physical Android phone it measured 4.5 ms average and 12.3 ms maximum against
+// an 8.3 ms budget, once per eraser lift, and the frames it lands in are the
+// eraser's worst. Nothing needs the answer that fast — it only enables or
+// disables Undo, Clear, and the screenshot control — so it waits for the child
+// to stop, the same discipline ADR-0085 gave history folding. A pointerdown
+// pushes it back out; a scan that comes due mid-stroke re-arms rather than
+// running.
+const EMPTY_SCAN_IDLE_MS = 400;
+let emptyScanTimer: ReturnType<typeof setTimeout> | null = null;
+
+function cancelEmptyScan() {
+  if (emptyScanTimer === null) return;
+  clearTimeout(emptyScanTimer);
+  emptyScanTimer = null;
+}
+
+function scheduleEmptyScan() {
+  cancelEmptyScan();
+  emptyScanTimer = setTimeout(() => {
+    emptyScanTimer = null;
+    if (activePointers.size > 0) {
+      scheduleEmptyScan();
+      return;
+    }
+    setCanvasEmptyState(scanDrawingIsEmpty());
+  }, EMPTY_SCAN_IDLE_MS);
+}
+
 function stopDrawing(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
@@ -1003,7 +1034,7 @@ function stopDrawing(e: PointerEvent) {
   activePointers.delete(e.pointerId);
 
   if (pointerState && !pointerState.edgeSwipeGuard && pointerState.erase) {
-    requestAnimationFrame(() => setCanvasEmptyState(scanDrawingIsEmpty()));
+    scheduleEmptyScan();
   }
 
   finishGroupWhenCanvasIdle();
@@ -1161,6 +1192,7 @@ function teardownEngine() {
   // the ink.
   releaseAllPointers();
   crayonOpsSinceFlush = 0;
+  cancelEmptyScan();
   cancelCrayonWarmup();
   penStreamAdopter.reset();
   detachTiledRenderer();
