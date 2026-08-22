@@ -110,6 +110,39 @@ Android sleeps mid-campaign and locks. `npm run perf:preflight -- --fix` wakes i
 `svc power stayon true`, but **a device with a passcode cannot be unlocked from the host** — the
 preflight blocks and says so. For an overnight run, unlock it first and leave it on the charger.
 
+## Serialize the captures, but keep both devices alive
+
+**Never capture Android and iOS at the same time.** Both campaigns drive input from this host, and
+host contention changes input cadence — the variable that produced the false Android failures in the
+first place. Chain them: finish one device's run, then start the other's.
+
+**Keep both devices awake and reachable throughout anyway.** The idle device has to be ready when
+its turn comes, and — more often — ready afterwards, when a result raises a question that only
+another capture can answer. Tearing one down between phases turns a two-minute verification into a
+restart.
+
+`npm run perf:preflight -- --fix --watch` holds both: it re-asserts Android's stay-awake every 60
+seconds and reports the moment either device goes away. It can only *observe* the iPad — nothing on
+the host can hold an iPad awake, so set **Settings → Display & Brightness → Auto-Lock → Never** on
+the device itself. An active XCUITest session keeps it awake during a capture; the gaps are the
+risk.
+
+## Do not tear the devices down when a campaign ends
+
+Leave stay-awake set, leave the tunnel up, leave the Appium server and WebDriverAgent running, and
+leave the preview server serving, until a human says otherwise.
+
+This is not tidiness versus laziness — it is the difference between answering a follow-up question
+in two minutes and spending twenty rebuilding the rig. It has cost this project real time twice: a
+cleanup pass that ran `svc power stayon false` let the phone sleep and lock, so the next session
+opened on an unusable device; and killing an `iproxy` forward left a WebDriverAgent process stranded
+on the iPad, which then failed to launch with an error that named neither the port nor the stale
+process.
+
+The one thing worth reverting is a debug override that changes what the device reports about itself
+— `adb shell dumpsys battery reset` if the watch ever forced a plugged state. Everything else stays
+up.
+
 ## Never run anything heavy on the host during a capture
 
 The host drives the input dispatch. A test suite, a build, or a second campaign competing for CPU

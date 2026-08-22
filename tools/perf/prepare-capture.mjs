@@ -3,6 +3,7 @@
 //   npm run perf:preflight                    report only
 //   npm run perf:preflight -- --fix           also wake Android and hold it awake
 //   npm run perf:preflight -- --json          machine-readable, for a campaign runner
+//   npm run perf:preflight -- --watch         hold Android awake for the whole campaign
 //
 // Every check here exists because a campaign produced numbers without it and the
 // numbers were wrong. See docs/PROFILING-CAMPAIGNS.md for what each failure looks
@@ -24,6 +25,10 @@ import {
 } from './lib/capture-readiness.mjs';
 
 const ANDROID_STAY_AWAKE_TIMEOUT_MS = 1_800_000;
+// Android clears stay-awake on its own across a USB reconnect or a reboot, and a
+// campaign that spans hours will meet one. Re-asserting costs one adb round trip
+// and is the difference between an overnight run and a locked screen at 3am.
+const ANDROID_WATCH_INTERVAL_MS = 60_000;
 
 const sh = (cmd, args) => {
   const result = spawnSync(cmd, args, { encoding: 'utf8' });
@@ -200,6 +205,78 @@ function portChecks() {
   return { checks, resolved };
 }
 
+// Holds BOTH devices ready for the length of a session, not just the one being
+// captured right now. Captures are serialized — two campaigns driving input from
+// one host is the contention that corrupts input cadence — but the idle device
+// still has to be awake and enumerated when its turn comes, and still has to be
+// reachable afterwards for a follow-up question.
+//
+// Android is held actively (stay-awake is a setting this can re-assert). iOS is
+// only observed: nothing here can hold an iPad awake, so Auto-Lock must be Never
+// on the device itself, and all this can do is say when it has gone away.
+export async function watchAndroid(
+  serial,
+  { intervalMs = ANDROID_WATCH_INTERVAL_MS, iosUdid } = {}
+) {
+  console.log(`watching ${serial}; re-asserting stay-awake every ${intervalMs / 1000}s`);
+  let lastIos = null;
+  let lastLocked = null;
+  for (;;) {
+    const locked = /deviceLocked=1/.test(
+      sh('adb', ['-s', serial, 'shell', 'dumpsys', 'trust']).out
+    );
+    if (locked !== lastLocked) {
+      console.log(
+        locked
+          ? `LOCKED ${serial} — unlock it by hand; captures from here are not scoreable`
+          : `awake ${serial}`
+      );
+      lastLocked = locked;
+    }
+    if (!locked) {
+      // Stay-awake is STAY_ON_WHILE_PLUGGED_IN, so it only holds while the
+      // framework reports the device plugged. A phone that has reached 100% and
+      // stopped drawing current still reports `AC powered: true` on the hardware
+      // this was written against — but firmware that does not would silently
+      // stop honouring stay-awake mid-campaign. The debug override makes the
+      // framework report plugged regardless; `dumpsys battery reset` undoes it.
+      const battery = sh('adb', ['-s', serial, 'shell', 'dumpsys', 'battery']).out;
+      const plugged = /(AC|USB|Wireless) powered: true/.test(battery);
+      if (!plugged) {
+        console.log(
+          `unplugged-looking ${serial} — forcing a plugged state so stay-awake still applies`
+        );
+        sh('adb', ['-s', serial, 'shell', 'dumpsys', 'battery', 'set', 'ac', '1']);
+      }
+      sh('adb', ['-s', serial, 'shell', 'svc', 'power', 'stayon', 'true']);
+      sh('adb', [
+        '-s',
+        serial,
+        'shell',
+        'settings',
+        'put',
+        'system',
+        'screen_off_timeout',
+        String(ANDROID_STAY_AWAKE_TIMEOUT_MS),
+      ]);
+    }
+    if (iosUdid) {
+      const enumerated = sh('idevice_id', ['-l']).out.includes(iosUdid);
+      const tunnel = sh('pgrep', ['-f', 'tunnel-creation.mjs']).ok;
+      const state = enumerated && tunnel;
+      if (state !== lastIos) {
+        console.log(
+          state
+            ? `ios ready ${iosUdid}`
+            : `IOS UNAVAILABLE ${iosUdid} — ${enumerated ? 'tunnel gone' : 'device not enumerated'}`
+        );
+        lastIos = state;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+}
+
 export function prepareCapture(argv = process.argv.slice(2)) {
   const fix = argv.includes('--fix');
   const android = androidChecks({ fix });
@@ -228,4 +305,13 @@ export function prepareCapture(argv = process.argv.slice(2)) {
   return report;
 }
 
-if (isMain(import.meta.url)) runMain(async () => prepareCapture());
+if (isMain(import.meta.url)) {
+  runMain(async () => {
+    const argv = process.argv.slice(2);
+    const report = prepareCapture(argv);
+    if (argv.includes('--watch') && report.androidSerial) {
+      process.exitCode = 0;
+      await watchAndroid(report.androidSerial, { iosUdid: report.iosUdid });
+    }
+  });
+}
