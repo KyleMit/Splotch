@@ -41,7 +41,7 @@ more expensive than a solid one, which is a property of the brush, not a regress
 ## Decision
 
 Add a table of **exceptions** to the lost-frame gate, keyed `<targetId>:<brush>`, and hold
-`ipad-device-web:crayon` to 1.4%. Every other cell keeps the single 1% gate.
+`ipad-device-web:crayon` to 1.5%. Every other cell keeps the single 1% gate.
 
 The table is an exception list, not a budget list. A cell absent from it is scored at
 `LOST_FRAME_TIME_SHARE_GATE`, so a passing grade never has to be spelled out anywhere and a target
@@ -53,17 +53,37 @@ Each entry carries the reason and the measurement it was set from, and the gener
 the whole table under its acceptance-gate section, so a reader never has to infer an exemption from
 a number that merely looks passing.
 
-The 1.23% behind this entry was measured through the split input/measurement transport of
-[ADR-0135](0135-split-device-capture-input-and-measurement.md). Recapturing the cell through the
-campaign's own Appium transport — the one the matrix is built from — scored **1.11%** at 118.2
-contact moves per second with every input-fidelity check passing, and pen reproduced at 0.66%
-against 0.77%. The two transports agree within this device's spread, so the entry is not an artifact
-of having been measured through a different input path than the gate governs.
+The 1.23% behind this entry was first measured through the split input/measurement transport of
+[ADR-0135](0135-split-device-capture-input-and-measurement.md), in one mode. Recapturing the whole
+target through the campaign's own Appium transport — the one the matrix is built from — reproduced
+it: pen came back at 0.66% against 0.77%, and every one of the twenty cells passed input fidelity at
+115–118 contact moves per second. The two transports agree, so the entry is not an artifact of
+having been measured through a different input path than the gate governs.
 
-**Entries only ratchet down.** 1.4% is 1.23% plus the ±0.15 percentage-point run-to-run spread this
-device shows at three samples — enough headroom that a re-measure of the same code does not flip the
-verdict, and not a percentage point more. Raising an entry needs the same evidence as adding one:
-device measurements, three samples, and the alternatives that were tried and rejected.
+**Set the value from the worst single capture, not the best median.** That recapture is also what
+sized this entry, and it moved it. Crayon's four modes are tightly grouped —
+
+| Mode            | Lost frame time |
+| --------------- | --------------: |
+| portrait-light  |           1.11% |
+| portrait-dark   |           1.16% |
+| landscape-dark  |           1.16% |
+| landscape-light |       **1.40%** |
+
+— except for one. Re-measuring landscape-light three times gave 1.23%, 1.17% and 1.09%, a median of
+1.17% in line with everything else, which makes the 1.40% a single-sample excursion rather than a
+property of that mode.
+
+It is still the number the threshold has to clear. **A matrix cell is a single capture**, not a
+median of three, so a value chosen from medians would have failed that cell roughly whenever the
+excursion recurred, with nothing in the output to explain why. An earlier revision of this ADR set
+1.4% from a single mode's three-sample median plus an assumed ±0.15 spread, and landed exactly on
+the worst observation — zero margin, and precisely the kind of number ADR-0136 warns to treat as
+provisional until it has been compared against another run of the same cell.
+
+**Entries only ratchet down** once sized against the full mode sweep. Raising an entry needs the
+same evidence as adding one: device measurements, three samples, and the alternatives that were
+tried and rejected.
 
 ## Consequences
 
@@ -79,7 +99,8 @@ device measurements, three samples, and the alternatives that were tried and rej
   emulators, and on all three desktop browsers is still held to 1%, and iPad crayon in the native
   Capacitor WebView is too.
 * \+ A crayon regression on the iPad is still caught. The cell has a budget rather than an
-  exemption, and 1.4% against a measured 1.23% is roughly one run-to-run spread of slack.
+  exemption, and 1.5% against a 1.11–1.17% median band leaves roughly one excursion of slack — wide
+  enough not to flap, narrow enough that a real regression crosses it.
 * − The matrix can now report "pass" for a cell a reader would expect to fail against the headline
   gate. Rendering the table beside the gates is the mitigation, and it is the reason the table is
   rendered rather than only stored.
@@ -88,4 +109,4 @@ device measurements, three samples, and the alternatives that were tried and rej
   anything the tooling enforces.
 * − Crayon's cost is now documented rather than solved. If the deposition model is ever reworked — a
   different texture representation, or ops that can coalesce — this entry should be re-measured and
-  lowered or removed, and it is worth checking before assuming the 1.4% still reflects the code.
+  lowered or removed, and it is worth checking before assuming the 1.5% still reflects the code.

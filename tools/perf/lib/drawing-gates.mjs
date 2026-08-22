@@ -11,12 +11,14 @@ export const LOST_FRAME_TIME_SHARE_GATE = 0.01;
 // needs the same evidence as adding it. See ADR-0137.
 export const LOST_FRAME_TIME_SHARE_EXCEPTIONS = {
   'ipad-device-web:crayon': {
-    share: 0.014,
+    share: 0.015,
     reason:
       'Crayon deposits wax through pattern-filled strokes that cannot be merged across pointermoves, ' +
-      'so it pays a per-move cost every other brush coalesces away. Held at 1.23% measured over three ' +
-      'samples after mirror-by-blit took it from 2.11%; Safari on this device is the only place the ' +
-      'residual survives ADR-0136 crediting.',
+      'so it pays a per-move cost every other brush coalesces away, and mirror-by-blit already took ' +
+      'it from 2.11%. Across all four orientation/theme modes its median is 1.11-1.17%, but a single ' +
+      'capture of landscape-light measured 1.40% and re-measured to 1.17% over three samples. A ' +
+      'matrix cell IS a single capture, so this is set above the observed single-sample excursion ' +
+      'rather than above the median.',
   },
 };
 
