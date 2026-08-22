@@ -535,7 +535,7 @@ function renderStrokeStart(ps: PointerState) {
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so live rendering, history replay, and export share the same
 // anti-aliasing behavior.
-function strokeSmoothSegments(ps: PointerState, points: Point[]) {
+function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) {
   if (points.length === 0) return;
   closeCrayonPassBeforeForeignOp(ps);
   const op: StrokeOp = {
@@ -558,10 +558,19 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
   }
   renderTiledOp(op);
   recordCurrentOp(op);
-  if (ps.crayon && !ps.erase && ++crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
-    recordCrayonFlush();
-    ps.seed = crayonSeedCounter++;
-    ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+  // Counted in POINTERMOVES, not in ops. ADR-0085 specifies one increment per
+  // recorded path op, which was the same thing when an op was exactly one
+  // pointermove. Rasterizing once per frame merges every move in a frame into a
+  // single op, so counting ops would stretch the pass to twice the wax before a
+  // checkpoint — ADR-0085 trial 23's failure, measured here as physical-iPad
+  // crayon going from 1.57% to 2.11% of in-contact frame time lost.
+  if (ps.crayon && !ps.erase) {
+    crayonOpsSinceFlush += moveCount;
+    if (crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
+      recordCrayonFlush();
+      ps.seed = crayonSeedCounter++;
+      ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+    }
   }
 }
 
@@ -574,11 +583,13 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
 // strokeSmoothSegments' own start/mid bookkeeping, so the drawn PATH is
 // identical to the unsplit one — only the pattern phase of the later ops
 // changes. Seeds are stored per op, so every replay reproduces the splits.
-function strokeCrayonSegments(ps: PointerState, points: Point[]) {
+function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) {
   let batch: Point[] = [];
   for (const p of points) {
     if (ps.passTracker!.advance(p) === 'split') {
-      strokeSmoothSegments(ps, batch);
+      // A split flushes and resets the counter itself, so the moves in the
+      // batch it closes cannot carry toward the next checkpoint.
+      strokeSmoothSegments(ps, batch, 0);
       batch = [];
       recordCrayonFlush();
       ps.seed = crayonSeedCounter++;
@@ -587,12 +598,12 @@ function strokeCrayonSegments(ps: PointerState, points: Point[]) {
     }
     batch.push(p);
   }
-  strokeSmoothSegments(ps, batch);
+  strokeSmoothSegments(ps, batch, moveCount);
 }
 
-function strokeSegments(ps: PointerState, points: Point[]) {
-  if (ps.passTracker) strokeCrayonSegments(ps, points);
-  else strokeSmoothSegments(ps, points);
+function strokeSegments(ps: PointerState, points: Point[], moveCount = 1) {
+  if (ps.passTracker) strokeCrayonSegments(ps, points, moveCount);
+  else strokeSmoothSegments(ps, points, moveCount);
 }
 
 export interface HarnessStrokeReplay {
@@ -944,6 +955,7 @@ function flushPendingRaster(ps: PointerState) {
   if (queued.length === 0) return;
   ps.pendingRaster = [];
   let merged: Point[] = [];
+  let mergedMoves = 0;
   let speed = 0;
   for (const batch of queued) {
     // A resume is a lift the stream never reported, so the points either side of
@@ -953,15 +965,17 @@ function flushPendingRaster(ps: PointerState) {
       merged.length > 0 &&
       pointerWasResumed(batch.at - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))
     ) {
-      strokeSegments(ps, merged);
+      strokeSegments(ps, merged, mergedMoves);
       merged = [];
+      mergedMoves = 0;
     }
     restartStrokeIfResumed(ps, batch.points[0], batch.at);
     speed = strokeSpeed(ps, batch.points[batch.points.length - 1], batch.at);
     merged.push(...batch.points);
+    mergedMoves += 1;
     ps.lastTime = batch.at;
   }
-  if (merged.length > 0) strokeSegments(ps, merged);
+  if (merged.length > 0) strokeSegments(ps, merged, mergedMoves);
   callbacks.onDrawSound?.({ speed, isStrokeStart: false });
 }
 
