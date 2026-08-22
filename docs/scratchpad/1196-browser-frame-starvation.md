@@ -297,6 +297,48 @@ canvas that ADR-0085 already rejected.
 
 The one real iPad lead left is the eraser: 0.59% deficit against pen's 0.04%.
 
+## Final state, calibrated transport, harness fixed
+
+Three samples per cell. iPad on Appium XCUITest at ~117 moves/s; Android on `adb shell input` at
+~116 moves/s. Scored on the dominant-interval beat with the credited charge.
+
+| Brush  | iPad baseline | iPad final | Android final |
+| ------ | ------------: | ---------: | ------------: |
+| pen    |         0.62% |      0.73% |         0.46% |
+| magic  |         0.61% |      0.63% |         0.44% |
+| eraser |     1.13% (F) |      0.72% |         0.44% |
+| crayon |     1.57% (F) |  1.68% (F) |         0.50% |
+
+Seven of eight cells pass. Crayon on the iPad fails at **1.57% before any change in this stack** —
+pre-existing, and invisible until the transport was fixed, because the WebDriverAgent transport
+measured the same brush at 0.13%.
+
+The final crayon figure overlaps its baseline (1.52-1.61 against 1.60-1.73), so the carve-out below
+restored it rather than regressing it.
+
+## Two defects the campaign found in itself
+
+**Rasterizing once per frame silently stretched crayon's deposition pass.** `crayonOpsSinceFlush`
+increments once per recorded path op, which ADR-0085 specifies and which was the same thing as once
+per pointermove until the merge existed. At 2.0 moves per frame the 64-op checkpoint began covering
+twice the wax — ADR-0085 trial 23's failure, reintroduced. Crayon went 1.57% -> 2.11%, three samples
+each with non-overlapping ranges. Counting the checkpoint in pointermoves recovered it to 1.85%;
+exempting crayon from the merge entirely recovered it to baseline. Android never saw this: at 0.97
+moves per frame nothing merges there, which is why it appeared on one device only.
+
+**The XCUITest capture never selected pen.** `capture-xcuitest-screen.mjs` skipped brush selection
+when `brush === 'pen'`, on the assumption that pen is the default. The tool choice is persisted and
+captures share an origin, so a pen cell drew with whatever the previous capture selected. An iPad
+run ordered `crayon pen magic eraser` reported a pen cell of 1.90% that was crayon's 1.85% under
+pen's label, carrying crayon's 0.15 ms/frame engine cost against pen's 0.12 — read for two rounds as
+a regression in the checkpoint fix. The same bug had been found and fixed in this campaign's own
+capture host hours earlier and written into the runbook, without anyone checking the shipped
+harness.
+
+Detection, now in the runbook: **vary the brush order between runs.** A contaminated cell moves with
+the order; a real one does not. The final run deliberately captured crayon immediately before pen,
+and pen held at 0.73% against crayon's 1.68%.
+
 ## Winner
 
 **Candidate 1** among the product changes, shipped with candidates 7 and 6, which are what make the
