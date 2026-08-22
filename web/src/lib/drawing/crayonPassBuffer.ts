@@ -228,12 +228,22 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   }
   const buf = crayonBufferFor(target);
   buf.ctx.canvas.hidden = false;
-  if (buf.mirror) buf.mirror.canvas.hidden = false;
+  // The mirror exists to reproduce the (1 - mix) half of the stamp. Over blank
+  // paper the stamp's two steps already collapse to exactly the wax (see the
+  // pass-buffer notes above), so on a target with no committed ink the mirror
+  // shows nothing the darken plane is not showing and costs one more composited
+  // plane per tile. A hidden target canvas is precisely "nothing painted here
+  // yet", and a foreign op closes the pass before it could ink the target
+  // mid-pass, so this cannot go stale inside one pass.
+  const mirror = target.canvas.hidden ? null : buf.mirror;
   const matrix = target.getTransform();
+  if (mirror) {
+    mirror.canvas.hidden = false;
+    mirror.setTransform(matrix);
+  }
   buf.ctx.setTransform(matrix);
-  buf.mirror?.setTransform(matrix);
   paintCrayon(buf.ctx, op);
-  if (buf.mirror) paintCrayon(buf.mirror, op);
+  if (mirror) paintCrayon(mirror, op);
   buf.dirty = true;
   const bounds = opPaddedUserBounds(op);
   unionCrayonBounds(buf, matrix, bounds);
