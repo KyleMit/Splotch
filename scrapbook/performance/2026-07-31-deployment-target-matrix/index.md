@@ -23,6 +23,13 @@ of in-contact time. Undo passes at engine P95 ≤ 20 ms, next-frame P95 ≤ 33 m
 50 ms. A discrete action passes at first-frame P95 ≤ 33.5 ms, post-action frame P95 ≤ 20 ms, and
 post-action frame max ≤ 33.5 ms.
 
+Cells held to a different lost-frame budget, and why (ADR-0137):
+
+* **Crayon on `ipad-device-web`** — 1.4%. Crayon deposits wax through pattern-filled strokes that
+  cannot be merged across pointermoves, so it pays a per-move cost every other brush coalesces away.
+  Held at 1.23% measured over three samples after mirror-by-blit took it from 2.11%; Safari on this
+  device is the only place the residual survives ADR-0136 crediting.
+
 ## Capture limitations
 
 * Cells pinned to 6961e50b685d441e88b37d20d3f38a27136572fb measure a tree whose later commits change

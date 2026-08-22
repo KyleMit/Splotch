@@ -535,7 +535,7 @@ function renderStrokeStart(ps: PointerState) {
 // Each call is captured as one path op (matching its own beginPath/stroke
 // boundary) so live rendering, history replay, and export share the same
 // anti-aliasing behavior.
-function strokeSmoothSegments(ps: PointerState, points: Point[]) {
+function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) {
   if (points.length === 0) return;
   closeCrayonPassBeforeForeignOp(ps);
   const op: StrokeOp = {
@@ -558,10 +558,19 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
   }
   renderTiledOp(op);
   recordCurrentOp(op);
-  if (ps.crayon && !ps.erase && ++crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
-    recordCrayonFlush();
-    ps.seed = crayonSeedCounter++;
-    ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+  // Counted in POINTERMOVES, not in ops. ADR-0085 specifies one increment per
+  // recorded path op, which was the same thing when an op was exactly one
+  // pointermove. Rasterizing once per frame merges every move in a frame into a
+  // single op, so counting ops would stretch the pass to twice the wax before a
+  // checkpoint — ADR-0085 trial 23's failure, measured here as physical-iPad
+  // crayon going from 1.57% to 2.11% of in-contact frame time lost.
+  if (ps.crayon && !ps.erase) {
+    crayonOpsSinceFlush += moveCount;
+    if (crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
+      recordCrayonFlush();
+      ps.seed = crayonSeedCounter++;
+      ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
+    }
   }
 }
 
@@ -574,11 +583,13 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
 // strokeSmoothSegments' own start/mid bookkeeping, so the drawn PATH is
 // identical to the unsplit one — only the pattern phase of the later ops
 // changes. Seeds are stored per op, so every replay reproduces the splits.
-function strokeCrayonSegments(ps: PointerState, points: Point[]) {
+function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) {
   let batch: Point[] = [];
   for (const p of points) {
     if (ps.passTracker!.advance(p) === 'split') {
-      strokeSmoothSegments(ps, batch);
+      // A split flushes and resets the counter itself, so the moves in the
+      // batch it closes cannot carry toward the next checkpoint.
+      strokeSmoothSegments(ps, batch, 0);
       batch = [];
       recordCrayonFlush();
       ps.seed = crayonSeedCounter++;
@@ -587,12 +598,12 @@ function strokeCrayonSegments(ps: PointerState, points: Point[]) {
     }
     batch.push(p);
   }
-  strokeSmoothSegments(ps, batch);
+  strokeSmoothSegments(ps, batch, moveCount);
 }
 
-function strokeSegments(ps: PointerState, points: Point[]) {
-  if (ps.passTracker) strokeCrayonSegments(ps, points);
-  else strokeSmoothSegments(ps, points);
+function strokeSegments(ps: PointerState, points: Point[], moveCount = 1) {
+  if (ps.passTracker) strokeCrayonSegments(ps, points, moveCount);
+  else strokeSmoothSegments(ps, points, moveCount);
 }
 
 export interface HarnessStrokeReplay {
@@ -642,6 +653,7 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
     speedSamples: [],
     edgeSwipeGuard: null,
     pendingPoints: [],
+    pendingRaster: [],
   };
 
   renderStrokeStart(pointerState);
@@ -712,6 +724,11 @@ interface PointerState {
   // at startDrawing().
   edgeSwipeGuard: GuardEdge | null;
   pendingPoints: Point[];
+  // Paper points delivered since the last raster flush, one entry per
+  // pointermove. Rasterizing them together once a frame is what keeps a
+  // digitizer that outruns the display from making the engine paint the same
+  // presentable frame several times over.
+  pendingRaster: { points: Point[]; at: number }[];
 }
 
 const activePointers = new Map<number, PointerState>();
@@ -767,6 +784,7 @@ function releaseCaptureSafe(id: number): void {
 // trigger the gesture. Children who want to draw at a guarded edge draw away.
 // The band/decision/inset thresholds and the geometry live in ./strokeMath.
 function startDrawing(e: PointerEvent) {
+  cancelEmptyScan();
   const timeSinceColorChange = Date.now() - lastColorChangeTime;
   const requiredDelay = e.pointerType === 'pen' ? 0 : COLOR_CHANGE_DEBOUNCE_MS;
   if (timeSinceColorChange < requiredDelay) return;
@@ -817,6 +835,7 @@ function startDrawing(e: PointerEvent) {
     speedSamples: [],
     edgeSwipeGuard,
     pendingPoints: [],
+    pendingRaster: [],
   };
   resetSpeedWindow(pointerState, now);
   activePointers.set(e.pointerId, pointerState);
@@ -858,6 +877,7 @@ function commitEdgeSwipe(ps: PointerState) {
 // Discarding the last live pointer does end the group here (flag reset
 // included): the discarded id gets no later stopDrawing tail to complete it.
 function discardPointer(e: PointerEvent) {
+  activePointers.get(e.pointerId)?.pendingRaster.splice(0);
   activePointers.delete(e.pointerId);
   releaseCaptureSafe(e.pointerId);
   finishGroupWhenCanvasIdle();
@@ -920,6 +940,81 @@ function strokeSpeed(ps: PointerState, last: Point, now: number): number {
   return calculateStrokeSpeed(ps.speedSamples, { t: now, distance }, SPEED_WINDOW_MS);
 }
 
+// A digitizer samples faster than the display presents — measured at 1.9-4.2
+// contact moves per painted frame on the iPad. Rasterizing inside the event
+// handler therefore paints the same presentable frame two to four times over,
+// and every one of those passes pays a stroke per intersecting tile plus the
+// renderer's own per-op bookkeeping. Queuing the points and rasterizing them as
+// one op per frame keeps the ink identical (the op carries every sample as its
+// own quadratic segment, exactly as a coalesced batch already did) while paying
+// the per-op cost once.
+let rasterFrame = 0;
+
+function flushPendingRaster(ps: PointerState) {
+  const queued = ps.pendingRaster;
+  if (queued.length === 0) return;
+  ps.pendingRaster = [];
+  let merged: Point[] = [];
+  let mergedMoves = 0;
+  let speed = 0;
+  for (const batch of queued) {
+    // A resume is a lift the stream never reported, so the points either side of
+    // it belong to different strokes and must not join into one op.
+    const jump = Math.hypot(batch.points[0].x - ps.x, batch.points[0].y - ps.y);
+    if (
+      merged.length > 0 &&
+      pointerWasResumed(batch.at - ps.lastTime, jump, Math.min(paper.pxW, paper.pxH))
+    ) {
+      strokeSegments(ps, merged, mergedMoves);
+      merged = [];
+      mergedMoves = 0;
+    }
+    restartStrokeIfResumed(ps, batch.points[0], batch.at);
+    speed = strokeSpeed(ps, batch.points[batch.points.length - 1], batch.at);
+    if (ps.crayon && !ps.erase) {
+      // Crayon alone keeps one op per pointermove. Its wax is deposited per op
+      // through two pattern passes into two surfaces, so a merged op paints a
+      // longer path per stroke() call and lands a larger dirty region on the
+      // preview planes — a cost the checkpoint accounting cannot give back.
+      // Measured on the physical iPad at 2.0 moves per frame, merging cost
+      // crayon 1.57% -> 2.11% of in-contact frame time; counting the checkpoint
+      // in pointermoves recovered it only to 1.85%. Every other brush paints one
+      // shape per op and coalesces cleanly.
+      strokeSegments(ps, batch.points, 1);
+    } else {
+      merged.push(...batch.points);
+      mergedMoves += 1;
+    }
+    ps.lastTime = batch.at;
+  }
+  if (merged.length > 0) strokeSegments(ps, merged, mergedMoves);
+  callbacks.onDrawSound?.({ speed, isStrokeStart: false });
+}
+
+function flushAllPendingRaster() {
+  if (rasterFrame !== 0) {
+    cancelAnimationFrame(rasterFrame);
+    rasterFrame = 0;
+  }
+  for (const ps of activePointers.values()) flushPendingRaster(ps);
+}
+
+function scheduleRasterFlush() {
+  if (rasterFrame !== 0) return;
+  rasterFrame = requestAnimationFrame(() => {
+    rasterFrame = 0;
+    if (PERF_MARKS) performance.mark('engine.draw:start');
+    try {
+      for (const ps of activePointers.values()) flushPendingRaster(ps);
+    } finally {
+      if (PERF_MARKS) {
+        performance.mark('engine.draw:end');
+        performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
+      }
+    }
+  });
+}
+
 function draw(e: PointerEvent) {
   const pointerState = activePointers.get(e.pointerId);
 
@@ -933,8 +1028,7 @@ function draw(e: PointerEvent) {
 
   if (!pointerState) return;
 
-  if (PERF_MARKS) performance.mark('engine.draw:start');
-  try {
+  {
     e.preventDefault();
 
     // Browsers coalesce fast input to ~one pointermove per frame but keep the
@@ -952,20 +1046,8 @@ function draw(e: PointerEvent) {
       return;
     }
 
-    const points = screenPoints.map(screenToPaper);
-    restartStrokeIfResumed(pointerState, points[0], now);
-    const speed = strokeSpeed(pointerState, points[points.length - 1], now);
-
-    strokeSegments(pointerState, points);
-
-    pointerState.lastTime = now;
-
-    callbacks.onDrawSound?.({ speed, isStrokeStart: false });
-  } finally {
-    if (PERF_MARKS) {
-      performance.mark('engine.draw:end');
-      performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
-    }
+    pointerState.pendingRaster.push({ points: screenPoints.map(screenToPaper), at: now });
+    scheduleRasterFlush();
   }
 }
 
@@ -973,7 +1055,40 @@ function scanDrawingIsEmpty() {
   return scanTiledRendererIsEmpty(renderScale);
 }
 
+// The empty scan reads pixels back from every visible tile, and a readback is a
+// GPU-to-CPU sync in the middle of a frame the child is drawing into: on a
+// physical Android phone it measured 4.5 ms average and 12.3 ms maximum against
+// an 8.3 ms budget, once per eraser lift, and the frames it lands in are the
+// eraser's worst. Nothing needs the answer that fast — it only enables or
+// disables Undo, Clear, and the screenshot control — so it waits for the child
+// to stop, the same discipline ADR-0085 gave history folding. A pointerdown
+// pushes it back out; a scan that comes due mid-stroke re-arms rather than
+// running.
+const EMPTY_SCAN_IDLE_MS = 400;
+let emptyScanTimer: ReturnType<typeof setTimeout> | null = null;
+
+function cancelEmptyScan() {
+  if (emptyScanTimer === null) return;
+  clearTimeout(emptyScanTimer);
+  emptyScanTimer = null;
+}
+
+function scheduleEmptyScan() {
+  cancelEmptyScan();
+  emptyScanTimer = setTimeout(() => {
+    emptyScanTimer = null;
+    if (activePointers.size > 0) {
+      scheduleEmptyScan();
+      return;
+    }
+    setCanvasEmptyState(scanDrawingIsEmpty());
+  }, EMPTY_SCAN_IDLE_MS);
+}
+
 function stopDrawing(e: PointerEvent) {
+  // Everything below closes the stroke — the crayon pass stamp, the commit, the
+  // eraser's empty scan — so the queued points have to become ink first.
+  flushAllPendingRaster();
   const pointerState = activePointers.get(e.pointerId);
 
   // Not a pointer this engine is tracking: a hovering mouse's pointerout, or a
@@ -1003,7 +1118,7 @@ function stopDrawing(e: PointerEvent) {
   activePointers.delete(e.pointerId);
 
   if (pointerState && !pointerState.edgeSwipeGuard && pointerState.erase) {
-    requestAnimationFrame(() => setCanvasEmptyState(scanDrawingIsEmpty()));
+    scheduleEmptyScan();
   }
 
   finishGroupWhenCanvasIdle();
@@ -1017,6 +1132,7 @@ function finishPenCanvasExit(e: PointerEvent) {
 
 export function releaseAllPointers() {
   if (!ctx) return;
+  flushAllPendingRaster();
 
   // Force-releasing mid-flight crayon strokes closes their open pass so the
   // committed command ends stamped (one flush covers every open pass — the
@@ -1161,6 +1277,7 @@ function teardownEngine() {
   // the ink.
   releaseAllPointers();
   crayonOpsSinceFlush = 0;
+  cancelEmptyScan();
   cancelCrayonWarmup();
   penStreamAdopter.reset();
   detachTiledRenderer();

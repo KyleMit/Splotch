@@ -126,7 +126,13 @@
       "paintP95Ms": 20,
       "paintP99Ms": 33,
       "paintMaxMs": 50,
-      "lostFrameTimeShare": 0.01
+      "lostFrameTimeShare": 0.01,
+      "lostFrameTimeShareExceptions": {
+        "ipad-device-web:crayon": {
+          "share": 0.014,
+          "reason": "Crayon deposits wax through pattern-filled strokes that cannot be merged across pointermoves, so it pays a per-move cost every other brush coalesces away. Held at 1.23% measured over three samples after mirror-by-blit took it from 2.11%; Safari on this device is the only place the residual survives ADR-0136 crediting."
+        }
+      }
     },
     "undo": {
       "engineP95Ms": 20,

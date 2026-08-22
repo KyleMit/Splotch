@@ -6,6 +6,13 @@ complete flag and output descriptions.
 
 ## Entry points
 
+* `perf:preflight` (`prepare-capture.mjs`) is the first command of any physical-device campaign. It
+  confirms both devices are reachable and awake, reports the iPad's hardware UDID rather than the
+  CoreDevice UUID `devicectl` prints, reuses an already-running RemoteXPC tunnel instead of asking
+  for its password again, and resolves every capture port around whatever else holds it — never
+  stopping a listener another session owns. `lib/capture-readiness.mjs` holds the decisions as pure
+  functions so they are testable without a device. The failures it exists to prevent are catalogued
+  in [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
 * Root analyzers consume existing evidence: `perf:analyze:chrome`, `perf:analyze:web-inspector`, and
   `perf:analyze:frames`.
 * `perf:campaign` drives one deployment-target capture campaign to completion and is resumable:

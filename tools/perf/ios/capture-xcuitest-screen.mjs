@@ -679,7 +679,12 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       if (!debugReady) throw new Error('The production route did not expose __drawingDebug');
     }
 
-    if (brush !== 'pen') {
+    // Every brush is selected, pen included. The tool choice is persisted, and
+    // captures share an origin, so a run that assumed pen was the default drew
+    // its "pen" strokes with whatever the previous capture had selected — an
+    // iPad campaign ordered `crayon pen magic eraser` reported a pen cell that
+    // was crayon's number to two decimal places, with crayon's engine cost.
+    {
       await execute(
         `document.querySelector('button[aria-label="Expand controls"]')?.click(); return true;`
       );

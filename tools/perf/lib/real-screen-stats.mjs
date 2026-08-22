@@ -115,11 +115,70 @@ const sum = (values) => values.reduce((total, value) => total + value, 0);
 const inWindow = (time, from, to) => time >= from && time <= to;
 
 // The beat this capture actually got, rather than the one the hardware claims.
-// The 10th percentile, not the minimum: a single short delta is jitter, while a
-// tenth of all frames landing at one interval is the beat.
+//
+// The DOMINANT INTERVAL, not a low percentile. Every physical browser measured
+// so far presents at more than one rate inside a single capture, and a low
+// percentile answers "the fastest rate this display ever visited" rather than
+// "the rate it held":
+//
+//   * Chrome on a 120 Hz Android phone raises the rate while a touch gesture is
+//     in progress and lets it fall back to 60 Hz. A capture is a mix of 8.3 ms
+//     and 16.6 ms frames with nothing in between.
+//   * Safari on a ProMotion iPad runs web content at 60 Hz but emits a short
+//     frame now and then. A physical-iPad pen capture put ~2.6% of its frames at
+//     or under 12 ms on an otherwise 16-17 ms beat, which dragged the 10th
+//     percentile to 14 ms.
+//
+// Both make the derived budget too small, and `frameStats` then charges the app
+// for frames that arrived on the beat the display was actually holding. On that
+// iPad capture the 10th percentile scored 1.67% of in-contact frame time as
+// lost against a 1% gate; the dominant interval scores 0.11%.
+//
+// Buckets are half-milliseconds — finer splits one refresh rate across
+// neighbouring buckets and stops any of them dominating. A capture with no
+// dominant interval is genuinely erratic rather than multi-rate, and there the
+// old percentile remains the better answer.
+const BEAT_BUCKET_MS = 0.5;
+const BEAT_MODE_SHARE_FLOOR = 0.25;
+
 export function observedFrameIntervalMs(frames) {
   const deltas = frames.filter((frame) => frame[FRAME_DT] > 0).map((frame) => frame[FRAME_DT]);
+  if (!deltas.length) return QUEUE_DELAY_LAG_MS;
+  const buckets = new Map();
+  for (const delta of deltas) {
+    const bucket = Math.round(delta / BEAT_BUCKET_MS) * BEAT_BUCKET_MS;
+    const members = buckets.get(bucket);
+    if (members) members.push(delta);
+    else buckets.set(bucket, [delta]);
+  }
+  let dominant = [];
+  for (const members of buckets.values()) {
+    if (members.length > dominant.length) dominant = members;
+  }
+  // The bucket's own median rather than its centre, so the returned beat stays a
+  // delta the capture actually contained and every threshold derived from it
+  // keeps its original precision.
+  if (dominant.length / deltas.length >= BEAT_MODE_SHARE_FLOOR) return percentile(dominant, 0.5);
   return percentile(deltas, 0.1) ?? QUEUE_DELAY_LAG_MS;
+}
+
+// A late interval that the very next interval gives back did not lose a frame.
+// The rAF callback slipped and the following one fired early to rejoin the vsync
+// grid, while the display presented steadily throughout; on a physical iPad that
+// pattern is 93% of what the raw charge reports. Crediting the next interval's
+// shortfall, floored at zero across the pair, leaves a genuinely missed slot
+// costing a full beat and prices a late/early pair at its real overshoot only.
+// Chosen over scoring presentation deficit directly because this keeps the
+// charge's insensitivity to small beat-estimate error. See ADR-0136.
+function creditedLostMs(deltas, budgetMs, lateThresholdMs) {
+  let total = 0;
+  for (let index = 0; index < deltas.length; index += 1) {
+    if (deltas[index] <= lateThresholdMs) continue;
+    const next = deltas[index + 1];
+    const repaidMs = next === undefined ? 0 : Math.max(0, budgetMs - next);
+    total += Math.max(0, deltas[index] - budgetMs - repaidMs);
+  }
+  return total;
 }
 
 export function frameStats(deltas, intervalMs) {
@@ -127,7 +186,7 @@ export function frameStats(deltas, intervalMs) {
   const lateThreshold = budgetMs * LATE_FRAME_MULTIPLE;
   const late = deltas.filter((delta) => delta > lateThreshold);
   const elapsedMs = round(sum(deltas));
-  const lostMs = round(sum(late.map((delta) => delta - budgetMs)));
+  const lostMs = round(creditedLostMs(deltas, budgetMs, lateThreshold));
   return {
     frames: deltas.length,
     p50: percentile(deltas, 0.5),
