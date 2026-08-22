@@ -86,9 +86,14 @@
     z-index: 1;
   }
 
+  /* DIAGNOSTIC BRANCH: the darken blend removed so the live crayon preview is
+     visually wrong on purpose. It bounds how much of the physical-iPad crayon
+     cost is compositing 16 blended planes rather than painting them, which the
+     N1-N5 sweep narrowed it down to: the residual frames run 45-47 ms with 0-1
+     ms of engine time inside them. */
   .live-crayon-tile {
     z-index: 2;
-    mix-blend-mode: darken;
+    mix-blend-mode: normal;
   }
 
   .live-crayon-tile-top {
