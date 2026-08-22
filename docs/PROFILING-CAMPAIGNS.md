@@ -231,6 +231,14 @@ Three things about `perf:campaign` that each cost a launch:
   transport into `tools/` is the fix; until then an Android recapture through the campaign produces
   artifacts that parse — so the campaign accepts them — and still fail the fidelity verdict.
 
+  Re-probed on 2026-08-22 and it reproduces exactly: **46.8 moves/s, 0.44 moves per frame**, with
+  `pressure` and `contactGeometry` both zero, failing on `cadence` and `contactGeometry`. Learn what
+  that costs before dismissing it as a harness detail — the capture then scores **11.5% lost frame
+  time**, and the published `android-device-web` rows read 10–12%. Those rows are not a measurement
+  of the product at all. At 0.44 moves per frame the app is barely being driven, and
+  `lostFrameTimeShare` prices the gaps between sparse input as lost frames. A red cell produced this
+  way looks exactly like a catastrophic regression and means nothing.
+
 `perf:ios:xcuitest:screen` drives Android too, despite the name.
 
 ## Serialize the captures, but keep both devices alive

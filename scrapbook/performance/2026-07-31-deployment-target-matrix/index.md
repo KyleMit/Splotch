@@ -76,6 +76,17 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   and were not recaptured. The same labels cost 100-106 ms on the iPad, where resizeCanvas spans a
   4.7 Mpx canvas rather than a 1512x982 desktop viewport - a device-size effect, not a code
   regression.
+* The android-device-web drawing rows are NOT a measurement of the product. Reproduced on
+  2026-08-22, the Appium Android browser transport delivers 46.8 contact moves per second against a
+  100-170 fidelity band, at 0.44 moves per frame with pressure and contact geometry both reading
+  zero, so its fidelity verdict fails on cadence and contactGeometry. The app is barely driven, and
+  lostFrameTimeShare then prices the gaps between sparse input as lost frames -- which is where
+  those rows' 10-12% comes from. Recapturing them needs the split input/measurement transport of
+  ADR-0135 promoted out of scratch; until then read the row as a harness artifact, not a regression.
+* The physical-iPad web rows were recaptured on 2026-08-22 against product commit
+  ae674d71bac62b4c8cbf6130a2b8982289e65c56, 20 of 20 cells with zero retries and every cell passing
+  input fidelity at 115-118 contact moves per second. They are the first rows in this matrix scored
+  under the corrected beat estimator (ADR-0134) and credited charge (ADR-0136).
 * 40 cells carry results preserved from data.json rather than re-read raw captures: Raw captures
   land in gitignored perf-profiles scratch on the capture host, so no campaign's raw input survives
   in a clean checkout: the 2026-08-20 scratch is gone from the workstation, and the 2026-08-21
