@@ -161,24 +161,42 @@ Android sleeps mid-campaign and locks. `npm run perf:preflight -- --fix` wakes i
 `svc power stayon true`, but **a device with a passcode cannot be unlocked from the host** — the
 preflight blocks and says so. For an overnight run, unlock it first and leave it on the charger.
 
-### An asleep iPad fails as a WebDriverAgent build error
+### Guided Access blocks every capture, disguised as a WebDriverAgent build error
 
-`xcodebuild failed with code 65` from Appium reads like a signing or Xcode problem and is usually
-neither. Run the `xcodebuild` line the Appium log prints and look past the exit code: the build can
-say `** TEST BUILD SUCCEEDED **` and still fail, because what failed is the *launch* —
+`xcodebuild failed with code 65` from Appium reads like a signing or Xcode problem and is neither.
+Run the `xcodebuild` line the Appium log prints and look past the exit code: the build says
+`** TEST BUILD SUCCEEDED **` and the *launch* is what failed.
+
+**Read to the innermost underlying error, not the first one.** The outer frames name a service that
+has nothing to do with the cause:
 
 ```
 The application failed to launch.
 Failure Reason: The request was denied by service delegate (SBMainWorkspace) for reason: Unspecified.
+  (Underlying Error: Guided Access active)
 ```
 
-SpringBoard refuses to launch the runner while the display is asleep, and no host-side tool can wake
-an iPad. `ideviceinfo -k PasswordProtected` returning `false` does not rule this out — that reports
-whether a passcode is set, not whether the screen is on. The device stays enumerated in
-`idevice_id -l` throughout, so every cheap liveness check passes while every capture fails.
+Guided Access locks the iPad to one app, so SpringBoard refuses to launch the WebDriverAgent runner
+and every capture on that device fails. It is plausible to find on this project's hardware in
+particular — Splotch is a toddler app, and Guided Access is exactly what a parent turns on to lock a
+child into it. Ending it needs the on-device passcode, so no host-side tool can clear it.
 
-Set Auto-Lock to Never on the iPad before an unattended run, and treat this signature as "someone
-has to touch the device", not as a toolchain problem to debug.
+Everything cheap still passes while this is true. The device stays enumerated in `idevice_id -l`,
+`ideviceinfo -k DeviceName` answers, the RemoteXPC tunnel stays up, and `perf:preflight` reports
+ready — none of them launch an app, which is the only operation Guided Access blocks.
+
+Two wrong paths this signature invites, both taken on 2026-08-22 before the underlying error was
+read:
+
+* **"The device is asleep."** `SBMainWorkspace` denials do happen for a sleeping display, so the
+  outer message is consistent with it, and `ideviceinfo -k PasswordProtected` returning `false`
+  looks like corroboration. It reports whether a passcode is set, not whether the screen is on, so
+  it corroborates nothing.
+* **"A stale automation session is blocking Safari."** A leftover *Safari is Running an Automated
+  Test* alert can genuinely be on screen at the same time, because a killed campaign leaves the
+  session registered. It is worth clearing — **Stop Test Session**, never **Turn Off Automation**,
+  which flips off Settings → Safari → Advanced → Remote Automation and breaks every later capture
+  until it is switched back on by hand — but it is not what denies the launch.
 
 ## Recapturing matrix cells
 
