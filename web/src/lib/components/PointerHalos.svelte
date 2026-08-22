@@ -56,11 +56,18 @@
     };
   }
 
+  // A fingertip already covers the ring it would draw, so on touch the ring
+  // buys nothing and costs a composited layer that moves every frame of every
+  // stroke. A pen or a mouse keeps it: there the contact point is visible and
+  // the ring is the only thing showing the stroke's footprint.
+  const HALO_POINTER_TYPES = new Set(['pen', 'mouse']);
+
   function handlePointerDown(e: PointerEvent) {
     if (toolState.brush === 'eraser') {
       updateEraserCursor(e);
       return;
     }
+    if (!HALO_POINTER_TYPES.has(e.pointerType)) return;
     growBrushRing({
       pointerId: e.pointerId,
       clientX: e.clientX,
