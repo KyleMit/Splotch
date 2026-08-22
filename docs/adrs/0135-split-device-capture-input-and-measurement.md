@@ -19,13 +19,20 @@ this campaign, for different reasons and with different weight:
   `osascript … with administrator privileges` recipe that routes its password prompt to the macOS
   GUI, and the 2026-08-21 physical-iPad matrix rows were captured with it running. What it costs is
   a human at the keyboard once per host boot, which an overnight run cannot supply.
-* `ios_webkit_debug_proxy` listed the device but zero inspectable pages, because this iPadOS 26.5
-  device has no Web Inspector switch at all: not under Settings → Apps → Safari → Advanced, not
-  under Settings → Developer, and Settings' own search for "Web Inspector" returns *No Results*.
-  That closes the whole WebKit Inspector Protocol family here — `perf:ios:webkit:gates`,
-  `perf:ios:webkit:frames`, its `--timeline` mode (the only programmatic source of WebKit
-  Composite/Paint records), and the manual Safari Timeline export that `perf:analyze:web-inspector`
-  reads.
+* `ios_webkit_debug_proxy` listed the device but zero inspectable pages. **This is the tool being
+  obsolete, not the device lacking a setting.** Apple moved the web inspector service behind
+  RemoteXPC on iOS 17, and `ios_webkit_debug_proxy` still asks the old lockdown service. Safari's
+  own Develop menu on a Mac reaches the same iPad's tabs fine, and so does
+  `pymobiledevice3 webinspector opened-tabs`, which speaks the modern path:
+
+  ```
+  <Safari(3091) TYPE:WIRTypeWebPage URL:http://…:4173/?perf-run=…>
+  ```
+
+  An earlier revision of this ADR claimed the device had no Web Inspector switch and that this
+  closed the whole WebKit Inspector Protocol family. Both halves were wrong. The switch was set; the
+  proxy was the problem. Repointing `perf:ios:webkit:frames` from `ios_webkit_debug_proxy` to
+  `pymobiledevice3` should restore that capture path on a modern OS.
 
 Neither is a permanent blocker. Together they mean an unattended capture depends on a GUI password
 prompt and on a device setting whose location is uncertain, and that a failure in either one takes

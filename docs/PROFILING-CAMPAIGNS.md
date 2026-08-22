@@ -92,25 +92,26 @@ keep whichever report saw more input.
 frames but zero pointer events. Before measuring, check that `document.elementFromPoint` at the
 canvas centre actually hits the canvas.
 
-## What is unavailable on a device with no Web Inspector switch
+## `ios_webkit_debug_proxy` is obsolete on iOS 17 and newer
 
-If Settings has no Web Inspector toggle — check Apps → Safari → Advanced, Developer, and Settings'
-own search — then every tool built on the WebKit Inspector Protocol is closed on that device, and
-none of them says so clearly:
+If it lists the *device* but reports zero *pages*, the device is fine and the tool is not. Apple
+moved the web inspector service behind RemoteXPC on iOS 17; `ios_webkit_debug_proxy` still asks the
+old lockdown service and comes back empty. That failure reads exactly like a disabled Web Inspector
+setting, and a campaign can lose a day to it.
 
-* `perf:ios:webkit:gates` and `perf:ios:webkit:frames`, which inject and read back over that
-  channel.
-* `perf:ios:webkit:frames --timeline`, the only programmatic source of WebKit
-  Composite/Paint/RecalculateStyles records.
-* `perf:analyze:web-inspector`, which reads a Timeline export a human makes from Safari's Develop
-  menu — so it cannot be run unattended even where the switch exists.
+Confirm which it is before concluding anything:
 
-`ios_webkit_debug_proxy` will still list the *device*; it just reports zero pages. That is the tell.
+```sh
+pymobiledevice3 webinspector opened-tabs     # speaks the modern path
+```
 
-Appium's XCUITest transport is unaffected: it reaches Safari over a different channel and can still
-execute script, drive trusted touch, and read the probe's tables. So a capture campaign is possible
-without Web Inspector; **compositor-level attribution is not**, and a question that needs to know
-where non-JavaScript frame time goes will have to wait for a device that has the switch.
+A tab listed there means remote inspection works and the tooling is what needs updating. Safari's
+Develop menu on a paired Mac is the same check by hand.
+
+`perf:ios:webkit:gates` and `perf:ios:webkit:frames` both go through the old proxy, so both are
+affected; repointing them at `pymobiledevice3` is the fix rather than declaring the capture path
+unavailable. `perf:analyze:web-inspector` is separate — it reads a Timeline export a human makes
+from Safari's Develop menu, so it cannot run unattended regardless.
 
 ## Input cadence is a result, not a detail
 
