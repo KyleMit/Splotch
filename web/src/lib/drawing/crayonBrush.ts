@@ -634,6 +634,11 @@ export class CrayonPassTracker {
   private readonly anchorSpacing: number;
 
   private anchors: { x: number; y: number; arc: number }[] = [];
+  // Anchors bucketed by a proximity-sized cell, so a reentry test looks at the
+  // nine cells around the tip instead of walking every anchor laid so far. The
+  // linear scan was O(anchors) per point and so O(n squared) over a pass that
+  // never splits, which is exactly the long slow stroke a toddler draws.
+  private anchorCells = new Map<string, { x: number; y: number; arc: number }[]>();
   private arc = 0;
   private lastX: number;
   private lastY: number;
@@ -652,7 +657,19 @@ export class CrayonPassTracker {
     this.lastY = startY;
     this.dirOriginX = startX;
     this.dirOriginY = startY;
-    this.anchors.push({ x: startX, y: startY, arc: 0 });
+    this.addAnchor({ x: startX, y: startY, arc: 0 });
+  }
+
+  private cellKey(x: number, y: number): string {
+    return `${Math.floor(x / this.proximity)},${Math.floor(y / this.proximity)}`;
+  }
+
+  private addAnchor(anchor: { x: number; y: number; arc: number }) {
+    this.anchors.push(anchor);
+    const key = this.cellKey(anchor.x, anchor.y);
+    const cell = this.anchorCells.get(key);
+    if (cell) cell.push(anchor);
+    else this.anchorCells.set(key, [anchor]);
   }
 
   // Advance the tip to p. Returns 'split' when a new pass must start at the
@@ -677,11 +694,22 @@ export class CrayonPassTracker {
   private reentryAt(p: CrayonPoint): boolean {
     const stepArc = Math.hypot(p.x - this.lastX, p.y - this.lastY);
     const tipArc = this.arc + stepArc;
-    for (const a of this.anchors) {
-      if (tipArc - a.arc <= this.excludeArc) break;
-      const dx = p.x - a.x;
-      const dy = p.y - a.y;
-      if (dx * dx + dy * dy <= this.proximity * this.proximity) return true;
+    // Cells are proximity-sized, so anything within proximity of the tip lies in
+    // one of the nine cells around it. Same predicate as the linear scan, same
+    // answer; it just stops looking at anchors that cannot possibly match.
+    const cx = Math.floor(p.x / this.proximity);
+    const cy = Math.floor(p.y / this.proximity);
+    for (let ix = cx - 1; ix <= cx + 1; ix++) {
+      for (let iy = cy - 1; iy <= cy + 1; iy++) {
+        const cell = this.anchorCells.get(`${ix},${iy}`);
+        if (!cell) continue;
+        for (const a of cell) {
+          if (tipArc - a.arc <= this.excludeArc) continue;
+          const dx = p.x - a.x;
+          const dy = p.y - a.y;
+          if (dx * dx + dy * dy <= this.proximity * this.proximity) return true;
+        }
+      }
     }
     return false;
   }
@@ -706,7 +734,7 @@ export class CrayonPassTracker {
     const ax = p.x - lastAnchor.x;
     const ay = p.y - lastAnchor.y;
     if (ax * ax + ay * ay >= this.anchorSpacing * this.anchorSpacing) {
-      this.anchors.push({ x: p.x, y: p.y, arc: this.arc });
+      this.addAnchor({ x: p.x, y: p.y, arc: this.arc });
     }
   }
 }
