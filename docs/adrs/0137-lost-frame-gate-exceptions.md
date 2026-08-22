@@ -53,6 +53,13 @@ Each entry carries the reason and the measurement it was set from, and the gener
 the whole table under its acceptance-gate section, so a reader never has to infer an exemption from
 a number that merely looks passing.
 
+The 1.23% behind this entry was measured through the split input/measurement transport of
+[ADR-0135](0135-split-device-capture-input-and-measurement.md). Recapturing the cell through the
+campaign's own Appium transport — the one the matrix is built from — scored **1.11%** at 118.2
+contact moves per second with every input-fidelity check passing, and pen reproduced at 0.66%
+against 0.77%. The two transports agree within this device's spread, so the entry is not an artifact
+of having been measured through a different input path than the gate governs.
+
 **Entries only ratchet down.** 1.4% is 1.23% plus the ±0.15 percentage-point run-to-run spread this
 device shows at three samples — enough headroom that a re-measure of the same code does not flip the
 verdict, and not a percentage point more. Raising an entry needs the same evidence as adding one:
@@ -62,6 +69,12 @@ device measurements, three samples, and the alternatives that were tried and rej
 
 * \+ The gate stays a single number everywhere except where it is written down that it is not, with
   the reasoning attached to the exemption rather than to a commit message.
+* − **A single capture prints `FAIL` for a cell the matrix passes.** The exception is keyed on the
+  matrix target id, and a capture command is given a device id — it has no way to know which matrix
+  row it is filling, so `perf:ios:xcuitest:screen` scores every cell against the flat 1% gate. The
+  recapture on 2026-08-22 measured iPad crayon at 1.11% and printed `FAIL` for it. Read a
+  capture-time verdict on an excepted cell as the raw number plus a reminder to check this table,
+  not as a regression.
 * \+ The exception is narrow. It names one brush on one target; crayon on Android physical, on both
   emulators, and on all three desktop browsers is still held to 1%, and iPad crayon in the native
   Capacitor WebView is too.
