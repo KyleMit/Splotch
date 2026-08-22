@@ -162,12 +162,31 @@ export function observedFrameIntervalMs(frames) {
   return percentile(deltas, 0.1) ?? QUEUE_DELAY_LAG_MS;
 }
 
+// A late interval that the very next interval gives back did not lose a frame.
+// The rAF callback slipped and the following one fired early to rejoin the vsync
+// grid, while the display presented steadily throughout; on a physical iPad that
+// pattern is 93% of what the raw charge reports. Crediting the next interval's
+// shortfall, floored at zero across the pair, leaves a genuinely missed slot
+// costing a full beat and prices a late/early pair at its real overshoot only.
+// Chosen over scoring presentation deficit directly because this keeps the
+// charge's insensitivity to small beat-estimate error. See ADR-0136.
+function creditedLostMs(deltas, budgetMs, lateThresholdMs) {
+  let total = 0;
+  for (let index = 0; index < deltas.length; index += 1) {
+    if (deltas[index] <= lateThresholdMs) continue;
+    const next = deltas[index + 1];
+    const repaidMs = next === undefined ? 0 : Math.max(0, budgetMs - next);
+    total += Math.max(0, deltas[index] - budgetMs - repaidMs);
+  }
+  return total;
+}
+
 export function frameStats(deltas, intervalMs) {
   const budgetMs = Math.min(intervalMs, QUEUE_DELAY_LAG_MS);
   const lateThreshold = budgetMs * LATE_FRAME_MULTIPLE;
   const late = deltas.filter((delta) => delta > lateThreshold);
   const elapsedMs = round(sum(deltas));
-  const lostMs = round(sum(late.map((delta) => delta - budgetMs)));
+  const lostMs = round(creditedLostMs(deltas, budgetMs, lateThreshold));
   return {
     frames: deltas.length,
     p50: percentile(deltas, 0.5),

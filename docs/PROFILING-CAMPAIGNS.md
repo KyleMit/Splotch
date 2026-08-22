@@ -113,6 +113,29 @@ affected; repointing them at `pymobiledevice3` is the fix rather than declaring 
 unavailable. `perf:analyze:web-inspector` is separate — it reads a Timeline export a human makes
 from Safari's Develop menu, so it cannot run unattended regardless.
 
+### What the pymobiledevice3 CDP bridge does and does not carry
+
+`pymobiledevice3 webinspector cdp` serves a Chrome-DevTools-shaped endpoint on `127.0.0.1:9222`, and
+`webinspector launch <url>` puts the page in `/json/list` so it has a `webSocketDebuggerUrl`. Two
+things about it cost an afternoon each, so take them as given:
+
+* **Match replies by `id`.** The socket's first inbound message is an unsolicited
+  `Target.targetInfoChanged` event, not the answer to your first command. A client that resolves on
+  the first frame it receives concludes every method timed out, which is exactly wrong — the bridge
+  is answering.
+* **Only part of the protocol is translated.** `Runtime.evaluate`, `Page.enable`, `Timeline.start`,
+  `Timeline.stop`, and `Timeline.setInstruments` all return `OK`. `Tracing` and `Performance` come
+  back `'<domain>' domain was not found`, so the Chrome-shaped tracing capture has no counterpart
+  here.
+
+`Runtime.evaluate` against the real iPad Safari page is the durable win — it is the piece that makes
+an unattended in-page capture possible at all. **Timeline is not** the frame-level instrument it
+looks like: a recording spanning 200 painted `requestAnimationFrame` frames emitted a *single*
+`Timeline.eventRecorded`, one aggregated `RenderingFrame` carrying one child each of
+`ScheduleStyleRecalculation`, `RecalculateStyles`, `Composite`, and `RequestAnimationFrame`. Counts
+that coarse cannot attribute per-frame cost between two brushes. Reach for `xctrace` against the
+native build for frame-level timing, and use the bridge for what the page itself can measure.
+
 ## Input cadence is a result, not a detail
 
 **Check the fidelity verdict on every capture, and never score a run that fails it.** Appium's
@@ -193,14 +216,15 @@ whole point when the interesting work is split between the app, `com.apple.WebKi
 `com.apple.WebKit.GPU`. Capturing one layer at a time forces correlation across separate runs with
 separate clocks — statistical at best, never per-frame.
 
-Two limits on that finding, because it does not generalize:
+One limit on that finding, because it does not generalize: it covers **sampling** templates. Time
+Profiler interrupts on a timer; templates that *instrument* rather than sample — Allocations, Leaks,
+Zombies — hook every call of interest and can be orders of magnitude heavier. Re-measure before
+trusting scope-independence there.
 
-* It covers **sampling** templates. Time Profiler interrupts on a timer; templates that *instrument*
-  rather than sample — Allocations, Leaks, Zombies — hook every call of interest and can be orders
-  of magnitude heavier. Re-measure before trusting scope-independence there.
-* It says nothing about **data volume**, which is real and large. The `--all-processes` Time
-  Profiler run exported to **119 MB** of XML against roughly 44 KB per table from a single-app
-  Animation Hitches trace. That is a cost in export and parse time, not in what the device does.
+Wide scope does produce far more data — an `--all-processes` Time Profiler run exported to 119 MB of
+XML against roughly 44 KB per table from a single-app Animation Hitches trace. Disk is not the
+reason to care and should not narrow a capture; budget for the export and parse instead, and prefer
+`--xpath` over reading a whole export into memory.
 
 The general rule this belongs to: when instrumentation might be changing what it measures, measure
 it. The app's own probe scored against a no-trace control answers it in ten minutes, and the same

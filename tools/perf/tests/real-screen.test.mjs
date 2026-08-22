@@ -484,6 +484,26 @@ describe('frameStats', () => {
     expect(frameStats([16.7, 116.7], 16.7).lostMs).toBeCloseTo(100, 0);
   });
 
+  it('credits a late frame that the next frame gives back', () => {
+    // The ProMotion jitter pair: a 29 ms callback followed by a 4 ms one sums to
+    // two 16.7 ms beats, so the display never skipped a slot. 12.3 ms over budget
+    // less 12.7 ms repaid floors to zero.
+    expect(frameStats([16.7, 29, 4, 16.7], 16.7).lostMs).toBe(0);
+  });
+
+  it('still charges a missed slot that is never repaid', () => {
+    // Same 29 ms overshoot, but the next frame arrives on the beat rather than
+    // early, so nothing was given back and the excess stands.
+    expect(frameStats([16.7, 29, 16.7, 16.7], 16.7).lostMs).toBeCloseTo(12.3, 1);
+  });
+
+  it('credits only up to the charge, never below zero across a pair', () => {
+    // A 26 ms frame followed by a 1 ms one: 9.3 ms charged against 15.7 ms
+    // repaid must not turn into a negative charge that offsets real loss
+    // elsewhere in the capture.
+    expect(frameStats([26, 1, 116.7], 16.7).lostMs).toBeCloseTo(100, 0);
+  });
+
   it('does not let an end-to-end regression raise its own frame budget', () => {
     const stats = frameStats(
       Array.from({ length: 400 }, () => 60),

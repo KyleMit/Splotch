@@ -1,6 +1,6 @@
 # ADR-0136: Do Not Charge a Late Frame That the Next Frame Gives Back
 
-**Status:** Proposed — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md);
+**Status:** Accepted — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md);
 depends on [ADR-0134](0134-frame-beat-from-the-dominant-interval.md). **Date:** 2026-08
 
 ## Context
@@ -74,22 +74,29 @@ zero. That leaves a genuinely missed slot costing one beat, makes a late/early p
 real overshoot — the measured pairs run about 2.2–2.3 beats rather than a clean 2.0, so a real
 residual survives — and keeps the metric's existing insensitivity to small beat-estimate error.
 
-Scored offline against every saved capture from the issue-1196 campaign, three samples per cell:
+Scored through the shipped `frameStats` against every saved capture from the issue-1196 campaign,
+three samples per cell, median reported:
 
-| Cell                                  | Charged | Credited | Gate @1% |
-| ------------------------------------- | ------: | -------: | -------- |
-| iPad floor control, pen               |   1.46% |    0.02% | —        |
-| iPad pen, landed build, calibrated    |   1.97% |    0.69% | PASS     |
-| iPad eraser, landed build, calibrated |   1.66% |    1.13% | FAIL     |
-| Android pen, landed build             |   0.35% |    0.35% | PASS     |
-| Android crayon, landed build          |   0.56% |    0.56% | PASS     |
-| Android magic, landed build           |   0.48% |    0.48% | PASS     |
-| Android eraser, landed build          |   0.36% |    0.36% | PASS     |
+| Cell                         | Charged | Credited | Gate @1% |
+| ---------------------------- | ------: | -------: | -------- |
+| iPad floor control, pen      |   1.46% |    0.02% | —        |
+| iPad pen, landed build       |   1.97% |    0.77% | PASS     |
+| iPad magic, landed build     |   1.71% |    0.68% | PASS     |
+| iPad eraser, landed build    |   1.66% |    0.68% | PASS     |
+| iPad crayon, landed build    |   2.34% |    1.23% | FAIL     |
+| Android pen, landed build    |   0.35% |    0.35% | PASS     |
+| Android crayon, landed build |   0.56% |    0.56% | PASS     |
+| Android magic, landed build  |   0.48% |    0.48% | PASS     |
+| Android eraser, landed build |   0.36% |    0.36% | PASS     |
 
 The artifact collapses, Android is untouched to two decimal places because nothing there is paired,
-and exactly one cell survives: the physical-iPad eraser at 1.13%. That is the residual worth
-chasing, and it is the first time in this campaign that a failing cell has pointed at the product
-rather than at the instrument.
+and exactly one cell survives: physical-iPad crayon at 1.23%. That is the residual worth chasing,
+and it is the first time in this campaign that a failing cell has pointed at the product rather than
+at the instrument.
+
+The eraser was the survivor when this was drafted, at 1.13%. Rasterizing once per frame rather than
+once per pointermove took it to 0.68% and it is no longer a failing cell; crayon, which that change
+deliberately exempts because its deposition passes cannot be merged, took its place.
 
 ## Consequences
 
@@ -98,8 +105,8 @@ rather than at the instrument.
 * \+ It stays a single value across targets, so a cell's number keeps meaning the same thing
   everywhere.
 * \+ Android is unaffected: none of its late frames are paired, so nothing is credited.
-* \+ What remains on the iPad is attributable. The eraser keeps a real residual (0.59% by deficit
-  against pen's 0.04%), which is a lead rather than a mystery.
+* \+ What remains on the iPad is attributable. Crayon keeps a real residual against pen's 0.77% on
+  identical geometry and input, which is a lead rather than a mystery.
 * − A third correction to the same metric in one campaign. The estimator (ADR-0134), the input
   cadence (ADR-0135) and now the charge were each independently wrong, and each one alone was enough
   to fail every physical-web cell. Treat a number from this gate as provisional until it has been
