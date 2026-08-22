@@ -74,8 +74,15 @@ A page that did hydrate exposes `window.__committedBrushMode`; a page that did n
 ## Capture state that survives between runs
 
 **The brush is persisted.** A capture that assumes pen is the default draws its "pen" strokes with
-whatever the previous capture selected. Select every brush explicitly, pen included, and assert
-`window.__committedBrushMode()` matches before measuring.
+whatever the previous capture selected — captures share an origin, so the tool choice survives the
+navigation. Select every brush explicitly, pen included, and assert `window.__committedBrushMode()`
+matches before measuring.
+
+`perf:ios:xcuitest:screen` had exactly this bug and skipped selection for pen. It cost a full
+verification round: an iPad campaign ordered `crayon pen magic eraser` reported a pen cell of 1.90%
+that was crayon's 1.85% wearing pen's label, complete with crayon's 0.15 ms/frame engine cost
+against pen's 0.12. The tell is a "pen" number that tracks the brush captured before it. **Vary the
+brush order between runs** — a contaminated cell moves with the order and a real one does not.
 
 **Safari runs two instances of one navigation.** The second records nothing and, without a guard,
 its empty tables overwrite the real capture. Stamp each run with a nonce the page echoes back, and
