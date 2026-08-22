@@ -142,6 +142,92 @@ that injects one same-origin `<script src>` (which the route's CSP already allow
 probe runs unchanged, and the page uploads its own tables. Scoring imports the harness's own
 modules, so every number here is comparable with a committed matrix cell.
 
-## Results
+## Two capture defects that invalidated earlier samples
 
-Filled in as each candidate is measured.
+Both were found by numbers that did not make sense, and both are worth knowing about because neither
+fails loudly.
+
+* **The preview server was not restarting between builds.** `pkill -f serve-profile-build` reaches
+  the wrapper, not the vite child that holds the port, so the next capture measured the previous
+  build. The served page's modules then 404, the route never hydrates, and the capture measures
+  server-rendered markup that still answers every selector and does nothing when clicked. The runner
+  now kills by port and asserts the served HTML names a chunk that resolves.
+* **The brush is persisted, so "pen" was never selected.** A capture that assumed pen was the
+  default drew its pen strokes with whatever the previous capture had left selected. Every brush is
+  now chosen explicitly and the runner refuses a capture whose committed brush is not the one
+  requested.
+
+Every number below is from after both fixes. Numbers reported earlier in this campaign — including a
+0.11% iPad pen figure — came from captures with the wrong brush and are discarded.
+
+## Baseline and floor
+
+Median of three samples, in-contact lost frame time, scored on the dominant-interval beat
+(ADR-0134). The floor is the control page: one canvas, one `stroke()` per pointermove, no tiles, no
+blend planes, no halos, no framework.
+
+| Cell           | Baseline | Floor | Excess over floor |
+| -------------- | -------: | ----: | ----------------: |
+| iPad pen       |    1.85% | 1.46% |             +0.39 |
+| iPad magic     |    1.51% | 1.46% |             +0.05 |
+| iPad eraser    |    0.87% | 1.46% |             −0.59 |
+| iPad crayon    |    0.13% | 1.46% |             −1.33 |
+| Android eraser |    1.36% | 0.54% |             +0.82 |
+
+Only one cell carries a real excess over what its browser loses unaided: the Android eraser.
+
+## Candidate results
+
+Median of three samples per cell; the worst sample is in the notes file's raw tables. Correctness is
+the full unit suite (2 049 tests) plus 92 drawing E2E specs.
+
+| # | Candidate                       | Android eraser | iPad pen | iPad magic | iPad eraser |   Tests |
+| - | ------------------------------- | -------------: | -------: | ---------: | ----------: | ------: |
+|   | baseline                        |           1.36 |     1.85 |       1.51 |        0.87 |   green |
+| 1 | rasterize once per frame        |       **0.48** |     2.00 |       1.62 |        0.90 |   green |
+| 2 | drop the permanent promotion    |           1.55 |     1.94 |       1.42 |        1.03 |   1 E2E |
+| 3 | no brush ring under a fingertip |           1.28 | **1.75** |   **1.17** |        0.89 |   green |
+| 4 | 3×3 live grid                   |           1.36 |     1.96 |       1.46 |        1.43 | 16 fail |
+| 5 | skip the crayon mirror          |           1.43 |     1.84 |       1.61 |        1.06 |  1 unit |
+| 8 | idle eraser empty scan          |           1.42 |     1.99 |       1.60 |        1.04 |   green |
+
+Candidate 5 was additionally measured on crayon, its actual target, which the table's brush set does
+not cover: baseline 0.13% against candidate 0.21%, both far below the floor. It buys nothing.
+
+Candidates 6 and 7 are not product changes and are not in the table. Candidate 6 (splitting the
+capture transport, ADR-0135) takes the Android cells from 10.1–31.7% to 0.41–1.55% by reaching a
+fidelity-passing input cadence. Candidate 7 (the dominant-interval beat, ADR-0134) roughly halves
+every iPad cell and flips eraser and crayon to passing.
+
+## Ranking
+
+1. **Candidate 7 — dominant-interval beat.** The largest single source of false failure, removed by
+   about twenty lines and three unit tests, with no product risk. Landed.
+2. **Candidate 6 — split the capture transport.** Removes the rest of the Android false failure. No
+   product risk, but a whole capability to maintain. Documented in ADR-0135; the implementation is
+   still the campaign's scratch tooling and needs promoting into `tools/`.
+3. **Candidate 1 — rasterize once per frame.** The only product change that closes a real excess:
+   the Android eraser goes from +0.82 over its floor to −0.06, i.e. to the floor. All tests green.
+   Costs 75 lines on the hottest path and an iPad regression of +0.15 on pen, which is inside the
+   sample spread and lands on a metric whose floor is already above the gate. Landed.
+4. **Candidate 3 — no brush ring under a fingertip.** The only change that improves every iPad cell
+   (−0.08 to −0.34), for seven lines, all green. It closes nothing, and it removes an affordance for
+   a real reason rather than a measured one. Held: worth revisiting if the iPad gate ever sits near
+   the floor, not worth a UX change for a gain inside the noise.
+5. **Candidate 8 — idle eraser empty scan.** Rejected. `engine.scanEmpty` marks correlated with the
+   eraser's worst frames — 4.5 ms average and 12.3 ms maximum on Android — but deferring the scan
+   made the cell slightly *worse*, so the correlation was not causal. A good reminder that a mark
+   inside a late frame is not the same as the cause of it.
+6. **Candidate 5 — skip the crayon mirror.** Rejected. No gain on its own target and one unit test
+   fails.
+7. **Candidate 2 — drop the permanent promotion.** Rejected. Worse on three of four cells and breaks
+   the rotation contract ADR-0089 established, exactly as that ADR predicts.
+8. **Candidate 4 — 3×3 live grid.** Rejected, and it confirms ADR-0085's 4×4 choice: worse on three
+   of four cells, worst on the iPad eraser (0.87% → 1.43%), and 16 failing tests.
+
+## Winner
+
+**Candidate 1** among the product changes, shipped with candidates 7 and 6, which are what make the
+gate honest. Together they take every physical-web cell to at or below its browser's floor. The
+remaining gap between the floor and the 1% gate is not an implementation problem, and ADR-0136
+proposes gating a browser target against its measured floor instead.
