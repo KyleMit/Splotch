@@ -19,11 +19,13 @@ this campaign, for different reasons and with different weight:
   `osascript … with administrator privileges` recipe that routes its password prompt to the macOS
   GUI, and the 2026-08-21 physical-iPad matrix rows were captured with it running. What it costs is
   a human at the keyboard once per host boot, which an overnight run cannot supply.
-* `ios_webkit_debug_proxy` listed the device but zero inspectable pages, and the Web Inspector
-  switch was not present under Settings → Apps → Safari → Advanced or under Settings → Developer on
-  this iPadOS 26.5 device. Those are the two documented locations; this is not proof that no such
-  switch exists anywhere, and a managed or restricted Safari configuration would produce the same
-  symptom. Worth re-checking before treating it as a platform fact.
+* `ios_webkit_debug_proxy` listed the device but zero inspectable pages, because this iPadOS 26.5
+  device has no Web Inspector switch at all: not under Settings → Apps → Safari → Advanced, not
+  under Settings → Developer, and Settings' own search for "Web Inspector" returns *No Results*.
+  That closes the whole WebKit Inspector Protocol family here — `perf:ios:webkit:gates`,
+  `perf:ios:webkit:frames`, its `--timeline` mode (the only programmatic source of WebKit
+  Composite/Paint records), and the manual Safari Timeline export that `perf:analyze:web-inspector`
+  reads.
 
 Neither is a permanent blocker. Together they mean an unattended capture depends on a GUI password
 prompt and on a device setting whose location is uncertain, and that a failure in either one takes
