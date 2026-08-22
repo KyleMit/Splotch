@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   androidWakeActions,
   classifyIosIdentifier,
+  classifyLaunchProbe,
   iosIdentifierProblem,
   resolvePort,
   summarize,
@@ -90,6 +91,47 @@ describe('android wake actions', () => {
     const { blockers } = androidWakeActions({ screenOn: true, stayOn: true, locked: true });
     expect(blockers).toHaveLength(1);
     expect(blockers[0]).toContain('unlock it by hand');
+  });
+});
+
+describe('classifyLaunchProbe', () => {
+  // The real failure from 2026-08-22: Appium's message, the outer frame naming a
+  // service that is not the cause, and the innermost frame that is.
+  const guidedAccess =
+    'Unable to launch WebDriverAgent. Original error: xcodebuild failed with code 65. ' +
+    'The request to open "art.splotch.WebDriverAgentRunner.xctrunner" failed. The request was ' +
+    'denied by service delegate (SBMainWorkspace) for reason: Unspecified. ' +
+    '(Underlying Error: Guided Access active)';
+
+  it('names Guided Access rather than the service that refused', () => {
+    const { status, detail } = classifyLaunchProbe({ ok: false, message: guidedAccess });
+
+    expect(status).toBe('blocked');
+    expect(detail).toContain('Guided Access');
+    expect(detail).toContain('Triple-click');
+    expect(detail).not.toContain('SBMainWorkspace');
+  });
+
+  it('does not read a code 65 as a signing problem when the cause is unknown', () => {
+    const { status, detail } = classifyLaunchProbe({
+      ok: false,
+      message: 'Unable to launch WebDriverAgent. Original error: xcodebuild failed with code 65.',
+    });
+
+    expect(status).toBe('blocked');
+    expect(detail).toContain('Underlying Error');
+    expect(detail).toContain('rarely a signing problem');
+  });
+
+  it('passes a probe that started and closed a session', () => {
+    expect(classifyLaunchProbe({ ok: true }).status).toBe('ok');
+  });
+
+  it('falls back to the raw message rather than guessing a cause', () => {
+    const { status, detail } = classifyLaunchProbe({ ok: false, message: 'ECONNREFUSED 4733' });
+
+    expect(status).toBe('blocked');
+    expect(detail).toBe('ECONNREFUSED 4733');
   });
 });
 

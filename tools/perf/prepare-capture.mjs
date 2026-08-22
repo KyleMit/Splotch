@@ -4,10 +4,15 @@
 //   npm run perf:preflight -- --fix           also wake Android and hold it awake
 //   npm run perf:preflight -- --json          machine-readable, for a campaign runner
 //   npm run perf:preflight -- --watch         hold Android awake for the whole campaign
+//   npm run perf:preflight -- --probe         start a real WDA session first (slow, exclusive)
 //
 // Every check here exists because a campaign produced numbers without it and the
 // numbers were wrong. See docs/PROFILING-CAMPAIGNS.md for what each failure looks
 // like when it is not caught.
+//
+// Everything except --probe is host-side, which is the gap --probe closes: a
+// device blocked by Guided Access stays enumerated, answers ideviceinfo, keeps
+// its tunnel up and reports ready here, because none of those launch an app.
 //
 // It never stops a listener another session owns. Anything that cost a human
 // approval — the root-owned RemoteXPC tunnel above all — is reused where it is
@@ -18,6 +23,7 @@ import { join } from 'node:path';
 import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 import {
   androidWakeActions,
+  classifyLaunchProbe,
   iosIdentifierProblem,
   PORT_ROLES,
   resolvePort,
@@ -277,6 +283,46 @@ export async function watchAndroid(
   }
 }
 
+// Building and launching WebDriverAgent is the only check here that proves the
+// device will actually accept a capture, and the only one that catches a
+// device-side denial — Guided Access above all. It costs a real WDA build, so it
+// is opt-in rather than part of the default report, and it must not run while a
+// capture holds the device.
+const LAUNCH_PROBE_TIMEOUT_MS = 300_000;
+
+export async function probeIosLaunch({ udid, appiumUrl, wdaPort }) {
+  const body = {
+    capabilities: {
+      alwaysMatch: {
+        platformName: 'iOS',
+        'appium:automationName': 'XCUITest',
+        'appium:udid': udid,
+        'appium:xcodeConfigFile': join(ROOT, 'ios', 'local.xcconfig'),
+        'appium:updatedWDABundleId': 'art.splotch.WebDriverAgentRunner',
+        'appium:wdaLocalPort': wdaPort,
+        'appium:browserName': 'Safari',
+        'appium:newCommandTimeout': 120,
+      },
+      firstMatch: [{}],
+    },
+  };
+  try {
+    const response = await fetch(`${appiumUrl}/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
+    });
+    const payload = await response.json();
+    const sessionId = payload.value?.sessionId;
+    if (!sessionId) return { ok: false, message: String(payload.value?.message ?? '') };
+    await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export function prepareCapture(argv = process.argv.slice(2)) {
   const fix = argv.includes('--fix');
   const android = androidChecks({ fix });
@@ -309,6 +355,20 @@ if (isMain(import.meta.url)) {
   runMain(async () => {
     const argv = process.argv.slice(2);
     const report = prepareCapture(argv);
+    if (argv.includes('--probe') && report.iosUdid) {
+      console.log('\nprobing a real WebDriverAgent launch (this builds WDA and takes a minute)…');
+      const probe = classifyLaunchProbe(
+        await probeIosLaunch({
+          udid: report.iosUdid,
+          appiumUrl: argFlag('appium-url', `http://127.0.0.1:${report.ports.appium}`),
+          wdaPort: report.ports.wda,
+        })
+      );
+      console.log(
+        `${probe.status === 'ok' ? '✓' : '✗'} ${'ios launch'.padEnd(22)} ${probe.detail}`
+      );
+      if (probe.status !== 'ok') process.exitCode = 1;
+    }
     if (argv.includes('--watch') && report.androidSerial) {
       process.exitCode = 0;
       await watchAndroid(report.androidSerial, { iosUdid: report.iosUdid });

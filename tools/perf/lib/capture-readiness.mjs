@@ -89,6 +89,50 @@ export function androidWakeActions({ screenOn, stayOn, locked }) {
   return { actions, blockers };
 }
 
+// Device-side conditions that deny an app launch, matched against the INNERMOST
+// underlying error of a WebDriverAgent failure. Appium reports all of them as
+// `xcodebuild failed with code 65`, and the outer frames name `SBMainWorkspace`,
+// which is the service that refused rather than the reason it did — so matching
+// anything but the innermost frame identifies the wrong cause. Each entry says
+// what a human has to do, because none of these can be cleared from the host.
+const LAUNCH_DENIAL_CAUSES = [
+  {
+    pattern: /Guided Access active/i,
+    detail:
+      'Guided Access is on — it locks the iPad to one app, so no test runner can launch. ' +
+      'Triple-click the side button, enter the Guided Access passcode, and tap End.',
+  },
+  {
+    pattern: /device.*(is )?(locked|passcode)/i,
+    detail: 'the device is locked — unlock it by hand; a passcode cannot be automated',
+  },
+  {
+    pattern: /Developer Mode/i,
+    detail: 'Developer Mode is off — enable it in Settings → Privacy & Security → Developer Mode',
+  },
+];
+
+// `ok` means a session started and was torn down. Anything else is reported with
+// the most specific cause the log supports, falling back to the raw message
+// rather than guessing — a wrong guess here is what sends a campaign chasing a
+// signing problem that does not exist.
+export function classifyLaunchProbe({ ok, message = '' }) {
+  if (ok) return { status: 'ok', detail: 'a WebDriverAgent session started and closed cleanly' };
+  for (const cause of LAUNCH_DENIAL_CAUSES) {
+    if (cause.pattern.test(message)) return { status: 'blocked', detail: cause.detail };
+  }
+  if (/xcodebuild failed with code 65/i.test(message)) {
+    return {
+      status: 'blocked',
+      detail:
+        'WebDriverAgent could not launch and the cause is not one this knows. Run the xcodebuild ' +
+        'line from the Appium log by hand and read to the innermost "Underlying Error" — the build ' +
+        'itself usually succeeds, so this is rarely a signing problem.',
+    };
+  }
+  return { status: 'blocked', detail: message.slice(0, 200) || 'the probe failed with no message' };
+}
+
 export function summarize(checks) {
   const blockers = checks.filter((check) => check.status === 'blocked');
   return {
