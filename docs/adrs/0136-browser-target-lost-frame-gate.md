@@ -1,77 +1,96 @@
-# ADR-0136: Set the Browser-Target Lost-Frame Gate from a Measured Floor
+# ADR-0136: Do Not Charge a Late Frame That the Next Frame Gives Back
 
 **Status:** Proposed — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md);
-depends on [ADR-0134](0134-frame-beat-from-the-dominant-interval.md) and
-[ADR-0135](0135-split-device-capture-input-and-measurement.md). **Date:** 2026-08
+depends on [ADR-0134](0134-frame-beat-from-the-dominant-interval.md). **Date:** 2026-08
 
 ## Context
 
-`LOST_FRAME_TIME_SHARE_GATE` is 1% of in-contact frame time, and issue 1196 asked whether that is
-the right bar for a browser or "simply the wrong bar", since the value came from native-quality
-capture.
+`lostFrameTimeShare` charges every in-contact frame interval longer than 1.5× the beat for its
+excess over one beat. On a physical iPad that charge is mostly not measuring lost frames.
 
-Two of the campaign's findings had to land first. ADR-0134 corrected the beat estimator, which was
-inflating every physical-browser cell. ADR-0135 corrected the Android input cadence, which was
-inflating the Android cells by an order of magnitude. What remained was a physical-iPad Safari
-result that no product change moved: pen at 1.85% and magic at 1.51%, medians of three samples.
+Look at what a "late" frame is on that device. These are real consecutive in-contact intervals from
+a capture, in milliseconds:
 
-Six product changes were measured against that residual — rasterizing once per frame, dropping the
-live paper view's permanent compositor promotion, suppressing the brush ring on touch, coarsening
-the tile grid, skipping a redundant crayon preview plane, and deferring the eraser's empty scan. On
-the iPad every one of them landed between 1.17% and 2.00% on pen and magic. Nothing shifted the
-residual, which is the shape of a floor rather than a cost.
+```
+17 | 17 | 29 |  4 | 17
+16 | 17 | 28 |  5 | 17
+17 | 16 | 29 |  5 | 16
+```
 
-So the floor was measured directly. A control page — one full-size canvas, one `stroke()` per
-pointermove, no tiles, no blend planes, no halos, no framework — was served to the same devices,
-driven by the same trusted gesture plan, and recorded by the same probe and the same maths:
+Every late interval is immediately followed by a very short one, and the pair sums to about 33 ms —
+two 60 Hz beats. The display was presenting steadily throughout; one `requestAnimationFrame`
+callback arrived late and the next fired almost immediately to rejoin the vsync grid. The metric
+charges the long half and gives no credit for the short half.
 
-| Target                 | Floor (median of 3) | Samples          |
-| ---------------------- | ------------------: | ---------------- |
-| iPad Pro 12.9 · Safari |               1.46% | 1.52, 1.46, 1.36 |
-| Galaxy S21 FE · Chrome |               0.54% | 0.57, 0.54, 0.49 |
+This is not a minority case. In a calibrated pen capture, **240 of 259 late frames (93%) are
+followed by a short frame**, and the floor control — one canvas, one `stroke()` per pointermove, no
+tiles, no blend planes, no framework — has **89 of 89 paired**.
 
-**On this iPad the cheapest drawing app that can exist loses 1.46% of in-contact frame time.** The
-1% gate is below that, so no implementation can pass it. Splotch's own cells sit at or near the
-floor: eraser 0.87% and crayon 0.13% are *below* it, magic 1.51% is at it, and pen 1.85% is 0.39
-above it.
+The cleanest way to see the size of the error is to score the same captures by presentation deficit
+instead: over each unbroken stretch of drawing, `elapsed − framesPresented × beat`, which asks how
+much time was not accounted for by a frame. A late/early pair nets to zero there; a genuinely missed
+slot still costs exactly one beat.
 
-The frame histograms say why. In-contact deltas for Splotch's pen, Splotch's crayon and the control
-page are the same shape — about 87% at 16–17 ms, a few percent of short frames, and a ~3% tail. What
-separates a pass from a fail is only whether that tail lands just above or just below 1.5× the beat:
-crayon's tail stops at 24 ms and scores 0.13%, while pen's and the control page's reach 28–30 ms and
-score 1.85% and 1.46%. That is Safari's jitter, and it is present with none of Splotch's
-architecture on the page.
+| Capture (median of 3)              | Charged | Deficit |
+| ---------------------------------- | ------: | ------: |
+| iPad floor control, pen            |   1.46% |   0.00% |
+| iPad pen, calibrated transport     |   2.05% |   0.04% |
+| iPad eraser, calibrated transport  |   1.68% |   0.59% |
+| Android eraser, before candidate 1 |   1.36% |   1.73% |
+| Android eraser, after candidate 1  |   0.36% |   0.77% |
+
+The floor control scores 1.46% charged and **zero** deficit. A page containing nothing but a canvas
+and a stroke call cannot be losing frames; the 1.46% is the metric pricing callback jitter.
+
+Android behaves differently and correctly: **none** of its late frames are paired, both measures
+agree there is real loss, and both agree candidate 1 roughly halves it. So the defect is specific to
+displays where rAF delivery wobbles around a steady presentation cadence, which is what ProMotion
+does to a 60 Hz web beat.
+
+An earlier draft of this ADR proposed raising the browser-target gate to 2% on the grounds that
+1.46% was Safari's achievable floor. That reasoning was wrong twice over: the number is an artifact
+rather than a floor, and the control page it came from used a 2.98 Mpx single canvas — the very
+architecture [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) rejected for causing WebKit
+surface-flush starvation. Raising the bar would have hidden the defect instead of fixing it.
 
 ## Decision
 
-Gate a browser target against its own measured floor rather than against a native-derived constant.
+Do not raise the gate. Stop charging for a late interval that the following interval gives back.
 
-* Keep 1% for native targets, where it was calibrated and where the app meets it — physical Android
-  native measures 0.0% on every brush.
-* For a browser target, the gate is **the floor plus a headroom allowance**. On the evidence above
-  that is 2% for physical iPad Safari and 1% for physical Android Chrome, whose floor is already
-  well inside the existing bar.
-* A floor is a property of a browser, a device and a workload, not a universal constant. Re-measure
-  it with the control page whenever the device floor, the OS, or the gesture plan changes, and
-  record the samples beside the campaign that used them.
-* A capture that fails the input-fidelity gate is not evidence about either the floor or the
-  product.
+The gate value stays at 1% of in-contact frame time, and it stays the same for browser and native
+targets.
 
-Under this gate the physical-iPad web cells pass on pen, crayon, magic and eraser, and physical
-Android web passes on pen, crayon and magic, with the eraser passing once ADR-0134's estimator and
-the rasterization change in this stack are both applied.
+Presentation deficit is the right shape for the charge, but it is **not** adopted as a drop-in
+replacement, because it is far more sensitive to the beat estimate than the current charge is. It
+compares `elapsed` against `frames × beat`, so an estimate that is low by even 0.2 ms accrues error
+on every frame rather than only on late ones. That is visible in the table above: on Android, where
+the estimated beat is 8.3 ms against a true 8.33 ms, every configuration lands between 0.76% and
+0.97% deficit including the floor control, and the measure loses the ability to discriminate. On the
+iPad, where the mean in-contact interval equals the 16.67 ms budget almost exactly, it is clean.
+
+So the change to make is narrower and better conditioned: when an interval is charged, credit the
+immediately following interval's shortfall against it, capped so the pair can never score below
+zero. That leaves a genuinely missed slot costing one beat, makes a late/early pair cost only its
+real overshoot — the measured pairs run about 2.2–2.3 beats rather than a clean 2.0, so a real
+residual survives — and keeps the metric's existing insensitivity to small beat-estimate error.
+
+This needs measuring before it ships. The saved captures from the issue-1196 campaign are enough to
+score it offline against both the current charge and the deficit, and it should not be adopted until
+that comparison exists.
 
 ## Consequences
 
-* \+ The release gate becomes achievable, so a red physical-web cell means something again.
-* \+ The floor is measured rather than asserted, and the control page is cheap to re-run.
-* \+ It separates two questions the single constant conflated: how much frame time the browser loses
-  on its own, and how much this app adds.
-* − Two gate values to keep straight, and the browser one is per-target. A cell must name the floor
-  it was scored against.
-* − A regression that pushes the app up to the floor from below is no longer caught by this gate.
-  Paint P95/P99/max and the between-strokes and whole-window columns remain the guards there.
-* − The 2% iPad figure is calibrated on one device, one OS version and one gesture plan, and through
-  a transport whose input cadence (about 60 moves/s) is below a real finger's. A cadence closer to a
-  digitizer's could move the floor in either direction, and the value should be re-derived if the
-  transport's cadence improves.
+* \+ The gate stops reporting callback jitter as lost frames, which is 93% of what a physical-iPad
+  pen capture currently reports.
+* \+ It stays a single value across targets, so a cell's number keeps meaning the same thing
+  everywhere.
+* \+ Android is unaffected: none of its late frames are paired, so nothing is credited.
+* \+ What remains on the iPad is attributable. The eraser keeps a real residual (0.59% by deficit
+  against pen's 0.04%), which is a lead rather than a mystery.
+* − A third correction to the same metric in one campaign. The estimator (ADR-0134), the input
+  cadence (ADR-0135) and now the charge were each independently wrong, and each one alone was enough
+  to fail every physical-web cell. Any future number from this gate should be treated as provisional
+  until a floor control is captured alongside it.
+* − Crediting the next interval assumes a late frame is repaid within one frame. A callback that
+  slips and repays over three frames is still charged in full. The pairing data shows one-frame
+  repayment is the dominant pattern on this hardware; another device could differ.

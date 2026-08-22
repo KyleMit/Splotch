@@ -256,6 +256,47 @@ change exists for and the one this transport cannot produce (ADR-0135). The outs
 iPad re-measurement at a digitizer's cadence; until then the iPad delta is a known cost accepted for
 a 1.0-point Android gain, on cells that are already above an unachievable gate.
 
+## Re-measured on the calibrated transport
+
+Everything above the fold was captured through the WebDriverAgent transport at about 61 moves/s. The
+Appium XCUITest path — the calibrated one, at ~115 moves/s and 1.95 moves per frame — was available
+the whole time; it had failed on a wrong device identifier (the `devicectl` CoreDevice UUID instead
+of the hardware UDID) and then on a port collision with another session's Appium server. Both are
+operator error, not platform limits. Re-run there, three samples per cell:
+
+| Cell        | Baseline | Candidate 1 |
+| ----------- | -------: | ----------: |
+| iPad pen    |    2.05% |       1.97% |
+| iPad eraser |    1.68% |       1.66% |
+
+**Candidate 1 is neutral on the iPad at the cadence it was designed for**, not the regression the
+under-paced transport suggested. Its case rests on Android alone.
+
+## The charge itself is wrong on this display
+
+Nearly every iPad "late" frame is followed immediately by a very short one, the pair summing to two
+beats — the display presenting steadily while a callback slipped and rejoined the grid. In the
+calibrated pen capture 240 of 259 late frames (93%) are paired; in the floor control, 89 of 89.
+
+Scoring the same captures by presentation deficit — `elapsed − frames × beat` over each drawing
+stretch, which a late/early pair nets to zero — gives:
+
+| Capture (median of 3)              | Charged | Deficit |
+| ---------------------------------- | ------: | ------: |
+| iPad floor control, pen            |   1.46% |   0.00% |
+| iPad pen, calibrated               |   2.05% |   0.04% |
+| iPad eraser, calibrated            |   1.68% |   0.59% |
+| Android eraser, before candidate 1 |   1.36% |   1.73% |
+| Android eraser, after candidate 1  |   0.36% |   0.77% |
+
+A page with nothing but a canvas and a stroke call cannot be losing frames, and it scores 1.46%. The
+iPad's residual is the metric pricing jitter. Android's is real, and both measures agree candidate 1
+roughly halves it. ADR-0136 is rewritten around this; its earlier floor-plus-headroom proposal is
+withdrawn, and the floor it rested on is doubly unsound — an artifact, measured on a 2.98 Mpx single
+canvas that ADR-0085 already rejected.
+
+The one real iPad lead left is the eraser: 0.59% deficit against pen's 0.04%.
+
 ## Winner
 
 **Candidate 1** among the product changes, shipped with candidates 7 and 6, which are what make the
