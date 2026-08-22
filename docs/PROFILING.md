@@ -1,5 +1,9 @@
 <!-- cspell:ignore adb appium webview chromium devtools simctl iwdp keepNames toplevel xcuitest -->
 
+> Running an unattended physical-device campaign? Read
+> [PROFILING-CAMPAIGNS.md](PROFILING-CAMPAIGNS.md) first and start with `npm run perf:preflight`. It
+> catalogues the setup mistakes that produce plausible, wrong numbers without raising an error.
+
 # Splotch — Performance Profiling
 
 The harness (`tools/perf/`, ADR-0032) drives a deterministic "toddler session" — multi-finger draw,

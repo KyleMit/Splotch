@@ -74,9 +74,22 @@ zero. That leaves a genuinely missed slot costing one beat, makes a late/early p
 real overshoot — the measured pairs run about 2.2–2.3 beats rather than a clean 2.0, so a real
 residual survives — and keeps the metric's existing insensitivity to small beat-estimate error.
 
-This needs measuring before it ships. The saved captures from the issue-1196 campaign are enough to
-score it offline against both the current charge and the deficit, and it should not be adopted until
-that comparison exists.
+Scored offline against every saved capture from the issue-1196 campaign, three samples per cell:
+
+| Cell                                  | Charged | Credited | Gate @1% |
+| ------------------------------------- | ------: | -------: | -------- |
+| iPad floor control, pen               |   1.46% |    0.02% | —        |
+| iPad pen, landed build, calibrated    |   1.97% |    0.69% | PASS     |
+| iPad eraser, landed build, calibrated |   1.66% |    1.13% | FAIL     |
+| Android pen, landed build             |   0.35% |    0.35% | PASS     |
+| Android crayon, landed build          |   0.56% |    0.56% | PASS     |
+| Android magic, landed build           |   0.48% |    0.48% | PASS     |
+| Android eraser, landed build          |   0.36% |    0.36% | PASS     |
+
+The artifact collapses, Android is untouched to two decimal places because nothing there is paired,
+and exactly one cell survives: the physical-iPad eraser at 1.13%. That is the residual worth
+chasing, and it is the first time in this campaign that a failing cell has pointed at the product
+rather than at the instrument.
 
 ## Consequences
 
@@ -89,8 +102,13 @@ that comparison exists.
   against pen's 0.04%), which is a lead rather than a mystery.
 * − A third correction to the same metric in one campaign. The estimator (ADR-0134), the input
   cadence (ADR-0135) and now the charge were each independently wrong, and each one alone was enough
-  to fail every physical-web cell. Any future number from this gate should be treated as provisional
-  until a floor control is captured alongside it.
+  to fail every physical-web cell. Treat a number from this gate as provisional until it has been
+  compared against the previous run of the same cell.
+* − The floor control was decisive as a one-off diagnostic and is **not** adopted as a standing
+  requirement. Its own architecture — a single 2.98 Mpx canvas — is one ADR-0085 rejected, so it
+  measures a bad implementation rather than a platform limit, and a gate derived from it would
+  enshrine that. Reach for it again to answer "is this the app or the browser", not to score a
+  release.
 * − Crediting the next interval assumes a late frame is repaid within one frame. A callback that
   slips and repays over three frames is still charged in full. The pairing data shows one-frame
   repayment is the dominant pattern on this hardware; another device could differ.

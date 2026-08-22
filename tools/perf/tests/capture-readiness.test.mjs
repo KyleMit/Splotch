@@ -1,0 +1,108 @@
+import { describe, expect, it } from 'vitest';
+import {
+  androidWakeActions,
+  classifyIosIdentifier,
+  iosIdentifierProblem,
+  resolvePort,
+  summarize,
+} from '../lib/capture-readiness.mjs';
+
+describe('iOS device identifiers', () => {
+  // The mistake that cost a whole overnight campaign: `xcrun devicectl` prints a
+  // CoreDevice UUID, Appium wants the hardware UDID, and the resulting error
+  // ("Could not find a pair record") reads like an unreachable device.
+  it('tells the hardware UDID from the CoreDevice UUID', () => {
+    expect(classifyIosIdentifier('00008103-0006202E3CF1001E')).toBe('hardware-udid');
+    expect(classifyIosIdentifier('BF6A40F5-B68E-5029-9BF8-7798D202F71C')).toBe('core-device-uuid');
+    expect(classifyIosIdentifier('')).toBe('missing');
+  });
+
+  it('accepts a hardware UDID without comment', () => {
+    expect(iosIdentifierProblem('00008103-0006202E3CF1001E')).toBeNull();
+  });
+
+  it('names the confusion rather than reporting an unreachable device', () => {
+    const problem = iosIdentifierProblem('BF6A40F5-B68E-5029-9BF8-7798D202F71C');
+    expect(problem).toContain('CoreDevice UUID');
+    expect(problem).toContain('idevice_id -l');
+  });
+});
+
+describe('port resolution', () => {
+  it('takes a free port as-is', () => {
+    expect(resolvePort('appium', { holder: null, free: [] })).toMatchObject({
+      port: 4723,
+      action: 'start',
+    });
+  });
+
+  // Anything that cost a human approval is reused, never restarted.
+  it('reuses an Appium server another session already started', () => {
+    expect(
+      resolvePort('appium', { holder: { pid: 1, compatible: true }, free: [4733] })
+    ).toMatchObject({ port: 4723, action: 'reuse' });
+  });
+
+  it('shifts off a port held by something incompatible', () => {
+    expect(
+      resolvePort('appium', { holder: { pid: 1, compatible: false }, free: [4733] })
+    ).toMatchObject({ port: 4733, action: 'start' });
+  });
+
+  // The collision that produced "WebDriverAgent is not initialized": two Appium
+  // servers forwarding the same WDA port, the second proxying into the first's
+  // session.
+  it('moves WDA to another local port rather than stopping the holder', () => {
+    const decision = resolvePort('wda', { holder: { pid: 39823 }, free: [8110, 8120] });
+    expect(decision).toMatchObject({ port: 8110, action: 'start' });
+    expect(decision.reason).toContain('39823');
+  });
+
+  it('restarts a preview server only when this session owns it', () => {
+    expect(resolvePort('preview', { holder: { pid: 1, ours: true }, free: [] })).toMatchObject({
+      action: 'restart',
+    });
+    expect(resolvePort('preview', { holder: { pid: 1, ours: false }, free: [] })).toMatchObject({
+      action: 'blocked',
+    });
+  });
+
+  it('blocks rather than guessing when no alternate is free', () => {
+    expect(resolvePort('wda', { holder: { pid: 1 }, free: [] })).toMatchObject({
+      action: 'blocked',
+    });
+  });
+});
+
+describe('android wake actions', () => {
+  it('asks for nothing when the device is already awake and held', () => {
+    expect(androidWakeActions({ screenOn: true, stayOn: true, locked: false }).actions).toEqual([]);
+  });
+
+  it('wakes a dark screen and sets stay-awake', () => {
+    expect(androidWakeActions({ screenOn: false, stayOn: false, locked: false }).actions).toEqual([
+      'wake',
+      'stayon',
+    ]);
+  });
+
+  it('reports a locked device as a blocker rather than trying to unlock it', () => {
+    const { blockers } = androidWakeActions({ screenOn: true, stayOn: true, locked: true });
+    expect(blockers).toHaveLength(1);
+    expect(blockers[0]).toContain('unlock it by hand');
+  });
+});
+
+describe('summarize', () => {
+  it('is ready only when nothing is blocked', () => {
+    expect(
+      summarize([
+        { name: 'a', status: 'ok' },
+        { name: 'b', status: 'warn' },
+      ]).ready
+    ).toBe(true);
+    const blocked = summarize([{ name: 'tunnel', status: 'blocked', detail: 'not running' }]);
+    expect(blocked.ready).toBe(false);
+    expect(blocked.blockers).toEqual(['tunnel: not running']);
+  });
+});
