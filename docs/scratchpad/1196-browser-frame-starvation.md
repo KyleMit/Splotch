@@ -225,6 +225,32 @@ every iPad cell and flips eraser and crayon to passing.
 8. **Candidate 4 — 3×3 live grid.** Rejected, and it confirms ADR-0085's 4×4 choice: worse on three
    of four cells, worst on the iPad eraser (0.87% → 1.43%), and 16 failing tests.
 
+## Verification of the landed combination
+
+Candidates 1 and 7 measured together on the branch that ships them, median of three samples, against
+each browser's floor:
+
+| Cell           | Baseline | Landed | Floor | Verdict               |
+| -------------- | -------: | -----: | ----: | --------------------- |
+| Android pen    |        — |  0.35% | 0.55% | at the floor          |
+| Android crayon |        — |  0.56% | 0.55% | at the floor          |
+| Android magic  |        — |  0.48% | 0.55% | at the floor          |
+| Android eraser |    1.36% |  0.36% | 0.55% | closed, +0.82 → −0.19 |
+| iPad eraser    |    0.87% |  1.25% | 1.46% | below the floor       |
+| iPad magic     |    1.51% |  1.63% | 1.46% | +0.17 over the floor  |
+| iPad pen       |    1.85% |  2.03% | 1.46% | +0.57 over the floor  |
+
+Every Android cell now sits at or below its floor, and the eraser's excess is gone.
+
+The iPad moved the wrong way by about 0.15–0.18 on pen and magic, consistently across six samples of
+candidate-1 builds against three baseline samples, so it is not noise. That is the deferral's own
+cost: rasterizing from an animation frame instead of from the event handler buys nothing when only
+about one move arrives per frame, and this transport delivers about 60 moves per second against a 60
+Hz beat. A real finger delivers 120 Hz or more into that same beat, which is the condition the
+change exists for and the one this transport cannot produce (ADR-0135). The outstanding check is an
+iPad re-measurement at a digitizer's cadence; until then the iPad delta is a known cost accepted for
+a 1.0-point Android gain, on cells that are already above an unachievable gate.
+
 ## Winner
 
 **Candidate 1** among the product changes, shipped with candidates 7 and 6, which are what make the
