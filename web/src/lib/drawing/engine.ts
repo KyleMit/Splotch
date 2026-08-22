@@ -950,7 +950,6 @@ const rasterQueue = createStrokeRasterQueue<PointerState>({
   strokeSpeed,
   strokeSegments,
   onFlushed: (speed) => callbacks.onDrawSound?.({ speed, isStrokeStart: false }),
-  perfMarks: PERF_MARKS,
 });
 
 function draw(e: PointerEvent) {

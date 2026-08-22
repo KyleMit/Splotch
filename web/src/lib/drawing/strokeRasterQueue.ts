@@ -9,6 +9,7 @@
 // own quadratic segment, exactly as a coalesced batch already did) while paying
 // the per-op cost once.
 import type { Point } from './strokeMath';
+import { PERF_MARKS } from './perf';
 
 export type RasterBatch = { points: Point[]; at: number };
 
@@ -32,7 +33,6 @@ export type StrokeRasterQueueDeps<P extends RasterPointer> = {
   strokeSpeed: (ps: P, last: Point, now: number) => number;
   strokeSegments: (ps: P, points: Point[], moveCount: number) => void;
   onFlushed: (speed: number) => void;
-  perfMarks: boolean;
 };
 
 export function createStrokeRasterQueue<P extends RasterPointer>(deps: StrokeRasterQueueDeps<P>) {
@@ -91,11 +91,15 @@ export function createStrokeRasterQueue<P extends RasterPointer>(deps: StrokeRas
     if (rasterFrame !== 0) return;
     rasterFrame = requestAnimationFrame(() => {
       rasterFrame = 0;
-      if (deps.perfMarks) performance.mark('engine.draw:start');
+      // PERF_MARKS is a compile-time literal, so this whole branch and its
+      // mark strings fold away in a release build. Taking it as a runtime
+      // dependency instead would defeat that and retain the marks, which is
+      // what the release seam scan exists to catch.
+      if (PERF_MARKS) performance.mark('engine.draw:start');
       try {
         for (const ps of deps.activePointers.values()) flushPointer(ps);
       } finally {
-        if (deps.perfMarks) {
+        if (PERF_MARKS) {
           performance.mark('engine.draw:end');
           performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
         }
