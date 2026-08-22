@@ -1,0 +1,7 @@
+
+===== idea4-content-inset-full =====
+PASS  restore-after-LANDSCAPE-start  {"restored":true,"tappedButton":true,"probe":[{"type":"pointerdown","targetIsUndo":true,"clientY":810},{"type":"pointerup","targetIsUndo":true,"clientY":810}]}
+PASS  restore-after-PORTRAIT-start  {"restored":true,"tappedButton":true,"probe":[{"type":"pointerdown","targetIsUndo":true,"clientY":686},{"type":"pointerup","targetIsUndo":true,"clientY":686}]}
+PASS  drag-off-cancels  {"cancelled":true}
+PASS  wiggle-tap-activates  {"restored":true}
+RESULT idea4-content-inset-full: ALL PASS

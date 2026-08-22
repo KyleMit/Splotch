@@ -1,0 +1,7 @@
+
+===== idea1-wiggle =====
+PASS  restore-after-LANDSCAPE-start  {"restored":true,"tappedButton":true,"probe":[{"type":"pointerdown","targetIsUndo":true,"clientY":726},{"type":"pointerup","targetIsUndo":true,"clientY":726}]}
+PASS  restore-after-PORTRAIT-start  {"restored":true,"tappedButton":true,"probe":[{"type":"pointerdown","targetIsUndo":true,"clientY":686},{"type":"pointerup","targetIsUndo":true,"clientY":686}]}
+PASS  drag-off-cancels  {"cancelled":true}
+FAIL  wiggle-tap-activates  {"restored":false}
+RESULT idea1-wiggle: NOT ALL PASS

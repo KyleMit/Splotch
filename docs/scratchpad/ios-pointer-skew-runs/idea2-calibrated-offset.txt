@@ -1,0 +1,6 @@
+
+===== idea2-calibrated-offset =====
+PASS  restore-after-LANDSCAPE-start  {"restored":true,"tappedButton":true,"probe":[{"type":"pointerdown","targetIsUndo":true,"clientY":746},{"type":"pointerup","targetIsUndo":true,"clientY":746}]}
+PASS  restore-after-PORTRAIT-start  {"restored":true,"tappedButton":true,"probe":[{"type":"pointerdown","targetIsUndo":true,"clientY":686},{"type":"pointerup","targetIsUndo":true,"clientY":686}]}
+PASS  drag-off-cancels  {"cancelled":true}
+RESULT idea2-calibrated-offset: ALL PASS
