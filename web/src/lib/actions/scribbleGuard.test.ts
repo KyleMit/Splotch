@@ -81,6 +81,12 @@ function pointerEvent(
   return e;
 }
 
+function touchEventAt(type: string, clientX: number, clientY: number) {
+  const e = new Event(type, { cancelable: true, bubbles: true });
+  Object.defineProperty(e, 'changedTouches', { value: [{ clientX, clientY }] });
+  return e;
+}
+
 const tapActions = new Set<{ destroy: () => void }>();
 
 function tapElement() {
@@ -234,6 +240,8 @@ describe('scribbleTap', () => {
       ['pointermove', true],
       ['pointerup', true],
       ['pointercancel', true],
+      ['pointerdown', true],
+      ['touchstart', true],
     ]);
 
     first.action.destroy();
@@ -243,6 +251,8 @@ describe('scribbleTap', () => {
       ['pointermove', true],
       ['pointerup', true],
       ['pointercancel', true],
+      ['pointerdown', true],
+      ['touchstart', true],
     ]);
   });
 
@@ -252,6 +262,31 @@ describe('scribbleTap', () => {
     window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 10.25, clientY: 10 }));
     el.dispatchEvent(pointerEvent('pointerleave', 1, { clientX: 10.25, clientY: 10 }));
     window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 10.25, clientY: 10 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  // WKWebView's ios.contentInset shifts PointerEvent client coordinates by the
+  // content inset while TouchEvent coordinates and layout are not, so the hit
+  // test has to run against the touch-corrected point (issue #1194).
+  it('corrects pointer coordinates by the offset the touch stream reports', () => {
+    const { el, activate } = tapElement();
+    vi.mocked(document.elementFromPoint).mockImplementation((_x, y) =>
+      y === 778 ? el : document.body
+    );
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientY: 746, pointerType: 'touch' }));
+    el.dispatchEvent(touchEventAt('touchstart', 36, 778));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientY: 746, pointerType: 'touch' }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves an uncorrected touch stream hit-testing at its own coordinates', () => {
+    const { el, activate } = tapElement();
+    vi.mocked(document.elementFromPoint).mockImplementation((_x, y) =>
+      y === 100 ? el : document.body
+    );
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientY: 100, pointerType: 'touch' }));
+    el.dispatchEvent(touchEventAt('touchstart', 0, 100));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientY: 100, pointerType: 'touch' }));
     expect(activate).toHaveBeenCalledTimes(1);
   });
 

@@ -39,24 +39,57 @@ type ScribbleTapHandler = (() => void) | ScribbleTapHandlers;
 function createScribbleTapDispatcher(ownerWindow: Window) {
   const handlersByPointerId = new Map<number, ScribbleTapStreamHandlers>();
   let subscriptionCount = 0;
+  // WKWebView configured with ios.contentInset reports PointerEvent client
+  // coordinates shifted by the content inset while TouchEvent coordinates,
+  // layout and hit-testing are not (issue #1194). Both streams describe the same
+  // contact, so their difference is exactly the correction elementFromPoint
+  // needs. Remeasured on every touch press, so a rotation that changes the inset
+  // corrects itself on the next contact.
+  let touchCorrectionX = 0;
+  let touchCorrectionY = 0;
+  let uncalibratedPointerX = 0;
+  let uncalibratedPointerY = 0;
+  let awaitingTouchCalibration = false;
 
   const move = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.move(event);
   const up = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.up(event);
   const cancel = (event: PointerEvent) => handlersByPointerId.get(event.pointerId)?.cancel(event);
 
+  const noteTouchPointer = (event: PointerEvent) => {
+    awaitingTouchCalibration = event.pointerType === 'touch';
+    uncalibratedPointerX = event.clientX;
+    uncalibratedPointerY = event.clientY;
+  };
+
+  const calibrate = (event: TouchEvent) => {
+    const touch = event.changedTouches[0];
+    if (!awaitingTouchCalibration || !touch) return;
+    awaitingTouchCalibration = false;
+    touchCorrectionX = touch.clientX - uncalibratedPointerX;
+    touchCorrectionY = touch.clientY - uncalibratedPointerY;
+  };
+
   function addWindowListeners() {
     ownerWindow.addEventListener('pointermove', move, true);
     ownerWindow.addEventListener('pointerup', up, true);
     ownerWindow.addEventListener('pointercancel', cancel, true);
+    ownerWindow.addEventListener('pointerdown', noteTouchPointer, true);
+    ownerWindow.addEventListener('touchstart', calibrate, true);
   }
 
   function removeWindowListeners() {
     ownerWindow.removeEventListener('pointermove', move, true);
     ownerWindow.removeEventListener('pointerup', up, true);
     ownerWindow.removeEventListener('pointercancel', cancel, true);
+    ownerWindow.removeEventListener('pointerdown', noteTouchPointer, true);
+    ownerWindow.removeEventListener('touchstart', calibrate, true);
   }
 
   return {
+    correctedX: (event: PointerEvent) =>
+      event.pointerType === 'touch' ? event.clientX + touchCorrectionX : event.clientX,
+    correctedY: (event: PointerEvent) =>
+      event.pointerType === 'touch' ? event.clientY + touchCorrectionY : event.clientY,
     subscribe(handlers: ScribbleTapStreamHandlers) {
       let active = true;
       let claimedPointerId: number | undefined;
@@ -163,7 +196,9 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
   }
 
   function eventHitsControl(e: PointerEvent): boolean {
-    const hit = node.ownerDocument.elementFromPoint(e.clientX, e.clientY);
+    const hit = dispatcher
+      ? node.ownerDocument.elementFromPoint(dispatcher.correctedX(e), dispatcher.correctedY(e))
+      : node.ownerDocument.elementFromPoint(e.clientX, e.clientY);
     return node.contains(hit);
   }
 
@@ -244,9 +279,8 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (e.detail === 0) activate();
   };
   // Direct pointer-id routing keeps the drawing hot path at one window handler.
-  const stream = ownerWindow
-    ? dispatcherFor(ownerWindow).subscribe({ move, up, cancel })
-    : undefined;
+  const dispatcher = ownerWindow ? dispatcherFor(ownerWindow) : undefined;
+  const stream = dispatcher?.subscribe({ move, up, cancel });
   node.addEventListener('pointerdown', down);
   node.addEventListener('click', click);
   return {
