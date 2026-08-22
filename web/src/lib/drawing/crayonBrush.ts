@@ -141,10 +141,11 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
   // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
   colorMix: 0.55,
-  passes: [
-    { widthScale: 1.0, coverage: 0.45 },
-    { widthScale: 0.68, coverage: 0.63 },
-  ],
+  // DIAGNOSTIC BRANCH: one density band instead of two, halving the
+  // pattern-filled strokes every crayon op pays. This changes the wax texture
+  // and is not a shipping value on its own; it exists to bound how much of the
+  // physical-iPad crayon cost is the pattern fill.
+  passes: [{ widthScale: 1.0, coverage: 0.55 }],
 };
 
 let opts: CrayonOptions = clone(CRAYON_DEFAULTS);
