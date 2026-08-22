@@ -115,10 +115,50 @@ const sum = (values) => values.reduce((total, value) => total + value, 0);
 const inWindow = (time, from, to) => time >= from && time <= to;
 
 // The beat this capture actually got, rather than the one the hardware claims.
-// The 10th percentile, not the minimum: a single short delta is jitter, while a
-// tenth of all frames landing at one interval is the beat.
+//
+// The DOMINANT INTERVAL, not a low percentile. Every physical browser measured
+// so far presents at more than one rate inside a single capture, and a low
+// percentile answers "the fastest rate this display ever visited" rather than
+// "the rate it held":
+//
+//   * Chrome on a 120 Hz Android phone raises the rate while a touch gesture is
+//     in progress and lets it fall back to 60 Hz. A capture is a mix of 8.3 ms
+//     and 16.6 ms frames with nothing in between.
+//   * Safari on a ProMotion iPad runs web content at 60 Hz but emits a short
+//     frame now and then. A physical-iPad pen capture put ~2.6% of its frames at
+//     or under 12 ms on an otherwise 16-17 ms beat, which dragged the 10th
+//     percentile to 14 ms.
+//
+// Both make the derived budget too small, and `frameStats` then charges the app
+// for frames that arrived on the beat the display was actually holding. On that
+// iPad capture the 10th percentile scored 1.67% of in-contact frame time as
+// lost against a 1% gate; the dominant interval scores 0.11%.
+//
+// Buckets are half-milliseconds — finer splits one refresh rate across
+// neighbouring buckets and stops any of them dominating. A capture with no
+// dominant interval is genuinely erratic rather than multi-rate, and there the
+// old percentile remains the better answer.
+const BEAT_BUCKET_MS = 0.5;
+const BEAT_MODE_SHARE_FLOOR = 0.25;
+
 export function observedFrameIntervalMs(frames) {
   const deltas = frames.filter((frame) => frame[FRAME_DT] > 0).map((frame) => frame[FRAME_DT]);
+  if (!deltas.length) return QUEUE_DELAY_LAG_MS;
+  const buckets = new Map();
+  for (const delta of deltas) {
+    const bucket = Math.round(delta / BEAT_BUCKET_MS) * BEAT_BUCKET_MS;
+    const members = buckets.get(bucket);
+    if (members) members.push(delta);
+    else buckets.set(bucket, [delta]);
+  }
+  let dominant = [];
+  for (const members of buckets.values()) {
+    if (members.length > dominant.length) dominant = members;
+  }
+  // The bucket's own median rather than its centre, so the returned beat stays a
+  // delta the capture actually contained and every threshold derived from it
+  // keeps its original precision.
+  if (dominant.length / deltas.length >= BEAT_MODE_SHARE_FLOOR) return percentile(dominant, 0.5);
   return percentile(deltas, 0.1) ?? QUEUE_DELAY_LAG_MS;
 }
 

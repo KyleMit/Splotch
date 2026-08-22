@@ -440,6 +440,32 @@ describe('observedFrameIntervalMs', () => {
     const frames = [...beat(180), ...beat(20, { from: 5000, interval: 300 })];
     expect(observedFrameIntervalMs(frames)).toBeCloseTo(16.7, 1);
   });
+
+  // The physical-iPad case: Safari holds 60 Hz for web content and emits an
+  // occasional short frame, which drags a low percentile below the rate the
+  // display actually held.
+  it('is unmoved by a minority of short frames on an otherwise steady beat', () => {
+    const frames = [...beat(190, { interval: 16.7 }), ...beat(10, { from: 9000, interval: 10 })];
+    expect(observedFrameIntervalMs(frames)).toBeCloseTo(16.7, 1);
+  });
+
+  // The physical-Android case: Chrome raises the rate under touch and falls back
+  // between strokes, so a capture is a mix of two refresh rates.
+  it('reports the rate a variable-refresh capture held for most of its frames', () => {
+    const frames = [...beat(140, { interval: 8.3 }), ...beat(60, { from: 5000, interval: 16.6 })];
+    expect(observedFrameIntervalMs(frames)).toBeCloseTo(8.3, 1);
+  });
+
+  it('falls back to the tenth percentile when no interval dominates', () => {
+    const frames = [
+      ...beat(40, { interval: 10 }),
+      ...beat(40, { from: 2000, interval: 20 }),
+      ...beat(40, { from: 4000, interval: 30 }),
+      ...beat(40, { from: 7000, interval: 40 }),
+      ...beat(40, { from: 11000, interval: 50 }),
+    ];
+    expect(observedFrameIntervalMs(frames)).toBeCloseTo(10, 0);
+  });
 });
 
 describe('frameStats', () => {
