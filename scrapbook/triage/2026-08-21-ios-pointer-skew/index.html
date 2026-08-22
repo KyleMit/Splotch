@@ -1,0 +1,1451 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Issue 1194 — the 32px lie WKWebView tells about where you tapped</title>
+    <style>
+      .viz-root {
+        color-scheme: light;
+        --plane: #f9f9f7;
+        --surface-1: #fcfcfb;
+        --surface-2: #f2f1ec;
+        --text-primary: #0b0b0b;
+        --text-secondary: #52514e;
+        --text-muted: #898781;
+        --grid: #e1e0d9;
+        --series-1: #2a78d6;
+        --series-2: #eb6834;
+        --series-3: #1baf7a;
+        --series-7: #4a3aa7;
+        --good: #0ca30c;
+        --warning: #fab219;
+        --critical: #d03b3b;
+        --shadow: 0 1px 2px rgba(11, 11, 11, 0.06), 0 8px 24px rgba(11, 11, 11, 0.05);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:where(:not([data-theme='light'])) .viz-root {
+          color-scheme: dark;
+          --plane: #0d0d0d;
+          --surface-1: #1a1a19;
+          --surface-2: #232321;
+          --text-primary: #ffffff;
+          --text-secondary: #c3c2b7;
+          --text-muted: #898781;
+          --grid: #2c2c2a;
+          --series-1: #3987e5;
+          --series-2: #d95926;
+          --series-3: #199e70;
+          --series-7: #9085e9;
+          --good: #0ca30c;
+          --warning: #fab219;
+          --critical: #d03b3b;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+      }
+      :root[data-theme='dark'] .viz-root {
+        color-scheme: dark;
+        --plane: #0d0d0d;
+        --surface-1: #1a1a19;
+        --surface-2: #232321;
+        --text-primary: #ffffff;
+        --text-secondary: #c3c2b7;
+        --text-muted: #898781;
+        --grid: #2c2c2a;
+        --series-1: #3987e5;
+        --series-2: #d95926;
+        --series-3: #199e70;
+        --series-7: #9085e9;
+        --good: #0ca30c;
+        --warning: #fab219;
+        --critical: #d03b3b;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      .viz-root {
+        background: var(--plane);
+        color: var(--text-primary);
+        font:
+          16px/1.6 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        min-height: 100vh;
+        padding: 0 20px 88px;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+
+      /* ---- masthead ---- */
+      .crayons {
+        display: flex;
+        height: 7px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 28px 0 26px;
+      }
+      .crayons i {
+        flex: 1;
+      }
+
+      header h1 {
+        font-size: clamp(28px, 4.4vw, 42px);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        margin: 0 0 10px;
+      }
+      header .sub {
+        font-size: 19px;
+        color: var(--text-secondary);
+        margin: 0 0 18px;
+        max-width: 72ch;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .chip {
+        font-size: 12.5px;
+        color: var(--text-secondary);
+        background: var(--surface-2);
+        border: 1px solid var(--grid);
+        border-radius: 999px;
+        padding: 3px 11px;
+        white-space: nowrap;
+      }
+      .theme-toggle {
+        position: fixed;
+        top: 14px;
+        right: 16px;
+        z-index: 10;
+        font: inherit;
+        font-size: 13px;
+        color: var(--text-secondary);
+        background: var(--surface-1);
+        border: 1px solid var(--grid);
+        border-radius: 999px;
+        padding: 6px 14px;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+      }
+
+      /* ---- structure ---- */
+      section {
+        margin: 46px 0 0;
+      }
+      h2 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: var(--text-muted);
+        margin: 0 0 6px;
+        font-weight: 700;
+      }
+      h3 {
+        font-size: 25px;
+        letter-spacing: -0.015em;
+        margin: 0 0 12px;
+        line-height: 1.25;
+      }
+      p {
+        margin: 0 0 14px;
+        max-width: 78ch;
+        color: var(--text-secondary);
+      }
+      p strong,
+      li strong {
+        color: var(--text-primary);
+      }
+      .card {
+        background: var(--surface-1);
+        border: 1px solid var(--grid);
+        border-radius: 14px;
+        padding: 22px 24px;
+        box-shadow: var(--shadow);
+      }
+      code,
+      .mono {
+        font:
+          13.5px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        background: var(--surface-2);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      pre {
+        margin: 0;
+        background: var(--surface-2);
+        border: 1px solid var(--grid);
+        border-radius: 10px;
+        padding: 15px 17px;
+        overflow-x: auto;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        display: block;
+        white-space: pre;
+        color: var(--text-primary);
+      }
+      .cmt {
+        color: var(--text-muted);
+      }
+      .bad {
+        color: var(--critical);
+        font-weight: 700;
+      }
+      .ok {
+        color: var(--good);
+        font-weight: 700;
+      }
+
+      /* ---- stat tiles ---- */
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+        margin-top: 22px;
+      }
+      .tile {
+        background: var(--surface-1);
+        border: 1px solid var(--grid);
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: var(--shadow);
+      }
+      .tile .k {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        font-weight: 700;
+      }
+      .tile .v {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        margin: 7px 0 3px;
+      }
+      .tile .d {
+        font-size: 13.5px;
+        color: var(--text-secondary);
+        line-height: 1.45;
+      }
+
+      /* ---- tables ---- */
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14.5px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--grid);
+        vertical-align: middle;
+      }
+      th {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+        font-weight: 700;
+        border-bottom-width: 2px;
+      }
+      td.num {
+        font:
+          13.5px ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+      }
+      tr.hl td {
+        background: color-mix(in srgb, var(--critical) 9%, transparent);
+      }
+      .rowlabel {
+        font-weight: 650;
+        color: var(--text-primary);
+      }
+
+      /* ---- status pill ---- */
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 3px 10px 3px 8px;
+        white-space: nowrap;
+        border: 1px solid transparent;
+      }
+      .pill svg {
+        width: 13px;
+        height: 13px;
+        flex: none;
+      }
+      .pill.pass {
+        color: var(--good);
+        background: color-mix(in srgb, var(--good) 12%, transparent);
+        border-color: color-mix(in srgb, var(--good) 34%, transparent);
+      }
+      .pill.fail {
+        color: var(--critical);
+        background: color-mix(in srgb, var(--critical) 12%, transparent);
+        border-color: color-mix(in srgb, var(--critical) 34%, transparent);
+      }
+      .pill.na {
+        color: var(--text-muted);
+        background: var(--surface-2);
+        border-color: var(--grid);
+      }
+
+      .legend {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 14px;
+      }
+
+      /* ---- option cards ---- */
+      .options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+      .opt {
+        background: var(--surface-1);
+        border: 1px solid var(--grid);
+        border-radius: 14px;
+        padding: 18px 19px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        border-top: 4px solid var(--accent, var(--grid));
+      }
+      .opt .n {
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: var(--accent, var(--text-muted));
+      }
+      .opt h4 {
+        margin: 6px 0 9px;
+        font-size: 17.5px;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+      }
+      .opt p {
+        font-size: 14px;
+        margin: 0 0 12px;
+      }
+      .opt dl {
+        margin: auto 0 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 12px;
+        font-size: 13px;
+        padding-top: 12px;
+        border-top: 1px solid var(--grid);
+      }
+      .opt dt {
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+      .opt dd {
+        margin: 0;
+        color: var(--text-primary);
+        text-align: right;
+        font-weight: 600;
+      }
+      .opt.winner {
+        outline: 2px solid var(--good);
+        outline-offset: 2px;
+      }
+
+      .callout {
+        border-left: 4px solid var(--warning);
+        background: color-mix(in srgb, var(--warning) 9%, var(--surface-1));
+        border-radius: 0 12px 12px 0;
+        padding: 17px 20px;
+        margin-top: 18px;
+      }
+      .callout.win {
+        border-left-color: var(--good);
+        background: color-mix(in srgb, var(--good) 8%, var(--surface-1));
+      }
+      .callout h4 {
+        margin: 0 0 7px;
+        font-size: 17px;
+      }
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+
+      ul.tight {
+        margin: 0 0 14px;
+        padding-left: 20px;
+        color: var(--text-secondary);
+        max-width: 78ch;
+      }
+      ul.tight li {
+        margin-bottom: 7px;
+      }
+
+      figure {
+        margin: 0;
+      }
+      figcaption {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 12px;
+        line-height: 1.5;
+      }
+      svg {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      footer {
+        margin-top: 56px;
+        padding-top: 20px;
+        border-top: 1px solid var(--grid);
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+      @media (max-width: 640px) {
+        .opt dl {
+          grid-template-columns: 1fr;
+        }
+        .opt dd {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="viz-root">
+      <button class="theme-toggle" id="themeToggle" type="button">Dark</button>
+      <div class="wrap">
+        <div class="crayons" aria-hidden="true">
+          <i style="background: #a970d8"></i><i style="background: #5b9bd5"></i><i
+            style="background: #4bbfb0"
+          ></i><i style="background: #8cc55f"></i><i style="background: #f2cd45"></i><i
+            style="background: #f0913e"
+          ></i><i style="background: #a97a52"></i><i style="background: #e4534d"></i><i
+            style="background: #f27bab"
+          ></i>
+        </div>
+
+        <header>
+          <h1>The undo button isn't broken.<br />WKWebView is lying about where you tapped.</h1>
+          <p class="sub">
+            Issue 1194 was filed as "undo doesn't restore the drawing after a blank rotation." It is
+            actually a 32-pixel disagreement between two coordinate systems inside the iOS WebView —
+            and it silently kills <em>every</em> toolbar button in portrait, not just undo.
+          </p>
+          <div class="meta">
+            <span class="chip">iPad mini (A17 Pro) Simulator · iPadOS 26.5</span>
+            <span class="chip">Native Capacitor WKWebView</span>
+            <span class="chip">main @ f7ca7e8f</span>
+            <span class="chip">Measured 2026-08-21</span>
+          </div>
+        </header>
+
+        <div class="tiles">
+          <div class="tile">
+            <div class="k">The defect</div>
+            <div class="v" style="color: var(--critical)">32 px</div>
+            <div class="d">
+              Pointer events report a Y coordinate 32px above where the finger actually is. Portrait
+              only. The button is 55px tall.
+            </div>
+          </div>
+          <div class="tile">
+            <div class="k">Blast radius</div>
+            <div class="v">Every button</div>
+            <div class="d">
+              Undo, save, coloring books, brush, stroke width — every control using
+              <code>scribbleTap</code>, not just undo.
+            </div>
+          </div>
+          <div class="tile">
+            <div class="k">Winning fix</div>
+            <div class="v" style="color: var(--good)">1 line</div>
+            <div class="d">
+              A Capacitor config value. Removes the cause instead of compensating for it, at zero
+              runtime cost.
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= THE MECHANISM ================= -->
+        <section>
+          <h2>What actually happens</h2>
+          <h3>Three answers to "where did the finger land?" — and they disagree</h3>
+          <p>
+            One trusted touch on the undo button, after rotating the blank canvas from landscape to
+            portrait. The touch events, the pointer events, and the synthesized click each report a
+            different Y coordinate for the <em>same physical contact</em>. Drawn to scale from the
+            measured values:
+          </p>
+
+          <figure class="card" style="padding: 26px 24px 20px">
+            <svg viewBox="0 0 980 400" role="img" aria-labelledby="skewTitle skewDesc">
+              <title id="skewTitle">
+                Measured vertical positions of one touch versus the button's layout box
+              </title>
+              <desc id="skewDesc">
+                The undo button's layout box spans Y 750 to 805. The touch event reports Y 778,
+                inside the button. The pointer event reports Y 746, in the 8-pixel gap above the
+                button. The synthesized click reports Y 737, inside the drawer toggle button above.
+              </desc>
+
+              <!-- ruler -->
+              <g
+                font-family="ui-monospace, Menlo, monospace"
+                font-size="11"
+                fill="var(--text-muted)"
+              >
+                <line
+                  x1="66"
+                  y1="24"
+                  x2="66"
+                  y2="356"
+                  stroke="var(--grid)"
+                  stroke-width="1.5"
+                ></line>
+                <text x="58" y="32" text-anchor="end">690</text>
+                <line x1="60" y1="28" x2="66" y2="28" stroke="var(--grid)" stroke-width="1.5"></line>
+                <text x="58" y="136" text-anchor="end">740</text>
+                <line
+                  x1="60"
+                  y1="132"
+                  x2="66"
+                  y2="132"
+                  stroke="var(--grid)"
+                  stroke-width="1.5"
+                ></line>
+                <text x="58" y="240" text-anchor="end">790</text>
+                <line
+                  x1="60"
+                  y1="236"
+                  x2="66"
+                  y2="236"
+                  stroke="var(--grid)"
+                  stroke-width="1.5"
+                ></line>
+                <text x="58" y="344" text-anchor="end">840</text>
+                <line
+                  x1="60"
+                  y1="340"
+                  x2="66"
+                  y2="340"
+                  stroke="var(--grid)"
+                  stroke-width="1.5"
+                ></line>
+                <text
+                  x="30"
+                  y="190"
+                  text-anchor="middle"
+                  transform="rotate(-90 30 190)"
+                  fill="var(--text-secondary)"
+                  font-family="inherit"
+                  font-size="12"
+                >
+                  CSS px from top of viewport
+                </text>
+              </g>
+
+              <!-- the two controls, drawn to scale: y_svg = (y - 690) * 2.08 + 28 -->
+              <!-- drawer toggle: 694 -> 742  =>  36.3 -> 136.2 -->
+              <rect
+                x="96"
+                y="36"
+                width="100"
+                height="100"
+                rx="16"
+                fill="var(--surface-2)"
+                stroke="var(--grid)"
+                stroke-width="2"
+              ></rect>
+              <text
+                x="146"
+                y="82"
+                text-anchor="middle"
+                font-size="12.5"
+                fill="var(--text-secondary)"
+                font-weight="600"
+              >
+                drawer
+              </text>
+              <text
+                x="146"
+                y="99"
+                text-anchor="middle"
+                font-size="12.5"
+                fill="var(--text-secondary)"
+                font-weight="600"
+              >
+                toggle
+              </text>
+
+              <!-- undo button: 750 -> 805  =>  152.8 -> 267.2 -->
+              <rect
+                x="96"
+                y="153"
+                width="100"
+                height="114"
+                rx="16"
+                fill="color-mix(in srgb, var(--series-1) 14%, var(--surface-1))"
+                stroke="var(--series-1)"
+                stroke-width="2.5"
+              ></rect>
+              <text
+                x="146"
+                y="180"
+                text-anchor="middle"
+                font-size="13.5"
+                fill="var(--text-primary)"
+                font-weight="700"
+              >
+                undo
+              </text>
+              <text
+                x="146"
+                y="253"
+                text-anchor="middle"
+                font-size="11.5"
+                fill="var(--text-secondary)"
+              >
+                750–805
+              </text>
+
+              <!-- CLICK marker: 737 => 125.8 -->
+              <g>
+                <line
+                  x1="96"
+                  y1="126"
+                  x2="700"
+                  y2="126"
+                  stroke="var(--series-7)"
+                  stroke-width="2"
+                  stroke-dasharray="6 4"
+                ></line>
+                <circle cx="146" cy="126" r="6.5" fill="var(--series-7)"></circle>
+                <text x="712" y="122" font-size="14" font-weight="700" fill="var(--text-primary)">
+                  click → y 737
+                </text>
+                <text x="712" y="140" font-size="12.5" fill="var(--text-secondary)">
+                  hits the drawer toggle — the wrong button
+                </text>
+              </g>
+
+              <!-- POINTER marker: 746 => 144.5 -->
+              <g>
+                <line
+                  x1="96"
+                  y1="145"
+                  x2="700"
+                  y2="145"
+                  stroke="var(--critical)"
+                  stroke-width="2.5"
+                ></line>
+                <circle
+                  cx="146"
+                  cy="145"
+                  r="7"
+                  fill="var(--critical)"
+                  stroke="var(--surface-1)"
+                  stroke-width="2"
+                ></circle>
+                <text x="712" y="163" font-size="14" font-weight="700" fill="var(--critical)">
+                  pointerdown / pointerup → y 746
+                </text>
+                <text x="712" y="181" font-size="12.5" fill="var(--text-secondary)">
+                  lands in the 8px gap above the button
+                </text>
+              </g>
+
+              <!-- TOUCH marker: 778 => 211 -->
+              <g>
+                <line
+                  x1="96"
+                  y1="211"
+                  x2="700"
+                  y2="211"
+                  stroke="var(--good)"
+                  stroke-width="2.5"
+                ></line>
+                <circle
+                  cx="146"
+                  cy="211"
+                  r="7"
+                  fill="var(--good)"
+                  stroke="var(--surface-1)"
+                  stroke-width="2"
+                ></circle>
+                <text x="712" y="207" font-size="14" font-weight="700" fill="var(--good)">
+                  touchstart / touchend → y 778
+                </text>
+                <text x="712" y="225" font-size="12.5" fill="var(--text-secondary)">
+                  dead centre of the button — correct
+                </text>
+              </g>
+
+              <!-- the 32px skew arrow -->
+              <g>
+                <line
+                  x1="640"
+                  y1="145"
+                  x2="640"
+                  y2="211"
+                  stroke="var(--critical)"
+                  stroke-width="2"
+                ></line>
+                <path d="M640 148 l-4.5 8 h9 z" fill="var(--critical)"></path>
+                <path d="M640 208 l-4.5 -8 h9 z" fill="var(--critical)"></path>
+                <rect
+                  x="588"
+                  y="167"
+                  width="104"
+                  height="23"
+                  rx="6"
+                  fill="var(--surface-1)"
+                  stroke="var(--critical)"
+                  stroke-width="1.5"
+                ></rect>
+                <text
+                  x="640"
+                  y="183"
+                  text-anchor="middle"
+                  font-size="12.5"
+                  font-weight="800"
+                  fill="var(--critical)"
+                >
+                  32px skew
+                </text>
+              </g>
+
+              <!-- footnote inside figure -->
+              <text x="96" y="308" font-size="13" fill="var(--text-secondary)">
+                <tspan font-weight="700" fill="var(--text-primary)"
+                  >The finger really was at 778.</tspan
+                >
+                The pointer event even names the right target —
+              </text>
+              <text x="96" y="329" font-size="13" fill="var(--text-secondary)">
+                <tspan font-family="ui-monospace, Menlo, monospace" font-size="12.5"
+                  >e.target === undoButton</tspan
+                >
+                — but its <tspan font-family="ui-monospace, Menlo, monospace" font-size="12.5"
+                  >clientY</tspan
+                >
+                is 32px off. Only the coordinates are wrong.
+              </text>
+              <text x="96" y="352" font-size="13" fill="var(--text-secondary)">
+                That 32px is
+                <tspan font-family="ui-monospace, Menlo, monospace" font-size="12.5"
+                  >screen.height − innerHeight</tspan
+                >: the WebView's top content inset. It exists in portrait, not landscape.
+              </text>
+            </svg>
+          </figure>
+
+          <h3 style="margin-top: 32px; font-size: 21px">The raw measurement</h3>
+          <div class="card scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>clientY</th>
+                  <th>pageY</th>
+                  <th>Dispatch target</th>
+                  <th><code>elementFromPoint(clientY)</code></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="rowlabel">touchstart / touchend</td>
+                  <td class="num ok">778</td>
+                  <td class="num">746</td>
+                  <td class="num">undoButton</td>
+                  <td class="num ok">undoButton ✓</td>
+                </tr>
+                <tr class="hl">
+                  <td class="rowlabel">pointerdown / pointerup</td>
+                  <td class="num bad">746</td>
+                  <td class="num">746</td>
+                  <td class="num">undoButton</td>
+                  <td class="num bad">.actions-panel ✗</td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">click (synthesized)</td>
+                  <td class="num bad">737</td>
+                  <td class="num">737</td>
+                  <td class="num bad">.drawer-toggle</td>
+                  <td class="num bad">.drawer-toggle ✗</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin-top: 14px; font-size: 14.5px">
+            There is no correct accessor to reach for: <code>clientY</code>, <code>pageY</code>,
+            <code>screenY</code> and <code>offsetY</code> on the pointer event all carry the same
+            skew. The only skew-free signal the browser gives us is
+            <strong><code>e.target</code></strong
+            >.
+          </p>
+        </section>
+
+        <!-- ================= WHERE IT BREAKS ================= -->
+        <section>
+          <h2>Where it breaks in our code</h2>
+          <h3>We throw away the right answer and recompute a wrong one</h3>
+          <p>
+            <code>scribbleTap</code> — the action every toolbar button activates through — doesn't
+            trust the target the browser dispatched to. It re-derives one from the coordinates:
+          </p>
+          <pre><code><span class="cmt">// web/src/lib/actions/scribbleGuard.ts</span>
+function eventHitsControl(e: PointerEvent): boolean {
+  const hit = node.ownerDocument.elementFromPoint(e.clientX, <span class="bad">e.clientY</span>);  <span class="cmt">// ← 746, not 778</span>
+  return node.contains(hit);                                     <span class="cmt">//   → false</span>
+}
+
+function move(e) { <span class="cmt">/* … */</span> if (moved &gt; 8px &amp;&amp; !eventHitsControl(e)) press.dragged = <span class="bad">true</span>; }
+function up(e)   { finishPress(!press.dragged &amp;&amp; <span class="bad">eventHitsControl(e)</span>); }  <span class="cmt">// → never activates</span></code></pre>
+          <p style="margin-top: 16px">
+            Note it is called <strong>twice</strong>: once in <code>up()</code> to decide the release
+            landed on the control, and once in <code>move()</code> to decide the press became a drag.
+            That second call is what makes this subtle — and it is where one of the four fixes falls
+            down.
+          </p>
+
+          <figure class="card" style="margin-top: 20px; padding: 26px 24px 18px">
+            <svg viewBox="0 0 980 300" role="img" aria-labelledby="pipeTitle pipeDesc">
+              <title id="pipeTitle">Where each candidate fix intervenes in the input pipeline</title>
+              <desc id="pipeDesc">
+                A five-stage pipeline from finger to activation. Option 4 intervenes at stage 2, the
+                WebView content inset. Options 2 and 3 intervene at stage 4, correcting coordinates
+                before the hit test. Option 1 intervenes at stage 5 only, which is why it misses the
+                drag detector at stage 4.
+              </desc>
+
+              <g font-size="12.5" font-family="inherit">
+                <!-- stages -->
+                <g>
+                  <rect
+                    x="14"
+                    y="86"
+                    width="150"
+                    height="62"
+                    rx="10"
+                    fill="var(--surface-2)"
+                    stroke="var(--grid)"
+                    stroke-width="1.5"
+                  ></rect>
+                  <text
+                    x="89"
+                    y="112"
+                    text-anchor="middle"
+                    font-weight="700"
+                    fill="var(--text-primary)"
+                  >
+                    Finger
+                  </text>
+                  <text x="89" y="130" text-anchor="middle" fill="var(--text-secondary)">
+                    at real y 778
+                  </text>
+                </g>
+
+                <g>
+                  <rect
+                    x="188"
+                    y="86"
+                    width="164"
+                    height="62"
+                    rx="10"
+                    fill="color-mix(in srgb, var(--series-2) 15%, var(--surface-1))"
+                    stroke="var(--series-2)"
+                    stroke-width="2.5"
+                  ></rect>
+                  <text
+                    x="270"
+                    y="110"
+                    text-anchor="middle"
+                    font-weight="700"
+                    fill="var(--text-primary)"
+                  >
+                    WebView inset
+                  </text>
+                  <text x="270" y="128" text-anchor="middle" fill="var(--text-secondary)">
+                    subtracts 32px
+                  </text>
+                </g>
+
+                <g>
+                  <rect
+                    x="376"
+                    y="86"
+                    width="164"
+                    height="62"
+                    rx="10"
+                    fill="var(--surface-2)"
+                    stroke="var(--grid)"
+                    stroke-width="1.5"
+                  ></rect>
+                  <text
+                    x="458"
+                    y="110"
+                    text-anchor="middle"
+                    font-weight="700"
+                    fill="var(--text-primary)"
+                  >
+                    PointerEvent
+                  </text>
+                  <text x="458" y="128" text-anchor="middle" fill="var(--text-secondary)">
+                    target ✓ · coords ✗
+                  </text>
+                </g>
+
+                <g>
+                  <rect
+                    x="564"
+                    y="86"
+                    width="176"
+                    height="62"
+                    rx="10"
+                    fill="color-mix(in srgb, var(--series-3) 15%, var(--surface-1))"
+                    stroke="var(--series-3)"
+                    stroke-width="2.5"
+                  ></rect>
+                  <text
+                    x="652"
+                    y="110"
+                    text-anchor="middle"
+                    font-weight="700"
+                    fill="var(--text-primary)"
+                  >
+                    eventHitsControl
+                  </text>
+                  <text x="652" y="128" text-anchor="middle" fill="var(--text-secondary)">
+                    used by move() + up()
+                  </text>
+                </g>
+
+                <g>
+                  <rect
+                    x="764"
+                    y="86"
+                    width="150"
+                    height="62"
+                    rx="10"
+                    fill="color-mix(in srgb, var(--series-1) 15%, var(--surface-1))"
+                    stroke="var(--series-1)"
+                    stroke-width="2.5"
+                  ></rect>
+                  <text
+                    x="839"
+                    y="110"
+                    text-anchor="middle"
+                    font-weight="700"
+                    fill="var(--text-primary)"
+                  >
+                    up() decides
+                  </text>
+                  <text x="839" y="128" text-anchor="middle" fill="var(--text-secondary)">
+                    activate or not
+                  </text>
+                </g>
+
+                <!-- arrows -->
+                <g stroke="var(--text-muted)" stroke-width="1.6" fill="none">
+                  <path d="M164 117 h18" marker-end="url(#ar)"></path>
+                  <path d="M352 117 h18" marker-end="url(#ar)"></path>
+                  <path d="M540 117 h18" marker-end="url(#ar)"></path>
+                  <path d="M740 117 h18" marker-end="url(#ar)"></path>
+                </g>
+                <defs>
+                  <marker
+                    id="ar"
+                    viewBox="0 0 8 8"
+                    refX="7"
+                    refY="4"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto"
+                  >
+                    <path d="M0 0 L8 4 L0 8 z" fill="var(--text-muted)"></path>
+                  </marker>
+                </defs>
+
+                <!-- intervention labels above -->
+                <g font-weight="700" font-size="12.5">
+                  <line
+                    x1="270"
+                    y1="60"
+                    x2="270"
+                    y2="84"
+                    stroke="var(--series-2)"
+                    stroke-width="2"
+                  ></line>
+                  <rect
+                    x="196"
+                    y="34"
+                    width="148"
+                    height="26"
+                    rx="7"
+                    fill="var(--series-2)"
+                  ></rect>
+                  <text x="270" y="52" text-anchor="middle" fill="#fff">Option 4 — the cause</text>
+
+                  <line
+                    x1="652"
+                    y1="60"
+                    x2="652"
+                    y2="84"
+                    stroke="var(--series-3)"
+                    stroke-width="2"
+                  ></line>
+                  <rect
+                    x="572"
+                    y="34"
+                    width="160"
+                    height="26"
+                    rx="7"
+                    fill="var(--series-3)"
+                  ></rect>
+                  <text x="652" y="52" text-anchor="middle" fill="#fff">Options 2 &amp; 3</text>
+
+                  <line
+                    x1="839"
+                    y1="60"
+                    x2="839"
+                    y2="84"
+                    stroke="var(--series-1)"
+                    stroke-width="2"
+                  ></line>
+                  <rect
+                    x="772"
+                    y="34"
+                    width="134"
+                    height="26"
+                    rx="7"
+                    fill="var(--series-1)"
+                  ></rect>
+                  <text x="839" y="52" text-anchor="middle" fill="#fff">Option 1</text>
+                </g>
+
+                <!-- the miss -->
+                <g>
+                  <path
+                    d="M652 150 v46"
+                    stroke="var(--critical)"
+                    stroke-width="2"
+                    fill="none"
+                    stroke-dasharray="6 4"
+                  ></path>
+                  <rect
+                    x="470"
+                    y="196"
+                    width="452"
+                    height="66"
+                    rx="10"
+                    fill="color-mix(in srgb, var(--critical) 9%, var(--surface-1))"
+                    stroke="var(--critical)"
+                    stroke-width="1.5"
+                  ></rect>
+                  <text x="490" y="219" font-size="13" font-weight="700" fill="var(--critical)">
+                    Option 1 sits downstream of the drag detector
+                  </text>
+                  <text x="490" y="238" font-size="12.5" fill="var(--text-secondary)">
+                    It fixes up(), but move() has already set dragged = true from the
+                  </text>
+                  <text x="490" y="255" font-size="12.5" fill="var(--text-secondary)">
+                    same bad coordinates. A tap that smudges 12px is still swallowed.
+                  </text>
+                </g>
+
+                <text x="14" y="219" font-size="13" fill="var(--text-secondary)" font-weight="600">
+                  Fix upstream and everything
+                </text>
+                <text x="14" y="237" font-size="13" fill="var(--text-secondary)" font-weight="600">
+                  downstream is correct for free.
+                </text>
+                <text x="14" y="258" font-size="12.5" fill="var(--text-muted)">
+                  Fix downstream and you patch
+                </text>
+                <text x="14" y="274" font-size="12.5" fill="var(--text-muted)">
+                  one symptom at a time.
+                </text>
+              </g>
+            </svg>
+          </figure>
+        </section>
+
+        <!-- ================= OPTIONS ================= -->
+        <section>
+          <h2>The four options</h2>
+          <h3>All four were built, unit-tested, and driven on a real device</h3>
+          <p>
+            Each is a branch off <code>main</code>. Each passed the full 2,050-test unit suite and
+            <code>svelte-check</code>. Each was then built into the native app and driven with
+            trusted XCUITest touch through four on-device scenarios.
+          </p>
+
+          <div class="options">
+            <div class="opt" style="--accent: var(--series-1)">
+              <div class="n">Option 1</div>
+              <h4>Trust the dispatch target</h4>
+              <p>
+                In <code>up()</code>, accept the press when <code>e.target</code> is inside the
+                control, before falling back to the hit test. The browser already told us; stop
+                second-guessing it.
+              </p>
+              <dl>
+                <dt>Where</dt>
+                <dd>App logic</dd>
+                <dt>Source diff</dt>
+                <dd>+12 lines</dd>
+                <dt>Runtime cost</dt>
+                <dd style="color: var(--good)">Saves a layout flush</dd>
+                <dt>On device</dt>
+                <dd style="color: var(--critical)">3 of 4</dd>
+              </dl>
+            </div>
+
+            <div class="opt" style="--accent: var(--series-3)">
+              <div class="n">Option 2</div>
+              <h4>Calibrate the skew away</h4>
+              <p>
+                Every touch fires a pointer event <em>and</em> a touch event for the same contact.
+                Diff them, remember the offset, and correct the pointer coordinates before hit
+                testing.
+              </p>
+              <dl>
+                <dt>Where</dt>
+                <dd>App logic</dd>
+                <dt>Source diff</dt>
+                <dd>+42 lines</dd>
+                <dt>Runtime cost</dt>
+                <dd>2 listeners, per press</dd>
+                <dt>On device</dt>
+                <dd style="color: var(--good)">4 of 4</dd>
+              </dl>
+            </div>
+
+            <div class="opt" style="--accent: var(--series-3)">
+              <div class="n">Option 3</div>
+              <h4>Hit-test with the touch coordinates</h4>
+              <p>
+                Skip the arithmetic and hit-test a touch pointer directly at the position its
+                parallel touch event reports — the one coordinate space that already agrees with
+                layout.
+              </p>
+              <dl>
+                <dt>Where</dt>
+                <dd>App logic</dd>
+                <dt>Source diff</dt>
+                <dd>+34 lines</dd>
+                <dt>Runtime cost</dt>
+                <dd style="color: var(--critical)">touchmove, always on</dd>
+                <dt>On device</dt>
+                <dd style="color: var(--good)">4 of 4</dd>
+              </dl>
+            </div>
+
+            <div class="opt winner" style="--accent: var(--series-2)">
+              <div class="n">Option 4 · winner</div>
+              <h4>Stop the WebView insetting at all</h4>
+              <p>
+                Set <code>ios.contentInset</code> to <code>"never"</code>. The WebView fills the
+                screen, CSS pads for the status bar (it already does), and there is no skew left to
+                compensate for.
+              </p>
+              <dl>
+                <dt>Where</dt>
+                <dd>Platform config</dd>
+                <dt>Source diff</dt>
+                <dd style="color: var(--good)">1 line</dd>
+                <dt>Runtime cost</dt>
+                <dd style="color: var(--good)">None</dd>
+                <dt>On device</dt>
+                <dd style="color: var(--good)">4 of 4</dd>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= RESULTS ================= -->
+        <section>
+          <h2>On-device results</h2>
+          <h3>The fourth scenario is what separates them</h3>
+          <p>
+            The first three scenarios are the bug and its obvious guards. The fourth — the
+            <strong>wiggle tap</strong> — is the one I added after reading the code: press the
+            button, smudge 12px, release, still well inside the 55px target. Exactly what a
+            toddler's finger does.
+          </p>
+
+          <div class="card scroll" style="margin-top: 18px">
+            <table>
+              <thead>
+                <tr>
+                  <th style="min-width: 200px">Scenario</th>
+                  <th>Baseline</th>
+                  <th>Option 1</th>
+                  <th>Option 2</th>
+                  <th>Option 3</th>
+                  <th>Option 4</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="rowlabel">
+                    Undo restores after landscape→portrait<br /><span
+                      style="color: var(--text-muted); font-weight: 400; font-size: 13px"
+                      >the reported bug</span
+                    >
+                  </td>
+                  <td data-s="fail"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">
+                    Undo restores after portrait→landscape<br /><span
+                      style="color: var(--text-muted); font-weight: 400; font-size: 13px"
+                      >regression guard</span
+                    >
+                  </td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                </tr>
+                <tr>
+                  <td class="rowlabel">
+                    Sliding off the button cancels<br /><span
+                      style="color: var(--text-muted); font-weight: 400; font-size: 13px"
+                      >must not over-trigger</span
+                    >
+                  </td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                </tr>
+                <tr class="hl">
+                  <td class="rowlabel">
+                    A tap that smudges 12px still fires<br /><span
+                      style="color: var(--text-muted); font-weight: 400; font-size: 13px"
+                      >the discriminator</span
+                    >
+                  </td>
+                  <td data-s="na"></td>
+                  <td data-s="fail"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                  <td data-s="pass"></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="legend">
+              <span class="pill pass" data-icon>Pass</span>
+              <span class="pill fail" data-icon>Fail</span>
+              <span class="pill na" data-icon>Not run</span>
+              <span style="align-self: center"
+                >Baseline's wiggle case wasn't run — the stationary tap already fails there.</span
+              >
+            </div>
+          </div>
+
+          <div class="callout">
+            <h4>Why option 1 fails the wiggle tap</h4>
+            <p>
+              It only patches <code>up()</code>. By the time <code>up()</code> runs,
+              <code>move()</code> has already seen 12px of travel, asked
+              <code>eventHitsControl()</code> whether the finger is still on the button, been told
+              <em>no</em> (from the same 32px-wrong coordinates), and latched
+              <code>dragged = true</code>. The press is dead before the fix gets a vote.
+            </p>
+            <p style="margin-bottom: 0">
+              This is the failure mode worth dwelling on: option 1 is the smallest diff, passes the
+              bug as filed, and would have looked completely fixed in review. It took writing a
+              scenario the issue never described to catch it.
+            </p>
+          </div>
+        </section>
+
+        <!-- ================= RECOMMENDATION ================= -->
+        <section>
+          <h2>Recommendation</h2>
+          <h3>Option 4 — delete the cause, not the symptom</h3>
+
+          <div class="callout win">
+            <h4>What changes</h4>
+            <pre
+              style="background: var(--surface-1); margin-top: 10px"
+            ><code><span class="cmt">// capacitor.config.json</span>
+  "ios": {
+-   "contentInset": <span class="bad">"always"</span>
++   "contentInset": <span class="ok">"never"</span>
+  }</code></pre>
+          </div>
+
+          <ul class="tight" style="margin-top: 20px">
+            <li>
+              <strong>It fixes everything downstream at once.</strong> Not just
+              <code>scribbleTap</code> — every control, every gesture, and any future code that
+              trusts pointer coordinates. Options 2 and 3 leave the platform lying to us and correct
+              the lie at one call site.
+            </li>
+            <li>
+              <strong>Zero runtime cost, one line of diff.</strong> Option 3 works, but installs a
+              window-level <code>touchmove</code> listener that fires on every move of every stroke —
+              the exact thing our own hot-path rule forbids, in an app whose whole story is stroke
+              latency.
+            </li>
+            <li>
+              <strong>It lands a feature we already built.</strong> The Notch Band now paints on iOS.
+              ADR-0026 designed it, shipped it on Android, and named
+              <code>ios.contentInset</code> as the reason it never worked here — "revisit
+              <code>capacitor.config.json</code> <code>ios.contentInset</code> if the band doesn't
+              extend under the notch."
+            </li>
+          </ul>
+
+          <div class="callout">
+            <h4>Two things to weigh before merging</h4>
+            <p>
+              <strong>It is a visible change.</strong> Every edge-anchored element's relationship to
+              the top of the screen shifts, and the status bar becomes ink-coloured. I verified that
+              on the iPad mini simulator in both orientations only — it wants a look on a physical
+              iPad and an iPhone, both themes, before it ships.
+            </p>
+            <p style="margin-bottom: 0">
+              <strong>It is specific to this source of skew.</strong> If iPadOS windowing later
+              introduces another coordinate mismatch, option 2 would still hold where option 4
+              wouldn't. If the visual change isn't wanted,
+              <strong>option 2 is the runner-up</strong> and is purely internal.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2>Corrections to the issue</h2>
+          <h3>Three claims in 1194 that the measurements contradict</h3>
+          <div class="card">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 42%">The issue says</th>
+                  <th>What was measured</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    "The toolbar's post-rotation layout is still settling when the click is
+                    hit-tested."
+                  </td>
+                  <td>
+                    Layout and hit-testing agree exactly — the button's box is 750–805 and its
+                    hit-test band is 750–802. Nothing is settling. The coordinates are skewed.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    Fix belongs in <code>tiledRendererBlankUndo.test.ts</code>, covering both
+                    rotation directions.
+                  </td>
+                  <td>
+                    The engine, <code>peekTiledUndoPaper()</code> and 1193's code are all healthy.
+                    The regression test belongs in <code>scribbleGuard.test.ts</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>"Undo does not restore the drawing."</td>
+                  <td>
+                    Undo is not special. Every <code>scribbleTap</code> control — save, coloring
+                    books, brush, stroke width — is dead to a portrait touch on iOS native.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <footer>
+          Measured on an iPad mini (A17 Pro) Simulator running iPadOS 26.5, against the native
+          Capacitor app built from <code>main</code> at f7ca7e8f, driven with trusted XCUITest touch
+          through Appium. Four candidate branches: <code>fix/1194-idea1-dispatch-target</code>,
+          <code>-idea2-calibrated-offset</code>, <code>-idea3-touch-coordinates</code>,
+          <code>-idea4-content-inset</code>.
+        </footer>
+      </div>
+    </div>
+
+    <script>
+      const ICONS = {
+        pass: '<path d="M13.5 4.5 6 12 2.5 8.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+        fail: '<path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+        na: '<path d="M3.5 8h9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+      };
+      const LABEL = { pass: 'Pass', fail: 'Fail', na: 'Not run' };
+      const pill = (s) =>
+        `<span class="pill ${s}"><svg viewBox="0 0 16 16" aria-hidden="true">${ICONS[s]}</svg>${LABEL[s]}</span>`;
+
+      for (const cell of document.querySelectorAll('td[data-s]')) {
+        cell.innerHTML = pill(cell.dataset.s);
+      }
+      for (const tag of document.querySelectorAll('.legend .pill[data-icon]')) {
+        const state = tag.classList.contains('pass')
+          ? 'pass'
+          : tag.classList.contains('fail')
+            ? 'fail'
+            : 'na';
+        tag.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true">${ICONS[state]}</svg>${LABEL[state]}`;
+      }
+
+      const root = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      const dark = () => root.getAttribute('data-theme') === 'dark';
+      const sync = () => (toggle.textContent = dark() ? 'Light' : 'Dark');
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        root.setAttribute('data-theme', 'dark');
+      }
+      sync();
+      toggle.addEventListener('click', () => {
+        root.setAttribute('data-theme', dark() ? 'light' : 'dark');
+        sync();
+      });
+    </script>
+  </body>
+</html>
