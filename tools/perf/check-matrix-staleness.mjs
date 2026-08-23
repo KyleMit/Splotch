@@ -21,12 +21,28 @@ import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 
 const DEFAULT_MANIFEST = 'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
 
-// The whole client source tree, because that is what a capture measures. An
-// enumerated scope was tried first and missed by exactly the margin an enumeration
-// always does: gating on `web/src/lib/drawing` reported "current" across a commit
-// that changed DrawingCanvas.svelte and the drawing-audio scheduling, both on the
-// measured interaction path. A tree digest cannot miss a file nobody thought of.
-export const MEASURED_TREE = 'web/src';
+// The product surface a capture actually measures. An enumerated *directory* scope
+// was tried first and missed by the margin an enumeration always does: gating on
+// `web/src/lib/drawing` reported "current" across a commit that changed
+// DrawingCanvas.svelte and drawing-audio scheduling. Widening to `web/src` alone
+// then missed the next one — 105c23bd..a347da5e has an identical `web/src` tree and
+// changes three pencil sound assets, which a drawing capture plays.
+//
+// So the fingerprint spans source, the static assets served with it, and the build
+// inputs that decide what the bundle contains. Two deliberate absences, both for
+// the same reason — a check that fires on changes which cannot move a frame is one
+// people learn to ignore. `web/tests` is excluded because a spec cannot affect the
+// product. `package.json` is excluded in favour of `pnpm-lock.yaml`: the lockfile
+// moves when dependencies do, while package.json also moves for every script
+// added, which would mark every capture stale the next time the harness is
+// touched — including by this campaign's own commits.
+export const MEASURED_SURFACE = [
+  'web/src',
+  'web/static',
+  'web/svelte.config.js',
+  'web/vite.config.ts',
+  'pnpm-lock.yaml',
+];
 
 // Every provenance field a mode carries, so undo and action captures are held to
 // the same standard as drawing rather than going unchecked.
@@ -54,17 +70,17 @@ export function capturedCommits(target) {
   return [...commits];
 }
 
-export function assessManifest(manifest, { treeAt, commitsSince }) {
-  const current = treeAt('HEAD_TREE');
+export function assessManifest(manifest, { surfaceAt, commitsSince }) {
+  const current = surfaceAt('HEAD');
   const rows = [];
   for (const target of manifest.targets ?? []) {
     for (const commit of capturedCommits(target)) {
-      const tree = treeAt(commit);
-      const verdict = !tree ? 'UNVERIFIABLE' : tree === current ? 'current' : 'STALE';
+      const surface = surfaceAt(commit);
+      const verdict = !surface ? 'UNVERIFIABLE' : surface === current ? 'current' : 'STALE';
       rows.push({
         target: target.id,
         capturedAt: commit.slice(0, 12),
-        [`${MEASURED_TREE} tree`]: tree ? tree.slice(0, 12) : '(unreachable)',
+        'measured surface': surface ? surface.slice(0, 12) : '(unreachable)',
         'engine commits since': commitsSince ? commitsSince(commit) : undefined,
         verdict,
       });
@@ -73,30 +89,34 @@ export function assessManifest(manifest, { treeAt, commitsSince }) {
   return rows;
 }
 
-function gitTreeReader(base) {
-  const currentTree = (() => {
+function gitSurfaceReader(base) {
+  const at = (commit, path) => {
     try {
-      return execFileSync('git', ['rev-parse', `${base}:${MEASURED_TREE}`], {
+      return execFileSync('git', ['rev-parse', `${commit}:${path}`], {
         cwd: ROOT,
         encoding: 'utf8',
       }).trim();
     } catch {
-      return null;
+      // The path did not exist at that commit. That is a real difference in the
+      // measured surface, not an unreadable one — the commit itself was already
+      // proven reachable below.
+      return 'absent';
     }
-  })();
-  return (commit) => {
-    if (commit === 'HEAD_TREE') return currentTree;
+  };
+  return (commitOrBase) => {
+    const commit = commitOrBase === 'HEAD' ? base : commitOrBase;
     try {
-      return execFileSync('git', ['rev-parse', `${commit}:${MEASURED_TREE}`], {
+      execFileSync('git', ['rev-parse', '--verify', '--quiet', `${commit}^{commit}`], {
         cwd: ROOT,
         encoding: 'utf8',
-      }).trim();
+      });
     } catch {
       // Unreachable is UNVERIFIABLE, never "current" — a shallow clone makes every
       // lookup fail, and reporting the matrix current there is the failure shape
       // this exists to end.
       return null;
     }
+    return MEASURED_SURFACE.map((path) => `${path}=${at(commit, path)}`).join(' ');
   };
 }
 
@@ -122,7 +142,7 @@ export async function checkMatrixStaleness({
 } = {}) {
   const manifest = JSON.parse(readFileSync(`${ROOT}/${manifestPath}`, 'utf8'));
   const rows = assessManifest(manifest, {
-    treeAt: gitTreeReader(base),
+    surfaceAt: gitSurfaceReader(base),
     commitsSince: engineCommitCounter(base),
   });
   if (!rows.length) {
@@ -144,12 +164,12 @@ export async function checkMatrixStaleness({
   const stale = rows.filter((row) => row.verdict === 'STALE');
   if (stale.length) {
     fail(
-      `${stale.length} target(s) publish a capture taken from ${MEASURED_TREE} that has since ` +
+      `${stale.length} target(s) publish a capture taken from a product surface that has since ` +
         `changed: ${stale.map((row) => `${row.target} (${row.capturedAt})`).join(', ')}. ` +
         'Recapture them, or mark those modes preserved so they stop claiming currency.'
     );
   }
-  console.log(`\n${rows.length} captured cell group(s), all from the current ${MEASURED_TREE}.`);
+  console.log(`\n${rows.length} captured cell group(s), all from the current product surface.`);
   return { rows, stale };
 }
 

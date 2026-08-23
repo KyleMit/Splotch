@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { assessManifest, capturedCommits, modeProvenance } from '../check-matrix-staleness.mjs';
+import {
+  MEASURED_SURFACE,
+  assessManifest,
+  capturedCommits,
+  modeProvenance,
+} from '../check-matrix-staleness.mjs';
 
 const target = (id, modes) => ({ id, modes });
 const captured = (commit) => ({ drawing: { pen: ['a.json'] }, drawingProductCommit: commit });
 const preserved = (commit) => ({ drawing: 'preserved', drawingProductCommit: commit });
 
-// Digest per commit; 'HEAD_TREE' is the branch's current tree.
+// Surface fingerprint per commit; 'HEAD' is the branch's current surface.
 const trees = (byCommit) => (commit) => byCommit[commit] ?? null;
 
 describe('modeProvenance', () => {
@@ -46,7 +51,7 @@ describe('assessManifest', () => {
     const manifest = { targets: [target('ipad-device-web', [captured('410371ea')])] };
 
     const [row] = assessManifest(manifest, {
-      treeAt: trees({ '410371ea': 'oldtree', HEAD_TREE: 'newtree' }),
+      surfaceAt: trees({ '410371ea': 'oldtree', HEAD: 'newtree' }),
       commitsSince: () => 0,
     });
 
@@ -58,7 +63,7 @@ describe('assessManifest', () => {
     const manifest = { targets: [target('mac-chrome', [captured('abc')])] };
 
     const [row] = assessManifest(manifest, {
-      treeAt: trees({ abc: 'sametree', HEAD_TREE: 'sametree' }),
+      surfaceAt: trees({ abc: 'sametree', HEAD: 'sametree' }),
       commitsSince: () => 0,
     });
 
@@ -71,7 +76,7 @@ describe('assessManifest', () => {
     const manifest = { targets: [target('mac-chrome', [captured('gone')])] };
 
     const [row] = assessManifest(manifest, {
-      treeAt: trees({ HEAD_TREE: 'newtree' }),
+      surfaceAt: trees({ HEAD: 'newtree' }),
       commitsSince: () => undefined,
     });
 
@@ -81,6 +86,39 @@ describe('assessManifest', () => {
   it('reports nothing when every target is preserved', () => {
     const manifest = { targets: [target('android-device-web', [preserved('old')])] };
 
-    expect(assessManifest(manifest, { treeAt: trees({}), commitsSince: () => 0 })).toEqual([]);
+    expect(assessManifest(manifest, { surfaceAt: trees({}), commitsSince: () => 0 })).toEqual([]);
+  });
+});
+
+describe('the measured surface', () => {
+  // The regression this covers: gating on the `web/src` tree alone reported
+  // "current" across 105c23bd..a347da5e, whose `web/src` trees are byte-identical
+  // and which changes three pencil sound assets a drawing capture plays.
+  it('includes the static assets a capture exercises', () => {
+    expect(MEASURED_SURFACE).toContain('web/static');
+    expect(MEASURED_SURFACE).toContain('web/src');
+  });
+
+  // Both absences are deliberate: a check that fires on changes which cannot move
+  // a frame is one people learn to ignore.
+  it('excludes specs and package.json, which move without changing the product', () => {
+    expect(MEASURED_SURFACE).not.toContain('web/tests');
+    expect(MEASURED_SURFACE).not.toContain('package.json');
+    expect(MEASURED_SURFACE).toContain('pnpm-lock.yaml');
+  });
+
+  it('calls a capture stale when only a static asset moved', () => {
+    const manifest = { targets: [target('ipad-device-web', [captured('105c23bd')])] };
+
+    const [row] = assessManifest(manifest, {
+      surfaceAt: trees({
+        '105c23bd': 'web/src=same web/static=old',
+        HEAD: 'web/src=same web/static=new',
+      }),
+      commitsSince: () => 0,
+    });
+
+    expect(row.verdict).toBe('STALE');
+    expect(row['engine commits since']).toBe(0);
   });
 });
