@@ -31,11 +31,12 @@ Standalone lookups; none depend on another skill.
 
 ## Performance — interaction matrices and page load
 
-| Skill                    | Measures                                                                                  |
-| ------------------------ | ----------------------------------------------------------------------------------------- |
-| `profiling`              | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)  |
-| `run-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets  |
-| `lighthouse-audit`       | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer |
+| Skill                    | Measures                                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `start-capture-session`  | **Start here for physical-device work** — takes the iPad/Android rig over and proves it will capture |
+| `profiling`              | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)             |
+| `run-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets             |
+| `lighthouse-audit`       | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer            |
 
 ## Audit lifecycle — produce → vet → fix
 

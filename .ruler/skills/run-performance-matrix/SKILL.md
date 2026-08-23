@@ -10,6 +10,10 @@ transport artifacts, simulator results, or stale builds with product behavior.
 
 ## Before running
 
+Physical iPad or Android in scope? **Start with the `start-capture-session` skill.** It takes the
+rig over and proves both devices will actually accept a capture — every other readiness check is
+host-side, which is how a device blocked by Guided Access reports ready while every capture fails.
+
 Read the `profiling` skill completely. Read the `mobile` skill completely when any iOS, Android, or
 Capacitor target is in scope. Read [`references/platforms.md`](references/platforms.md) completely
 before starting a multi-target run or any target whose setup is not already active.
