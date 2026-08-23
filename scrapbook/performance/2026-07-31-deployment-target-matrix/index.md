@@ -66,27 +66,46 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   the requested page viewport.
 * Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is
   the only Safari-calibrated release-gate transport.
-* Raw perf-profiles are local scratch evidence and are not tracked, so every cell is carried forward
+* Raw perf-profiles are local scratch and are mostly untracked, so most cells are carried forward
   from the published normalized results and each run keeps the raw source path it was captured from.
-* The 2026-08-21 physical-iPad cells were captured on ce88c8e587ac45847c419e05ef7a79d282bc747a,
-  which carries the blank-rotation undo fix; every other cell stays pinned to
-  6961e50b685d441e88b37d20d3f38a27136572fb. Those pinned cells were checked rather than assumed: a
-  fresh mac-safari landscape-light action sweep at the newer commit matched the pinned result on all
-  50 labels within 5 ms, the three blank-rotation labels included, so the pinned rows are not stale
-  and were not recaptured. The same labels cost 100-106 ms on the iPad, where resizeCanvas spans a
-  4.7 Mpx canvas rather than a 1512x982 desktop viewport - a device-size effect, not a code
-  regression.
+  The 2026-08-23 physical-iPad and Mac captures are the exception: one capture per target and brush
+  is tracked under perf-profiles/evidence/ per ADR-0138, so those rows can be re-scored offline
+  against a corrected metric instead of recaptured on hardware.
+* Cell provenance as published: the physical-iPad and Mac rows were captured at
+  6e211ddc4f27aed28f4864c7486d4410be44d2b9; the two physical-iPad NATIVE landscape modes remain
+  preserved at ce88c8e587ac45847c419e05ef7a79d282bc747a because their action sweeps could not be
+  captured (issue 1237); every simulator, emulator and physical-Android cell stays pinned to
+  6961e50b685d441e88b37d20d3f38a27136572fb. npm run check:matrix-staleness compares each captured
+  cell's source tree against the branch, so this statement is verified rather than asserted.
 * The android-device-web drawing rows are NOT a measurement of the product. Reproduced on
   2026-08-22, the Appium Android browser transport delivers 46.8 contact moves per second against a
   100-170 fidelity band, at 0.44 moves per frame with pressure and contact geometry both reading
   zero, so its fidelity verdict fails on cadence and contactGeometry. The app is barely driven, and
   lostFrameTimeShare then prices the gaps between sparse input as lost frames -- which is where
-  those rows' 10-12% comes from. Recapturing them needs the split input/measurement transport of
-  ADR-0135 promoted out of scratch; until then read the row as a harness artifact, not a regression.
-* The physical-iPad web rows were recaptured on 2026-08-22 against product commit
-  ae674d71bac62b4c8cbf6130a2b8982289e65c56, 20 of 20 cells with zero retries and every cell passing
-  input fidelity at 115-118 contact moves per second. They are the first rows in this matrix scored
-  under the corrected beat estimator (ADR-0134) and credited charge (ADR-0136).
+  those rows' 10-12% comes from. perf:campaign can now drive this target through the ADR-0135 split
+  transport, which measures 116.6 moves per second on the same phone; recapturing still waits on the
+  Android fidelity thresholds being calibrated from a hand capture (issue 1218), because pressure
+  and contactGeometry are iPad-calibrated and Chrome cannot satisfy them. Until then read the row as
+  a harness artifact, not a regression.
+* The physical-iPad web rows were recaptured on 2026-08-23 against product commit
+  6e211ddc4f27aed28f4864c7486d4410be44d2b9, 20 of 20 cells with zero retries and every cell passing
+  input fidelity at 115-119 contact moves per second. The 2026-08-22 pass at
+  ae674d71bac62b4c8cbf6130a2b8982289e65c56 was superseded rather than kept: four further commits to
+  web/src/lib/drawing landed that evening, and landscape-light crayon moved from a worst paint frame
+  of 65 ms to 46 ms across them. A red cell can be a faithful measurement of a build nobody runs.
+* Every physical-iPad NATIVE drawing cell is rendered unscoreable rather than as a product pass or
+  fail. Each capture fails input fidelity on `coalescing`, which requires zero coalesced samples per
+  pointermove -- a description of Safari, not of faithful input: measured the same night, the
+  WKWebView reports 1.05 coalesced samples per move against Safari's 0 at an identical 118.2 contact
+  moves per second. The previously published native evidence carries the same failed verdict, so
+  this is long-standing rather than new, but matching the old evidence establishes consistent
+  provenance and not valid measurement. Issue 1234 tracks calibrating the check per runtime; until
+  then the numbers are shown with the failed check named and are not scored.
+* The three Mac engines are not driven at the same input cadence: Chromium and Firefox deliver
+  119.9-120.1 contact moves per second, Playwright WebKit 60.0-60.1. Both are stable and both
+  reproduce their previously published numbers, so this is long-standing rather than new -- but
+  mac-safari reading clean is partly a statement about how hard it was driven, and the three desktop
+  rows are not strictly comparable to each other.
 * 26 cells carry results preserved from data.json rather than re-read raw captures: Raw captures
   land in gitignored perf-profiles scratch on the capture host, so no campaign's raw input survives
   in a clean checkout: the 2026-08-20 scratch is gone from the workstation, and the 2026-08-21
@@ -186,52 +205,52 @@ Each cell is blank-paper paint `P95 / P99 / max` in milliseconds, followed by th
 lost-frame share of in-contact time. Every target retains separate portrait/landscape and light/dark
 rows.
 
-| Target                                           | Pen                                | Crayon                              | Magic                              | Eraser                               |
-| ------------------------------------------------ | ---------------------------------- | ----------------------------------- | ---------------------------------- | ------------------------------------ |
-| 1. iPad physical · web · Portrait · Light        | 16 / 22 / 35 · L0.7%               | 16 / 23 / 48 · L1.3%                | 16 / 20 / 34 · L0.6%               | 16 / 20 / 35 · L0.4%                 |
-| 1. iPad physical · web · Portrait · Dark         | 16 / 22 / 35 · L0.8%               | 16 / 22 / 45 · L1.1%                | 15 / 19 / 34 · L0.6%               | 16 / 21 / 42 · L0.6%                 |
-| 1. iPad physical · web · Landscape · Light       | 15 / 22 / 36 · L0.9%               | 15 / 23 / 46 · L1.1%                | 15 / 20 / 41 · L0.6%               | 16 / 20 / 34 · L0.4%                 |
-| 1. iPad physical · web · Landscape · Dark        | 15 / 21 / 42 · L0.8%               | 16 / 22 / 47 · L1.1%                | 16 / 20 / 33 · L0.5%               | 16 / 20 / 33 · L0.5%                 |
-| 2. iPad physical · native · Portrait · Light     | 15 / 16 / 33 · L0.0%               | **FAIL 16 / 27 / 87 · L2.1%**       | 15 / 16 / 37 · L0.0%               | 15 / 17 / 21 · L0%                   |
-| 2. iPad physical · native · Portrait · Dark      | 15 / 16 / 33 · L0.0%               | **FAIL 16 / 27 / 62 · L2.0%**       | 15 / 17 / 43 · L0.1%               | 16 / 17 / 30 · L0.0%                 |
-| 2. iPad physical · native · Landscape · Light    | 15 / 16 / 24 · L0.0%               | **FAIL 16 / 24 / 62 · L2%**         | 15 / 16 / 28 · L0.0%               | 16 / 17 / 21 · L0.2%                 |
-| 2. iPad physical · native · Landscape · Dark     | 16 / 16 / 41 · L0.1%               | **FAIL 16 / 25 / 76 · L2.1%**       | 15 / 16 / 33 · L0.1%               | 15 / 16 / 21 · L0.2%                 |
-| 3. iPad simulator · web · Portrait · Light       | **FAIL 11 / 16 / 21 · L2.1%**      | 16 / 17 / 21 · L0.1%                | 6 / 9 / 24 · L0.9%                 | **FAIL 7 / 11 / 14 · L1.3%**         |
-| 3. iPad simulator · web · Portrait · Dark        | 10 / 13 / 22 · L0.8%               | 7 / 8 / 21 · L0.2%                  | 13 / 15 / 21 · L0.4%               | 16 / 18 / 40 · L0.4%                 |
-| 3. iPad simulator · web · Landscape · Light      | **FAIL 16 / 20 / 23 · L1.1%**      | 15 / 17 / 21 · L0.0%                | 15 / 17 / 21 · L0.7%               | 16 / 19 / 22 · L0.5%                 |
-| 3. iPad simulator · web · Landscape · Dark       | **FAIL 8 / 13 / 15 · L1.5%**       | 12 / 15 / 21 · L0.0%                | **FAIL 7 / 11 / 13 · L1.4%**       | **FAIL 8 / 12 / 17 · L1.2%**         |
-| 4. iPad simulator · native · Portrait · Light    | 10 / 13 / 17 · L0.0%               | 13 / 17 / 24 · L0.1%                | 16 / 18 / 23 · L0.0%               | 17 / 18 / 20 · L0.0%                 |
-| 4. iPad simulator · native · Portrait · Dark     | 14 / 15 / 23 · L0.1%               | 10 / 15 / 29 · L0.1%                | 16 / 18 / 22 · L0.0%               | 13 / 15 / 19 · L0%                   |
-| 4. iPad simulator · native · Landscape · Light   | 4 / 6 / 18 · L0.0%                 | 11 / 19 / 28 · L0.4%                | 16 / 17 / 23 · L0.0%               | 12 / 14 / 21 · L0.0%                 |
-| 4. iPad simulator · native · Landscape · Dark    | 15 / 16 / 29 · L0.0%               | 13 / 20 / 24 · L0.1%                | 10 / 11 / 15 · L0%                 | 5 / 8 / 11 · L0%                     |
-| 5. Android physical · web · Portrait · Light     | **FAIL 7.9 / 8.2 / 13.6 · L10.1%** | **FAIL 8 / 8.2 / 11 · L11.9%**      | **FAIL 7.9 / 8.2 / 13.8 · L12.0%** | **FAIL 15.8 / 16.4 / 16.6 · L31.7%** |
-| 5. Android physical · web · Portrait · Dark      | **FAIL 7.9 / 8.2 / 15.4 · L9.8%**  | **FAIL 7.9 / 8.2 / 13.8 · L11.7%**  | **FAIL 7.9 / 8.2 / 13 · L12.0%**   | **FAIL 15.4 / 16.3 / 18.8 · L31.6%** |
-| 5. Android physical · web · Landscape · Light    | **FAIL 7.8 / 8.2 / 10.4 · L10.3%** | **FAIL 7.9 / 8.2 / 16.3 · L10.4%**  | **FAIL 8 / 8.2 / 11.5 · L10.5%**   | **FAIL 15.7 / 16.4 / 20.1 · L30.7%** |
-| 5. Android physical · web · Landscape · Dark     | **FAIL 7.9 / 8.2 / 8.3 · L10.3%**  | **FAIL 7.9 / 8.3 / 19.9 · L11.3%**  | **FAIL 7.9 / 8.2 / 12.5 · L10.3%** | **FAIL 15.6 / 16.4 / 16.7 · L30.9%** |
-| 6. Android physical · native · Portrait · Light  | 8 / 8.2 / 8.4 · L0%                | 7.9 / 8.2 / 8.3 · L0.0%             | 7.8 / 8.2 / 8.3 · L0.0%            | 7.9 / 8.2 / 8.3 · L0.0%              |
-| 6. Android physical · native · Portrait · Dark   | 7.9 / 8.2 / 8.4 · L0%              | 7.9 / 8.2 / 8.3 · L0%               | 7.8 / 8.2 / 8.3 · L0.0%            | 7.7 / 8.2 / 8.3 · L0%                |
-| 6. Android physical · native · Landscape · Light | 7.9 / 8.2 / 8.3 · L0%              | 7.8 / 8.2 / 8.4 · L0.0%             | 7.8 / 8.2 / 8.4 · L0.0%            | 7.9 / 8.2 / 8.3 · L0%                |
-| 6. Android physical · native · Landscape · Dark  | 7.9 / 8.2 / 8.3 · L0%              | 7.9 / 8.2 / 8.3 · L0.0%             | 7.9 / 8.2 / 8.3 · L0%              | 7.9 / 8.2 / 8.4 · L0%                |
-| 7. Android emulator · web · Portrait · Light     | 14.4 / 14.7 / 15.7 · L0.6%         | 16.2 / 16.2 / 16.5 · L0.0%          | 14.8 / 15.9 / 16.2 · L0.1%         | 16.1 / 16.2 / 16.5 · L0.5%           |
-| 7. Android emulator · web · Portrait · Dark      | 16.1 / 16.2 / 16.5 · L0%           | 15.8 / 15.9 / 16.2 · L0%            | 15.1 / 16 / 16.1 · L0%             | 15.7 / 15.8 / 16.1 · L0%             |
-| 7. Android emulator · web · Landscape · Light    | 16.6 / 16.7 / 16.7 · L0%           | 15.7 / 15.8 / 16.1 · L0%            | 15.1 / 16.1 / 16.4 · L0%           | 14.7 / 16 / 16 · L0%                 |
-| 7. Android emulator · web · Landscape · Dark     | 16.4 / 16.4 / 16.4 · L0.0%         | **FAIL 14.7 / 16.1 / 49.3 · L1.2%** | 16 / 16 / 16.3 · L0.0%             | 15.7 / 16.6 / 16.7 · L0.1%           |
-| 8. Android emulator · native · Portrait · Light  | 15.3 / 15.7 / 16.7 · L0%           | 15.7 / 15.7 / 16.1 · L0%            | 15.3 / 16.3 / 16.4 · L0%           | 16 / 16.3 / 16.4 · L0%               |
-| 8. Android emulator · native · Portrait · Dark   | 15.3 / 16.3 / 16.7 · L0%           | 16.1 / 16.4 / 16.4 · L0%            | 15.3 / 16.3 / 16.7 · L0%           | 15.7 / 16 / 16.7 · L0%               |
-| 8. Android emulator · native · Landscape · Light | 15.9 / 16.3 / 16.3 · L0%           | 15.3 / 16.3 / 16.6 · L0%            | 16.3 / 16.3 / 16.6 · L0%           | 16 / 16.3 / 16.4 · L0%               |
-| 8. Android emulator · native · Landscape · Dark  | 16.1 / 16.2 / 16.5 · L0%           | 15.7 / 16 / 16 · L0%                | 15.5 / 16.2 / 16.6 · L0%           | 15.9 / 16 / 16 · L0%                 |
-| 9. Mac · Chrome · Portrait · Light               | 9.4 / 10.2 / 10.3 · L0%            | 9.8 / 10.1 / 10.2 · L0%             | 9.8 / 10.1 / 10.2 · L0%            | 9.7 / 10.1 / 10.2 · L0%              |
-| 9. Mac · Chrome · Portrait · Dark                | 9.6 / 10.1 / 10.2 · L0%            | 9.9 / 10.1 / 10.1 · L0%             | 9.4 / 10.1 / 10.3 · L0%            | 9.6 / 10.1 / 10.2 · L0%              |
-| 9. Mac · Chrome · Landscape · Light              | 9.6 / 10.1 / 10.2 · L0%            | 9.8 / 10.1 / 10.2 · L0%             | 9.6 / 10.1 / 10.2 · L0%            | 9.7 / 10.1 / 10.2 · L0%              |
-| 9. Mac · Chrome · Landscape · Dark               | 9.7 / 10.1 / 10.2 · L0%            | 9.9 / 10.1 / 10.2 · L0%             | 9.5 / 10.1 / 10.2 · L0%            | 9.7 / 10.1 / 10.2 · L0%              |
-| 10. Mac · Safari · Portrait · Light              | 17 / 18 / 19 · L0%                 | 16 / 18 / 18 · L0%                  | 17 / 18 / 18 · L0%                 | 15 / 18 / 18 · L0%                   |
-| 10. Mac · Safari · Portrait · Dark               | 16 / 18 / 18 · L0%                 | 17 / 18 / 18 · L0%                  | 16 / 18 / 18 · L0%                 | 16 / 18 / 18 · L0%                   |
-| 10. Mac · Safari · Landscape · Light             | 15 / 18 / 18 · L0%                 | 17 / 18 / 18 · L0%                  | 15 / 18 / 19 · L0%                 | 0 / 17 / 18 · L0%                    |
-| 10. Mac · Safari · Landscape · Dark              | 16 / 18 / 18 · L0%                 | 16 / 18 / 18 · L0%                  | 17 / 18 / 18 · L0%                 | 17 / 18 / 18 · L0%                   |
-| 11. Mac · Firefox · Portrait · Light             | 9.3 / 9.9 / 10.1 · L0%             | 9.4 / 9.8 / 10.2 · L0%              | 9.3 / 9.9 / 10.2 · L0%             | 9.3 / 9.9 / 10.3 · L0%               |
-| 11. Mac · Firefox · Portrait · Dark              | 9.5 / 9.9 / 10.2 · L0%             | 9.4 / 10.0 / 10.1 · L0%             | 9.4 / 9.9 / 10.3 · L0%             | 9.3 / 10.0 / 10.3 · L0%              |
-| 11. Mac · Firefox · Landscape · Light            | 9.4 / 9.8 / 10.2 · L0%             | 9.2 / 9.8 / 10.1 · L0%              | 9.4 / 10.0 / 10.1 · L0%            | 9.5 / 10.0 / 10.2 · L0%              |
-| 11. Mac · Firefox · Landscape · Dark             | 9.3 / 10 / 10.0 · L0%              | 9.3 / 10.0 / 10.3 · L0%             | 9.5 / 10.1 / 10.2 · L0%            | 9.4 / 10.0 / 10.1 · L0%              |
+| Target                                           | Pen                                              | Crayon                                           | Magic                                            | Eraser                                           |
+| ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ |
+| 1. iPad physical · web · Portrait · Light        | 16 / 22 / 35 · L0.7%                             | 16 / 23 / 48 · L1.3%                             | 16 / 20 / 34 · L0.6%                             | 16 / 20 / 35 · L0.4%                             |
+| 1. iPad physical · web · Portrait · Dark         | 16 / 22 / 35 · L0.8%                             | 16 / 22 / 45 · L1.1%                             | 15 / 19 / 34 · L0.6%                             | 16 / 21 / 42 · L0.6%                             |
+| 1. iPad physical · web · Landscape · Light       | 15 / 22 / 36 · L0.9%                             | 15 / 23 / 46 · L1.1%                             | 15 / 20 / 41 · L0.6%                             | 16 / 20 / 34 · L0.4%                             |
+| 1. iPad physical · web · Landscape · Dark        | 15 / 21 / 42 · L0.8%                             | 16 / 22 / 47 · L1.1%                             | 16 / 20 / 33 · L0.5%                             | 16 / 20 / 33 · L0.5%                             |
+| 2. iPad physical · native · Portrait · Light     | *unscoreable (coalescing)*: 15 / 16 / 33 · L0.0% | *unscoreable (coalescing)*: 16 / 27 / 87 · L2.1% | *unscoreable (coalescing)*: 15 / 16 / 37 · L0.0% | *unscoreable (coalescing)*: 15 / 17 / 21 · L0%   |
+| 2. iPad physical · native · Portrait · Dark      | *unscoreable (coalescing)*: 15 / 16 / 33 · L0.0% | *unscoreable (coalescing)*: 16 / 27 / 62 · L2.0% | *unscoreable (coalescing)*: 15 / 17 / 43 · L0.1% | *unscoreable (coalescing)*: 16 / 17 / 30 · L0.0% |
+| 2. iPad physical · native · Landscape · Light    | 15 / 16 / 24 · L0.0%                             | **FAIL 16 / 24 / 62 · L2%**                      | 15 / 16 / 28 · L0.0%                             | 16 / 17 / 21 · L0.2%                             |
+| 2. iPad physical · native · Landscape · Dark     | 16 / 16 / 41 · L0.1%                             | **FAIL 16 / 25 / 76 · L2.1%**                    | 15 / 16 / 33 · L0.1%                             | 15 / 16 / 21 · L0.2%                             |
+| 3. iPad simulator · web · Portrait · Light       | **FAIL 11 / 16 / 21 · L2.1%**                    | 16 / 17 / 21 · L0.1%                             | 6 / 9 / 24 · L0.9%                               | **FAIL 7 / 11 / 14 · L1.3%**                     |
+| 3. iPad simulator · web · Portrait · Dark        | 10 / 13 / 22 · L0.8%                             | 7 / 8 / 21 · L0.2%                               | 13 / 15 / 21 · L0.4%                             | 16 / 18 / 40 · L0.4%                             |
+| 3. iPad simulator · web · Landscape · Light      | **FAIL 16 / 20 / 23 · L1.1%**                    | 15 / 17 / 21 · L0.0%                             | 15 / 17 / 21 · L0.7%                             | 16 / 19 / 22 · L0.5%                             |
+| 3. iPad simulator · web · Landscape · Dark       | **FAIL 8 / 13 / 15 · L1.5%**                     | 12 / 15 / 21 · L0.0%                             | **FAIL 7 / 11 / 13 · L1.4%**                     | **FAIL 8 / 12 / 17 · L1.2%**                     |
+| 4. iPad simulator · native · Portrait · Light    | 10 / 13 / 17 · L0.0%                             | 13 / 17 / 24 · L0.1%                             | 16 / 18 / 23 · L0.0%                             | 17 / 18 / 20 · L0.0%                             |
+| 4. iPad simulator · native · Portrait · Dark     | 14 / 15 / 23 · L0.1%                             | 10 / 15 / 29 · L0.1%                             | 16 / 18 / 22 · L0.0%                             | 13 / 15 / 19 · L0%                               |
+| 4. iPad simulator · native · Landscape · Light   | 4 / 6 / 18 · L0.0%                               | 11 / 19 / 28 · L0.4%                             | 16 / 17 / 23 · L0.0%                             | 12 / 14 / 21 · L0.0%                             |
+| 4. iPad simulator · native · Landscape · Dark    | 15 / 16 / 29 · L0.0%                             | 13 / 20 / 24 · L0.1%                             | 10 / 11 / 15 · L0%                               | 5 / 8 / 11 · L0%                                 |
+| 5. Android physical · web · Portrait · Light     | **FAIL 7.9 / 8.2 / 13.6 · L10.1%**               | **FAIL 8 / 8.2 / 11 · L11.9%**                   | **FAIL 7.9 / 8.2 / 13.8 · L12.0%**               | **FAIL 15.8 / 16.4 / 16.6 · L31.7%**             |
+| 5. Android physical · web · Portrait · Dark      | **FAIL 7.9 / 8.2 / 15.4 · L9.8%**                | **FAIL 7.9 / 8.2 / 13.8 · L11.7%**               | **FAIL 7.9 / 8.2 / 13 · L12.0%**                 | **FAIL 15.4 / 16.3 / 18.8 · L31.6%**             |
+| 5. Android physical · web · Landscape · Light    | **FAIL 7.8 / 8.2 / 10.4 · L10.3%**               | **FAIL 7.9 / 8.2 / 16.3 · L10.4%**               | **FAIL 8 / 8.2 / 11.5 · L10.5%**                 | **FAIL 15.7 / 16.4 / 20.1 · L30.7%**             |
+| 5. Android physical · web · Landscape · Dark     | **FAIL 7.9 / 8.2 / 8.3 · L10.3%**                | **FAIL 7.9 / 8.3 / 19.9 · L11.3%**               | **FAIL 7.9 / 8.2 / 12.5 · L10.3%**               | **FAIL 15.6 / 16.4 / 16.7 · L30.9%**             |
+| 6. Android physical · native · Portrait · Light  | 8 / 8.2 / 8.4 · L0%                              | 7.9 / 8.2 / 8.3 · L0.0%                          | 7.8 / 8.2 / 8.3 · L0.0%                          | 7.9 / 8.2 / 8.3 · L0.0%                          |
+| 6. Android physical · native · Portrait · Dark   | 7.9 / 8.2 / 8.4 · L0%                            | 7.9 / 8.2 / 8.3 · L0%                            | 7.8 / 8.2 / 8.3 · L0.0%                          | 7.7 / 8.2 / 8.3 · L0%                            |
+| 6. Android physical · native · Landscape · Light | 7.9 / 8.2 / 8.3 · L0%                            | 7.8 / 8.2 / 8.4 · L0.0%                          | 7.8 / 8.2 / 8.4 · L0.0%                          | 7.9 / 8.2 / 8.3 · L0%                            |
+| 6. Android physical · native · Landscape · Dark  | 7.9 / 8.2 / 8.3 · L0%                            | 7.9 / 8.2 / 8.3 · L0.0%                          | 7.9 / 8.2 / 8.3 · L0%                            | 7.9 / 8.2 / 8.4 · L0%                            |
+| 7. Android emulator · web · Portrait · Light     | 14.4 / 14.7 / 15.7 · L0.6%                       | 16.2 / 16.2 / 16.5 · L0.0%                       | 14.8 / 15.9 / 16.2 · L0.1%                       | 16.1 / 16.2 / 16.5 · L0.5%                       |
+| 7. Android emulator · web · Portrait · Dark      | 16.1 / 16.2 / 16.5 · L0%                         | 15.8 / 15.9 / 16.2 · L0%                         | 15.1 / 16 / 16.1 · L0%                           | 15.7 / 15.8 / 16.1 · L0%                         |
+| 7. Android emulator · web · Landscape · Light    | 16.6 / 16.7 / 16.7 · L0%                         | 15.7 / 15.8 / 16.1 · L0%                         | 15.1 / 16.1 / 16.4 · L0%                         | 14.7 / 16 / 16 · L0%                             |
+| 7. Android emulator · web · Landscape · Dark     | 16.4 / 16.4 / 16.4 · L0.0%                       | **FAIL 14.7 / 16.1 / 49.3 · L1.2%**              | 16 / 16 / 16.3 · L0.0%                           | 15.7 / 16.6 / 16.7 · L0.1%                       |
+| 8. Android emulator · native · Portrait · Light  | 15.3 / 15.7 / 16.7 · L0%                         | 15.7 / 15.7 / 16.1 · L0%                         | 15.3 / 16.3 / 16.4 · L0%                         | 16 / 16.3 / 16.4 · L0%                           |
+| 8. Android emulator · native · Portrait · Dark   | 15.3 / 16.3 / 16.7 · L0%                         | 16.1 / 16.4 / 16.4 · L0%                         | 15.3 / 16.3 / 16.7 · L0%                         | 15.7 / 16 / 16.7 · L0%                           |
+| 8. Android emulator · native · Landscape · Light | 15.9 / 16.3 / 16.3 · L0%                         | 15.3 / 16.3 / 16.6 · L0%                         | 16.3 / 16.3 / 16.6 · L0%                         | 16 / 16.3 / 16.4 · L0%                           |
+| 8. Android emulator · native · Landscape · Dark  | 16.1 / 16.2 / 16.5 · L0%                         | 15.7 / 16 / 16 · L0%                             | 15.5 / 16.2 / 16.6 · L0%                         | 15.9 / 16 / 16 · L0%                             |
+| 9. Mac · Chrome · Portrait · Light               | 9.4 / 10.2 / 10.3 · L0%                          | 9.8 / 10.1 / 10.2 · L0%                          | 9.8 / 10.1 / 10.2 · L0%                          | 9.7 / 10.1 / 10.2 · L0%                          |
+| 9. Mac · Chrome · Portrait · Dark                | 9.6 / 10.1 / 10.2 · L0%                          | 9.9 / 10.1 / 10.1 · L0%                          | 9.4 / 10.1 / 10.3 · L0%                          | 9.6 / 10.1 / 10.2 · L0%                          |
+| 9. Mac · Chrome · Landscape · Light              | 9.6 / 10.1 / 10.2 · L0%                          | 9.8 / 10.1 / 10.2 · L0%                          | 9.6 / 10.1 / 10.2 · L0%                          | 9.7 / 10.1 / 10.2 · L0%                          |
+| 9. Mac · Chrome · Landscape · Dark               | 9.7 / 10.1 / 10.2 · L0%                          | 9.9 / 10.1 / 10.2 · L0%                          | 9.5 / 10.1 / 10.2 · L0%                          | 9.7 / 10.1 / 10.2 · L0%                          |
+| 10. Mac · Safari · Portrait · Light              | 17 / 18 / 19 · L0%                               | 16 / 18 / 18 · L0%                               | 17 / 18 / 18 · L0%                               | 15 / 18 / 18 · L0%                               |
+| 10. Mac · Safari · Portrait · Dark               | 16 / 18 / 18 · L0%                               | 17 / 18 / 18 · L0%                               | 16 / 18 / 18 · L0%                               | 16 / 18 / 18 · L0%                               |
+| 10. Mac · Safari · Landscape · Light             | 15 / 18 / 18 · L0%                               | 17 / 18 / 18 · L0%                               | 15 / 18 / 19 · L0%                               | 0 / 17 / 18 · L0%                                |
+| 10. Mac · Safari · Landscape · Dark              | 16 / 18 / 18 · L0%                               | 16 / 18 / 18 · L0%                               | 17 / 18 / 18 · L0%                               | 17 / 18 / 18 · L0%                               |
+| 11. Mac · Firefox · Portrait · Light             | 9.3 / 9.9 / 10.1 · L0%                           | 9.4 / 9.8 / 10.2 · L0%                           | 9.3 / 9.9 / 10.2 · L0%                           | 9.3 / 9.9 / 10.3 · L0%                           |
+| 11. Mac · Firefox · Portrait · Dark              | 9.5 / 9.9 / 10.2 · L0%                           | 9.4 / 10.0 / 10.1 · L0%                          | 9.4 / 9.9 / 10.3 · L0%                           | 9.3 / 10.0 / 10.3 · L0%                          |
+| 11. Mac · Firefox · Landscape · Light            | 9.4 / 9.8 / 10.2 · L0%                           | 9.2 / 9.8 / 10.1 · L0%                           | 9.4 / 10.0 / 10.1 · L0%                          | 9.5 / 10.0 / 10.2 · L0%                          |
+| 11. Mac · Firefox · Landscape · Dark             | 9.3 / 10 / 10.0 · L0%                            | 9.3 / 10.0 / 10.3 · L0%                          | 9.5 / 10.1 / 10.2 · L0%                          | 9.4 / 10.0 / 10.1 · L0%                          |
 
 ## Undo
 

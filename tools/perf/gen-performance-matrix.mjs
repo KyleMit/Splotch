@@ -142,10 +142,18 @@ function normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateS
   validateCaptureMode(profile, mode, source);
   const phases = profile.report ? summarizeRun(profile.report).phases : profile.summaries?.phases;
   const scored = scoreDrawingRun(phases ?? [], gateShare);
+  const failedFidelityChecks = Object.entries(profile.fidelity?.checks ?? {})
+    .filter(([, passed]) => !passed)
+    .map(([check]) => check);
   return {
     source,
     productCommit,
     fidelity: profile.fidelity ?? null,
+    // A capture whose input fidelity failed is not a product pass or fail — the
+    // capture runner's own contract calls it unscoreable, and rendering it as an
+    // ordinary measurement launders a rejected input path into a product claim.
+    scoreable: profile.fidelity?.passed !== false,
+    failedFidelityChecks,
     phases: scored.phases.map((phase) => ({
       phase: phase.phase,
       paint: normalizedDistribution(phase.paint),
@@ -179,6 +187,10 @@ function aggregateDrawingRuns(runs) {
     lostFrameTimeShare: roundShare(maximum(blankPhases.map((phase) => phase.lostFrameTimeShare))),
     blankPassed: blankPhases.length > 0 && blankPhases.every((phase) => phase.passed),
     allPhasesPassed: runs.length > 0 && runs.every((run) => run.passed),
+    scoreable: runs.length > 0 && runs.every((run) => run.scoreable !== false),
+    failedFidelityChecks: [
+      ...new Set(runs.flatMap((run) => run.failedFidelityChecks ?? [])),
+    ].sort(),
   };
 }
 
@@ -795,6 +807,13 @@ function renderMarkdown(matrix) {
         const aggregate = target.drawing[brush].aggregate;
         if (!drawingAggregateAvailable(aggregate)) return 'Unavailable: not measured';
         const value = `${fmt(aggregate.paint.p95)} / ${fmt(aggregate.paint.p99)} / ${fmt(aggregate.paint.max)} · L${fmtPercent(aggregate.lostFrameTimeShare)}`;
+        // Unscoreable is neither Pass nor FAIL. Every sample behind this cell
+        // failed its input-fidelity gate, so the number describes an input path
+        // the runner rejects; the failed check is named so the reader can see
+        // which one rather than inferring it from a target-level advisory label.
+        if (aggregate.scoreable === false) {
+          return `_unscoreable (${aggregate.failedFidelityChecks.join(', ')})_: ${value}`;
+        }
         return aggregate.blankPassed ? value : `**FAIL ${value}**`;
       }),
     ];
@@ -943,16 +962,19 @@ function releaseGateSentence(matrix) {
   }
 
   const aggregates = gateAggregates(gate);
-  const failing = aggregates.filter(
+  const scoreable = aggregates.filter((aggregate) => aggregate.scoreable !== false);
+  const unscoreable = aggregates.length - scoreable.length;
+  const failing = scoreable.filter(
     (aggregate) => (aggregate.allPhasesPassed ?? aggregate.blankPassed) === false
   ).length;
   const coverage = `${captured}/${gate.modes.length} modes captured`;
-  const verdict = !aggregates.length
+  const verdict = !scoreable.length
     ? 'no drawing aggregate scored'
     : failing
-      ? `${failing} of ${aggregates.length} brush aggregates over gate`
-      : `all ${aggregates.length} brush aggregates inside gate`;
-  return `${gate.label} is the calibrated release gate — ${coverage}, ${verdict}.`;
+      ? `${failing} of ${scoreable.length} brush aggregates over gate`
+      : `all ${scoreable.length} brush aggregates inside gate`;
+  const caveat = unscoreable ? `, ${unscoreable} unscoreable (failed input fidelity)` : '';
+  return `${gate.label} is the calibrated release gate — ${coverage}, ${verdict}${caveat}.`;
 }
 
 const EXTRA_CSS = `
