@@ -12,6 +12,8 @@ import {
   summarizeActions,
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
+import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -175,11 +177,20 @@ function validateCaptureMode(profile, mode, source) {
   }
 }
 
-function normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare) {
+function normalizeDrawingRun(
+  source,
+  productCommit,
+  sourceDirectory,
+  mode,
+  gateShare,
+  expectedRefreshRegime
+) {
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
-  const phases = profile.report ? summarizeRun(profile.report).phases : profile.summaries?.phases;
+  const summaries = profile.report ? summarizeRun(profile.report) : profile.summaries;
+  const phases = summaries?.phases;
   const scored = scoreDrawingRun(phases ?? [], gateShare);
+  const refreshRegime = refreshRegimeVerdict(summaries?.intervalMs, expectedRefreshRegime);
   const failedFidelityChecks = Object.entries(profile.fidelity?.checks ?? {})
     .filter(([, passed]) => !passed)
     .map(([check]) => check);
@@ -187,10 +198,18 @@ function normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateS
     source,
     productCommit,
     fidelity: profile.fidelity ?? null,
+    // Published so a cell can be audited for the regime it was scored against.
+    // Preserved cells carry normalized results and no beat, which is exactly why a
+    // 6x-wrong number could not be told from a real one after the fact.
+    refreshRegime,
     // A capture whose input fidelity failed is not a product pass or fail — the
     // capture runner's own contract calls it unscoreable, and rendering it as an
-    // ordinary measurement launders a rejected input path into a product claim.
-    scoreable: profile.fidelity?.passed !== false,
+    // ordinary measurement launders a rejected input path into a product claim. A
+    // capture measured at the other refresh rate is unscoreable for the neighbouring
+    // reason: the gates are 60 Hz-calibrated (ADR-0085) and lostFrameTimeShare
+    // prices frames against the observed beat, so the same drawing charged against
+    // 8.3 ms instead of 16.7 ms reads as a catastrophe.
+    scoreable: profile.fidelity?.passed !== false && refreshRegime.matched,
     failedFidelityChecks,
     phases: scored.phases.map((phase) => ({
       phase: phase.phase,
@@ -229,7 +248,26 @@ function aggregateDrawingRuns(runs) {
     failedFidelityChecks: [
       ...new Set(runs.flatMap((run) => run.failedFidelityChecks ?? [])),
     ].sort(),
+    // The regime the samples behind this cell were measured in. A cell whose runs
+    // disagree is `mixed`, which is worth seeing on its own: their numbers are not
+    // comparable to each other, let alone to the column.
+    refreshRegime: distinctRefreshRegime(runs),
+    offRefreshRegime: runs.some((run) => run.refreshRegime?.matched === false),
   };
+}
+
+function distinctRefreshRegime(runs) {
+  const observed = [...new Set(runs.map((run) => run.refreshRegime?.observed ?? null))];
+  if (observed.length === 0) return null;
+  return observed.length === 1 ? observed[0] : 'mixed';
+}
+
+// Fidelity and refresh regime are two separate reasons a cell cannot be scored, and
+// a label that named only the first rendered an empty parenthesis for the second.
+function unscoreableReasons(aggregate) {
+  const reasons = [...aggregate.failedFidelityChecks];
+  if (aggregate.offRefreshRegime) reasons.push(`${aggregate.refreshRegime} beat`);
+  return reasons;
 }
 
 function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, targetId) {
@@ -237,7 +275,14 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
     BRUSHES.map((brush) => {
       const gateShare = lostFrameTimeShareGateFor(targetId, brush);
       const runs = (sources[brush] ?? []).map((source) =>
-        normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare)
+        normalizeDrawingRun(
+          source,
+          productCommit,
+          sourceDirectory,
+          mode,
+          gateShare,
+          CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null
+        )
       );
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
@@ -604,7 +649,8 @@ function drawingPlot(matrix, metric, gate, title) {
         // product-failure styling; the tooltip says why instead.
         const unscoreable = result.scoreable === false;
         const failed = !unscoreable && Number.isFinite(value) && value > gate;
-        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms`;
+        const why = unscoreable ? ` · unscoreable: ${unscoreableReasons(result).join(', ')}` : '';
+        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${why}`;
         const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
         return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${unscoreable ? ' unscoreable' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
       }).join('');
@@ -855,7 +901,7 @@ function renderMarkdown(matrix) {
         // the runner rejects; the failed check is named so the reader can see
         // which one rather than inferring it from a target-level advisory label.
         if (aggregate.scoreable === false) {
-          return `_unscoreable (${aggregate.failedFidelityChecks.join(', ')})_: ${value}`;
+          return `_unscoreable (${unscoreableReasons(aggregate).join(', ')})_: ${value}`;
         }
         return aggregate.blankPassed ? value : `**FAIL ${value}**`;
       }),
@@ -1016,7 +1062,11 @@ function releaseGateSentence(matrix) {
     : failing
       ? `${failing} of ${scoreable.length} brush aggregates over gate`
       : `all ${scoreable.length} brush aggregates inside gate`;
-  const caveat = unscoreable ? `, ${unscoreable} unscoreable (failed input fidelity)` : '';
+  const offRegime = aggregates.filter((aggregate) => aggregate.offRefreshRegime).length;
+  const why = offRegime
+    ? `failed input fidelity or were measured off this target's refresh regime`
+    : 'failed input fidelity';
+  const caveat = unscoreable ? `, ${unscoreable} unscoreable (${why})` : '';
   return `${gate.label} is the calibrated release gate — ${coverage}, ${verdict}${caveat}.`;
 }
 
@@ -1092,7 +1142,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: every sample behind it failed its input-fidelity gate, so the number describes an input path the capture runner rejects and is neither a pass nor a failure. Its tooltip names the failed check. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. Profiling controls such as the idle-frame sample remain in normalized data but are omitted from the user-action comparison.</p></div>
+  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. Profiling controls such as the idle-frame sample remain in normalized data but are omitted from the user-action comparison.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({

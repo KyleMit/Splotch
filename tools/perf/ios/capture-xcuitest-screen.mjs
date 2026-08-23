@@ -5,6 +5,7 @@ import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { captureRuntime, inputFidelity } from '../lib/input-fidelity.mjs';
+import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { probeConfigScript } from './capture-webkit-frames.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
@@ -888,7 +889,13 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
 
-    console.log(`\nObserved frame beat: ${summaries.intervalMs} ms`);
+    // Classified but not judged: this command is given a device id, not a matrix
+    // row, so it cannot know which regime the cell it is filling is scored against
+    // (the same limit ADR-0137's exception table has). Naming the regime is still
+    // what turns a beat into something an operator can compare against the column.
+    console.log(
+      `\nObserved frame beat: ${describeRefreshRegime(refreshRegimeVerdict(summaries.intervalMs))}`
+    );
     console.log('\nFrame pacing');
     console.table(pacingRows(summaries.phases));
     console.log('\nTrusted input fidelity');

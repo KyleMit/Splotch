@@ -48,9 +48,14 @@ const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 // rather than derived from `runtime` plus the id, because the derivation would have
 // to parse a platform out of a name and would silently pick a wrong table for the
 // next target whose name does not follow the pattern.
+// `refreshRegime` names the presentation rate this target's cells are scored
+// against, set from measured captures — see tools/perf/lib/refresh-regime.mjs. null
+// means no regime has been established from measurement yet, which is a gap to
+// close rather than a licence to score anything.
 export const CAMPAIGN_TARGETS = {
   'ipad-simulator-web': {
     captureRuntime: 'ios-safari',
+    refreshRegime: null,
     label: 'iPad Simulator · web',
     transport: 'appium',
     runtime: 'web',
@@ -58,6 +63,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'ipad-simulator-native': {
     captureRuntime: 'ios-capacitor-webview',
+    refreshRegime: null,
     label: 'iPad Simulator · native',
     transport: 'appium',
     runtime: 'native',
@@ -65,6 +71,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'ipad-device-web': {
     captureRuntime: 'ios-safari',
+    refreshRegime: '60hz',
     label: 'iPad device · web',
     transport: 'appium',
     runtime: 'web',
@@ -72,6 +79,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'ipad-device-native': {
     captureRuntime: 'ios-capacitor-webview',
+    refreshRegime: '60hz',
     label: 'iPad device · native',
     transport: 'appium',
     runtime: 'native',
@@ -79,6 +87,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-emulator-web': {
     captureRuntime: 'android-chrome',
+    refreshRegime: null,
     deviceClass: 'handset',
     label: 'Android emulator · web',
     transport: 'appium',
@@ -89,6 +98,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-emulator-native': {
     captureRuntime: 'android-capacitor-webview',
+    refreshRegime: null,
     deviceClass: 'handset',
     label: 'Android emulator · native',
     transport: 'appium',
@@ -97,6 +107,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-device-web': {
     captureRuntime: 'android-chrome',
+    refreshRegime: '120hz',
     deviceClass: 'handset',
     label: 'Android device · web',
     // ADR-0135: the Appium browser transport drives this device at 46.8 contact
@@ -110,6 +121,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'mac-chrome': {
     captureRuntime: 'desktop-playwright',
+    refreshRegime: '120hz',
     label: 'Mac · Chrome',
     transport: 'desktop',
     desktopEngine: 'chromium',
@@ -119,6 +131,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'mac-safari': {
     captureRuntime: 'desktop-playwright',
+    refreshRegime: '60hz',
     label: 'Mac · Safari',
     transport: 'desktop',
     desktopEngine: 'webkit',
@@ -128,6 +141,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'mac-firefox': {
     captureRuntime: 'desktop-playwright',
+    refreshRegime: '120hz',
     label: 'Mac · Firefox',
     transport: 'desktop',
     desktopEngine: 'firefox',
@@ -137,6 +151,7 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-device-native': {
     captureRuntime: 'android-capacitor-webview',
+    refreshRegime: null,
     deviceClass: 'handset',
     label: 'Android device · native',
     transport: 'appium',

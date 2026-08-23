@@ -29,6 +29,7 @@ import {
   describeFidelityFailures,
   inputFidelity,
 } from './lib/input-fidelity.mjs';
+import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_GATE,
@@ -139,7 +140,11 @@ export function rescoreCapture(parsed, { name, targetId }) {
     (targetId ? CAMPAIGN_TARGETS[targetId]?.captureRuntime : null) ??
     DEFAULT_CAPTURE_RUNTIME;
   const fidelity = inputFidelity(phase.input ?? {}, runtime);
-  return { name, target: targetId, brush, gateShare, summaries, drawing, fidelity };
+  const regime = refreshRegimeVerdict(
+    summaries.intervalMs,
+    targetId ? (CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null) : null
+  );
+  return { name, target: targetId, brush, gateShare, summaries, drawing, fidelity, regime };
 }
 
 function row(scored) {
@@ -152,6 +157,10 @@ function row(scored) {
     brush: scored.brush,
     'mv/s': round(phase.input?.movesPerSecond, 1),
     beat: round(scored.summaries.intervalMs, 2),
+    // A capture measured in the other refresh regime is not comparable to the rest
+    // of the column, and its lost-frame share can be 6x wrong while every other
+    // value in the row looks ordinary.
+    regime: scored.regime.matched ? scored.regime.observed : `${scored.regime.observed}!`,
     'paint p95': round(phase.paintLatencyMs?.p95, 1),
     'paint max': round(phase.paintLatencyMs?.max, 1),
     'lost %': round(lost * 100, 2),

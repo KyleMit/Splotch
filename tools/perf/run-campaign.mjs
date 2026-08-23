@@ -36,11 +36,13 @@ import {
   EXHAUSTED,
   FAILED,
   LEDGER_HEADER,
+  OFF_REFRESH_REGIME,
   UNSCOREABLE,
   formatLedgerRow,
   nextAction,
   parseLedger,
 } from './lib/campaign-ledger.mjs';
+import { describeRefreshRegime, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 
 const SIMULATOR_SETTLE_MS = 5_000;
 const PROBE_HOST_TIMEOUT_MS = 5_000;
@@ -60,7 +62,11 @@ function absolute(path) {
 // rather than retried until it turns green. A failed fidelity verdict is not a red
 // gate — it is a capture that cannot be scored at all — and it is reported
 // separately so the ledger says which of the two happened.
-export function inspectArtifact(path, runtime, { verdictRequired = false } = {}) {
+export function inspectArtifact(
+  path,
+  runtime,
+  { verdictRequired = false, expectedRefreshRegime = null } = {}
+) {
   const full = absolute(path);
   if (!existsSync(full)) return { ok: false, status: FAILED };
   let artifact;
@@ -73,7 +79,12 @@ export function inspectArtifact(path, runtime, { verdictRequired = false } = {})
   if (!artifactPassedFidelity(artifact, { verdictRequired })) {
     return { ok: false, status: UNSCOREABLE };
   }
-  return { ok: true, status: COMPLETE };
+  // Checked after fidelity so the more fundamental rejection is the one reported:
+  // a capture that was barely driven has a meaningless beat as well as a meaningless
+  // number, and naming the regime would send the next session after the wrong thing.
+  const regime = refreshRegimeVerdict(artifact?.summaries?.intervalMs, expectedRefreshRegime);
+  if (!regime.matched) return { ok: false, status: OFF_REFRESH_REGIME, regime };
+  return { ok: true, status: COMPLETE, regime };
 }
 
 function rebootSimulator(udid) {
@@ -193,12 +204,13 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const rebootUdid = flag('reboot-simulator');
   const results = [];
 
-  const { runtime } = campaignTarget(targetId);
+  const { runtime, refreshRegime } = campaignTarget(targetId);
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
       artifactValid: inspectArtifact(cell.artifact, runtime, {
         verdictRequired: cell.reportsFidelity,
+        expectedRefreshRegime: refreshRegime,
       }).ok,
       maxAttempts,
     });
@@ -242,6 +254,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       );
       const inspected = inspectArtifact(cell.artifact, runtime, {
         verdictRequired: cell.reportsFidelity,
+        expectedRefreshRegime: refreshRegime,
       });
       landed = inspected.ok;
       appendLedger(ledgerPath, {
@@ -252,6 +265,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       });
       if (inspected.status === UNSCOREABLE) {
         console.log(`RETRY ${cell.id} — the capture failed input fidelity and cannot be scored`);
+      } else if (inspected.status === OFF_REFRESH_REGIME) {
+        console.log(
+          `RETRY ${cell.id} — measured at ${describeRefreshRegime(inspected.regime)}, ` +
+            'which this target is not scored against'
+        );
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);
       }
