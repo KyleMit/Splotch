@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { foreignPortListeners, freePort, spawnViteServer } from '../../lib/vite-server.mjs';
+import { buildDirHoldsNativeExport } from '../serve-profile-build.mjs';
 
 // A preview server left over from a previous build keeps the port and keeps
 // serving the SvelteKit manifest it loaded at startup, so the next capture
@@ -66,7 +67,23 @@ async function assertServedManifestResolves(base) {
 // Pure so the decision is testable: the CLI wrapper below exits the process, which
 // a test cannot catch.
 export function servedBuildIdentityProblem(base, entry, { allowForeignBuild = false } = {}) {
-  if (allowForeignBuild || localBuildHasEntry(entry)) return null;
+  if (allowForeignBuild) return null;
+  // Checked HERE, per capture, and not only when perf:serve starts. The incident
+  // this guards overwrote web/build while a long-lived preview was already serving
+  // it, and a start-time check cannot see that: the server stays up, the manifest
+  // still resolves, and the entry is still in web/build, because the native strip
+  // removes the web-only files and leaves the chunks. Campaign cells go through
+  // --url and never re-enter runPerfServe, so the start-time check alone leaves
+  // every later cell reaching the export.
+  if (buildDirHoldsNativeExport()) {
+    return (
+      'web/build holds the native static export, not the web build — a native build ' +
+      '(build:cap, ios:run:device, android:run) overwrote it, possibly while this server ' +
+      'was already running. A capture against it hangs rather than failing. ' +
+      'Run `npm run perf:build` and restart the preview.'
+    );
+  }
+  if (localBuildHasEntry(entry)) return null;
   return (
     `${base} is serving ${entry}, which this checkout's web/build does not contain — ` +
     'the port is held by another build. A capture against it would measure a different ' +

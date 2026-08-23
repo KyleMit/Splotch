@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { brushOf, rawReportOf, rescoreCapture } from '../rescore-captures.mjs';
 import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { destinationBlocked, modeOf, selectEvidence } from '../keep-capture-evidence.mjs';
@@ -225,5 +225,28 @@ describe('promoting into an existing campaign name', () => {
 
     expect(destinationBlocked(destination, { force: true })).toBe(false);
     expect(existsSync(join(destination, 'stale.json'))).toBe(false);
+  });
+});
+
+describe('the served build is re-checked per capture', () => {
+  // The incident this guards overwrote web/build while a long-lived preview was
+  // already serving it. A start-time check cannot see that: the server stays up,
+  // the manifest still resolves, and the entry is still present, because the
+  // native strip removes the web-only files and leaves the chunks. Campaign cells
+  // go through --url and never re-enter runPerfServe, so a start-time check alone
+  // leaves every later cell reaching the export.
+  it('reports a native export even when the entry is still in place', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-poststart-'));
+    writeFileSync(join(dir, 'index.html'), '');
+    writeFileSync(join(dir, 'start.abc.js'), '');
+    for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
+
+    expect(buildDirHoldsNativeExport(dir)).toBe(false);
+
+    // The real strip: web-only files removed, every chunk left in place.
+    for (const file of WEB_ONLY_STATIC_FILES) rmSync(join(dir, file));
+
+    expect(buildDirHoldsNativeExport(dir)).toBe(true);
+    expect(existsSync(join(dir, 'start.abc.js'))).toBe(true);
   });
 });
