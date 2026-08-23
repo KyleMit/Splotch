@@ -1,0 +1,135 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import { COMPLETE, FAILED, OFF_REFRESH_REGIME, UNSCOREABLE } from '../lib/campaign-ledger.mjs';
+import { inspectArtifact } from '../run-campaign.mjs';
+
+// This is the function that decides whether a cell is banked or spent again, and
+// every campaign's evidence passes through it. It had no test.
+const directories = [];
+
+afterEach(() => {
+  for (const directory of directories.splice(0))
+    rmSync(directory, { recursive: true, force: true });
+});
+
+function artifactAt(contents) {
+  const directory = mkdtempSync(join(tmpdir(), 'splotch-acceptance-'));
+  directories.push(directory);
+  const path = join(directory, 'real-screen.json');
+  writeFileSync(path, typeof contents === 'string' ? contents : JSON.stringify(contents));
+  return path;
+}
+
+const scoreable = {
+  transport: 'browser',
+  fidelity: { passed: true },
+  summaries: { intervalMs: 17 },
+};
+
+describe('inspectArtifact', () => {
+  it('accepts a capture that parses, matches the runtime, and is in regime', () => {
+    expect(
+      inspectArtifact(artifactAt(scoreable), 'web', {
+        verdictRequired: true,
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('treats a missing or unparseable artifact as a failed attempt', () => {
+    expect(inspectArtifact(join(tmpdir(), 'nope', 'real-screen.json'), 'web')).toMatchObject({
+      ok: false,
+      status: FAILED,
+    });
+    expect(inspectArtifact(artifactAt('{ not json'), 'web')).toMatchObject({
+      ok: false,
+      status: FAILED,
+    });
+  });
+
+  // A native capture that attached to Chrome, or a web capture that attached to the
+  // installed app, produces a well-formed artifact and exits zero.
+  it('rejects an artifact from the wrong runtime', () => {
+    const native = artifactAt({ ...scoreable, transport: NATIVE_TRANSPORT });
+
+    expect(inspectArtifact(native, 'web')).toMatchObject({ ok: false, status: FAILED });
+    expect(inspectArtifact(native, 'native')).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  // The split runner writes its artifact and THEN fails the gate, so acceptance on
+  // "the artifact parses" banks exactly the cells that transport exists to stop
+  // producing. UNSCOREABLE is distinct from FAILED because "every row is
+  // missing-or-invalid-json" is the read that makes clearing a ledger safe.
+  it('separates a capture that cannot be scored from one that was never written', () => {
+    const failed = artifactAt({ ...scoreable, fidelity: { passed: false } });
+
+    expect(inspectArtifact(failed, 'web', { verdictRequired: true })).toMatchObject({
+      ok: false,
+      status: UNSCOREABLE,
+    });
+    expect(UNSCOREABLE).not.toBe(FAILED);
+  });
+
+  // Tolerance for an absent verdict is granted per transport: the desktop runner
+  // genuinely reports none, but a runner that always writes one must have an absent
+  // verdict treated as no verdict rather than as consent.
+  it('tolerates a missing verdict only where one is not required', () => {
+    const silent = artifactAt({ transport: 'browser', summaries: { intervalMs: 17 } });
+
+    expect(inspectArtifact(silent, 'web', { verdictRequired: false }).ok).toBe(true);
+    expect(inspectArtifact(silent, 'web', { verdictRequired: true })).toMatchObject({
+      ok: false,
+      status: UNSCOREABLE,
+    });
+  });
+
+  describe('the refresh regime', () => {
+    // The 2026-08-23 excursion: a capture that parsed, passed input fidelity at 119
+    // contact moves/s, and whose lost frame time was 6x wrong purely from the beat
+    // it was priced against.
+    it('refuses a capture measured in another regime, and says which', () => {
+      const offRegime = artifactAt({ ...scoreable, summaries: { intervalMs: 8 } });
+
+      expect(
+        inspectArtifact(offRegime, 'web', {
+          verdictRequired: true,
+          expectedRefreshRegime: '60hz',
+        })
+      ).toMatchObject({
+        ok: false,
+        status: OFF_REFRESH_REGIME,
+        regime: { observed: '120hz', expected: '60hz', matched: false },
+      });
+    });
+
+    // Checked after fidelity on purpose: a capture that was barely driven has a
+    // meaningless beat as well as a meaningless number, and naming the regime would
+    // send the next session after the wrong thing.
+    it('reports a fidelity failure ahead of a regime mismatch', () => {
+      const both = artifactAt({
+        transport: 'browser',
+        fidelity: { passed: false },
+        summaries: { intervalMs: 8 },
+      });
+
+      expect(
+        inspectArtifact(both, 'web', { verdictRequired: true, expectedRefreshRegime: '60hz' })
+      ).toMatchObject({ ok: false, status: UNSCOREABLE });
+    });
+
+    // A target with no established regime records the observation and scores. That
+    // is a gap to close by measuring it, not a licence — and above all it must not
+    // start rejecting the targets nobody has characterized yet.
+    it('does not reject a target with no established regime', () => {
+      const odd = artifactAt({ ...scoreable, summaries: { intervalMs: 33.3 } });
+
+      expect(inspectArtifact(odd, 'web', { verdictRequired: true })).toMatchObject({
+        ok: true,
+        status: COMPLETE,
+      });
+    });
+  });
+});
