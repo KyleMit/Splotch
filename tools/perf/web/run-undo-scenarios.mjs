@@ -46,7 +46,9 @@ import { toMiB } from '../lib/performance-units.mjs';
 import {
   COMMIT_GATE_MS,
   COMMIT_GATE_PERCENTILE,
+  confirmedBreach,
   evaluateCommitTiming,
+  HOST_SLOWDOWN_CAP,
 } from '../lib/undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 
@@ -674,9 +676,24 @@ export async function runUndoScenarios() {
       metrics,
     });
 
+    // A first-pass breach is re-measured before it is believed. The gate's
+    // percentile over ~21 commit samples resolves to the second-highest sample, so
+    // two adjacent slow commits set it — which is what a scheduling stall on a
+    // shared runner produces, and it does not reproduce. Re-running costs one
+    // scenario and only happens on the path that would otherwise turn main red.
+    const confirmations = await confirmBreaches({
+      page,
+      base,
+      results,
+      scenarios,
+      timeline,
+      normalizeSharedRunnerCrayon: suite === 'fast',
+      enforcesCoverage: engine.gated,
+    });
     const gate = reportCommitGate(results, {
       normalizeSharedRunnerCrayon: suite === 'fast',
       enforcesCoverage: engine.gated,
+      confirmations,
     });
     const fullRun =
       requestedKeys.length === ALL_UNDO_SCENARIO_KEYS.length &&
@@ -790,7 +807,7 @@ function formatCommitBreach(scenario, timing) {
   const gateTiming = timing.normalized
     ? `gate ${f1(timing.gateP95Ms)} ms after ${f1(timing.slowdownFactor)}× ` +
       `same-run renderer normalization (raw ${f1(timing.rawP95Ms)} ms · ` +
-      `draw ${f1(timing.drawMsPerCall)} ms/call), `
+      `draw total ${f1(scenario.draw.totalMs)} ms), `
     : `commit p95 ${f1(timing.rawP95Ms)} ms, `;
   return `  ${scenario.key}: ${gateTiming}max ${f1(scenario.draw.commitMaxMs)} ms`;
 }
@@ -820,9 +837,60 @@ function reportMissingCommitSamples(measured) {
   return { breaches: [], evaluated: false };
 }
 
+// Re-measures every scenario whose first pass breached, and returns the second
+// timing per key. Only the breaching scenarios are re-run: a green suite costs
+// nothing, and a red one costs one extra scenario per breach.
+//
+// The re-run goes through the same `runUndoScenario` the first pass used, on the
+// same page and the same build, so the two measurements differ in nothing except
+// when they were taken — which is the whole question being asked.
+async function confirmBreaches({
+  page,
+  base,
+  results,
+  scenarios,
+  timeline,
+  normalizeSharedRunnerCrayon,
+  enforcesCoverage,
+}) {
+  if (!enforcesCoverage) return new Map();
+  const suspects = results.filter(
+    (result) =>
+      !result.skipped && evaluateCommitTiming(result, { normalizeSharedRunnerCrayon }).breached
+  );
+  const confirmations = new Map();
+  for (const suspect of suspects) {
+    const scenario = scenarios.find((candidate) => candidate.key === suspect.key);
+    if (!scenario) continue;
+    console.log(`Re-measuring ${suspect.key}: its first pass breached, confirming before failing.`);
+    try {
+      const second = await runUndoScenario(page, base, scenario);
+      confirmations.set(suspect.key, second);
+    } catch (error) {
+      // A re-run that could not complete is not a confirmation and not an
+      // acquittal. Left absent, so the gate reports the scenario unconfirmed
+      // rather than quietly passing it.
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Could not re-measure ${suspect.key}: ${message}`);
+    }
+    if (timeline) {
+      try {
+        timeline.append(await collectMeasures(page));
+      } catch {
+        // The stitched timeline is diagnostic; a failed drain must not sink the run.
+      }
+    }
+  }
+  return confirmations;
+}
+
 function reportCommitGate(
   results,
-  { normalizeSharedRunnerCrayon = false, enforcesCoverage = engine.gated } = {}
+  {
+    normalizeSharedRunnerCrayon = false,
+    enforcesCoverage = engine.gated,
+    confirmations = new Map(),
+  } = {}
 ) {
   const budgetMs = COMMIT_GATE_MS;
   const { gated } = engine;
@@ -832,7 +900,27 @@ function reportCommitGate(
     evaluateCommitTiming(scenario, { normalizeSharedRunnerCrayon })
   );
   const timings = new Map(scenarioTimings.map((timing) => [timing.key, timing]));
-  const breaches = gated ? measured.filter((scenario) => timings.get(scenario.key).breached) : [];
+  // A scenario fails only when every measurement of it breached. One breach out of
+  // two is the shared runner; two out of two is the work.
+  const confirmedTimings = new Map(
+    [...confirmations].map(([key, second]) => [
+      key,
+      evaluateCommitTiming(second, { normalizeSharedRunnerCrayon }),
+    ])
+  );
+  const breaches = gated
+    ? measured.filter((scenario) => {
+        const first = timings.get(scenario.key);
+        if (!first.breached) return false;
+        const second = confirmedTimings.get(scenario.key);
+        return second ? confirmedBreach([first, second]) : true;
+      })
+    : [];
+  const unconfirmed = gated
+    ? measured
+        .filter((scenario) => timings.get(scenario.key).breached)
+        .filter((scenario) => !breaches.includes(scenario))
+    : [];
   const base = {
     engine: engineName,
     gated,
@@ -840,7 +928,17 @@ function reportCommitGate(
     percentile: COMMIT_GATE_PERCENTILE,
     breaches,
     scenarioTimings,
+    confirmationTimings: [...confirmedTimings.values()],
   };
+  for (const scenario of unconfirmed) {
+    const first = timings.get(scenario.key);
+    const second = confirmedTimings.get(scenario.key);
+    console.log(
+      `Commit gate: ${scenario.key} breached once and not again — ` +
+        `${first.gateP95Ms.toFixed(1)} ms then ${second.gateP95Ms.toFixed(1)} ms against ` +
+        `${budgetMs} ms. Reported, not failed.`
+    );
+  }
 
   // Ordered most-specific-cause-first, so a run that never completed a scenario
   // is not reported as a marks-less bundle.
@@ -870,9 +968,15 @@ function reportCommitGate(
   const unevaluable = scenarioTimings.filter((timing) => !timing.evaluable);
   if (unevaluable.length > 0) {
     process.exitCode = 1;
+    const stalled = unevaluable.filter((timing) => timing.stalled);
     console.error(
-      `\n✗ Commit gate NOT EVALUATED on ${engineName}: the same-run renderer control ` +
-        `had no engine.draw samples for ${unevaluable.map((timing) => timing.key).join(', ')}.\n`
+      `\n✗ Commit gate NOT EVALUATED on ${engineName}: ` +
+        (stalled.length > 0
+          ? `the host was more than ${HOST_SLOWDOWN_CAP}x slower than the calibrated runner for ` +
+            `${stalled.map((timing) => `${timing.key} (${timing.hostSlowdown.toFixed(1)}x)`).join(', ')}, ` +
+            'so its numbers are not comparable to anything and are refused rather than discounted.\n'
+          : `the same-run renderer control had no engine.draw samples for ` +
+            `${unevaluable.map((timing) => timing.key).join(', ')}.\n`)
     );
     return {
       engine: engineName,

@@ -3,8 +3,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  BREACH_CONFIRMATIONS,
   COMMIT_GATE_MS,
-  CRAYON_DRAW_REFERENCE_MS_PER_CALL,
+  CRAYON_DRAW_REFERENCE_TOTAL_MS,
+  HOST_SLOWDOWN_CAP,
+  confirmedBreach,
   evaluateCommitTiming,
 } from '../lib/undo-commit-gate.mjs';
 import { ALL_UNDO_SCENARIO_KEYS, FAST_UNDO_SCENARIO_KEYS } from '../lib/undo-scenario-keys.mjs';
@@ -33,6 +36,16 @@ function timingScenario({ key = 'crayon-scribbles', commitP95Ms, drawTotalMs, dr
     },
   };
 }
+
+// A real capture from the current mark regime, kept so the gate is exercised
+// against what the app actually emits rather than against a hand-written shape.
+// The fixture is what makes the unit drift in issue 1247 impossible to reintroduce
+// silently: it records 22 `engine.draw` measures per scenario where the old
+// per-operation marks gave tens of thousands.
+const capture = JSON.parse(
+  readFileSync(join(import.meta.dirname, 'fixtures', 'undo-scenarios-webkit-fast.json'), 'utf8')
+);
+const captured = (key) => capture.scenarios.find((scenario) => scenario.key === key);
 
 describe('WebKit performance CI', () => {
   it('defines the fast scenario set once and resolves every key through the scenario registry', () => {
@@ -126,23 +139,18 @@ describe('WebKit performance CI', () => {
 
   it('normalizes shared-runner crayon slowdown while preserving the 25 ms work-shape gate', () => {
     const noisyHealthy = evaluateCommitTiming(
-      timingScenario({ commitP95Ms: 60, drawTotalMs: 100_186, drawOps: 26_378 }),
+      timingScenario({ commitP95Ms: 60, drawTotalMs: CRAYON_DRAW_REFERENCE_TOTAL_MS * 3 }),
       { normalizeSharedRunnerCrayon: true }
     );
     const knownBad = evaluateCommitTiming(
-      timingScenario({
-        commitP95Ms: 47,
-        drawTotalMs: CRAYON_DRAW_REFERENCE_MS_PER_CALL * 26_378,
-        drawOps: 26_378,
-      }),
+      timingScenario({ commitP95Ms: 47, drawTotalMs: CRAYON_DRAW_REFERENCE_TOTAL_MS }),
       { normalizeSharedRunnerCrayon: true }
     );
     const multiPointerRegression = evaluateCommitTiming(
       timingScenario({
         key: 'multi-finger',
         commitP95Ms: 47,
-        drawTotalMs: 100_186,
-        drawOps: 26_378,
+        drawTotalMs: CRAYON_DRAW_REFERENCE_TOTAL_MS * 3,
       }),
       { normalizeSharedRunnerCrayon: true }
     );
@@ -157,12 +165,77 @@ describe('WebKit performance CI', () => {
     });
   });
 
+  // Issue 1247: the divisor used to be `totalMs / ops` against a per-operation
+  // reference, and moving `engine.draw` into `drainQueues()` rescaled `ops` by
+  // three orders of magnitude without anything noticing. Against this real capture
+  // that formula divides by 924 and the gate cannot fail at any commit cost.
+  it('cannot be rescaled by a change to engine.draw marking granularity', () => {
+    const crayon = captured('crayon-scribbles');
+
+    expect(crayon.draw.ops).toBeLessThan(100);
+    const perCallDivisor = crayon.draw.totalMs / crayon.draw.ops / 0.4;
+    expect(perCallDivisor).toBeGreaterThan(500);
+
+    const timing = evaluateCommitTiming(
+      { key: crayon.key, draw: { ...crayon.draw, commitP95Ms: 40 } },
+      { normalizeSharedRunnerCrayon: true }
+    );
+
+    expect(timing.slowdownFactor).toBe(1);
+    expect(timing.gateP95Ms).toBe(40);
+    expect(timing.breached).toBe(true);
+  });
+
+  it('scores a real healthy capture well inside the budget', () => {
+    for (const scenario of capture.scenarios) {
+      const timing = evaluateCommitTiming(scenario, { normalizeSharedRunnerCrayon: true });
+
+      expect(timing.evaluable).toBe(true);
+      expect(timing.breached).toBe(false);
+      expect(timing.gateP95Ms).toBeLessThan(COMMIT_GATE_MS);
+    }
+  });
+
+  // Normalization can only ever lower a score, so an unbounded divisor retires the
+  // gate. Past the cap the run is refused rather than discounted into a pass.
+  it('refuses to score a host slower than the cap instead of discounting it', () => {
+    const stalled = evaluateCommitTiming(
+      timingScenario({
+        commitP95Ms: 400,
+        drawTotalMs: CRAYON_DRAW_REFERENCE_TOTAL_MS * (HOST_SLOWDOWN_CAP + 1),
+      }),
+      { normalizeSharedRunnerCrayon: true }
+    );
+
+    expect(stalled).toMatchObject({ stalled: true, evaluable: false, breached: false });
+  });
+
   it('keeps full and on-demand WebKit runs on raw absolute timing', () => {
     const timing = evaluateCommitTiming(
-      timingScenario({ commitP95Ms: 60, drawTotalMs: 100_186, drawOps: 26_378 })
+      timingScenario({ commitP95Ms: 60, drawTotalMs: CRAYON_DRAW_REFERENCE_TOTAL_MS * 3 })
     );
 
     expect(timing).toMatchObject({ normalized: false, gateP95Ms: 60, breached: true });
+  });
+
+  // The gate's percentile over ~21 commit samples resolves to the second-highest
+  // sample, so two adjacent slow commits set it — which is what a shared-runner
+  // stall produces. Measured at one commit on main: 133.0 ms, then 2.0 ms on a
+  // re-run of the same job.
+  it('fails a scenario only when every measurement of it breached', () => {
+    const breaching = evaluateCommitTiming(
+      timingScenario({ key: 'multi-finger', commitP95Ms: 133, drawTotalMs: 1 })
+    );
+    const clean = evaluateCommitTiming(
+      timingScenario({ key: 'multi-finger', commitP95Ms: 2, drawTotalMs: 1 })
+    );
+
+    expect(BREACH_CONFIRMATIONS).toBe(2);
+    expect(confirmedBreach([breaching, clean])).toBe(false);
+    expect(confirmedBreach([breaching, breaching])).toBe(true);
+    // One measurement is not a confirmation either way; the runner keeps the
+    // unconfirmed breach rather than promoting it.
+    expect(confirmedBreach([breaching])).toBe(false);
   });
 
   it('runs the full seven-scenario command on release tags', () => {
