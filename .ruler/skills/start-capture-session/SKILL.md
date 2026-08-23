@@ -19,20 +19,29 @@ Everything else the preflight checks is host-side, and that is exactly how a blo
 ready: enumeration, `ideviceinfo`, the tunnel, and every port check pass without ever launching an
 app or delivering a touch.
 
-| Flag                     | Proves                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------ |
-| `--wake-android`         | The phone is awake and stays awake. **The only flag that writes to a device.** |
-| `--verify-android-input` | A real touch reaches a page at usable cadence — about 20 s                     |
-| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session — about a minute                 |
+| Flag                     | Proves                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------- |
+| `--wake-android`         | The phone is awake and stays awake. Writes stay-awake and a screen timeout, and does not undo them. |
+| `--verify-android-input` | A real touch reaches a page at usable cadence, **and** the device and a loaded page both rotate     |
+| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session — about a minute                                      |
+
+`--verify-android-input` takes about a minute: roughly 20 s for the touch cadence and another 40 s
+driving the page through landscape and back. Rotation is folded into it rather than given its own
+flag on purpose — the promise it used to make, *a real touch reaches a page at usable cadence*, was
+true and irrelevant for the half of the matrix that is landscape, and a rig must not be declarable
+ready on a device that will not turn. It writes `user_rotation` and `accelerometer_rotation` and
+restores whatever it found, including deleting a setting that was never written.
 
 Fix whatever it blocks on before capturing anything. A blocked preflight exits non-zero and names
 the cause; two of the likely ones need a human at the device and cannot be cleared from the host —
 **Guided Access** (triple-click the side button, enter the passcode, End) and a locked phone.
 
-**A green preflight does not mean every cell can be captured.** It proves touch, never rotation, so
-a device that will not turn still passes all three flags and then fails every landscape cell — which
-is half the matrix. Tracked as issue 1248. Until it verifies rotation, capture one landscape cell
-first and confirm it writes an artifact before queueing a target.
+**A green preflight still does not mean every cell can be captured.** Rotation used to be the gap:
+the preflight proved touch and never rotation, so a device that would not turn passed every flag and
+then failed every landscape cell — half the matrix. `--verify-android-input` now drives a real
+rotation and reads the orientation the **page** reports, so that particular hole is closed on
+Android. The iPad has no equivalent check, and neither device is proved against anything the
+verification does not itself exercise.
 
 ## Reuse what cost a human, reclaim what is cheap
 

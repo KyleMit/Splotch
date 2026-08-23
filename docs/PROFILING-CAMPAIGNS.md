@@ -191,12 +191,21 @@ WKWebView, which expects more than zero coalesced samples where Safari expects n
 2026-08-23 with both runtimes driven at the same cadence on the same device. Do not widen that check
 to cover both; widening it retires it in Safari, where it does real work.
 
-## The preflight proves touch, not rotation
+## The preflight proves what it exercises, and nothing else
 
-`--verify-android-input` drives the floor control and reports a cadence in band. It never rotates
-the device, so **a rotation fault passes every preflight check and fails every landscape cell**. The
-2026-08-23 recapture opened on a green rig and lost all eight `android-device-web` landscape drawing
-cells before the first artifact was missed.
+`--verify-android-input` used to drive the floor control and report a cadence in band, and nothing
+more. It never rotated the device, so **a rotation fault passed every preflight check and failed
+every landscape cell**. The 2026-08-23 recapture opened on a green rig and lost all eight
+`android-device-web` landscape drawing cells before the first artifact was missed.
+
+That flag now also drives a real rotation — the same stop, rotate, launch order a capture drives —
+and reads the orientation the **page** reports rather than the one the device was asked for. It
+restores the rotation settings it found. Verified both ways on the SM-G990U1: the correct order
+passes, and re-injecting the original defect (rotate, then `am force-stop`) is caught and named.
+
+The general rule outlives this particular hole: **a preflight proves the operations it performs.**
+The iPad still has no rotation check, and every trap below is one that some cheap check passed
+through.
 
 Two distinct causes were behind it, and the first is the one that generalizes:
 

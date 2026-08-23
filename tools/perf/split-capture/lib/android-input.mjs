@@ -130,3 +130,43 @@ export function androidPageLaunchSteps(orientation, pageUrl) {
     },
   ];
 }
+
+// The rotation settings a verification has to put back. `settings get` answers
+// `null` for a value that was never written, and writing the string "null" back
+// leaves the device with a setting it cannot parse — so an absent value is
+// restored by deleting the setting rather than by writing what was read.
+export function androidRotationRestoreCommands(previous) {
+  return ['accelerometer_rotation', 'user_rotation'].map((key) => {
+    const value = previous?.[key];
+    return value === null || value === undefined || value === 'null'
+      ? ['shell', 'settings', 'delete', 'system', key]
+      : ['shell', 'settings', 'put', 'system', key, String(value)];
+  });
+}
+
+// A rotation fault passes every other preflight check: enumeration, stay-awake,
+// and a touch at usable cadence are all true of a device that will not turn, and
+// then every landscape cell fails. The verdict names the orientation that did not
+// arrive, because "rotation is broken" and "landscape specifically does not stick"
+// send a session to different places.
+export function androidRotationVerdict(observations) {
+  const wrong = observations.filter(
+    (observation) => observation.observed !== observation.requested
+  );
+  if (wrong.length === 0) {
+    return {
+      ok: true,
+      detail: `page followed the device through ${observations.map((o) => o.requested.toLowerCase()).join(' and ')}`,
+    };
+  }
+  const described = wrong
+    .map(
+      (observation) =>
+        `${observation.requested.toLowerCase()} came back as ${(observation.observed ?? 'nothing').toLowerCase()}`
+    )
+    .join('; ');
+  return {
+    ok: false,
+    detail: `${described}. Every landscape cell will fail; the device or the page is not following user_rotation.`,
+  };
+}
