@@ -68,7 +68,7 @@ const IMMUTABLE_REF = /\/_app\/immutable\/[A-Za-z0-9._\-/]+\.js/g;
 // its filename proved nothing — a foreign URL plus this checkout's entry path
 // passed. Everything the served page and the served entry actually reference is
 // fetched and compared instead.
-export function referencedChunks(html, entryModule) {
+function referencedChunks(html, entryModule) {
   return [...new Set([...`${html}\n${entryModule}`.matchAll(IMMUTABLE_REF)].map(([ref]) => ref))];
 }
 
