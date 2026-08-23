@@ -377,12 +377,43 @@ Two are fixed and one is proposed; all three are worth recognizing in a number.
 * **`lostFrameTimeShare` is a share of in-contact *time*, not of frames.** The frame share is
   roughly double it. Say which you mean.
 
+## A red cell describes the commit it was captured at, not the product
+
+**Before treating a red cell as a product problem, rebuild the commit it was captured at and confirm
+the failure still reproduces.** The matrix records that commit per mode (`drawingProductCommit` in
+`sources.json`), and the product moves underneath it.
+
+This is a different check from "compare against the previous run of the same cell" below, and it
+catches something that one cannot: not a bad measurement, but a good measurement of a build nobody
+runs any more.
+
+Issue 1203 is the worked example. It reported physical-iPad crayon straddling the 50 ms paint-max
+gate at 65, 59, 45 and 46 ms, from the 2026-08-22 `ipad-device-web` capture — which was taken at
+`ae674d71` at 13:21. Four further commits to `web/src/lib/drawing/` landed before that day's work
+merged at 22:20. Measured on the same rig the following night:
+
+| Build                             |  n | paint max per sample       | worst |
+| --------------------------------- | -: | -------------------------- | ----: |
+| `ae674d71` — what the matrix held |  5 | 48, 42, 47, **77**, 45     |    77 |
+| `main`                            |  7 | 47, 45, 47, 47, 45, 47, 47 |    47 |
+
+The old commit reproduces the straddle exactly. `main` shows no excursion in seven consecutive
+samples. The gate had already been fixed by the raster-queue extraction, and five candidate
+implementations had been written to attack a cost that no longer existed.
+
+The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
+`npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell
+currently claiming to be a measurement was taken before the engine changed — without a device.
+
 ## Before believing a result
 
 1. Fidelity verdict passed, and the input cadence is in band.
-2. The served build's manifest resolves.
+2. The served build's manifest resolves, and the build is **this checkout's web build** — not
+   another worktree's, and not the native static export `build:cap` leaves in the same directory.
 3. The committed brush matches the requested one.
 4. At least three samples per cell — the within-config spread on a physical device is routinely
    comparable to the effect being measured.
 5. The previous run of the same cell, for comparison. A single absolute number from this gate has
    been wrong more often than it has been right.
+6. **The commit the cell was captured at**, if you are about to treat the number as a product
+   problem. See above — a red cell can be a faithful measurement of a superseded build.
