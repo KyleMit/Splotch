@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { brushOf, rawReportOf, rescoreCapture } from '../rescore-captures.mjs';
+import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { modeOf, selectEvidence, targetOf } from '../keep-capture-evidence.mjs';
+import { modeOf, selectEvidence } from '../keep-capture-evidence.mjs';
+import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
 import { buildDirHoldsNativeExport } from '../serve-profile-build.mjs';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 
@@ -75,8 +77,61 @@ describe('rescoreCapture', () => {
     const excepted = rescoreCapture(capture, { name: 'c', targetId: 'ipad-device-web' });
     const plain = rescoreCapture(capture, { name: 'c', targetId: 'mac-chrome' });
 
-    expect(excepted?.gateShare).toBe(0.015);
+    expect(excepted?.gateShare).toBe(
+      LOST_FRAME_TIME_SHARE_EXCEPTIONS['ipad-device-web:crayon'].share
+    );
     expect(plain?.gateShare).toBe(0.01);
+  });
+
+  // A whole-corpus rescore of mixed-target evidence cannot agree with the gates if
+  // target identity is one global flag: the same capture reported the 1.5%
+  // exception with --target=ipad-device-web and silently fell back to 1% without.
+  it('gates each capture by its own target in one mixed-target pass', () => {
+    const corpus = [
+      { file: 'ipad-device-web-crayon', target: 'ipad-device-web' },
+      { file: 'mac-chrome-crayon', target: 'mac-chrome' },
+    ];
+
+    const gates = corpus.map(
+      (entry) =>
+        rescoreCapture({ brush: 'crayon', report }, { name: entry.file, targetId: entry.target })
+          ?.gateShare
+    );
+
+    expect(gates).toEqual([LOST_FRAME_TIME_SHARE_EXCEPTIONS['ipad-device-web:crayon'].share, 0.01]);
+  });
+
+  // An unknown target must not quietly take the plain gate: a cell carrying an
+  // exception would be scored against a threshold it was excused from, and the
+  // table would read PASS or FAIL either way.
+  it('refuses to apply any gate when the target is unknown', () => {
+    const scored = rescoreCapture({ brush: 'crayon', report }, { name: 'c', targetId: null });
+
+    expect(scored?.gateShare).toBeNull();
+  });
+});
+
+describe('evidenceIndexTargets', () => {
+  it('reads per-file target identity out of a flat evidence corpus', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-evidence-'));
+    writeFileSync(
+      join(dir, 'index.json'),
+      JSON.stringify({
+        kept: [
+          { file: 'ipad-device-web-crayon.json', target: 'ipad-device-web' },
+          { file: 'mac-chrome-crayon.json', target: 'mac-chrome' },
+        ],
+      })
+    );
+
+    const targets = evidenceIndexTargets(dir);
+
+    expect(targets.get('ipad-device-web-crayon.json')).toBe('ipad-device-web');
+    expect(targets.get('mac-chrome-crayon.json')).toBe('mac-chrome');
+  });
+
+  it('reports nothing for a corpus with no index', () => {
+    expect(evidenceIndexTargets(mkdtempSync(join(tmpdir(), 'splotch-noindex-'))).size).toBe(0);
   });
 });
 
@@ -90,8 +145,10 @@ describe('keep-capture-evidence', () => {
 
   // Taking the filename for a flat corpus makes every capture its own target,
   // which silently turns "one per target x brush" into "keep everything".
+  // Returning null rather than a placeholder is what lets the rescorer refuse to
+  // apply any gate; callers that want a display label supply their own fallback.
   it('does not invent a target from a flat corpus filename', () => {
-    expect(targetOf({}, 'abase.1-crayon')).toBe('unknown');
+    expect(targetOf({}, 'abase.1-crayon')).toBeNull();
     expect(targetOf({}, 'abase.1-crayon', 'ipad-device-web')).toBe('ipad-device-web');
   });
 

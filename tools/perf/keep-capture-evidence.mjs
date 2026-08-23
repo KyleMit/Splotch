@@ -17,27 +17,10 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
-import { findCaptureFiles, brushOf, rawReportOf } from './rescore-captures.mjs';
+import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
 
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 
-// A campaign tree lays cells out as <target>/<mode>/<brush>-real-screen.json, so
-// the target is the leading directory. A flat corpus has none, and taking the
-// filename instead would make every capture its own target — which silently turns
-// "one per target x brush" into "keep everything", the opposite of the rule.
-export function targetOf(parsed, relativePath, fallback) {
-  const declared = parsed?.targetId ?? parsed?.target;
-  if (declared) return declared;
-  const segments = relativePath.split('/');
-  if (segments.length > 1) return segments[0];
-  return fallback ?? 'unknown';
-}
-
-// orientation/theme is what a campaign artifact records — top level on the split
-// and desktop transports, under `automation` on the Appium one. `mode` is checked
-// only after both, because the Appium envelope already uses that key for its
-// automation mode, so reading it first labels an iPad capture
-// "xcuitest:ipad-device-web-landscape-dark-crayon" instead of "LANDSCAPE-dark".
 export function modeOf(parsed) {
   const orientation =
     parsed?.orientation ?? parsed?.automation?.orientation ?? viewportOrientation(parsed);
@@ -95,7 +78,8 @@ export async function keepCaptureEvidence({
     candidates.push({
       file,
       relativePath,
-      target: targetOf(parsed, relativePath, target),
+      // `null` means "no gate applies" to the rescorer; the index wants a label.
+      target: targetOf(parsed, relativePath, target) ?? 'unknown',
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
       fidelity: parsed.fidelity?.passed ?? null,

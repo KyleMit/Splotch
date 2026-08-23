@@ -212,7 +212,7 @@ function ipv6Groups(host) {
   return [...left, ...Array(gap).fill(0), ...right];
 }
 
-export function isUnreachableFromDevice(hostname) {
+function isUnreachableFromDevice(hostname) {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
   if (host === 'localhost' || host.endsWith('.localhost')) return true;
 

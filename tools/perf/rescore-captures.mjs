@@ -20,12 +20,16 @@
 // branch and run this over the corpus. That is how the credited charge was
 // judged, and it exercises the real code path rather than a parallel one.
 
-import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { basename, dirname, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { inputFidelity } from './ios/capture-xcuitest-screen.mjs';
-import { lostFrameTimeShareGateFor, scoreDrawingRun } from './lib/drawing-gates.mjs';
+import {
+  LOST_FRAME_TIME_SHARE_GATE,
+  lostFrameTimeShareGateFor,
+  scoreDrawingRun,
+} from './lib/drawing-gates.mjs';
 
 const BRUSHES = ['crayon', 'magic', 'eraser', 'pen'];
 
@@ -65,6 +69,33 @@ function round(value, places = 2) {
   return Number.isFinite(value) ? Math.round(value * factor) / factor : undefined;
 }
 
+// A campaign tree lays cells out as <target>/<mode>/<brush>-real-screen.json, so
+// the target is the leading directory. A flat corpus has none, and taking the
+// filename instead would invent a target per capture.
+export function targetOf(parsed, relativePath, fallback) {
+  const declared = parsed?.targetId ?? parsed?.target;
+  if (declared) return declared;
+  const segments = relativePath.split('/');
+  if (segments.length > 1) return segments[0];
+  return fallback ?? null;
+}
+
+// The tracked evidence corpus is flat and mixed-target, and its index is the only
+// thing that knows which target each file came from. Without reading it, one
+// `--target` gets applied to every capture in the directory — so an iPad crayon
+// exception silently governs a Mac capture, or the default gate silently governs
+// an exception-bearing one.
+export function evidenceIndexTargets(root) {
+  const indexPath = join(root, 'index.json');
+  if (!existsSync(indexPath)) return new Map();
+  try {
+    const index = JSON.parse(readFileSync(indexPath, 'utf8'));
+    return new Map((index.kept ?? []).map((entry) => [entry.file, entry.target]));
+  } catch {
+    return new Map();
+  }
+}
+
 export function rescoreCapture(parsed, { name, targetId }) {
   const report = rawReportOf(parsed);
   if (!report) return null;
@@ -72,10 +103,13 @@ export function rescoreCapture(parsed, { name, targetId }) {
   const summaries = summarizeRun(report);
   const phase = summaries.phases?.[0];
   if (!phase) return null;
-  const gateShare = lostFrameTimeShareGateFor(targetId, brush);
-  const drawing = scoreDrawingRun(summaries.phases, gateShare);
+  // An unknown target must NOT quietly fall back to the plain gate: a cell that
+  // carries an exception would then be scored against a threshold it was
+  // explicitly excused from, and the table would say PASS or FAIL either way.
+  const gateShare = targetId ? lostFrameTimeShareGateFor(targetId, brush) : null;
+  const drawing = scoreDrawingRun(summaries.phases, gateShare ?? LOST_FRAME_TIME_SHARE_GATE);
   const fidelity = inputFidelity(phase.input ?? {});
-  return { name, brush, gateShare, summaries, drawing, fidelity };
+  return { name, target: targetId, brush, gateShare, summaries, drawing, fidelity };
 }
 
 function failedChecks(fidelity) {
@@ -91,13 +125,14 @@ function row(scored) {
   const lost = contact?.lostFrameTimeShare ?? phase.pacing?.lostFrameTimeShare;
   return {
     capture: scored.name,
+    target: scored.target ?? '(unknown)',
     brush: scored.brush,
     'mv/s': round(phase.input?.movesPerSecond, 1),
     beat: round(scored.summaries.intervalMs, 2),
     'paint p95': round(phase.paintLatencyMs?.p95, 1),
     'paint max': round(phase.paintLatencyMs?.max, 1),
     'lost %': round(lost * 100, 2),
-    'gate %': round(scored.gateShare * 100, 2),
+    'gate %': scored.gateShare === null ? '?' : round(scored.gateShare * 100, 2),
     // A capture that fails fidelity must not be scored at all, however plausible
     // its number looks, so the verdict is printed beside the number and not
     // behind a flag. The FAILING CHECKS are named rather than a bare FAIL,
@@ -107,7 +142,7 @@ function row(scored) {
     // classes those targets advisory. `cadence` is the one that invalidates a
     // number outright, and a bare FAIL hides which of the two you are looking at.
     fidelity: scored.fidelity.passed ? 'pass' : failedChecks(scored.fidelity),
-    gate: scored.drawing.passed ? 'PASS' : 'FAIL',
+    gate: scored.gateShare === null ? 'UNSCORED' : scored.drawing.passed ? 'PASS' : 'FAIL',
   };
 }
 
@@ -122,6 +157,7 @@ export async function rescoreCaptures({
   const files = findCaptureFiles(root).filter((file) => !filter || file.includes(filter));
   if (!files.length) fail(`no capture JSON under ${corpus}${filter ? ` matching ${filter}` : ''}`);
 
+  const indexTargets = evidenceIndexTargets(root);
   const scored = [];
   const skipped = [];
   for (const file of files) {
@@ -135,7 +171,14 @@ export async function rescoreCaptures({
     }
     let result;
     try {
-      result = rescoreCapture(parsed, { name, targetId });
+      result = rescoreCapture(parsed, {
+        name,
+        targetId:
+          targetOf(parsed, relative(root, file), null) ??
+          indexTargets.get(basename(file)) ??
+          targetId ??
+          null,
+      });
     } catch (error) {
       skipped.push({ name, reason: error.message });
       continue;
@@ -146,9 +189,17 @@ export async function rescoreCaptures({
 
   console.table(scored.map(row));
   const unscoreable = scored.filter((entry) => !entry.fidelity.passed);
+  const unknownTarget = scored.filter((entry) => entry.gateShare === null);
   console.log(
-    `\n${scored.length} rescored · ${unscoreable.length} failed input fidelity · ${skipped.length} skipped`
+    `\n${scored.length} rescored · ${unscoreable.length} failed input fidelity · ` +
+      `${unknownTarget.length} with no target identity · ${skipped.length} skipped`
   );
+  if (unknownTarget.length) {
+    console.log(
+      '  UNSCORED rows carry no target, so no gate applies — pass --target= for a ' +
+        'single-target corpus, or rescore a tree that names its targets.'
+    );
+  }
   // Named rather than counted: a corpus is usually re-scored to answer a question
   // about a specific cell, and a silent omission is how that answer goes wrong.
   for (const entry of skipped) console.log(`  skipped ${entry.name} — ${entry.reason}`);
