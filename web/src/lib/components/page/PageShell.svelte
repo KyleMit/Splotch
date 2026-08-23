@@ -89,6 +89,7 @@
        beneath short content. */
     min-height: 100vh;
     background: var(--page-ground);
+    --page-pad-top: 32px;
     padding: 32px 16px 72px;
     color: var(--page-ink);
     font-size: var(--font-size-md);
@@ -113,6 +114,7 @@
      left-aligned in a much wider sheet. */
   @media (max-width: 920px) {
     .page {
+      --page-pad-top: var(--space-6);
       padding: var(--space-6);
     }
 
@@ -128,6 +130,7 @@
      viewport) has to match it. */
   @media (max-width: 540px) {
     .page {
+      --page-pad-top: 0px;
       padding: 0;
       background: var(--page-sheet);
     }
@@ -137,6 +140,16 @@
       border-radius: 0;
       box-shadow: none;
     }
+  }
+
+  /* Declared after every breakpoint above so it wins whichever `padding`
+     shorthand they set. `viewport-fit=cover` (ADR-0026) plus iOS's
+     `contentInset: "never"` render these routes under the status bar and notch,
+     and unlike the drawing route nothing here re-insets them — without this the
+     back link and wordmark sit under the cutout on a notched iPhone. The ground
+     still paints the full strip; only the content moves down. */
+  .page {
+    padding-top: calc(var(--page-pad-top) + env(safe-area-inset-top));
   }
 
   /* One bar, then one hero: nothing sits between them, and the bar carries no

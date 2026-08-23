@@ -10,6 +10,7 @@ import {
   statusBarHiddenFor,
   computeNotchBandState,
   NOTCH_INSET_THRESHOLD_PX,
+  IOS_NOTCH_INSET_THRESHOLD_PX,
   type NotchBandInput,
 } from './notchBand';
 import { PALETTE_COLORS } from '../state/colors.svelte';
@@ -17,7 +18,11 @@ import { PAPER_COLORS } from '../theme';
 
 // Representative insets: a clear notch vs. a bezel/status-bar device.
 const NOTCH_INSET = 47; // iPhone notch (portrait)
-const BEZEL_INSET = 20; // iPad / plain status bar
+const BEZEL_INSET = 20; // plain status bar
+// What a bezel iPad actually measures once ios.contentInset is "never" and the
+// status-bar strip surfaces as a safe-area inset (issue 1194). Above the Android
+// threshold, so it is only excluded by iOS having its own floor.
+const IPAD_STATUS_BAR_INSET = 32;
 const TRANSPARENT_EDGE_COLORS = {
   top: 'transparent',
   left: 'transparent',
@@ -50,15 +55,25 @@ describe('bandColor', () => {
 
 describe('hasNotch', () => {
   it('treats a deep inset (notch / hole-punch) as a cutout', () => {
-    expect(hasNotch(NOTCH_INSET)).toBe(true);
-    expect(hasNotch(59)).toBe(true); // Dynamic Island
-    expect(hasNotch(NOTCH_INSET_THRESHOLD_PX)).toBe(true); // boundary is inclusive
+    expect(hasNotch(NOTCH_INSET, 'ios')).toBe(true);
+    expect(hasNotch(59, 'ios')).toBe(true); // Dynamic Island
+    expect(hasNotch(IOS_NOTCH_INSET_THRESHOLD_PX, 'ios')).toBe(true); // boundary is inclusive
+    expect(hasNotch(NOTCH_INSET_THRESHOLD_PX, 'android')).toBe(true);
+  });
+
+  // ios.contentInset "never" exposes the whole status-bar strip as an inset, so a
+  // bezel iPad reports 32px — past the Android threshold on a device with no
+  // cutout. ADR-0026 requires it to get no band.
+  it('treats an iPad status-bar strip as no cutout despite clearing the Android floor', () => {
+    expect(IPAD_STATUS_BAR_INSET).toBeGreaterThan(NOTCH_INSET_THRESHOLD_PX);
+    expect(hasNotch(IPAD_STATUS_BAR_INSET, 'ios')).toBe(false);
   });
 
   it('treats a shallow inset (bezel iPad / status bar) as no cutout', () => {
-    expect(hasNotch(BEZEL_INSET)).toBe(false);
-    expect(hasNotch(0)).toBe(false); // desktop / browser tab
-    expect(hasNotch(NOTCH_INSET_THRESHOLD_PX - 1)).toBe(false);
+    expect(hasNotch(BEZEL_INSET, 'ios')).toBe(false);
+    expect(hasNotch(0, 'ios')).toBe(false); // desktop / browser tab
+    expect(hasNotch(IOS_NOTCH_INSET_THRESHOLD_PX - 1, 'ios')).toBe(false);
+    expect(hasNotch(NOTCH_INSET_THRESHOLD_PX - 1, 'android')).toBe(false);
   });
 });
 
@@ -305,7 +320,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
 });
 
 describe('computeNotchBandState — no-cutout devices skip the band', () => {
-  const baseline: NotchBandInput = { ...NO_CUTOUT, insetTop: BEZEL_INSET };
+  const baseline: NotchBandInput = { ...NO_CUTOUT, insetTop: IPAD_STATUS_BAR_INSET };
 
   it('bezel iPad (camera in the bezel) gets no band and no icon flip', () => {
     const state = computeNotchBandState(baseline);

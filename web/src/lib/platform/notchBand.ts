@@ -26,13 +26,25 @@ import type { Orientation, Platform } from './index';
 // imported here, so this file never touches @capacitor/status-bar at runtime.
 import type { Style, StatusBarPlugin } from '@capacitor/status-bar';
 
-// Minimum top safe-area inset (CSS px) we treat as a real display cutout. Above
-// it: iPhone notches / Dynamic Island (~44–59px) and Android hole-punches.
-// Below it: a plain status bar or a bezel-camera iPad (~20–24px), which get no
-// band. CSS insets can't perfectly separate an Android hole-punch from an iPad
-// status bar (they overlap near ~24px); this threshold reliably excludes the
-// bezel-iPad case and is the single knob to tune if a device misjudges.
+// Minimum top safe-area inset (CSS px) treated as a real display cutout on
+// Android and the web targets. Above it: hole-punches. Below it: a plain status
+// bar, which gets no band. CSS insets can't perfectly separate an Android
+// hole-punch from a shallow status bar (they overlap near ~24px), so this is the
+// knob to tune if an Android device misjudges. iOS uses its own floor below.
 export const NOTCH_INSET_THRESHOLD_PX = 30;
+
+// iOS needs a higher floor. `ios.contentInset: "never"` stops WKWebView insetting
+// content itself, so the whole status-bar strip surfaces as a safe-area inset:
+// a bezel iPad measures 32px there — above the cross-platform threshold, on a
+// device with no cutout at all. Every real iOS cutout is deeper (a notch is
+// ~44–47px, the Dynamic Island 59px), so the two separate cleanly in between.
+// Android keeps the lower threshold: its hole-punch overlaps the iPad's
+// status-bar range, so depth alone can't split those two.
+export const IOS_NOTCH_INSET_THRESHOLD_PX = 40;
+
+export function notchInsetThreshold(platform: Platform): number {
+  return platform === 'ios' ? IOS_NOTCH_INSET_THRESHOLD_PX : NOTCH_INSET_THRESHOLD_PX;
+}
 
 // Capacitor StatusBar.Style string values (mirrored here so the pure layer has
 // no plugin import): 'DARK' = light icons (for a dark band), 'LIGHT' = dark
@@ -84,8 +96,8 @@ export function bandColor(activeColor: string, eraser: boolean, paperColor: stri
   return eraser ? paperColor : activeColor;
 }
 
-export function hasNotch(insetTop: number): boolean {
-  return insetTop >= NOTCH_INSET_THRESHOLD_PX;
+export function hasNotch(insetTop: number, platform: Platform): boolean {
+  return insetTop >= notchInsetThreshold(platform);
 }
 
 export function statusBarStyleForBand(color: string): StatusBarStyle {
@@ -137,7 +149,7 @@ export function applyStatusBar(
 export function computeNotchBandState(input: NotchBandInput): NotchBandState {
   const color = bandColor(input.activeColor, input.eraser, input.paperColor);
   const { edge, inset } = cutoutEdge(input);
-  const show = hasNotch(inset);
+  const show = hasNotch(inset, input.platform);
   return {
     backgroundColors: {
       top: show && edge === 'top' ? color : 'transparent',
