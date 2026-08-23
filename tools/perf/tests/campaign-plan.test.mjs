@@ -14,6 +14,7 @@ import {
   campaignTarget,
   planCampaign,
   probeHostProblem,
+  resolvedProbeHostProblem,
 } from '../lib/campaign-plan.mjs';
 import { entryModulePath, servedBuildIdentityProblem } from '../lib/profile-preview.mjs';
 import { campaignProgress } from '../campaign-status.mjs';
@@ -790,5 +791,59 @@ describe('servedBuildIdentityProblem', () => {
     expect(
       servedBuildIdentityProblem('http://127.0.0.1:4173/', foreign, { allowForeignBuild: true })
     ).toBeNull();
+  });
+});
+
+describe('resolvedProbeHostProblem', () => {
+  const resolving = (byHost) => async (host) => {
+    if (!(host in byHost)) throw new Error('ENOTFOUND');
+    return byHost[host];
+  };
+
+  // The regression this covers: classifying the hostname TEXT let ordinary names
+  // that DNS resolves to loopback through — localtest.me, lvh.me and the *.nip.io
+  // family — so the campaign ran on against a host answering only to this machine.
+  it('rejects a name that resolves to loopback', async () => {
+    const lookup = resolving({
+      'localtest.me': ['127.0.0.1'],
+      'lvh.me': ['127.0.0.1'],
+      '127.0.0.2.nip.io': ['127.0.0.2'],
+    });
+
+    for (const host of ['localtest.me', 'lvh.me', '127.0.0.2.nip.io']) {
+      expect(await resolvedProbeHostProblem(`http://${host}:4175`, { lookup }), host).toMatch(
+        /loopback/
+      );
+    }
+  });
+
+  // One loopback answer among several is still a host the device may connect to
+  // itself on.
+  it('rejects a name where any answer is loopback', async () => {
+    const lookup = resolving({ 'split.example': ['192.168.40.53', '127.0.0.1'] });
+
+    expect(await resolvedProbeHostProblem('http://split.example:4175', { lookup })).toMatch(
+      /loopback/
+    );
+  });
+
+  it('accepts a name that resolves only to routable addresses', async () => {
+    const lookup = resolving({ 'rig.example': ['192.168.40.53', 'fe80::1'] });
+
+    expect(await resolvedProbeHostProblem('http://rig.example:4175', { lookup })).toBeNull();
+  });
+
+  it('rejects a name that does not resolve at all', async () => {
+    expect(
+      await resolvedProbeHostProblem('http://nowhere.example:4175', { lookup: resolving({}) })
+    ).toMatch(/does not resolve/);
+  });
+
+  it('still catches a literal loopback before reaching DNS', async () => {
+    const lookup = async () => {
+      throw new Error('should not be consulted');
+    };
+
+    expect(await resolvedProbeHostProblem('http://127.0.0.1:4175', { lookup })).toMatch(/loopback/);
   });
 });

@@ -251,6 +251,47 @@ export function probeHostProblem(probeHost) {
   return null;
 }
 
+// Classifying the hostname TEXT is not enough: `localtest.me`, `lvh.me` and the
+// whole `*.nip.io` family are ordinary names that DNS resolves to loopback, so
+// they passed the literal check and the campaign ran on against a host that
+// answers only to this machine — the original failure mode wearing a domain name.
+//
+// The resolver is injected so the test can be deterministic without a network.
+export async function resolvedProbeHostProblem(
+  probeHost,
+  { lookup = defaultLookup, hostname = null } = {}
+) {
+  const literal = probeHostProblem(probeHost);
+  if (literal) return literal;
+
+  const host = hostname ?? new URL(probeHost).hostname.replace(/^\[|\]$/g, '');
+  let addresses;
+  try {
+    addresses = await lookup(host);
+  } catch {
+    return `--probe-host=${probeHost} does not resolve — the device cannot reach a name that has no address`;
+  }
+  if (!addresses.length) {
+    return `--probe-host=${probeHost} resolved to no addresses`;
+  }
+  // EVERY returned address must be reachable. One loopback answer among several is
+  // still a host the device may connect to itself on.
+  const unreachable = addresses.filter((address) => isUnreachableFromDevice(address));
+  if (unreachable.length) {
+    return (
+      `--probe-host=${probeHost} resolves to ${unreachable.join(', ')}, which is loopback — ` +
+      "the device would connect to itself. Pass this host's LAN address."
+    );
+  }
+  return null;
+}
+
+async function defaultLookup(host) {
+  const { lookup } = await import('node:dns/promises');
+  const answers = await lookup(host, { all: true });
+  return answers.map((answer) => answer.address);
+}
+
 export function campaignTarget(targetId) {
   const target = CAMPAIGN_TARGETS[targetId];
   if (!target) {
