@@ -53,6 +53,33 @@ collision explicitly instead of trusting the reader to notice.
   top, not one per PR. Anyone expecting per-PR merge commits in first-parent history will read the
   landing as a bug and consider reverting.
 
+## What the first review corrected
+
+Four claims in the initial version were wrong or under-qualified, and each failure mode is worth
+keeping because none of them errors — they all produce a runbook that reads fine and fails late.
+
+* **"The tip PR's checks are the ship gate."** True as a statement about *content* — with a linear
+  chain and the trunk at the fork point, the tip's tree is what lands. False as a statement about
+  *permission*: GitHub evaluates branch protection and rulesets per included PR when the stack merge
+  runs, and bypassing is unsupported even for admins. The original packet reached its conclusion on
+  a repo whose `main` has no required status checks, so the precondition was invisible in the
+  evidence. The skill now checks the base's rules first and splits the two gates apart.
+* **`gh stack merge` with no argument** uses the stack for the *current branch*, while
+  `gh stack
+  link` deliberately writes no local state — so the documented flow produced a merge
+  command with nothing to target. Caught by reading `gh stack merge --help`, which says so plainly.
+* **Hardcoded `gh`.** A shared runbook that reaches straight for the CLI contradicts the root
+  instructions (native GitHub tooling first) and breaks in a sandbox with no Keychain access. The
+  `gh` lines survive as the fallback and as the precise statement of the operation; `gh stack` is
+  the only mandatory CLI use because nothing native covers it.
+* **"`gh stack` is the only programmatic path."** The GraphQL half was right and the conclusion was
+  not: REST exposes `/repos/{owner}/{repo}/stacks` plus `add`, `unstack`, and an asynchronous
+  `merge-async` endpoint. Verified by calling the live endpoint, which also returned this repo's own
+  stack history.
+
+The pattern across all four: a claim generalized from one successful run on one repository, stated
+without the precondition that made it true.
+
 ## Open questions
 
 * Whether `gh stack` beyond 0.1.0 preserves `link`'s numeric ambiguity, the `--base` flag, and
