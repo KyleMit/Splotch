@@ -78,6 +78,13 @@ export function rescoreCapture(parsed, { name, targetId }) {
   return { name, brush, gateShare, summaries, drawing, fidelity };
 }
 
+function failedChecks(fidelity) {
+  return Object.entries(fidelity.checks ?? {})
+    .filter(([, passed]) => !passed)
+    .map(([name]) => name)
+    .join('+');
+}
+
 function row(scored) {
   const phase = scored.summaries.phases[0];
   const contact = phase.starvation?.inContact;
@@ -93,8 +100,13 @@ function row(scored) {
     'gate %': round(scored.gateShare * 100, 2),
     // A capture that fails fidelity must not be scored at all, however plausible
     // its number looks, so the verdict is printed beside the number and not
-    // behind a flag.
-    fidelity: scored.fidelity.passed ? 'pass' : 'FAIL',
+    // behind a flag. The FAILING CHECKS are named rather than a bare FAIL,
+    // because which one failed decides whether the number means anything: the
+    // pressure and contactGeometry thresholds are iPad-calibrated, so every
+    // desktop and Android capture fails them by construction and the matrix
+    // classes those targets advisory. `cadence` is the one that invalidates a
+    // number outright, and a bare FAIL hides which of the two you are looking at.
+    fidelity: scored.fidelity.passed ? 'pass' : failedChecks(scored.fidelity),
     gate: scored.drawing.passed ? 'PASS' : 'FAIL',
   };
 }

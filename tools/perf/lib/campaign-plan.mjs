@@ -29,6 +29,14 @@ const SCREEN_COMMAND = 'perf:ios:xcuitest:screen';
 // flag, so a split cell carries a different argument vocabulary rather than the
 // Appium one minus the parts that would be ignored.
 export const SPLIT_SCREEN_COMMAND = 'perf:device:frames';
+// Desktop rows run entirely on the capture host through Playwright. Orientation
+// is a viewport shape rather than a device rotation, and the matrix derives it
+// back from the recorded viewport, so the two geometries have to stay a matched
+// pair rather than two independent numbers.
+const DESKTOP_SCREEN_COMMAND = 'perf:web:frames';
+const DESKTOP_ACTIONS_COMMAND = 'perf:web:actions';
+const DESKTOP_LANDSCAPE_VIEWPORT = '1366x915';
+const DESKTOP_PORTRAIT_VIEWPORT = '915x1366';
 const ACTIONS_APPIUM_COMMAND = 'perf:ios:xcuitest:actions';
 const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 
@@ -84,6 +92,30 @@ export const CAMPAIGN_TARGETS = {
     runtime: 'web',
     actionsTransport: 'cdp',
     webviewClass: 'android.webkit.WebView',
+  },
+  'mac-chrome': {
+    label: 'Mac · Chrome',
+    transport: 'desktop',
+    desktopEngine: 'chromium',
+    actionsTransport: 'desktop',
+    runtime: 'web',
+    deviceClass: 'desktop',
+  },
+  'mac-safari': {
+    label: 'Mac · Safari',
+    transport: 'desktop',
+    desktopEngine: 'webkit',
+    actionsTransport: 'desktop',
+    runtime: 'web',
+    deviceClass: 'desktop',
+  },
+  'mac-firefox': {
+    label: 'Mac · Firefox',
+    transport: 'desktop',
+    desktopEngine: 'firefox',
+    actionsTransport: 'desktop',
+    runtime: 'web',
+    deviceClass: 'desktop',
   },
   'android-device-native': {
     deviceClass: 'handset',
@@ -196,6 +228,31 @@ function splitTransportArgs(target, host) {
   return args;
 }
 
+export function desktopViewport(orientation) {
+  return orientation === 'PORTRAIT' ? DESKTOP_PORTRAIT_VIEWPORT : DESKTOP_LANDSCAPE_VIEWPORT;
+}
+
+// The desktop capture records no `orientation` field; the matrix derives it from
+// the viewport it did record (`width > height ? LANDSCAPE : PORTRAIT`) and refuses
+// a capture whose derived mode disagrees with the cell it was filed under. So the
+// viewport IS the orientation here, and a square one would be rejected.
+function desktopArgs(target, mode, item, host) {
+  const args = [
+    `--engine=${target.desktopEngine}`,
+    `--viewport=${desktopViewport(mode.orientation)}`,
+    `--theme=${mode.theme}`,
+  ];
+  if (host.url) args.push(`--url=${host.url}`);
+  if (item === 'actions') {
+    args.push(`--repeats=${ACTION_REPEATS}`, '--report-only');
+    return args;
+  }
+  const brush = item === 'pen-undo' ? 'pen' : item;
+  args.push(`--brush=${brush}`);
+  if (item === 'pen-undo') args.push(`--undo-count=${UNDO_COUNT}`);
+  return args;
+}
+
 function transportArgs(target, host) {
   const args = [];
   if (host.appiumUrl) args.push(`--appium-url=${host.appiumUrl}`);
@@ -245,20 +302,24 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
     for (const item of resolveItems(items)) {
       const isActions = item === 'actions';
       const useCdp = isActions && target.actionsTransport === 'cdp';
+      const useSplit = !isActions && target.transport === 'split';
+      const useDesktop = target.transport === 'desktop';
       const artifact = artifactPath(outputRoot, targetId, mode, item);
       const runLabel = `${label ?? targetId}-${mode.id}-${item}`;
 
-      const command = useCdp
-        ? ACTIONS_CDP_COMMAND
-        : isActions
-          ? ACTIONS_APPIUM_COMMAND
-          : target.transport === 'split'
-            ? SPLIT_SCREEN_COMMAND
-            : SCREEN_COMMAND;
+      const command = useDesktop
+        ? isActions
+          ? DESKTOP_ACTIONS_COMMAND
+          : DESKTOP_SCREEN_COMMAND
+        : useCdp
+          ? ACTIONS_CDP_COMMAND
+          : isActions
+            ? ACTIONS_APPIUM_COMMAND
+            : target.transport === 'split'
+              ? SPLIT_SCREEN_COMMAND
+              : SCREEN_COMMAND;
 
       // Direct CDP addresses the device itself and never borrows an Appium session.
-      const useSplit = !isActions && target.transport === 'split';
-
       const transport = useCdp
         ? [
             ...(host.deviceId ? [`--device-id=${host.deviceId}`] : []),
@@ -283,6 +344,17 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
             ]
           : drawingArgs(item, mode);
 
+      const args = useDesktop
+        ? [...desktopArgs(target, mode, item, host), `--label=${runLabel}`, `--output=${artifact}`]
+        : [
+            ...transport,
+            ...specific,
+            `--label=${runLabel}`,
+            `--output=${artifact}`,
+            // --report-only keeps a valid red gate instead of stopping the queue on it.
+            ...(useSplit ? [] : ['--report-only']),
+          ];
+
       plan.push({
         id: `${mode.id}/${item}`,
         targetId,
@@ -290,14 +362,7 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         item,
         artifact,
         command,
-        args: [
-          ...transport,
-          ...specific,
-          `--label=${runLabel}`,
-          `--output=${artifact}`,
-          // --report-only keeps a valid red gate instead of stopping the queue on it.
-          ...(useSplit ? [] : ['--report-only']),
-        ],
+        args,
       });
     }
   }

@@ -8,7 +8,9 @@
 // a grandchild and leaks the port. freePort() clears out any stale leftover
 // server up front so every run serves the build it just produced.
 
-import { fail, run, sleep } from '../../lib/proc.mjs';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { spawnViteServer, freePort } from '../../lib/vite-server.mjs';
 
@@ -27,6 +29,16 @@ export function entryModulePath(html) {
   return /\/_app\/immutable\/entry\/start\.[^"']+\.js/.exec(html ?? '')?.[0] ?? null;
 }
 
+// Resolving the entry proves the server is internally consistent. It does NOT
+// prove the build is THIS checkout's — a preview server another worktree left on
+// the port serves its own perfectly coherent build, and every check above passes
+// against someone else's product. Observed on 2026-08-22, where port 4173 was held
+// by a Codex worktree's preview for 85 minutes and the manifest check said fresh.
+// Only the local build output can settle it.
+function localBuildHasEntry(entry) {
+  return existsSync(join(ROOT, 'web', 'build', entry));
+}
+
 export async function assertServedBuildIsFresh(base) {
   const html = await fetch(base).then((response) => response.text());
   const entry = entryModulePath(html);
@@ -38,6 +50,13 @@ export async function assertServedBuildIsFresh(base) {
     fail(
       `${base} is serving a stale manifest: it names ${entry}, which 404s. ` +
         'A capture against it would measure un-hydrated server-rendered markup.'
+    );
+  }
+  if (!localBuildHasEntry(entry)) {
+    fail(
+      `${base} is serving ${entry}, which this checkout's web/build does not contain — ` +
+        'the port is held by another build. A capture against it would measure a different ' +
+        'product. Choose a free port rather than stopping a listener another session owns.'
     );
   }
   return entry;

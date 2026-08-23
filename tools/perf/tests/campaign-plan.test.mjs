@@ -6,6 +6,7 @@ import {
   CAMPAIGN_TARGETS,
   UNDO_COUNT,
   SPLIT_SCREEN_COMMAND,
+  desktopViewport,
   artifactMatchesRuntime,
   artifactPassedFidelity,
   artifactPath,
@@ -151,9 +152,14 @@ describe('campaign device class', () => {
     expect(cell.args.some((arg) => arg.startsWith('--device-class'))).toBe(false);
   });
 
+  // Only the Appium actions runner reads the class, and a desktop cell never
+  // reaches it — but the point of this check is that no target arrives without
+  // declaring what it is, so the vocabulary grows rather than the check narrowing.
   it('classes every target, so a new one cannot silently arrive without one', () => {
     for (const [id, target] of Object.entries(CAMPAIGN_TARGETS)) {
-      expect(['tablet', 'handset'], `${id} needs a deviceClass`).toContain(target.deviceClass);
+      expect(['tablet', 'handset', 'desktop'], `${id} needs a deviceClass`).toContain(
+        target.deviceClass
+      );
     }
   });
 });
@@ -367,5 +373,71 @@ describe('entryModulePath', () => {
   it('reports no entry for a page that names none', () => {
     expect(entryModulePath('<html><body><canvas></canvas></body></html>')).toBeNull();
     expect(entryModulePath(undefined)).toBeNull();
+  });
+});
+
+describe('desktop transport', () => {
+  const desktopCells = (targetId, options = {}) =>
+    planCampaign(targetId, {
+      outputRoot: 'out',
+      host: { url: 'http://127.0.0.1:4193/' },
+      modes: ['landscape-light'],
+      ...options,
+    });
+
+  it('routes desktop drawing and actions to the Playwright commands', () => {
+    const drawing = desktopCells('mac-chrome', { items: ['crayon'] })[0];
+    const actions = desktopCells('mac-chrome', { items: ['actions'] })[0];
+
+    expect(drawing.command).toBe('perf:web:frames');
+    expect(actions.command).toBe('perf:web:actions');
+    expect(drawing.args).toContain('--engine=chromium');
+    expect(actions.args).toContain('--engine=chromium');
+  });
+
+  it('gives each desktop target its own engine', () => {
+    const engineOf = (targetId) =>
+      desktopCells(targetId, { items: ['pen-undo'] })[0].args.find((arg) =>
+        arg.startsWith('--engine=')
+      );
+
+    expect(engineOf('mac-chrome')).toBe('--engine=chromium');
+    expect(engineOf('mac-safari')).toBe('--engine=webkit');
+    expect(engineOf('mac-firefox')).toBe('--engine=firefox');
+  });
+
+  // The desktop capture records no orientation field. The matrix derives it back
+  // from the viewport and refuses a capture whose derived mode disagrees with the
+  // cell it was filed under, so the viewport IS the orientation here.
+  it('carries orientation as a viewport shape the matrix can derive back', () => {
+    const landscape = desktopCells('mac-chrome', { items: ['crayon'] })[0];
+    const portrait = desktopCells('mac-chrome', {
+      items: ['crayon'],
+      modes: ['portrait-dark'],
+    })[0];
+
+    expect(landscape.args).toContain(`--viewport=${desktopViewport('LANDSCAPE')}`);
+    expect(portrait.args).toContain(`--viewport=${desktopViewport('PORTRAIT')}`);
+
+    const [lw, lh] = desktopViewport('LANDSCAPE').split('x').map(Number);
+    const [pw, ph] = desktopViewport('PORTRAIT').split('x').map(Number);
+    expect(lw).toBeGreaterThan(lh);
+    expect(pw).toBeLessThan(ph);
+  });
+
+  it('drives undo from the pen cell so it carries that cell shape and theme', () => {
+    const pen = desktopCells('mac-chrome', { items: ['pen-undo'] })[0];
+    const crayon = desktopCells('mac-chrome', { items: ['crayon'] })[0];
+
+    expect(pen.args).toContain(`--undo-count=${UNDO_COUNT}`);
+    expect(crayon.args.some((arg) => arg.startsWith('--undo-count'))).toBe(false);
+  });
+
+  it('never passes a desktop cell a device flag', () => {
+    const cell = desktopCells('mac-firefox', { items: ['magic'] })[0];
+
+    for (const ignored of ['--device-id', '--appium-url', '--native-app', '--platform']) {
+      expect(cell.args.some((arg) => arg.startsWith(ignored))).toBe(false);
+    }
   });
 });
