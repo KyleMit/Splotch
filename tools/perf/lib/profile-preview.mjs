@@ -42,7 +42,7 @@ function localBuildHasEntry(entry) {
 // Valid against ANY server, including the externally-served historical build that
 // `--url=` exists for, so this is the half of the check a `--url` capture can also
 // run. It cannot say whose build it is — only that the build is self-consistent.
-export async function assertServedManifestResolves(base) {
+async function assertServedManifestResolves(base) {
   const html = await fetch(base).then((response) => response.text());
   const entry = entryModulePath(html);
   if (!entry) {
