@@ -65,15 +65,23 @@ staging file, `fix-audits` burns the issues down.
 
 ## Pull requests — author, review, respond
 
-All three augment the built-in PR flows rather than replacing them.
+These augment the built-in PR flows rather than replacing them.
 
 | Skill                   | Use when you are…                                                                  |
 | ----------------------- | ---------------------------------------------------------------------------------- |
+| `create-stacked-prs`    | **Sequencing** a multi-issue campaign into a chain of stacked PRs                  |
 | `pr-screenshots`        | **Opening** a PR that touches UI — screenshot/before-after/gif conventions         |
 | `leave-pr-review`       | **Authoring** a review of someone's PR — local checkout, empirical verification    |
 | `address-pr-review`     | **Receiving** a review — triage every comment, fix or rebut, reply and resolve     |
 | `implement-issue-stack` | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-claude` |
 | `triage-dependabot-prs` | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest |
+
+`create-stacked-prs` comes first in that table for a reason: it decides the *shape* of the campaign
+before any single PR exists, and every later skill in the group has to respect that shape. Its one
+rule — no new commit on a PR once another PR sits above it — directly overrides
+`address-pr-review`'s default of committing fixes onto the reviewed branch, so read it before
+answering review on a stacked PR. `implement-issue-stack` is the unattended Codex orchestrator for
+the same shape; this one is the by-hand procedure, in either agent.
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
