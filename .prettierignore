@@ -35,3 +35,8 @@ tools/asset-gen/ideas-exploration/ideas-review.html
 
 # Markdown is owned by dprint (dprint.json, ADR-0057) — permanently out of Prettier scope
 *.md
+
+# ADR-0138 stores tracked capture evidence MINIFIED — the corpus is sized on the
+# dense form, and reformatting it would roughly quadruple every file for frame
+# tables no human reads. The README beside them is Markdown and dprint's to own.
+perf-profiles/evidence/**/*.json
