@@ -84,15 +84,30 @@ function rebootSimulator(udid) {
   spawnSync('xcrun', ['simctl', 'bootstatus', udid, '-b'], { stdio: 'ignore' });
 }
 
+// A 200 is not the probe protocol. A plain-text server on the requested port
+// answered `not a probe` with status 200 and the campaign ran on, which recreates
+// exactly the page-timeout failure this guard exists to eliminate — a wrong server
+// or a permissive fallback on the right port. The plan's own shape is the cheapest
+// marker available, and it has to be parsed rather than merely fetched.
+export function isProbePlan(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+  return (
+    typeof payload.label === 'string' &&
+    typeof payload.finish === 'boolean' &&
+    Number.isFinite(payload.contactMs)
+  );
+}
+
 // The device is what has to reach this URL, and only the device can prove that. The
-// host can prove the server is up and answering the probe protocol, which is the
+// host can prove the server is up and speaking the probe protocol, which is the
 // half of the failure that is cheap to catch before a queue of cells times out.
 async function probeHostResponds(probeHost) {
   try {
     const response = await fetch(new URL('/__probe/plan', probeHost), {
       signal: AbortSignal.timeout(PROBE_HOST_TIMEOUT_MS),
     });
-    return response.ok;
+    if (!response.ok) return false;
+    return isProbePlan(await response.json());
   } catch {
     return false;
   }
@@ -152,7 +167,8 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     const reachable = await probeHostResponds(flag('probe-host'));
     if (!reachable) {
       fail(
-        `the probe host at ${flag('probe-host')} did not answer — start it with ` +
+        `the probe host at ${flag('probe-host')} did not answer the probe protocol — ` +
+          'a server responding on that port is not enough. Start it with ' +
           "`npm run perf:device:serve` and pass this host's LAN address"
       );
     }

@@ -17,6 +17,7 @@ import {
 } from '../lib/campaign-plan.mjs';
 import { entryModulePath } from '../lib/profile-preview.mjs';
 import { campaignProgress } from '../campaign-status.mjs';
+import { isProbePlan } from '../run-campaign.mjs';
 import {
   ALREADY_VALID,
   COMPLETE,
@@ -595,5 +596,31 @@ describe('campaignProgress', () => {
     });
 
     expect(progress.outstanding).toContainEqual({ cell: 'portrait-light/pen-undo', attempts: 2 });
+  });
+});
+
+describe('isProbePlan', () => {
+  // The regression this covers: a plain-text server answering `not a probe` with
+  // status 200 on the requested port satisfied the old check, and the campaign ran
+  // on — recreating the page-timeout failure the guard exists to eliminate.
+  it('rejects a 200 that is not the probe protocol', () => {
+    expect(isProbePlan('not a probe')).toBe(false);
+    expect(isProbePlan(null)).toBe(false);
+    expect(isProbePlan({})).toBe(false);
+    expect(isProbePlan({ ok: true })).toBe(false);
+    expect(isProbePlan([{ label: 'run', finish: false, contactMs: 1 }])).toBe(false);
+  });
+
+  // The shape a running `perf:device:serve` actually answers with, taken from one.
+  it('accepts the plan the probe host serves', () => {
+    expect(isProbePlan({ brush: 'pen', contactMs: 600000, finish: false, label: 'run' })).toBe(
+      true
+    );
+  });
+
+  it('rejects a plan missing any required field', () => {
+    expect(isProbePlan({ contactMs: 1, finish: false })).toBe(false);
+    expect(isProbePlan({ label: 'run', contactMs: 1 })).toBe(false);
+    expect(isProbePlan({ label: 'run', finish: false })).toBe(false);
   });
 });
