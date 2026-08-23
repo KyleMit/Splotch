@@ -32,7 +32,7 @@ import {
 } from '../lib/real-screen-stats.mjs';
 import {
   androidGestureInstructions,
-  androidRotationCommands,
+  androidPageLaunchSteps,
   swipeArgs,
 } from './lib/android-input.mjs';
 
@@ -83,21 +83,15 @@ async function wda(wdaUrl, method, path, body) {
 function androidDriver({ serial, pageUrl, orientation }) {
   return {
     async openPage() {
-      for (const args of androidRotationCommands(orientation)) adb(serial, args);
-      await sleep(ROTATION_SETTLE_MS);
-      adb(serial, ['shell', 'am', 'force-stop', 'com.android.chrome']);
-      await sleep(APP_STOP_SETTLE_MS);
-      adb(serial, [
-        'shell',
-        'am',
-        'start',
-        '-a',
-        'android.intent.action.VIEW',
-        '-d',
-        `'${pageUrl}'`,
-        'com.android.chrome',
-      ]);
-      await sleep(PAGE_SETTLE_MS);
+      const settles = {
+        appStop: APP_STOP_SETTLE_MS,
+        rotation: ROTATION_SETTLE_MS,
+        page: PAGE_SETTLE_MS,
+      };
+      for (const step of androidPageLaunchSteps(orientation, pageUrl)) {
+        adb(serial, step.args);
+        if (step.settle) await sleep(settles[step.settle]);
+      }
     },
     boundsFrom(geometry) {
       return {

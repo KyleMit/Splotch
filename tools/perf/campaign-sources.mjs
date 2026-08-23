@@ -17,6 +17,7 @@ import { isAbsolute, join } from 'node:path';
 import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import {
   CAMPAIGN_MODES,
+  SPLIT_TRANSPORT,
   artifactMatchesRuntime,
   artifactPath,
   campaignTarget,
@@ -46,6 +47,7 @@ export function campaignModeSources(
   { outputRoot, productCommit, modes, actionsUnavailableReason }
 ) {
   const target = campaignTarget(targetId);
+  const capturesUndo = target.transport !== SPLIT_TRANSPORT;
   const selected = modes?.length
     ? CAMPAIGN_MODES.filter((mode) => modes.includes(mode.id))
     : CAMPAIGN_MODES;
@@ -83,7 +85,11 @@ export function campaignModeSources(
         status: 'captured',
         drawingProductCommit: productCommit,
         drawing: Object.fromEntries(Object.entries(paths).map(([brush, path]) => [brush, [path]])),
-        undoSource: paths.pen,
+        // The split transport is drawing-only — its pen cell has no undo phase, so
+        // naming that artifact as the undo source normalizes to null and silently
+        // drops the mode's undo row. Omitting it lets applyCampaignModes carry the
+        // existing measurement forward instead.
+        ...(capturesUndo ? { undoSource: paths.pen } : {}),
         ...(actionsOnly
           ? { actionsUnavailableReason }
           : { actionSources: [{ source: actions, productCommit, kind: 'full' }] }),
@@ -99,7 +105,26 @@ export function applyCampaignModes(manifest, targetId, entries) {
     if (!entry.mode) continue;
     const index = target.modes.findIndex((mode) => mode.id === entry.id);
     if (index === -1) fail(`Manifest target ${targetId} has no mode ${entry.id}`);
-    target.modes[index] = entry.mode;
+    // A transport that cannot capture a section leaves it off the entry, and the
+    // mode keeps whatever it already published. Replacing the object wholesale
+    // would discard that measurement without saying so.
+    //
+    // The commit has to be resolved here rather than copied, because undo
+    // provenance is usually implicit: a mode carrying `undoSource` alone lets the
+    // report fall back to its `drawingProductCommit`, and this merge is about to
+    // replace that with the commit the DRAWING was recaptured at. Copying the
+    // absent field would silently re-date the preserved undo rows to a commit
+    // they were never measured at, and the provenance table prints that date.
+    const existing = target.modes[index];
+    target.modes[index] = {
+      ...entry.mode,
+      ...(entry.mode.undoSource === undefined && existing.undoSource !== undefined
+        ? {
+            undoSource: existing.undoSource,
+            undoProductCommit: existing.undoProductCommit ?? existing.drawingProductCommit,
+          }
+        : {}),
+    };
   }
   return manifest;
 }

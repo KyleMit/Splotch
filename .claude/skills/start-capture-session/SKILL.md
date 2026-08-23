@@ -29,6 +29,11 @@ Fix whatever it blocks on before capturing anything. A blocked preflight exits n
 the cause; two of the likely ones need a human at the device and cannot be cleared from the host —
 **Guided Access** (triple-click the side button, enter the passcode, End) and a locked phone.
 
+**A green preflight does not mean every cell can be captured.** It proves touch, never rotation, so
+a device that will not turn still passes all three flags and then fails every landscape cell — which
+is half the matrix. Tracked as issue 1248. Until it verifies rotation, capture one landscape cell
+first and confirm it writes an artifact before queueing a target.
+
 ## Reuse what cost a human, reclaim what is cheap
 
 The repo's concurrent-worktree rule — never stop a listener another session owns — is written for
@@ -63,7 +68,16 @@ For a full cross-target snapshot rather than a single capture, continue with the
   turn comes, and reachable afterwards for a follow-up question.
 * **Read the fidelity verdict before the result.** A capture that parses is not a capture that can
   be scored. A cell that fails input fidelity must not be scored at all, however plausible its
-  number looks.
+  number looks. **Which check failed decides what the failure means**: `cadence` invalidates the
+  number outright, while `pressure` and `contactGeometry` are iPad-calibrated and every Android and
+  desktop capture fails them by construction, which is why those targets are classed advisory.
+* **Restart a long-lived server after editing what it serves.** The campaign re-reads the capture
+  tool every cell, but `perf:device:serve` holds the injected page bootstrap in its module cache and
+  `perf:serve` holds the build it started with. The two together read as "my fix did nothing", which
+  invites a second wrong fix on top of a correct one. Prove the change is served, don't assume it.
+* **Do not retry a gate that cannot pass.** `--max-attempts` defaults to 3, so a target whose
+  fidelity failure is structural spends triple the device time reaching the same verdict. Pass
+  `--max-attempts=1` once you know which failure you are looking at.
 * **Do not tear the rig down when a capture ends.** A campaign is many captures, and clearing
   stay-awake between them is what put the phone to sleep mid-campaign once already.
 

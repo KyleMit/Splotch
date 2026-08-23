@@ -150,4 +150,69 @@ describe('campaign sources', () => {
     expect(manifest.targets[0].modes[0].reason).toBe('untouched');
     expect(manifest.targets[0].modes[1].status).toBe('captured');
   });
+
+  it('names no undo source for the split transport, which captures drawing only', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+    const [entry] = sourcesFor('android-device-web', outputRoot);
+
+    // Its pen cell has no undo phase, so naming that artifact normalizes to null
+    // and drops the row rather than measuring it.
+    expect(entry.mode.undoSource).toBeUndefined();
+    expect(entry.mode.drawing.pen).toHaveLength(1);
+  });
+
+  it('carries a published undo measurement forward when the entry names none', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+    const entries = sourcesFor('android-device-web', outputRoot);
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              undoSource: 'preserved',
+              undoProductCommit: 'abc',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    expect(manifest.targets[0].modes[0].undoSource).toBe('preserved');
+    expect(manifest.targets[0].modes[0].undoProductCommit).toBe('abc');
+    expect(manifest.targets[0].modes[0].drawing.pen).toHaveLength(1);
+  });
+
+  it('pins implicit undo provenance before the drawing commit moves under it', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+    const entries = sourcesFor('android-device-web', outputRoot);
+    // The shape every android-device-web mode actually has: an undo source with
+    // no commit of its own, so the report reads provenance off drawingProductCommit
+    // — which this merge is about to replace with the recapture's commit.
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              undoSource: 'preserved',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
+    expect(merged.undoProductCommit).toBe('aaaaaaaaaaaa');
+  });
 });
