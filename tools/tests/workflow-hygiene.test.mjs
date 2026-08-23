@@ -82,6 +82,89 @@ function runInstallMaestro(versionOutput) {
   return { githubPath, home, result };
 }
 
+function stepScript(lines, stepName) {
+  const start = lines.findIndex((line) => line.trim() === `- name: ${stepName}`);
+  if (start < 0) return undefined;
+  const runIndex = lines.findIndex((line, index) => index > start && /^\s+run: \|\s*$/.test(line));
+  if (runIndex < 0) return undefined;
+
+  const scriptIndent = lines[runIndex].search(/\S/) + 2;
+  const script = [];
+  for (const line of lines.slice(runIndex + 1)) {
+    if (line.trim() !== '' && line.search(/\S/) < scriptIndent) break;
+    script.push(line.slice(scriptIndent));
+  }
+  return script.join('\n');
+}
+
+// The stub resolves --body-file the way gh does and captures the bytes from
+// that exact path, so the body assertions describe what gh was handed rather
+// than whatever the step happened to leave in RUNNER_TEMP. Reading the
+// directory instead lets a step that names a missing or wrong file still
+// satisfy every assertion, while real gh would exit non-zero and the
+// unattended gate would file nothing.
+const GH_STUB = [
+  `printf '%s\\n' "$*" >>"$GH_CALL_LOG"`,
+  'if [[ "$1" == issue && "$2" == list ]]; then',
+  '  printf %s "$GH_EXISTING_ISSUE"',
+  '  exit 0',
+  'fi',
+  'body_file=""',
+  'awaiting=0',
+  'for arg in "$@"; do',
+  '  if [[ $awaiting == 1 ]]; then body_file="$arg"; awaiting=0; continue; fi',
+  '  case "$arg" in',
+  '    --body-file) awaiting=1 ;;',
+  '    --body-file=*) body_file="${arg#--body-file=}" ;;',
+  '  esac',
+  'done',
+  'if [[ $awaiting == 1 || -z "$body_file" ]]; then',
+  '  echo "gh: --body-file needs a value" >&2',
+  '  exit 1',
+  'fi',
+  'if [[ ! -r "$body_file" ]]; then',
+  '  echo "gh: cannot read $body_file" >&2',
+  '  exit 1',
+  'fi',
+  'cat "$body_file" >"$GH_BODY_CAPTURE"',
+].join('\n');
+
+function runFilingStep(script, stepEnv, existingIssue) {
+  const root = mkdtempSync(join(tmpdir(), 'splotch-gate-filing-'));
+  tempRoots.push(root);
+  const stubBin = join(root, 'bin');
+  const runnerTemp = join(root, 'runner-temp');
+  const ghCallLog = join(root, 'gh-calls.log');
+  const ghBodyCapture = join(root, 'gh-body-capture.md');
+  mkdirSync(stubBin);
+  mkdirSync(runnerTemp);
+  writeFileSync(ghCallLog, '');
+  writeFileSync(ghBodyCapture, '');
+  writeExecutable(join(stubBin, 'gh'), GH_STUB);
+
+  const result = spawnSync(
+    '/bin/bash',
+    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script],
+    {
+      encoding: 'utf8',
+      env: {
+        ...stepEnv,
+        GH_BODY_CAPTURE: ghBodyCapture,
+        GH_CALL_LOG: ghCallLog,
+        GH_EXISTING_ISSUE: existingIssue,
+        PATH: `${stubBin}:/usr/bin:/bin`,
+        RUNNER_TEMP: runnerTemp,
+      },
+    }
+  );
+
+  return {
+    body: readFileSync(ghBodyCapture, 'utf8'),
+    ghCalls: readFileSync(ghCallLog, 'utf8'),
+    result,
+  };
+}
+
 afterEach(() => {
   for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -342,6 +425,103 @@ describe('workflow hygiene', () => {
       expect(jobText).toContain('--shard=${{ matrix.shard }}/${{ strategy.job-total }}');
     });
   });
+
+  // These steps run only when a gate has already gone red, so a broken one is
+  // invisible until the moment it is the only thing reporting. Executing them
+  // against a stub gh is the difference between "the YAML looks right" and
+  // "the issue gets filed" — the shell has been wrong here while the YAML was
+  // fine. Reading the body from a variable is what made it wrong: a heredoc
+  // inside "$(...)" leaves bash scanning for the closing paren, and an
+  // apostrophe in the prose ends the scan early.
+  const filingSteps = [
+    {
+      body: ["renderer's", 'ADR-0093'],
+      env: {
+        GITHUB_SHA: 'e4cb7451e0aa0dcd5e0f2c9e0b3b5c8ea1f2d3c4',
+        RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/1',
+      },
+      label: 'area:ci-testing',
+      title: 'WebKit commit gate failed on main',
+      workflow: 'test.yml',
+    },
+    {
+      body: ['maestro-report-api-<API>', 'launch-smoke matrix leg'],
+      env: {
+        BUILD_RESULT: 'success',
+        GITHUB_REF_NAME: 'v1.5.0',
+        PLATFORM: 'Android',
+        RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/2',
+        SMOKE_RESULT: 'failure',
+      },
+      label: 'area:native',
+      title: 'Android native deploy gate failed',
+      workflow: 'android-deploy.yml',
+    },
+    {
+      body: ['maestro-ios-report', 'did not boot and paint'],
+      env: {
+        ARTIFACT: 'maestro-ios-report',
+        GITHUB_REF_NAME: 'v1.5.0',
+        PLATFORM: 'iOS',
+        REPORT_OUTCOME: 'success',
+        RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/3',
+        SMOKE_OUTCOME: 'failure',
+      },
+      label: 'area:native',
+      title: 'iOS native deploy gate failed',
+      workflow: 'ios-deploy.yml',
+    },
+  ];
+
+  describe.each(filingSteps)('$workflow files its gate failure', (step) => {
+    const script = stepScript(
+      workflows.find(({ name }) => name === step.workflow).lines,
+      'File the failure'
+    );
+
+    it('has a File the failure step carrying a shell script', () => {
+      expect(script).toBeTruthy();
+    });
+
+    it('opens one issue when none is already tracking the gate', () => {
+      const { body, ghCalls, result } = runFilingStep(script, step.env, '');
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(0);
+      expect(ghCalls).toContain(`issue create --title ${step.title}`);
+      expect(ghCalls).toContain(`--label type:bug --label ${step.label} --body-file`);
+      expect(ghCalls).not.toContain('issue comment');
+      for (const excerpt of step.body) expect(body).toContain(excerpt);
+      expect(body).toContain(step.env.RUN_URL);
+    });
+
+    it('comments on the open issue instead of opening a second one', () => {
+      const { body, ghCalls, result } = runFilingStep(script, step.env, '41');
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(0);
+      expect(ghCalls).toContain('issue comment 41 --body-file');
+      expect(ghCalls).not.toContain('issue create');
+      for (const excerpt of step.body) expect(body).toContain(excerpt);
+    });
+  });
+
+  // Locks the harness itself. If the stub stops resolving --body-file, every
+  // case above keeps passing against a step that names a file gh cannot read.
+  it.each([
+    ['a path it cannot read', 'gh issue create --title T --body-file /nonexistent/gate-body.md'],
+    ['no value at all', 'gh issue create --title T --body-file'],
+  ])('fails a filing step that hands gh %s', (_label, script) => {
+    const { result } = runFilingStep(script, {}, '');
+
+    expect(result.status).not.toBe(0);
+  });
+
+  for (const { name, lines } of workflows) {
+    it(`${name} keeps issue bodies out of a command substitution`, () => {
+      expect(lines.join('\n')).not.toContain('="$(cat <<');
+    });
+  }
 
   for (const { name, lines } of [...workflows, ...actions]) {
     it(`${name} pins every external action to a 40-char SHA`, () => {
