@@ -7,11 +7,61 @@
 // stop() kills the whole group.
 
 import { spawn, spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './proc.mjs';
 
 // Best-effort: kill whatever is listening on `port` so strictPort doesn't fail
 // and we never reuse a stale server from a previous run.
+export function portListenerPids(port) {
+  const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
+  if (out.error) return [];
+  return (out.stdout || '')
+    .split('\n')
+    .map((line) => Number(line.trim()))
+    .filter((pid) => Number.isInteger(pid) && pid > 0);
+}
+
+// A listener's working directory is what identifies which checkout owns it. Two
+// worktrees of this repo are different owners even though both are "Splotch".
+export function listenerWorkingDirectory(pid) {
+  const out = spawnSync('lsof', ['-a', '-p', String(pid), '-d', 'cwd', '-Fn'], {
+    encoding: 'utf8',
+  });
+  if (out.error) return null;
+  const line = (out.stdout || '').split('\n').find((entry) => entry.startsWith('n'));
+  return line ? line.slice(1) : null;
+}
+
+// Listeners on this port that belong to some OTHER checkout. freePort() SIGTERMs
+// every listener it finds, which is right for this session's own leftovers and
+// wrong for anyone else's — it killed another worktree's preview server before the
+// build-identity assertion could even report which build it was serving, while the
+// error text told the reader to pick a free port instead of stopping it.
+//
+// A listener whose working directory cannot be read counts as foreign: refusing to
+// start is recoverable, and killing something unidentified is not.
+export function foreignPortListeners(port, root) {
+  // Both sides are resolved because macOS reports the real path (/private/var/...)
+  // where Node hands out the symlink (/var/...), and a mismatch there would call
+  // this session's own listener foreign.
+  const resolved = realPath(root);
+  return portListenerPids(port).filter((pid) => {
+    const cwd = listenerWorkingDirectory(pid);
+    if (!cwd) return true;
+    const owner = realPath(cwd);
+    return owner !== resolved && !owner.startsWith(`${resolved}/`);
+  });
+}
+
+function realPath(path) {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
 export function freePort(port) {
   const out = spawnSync('lsof', ['-ti', `tcp:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
   if (out.error) {
