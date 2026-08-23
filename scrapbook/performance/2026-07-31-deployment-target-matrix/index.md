@@ -311,9 +311,11 @@ Undo timing is `engine P95 / next-frame P95 / next-frame max` in milliseconds.
 
 ## Discrete actions
 
-The idle-frame profiling control remains in normalized data but is excluded below. The post-action
-column is `P95 / max` in milliseconds. Full per-action timing and provenance are available in the
-interactive matrix and normalized JSON.
+The idle-frame profiling control is excluded from the columns below and **consulted** rather than
+merely dropped: it performs no interaction, so a mode where it fails its own gate cannot attribute
+any action score to the product. Such a mode is marked `no control` and left out of the cross-mode
+failure ranking. The post-action column is `P95 / max` in milliseconds. Full per-action timing and
+provenance are available in the interactive matrix and normalized JSON.
 
 | Target                                           | Passing | At final commit | Worst first P95 | Worst post P95 / max | Failed actions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------------------------------------ | ------- | --------------- | --------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

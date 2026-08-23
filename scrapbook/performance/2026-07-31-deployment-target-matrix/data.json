@@ -1640,7 +1640,9 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -3123,7 +3125,9 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -4631,7 +4635,9 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -6139,7 +6145,9 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         }
       ]
@@ -7659,7 +7667,9 @@
                 "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -9167,7 +9177,9 @@
                 "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -11062,7 +11074,9 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -12506,7 +12520,9 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -13975,7 +13991,9 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -15444,7 +15462,9 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -16929,7 +16949,9 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -18402,7 +18424,9 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -20368,7 +20392,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -21870,7 +21896,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -23022,7 +23050,9 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -24174,7 +24204,9 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -25688,7 +25720,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -27190,7 +27224,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -28342,7 +28378,9 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-native/landscape-light/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -29494,7 +29532,9 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-native/landscape-dark/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -31008,7 +31048,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": false
           },
           "preservedSections": [
             "drawing",
@@ -32510,7 +32552,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": false
           },
           "preservedSections": [
             "drawing",
@@ -33658,7 +33702,9 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -34806,7 +34852,9 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -36320,7 +36368,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -37822,7 +37872,9 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -38974,7 +39026,9 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -40126,7 +40180,9 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           },
           "preservedSections": [
             "drawing",
@@ -41959,7 +42015,9 @@
                 "source": "perf-profiles/campaign/mac-chrome/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -43775,7 +43833,9 @@
                 "source": "perf-profiles/campaign/mac-chrome/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -45616,7 +45676,9 @@
                 "source": "perf-profiles/campaign/mac-chrome/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -47457,7 +47519,9 @@
                 "source": "perf-profiles/campaign/mac-chrome/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         }
       ]
@@ -49285,7 +49349,9 @@
                 "source": "perf-profiles/campaign/mac-safari/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -51101,7 +51167,9 @@
                 "source": "perf-profiles/campaign/mac-safari/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -52942,7 +53010,9 @@
                 "source": "perf-profiles/campaign/mac-safari/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -54783,7 +54853,9 @@
                 "source": "perf-profiles/campaign/mac-safari/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         }
       ]
@@ -56611,7 +56683,9 @@
                 "source": "perf-profiles/campaign/mac-firefox/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -58427,7 +58501,9 @@
                 "source": "perf-profiles/campaign/mac-firefox/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -60268,7 +60344,9 @@
                 "source": "perf-profiles/campaign/mac-firefox/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         },
         {
@@ -62109,7 +62187,9 @@
                 "source": "perf-profiles/campaign/mac-firefox/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true
           }
         }
       ]
