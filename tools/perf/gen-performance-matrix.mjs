@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { esc } from '../lib/html.mjs';
+import { checkMatrixStaleness } from './check-matrix-staleness.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { masthead, page, siteFooter } from '../scrapbook/lib/scrapbook-chrome.mjs';
 import {
@@ -1059,6 +1060,11 @@ ${siteFooter({ home: '../../index.html' })}`;
   });
 }
 
+// The staleness check runs IN PROCESS against the manifest this run resolved, not
+// as a shell chain. npm appends forwarded arguments to the end of a compound
+// command, so `gen:performance-matrix -- <manifest>` handed the path to the
+// checker and generated the DEFAULT manifest — exiting 0 having verified a
+// different file than it wrote.
 export async function generateDeploymentMatrixReport(manifestArg = process.argv[2]) {
   const manifestPath = manifestArg
     ? isAbsolute(manifestArg)
@@ -1073,6 +1079,8 @@ export async function generateDeploymentMatrixReport(manifestArg = process.argv[
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'data.json'))}`);
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'index.md'))}`);
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'index.html'))}`);
+
+  await checkMatrixStaleness({ manifestPath: relative(ROOT, manifestPath) });
 }
 
 if (isMain(import.meta.url)) runMain(generateDeploymentMatrixReport);
