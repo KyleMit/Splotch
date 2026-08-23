@@ -6,6 +6,10 @@ import {
 } from '../split-capture/lib/android-input.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
+import {
+  classifyInputCadence,
+  describeContactSamples,
+} from '../split-capture/lib/input-verdict.mjs';
 
 const stroke = [
   { type: 'pointerMove', x: 10, y: 10, duration: 0 },
@@ -139,5 +143,57 @@ describe('pageBootstrapSource', () => {
 
     expect(source).toContain("element.src = '/__probe/probe.js'");
     expect(source).not.toMatch(/\beval\(/);
+  });
+});
+
+describe('classifyInputCadence', () => {
+  it('fails a capture that recorded no input rather than reporting a rate', () => {
+    const { ok, detail } = classifyInputCadence({ movesPerSecond: 0 });
+
+    expect(ok).toBe(false);
+    expect(detail).toContain('never reached it');
+  });
+
+  it('fails the Appium Android transport at its measured rate', () => {
+    // 46.8 moves/s is what the campaign measured, and every cell captured that
+    // way was unscoreable while parsing perfectly.
+    const { ok, detail } = classifyInputCadence({ movesPerSecond: 46.8, moveGapP95Ms: 21 });
+
+    expect(ok).toBe(false);
+    expect(detail).toContain('46.8');
+    expect(detail).toContain('cannot be scored');
+  });
+
+  it('passes the split transport at its measured rate', () => {
+    expect(classifyInputCadence({ movesPerSecond: 116.6, moveGapP95Ms: 11 }).ok).toBe(true);
+  });
+
+  it('fails input faster than a hand', () => {
+    expect(classifyInputCadence({ movesPerSecond: 240, moveGapP95Ms: 4 }).ok).toBe(false);
+  });
+
+  it('fails a stalling stream even when the mean rate looks fine', () => {
+    // A burst-then-stall pattern averages into the band while presenting nothing
+    // like a steady cadence.
+    const { ok, detail } = classifyInputCadence({ movesPerSecond: 120, moveGapP95Ms: 45 });
+
+    expect(ok).toBe(false);
+    expect(detail).toContain('stalls');
+  });
+
+  it('does not let iPad-calibrated pressure or geometry decide the verdict', () => {
+    // Chrome reports pressure 1 and no contact radius for synthesized touch.
+    // Judging Android against Safari's hand-calibrated shape would make this
+    // check permanently red and therefore useless.
+    const android = {
+      movesPerSecond: 116.6,
+      moveGapP95Ms: 11,
+      pressure: { p50: 1 },
+      contactWidth: { p50: 0 },
+      contactHeight: { p50: 0 },
+    };
+
+    expect(classifyInputCadence(android).ok).toBe(true);
+    expect(describeContactSamples(android)).toContain('no contact geometry reported');
   });
 });

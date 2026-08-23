@@ -48,7 +48,13 @@ const PAGE = `<!doctype html>
   #drawingCanvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
 </style></head>
 <body>
-<div class="paper-view"></div>
+<!-- The hidden attribute is load-bearing, not decoration. The probe starts a
+     blank phase only while .paper-view is hidden, which is how the app signals
+     "blank paper" rather than "a coloring page is open". Rendered visible, the
+     probe decides a page is active, never starts the phase, and reports every
+     recorded event as "never started" - thousands of frames attributed to
+     nothing. -->
+<div class="paper-view" hidden></div>
 <canvas id="drawingCanvas"></canvas>
 <script src="/__probe/control.js"></script>
 <script src="/__probe/bootstrap.js"></script>
