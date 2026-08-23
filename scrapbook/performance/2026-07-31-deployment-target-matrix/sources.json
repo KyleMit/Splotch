@@ -668,44 +668,116 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-chrome/portrait-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-chrome/portrait-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-chrome/portrait-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-chrome/portrait-light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-chrome/portrait-light/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-chrome/portrait-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "portrait-dark",
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-chrome/portrait-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-chrome/portrait-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-chrome/portrait-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-chrome/portrait-dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-chrome/portrait-dark/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-chrome/portrait-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-chrome/landscape-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-chrome/landscape-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-chrome/landscape-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-chrome/landscape-light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-chrome/landscape-light/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-chrome/landscape-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-chrome/landscape-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-chrome/landscape-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-chrome/landscape-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-chrome/landscape-dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-chrome/landscape-dark/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-chrome/landscape-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },
@@ -724,44 +796,116 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-safari/portrait-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-safari/portrait-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-safari/portrait-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-safari/portrait-light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-safari/portrait-light/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-safari/portrait-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "portrait-dark",
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-safari/portrait-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-safari/portrait-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-safari/portrait-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-safari/portrait-dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-safari/portrait-dark/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-safari/portrait-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-safari/landscape-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-safari/landscape-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-safari/landscape-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-safari/landscape-light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-safari/landscape-light/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-safari/landscape-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-safari/landscape-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-safari/landscape-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-safari/landscape-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-safari/landscape-dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-safari/landscape-dark/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-safari/landscape-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },
@@ -780,44 +924,116 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-firefox/portrait-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-firefox/portrait-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-firefox/portrait-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-firefox/portrait-light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-firefox/portrait-light/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-firefox/portrait-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "portrait-dark",
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-firefox/portrait-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-firefox/portrait-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-firefox/portrait-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-firefox/portrait-dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-firefox/portrait-dark/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-firefox/portrait-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-firefox/landscape-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-firefox/landscape-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-firefox/landscape-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-firefox/landscape-light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-firefox/landscape-light/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-firefox/landscape-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
-          "actionSources": "preserved",
-          "undoSource": "preserved",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign/mac-firefox/landscape-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign/mac-firefox/landscape-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign/mac-firefox/landscape-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign/mac-firefox/landscape-dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign/mac-firefox/landscape-dark/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign/mac-firefox/landscape-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         }
       ]
     }

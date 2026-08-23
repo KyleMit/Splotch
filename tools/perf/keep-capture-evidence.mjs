@@ -39,10 +39,21 @@ export function targetOf(parsed, relativePath, fallback) {
 // automation mode, so reading it first labels an iPad capture
 // "xcuitest:ipad-device-web-landscape-dark-crayon" instead of "LANDSCAPE-dark".
 export function modeOf(parsed) {
-  const orientation = parsed?.orientation ?? parsed?.automation?.orientation;
+  const orientation =
+    parsed?.orientation ?? parsed?.automation?.orientation ?? viewportOrientation(parsed);
   if (orientation) return `${orientation}-${parsed?.theme ?? 'light'}`;
   if (parsed?.mode) return parsed.mode;
   return 'unknown';
+}
+
+// The desktop transport records no orientation — it IS the viewport shape, and the
+// matrix derives it back the same way. Without this a desktop capture falls
+// through to `mode`, which on that transport holds the drive plan
+// ("synthetic:mixed:crayon") rather than the cell.
+function viewportOrientation(parsed) {
+  const { width, height } = parsed?.viewport ?? {};
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width === height) return null;
+  return width > height ? 'LANDSCAPE' : 'PORTRAIT';
 }
 
 // One per target x brush. Ties are broken by keeping the FIRST seen rather than
@@ -61,6 +72,7 @@ export async function keepCaptureEvidence({
   corpus = argFlag('corpus'),
   campaign = argFlag('campaign'),
   target = argFlag('target'),
+  filter = argFlag('filter'),
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
@@ -68,6 +80,10 @@ export async function keepCaptureEvidence({
 
   const candidates = [];
   for (const file of findCaptureFiles(root)) {
+    // One campaign directory can hold several targets, including ones captured on
+    // an earlier run against a different product. --filter keeps a promotion scoped
+    // to the targets this campaign actually took.
+    if (filter && !file.includes(filter)) continue;
     let parsed;
     try {
       parsed = JSON.parse(readFileSync(file, 'utf8'));

@@ -66,8 +66,9 @@ Two rules define the subset, and both follow from what re-scoring is for.
 **Whole, never trimmed.** A capture is stored minified but complete. The measurement above is the
 reason: every trimming that saves meaningful space also removes a gate or corrupts a verdict, and a
 preserved capture that cannot prove its own input fidelity is worse than no preserved capture,
-because it will be believed. Minified and packed this is roughly 86 KB per capture against 2.4 MB
-pretty-printed on disk.
+because it will be believed. Minified and packed this measured **104 KB per capture** across the
+first two campaigns promoted this way (20 captures, 2.3 MB), against 2.4 MB pretty-printed on disk.
+A desktop capture is the heavier end, because it carries all nine renderer phases.
 
 **One capture per target × brush per campaign**, not per matrix cell. A metric change's effect
 varies with the display and transport (the target) and with the workload (the brush); orientation
@@ -96,7 +97,7 @@ campaign concluded matters most.
 \+ Bounded and predictable weight: one target × brush grid per campaign, at a size that is known
 rather than discovered.
 
-− Roughly 3.7 MB of repo growth per campaign, in blobs no human will read. This accumulates, and
+− Roughly 4.5 MB of repo growth per campaign, in blobs no human will read. This accumulates, and
 nothing prunes it automatically. Revisit if campaigns become frequent; the natural next step is
 retaining only the most recent campaign per target plus any corpus an ADR cites.
 
