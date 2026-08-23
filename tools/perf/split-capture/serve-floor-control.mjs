@@ -232,6 +232,19 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
   return { server, state };
 }
 
+// `server.close()` stops the listener accepting new connections and then waits for
+// the established ones to end on their own. The device's browser holds its
+// keep-alive sockets open long after the capture is done, so those sockets keep the
+// event loop non-empty and the process never exits — a verification that passed every
+// check still hangs, which is invisible interactively and fatal in a chained
+// unattended run. Destroying them is the only thing that releases the loop.
+export function closeFloorControlHost(server) {
+  return new Promise((resolve) => {
+    server.close(resolve);
+    server.closeAllConnections();
+  });
+}
+
 export function serveFloorControl({
   port = Number(argFlag('port', DEFAULT_PORT)),
   reportDir = argFlag('report-dir', DEFAULT_REPORT_DIR),
