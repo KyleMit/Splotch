@@ -146,10 +146,26 @@ export function artifactMatchesRuntime(artifact, runtime) {
 // The split transport writes its artifact BEFORE it fails the fidelity gate, so a
 // capture that must not be scored still parses and still names the right runtime.
 // Acceptance has to read the verdict the artifact carries, or the campaign banks
-// exactly the unscoreable cells that transport exists to stop producing. An
-// artifact from a path that reports no verdict is unchanged by this.
-export function artifactPassedFidelity(artifact) {
-  return artifact?.fidelity?.passed !== false;
+// exactly the unscoreable cells that transport exists to stop producing.
+//
+// A MISSING verdict is the subtle half. Tolerating it keeps the desktop transport
+// working, which genuinely reports none — but applied to a transport that always
+// writes one it fails open, and the cell it fails open on is the one whose verdict
+// is mandatory. So tolerance is granted per transport rather than globally, and a
+// runner that always writes a verdict has an absent one treated as no verdict at
+// all rather than as consent.
+export function artifactPassedFidelity(artifact, { verdictRequired = false } = {}) {
+  const passed = artifact?.fidelity?.passed;
+  if (passed === undefined) return !verdictRequired;
+  return passed === true;
+}
+
+// The commands that always write a `fidelity` block. Desktop capture does not, and
+// the action runners score a different contract, so neither can be held to one.
+const FIDELITY_REPORTING_COMMANDS = new Set([SCREEN_COMMAND, SPLIT_SCREEN_COMMAND]);
+
+export function commandReportsFidelity(command) {
+  return FIDELITY_REPORTING_COMMANDS.has(command);
 }
 
 // A loopback probe host reaches the capture host's own browser and never the
@@ -362,6 +378,7 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         item,
         artifact,
         command,
+        reportsFidelity: commandReportsFidelity(command),
         args,
       });
     }

@@ -60,7 +60,7 @@ function absolute(path) {
 // rather than retried until it turns green. A failed fidelity verdict is not a red
 // gate — it is a capture that cannot be scored at all — and it is reported
 // separately so the ledger says which of the two happened.
-function inspectArtifact(path, runtime) {
+export function inspectArtifact(path, runtime, { verdictRequired = false } = {}) {
   const full = absolute(path);
   if (!existsSync(full)) return { ok: false, status: FAILED };
   let artifact;
@@ -70,7 +70,9 @@ function inspectArtifact(path, runtime) {
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
-  if (!artifactPassedFidelity(artifact)) return { ok: false, status: UNSCOREABLE };
+  if (!artifactPassedFidelity(artifact, { verdictRequired })) {
+    return { ok: false, status: UNSCOREABLE };
+  }
   return { ok: true, status: COMPLETE };
 }
 
@@ -179,7 +181,9 @@ export async function runCampaign(argv = process.argv.slice(2)) {
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
-      artifactValid: inspectArtifact(cell.artifact, runtime).ok,
+      artifactValid: inspectArtifact(cell.artifact, runtime, {
+        verdictRequired: cell.reportsFidelity,
+      }).ok,
       maxAttempts,
     });
 
@@ -220,7 +224,9 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         ['run', cell.command, '--ignore-scripts', '--', ...cell.args],
         { cwd: ROOT, stdio: 'inherit' }
       );
-      const inspected = inspectArtifact(cell.artifact, runtime);
+      const inspected = inspectArtifact(cell.artifact, runtime, {
+        verdictRequired: cell.reportsFidelity,
+      });
       landed = inspected.ok;
       appendLedger(ledgerPath, {
         cell: cell.id,

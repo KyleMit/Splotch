@@ -9,6 +9,7 @@ import {
   desktopViewport,
   artifactMatchesRuntime,
   artifactPassedFidelity,
+  commandReportsFidelity,
   artifactPath,
   campaignTarget,
   planCampaign,
@@ -328,6 +329,47 @@ describe('probeHostProblem', () => {
 
   it('accepts a LAN address', () => {
     expect(probeHostProblem('http://192.168.1.9:4175')).toBeNull();
+  });
+});
+
+describe('artifactPassedFidelity — a missing verdict', () => {
+  // The regression this covers: a stale split artifact with no `fidelity` block was
+  // banked as valid-json, because tolerance for a missing verdict was global rather
+  // than per transport — and it failed open on the one transport whose verdict is
+  // mandatory.
+  it('is refused for a transport that always writes one', () => {
+    const stale = { transport: 'split-input-measurement' };
+
+    expect(artifactPassedFidelity(stale, { verdictRequired: true })).toBe(false);
+  });
+
+  it('is tolerated for a transport that reports none', () => {
+    expect(artifactPassedFidelity({ viewport: { width: 1366, height: 915 } })).toBe(true);
+  });
+
+  it('marks the split and Appium screen commands as verdict-reporting, desktop not', () => {
+    expect(commandReportsFidelity(SPLIT_SCREEN_COMMAND)).toBe(true);
+    expect(commandReportsFidelity('perf:ios:xcuitest:screen')).toBe(true);
+    expect(commandReportsFidelity('perf:web:frames')).toBe(false);
+    expect(commandReportsFidelity('perf:web:actions')).toBe(false);
+  });
+
+  it('is carried on every planned cell so inspection does not have to guess', () => {
+    const [split] = planCampaign('android-device-web', {
+      outputRoot: 'out',
+      host: SPLIT_HOST,
+      modes: ['landscape-light'],
+      items: ['crayon'],
+    });
+    const [desktop] = planCampaign('mac-chrome', {
+      outputRoot: 'out',
+      host: { url: 'http://127.0.0.1:4193/' },
+      modes: ['landscape-light'],
+      items: ['crayon'],
+    });
+
+    expect(split.reportsFidelity).toBe(true);
+    expect(desktop.reportsFidelity).toBe(false);
   });
 });
 
