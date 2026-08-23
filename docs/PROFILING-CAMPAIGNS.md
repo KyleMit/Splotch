@@ -336,6 +336,27 @@ The general rule this belongs to: when instrumentation might be changing what it
 it. The app's own probe scored against a no-trace control answers it in ten minutes, and the same
 technique applies to the in-page probe and `PERF_MARKS`.
 
+## Do not edit the tools while a campaign is running
+
+The rule below is about CPU. This one is about the source: **a campaign spawns a fresh Node process
+per cell**, so it reads the capture tool from disk every time. Editing that tool mid-run changes
+what the next cell executes, and the run silently splits into "cells captured before the edit" and
+"cells captured after it".
+
+On 2026-08-23 an import was added to `capture-local-frames.mjs` while a desktop sweep was in flight.
+The call site landed and the import did not, so every drawing cell from that moment on died with
+`ReferenceError: assertServedManifestResolves is not defined` while the action cells — a different
+module, edited correctly — kept passing. The ledger showed 7 valid and 39 failed, which reads like a
+device or browser problem and was neither.
+
+It is recoverable, because a failed cell writes no artifact: the ledger is then all
+`missing-or-invalid-json` with nothing on disk, which is the documented signature for a ledger that
+is safe to clear (see *Recapturing matrix cells*). Confirm the artifact count matches the valid-row
+count before clearing, then rerun — cells that already landed are skipped on their artifacts, not on
+the ledger.
+
+Make tool edits between targets, or on a branch the running campaign is not executing from.
+
 ## Never run anything heavy on the host during a capture
 
 The host drives the input dispatch. A test suite, a build, or a second campaign competing for CPU

@@ -37,6 +37,7 @@ import { waitForUrl } from '../../lib/net.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
+import { assertServedManifestResolves } from '../lib/profile-preview.mjs';
 import { spawnPerfServe } from '../serve-profile-build.mjs';
 import { printRun } from '../analyze-frame-capture.mjs';
 import { probeConfigScript } from '../ios/capture-webkit-frames.mjs';
