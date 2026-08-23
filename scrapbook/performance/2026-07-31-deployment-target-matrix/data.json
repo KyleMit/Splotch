@@ -18,7 +18,7 @@
     "Cell provenance as published: the physical-iPad and Mac rows were captured at 6e211ddc4f27aed28f4864c7486d4410be44d2b9; the two physical-iPad NATIVE landscape modes remain preserved at ce88c8e587ac45847c419e05ef7a79d282bc747a because their action sweeps could not be captured (issue 1237); every simulator, emulator and physical-Android cell stays pinned to 6961e50b685d441e88b37d20d3f38a27136572fb. npm run check:matrix-staleness compares each captured cell's source tree against the branch, so this statement is verified rather than asserted.",
     "The android-device-web drawing rows are NOT a measurement of the product. Reproduced on 2026-08-22, the Appium Android browser transport delivers 46.8 contact moves per second against a 100-170 fidelity band, at 0.44 moves per frame with pressure and contact geometry both reading zero, so its fidelity verdict fails on cadence and contactGeometry. The app is barely driven, and lostFrameTimeShare then prices the gaps between sparse input as lost frames -- which is where those rows' 10-12% comes from. perf:campaign can now drive this target through the ADR-0135 split transport, which measures 116.6 moves per second on the same phone; recapturing still waits on the Android fidelity thresholds being calibrated from a hand capture (issue 1218), because pressure and contactGeometry are iPad-calibrated and Chrome cannot satisfy them. Until then read the row as a harness artifact, not a regression.",
     "The physical-iPad web rows were recaptured on 2026-08-23 against product commit 6e211ddc4f27aed28f4864c7486d4410be44d2b9, 20 of 20 cells with zero retries and every cell passing input fidelity at 115-119 contact moves per second. The 2026-08-22 pass at ae674d71bac62b4c8cbf6130a2b8982289e65c56 was superseded rather than kept: four further commits to web/src/lib/drawing landed that evening, and landscape-light crayon moved from a worst paint frame of 65 ms to 46 ms across them. A red cell can be a faithful measurement of a build nobody runs.",
-    "Every physical-iPad NATIVE drawing cell is rendered unscoreable rather than as a product pass or fail. Each capture fails input fidelity on `coalescing`, which requires zero coalesced samples per pointermove -- a description of Safari, not of faithful input: measured the same night, the WKWebView reports 1.05 coalesced samples per move against Safari's 0 at an identical 118.2 contact moves per second. The previously published native evidence carries the same failed verdict, so this is long-standing rather than new, but matching the old evidence establishes consistent provenance and not valid measurement. Issue 1234 tracks calibrating the check per runtime; until then the numbers are shown with the failed check named and are not scored.",
+    "Seven of the eleven targets render their drawing cells UNSCOREABLE rather than as a product pass or fail: both physical-iPad native, both iPad simulator, both Android emulator, and physical-Android web and native. Every sample behind those cells fails its input-fidelity gate, which the capture runner's own contract calls unscoreable, so the numbers describe input paths the runner rejects. The failed check is named on each cell and in its tooltip; a hollow dot in the interactive plots means the same thing. Only physical-iPad WEB (Safari, fidelity passing) and the three Mac targets (which report no fidelity verdict at all) carry scored drawing results. The reasons differ by platform and are tracked separately: `coalescing` requires zero coalesced samples per pointermove, a description of Safari rather than of faithful input -- the Capacitor WKWebView reports 1.05 against Safari's 0 at an identical 118.2 contact moves per second (issue 1234); Android's `pressure` and `contactGeometry` thresholds are calibrated from an iPad hand capture and Chrome cannot satisfy them (issue 1218). Preserved and freshly captured cells are held to the same rule, so a recapture cannot silently turn an unscoreable measurement into a product verdict.",
     "The three Mac engines are not driven at the same input cadence: Chromium and Firefox deliver 119.9-120.1 contact moves per second, Playwright WebKit 60.0-60.1. Both are stable and both reproduce their previously published numbers, so this is long-standing rather than new -- but mac-safari reading clean is partly a statement about how hard it was driven, and the three desktop rows are not strictly comparable to each other."
   ],
   "preservedEvidence": {
@@ -8981,7 +8981,11 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9024,7 +9028,11 @@
                 },
                 "lostFrameTimeShare": 0.02,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9067,7 +9075,11 @@
                 },
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9110,7 +9122,11 @@
                 },
                 "lostFrameTimeShare": 0.0018,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9187,7 +9203,11 @@
                 },
                 "lostFrameTimeShare": 0.0013,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9230,7 +9250,11 @@
                 },
                 "lostFrameTimeShare": 0.0211,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9273,7 +9297,11 @@
                 },
                 "lostFrameTimeShare": 0.0007,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9316,7 +9344,11 @@
                 },
                 "lostFrameTimeShare": 0.0022,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -9405,7 +9437,11 @@
                 },
                 "lostFrameTimeShare": 0.0207,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -9448,7 +9484,11 @@
                 },
                 "lostFrameTimeShare": 0.0013,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -9491,7 +9531,11 @@
                 },
                 "lostFrameTimeShare": 0.0093,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -9534,7 +9578,11 @@
                 },
                 "lostFrameTimeShare": 0.0133,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -10833,7 +10881,11 @@
                 },
                 "lostFrameTimeShare": 0.0084,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -10876,7 +10928,11 @@
                 },
                 "lostFrameTimeShare": 0.0016,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -10919,7 +10975,11 @@
                 },
                 "lostFrameTimeShare": 0.0039,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -10962,7 +11022,11 @@
                 },
                 "lostFrameTimeShare": 0.0036,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -12261,7 +12325,11 @@
                 },
                 "lostFrameTimeShare": 0.0105,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -12304,7 +12372,11 @@
                 },
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -12347,7 +12419,11 @@
                 },
                 "lostFrameTimeShare": 0.0066,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -12390,7 +12466,11 @@
                 },
                 "lostFrameTimeShare": 0.0046,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -13714,7 +13794,11 @@
                 },
                 "lostFrameTimeShare": 0.0152,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -13757,7 +13841,11 @@
                 },
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -13800,7 +13888,11 @@
                 },
                 "lostFrameTimeShare": 0.0138,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -13843,7 +13935,11 @@
                 },
                 "lostFrameTimeShare": 0.0123,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence"
+                ]
               },
               "runs": [
                 {
@@ -15179,7 +15275,12 @@
                 },
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -15222,7 +15323,12 @@
                 },
                 "lostFrameTimeShare": 0.0006,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -15265,7 +15371,12 @@
                 },
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -15308,7 +15419,12 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -16632,7 +16748,12 @@
                 },
                 "lostFrameTimeShare": 0.0006,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -16675,7 +16796,12 @@
                 },
                 "lostFrameTimeShare": 0.0008,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -16718,7 +16844,12 @@
                 },
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -16761,7 +16892,12 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18085,7 +18221,12 @@
                 },
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18128,7 +18269,12 @@
                 },
                 "lostFrameTimeShare": 0.0043,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18171,7 +18317,12 @@
                 },
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18214,7 +18365,12 @@
                 },
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18291,7 +18447,12 @@
                 },
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18334,7 +18495,12 @@
                 },
                 "lostFrameTimeShare": 0.0013,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18377,7 +18543,12 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18420,7 +18591,12 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing"
+                ]
               },
               "runs": [
                 {
@@ -18509,7 +18685,13 @@
                 },
                 "lostFrameTimeShare": 0.101,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -18552,7 +18734,13 @@
                 },
                 "lostFrameTimeShare": 0.1193,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -18595,7 +18783,13 @@
                 },
                 "lostFrameTimeShare": 0.1203,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -18638,7 +18832,13 @@
                 },
                 "lostFrameTimeShare": 0.3169,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -19987,7 +20187,13 @@
                 },
                 "lostFrameTimeShare": 0.0985,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -20030,7 +20236,13 @@
                 },
                 "lostFrameTimeShare": 0.1168,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -20073,7 +20285,13 @@
                 },
                 "lostFrameTimeShare": 0.1197,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -20116,7 +20334,13 @@
                 },
                 "lostFrameTimeShare": 0.3165,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -21465,7 +21689,13 @@
                 },
                 "lostFrameTimeShare": 0.1025,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -21508,7 +21738,13 @@
                 },
                 "lostFrameTimeShare": 0.1038,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -21551,7 +21787,13 @@
                 },
                 "lostFrameTimeShare": 0.1046,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -21594,7 +21836,13 @@
                 },
                 "lostFrameTimeShare": 0.3071,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -22593,7 +22841,13 @@
                 },
                 "lostFrameTimeShare": 0.1034,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -22636,7 +22890,13 @@
                 },
                 "lostFrameTimeShare": 0.1129,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -22679,7 +22939,13 @@
                 },
                 "lostFrameTimeShare": 0.1032,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -22722,7 +22988,13 @@
                 },
                 "lostFrameTimeShare": 0.3087,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -23733,7 +24005,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -23776,7 +24054,13 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -23819,7 +24103,13 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -23862,7 +24152,13 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -25211,7 +25507,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -25254,7 +25556,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -25297,7 +25605,13 @@
                 },
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -25340,7 +25654,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -26689,7 +27009,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -26732,7 +27058,13 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -26775,7 +27107,13 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -26818,7 +27156,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -27817,7 +28161,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -27860,7 +28210,13 @@
                 },
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -27903,7 +28259,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -27946,7 +28308,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -28957,7 +29325,13 @@
                 },
                 "lostFrameTimeShare": 0.0057,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -29000,7 +29374,13 @@
                 },
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -29043,7 +29423,13 @@
                 },
                 "lostFrameTimeShare": 0.0009,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -29086,7 +29472,13 @@
                 },
                 "lostFrameTimeShare": 0.0054,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -30435,7 +30827,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -30478,7 +30876,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -30521,7 +30925,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -30564,7 +30974,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -31913,7 +32329,12 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -31956,7 +32377,12 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -31999,7 +32425,12 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -32042,7 +32473,12 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -33041,7 +33477,12 @@
                 },
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -33084,7 +33525,12 @@
                 },
                 "lostFrameTimeShare": 0.0123,
                 "blankPassed": false,
-                "allPhasesPassed": false
+                "allPhasesPassed": false,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -33127,7 +33573,12 @@
                 },
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -33170,7 +33621,12 @@
                 },
                 "lostFrameTimeShare": 0.0009,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -34181,7 +34637,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -34224,7 +34686,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -34267,7 +34735,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -34310,7 +34784,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -35659,7 +36139,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -35702,7 +36188,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -35745,7 +36237,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -35788,7 +36286,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -37137,7 +37641,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -37180,7 +37690,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -37223,7 +37739,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -37266,7 +37788,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -38265,7 +38793,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -38308,7 +38842,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -38351,7 +38891,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
@@ -38394,7 +38940,13 @@
                 },
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
-                "allPhasesPassed": true
+                "allPhasesPassed": true,
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "cadence",
+                  "coalescing",
+                  "contactGeometry"
+                ]
               },
               "runs": [
                 {
