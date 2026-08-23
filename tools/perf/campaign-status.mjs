@@ -15,28 +15,34 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
-import { artifactMatchesRuntime, campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
+import { campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
+import { inspectArtifact } from './run-campaign.mjs';
 import { attemptsFor, completedCells, parseLedger } from './lib/campaign-ledger.mjs';
 
 const absolute = (path) => (isAbsolute(path) ? path : join(ROOT, path));
 
-function artifactLanded(path, runtime) {
-  const full = absolute(path);
-  if (!existsSync(full)) return false;
-  try {
-    return artifactMatchesRuntime(JSON.parse(readFileSync(full, 'utf8')), runtime);
-  } catch {
-    return false;
-  }
-}
-
-export function campaignProgress(plan, { runtime, ledgerRows, artifactLanded: landed }) {
+export function campaignProgress(plan, { runtime, ledgerRows, inspect }) {
   const recorded = completedCells(ledgerRows);
   const done = [];
   const outstanding = [];
   for (const cell of plan) {
-    if (landed(cell.artifact, runtime) || recorded.has(cell.id)) done.push(cell.id);
-    else outstanding.push({ cell: cell.id, attempts: attemptsFor(ledgerRows, cell.id) });
+    // Completion is decided by CURRENT artifact inspection only. A ledger row
+    // saying a cell landed does not survive the artifact being deleted, corrupted
+    // or replaced with the wrong runtime — the runner would rerun that cell, so
+    // reporting it done contradicts the thing status exists to describe. The
+    // ledger explains history and drift; it does not certify.
+    const inspected = inspect(cell);
+    if (inspected.ok) done.push(cell.id);
+    else {
+      outstanding.push({
+        cell: cell.id,
+        attempts: attemptsFor(ledgerRows, cell.id),
+        status: inspected.status,
+        // A cell the ledger calls complete whose artifact no longer inspects
+        // clean is the interesting case, so it is named rather than hidden.
+        ledgerDisagrees: recorded.has(cell.id),
+      });
+    }
   }
   return { total: plan.length, done, outstanding };
 }
@@ -52,15 +58,22 @@ export async function campaignStatus({
   const ledger = absolute(ledgerPath ?? `${outputRoot}/${targetId}/ledger.tsv`);
   const ledgerRows = existsSync(ledger) ? parseLedger(readFileSync(ledger, 'utf8')) : [];
 
+  // The runner's own inspection, not a reimplementation of half of it: it also
+  // requires the fidelity verdict, and a status that skipped that reported
+  // structurally rejected measurements as complete.
   const { total, done, outstanding } = campaignProgress(plan, {
     runtime,
     ledgerRows,
-    artifactLanded,
+    inspect: (cell) =>
+      inspectArtifact(cell.artifact, runtime, { verdictRequired: cell.reportsFidelity }),
   });
 
   console.log(`${targetId}: ${done.length}/${total} cells complete`);
   for (const entry of outstanding) {
-    console.log(`  todo  ${entry.cell.padEnd(26)} ${entry.attempts} attempt(s) spent`);
+    const drift = entry.ledgerDisagrees ? '  (ledger says complete — artifact does not)' : '';
+    console.log(
+      `  todo  ${entry.cell.padEnd(26)} ${entry.attempts} attempt(s) spent · ${entry.status}${drift}`
+    );
   }
   return { total, done, outstanding };
 }

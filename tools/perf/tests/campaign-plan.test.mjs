@@ -563,21 +563,21 @@ describe('completedCells', () => {
 
 describe('campaignProgress', () => {
   const plan = [
-    { id: 'portrait-light/crayon', artifact: 'a.json' },
-    { id: 'portrait-light/pen-undo', artifact: 'b.json' },
+    { id: 'portrait-light/crayon', artifact: 'a.json', reportsFidelity: true },
+    { id: 'portrait-light/pen-undo', artifact: 'b.json', reportsFidelity: true },
   ];
+  const inspectOnly = (okFor) => (cell) =>
+    cell.artifact === okFor ? { ok: true, status: COMPLETE } : { ok: false, status: FAILED };
 
-  // Acceptance matches the runner's: the artifact on disk is the truth, and a
-  // cleared ledger must not make a finished target look unstarted.
   it('counts a landed artifact even with no ledger row for it', () => {
     const progress = campaignProgress(plan, {
       runtime: 'web',
       ledgerRows: [],
-      artifactLanded: (artifact) => artifact === 'a.json',
+      inspect: inspectOnly('a.json'),
     });
 
     expect(progress.done).toEqual(['portrait-light/crayon']);
-    expect(progress.outstanding).toEqual([{ cell: 'portrait-light/pen-undo', attempts: 0 }]);
+    expect(progress.outstanding).toMatchObject([{ cell: 'portrait-light/pen-undo', attempts: 0 }]);
   });
 
   it('reports attempts already spent on each outstanding cell', () => {
@@ -592,10 +592,156 @@ describe('campaignProgress', () => {
     const progress = campaignProgress(plan, {
       runtime: 'web',
       ledgerRows,
-      artifactLanded: () => false,
+      inspect: () => ({ ok: false, status: FAILED }),
     });
 
-    expect(progress.outstanding).toContainEqual({ cell: 'portrait-light/pen-undo', attempts: 2 });
+    expect(progress.outstanding).toContainEqual(
+      expect.objectContaining({ cell: 'portrait-light/pen-undo', attempts: 2 })
+    );
+  });
+
+  // The regression this covers: completion was `landed || ledgerSaysDone`, so a
+  // COMPLETE row certified a cell whose artifact had been deleted, corrupted or
+  // replaced with the wrong runtime — while the runner would rerun it.
+  it('does not let a ledger row certify a cell whose artifact is gone', () => {
+    const ledgerRows = parseLedger(
+      [
+        'timestamp\tcell\tstatus\tattempt\tartifact\tlog',
+        `t1\tportrait-light/crayon\t${COMPLETE}-exit-0\t1\ta\t-`,
+      ].join('\n')
+    );
+
+    const progress = campaignProgress(plan, {
+      runtime: 'web',
+      ledgerRows,
+      inspect: () => ({ ok: false, status: FAILED }),
+    });
+
+    expect(progress.done).toEqual([]);
+    expect(progress.outstanding).toContainEqual(
+      expect.objectContaining({ cell: 'portrait-light/crayon', ledgerDisagrees: true })
+    );
+  });
+});
+
+describe('entryModulePath', () => {
+  it('finds the SvelteKit entry module a served page names', () => {
+    const html = '<html><body><script>import("/_app/immutable/entry/start.C3xK9a.js")</script>';
+
+    expect(entryModulePath(html)).toBe('/_app/immutable/entry/start.C3xK9a.js');
+  });
+
+  // Server-rendered markup answers every selector whether or not the app
+  // hydrated, so "the page loaded" proves nothing about the build behind it.
+  it('reports no entry for a page that names none', () => {
+    expect(entryModulePath('<html><body><canvas></canvas></body></html>')).toBeNull();
+    expect(entryModulePath(undefined)).toBeNull();
+  });
+});
+
+describe('desktop transport', () => {
+  const desktopCells = (targetId, options = {}) =>
+    planCampaign(targetId, {
+      outputRoot: 'out',
+      host: { url: 'http://127.0.0.1:4193/' },
+      modes: ['landscape-light'],
+      ...options,
+    });
+
+  it('routes desktop drawing and actions to the Playwright commands', () => {
+    const drawing = desktopCells('mac-chrome', { items: ['crayon'] })[0];
+    const actions = desktopCells('mac-chrome', { items: ['actions'] })[0];
+
+    expect(drawing.command).toBe('perf:web:frames');
+    expect(actions.command).toBe('perf:web:actions');
+    expect(drawing.args).toContain('--engine=chromium');
+    expect(actions.args).toContain('--engine=chromium');
+  });
+
+  it('gives each desktop target its own engine', () => {
+    const engineOf = (targetId) =>
+      desktopCells(targetId, { items: ['pen-undo'] })[0].args.find((arg) =>
+        arg.startsWith('--engine=')
+      );
+
+    expect(engineOf('mac-chrome')).toBe('--engine=chromium');
+    expect(engineOf('mac-safari')).toBe('--engine=webkit');
+    expect(engineOf('mac-firefox')).toBe('--engine=firefox');
+  });
+
+  // The desktop capture records no orientation field. The matrix derives it back
+  // from the viewport and refuses a capture whose derived mode disagrees with the
+  // cell it was filed under, so the viewport IS the orientation here.
+  it('carries orientation as a viewport shape the matrix can derive back', () => {
+    const landscape = desktopCells('mac-chrome', { items: ['crayon'] })[0];
+    const portrait = desktopCells('mac-chrome', {
+      items: ['crayon'],
+      modes: ['portrait-dark'],
+    })[0];
+
+    expect(landscape.args).toContain(`--viewport=${desktopViewport('LANDSCAPE')}`);
+    expect(portrait.args).toContain(`--viewport=${desktopViewport('PORTRAIT')}`);
+
+    const [lw, lh] = desktopViewport('LANDSCAPE').split('x').map(Number);
+    const [pw, ph] = desktopViewport('PORTRAIT').split('x').map(Number);
+    expect(lw).toBeGreaterThan(lh);
+    expect(pw).toBeLessThan(ph);
+  });
+
+  it('drives undo from the pen cell so it carries that cell shape and theme', () => {
+    const pen = desktopCells('mac-chrome', { items: ['pen-undo'] })[0];
+    const crayon = desktopCells('mac-chrome', { items: ['crayon'] })[0];
+
+    expect(pen.args).toContain(`--undo-count=${UNDO_COUNT}`);
+    expect(crayon.args.some((arg) => arg.startsWith('--undo-count'))).toBe(false);
+  });
+
+  it('never passes a desktop cell a device flag', () => {
+    const cell = desktopCells('mac-firefox', { items: ['magic'] })[0];
+
+    for (const ignored of ['--device-id', '--appium-url', '--native-app', '--platform']) {
+      expect(cell.args.some((arg) => arg.startsWith(ignored))).toBe(false);
+    }
+  });
+});
+
+describe('completedCells', () => {
+  const rows = (lines) =>
+    parseLedger(['timestamp\tcell\tstatus\tattempt\tartifact\tlog', ...lines].join('\n'));
+
+  // A row-count watcher stopped a 20-cell target five cells early on 2026-08-23,
+  // because the ledger is append-only and its line count is not its cell count.
+  it('counts distinct cells, not ledger rows', () => {
+    const ledger = rows([
+      `t1\tportrait-light/crayon\t${FAILED}-exit-1\t1\ta\t-`,
+      `t2\tportrait-light/crayon\t${COMPLETE}-exit-0\t2\ta\t-`,
+      `t3\tportrait-dark/crayon\t${COMPLETE}-exit-0\t1\tb\t-`,
+    ]);
+
+    expect(completedCells(ledger).size).toBe(2);
+  });
+
+  // A resumed run records already-valid for work it skipped, so a valid-json
+  // filter reported a finished target as a third done.
+  it('counts a resumed run’s skipped cells as complete', () => {
+    const ledger = rows([
+      `t1\tportrait-light/crayon\t${ALREADY_VALID}\t0\ta\t-`,
+      `t2\tportrait-dark/crayon\t${COMPLETE}-exit-0\t1\tb\t-`,
+    ]);
+
+    expect([...completedCells(ledger)].sort()).toEqual([
+      'portrait-dark/crayon',
+      'portrait-light/crayon',
+    ]);
+  });
+
+  it('does not count a failed or unscoreable attempt', () => {
+    const ledger = rows([
+      `t1\ta/crayon\t${FAILED}-exit-1\t1\ta\t-`,
+      `t2\tb/crayon\t${UNSCOREABLE}-exit-1\t1\tb\t-`,
+    ]);
+
+    expect(completedCells(ledger).size).toBe(0);
   });
 });
 
