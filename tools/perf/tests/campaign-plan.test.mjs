@@ -322,6 +322,39 @@ describe('probeHostProblem', () => {
     expect(probeHostProblem('http://localhost:4175')).toMatch(/loopback/);
   });
 
+  // The regression this covers: the first version matched a set of exact
+  // spellings, and an IPv4-mapped loopback walked straight past it — the campaign
+  // then ran on against a host the phone can never reach. URL parsing normalizes
+  // that form to [::ffff:7f00:1], so the text cannot be matched either.
+  it('rejects loopback however it is spelled', () => {
+    for (const host of [
+      'http://[::ffff:127.0.0.1]:4201',
+      'http://[::ffff:7f00:1]:4201',
+      'http://[0:0:0:0:0:ffff:127.0.0.1]:4201',
+      'http://127.1.2.3:4175',
+      'http://[::1]:4175',
+      'http://foo.localhost:4175',
+    ]) {
+      expect(probeHostProblem(host), host).toMatch(/loopback/);
+    }
+  });
+
+  it('rejects the unspecified addresses, which are equally unroutable', () => {
+    expect(probeHostProblem('http://0.0.0.0:4175')).toMatch(/loopback/);
+    expect(probeHostProblem('http://[::]:4175')).toMatch(/loopback/);
+  });
+
+  it('accepts routable v4 and v6 addresses', () => {
+    for (const host of [
+      'http://192.168.40.53:4175',
+      'http://10.0.0.5:4175',
+      'http://[fe80::1]:4175',
+      'http://[2001:db8::1]:4175',
+    ]) {
+      expect(probeHostProblem(host), host).toBeNull();
+    }
+  });
+
   it('rejects a missing or unparseable host', () => {
     expect(probeHostProblem(undefined)).toMatch(/--probe-host=/);
     expect(probeHostProblem('nonsense')).toMatch(/not a URL/);

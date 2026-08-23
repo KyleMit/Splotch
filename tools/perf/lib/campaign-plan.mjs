@@ -130,49 +130,75 @@ export const CAMPAIGN_TARGETS = {
 // `android-chrome-cdp`) write their own.
 export const NATIVE_TRANSPORT = 'native-capacitor-webview';
 
-const LOOPBACK_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '::1', '[::1]', '0.0.0.0']);
+// Classified rather than matched against a list of spellings. A set of exact
+// strings misses every other way to write the same address: `[::ffff:127.0.0.1]`
+// walked past the first version of this guard and the campaign ran on against a
+// host the phone can never reach. URL parsing normalizes that to `[::ffff:7f00:1]`,
+// so the text form cannot be matched either — the address has to be expanded and
+// classified.
+const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
 
-// Several debuggable WebViews can satisfy the context search, so a native capture
-// that attached to Chrome — or a web capture that attached to the installed app —
-// produces a well-formed artifact and exits zero. The runbook asks for this to be
-// eyeballed per cell; a queue of 20 is exactly where eyeballing stops happening.
-// Acceptance stays "a parseable artifact" so a red gate survives, but the artifact
-// has to be one of the thing the cell asked for.
-export function artifactMatchesRuntime(artifact, runtime) {
-  const isNative = artifact?.transport === NATIVE_TRANSPORT;
-  return runtime === 'native' ? isNative : !isNative;
+function ipv4Octets(host) {
+  const match = IPV4.exec(host);
+  if (!match) return null;
+  const octets = match.slice(1).map(Number);
+  return octets.every((part) => part <= 255) ? octets : null;
 }
 
-// The split transport writes its artifact BEFORE it fails the fidelity gate, so a
-// capture that must not be scored still parses and still names the right runtime.
-// Acceptance has to read the verdict the artifact carries, or the campaign banks
-// exactly the unscoreable cells that transport exists to stop producing.
-//
-// A MISSING verdict is the subtle half. Tolerating it keeps the desktop transport
-// working, which genuinely reports none — but applied to a transport that always
-// writes one it fails open, and the cell it fails open on is the one whose verdict
-// is mandatory. So tolerance is granted per transport rather than globally, and a
-// runner that always writes a verdict has an absent one treated as no verdict at
-// all rather than as consent.
-export function artifactPassedFidelity(artifact, { verdictRequired = false } = {}) {
-  const passed = artifact?.fidelity?.passed;
-  if (passed === undefined) return !verdictRequired;
-  return passed === true;
+// 127/8 is loopback in its entirety, not just 127.0.0.1, and 0.0.0.0 is the
+// unspecified address. Neither is reachable from another machine.
+function unreachableIpv4(octets) {
+  return octets[0] === 127 || octets.every((part) => part === 0);
 }
 
-// The commands that always write a `fidelity` block. Desktop capture does not, and
-// the action runners score a different contract, so neither can be held to one.
-const FIDELITY_REPORTING_COMMANDS = new Set([SCREEN_COMMAND, SPLIT_SCREEN_COMMAND]);
-
-export function commandReportsFidelity(command) {
-  return FIDELITY_REPORTING_COMMANDS.has(command);
+// Returns the eight 16-bit groups, or null when this is not an IPv6 literal. The
+// trailing-dotted-quad form (`::ffff:127.0.0.1`) is folded into two groups first.
+function ipv6Groups(host) {
+  if (!host.includes(':')) return null;
+  let text = host;
+  const tail = /(\d{1,3}(?:\.\d{1,3}){3})$/.exec(text);
+  if (tail) {
+    const octets = ipv4Octets(tail[1]);
+    if (!octets) return null;
+    const high = ((octets[0] << 8) | octets[1]).toString(16);
+    const low = ((octets[2] << 8) | octets[3]).toString(16);
+    text = `${text.slice(0, tail.index)}${high}:${low}`;
+  }
+  const [head, rest, extra] = text.split('::');
+  if (extra !== undefined) return null;
+  const parse = (part) => (part ? part.split(':').map((group) => parseInt(group, 16)) : []);
+  const left = parse(head);
+  const right = rest === undefined ? [] : parse(rest);
+  if (left.concat(right).some((group) => !Number.isInteger(group) || group > 0xffff)) return null;
+  if (rest === undefined) return left.length === 8 ? left : null;
+  const gap = 8 - left.length - right.length;
+  if (gap < 0) return null;
+  return [...left, ...Array(gap).fill(0), ...right];
 }
 
-// A loopback probe host reaches the capture host's own browser and never the
-// device, and the resulting failure reads as a page that would not load rather than
-// as a wrong address. Rejecting it up front is worth more than the queue of
-// identical timeouts it replaces. Reachability FROM the device cannot be proven
-// here; what can be is that the address could never have been right.
+export function isUnreachableFromDevice(hostname) {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (host === 'localhost' || host.endsWith('.localhost')) return true;
+
+  const octets = ipv4Octets(host);
+  if (octets) return unreachableIpv4(octets);
+
+  const groups = ipv6Groups(host);
+  if (!groups) return false;
+  const leading = groups.slice(0, 5).every((group) => group === 0);
+  // ::ffff:a.b.c.d (mapped) and ::a.b.c.d (compatible) both carry a v4 address in
+  // the last two groups, and a loopback there is loopback however it is spelled.
+  if (leading && (groups[5] === 0xffff || groups[5] === 0)) {
+    const embedded = [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff];
+    if (groups[5] === 0xffff || groups[6] !== 0) return unreachableIpv4(embedded);
+  }
+  // ::1 is loopback; :: is unspecified.
+  return (
+    groups.every((group) => group === 0) ||
+    (leading && groups[5] === 0 && groups[6] === 0 && groups[7] === 1)
+  );
+}
+
 export function probeHostProblem(probeHost) {
   if (!probeHost) {
     return 'pass --probe-host= — the split transport needs the probe host URL as the device sees it';
@@ -183,7 +209,7 @@ export function probeHostProblem(probeHost) {
   } catch {
     return `--probe-host=${probeHost} is not a URL`;
   }
-  if (LOOPBACK_HOSTNAMES.has(parsed.hostname)) {
+  if (isUnreachableFromDevice(parsed.hostname)) {
     return `--probe-host=${probeHost} is a loopback address, which the device cannot reach — pass this host's LAN address`;
   }
   return null;
