@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   androidWakeActions,
+  appiumReuse,
   classifyIosIdentifier,
   classifyLaunchProbe,
   iosIdentifierProblem,
@@ -38,15 +39,28 @@ describe('port resolution', () => {
   });
 
   // Anything that cost a human approval is reused, never restarted.
-  it('reuses an Appium server another session already started', () => {
+  it('reuses an Appium server that answers the handshake', () => {
     expect(
-      resolvePort('appium', { holder: { pid: 1, compatible: true }, free: [4733] })
+      resolvePort('appium', {
+        holder: { pid: 1, appium: { responds: true, ready: true, version: '3.6.0' } },
+        free: [4733],
+      })
     ).toMatchObject({ port: 4723, action: 'reuse' });
   });
 
-  it('shifts off a port held by something incompatible', () => {
+  it('shifts off a port whose holder never answers the handshake', () => {
+    // A process whose command line merely mentions appium is not a server.
     expect(
-      resolvePort('appium', { holder: { pid: 1, compatible: false }, free: [4733] })
+      resolvePort('appium', { holder: { pid: 1, appium: { responds: false } }, free: [4733] })
+    ).toMatchObject({ port: 4733, action: 'start' });
+  });
+
+  it('shifts off a server that is already driving a device', () => {
+    expect(
+      resolvePort('appium', {
+        holder: { pid: 1, appium: { responds: true, ready: true, sessionCount: 1 } },
+        free: [4733],
+      })
     ).toMatchObject({ port: 4733, action: 'start' });
   });
 
@@ -132,6 +146,48 @@ describe('classifyLaunchProbe', () => {
 
     expect(status).toBe('blocked');
     expect(detail).toBe('ECONNREFUSED 4733');
+  });
+});
+
+describe('appiumReuse', () => {
+  it('refuses a holder that does not answer /status', () => {
+    const { reuse, reason } = appiumReuse({ responds: false });
+
+    expect(reuse).toBe(false);
+    expect(reason).toContain('not a live Appium server');
+  });
+
+  it('refuses a server that reports itself not ready', () => {
+    expect(appiumReuse({ responds: true, ready: false }).reuse).toBe(false);
+  });
+
+  it('refuses a server with an active session rather than contending for it', () => {
+    const { reuse, reason } = appiumReuse({ responds: true, ready: true, sessionCount: 2 });
+
+    expect(reuse).toBe(false);
+    expect(reason).toContain('2 session(s) already active');
+  });
+
+  it('borrows a provably idle server', () => {
+    const { reuse, reason } = appiumReuse({
+      responds: true,
+      ready: true,
+      version: '3.6.0',
+      sessionCount: 0,
+    });
+
+    expect(reuse).toBe(true);
+    expect(reason).toContain('idle');
+  });
+
+  it('borrows when idleness is unprovable, and says so', () => {
+    // /appium/sessions is gated behind --allow-insecure=session_discovery, so
+    // sessionCount is normally null. Null must not be read as zero.
+    const { reuse, reason } = appiumReuse({ responds: true, ready: true, version: '3.6.0' });
+
+    expect(reuse).toBe(true);
+    expect(reason).toContain('unprovable');
+    expect(reason).toContain('wdaLocalPort');
   });
 });
 

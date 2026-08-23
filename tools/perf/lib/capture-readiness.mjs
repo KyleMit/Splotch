@@ -46,6 +46,39 @@ export const PORT_ROLES = {
   inspector: { port: 9221, onConflict: 'shift', shiftTo: [9231, 9241] },
 };
 
+// Whether an Appium server already on the port can be borrowed.
+//
+// Matching the holder's command line against /appium/ was the original test and
+// it is barely a test at all: it passes for a crashed server, a half-started
+// one, and a shell whose arguments merely mention the word. The handshake is the
+// evidence — a live server answers `GET /status` with a build version.
+//
+// Idleness is a different question and usually **cannot be answered**.
+// `GET /appium/sessions` is gated behind `--allow-insecure=session_discovery`,
+// which no server here runs with, so `sessionCount` is normally null rather than
+// zero. That is reported honestly instead of being assumed idle: borrowing is
+// still the right default, because Appium serves concurrent sessions and the
+// contention that actually bit this campaign was two servers defaulting to the
+// same WebDriverAgent port (8100), which the `wda` role resolves separately.
+export function appiumReuse({ responds, ready, version, sessionCount } = {}) {
+  if (!responds) {
+    return { reuse: false, reason: 'nothing answered GET /status — not a live Appium server' };
+  }
+  if (!ready) return { reuse: false, reason: 'GET /status reports the server is not ready' };
+  if (sessionCount > 0) {
+    return {
+      reuse: false,
+      reason: `${sessionCount} session(s) already active — it is driving a device`,
+    };
+  }
+  const label = version ? `Appium ${version}` : 'a live Appium server';
+  if (sessionCount === 0) return { reuse: true, reason: `${label}, idle` };
+  return {
+    reuse: true,
+    reason: `${label}; session discovery is disabled so idleness is unprovable — pass an explicit wdaLocalPort`,
+  };
+}
+
 export function resolvePort(role, { holder, free }) {
   const spec = PORT_ROLES[role];
   if (!spec) throw new Error(`Unknown capture port role ${role}`);
@@ -61,13 +94,12 @@ export function resolvePort(role, { holder, free }) {
         };
   }
   if (spec.onConflict === 'reuse-or-shift') {
-    if (holder.compatible) {
-      return { port: spec.port, action: 'reuse', reason: 'a compatible server is already serving' };
-    }
+    const verdict = appiumReuse(holder.appium);
+    if (verdict.reuse) return { port: spec.port, action: 'reuse', reason: verdict.reason };
     const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
     return next
-      ? { port: next, action: 'start', reason: `${spec.port} is taken by an incompatible process` }
-      : { port: spec.port, action: 'blocked', reason: 'no alternate port is free' };
+      ? { port: next, action: 'start', reason: `${spec.port}: ${verdict.reason}` }
+      : { port: spec.port, action: 'blocked', reason: verdict.reason };
   }
   const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
   return next

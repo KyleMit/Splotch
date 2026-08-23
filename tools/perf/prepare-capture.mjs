@@ -186,7 +186,32 @@ function iosChecks() {
   return { checks, udid };
 }
 
-function portChecks() {
+// Short: a live server answers immediately on loopback, and a hung one must not
+// hold up a preflight that exists to be run before every campaign.
+const APPIUM_PROBE_TIMEOUT_MS = 4_000;
+
+async function probeAppium(port) {
+  const get = async (path) => {
+    const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+      signal: AbortSignal.timeout(APPIUM_PROBE_TIMEOUT_MS),
+    }).catch(() => null);
+    if (!response) return null;
+    return response.json().catch(() => null);
+  };
+  const status = await get('/status');
+  if (!status?.value) return { responds: false };
+  const sessions = await get('/appium/sessions');
+  return {
+    responds: true,
+    ready: status.value.ready === true,
+    version: status.value.build?.version,
+    // Absent unless the server runs with --allow-insecure=session_discovery, so
+    // null means "unknown", never "idle".
+    sessionCount: Array.isArray(sessions?.value) ? sessions.value.length : null,
+  };
+}
+
+async function portChecks() {
   const checks = [];
   const resolved = {};
   for (const [role, spec] of Object.entries(PORT_ROLES)) {
@@ -197,7 +222,8 @@ function portChecks() {
         // "Ours" means this repo started it; a preview server is the only thing
         // safe to restart, and only when it is ours.
         ours: holder.args.includes('serve-profile-build') || holder.args.includes('vite preview'),
-        compatible: role === 'appium' && /\bappium\b/.test(holder.args),
+        // Proven by handshake rather than inferred from a command line.
+        appium: role === 'appium' ? await probeAppium(spec.port) : undefined,
       },
       free: freePorts(spec.shiftTo ?? []),
     });
@@ -323,11 +349,11 @@ export async function probeIosLaunch({ udid, appiumUrl, wdaPort }) {
   }
 }
 
-export function prepareCapture(argv = process.argv.slice(2)) {
+export async function prepareCapture(argv = process.argv.slice(2)) {
   const fix = argv.includes('--fix');
   const android = androidChecks({ fix });
   const ios = iosChecks();
-  const ports = portChecks();
+  const ports = await portChecks();
   const result = summarize([...android.checks, ...ios.checks, ...ports.checks]);
   const report = {
     ...result,
@@ -354,7 +380,7 @@ export function prepareCapture(argv = process.argv.slice(2)) {
 if (isMain(import.meta.url)) {
   runMain(async () => {
     const argv = process.argv.slice(2);
-    const report = prepareCapture(argv);
+    const report = await prepareCapture(argv);
     if (argv.includes('--probe') && report.iosUdid) {
       console.log('\nprobing a real WebDriverAgent launch (this builds WDA and takes a minute)…');
       const probe = classifyLaunchProbe(
