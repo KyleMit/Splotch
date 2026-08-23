@@ -42,6 +42,23 @@ export function attemptsFor(rows, cellId) {
   ).length;
 }
 
+// The ledger is an append-only log with skip and retry rows, so its LINE COUNT is
+// not its cell count and neither is a grep for one status. A resumed run records
+// `already-valid` rather than `valid-json` for work it skipped, so counting only
+// the latter undercounts too.
+//
+// Both mistakes were made while monitoring an unattended run on 2026-08-23: a
+// row-count watcher stopped a 20-cell target five cells early and nobody noticed
+// until the fold-in refused the mode, and a `valid-json` filter then reported a
+// finished target as a third done. This is the one place that answer lives.
+export function completedCells(rows) {
+  const done = new Set();
+  for (const row of rows) {
+    if (row.status?.startsWith(COMPLETE) || row.status === ALREADY_VALID) done.add(row.cell);
+  }
+  return done;
+}
+
 export function isComplete(rows, cellId) {
   return rows.some(
     (row) =>

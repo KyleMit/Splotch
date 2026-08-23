@@ -15,10 +15,13 @@ import {
   probeHostProblem,
 } from '../lib/campaign-plan.mjs';
 import { entryModulePath } from '../lib/profile-preview.mjs';
+import { campaignProgress } from '../campaign-status.mjs';
 import {
   ALREADY_VALID,
+  COMPLETE,
   FAILED,
   UNSCOREABLE,
+  completedCells,
   attemptsFor,
   isComplete,
   nextAction,
@@ -439,5 +442,83 @@ describe('desktop transport', () => {
     for (const ignored of ['--device-id', '--appium-url', '--native-app', '--platform']) {
       expect(cell.args.some((arg) => arg.startsWith(ignored))).toBe(false);
     }
+  });
+});
+
+describe('completedCells', () => {
+  const rows = (lines) =>
+    parseLedger(['timestamp\tcell\tstatus\tattempt\tartifact\tlog', ...lines].join('\n'));
+
+  // A row-count watcher stopped a 20-cell target five cells early on 2026-08-23,
+  // because the ledger is append-only and its line count is not its cell count.
+  it('counts distinct cells, not ledger rows', () => {
+    const ledger = rows([
+      `t1\tportrait-light/crayon\t${FAILED}-exit-1\t1\ta\t-`,
+      `t2\tportrait-light/crayon\t${COMPLETE}-exit-0\t2\ta\t-`,
+      `t3\tportrait-dark/crayon\t${COMPLETE}-exit-0\t1\tb\t-`,
+    ]);
+
+    expect(completedCells(ledger).size).toBe(2);
+  });
+
+  // A resumed run records already-valid for work it skipped, so a valid-json
+  // filter reported a finished target as a third done.
+  it('counts a resumed run’s skipped cells as complete', () => {
+    const ledger = rows([
+      `t1\tportrait-light/crayon\t${ALREADY_VALID}\t0\ta\t-`,
+      `t2\tportrait-dark/crayon\t${COMPLETE}-exit-0\t1\tb\t-`,
+    ]);
+
+    expect([...completedCells(ledger)].sort()).toEqual([
+      'portrait-dark/crayon',
+      'portrait-light/crayon',
+    ]);
+  });
+
+  it('does not count a failed or unscoreable attempt', () => {
+    const ledger = rows([
+      `t1\ta/crayon\t${FAILED}-exit-1\t1\ta\t-`,
+      `t2\tb/crayon\t${UNSCOREABLE}-exit-1\t1\tb\t-`,
+    ]);
+
+    expect(completedCells(ledger).size).toBe(0);
+  });
+});
+
+describe('campaignProgress', () => {
+  const plan = [
+    { id: 'portrait-light/crayon', artifact: 'a.json' },
+    { id: 'portrait-light/pen-undo', artifact: 'b.json' },
+  ];
+
+  // Acceptance matches the runner's: the artifact on disk is the truth, and a
+  // cleared ledger must not make a finished target look unstarted.
+  it('counts a landed artifact even with no ledger row for it', () => {
+    const progress = campaignProgress(plan, {
+      runtime: 'web',
+      ledgerRows: [],
+      artifactLanded: (artifact) => artifact === 'a.json',
+    });
+
+    expect(progress.done).toEqual(['portrait-light/crayon']);
+    expect(progress.outstanding).toEqual([{ cell: 'portrait-light/pen-undo', attempts: 0 }]);
+  });
+
+  it('reports attempts already spent on each outstanding cell', () => {
+    const ledgerRows = parseLedger(
+      [
+        'timestamp\tcell\tstatus\tattempt\tartifact\tlog',
+        `t1\tportrait-light/pen-undo\t${FAILED}-exit-1\t1\tb\t-`,
+        `t2\tportrait-light/pen-undo\t${FAILED}-exit-1\t2\tb\t-`,
+      ].join('\n')
+    );
+
+    const progress = campaignProgress(plan, {
+      runtime: 'web',
+      ledgerRows,
+      artifactLanded: () => false,
+    });
+
+    expect(progress.outstanding).toContainEqual({ cell: 'portrait-light/pen-undo', attempts: 2 });
   });
 });
