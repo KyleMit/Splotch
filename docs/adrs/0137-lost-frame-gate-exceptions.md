@@ -41,10 +41,10 @@ and what it measured; the adopted ones are in the PR that shipped.
 | `exp/1196-n5-no-mirror-blank`              | C5 re-measured after N1                   | 1.73%              | #1212          |
 | `exp/1196-n6-no-darken-blend`              | No `darken` blend at all (diagnostic)     | 1.26%              | #1213          |
 
-N6 is the one to read first. Removing the blend entirely is not shippable — it is what makes wax
-look subtractive — and it only *matched* mirror-by-blit rather than beating it. That is the direct
-evidence that crayon's residual is not the blend, and it is much of why this ADR concludes the cost
-is irreducible without a different deposition model.
+N6 is the one to read first. Turning the `darken` blend off is not shippable — it is what makes wax
+look subtractive — and it only *matched* mirror-by-blit rather than beating it, which is the direct
+evidence that the blend **mode** is not where the residual lives. It leaves the two preview planes
+themselves untested; see below.
 
 Crayon is the one brush whose ops cannot be coalesced. Every other brush paints one shape per op, so
 a frame's worth of pointermoves merges into a single path and the per-op cost disappears. Crayon
@@ -60,17 +60,24 @@ cycling them deterministically is, in substance, what the shipped design already
 Mirror-by-blit removed the last duplicated work by copying the op's own rect instead of re-running
 the pattern fill to produce byte-identical pixels.
 
-Two independent measurements say the remaining cost is not where an optimization could reach it.
-`xcrun xctrace` against the native build put crayon and pen within noise of each other on the GPU —
-**p50 1.50 ms against 1.53 ms** — so crayon is not GPU-bound compositing, and the top WebCore symbol
-in both was `AXObjectCache::performDeferredCacheUpdate` (59 samples crayon, 72 pen), which is an
-XCUITest accessibility artifact rather than drawing work. And N6 above removed the `darken` blend
-outright and only matched mirror-by-blit. Between them, the blend and the compositor are ruled out,
-which leaves the per-op patterned stroke itself.
+Two measurements narrow where the remaining cost is **not**, without locating it. `xcrun xctrace`
+against the **native** build put crayon and pen within noise of each other on the GPU — **p50 1.50
+ms against 1.53 ms** — so crayon is not GPU-*bound*; the top WebCore symbol in both was
+`AXObjectCache::performDeferredCacheUpdate` (59 samples crayon, 72 pen), an XCUITest accessibility
+artifact rather than drawing work. And N6 above swapped `mix-blend-mode: darken` for `normal` and
+only matched mirror-by-blit, so the blend *mode* is not the dominant cost.
 
-Two things follow. Crayon on this target costs more than the gate allows and further reduction needs
-a different deposition model rather than another optimization. And a patterned stroke is inherently
-more expensive than a solid one, which is a property of the brush, not a regression in it.
+Be precise about what that does not establish. N6 left **both preview planes and all compositing in
+place**, so it bounds the blend mode rather than the cost of compositing two planes per tile. The
+xctrace run measured the native Capacitor WebView and only GPU p50, so it says nothing about
+Safari's CPU-side layer or compositor scheduling — which is the target the gate actually governs.
+And the candidate that would have tested this directly, collapsing crayon's two planes into one
+(#1206), was branched and never implemented.
+
+Two things follow. Crayon on this target costs more than the gate allows, and thirteen measured
+attempts failed to close the gap — which is a reason to stop paying for more attempts now, not a
+proof that the cost is irreducible. And a patterned stroke is inherently more expensive than a solid
+one, which is a property of the brush rather than a regression in it.
 
 ## Decision
 
@@ -142,5 +149,7 @@ tried and rejected.
   rejected alternatives are the only things holding that line, and both are conventions rather than
   anything the tooling enforces.
 * − Crayon's cost is now documented rather than solved. If the deposition model is ever reworked — a
-  different texture representation, or ops that can coalesce — this entry should be re-measured and
-  lowered or removed, and it is worth checking before assuming the 1.5% still reflects the code.
+  different texture representation, ops that can coalesce, or the single-plane preview that #1206
+  never got around to testing — this entry should be re-measured and lowered or removed. **The
+  exception records a cost that thirteen implementations failed to reduce, not a proof that no
+  implementation can.**
