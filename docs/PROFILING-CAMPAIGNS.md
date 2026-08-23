@@ -453,6 +453,52 @@ The general rule this belongs to: when instrumentation might be changing what it
 it. The app's own probe scored against a no-trace control answers it in ten minutes, and the same
 technique applies to the in-page probe and `PERF_MARKS`.
 
+## The in-page probe's own observer effect
+
+Every real-screen capture runs with an injected probe that hooks pointer events,
+`requestAnimationFrame` and performance marks on the drawing hot path — code the shipped app does
+not run, executing inside the loop being measured. It was measured the same way, with
+`npm run perf:device:probe-overhead`.
+
+The awkward part is that the probe cannot score the arm that has no probe, and on this phone neither
+platform-side clock answers for a browser target. Both were tried:
+
+| Instrument                                 | On `com.android.chrome` while its page is drawn on                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `dumpsys gfxinfo … framestats`             | **0 frames rendered** — Chrome composites web content outside the view-system pipeline |
+| `dumpsys SurfaceFlinger --latency <layer>` | all-zero rows on Android 16; only the refresh period is real                           |
+
+That is a property of the target, not of the method: the same `gfxinfo` command against
+`com.android.settings` over the same kind of gesture reports 298 frames. **`gfxinfo` is for the
+native app, not for the browser target** — `docs/PROFILING-ANDROID.md` says so now.
+
+So the common clock is a minimal `requestAnimationFrame` counter injected into *both* arms. It is
+not free, but it is identical in both, so it cancels — the probe is the single variable. Same page,
+same origin (so the persisted brush carries), same OS-driven gesture at identical device
+coordinates, arms interleaved so device warming cannot be mistaken for the probe, three samples
+each:
+
+| Brush  | Control frames/s          | Probe frames/s            | Worst frame, control |      Worst frame, probe |
+| ------ | ------------------------- | ------------------------- | -------------------: | ----------------------: |
+| pen    | 90.09 (90.21/89.77/90.30) | 90.13 (90.09/90.01/90.29) |  16.8, 17.0, 25.1 ms |     25.0, 25.0, 25.0 ms |
+| crayon | 89.98 (90.20/89.68/90.05) | 90.03 (89.71/90.21/90.16) |  25.0, 25.1, 25.0 ms | **33.4, 33.4, 33.4 ms** |
+
+**In steady state it is unmeasurable.** The arms interleave inside each other's spread on both
+brushes, and p50, p95 and p99 are identical to the millisecond in every sample. Record it beside the
+Instruments finding and stop worrying about it.
+
+**The tail is the one place it shows.** On crayon the probe arm's single worst frame was 33.4 ms in
+all three samples against the control's 25.0 — four beats against three, reproducible to the tenth
+of a millisecond. It is one frame per twelve-second run and it did not appear on pen. Treat it as a
+lead rather than a result: three samples on one device and one brush, with a plausible cause (a
+buffer growth or an observer flush) that nothing here has confirmed.
+
+Two limits worth stating rather than discovering later. The control still carries the counter, so
+this bounds the probe against a trivial rAF loop and not against a wholly uninstrumented page — that
+is inherent in needing a common clock. And the gesture is a plain centre swipe rather than the
+calibrated trusted-gesture path, so it is a fair comparison between arms and not a scoreable
+capture.
+
 ## Do not edit the tools while a campaign is running
 
 The rule below is about CPU. This one is about the source: **a campaign spawns a fresh Node process
