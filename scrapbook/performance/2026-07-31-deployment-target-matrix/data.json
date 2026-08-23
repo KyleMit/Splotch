@@ -191,6 +191,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -198,7 +199,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -247,6 +249,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -254,7 +257,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -303,6 +307,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -310,7 +315,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -359,6 +365,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -366,7 +373,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1666,6 +1674,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1673,7 +1682,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1722,6 +1732,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1729,7 +1740,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1778,6 +1790,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1785,7 +1798,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1834,6 +1848,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1841,7 +1856,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3141,6 +3157,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3148,7 +3165,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3197,6 +3215,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3204,7 +3223,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3253,6 +3273,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3260,7 +3281,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3309,6 +3331,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3316,7 +3339,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4641,6 +4665,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4648,7 +4673,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4697,6 +4723,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4704,7 +4731,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4753,6 +4781,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4760,7 +4789,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4809,6 +4839,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4816,7 +4847,8 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6142,10 +6174,8 @@
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6155,14 +6185,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6170,10 +6202,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",
@@ -6202,10 +6232,8 @@
                 "lostFrameTimeShare": 0.0214,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6215,14 +6243,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6230,10 +6260,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",
@@ -6262,10 +6290,8 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6275,14 +6301,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6290,10 +6318,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",
@@ -6322,10 +6348,8 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6335,14 +6359,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6350,10 +6376,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7658,10 +7682,8 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7671,14 +7693,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7686,10 +7710,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7718,10 +7740,8 @@
                 "lostFrameTimeShare": 0.0203,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7731,14 +7751,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7746,10 +7768,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7778,10 +7798,8 @@
                 "lostFrameTimeShare": 0.001,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7791,14 +7809,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7806,10 +7826,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7838,10 +7856,8 @@
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": false,
-                "failedFidelityChecks": [
-                  "coalescing"
-                ],
+                "scoreable": true,
+                "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7851,14 +7867,16 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
-                    "passed": false,
+                    "runtime": "ios-capacitor-webview",
+                    "passed": true,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7866,10 +7884,8 @@
                     "expected": "60hz",
                     "matched": true
                   },
-                  "scoreable": false,
-                  "failedFidelityChecks": [
-                    "coalescing"
-                  ],
+                  "scoreable": true,
+                  "failedFidelityChecks": [],
                   "phases": [
                     {
                       "phase": "blank",

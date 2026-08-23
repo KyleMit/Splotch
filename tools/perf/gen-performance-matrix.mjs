@@ -13,6 +13,7 @@ import {
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
 import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
@@ -177,13 +178,38 @@ function validateCaptureMode(profile, mode, source) {
   }
 }
 
+// The verdict a capture recorded is the one its runner computed on the day, from
+// whatever expectations that checkout held. The matrix already re-scores every
+// drawing table with the current gates for exactly that reason, and leaving the
+// fidelity verdict frozen means a correction to the expectations reaches published
+// cells only through device time. So it is re-derived here too, from the input the
+// capture recorded and the runtime the target declares.
+//
+// Only when the capture carried a verdict at all. A runner that writes none — the
+// desktop transport — is not held to one, the same carve-out `artifactPassedFidelity`
+// makes; deriving one for it would mark every desktop cell unscoreable on a
+// trusted-touch check that Playwright cannot satisfy by construction.
+//
+// A PRESERVED cell keeps the verdict it was published with, because re-deriving one
+// needs the raw input samples and a preserved cell has only normalized results — the
+// same reason it keeps its published scores rather than being re-scored. So a target
+// captured on both sides of a recapture can show a fresh mode judged by the current
+// expectations beside a preserved mode judged by the ones in force when it was taken.
+// That is the standing cost of preserved evidence (ADR-0138), marked as such in the
+// matrix, and it resolves when the mode is recaptured — not a second verdict for the
+// same measurement.
+function rederiveFidelity(profile, phases, captureRuntime) {
+  if (!profile.fidelity) return null;
+  return inputFidelity(phases?.[0]?.input ?? {}, captureRuntime);
+}
+
 function normalizeDrawingRun(
   source,
   productCommit,
   sourceDirectory,
   mode,
   gateShare,
-  expectedRefreshRegime
+  { expectedRefreshRegime, captureRuntime }
 ) {
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
@@ -191,13 +217,14 @@ function normalizeDrawingRun(
   const phases = summaries?.phases;
   const scored = scoreDrawingRun(phases ?? [], gateShare);
   const refreshRegime = refreshRegimeVerdict(summaries?.intervalMs, expectedRefreshRegime);
-  const failedFidelityChecks = Object.entries(profile.fidelity?.checks ?? {})
-    .filter(([, passed]) => !passed)
+  const fidelity = rederiveFidelity(profile, phases, captureRuntime);
+  const failedFidelityChecks = Object.entries(fidelity?.checks ?? {})
+    .filter(([, passed]) => passed !== true)
     .map(([check]) => check);
   return {
     source,
     productCommit,
-    fidelity: profile.fidelity ?? null,
+    fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
     // 6x-wrong number could not be told from a real one after the fact.
@@ -209,7 +236,7 @@ function normalizeDrawingRun(
     // reason: the gates are 60 Hz-calibrated (ADR-0085) and lostFrameTimeShare
     // prices frames against the observed beat, so the same drawing charged against
     // 8.3 ms instead of 16.7 ms reads as a catastrophe.
-    scoreable: profile.fidelity?.passed !== false && refreshRegime.matched,
+    scoreable: fidelity?.passed !== false && refreshRegime.matched,
     failedFidelityChecks,
     phases: scored.phases.map((phase) => ({
       phase: phase.phase,
@@ -275,14 +302,10 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
     BRUSHES.map((brush) => {
       const gateShare = lostFrameTimeShareGateFor(targetId, brush);
       const runs = (sources[brush] ?? []).map((source) =>
-        normalizeDrawingRun(
-          source,
-          productCommit,
-          sourceDirectory,
-          mode,
-          gateShare,
-          CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null
-        )
+        normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare, {
+          expectedRefreshRegime: CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null,
+          captureRuntime: CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? DEFAULT_CAPTURE_RUNTIME,
+        })
       );
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
