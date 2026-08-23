@@ -16,6 +16,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
+import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import {
   inputFidelity,
   nativeCanvasBounds,
@@ -210,6 +211,7 @@ export async function captureDeviceFrames({
   label = argFlag('label'),
   output = argFlag('output'),
   reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
+  allowForeignBuild = argFlag('allow-foreign-build'),
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
@@ -219,6 +221,12 @@ export async function captureDeviceFrames({
   if (!host) fail('--host= is required — the probe host URL the device can reach over the LAN');
   if (platform === 'android' && !serial)
     fail('--device-serial= is required for --platform=android');
+
+  // The probe host proxies everything but the instrumented HTML to the real
+  // preview, so the build the device will load is checkable from here — and until
+  // it was, only the desktop runners verified a build at all. A native export
+  // written after the preview started reached device cells unchallenged.
+  await assertServedBuildIsFresh(host, { allowForeignBuild: allowForeignBuild !== undefined });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;

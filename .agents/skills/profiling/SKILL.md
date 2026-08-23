@@ -25,6 +25,12 @@ is pure and re-runnable on any saved trace.
 WebKit/JavaScriptCore engine, Apple GPU, and 120 Hz ProMotion display together. Read it before any
 real-device profiling; start at its "Which approach to use" table.
 
+**[`docs/PROFILING-ANDROID.md`](../../../docs/PROFILING-ANDROID.md)** is the equivalent for a
+**physical Android device**, where the platform gives up far more than Apple's does: per-frame stage
+timings from `dumpsys gfxinfo … framestats`, whole-device Perfetto traces (including `sched`, which
+answers "was the app slow or was it descheduled?"), and CDP `Tracing` inside the WebView — the one
+instrument with no iPad counterpart. Start at its "Which instrument answers which question" table.
+
 Two things to check before drawing a conclusion:
 
 * **Pick the command that brackets the window you care about.** Every web command except

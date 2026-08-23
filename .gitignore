@@ -7,7 +7,10 @@
 /screenshots/
 
 # Performance profiling captures (npm run perf:web) — local artifacts.
-/perf-profiles/
+/perf-profiles/*
+# ADR-0138: a curated per-campaign subset of raw captures is tracked, so a metric
+# correction can be re-scored against history instead of recaptured on hardware.
+!/perf-profiles/evidence/
 /.perf-state/
 
 # Lighthouse audit reports (.claude/skills/lighthouse-audit) — attach to the PR, don't commit.

@@ -3,8 +3,9 @@
 // docs/PROFILING-IPAD.md.
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
+import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 
 const SERVE_ENTRY = join(ROOT, 'tools', 'perf', 'serve-profile-build.mjs');
 
@@ -18,6 +19,13 @@ const PREVIEW_PORT = 4173;
 const stripAnsi = (line) => line.replace(/\u001B\[[0-9;]*m/g, '');
 
 export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
+  if (buildDirHoldsNativeExport()) {
+    fail(
+      'web/build holds the native static export, not the web build — a native build ' +
+        '(build:cap, ios:run:device, android:run) overwrote it. A capture against it hangs ' +
+        'rather than failing. Run `npm run perf:build` first.'
+    );
+  }
   const addresses = lanAddresses();
   const child = spawn(
     process.execPath,

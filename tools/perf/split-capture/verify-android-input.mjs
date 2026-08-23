@@ -18,7 +18,7 @@ import { inputFidelity, trustedGestureActions } from '../ios/capture-xcuitest-sc
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidGestureInstructions, swipeArgs } from './lib/android-input.mjs';
 import { classifyInputCadence, describeContactSamples } from './lib/input-verdict.mjs';
-import { createFloorControlHost } from './serve-floor-control.mjs';
+import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
 
 const DEFAULT_PORT = 4177;
 const PAGE_SETTLE_MS = 6_000;
@@ -131,7 +131,7 @@ export async function verifyAndroidInput({
       fidelity: inputFidelity(input),
     };
   } finally {
-    server.close();
+    await closeFloorControlHost(server);
   }
 }
 

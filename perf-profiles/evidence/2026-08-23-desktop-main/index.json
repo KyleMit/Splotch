@@ -1,0 +1,102 @@
+{
+  "campaign": "2026-08-23-desktop-main",
+  "capturedFrom": "perf-profiles/campaign",
+  "kept": [
+    {
+      "file": "mac-chrome-crayon.json",
+      "target": "mac-chrome",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "mac-chrome-eraser.json",
+      "target": "mac-chrome",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "mac-chrome-magic.json",
+      "target": "mac-chrome",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/magic-real-screen.json"
+    },
+    {
+      "file": "mac-chrome-pen.json",
+      "target": "mac-chrome",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/pen-real-screen.json"
+    },
+    {
+      "file": "mac-firefox-crayon.json",
+      "target": "mac-firefox",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "mac-firefox-eraser.json",
+      "target": "mac-firefox",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "mac-firefox-magic.json",
+      "target": "mac-firefox",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/magic-real-screen.json"
+    },
+    {
+      "file": "mac-firefox-pen.json",
+      "target": "mac-firefox",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/pen-real-screen.json"
+    },
+    {
+      "file": "mac-safari-crayon.json",
+      "target": "mac-safari",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "mac-safari-eraser.json",
+      "target": "mac-safari",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "mac-safari-magic.json",
+      "target": "mac-safari",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/magic-real-screen.json"
+    },
+    {
+      "file": "mac-safari-pen.json",
+      "target": "mac-safari",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/pen-real-screen.json"
+    }
+  ]
+}

@@ -1,9 +1,14 @@
+import { connect } from 'node:net';
 import { describe, expect, it } from 'vitest';
 import {
   androidGestureInstructions,
   androidRotationCommands,
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
+import {
+  closeFloorControlHost,
+  createFloorControlHost,
+} from '../split-capture/serve-floor-control.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
@@ -195,5 +200,37 @@ describe('classifyInputCadence', () => {
 
     expect(classifyInputCadence(android).ok).toBe(true);
     expect(describeContactSamples(android)).toContain('no contact geometry reported');
+  });
+});
+
+describe('closeFloorControlHost', () => {
+  const listenOnEphemeralPort = async () => {
+    const { server } = createFloorControlHost({ log: () => {} });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    return { server, port: server.address().port };
+  };
+
+  // The bug this covers is a process that never exits, so the assertion has to be
+  // that the close RESOLVES, not that it was called. Node destroys idle sockets on
+  // close() by itself and waits only on ones carrying a request in progress — which
+  // is the state the device's browser leaves behind, and the state that has to be
+  // reproduced here for the test to mean anything.
+  it('resolves while a client holds a socket open mid-request', async () => {
+    const { server, port } = await listenOnEphemeralPort();
+    const socket = connect(port, '127.0.0.1');
+    await new Promise((resolve) => socket.on('connect', resolve));
+    socket.write('GET /__probe/plan HTTP/1.1\r\nHost: floor-control\r\n');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    await expect(closeFloorControlHost(server)).resolves.toBeUndefined();
+    expect(server.listening).toBe(false);
+    socket.destroy();
+  });
+
+  it('resolves when nothing ever connected', async () => {
+    const { server } = await listenOnEphemeralPort();
+
+    await expect(closeFloorControlHost(server)).resolves.toBeUndefined();
+    expect(server.listening).toBe(false);
   });
 });

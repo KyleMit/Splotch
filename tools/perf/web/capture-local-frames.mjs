@@ -37,6 +37,7 @@ import { waitForUrl } from '../../lib/net.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
+import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { spawnPerfServe } from '../serve-profile-build.mjs';
 import { printRun } from '../analyze-frame-capture.mjs';
 import { probeConfigScript } from '../ios/capture-webkit-frames.mjs';
@@ -118,6 +119,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
         'device-scale-factor',
         'headed',
         'no-serve',
+        'allow-foreign-build',
         'no-forensics',
         'output',
         'theme',
@@ -174,6 +176,11 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
   let browser;
   try {
     await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
+    // A `--url` capture skips buildAndPreview, which is where the build is
+    // normally proved — and `--url` is the path every campaign cell takes, so
+    // without this the identity assertion covered only the path nobody uses. A
+    // coherent server can still be serving another checkout's build.
+    await assertServedBuildIsFresh(url, { allowForeignBuild: has('allow-foreign-build') });
     browser = await engine.launcher.launch({ headless });
     const context = await browser.newContext({
       viewport,

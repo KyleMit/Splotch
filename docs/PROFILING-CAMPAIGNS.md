@@ -226,18 +226,27 @@ Three things about `perf:campaign` that each cost a launch:
   and wrong after a misconfigured launch. Read `ledger.tsv` before clearing it: if every row is
   `missing-or-invalid-json-exit-1` and no artifact was produced, the attempts recorded nothing and
   deleting the ledger costs nothing.
-* **Its Android drawing transport is the one ADR-0135 measured at 46.8 moves/s**, below the 100–170
-  fidelity band. Cells captured that way must not be scored. Promoting the split input/measurement
-  transport into `tools/` is the fix; until then an Android recapture through the campaign produces
-  artifacts that parse — so the campaign accepts them — and still fail the fidelity verdict.
+* **`android-device-web` drawing goes through the split input/measurement transport**, which
+  requires `--probe-host=` — this host's LAN address, as the *device* sees it. A loopback address
+  reaches the capture host's own browser and never the phone; the campaign rejects one up front, and
+  asserts the probe host answers before the queue starts, because getting it wrong otherwise reads
+  as a page that would not load. Start the host with `npm run perf:device:serve` first.
 
-  Re-probed on 2026-08-22 and it reproduces exactly: **46.8 moves/s, 0.44 moves per frame**, with
-  `pressure` and `contactGeometry` both zero, failing on `cadence` and `contactGeometry`. Learn what
-  that costs before dismissing it as a harness detail — the capture then scores **11.5% lost frame
-  time**, and the published `android-device-web` rows read 10–12%. Those rows are not a measurement
-  of the product at all. At 0.44 moves per frame the app is barely being driven, and
-  `lostFrameTimeShare` prices the gaps between sparse input as lost frames. A red cell produced this
-  way looks exactly like a catastrophic regression and means nothing.
+  The transport it replaced is the one ADR-0135 measured at **46.8 moves/s**, below the 100–170
+  fidelity band. Re-probed on 2026-08-22 and it reproduces exactly: 46.8 moves/s, 0.44 moves per
+  frame, with `pressure` and `contactGeometry` both zero, failing on `cadence` and
+  `contactGeometry`. Learn what that costs before dismissing it as a harness detail — the capture
+  then scores **11.5% lost frame time**, and the published `android-device-web` rows read 10–12%.
+  Those rows are not a measurement of the product at all. At 0.44 moves per frame the app is barely
+  being driven, and `lostFrameTimeShare` prices the gaps between sparse input as lost frames. A red
+  cell produced this way looks exactly like a catastrophic regression and means nothing.
+
+* **A capture that fails input fidelity is no longer counted complete.** The split runner writes its
+  artifact and *then* fails the gate, so acceptance on "the artifact parses" banked exactly the
+  cells the transport exists to stop producing. The ledger now distinguishes them: a
+  `failed-input-fidelity` row spends an attempt but does not claim the artifact was missing — which
+  matters, because "every row is `missing-or-invalid-json` and no artifact was produced" is the read
+  that makes clearing a ledger safe.
 
 `perf:ios:xcuitest:screen` drives Android too, despite the name.
 
@@ -257,6 +266,23 @@ stay-awake every 60 seconds and reports the moment either device goes away. It c
 the iPad — nothing on the host can hold an iPad awake, so set **Settings → Display & Brightness →
 Auto-Lock → Never** on the device itself. An active XCUITest session keeps it awake during a
 capture; the gaps are the risk.
+
+## Keep the evidence before the scratch is gone
+
+**Promote the campaign's representative captures into the tracked corpus** as a closing step:
+
+```sh
+npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=<name>
+```
+
+`perf-profiles/` is gitignored, so everything a campaign captured disappears from a clean checkout.
+That is what makes a metric correction cost device time rather than seconds: when the beat estimator
+and the charge were corrected, every published cell kept the old number because re-scoring needs the
+raw frames. ADR-0138 tracks one capture per target × brush so the next correction can be re-scored
+against history with `perf:rescore`.
+
+This step is not enforced anywhere, and the moment it gets skipped is the moment a campaign ends in
+a hurry — which is every campaign.
 
 ## Do not tear the devices down when a campaign ends
 
@@ -310,6 +336,27 @@ The general rule this belongs to: when instrumentation might be changing what it
 it. The app's own probe scored against a no-trace control answers it in ten minutes, and the same
 technique applies to the in-page probe and `PERF_MARKS`.
 
+## Do not edit the tools while a campaign is running
+
+The rule below is about CPU. This one is about the source: **a campaign spawns a fresh Node process
+per cell**, so it reads the capture tool from disk every time. Editing that tool mid-run changes
+what the next cell executes, and the run silently splits into "cells captured before the edit" and
+"cells captured after it".
+
+On 2026-08-23 an import was added to `capture-local-frames.mjs` while a desktop sweep was in flight.
+The call site landed and the import did not, so every drawing cell from that moment on died with
+`ReferenceError: assertServedManifestResolves is not defined` while the action cells — a different
+module, edited correctly — kept passing. The ledger showed 7 valid and 39 failed, which reads like a
+device or browser problem and was neither.
+
+It is recoverable, because a failed cell writes no artifact: the ledger is then all
+`missing-or-invalid-json` with nothing on disk, which is the documented signature for a ledger that
+is safe to clear (see *Recapturing matrix cells*). Confirm the artifact count matches the valid-row
+count before clearing, then rerun — cells that already landed are skipped on their artifacts, not on
+the ledger.
+
+Make tool edits between targets, or on a branch the running campaign is not executing from.
+
 ## Never run anything heavy on the host during a capture
 
 The host drives the input dispatch. A test suite, a build, or a second campaign competing for CPU
@@ -330,12 +377,78 @@ Two are fixed and one is proposed; all three are worth recognizing in a number.
 * **`lostFrameTimeShare` is a share of in-contact *time*, not of frames.** The frame share is
   roughly double it. Say which you mean.
 
+## A red cell describes the commit it was captured at, not the product
+
+**Before treating a red cell as a product problem, rebuild the commit it was captured at and confirm
+the failure still reproduces.** The matrix records that commit per mode (`drawingProductCommit` in
+`sources.json`), and the product moves underneath it.
+
+This is a different check from "compare against the previous run of the same cell" below, and it
+catches something that one cannot: not a bad measurement, but a good measurement of a build nobody
+runs any more.
+
+Issue 1203 is the worked example. It reported physical-iPad crayon straddling the 50 ms paint-max
+gate at 65, 59, 45 and 46 ms, from the 2026-08-22 `ipad-device-web` capture — which was taken at
+`ae674d71` at 13:21. Four further commits to `web/src/lib/drawing/` landed before that day's work
+merged at 22:20. Measured on the same rig the following night:
+
+| Build                             |  n | paint max per sample       | worst |
+| --------------------------------- | -: | -------------------------- | ----: |
+| `ae674d71` — what the matrix held |  5 | 48, 42, 47, **77**, 45     |    77 |
+| `main`                            |  7 | 47, 45, 47, 47, 45, 47, 47 |    47 |
+
+The `main` arm was **eight** captures, not seven. One passed input fidelity and came back with an
+estimated beat of 8 ms where the other seven sat at 17 ms, and it is excluded because those two
+regimes are not comparable — the same drawing charged against an 8.3 ms beat instead of 16.7 ms
+reads as a catastrophe. Its paint max was 42 ms, so excluding it does not flatter the result. State
+an exclusion like this rather than presenting only the survivors, or an honest regime check is
+indistinguishable from best-of selection.
+
+The old commit reproduces the straddle exactly. `main` shows no excursion in seven consecutive
+samples. The gate had already been fixed by the raster-queue extraction, and five candidate
+implementations had been written to attack a cost that no longer existed.
+
+### How to run the A/B without invalidating it
+
+Checking the capture commit out in the active worktree gets you that commit's **capture driver and
+scorer** as well as its product, and rebuilding overwrites the shared `web/build` underneath any
+preview a running rig is serving. Either makes the comparison meaningless, and the second disrupts
+whatever else is capturing.
+
+So: build the historical product in an **isolated worktree on its own port**, drive both arms with
+the **current** harness, and re-score both with the **current** scoring modules. Only the product
+may differ between them.
+
+```sh
+git worktree add /tmp/ab-<commit> <commit>
+cd /tmp/ab-<commit> && npm run perf:build
+npm run perf:serve -- --port=<free port> --strict-port &
+# drive from THIS checkout, pointing at that port
+npm run perf:ios:xcuitest:screen --ignore-scripts -- --url=http://<lan>:<free port>/ --no-serve …
+npm run perf:rescore -- --corpus=<both arms> --target=<the cell's target>
+```
+
+The historical arm is deliberately **not** this checkout's build, so it needs
+`--allow-foreign-build`; that flag exists for exactly this case. The invariant being protected is
+the *intended, independently verified* product commit — not current-worktree identity.
+
+The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
+`npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell
+currently claiming to be a measurement was taken from source that has since changed — without a
+device, and `gen:performance-matrix` now runs it for you.
+
 ## Before believing a result
 
 1. Fidelity verdict passed, and the input cadence is in band.
-2. The served build's manifest resolves.
+2. The served build is the one you intended, verified rather than assumed. A resolving manifest
+   proves only that a server is self-consistent; it says nothing about *whose* build it is, and
+   `build:cap` leaves a native static export in the same `web/build` a web build uses. Both are
+   checked on every capture, including the `--url` path — but a deliberately historical build is not
+   this checkout's, so identity there is asserted by you with `--allow-foreign-build`.
 3. The committed brush matches the requested one.
 4. At least three samples per cell — the within-config spread on a physical device is routinely
    comparable to the effect being measured.
 5. The previous run of the same cell, for comparison. A single absolute number from this gate has
    been wrong more often than it has been right.
+6. **The commit the cell was captured at**, if you are about to treat the number as a product
+   problem. See above — a red cell can be a faithful measurement of a superseded build.

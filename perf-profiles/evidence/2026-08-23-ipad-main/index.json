@@ -1,0 +1,70 @@
+{
+  "campaign": "2026-08-23-ipad-main",
+  "capturedFrom": "perf-profiles/campaign-main",
+  "kept": [
+    {
+      "file": "ipad-device-native-crayon.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": false,
+      "source": "ipad-device-native/landscape-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "ipad-device-native-eraser.json",
+      "target": "ipad-device-native",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": false,
+      "source": "ipad-device-native/landscape-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "ipad-device-native-magic.json",
+      "target": "ipad-device-native",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": false,
+      "source": "ipad-device-native/landscape-dark/magic-real-screen.json"
+    },
+    {
+      "file": "ipad-device-native-pen.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": false,
+      "source": "ipad-device-native/landscape-dark/pen-real-screen.json"
+    },
+    {
+      "file": "ipad-device-web-crayon.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "ipad-device-web-eraser.json",
+      "target": "ipad-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "ipad-device-web-magic.json",
+      "target": "ipad-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/magic-real-screen.json"
+    },
+    {
+      "file": "ipad-device-web-pen.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/pen-real-screen.json"
+    }
+  ]
+}

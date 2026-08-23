@@ -634,7 +634,14 @@ describe('deployment matrix report', () => {
       const matrix = normalizeMatrix(preservingManifest(manifestDirectory), manifestDirectory);
       const mode = matrix.targets[0].modes[0];
 
-      expect(mode.drawing).toEqual(publishedDrawing);
+      // The published measurements are carried forward untouched. Scoreability is
+      // the one thing re-derived, from the fidelity verdict those runs already
+      // carry — without it a preserved fidelity-failed cell rendered a bold product
+      // FAIL while a freshly captured one with the identical verdict rendered
+      // unscoreable.
+      expect(mode.drawing.crayon.runs).toEqual(publishedDrawing.crayon.runs);
+      expect(mode.drawing.crayon.aggregate).toMatchObject(publishedDrawing.crayon.aggregate);
+      expect(mode.drawing.crayon.aggregate.scoreable).toBe(true);
       expect(mode.preservedSections).toEqual(['drawing']);
       expect(matrix.preservedEvidence).toEqual({
         from: 'data.json',

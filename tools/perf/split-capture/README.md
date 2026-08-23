@@ -29,6 +29,10 @@ only has to be able to touch the screen.
 
 Run the host first; it binds `0.0.0.0` because the device loads it over the LAN.
 
+`perf:campaign` drives this path for any target that declares `transport: 'split'` — today
+`android-device-web`. It asserts the probe host answers before its queue starts rather than starting
+one itself, so `perf:device:serve` still has to be running.
+
 ```sh
 npm run perf:build
 npm run perf:serve -- --port=4173 --strict-port &
@@ -49,9 +53,11 @@ artifact records `orientation`, `theme`, and the `fidelity` verdict alongside th
 the performance matrix validates a capture against the mode it was filed under and refuses one that
 cannot prove which mode it measured.
 
-The CLI exits non-zero when the fidelity gate fails. That is deliberate: an artifact that parses is
-not the same as an artifact that can be scored, and the campaign runner accepts any artifact that
-parses.
+The CLI exits non-zero when the fidelity gate fails, **after** writing the artifact. That ordering
+is deliberate — the failed capture is kept for inspection — but it means an artifact that parses is
+not the same as an artifact that can be scored. The campaign runner reads the `fidelity` verdict the
+artifact carries for exactly this reason, and records a fidelity failure as `failed-input-fidelity`
+rather than banking the cell.
 
 ## The Android fidelity gate is not yet satisfiable
 
