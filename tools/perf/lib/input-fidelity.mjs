@@ -18,15 +18,15 @@
 // that was under-driven cannot. The two are distinguished so a reader knows which
 // they are looking at — an uncalibrated check is a gap in the instrument and is
 // closed by measuring the runtime, not by re-running the capture.
-export const UNCALIBRATED = 'uncalibrated';
+const UNCALIBRATED = 'uncalibrated';
 
 // Calibrated against the schema-2 hand capture on the target iPad. These gate
 // whether a run exercised the physical touch path; they are not lag thresholds.
 export const FIDELITY_MOVES_PER_SECOND_MIN = 100;
 export const FIDELITY_MOVES_PER_SECOND_MAX = 170;
 export const FIDELITY_MOVE_GAP_P95_MAX_MS = 20;
-export const FIDELITY_CONTACT_SIZE_MIN_PX = 40;
-export const FIDELITY_CONTACT_SIZE_MAX_PX = 100;
+const FIDELITY_CONTACT_SIZE_MIN_PX = 40;
+const FIDELITY_CONTACT_SIZE_MAX_PX = 100;
 
 export const CAPTURE_RUNTIMES = [
   'ios-safari',

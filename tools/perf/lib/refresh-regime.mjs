@@ -31,7 +31,7 @@ export const REFRESH_REGIMES = {
 // Wide enough to absorb the estimator's own spread — the tracked corpus reports
 // 16-17 ms for 60 Hz targets and 8.30-8.42 ms for 120 Hz ones — and narrow enough
 // that the two bands cannot meet: 60 Hz spans 13.3-20.0 ms and 120 Hz 6.7-10.0 ms.
-export const REFRESH_REGIME_TOLERANCE_FRACTION = 0.2;
+const REFRESH_REGIME_TOLERANCE_FRACTION = 0.2;
 
 // null rather than a nearest-match fallback: a beat that belongs to neither band is
 // a capture nobody has a budget for, and quietly filing it under the closer one is
