@@ -35,8 +35,11 @@ in the shared chrome, and register it in the index registry
 * Keep a note when a later ADR depends on its chronology or evidence. When its thresholds or
   provenance go stale, **update the note** rather than treating it as a live plan or silently
   trusting it.
-* Non-Markdown files are kept **verbatim** — `docs/scratchpad/` is in `.prettierignore`, so a run's
-  `summary.json` or one-off HTML sheet stays exactly as the tool wrote it. The notes themselves are
-  Markdown and dprint formats them like the rest of the repo (ADR-0057).
+* A tree of **verbatim run output** is kept exactly as the tool wrote it, and its path is listed in
+  `.prettierignore` so nothing reformats those bytes. Add the line when you add such a tree.
+  Hand-authored files here — a probe harness, a helper script — are maintained source and stay in
+  Prettier's scope. Notes are Markdown, which dprint owns like the rest of the repo (ADR-0057).
+* A page carried in from somewhere else keeps its look but not its old navigation: repoint or strip
+  links that resolved against the tree it came from, or they dead-end from the new location.
 * Nothing here is a backlog. A durable TODO is a GitHub issue (`docs/ISSUE-WORKFLOW.md`); a decision
   is an ADR (`docs/adrs/`); a pause-and-resume packet is a handoff (`docs/handoff/`).
