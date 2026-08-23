@@ -1,0 +1,137 @@
+// Promote a campaign's representative captures into the tracked evidence corpus.
+//
+//   npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=2026-08-android
+//
+// ADR-0138: raw captures are otherwise gitignored, so a metric correction cannot
+// be applied to any number already published — it can only be recaptured on
+// hardware, which is what left ten of eleven matrix targets on a superseded
+// estimator. A curated subset makes re-scoring history a script instead.
+//
+// Two rules, both from that ADR. Captures are kept WHOLE: every trimming that
+// saves meaningful space also drops a gate or corrupts the fidelity verdict, and
+// a preserved capture that cannot prove its own fidelity is worse than none
+// because it will be believed. And the subset is one capture per target x brush
+// rather than per matrix cell, because a metric's effect varies with the display
+// and the workload, not with orientation and theme.
+
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, join, relative } from 'node:path';
+import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import { findCaptureFiles, brushOf, rawReportOf } from './rescore-captures.mjs';
+
+export const EVIDENCE_ROOT = 'perf-profiles/evidence';
+
+// A campaign tree lays cells out as <target>/<mode>/<brush>-real-screen.json, so
+// the target is the leading directory. A flat corpus has none, and taking the
+// filename instead would make every capture its own target — which silently turns
+// "one per target x brush" into "keep everything", the opposite of the rule.
+export function targetOf(parsed, relativePath, fallback) {
+  const declared = parsed?.targetId ?? parsed?.target;
+  if (declared) return declared;
+  const segments = relativePath.split('/');
+  if (segments.length > 1) return segments[0];
+  return fallback ?? 'unknown';
+}
+
+// orientation/theme is what a campaign artifact records. `mode` is checked only
+// after them because the Appium envelope already uses that key for its automation
+// mode, so reading it first labels an iPad capture "xcuitest:abase.1".
+export function modeOf(parsed) {
+  if (parsed?.orientation) return `${parsed.orientation}-${parsed.theme ?? 'light'}`;
+  if (parsed?.mode) return parsed.mode;
+  return 'unknown';
+}
+
+// One per target x brush. Ties are broken by keeping the FIRST seen rather than
+// the best: picking the best sample would preserve a corpus that flatters the
+// metric it exists to let someone re-examine.
+export function selectEvidence(candidates) {
+  const kept = new Map();
+  for (const candidate of candidates) {
+    const key = `${candidate.target}:${candidate.brush}`;
+    if (!kept.has(key)) kept.set(key, candidate);
+  }
+  return [...kept.values()];
+}
+
+export async function keepCaptureEvidence({
+  corpus = argFlag('corpus'),
+  campaign = argFlag('campaign'),
+  target = argFlag('target'),
+} = {}) {
+  if (!corpus) fail('--corpus=<dir> is required');
+  if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
+  const root = join(ROOT, corpus);
+
+  const candidates = [];
+  for (const file of findCaptureFiles(root)) {
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+      continue;
+    }
+    if (!rawReportOf(parsed)) continue;
+    const relativePath = relative(root, file);
+    candidates.push({
+      file,
+      relativePath,
+      target: targetOf(parsed, relativePath, target),
+      brush: brushOf(parsed, relativePath),
+      mode: modeOf(parsed),
+      fidelity: parsed.fidelity?.passed ?? null,
+    });
+  }
+  if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
+
+  const selected = selectEvidence(candidates);
+  const destination = join(ROOT, EVIDENCE_ROOT, campaign);
+  mkdirSync(destination, { recursive: true });
+
+  // Minified, not copied: a capture is ~2.4 MB pretty-printed and ~620 KB dense,
+  // and the tracked corpus is sized in ADR-0138 on the dense form. Nothing is
+  // dropped — only the whitespace.
+  for (const entry of selected) {
+    writeFileSync(
+      join(destination, `${entry.target}-${entry.brush}.json`),
+      JSON.stringify(JSON.parse(readFileSync(entry.file, 'utf8')))
+    );
+  }
+  // The index is what makes the corpus readable without opening a frame table:
+  // which cell each sample came from, and whether it can be scored at all.
+  writeFileSync(
+    join(destination, 'index.json'),
+    JSON.stringify(
+      {
+        campaign,
+        capturedFrom: corpus,
+        kept: selected.map((entry) => ({
+          file: `${entry.target}-${entry.brush}.json`,
+          target: entry.target,
+          brush: entry.brush,
+          mode: entry.mode,
+          fidelityPassed: entry.fidelity,
+          source: entry.relativePath,
+        })),
+      },
+      null,
+      2
+    )
+  );
+
+  console.log(
+    `Kept ${selected.length} of ${candidates.length} captures in ${EVIDENCE_ROOT}/${campaign}`
+  );
+  for (const entry of selected) {
+    console.log(
+      `  ${entry.target}/${entry.brush}  ${entry.mode}  fidelity=${entry.fidelity ?? 'unreported'}  <- ${basename(entry.relativePath)}`
+    );
+  }
+  return { selected, candidates };
+}
+
+if (isMain(import.meta.url)) {
+  runMain(async () => {
+    await keepCaptureEvidence();
+  });
+}

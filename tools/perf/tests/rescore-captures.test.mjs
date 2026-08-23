@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { brushOf, rawReportOf, rescoreCapture } from '../rescore-captures.mjs';
+import { modeOf, selectEvidence, targetOf } from '../keep-capture-evidence.mjs';
 
 // The real frame table is a tuple stream, not a record list, and phases are
 // declared separately — a fixture that gets that wrong scores as an empty run
@@ -71,5 +72,38 @@ describe('rescoreCapture', () => {
 
     expect(excepted?.gateShare).toBe(0.015);
     expect(plain?.gateShare).toBe(0.01);
+  });
+});
+
+describe('keep-capture-evidence', () => {
+  it('reads the target from the campaign tree layout', () => {
+    expect(targetOf({}, 'android-device-web/landscape-light/crayon-real-screen')).toBe(
+      'android-device-web'
+    );
+    expect(targetOf({ targetId: 'ipad-device-web' }, 'anything/else')).toBe('ipad-device-web');
+  });
+
+  // Taking the filename for a flat corpus makes every capture its own target,
+  // which silently turns "one per target x brush" into "keep everything".
+  it('does not invent a target from a flat corpus filename', () => {
+    expect(targetOf({}, 'abase.1-crayon')).toBe('unknown');
+    expect(targetOf({}, 'abase.1-crayon', 'ipad-device-web')).toBe('ipad-device-web');
+  });
+
+  it('labels the mode from whichever shape the capture records it in', () => {
+    expect(modeOf({ mode: 'landscape-dark' })).toBe('landscape-dark');
+    expect(modeOf({ orientation: 'LANDSCAPE', theme: 'dark' })).toBe('LANDSCAPE-dark');
+    expect(modeOf({})).toBe('unknown');
+  });
+
+  it('keeps one capture per target and brush', () => {
+    const kept = selectEvidence([
+      { target: 'a', brush: 'pen', file: '1' },
+      { target: 'a', brush: 'pen', file: '2' },
+      { target: 'a', brush: 'crayon', file: '3' },
+      { target: 'b', brush: 'pen', file: '4' },
+    ]);
+
+    expect(kept.map((entry) => entry.file)).toEqual(['1', '3', '4']);
   });
 });

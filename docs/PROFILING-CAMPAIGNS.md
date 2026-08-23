@@ -267,6 +267,23 @@ the iPad — nothing on the host can hold an iPad awake, so set **Settings → D
 Auto-Lock → Never** on the device itself. An active XCUITest session keeps it awake during a
 capture; the gaps are the risk.
 
+## Keep the evidence before the scratch is gone
+
+**Promote the campaign's representative captures into the tracked corpus** as a closing step:
+
+```sh
+npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=<name>
+```
+
+`perf-profiles/` is gitignored, so everything a campaign captured disappears from a clean checkout.
+That is what makes a metric correction cost device time rather than seconds: when the beat estimator
+and the charge were corrected, every published cell kept the old number because re-scoring needs the
+raw frames. ADR-0138 tracks one capture per target × brush so the next correction can be re-scored
+against history with `perf:rescore`.
+
+This step is not enforced anywhere, and the moment it gets skipped is the moment a campaign ends in
+a hurry — which is every campaign.
+
 ## Do not tear the devices down when a campaign ends
 
 Leave stay-awake set, leave the tunnel up, leave the Appium server and WebDriverAgent running, and
