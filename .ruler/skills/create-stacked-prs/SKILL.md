@@ -205,6 +205,8 @@ gh stack link <pr-url-bottom> <pr-url-2> <pr-url-3>   # bottom → top
 * **Do not pass `--open`** unless you want every PR marked ready for review — it un-drafts drafts.
 * Append to an existing stack by passing its stack number first:
   `gh stack link 7 <pr-url> <pr-url>`.
+* **Record the stack number `link` prints.** It is the handle for every later command, and `link`
+  creates no local tracking state — nothing else will hand it back to you.
 * Stack propagation is asynchronous. Re-read the bases for a few seconds until every one is correct;
   a wrong base after that is infrastructure to repair, not to work around.
 * Local view: `gh stack checkout <stack-number>` imports the stack from GitHub, then
@@ -213,10 +215,16 @@ gh stack link <pr-url-bottom> <pr-url-2> <pr-url-3>   # bottom → top
 ## Merging — only when the user asks
 
 ```bash
-gh stack merge --merge --yes    # merge commits — matches this repo's merge-commit trunk
-gh stack merge --rebase --yes   # linear, all commits preserved, every SHA rewritten
-gh stack merge --squash --yes   # one commit per PR; discards intra-PR history
+gh stack merge <stack-number> --merge --yes    # merge commits — matches this repo's trunk
+gh stack merge <stack-number> --rebase --yes   # linear, all commits preserved, every SHA rewritten
+gh stack merge <stack-number> --squash --yes   # one commit per PR; discards intra-PR history
 ```
+
+**Pass the stack number.** With no argument `gh stack merge` uses the stack for the *current
+branch*, and `gh stack link` deliberately writes no local state — so unless someone ran
+`gh stack checkout <stack-number>` first, the bare form has nothing to target. A bare number is read
+first as a stack number and then as a PR number; passing a PR number instead merges everything up to
+and including that PR.
 
 `--yes` skips the interactive wizard and is required non-interactively. The merge is **atomic and
 bottom-to-top**: if any PR cannot merge, none do. Only open-and-not-draft is checked client-side;
