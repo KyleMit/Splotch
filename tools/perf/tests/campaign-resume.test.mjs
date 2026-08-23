@@ -78,11 +78,27 @@ describe('campaign resume', () => {
     seedLedger(`${root}/ledger.tsv`, MAX_ATTEMPTS);
     const artifact = join(root, artifactPath('out', 'android-emulator-web', MODE, 'pen-undo'));
     mkdirSync(dirname(artifact), { recursive: true });
-    writeFileSync(artifact, JSON.stringify({ transport: 'browser' }));
+    // A real capture from this runner carries a fidelity verdict; the fixture used
+    // to omit it, which only passed while a missing verdict was tolerated globally.
+    writeFileSync(artifact, JSON.stringify({ transport: 'browser', fidelity: { passed: true } }));
 
     const { ran } = await run('android-emulator-web', root);
 
     expect(campaignTarget('android-emulator-web').runtime).toBe('web');
     expect(ran).toEqual([{ cell: CELL, status: 'already-valid' }]);
+  });
+
+  // The runner always writes a verdict, so an artifact without one is stale or
+  // foreign — not a capture this cell produced. Accepting it is the fail-open that
+  // banked unscoreable cells as complete.
+  it('refuses an artifact with no fidelity verdict from a runner that writes one', async () => {
+    const root = scratch();
+    const artifact = join(root, artifactPath('out', 'android-emulator-web', MODE, 'pen-undo'));
+    mkdirSync(dirname(artifact), { recursive: true });
+    writeFileSync(artifact, JSON.stringify({ transport: 'browser' }));
+
+    const { ran } = await run('android-emulator-web', root, ['--max-attempts=1']);
+
+    expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
   });
 });
