@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { brushOf, rawReportOf, rescoreCapture } from '../rescore-captures.mjs';
 import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { modeOf, selectEvidence } from '../keep-capture-evidence.mjs';
+import { destinationBlocked, modeOf, selectEvidence } from '../keep-capture-evidence.mjs';
 import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
 import { buildDirHoldsNativeExport } from '../serve-profile-build.mjs';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
@@ -200,5 +200,30 @@ describe('buildDirHoldsNativeExport', () => {
 
   it('says nothing about a directory with no build in it', () => {
     expect(buildDirHoldsNativeExport(join(dir, 'absent'))).toBe(false);
+  });
+});
+
+describe('promoting into an existing campaign name', () => {
+  // Reusing a campaign name overwrote only the files the second run selected. The
+  // earlier captures stayed beside a rewritten index that no longer named them,
+  // and perf:rescore walks the directory rather than treating the index as an
+  // allowlist — so they scored as current evidence.
+  it('refuses a destination that already exists', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-evidence-root-'));
+    mkdirSync(join(root, 'existing'), { recursive: true });
+    writeFileSync(join(root, 'existing', 'stale.json'), '{}');
+
+    expect(existsSync(join(root, 'existing'))).toBe(true);
+    expect(destinationBlocked(join(root, 'existing'), { force: false })).toBe(true);
+  });
+
+  it('replaces it whole when forced, so nothing unselected survives', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-evidence-root-'));
+    const destination = join(root, 'existing');
+    mkdirSync(destination, { recursive: true });
+    writeFileSync(join(destination, 'stale.json'), '{}');
+
+    expect(destinationBlocked(destination, { force: true })).toBe(false);
+    expect(existsSync(join(destination, 'stale.json'))).toBe(false);
   });
 });

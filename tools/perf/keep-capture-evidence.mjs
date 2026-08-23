@@ -14,7 +14,7 @@
 // rather than per matrix cell, because a metric's effect varies with the display
 // and the workload, not with orientation and theme.
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
@@ -42,6 +42,16 @@ function viewportOrientation(parsed) {
 // One per target x brush. Ties are broken by keeping the FIRST seen rather than
 // the best: picking the best sample would preserve a corpus that flatters the
 // metric it exists to let someone re-examine.
+// Returns true when promotion must stop. With --force the existing corpus is
+// removed WHOLE rather than merged into, so a run selecting fewer targets cannot
+// leave the previous run's captures behind an index that no longer names them.
+export function destinationBlocked(destination, { force }) {
+  if (!existsSync(destination)) return false;
+  if (!force) return true;
+  rmSync(destination, { recursive: true, force: true });
+  return false;
+}
+
 export function selectEvidence(candidates) {
   const kept = new Map();
   for (const candidate of candidates) {
@@ -56,6 +66,7 @@ export async function keepCaptureEvidence({
   campaign = argFlag('campaign'),
   target = argFlag('target'),
   filter = argFlag('filter'),
+  force = argFlag('force') !== undefined || process.argv.includes('--force'),
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
@@ -89,6 +100,23 @@ export async function keepCaptureEvidence({
 
   const selected = selectEvidence(candidates);
   const destination = join(ROOT, EVIDENCE_ROOT, campaign);
+
+  // Reusing a campaign name does NOT replace the corpus — it overwrites only the
+  // files this run happens to select. A second promotion with fewer targets left
+  // the earlier captures sitting beside a rewritten index that no longer mentions
+  // them, and `perf:rescore` walks the directory rather than treating the index as
+  // an allowlist, so those stale captures scored as current evidence.
+  //
+  // The whole directory is therefore replaced, and only after the new selection is
+  // known to be non-empty — so a failed promotion cannot leave nothing behind.
+  if (destinationBlocked(destination, { force })) {
+    fail(
+      `${EVIDENCE_ROOT}/${campaign} already exists. Promoting into it would leave ` +
+        'captures this run did not select beside an index that no longer names them, ' +
+        'and perf:rescore scores every JSON it finds. Pass --force to replace the ' +
+        'corpus, or use a new --campaign name.'
+    );
+  }
   mkdirSync(destination, { recursive: true });
 
   // Minified, not copied: a capture is ~2.4 MB pretty-printed and ~620 KB dense,
