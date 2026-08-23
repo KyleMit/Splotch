@@ -180,7 +180,8 @@ jobs:
           ${SMOKE_RESULT}). The flow asserts only first paint (ADR-0120); inspect the named API jobs to
           distinguish emulator/toolchain failures from a shipped artifact that did not boot and paint."
           fi
-          body="$(cat <<EOF
+          body_file="${RUNNER_TEMP}/native-deploy-gate-failure.md"
+          cat >"$body_file" <<EOF
           The ${PLATFORM} native deploy gate failed for ${GITHUB_REF_NAME}.
 
           * Run: ${RUN_URL}
@@ -190,10 +191,9 @@ jobs:
 
           ${cause}
           EOF
-          )"
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
           if [[ -n "$existing" ]]; then
-            gh issue comment "$existing" --body "$body"
+            gh issue comment "$existing" --body-file "$body_file"
           else
-            gh issue create --title "$title" --label type:bug --label area:native --body "$body"
+            gh issue create --title "$title" --label type:bug --label area:native --body-file "$body_file"
           fi

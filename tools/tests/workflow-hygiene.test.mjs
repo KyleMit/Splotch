@@ -82,6 +82,61 @@ function runInstallMaestro(versionOutput) {
   return { githubPath, home, result };
 }
 
+function stepScript(lines, stepName) {
+  const start = lines.findIndex((line) => line.trim() === `- name: ${stepName}`);
+  if (start < 0) return undefined;
+  const runIndex = lines.findIndex((line, index) => index > start && /^\s+run: \|\s*$/.test(line));
+  if (runIndex < 0) return undefined;
+
+  const scriptIndent = lines[runIndex].search(/\S/) + 2;
+  const script = [];
+  for (const line of lines.slice(runIndex + 1)) {
+    if (line.trim() !== '' && line.search(/\S/) < scriptIndent) break;
+    script.push(line.slice(scriptIndent));
+  }
+  return script.join('\n');
+}
+
+function runFilingStep(script, stepEnv, existingIssue) {
+  const root = mkdtempSync(join(tmpdir(), 'splotch-gate-filing-'));
+  tempRoots.push(root);
+  const stubBin = join(root, 'bin');
+  const runnerTemp = join(root, 'runner-temp');
+  const ghCallLog = join(root, 'gh-calls.log');
+  mkdirSync(stubBin);
+  mkdirSync(runnerTemp);
+  writeFileSync(ghCallLog, '');
+  writeExecutable(
+    join(stubBin, 'gh'),
+    [
+      `printf '%s\\n' "$*" >>"$GH_CALL_LOG"`,
+      'if [[ "$1" == issue && "$2" == list ]]; then printf %s "$GH_EXISTING_ISSUE"; fi',
+    ].join('\n')
+  );
+
+  const result = spawnSync(
+    '/bin/bash',
+    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script],
+    {
+      encoding: 'utf8',
+      env: {
+        ...stepEnv,
+        GH_CALL_LOG: ghCallLog,
+        GH_EXISTING_ISSUE: existingIssue,
+        PATH: `${stubBin}:/usr/bin:/bin`,
+        RUNNER_TEMP: runnerTemp,
+      },
+    }
+  );
+
+  const written = readdirSync(runnerTemp);
+  return {
+    body: written.length === 1 ? readFileSync(join(runnerTemp, written[0]), 'utf8') : '',
+    ghCalls: readFileSync(ghCallLog, 'utf8'),
+    result,
+  };
+}
+
 afterEach(() => {
   for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -342,6 +397,92 @@ describe('workflow hygiene', () => {
       expect(jobText).toContain('--shard=${{ matrix.shard }}/${{ strategy.job-total }}');
     });
   });
+
+  // These steps run only when a gate has already gone red, so a broken one is
+  // invisible until the moment it is the only thing reporting. Executing them
+  // against a stub gh is the difference between "the YAML looks right" and
+  // "the issue gets filed" — the shell has been wrong here while the YAML was
+  // fine. Reading the body from a variable is what made it wrong: a heredoc
+  // inside "$(...)" leaves bash scanning for the closing paren, and an
+  // apostrophe in the prose ends the scan early.
+  const filingSteps = [
+    {
+      body: ["renderer's", 'ADR-0093'],
+      env: {
+        GITHUB_SHA: 'e4cb7451e0aa0dcd5e0f2c9e0b3b5c8ea1f2d3c4',
+        RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/1',
+      },
+      label: 'area:ci-testing',
+      title: 'WebKit commit gate failed on main',
+      workflow: 'test.yml',
+    },
+    {
+      body: ['maestro-report-api-<API>', 'launch-smoke matrix leg'],
+      env: {
+        BUILD_RESULT: 'success',
+        GITHUB_REF_NAME: 'v1.5.0',
+        PLATFORM: 'Android',
+        RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/2',
+        SMOKE_RESULT: 'failure',
+      },
+      label: 'area:native',
+      title: 'Android native deploy gate failed',
+      workflow: 'android-deploy.yml',
+    },
+    {
+      body: ['maestro-ios-report', 'did not boot and paint'],
+      env: {
+        ARTIFACT: 'maestro-ios-report',
+        GITHUB_REF_NAME: 'v1.5.0',
+        PLATFORM: 'iOS',
+        REPORT_OUTCOME: 'success',
+        RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/3',
+        SMOKE_OUTCOME: 'failure',
+      },
+      label: 'area:native',
+      title: 'iOS native deploy gate failed',
+      workflow: 'ios-deploy.yml',
+    },
+  ];
+
+  describe.each(filingSteps)('$workflow files its gate failure', (step) => {
+    const script = stepScript(
+      workflows.find(({ name }) => name === step.workflow).lines,
+      'File the failure'
+    );
+
+    it('has a File the failure step carrying a shell script', () => {
+      expect(script).toBeTruthy();
+    });
+
+    it('opens one issue when none is already tracking the gate', () => {
+      const { body, ghCalls, result } = runFilingStep(script, step.env, '');
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(0);
+      expect(ghCalls).toContain(`issue create --title ${step.title}`);
+      expect(ghCalls).toContain(`--label type:bug --label ${step.label} --body-file`);
+      expect(ghCalls).not.toContain('issue comment');
+      for (const excerpt of step.body) expect(body).toContain(excerpt);
+      expect(body).toContain(step.env.RUN_URL);
+    });
+
+    it('comments on the open issue instead of opening a second one', () => {
+      const { body, ghCalls, result } = runFilingStep(script, step.env, '41');
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(0);
+      expect(ghCalls).toContain('issue comment 41 --body-file');
+      expect(ghCalls).not.toContain('issue create');
+      for (const excerpt of step.body) expect(body).toContain(excerpt);
+    });
+  });
+
+  for (const { name, lines } of workflows) {
+    it(`${name} keeps issue bodies out of a command substitution`, () => {
+      expect(lines.join('\n')).not.toContain('="$(cat <<');
+    });
+  }
 
   for (const { name, lines } of [...workflows, ...actions]) {
     it(`${name} pins every external action to a 40-char SHA`, () => {

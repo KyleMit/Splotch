@@ -307,6 +307,11 @@ jobs:
       # A post-merge gate nobody is watching is not a gate. One open issue
       # collects every red commit until it is closed, so a broken main does not
       # file one issue per merge.
+      #
+      # The body goes to a file rather than into a variable: a heredoc inside
+      # "$(...)" makes bash scan the substitution for its closing paren, and an
+      # apostrophe in the prose below reads as an unterminated quote during that
+      # scan. tools/tests/workflow-hygiene.test.mjs executes this step.
       - name: File the failure
         if: failure()
         env:
@@ -314,7 +319,8 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           title='WebKit commit gate failed on main'
-          body="$(cat <<EOF
+          body_file="${RUNNER_TEMP}/webkit-commit-gate-failure.md"
+          cat >"$body_file" <<EOF
           The post-merge WebKit commit gate failed on main at commit ${GITHUB_SHA}.
 
           * Run: ${RUN_URL}
@@ -327,12 +333,11 @@ jobs:
           difference is ignored. The legacy renderer's structural blob-encoding half retired with
           that implementation, so a failure here is a timing regression or host noise.
           EOF
-          )"
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
           if [[ -n "$existing" ]]; then
-            gh issue comment "$existing" --body "$body"
+            gh issue comment "$existing" --body-file "$body_file"
           else
-            gh issue create --title "$title" --label type:bug --label area:ci-testing --body "$body"
+            gh issue create --title "$title" --label type:bug --label area:ci-testing --body-file "$body_file"
           fi
 
   webkit-commit-gate-full:
