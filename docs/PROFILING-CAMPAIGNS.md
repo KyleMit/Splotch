@@ -7,7 +7,7 @@ produces **numbers that look fine and are wrong**.
 Start every run with:
 
 ```sh
-npm run perf:preflight -- --wake-android --verify-ios-launch
+npm run perf:preflight -- --wake-android --verify-android-input --verify-ios-launch
 ```
 
 It refuses to report ready while anything below is unresolved, reuses whatever is already running

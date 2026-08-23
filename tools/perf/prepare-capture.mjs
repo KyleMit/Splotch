@@ -4,6 +4,7 @@
 //   npm run perf:preflight -- --wake-android        wake it and set stay-awake
 //   npm run perf:preflight -- --hold-android-awake  the same, re-asserted for the session
 //   npm run perf:preflight -- --verify-ios-launch   launch a real WDA session (slow, exclusive)
+//   npm run perf:preflight -- --verify-android-input drive a real touch and read the cadence
 //   npm run perf:preflight -- --json                machine-readable, for a campaign runner
 //
 // Every check here exists because a campaign produced numbers without it and the
@@ -29,6 +30,7 @@ import {
   resolvePort,
   summarize,
 } from './lib/capture-readiness.mjs';
+import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
 
 const ANDROID_STAY_AWAKE_TIMEOUT_MS = 1_800_000;
 // Android clears stay-awake on its own across a USB reconnect or a reboot, and a
@@ -381,6 +383,18 @@ if (isMain(import.meta.url)) {
   runMain(async () => {
     const argv = process.argv.slice(2);
     const report = await prepareCapture(argv);
+    // Android first: it is the cheaper of the two verifications, so a bad
+    // input path surfaces before a minute is spent building WebDriverAgent.
+    if (argv.includes('--verify-android-input') && report.androidSerial) {
+      console.log('\nverifying Android input against the floor control…');
+      const input = await verifyAndroidInput({
+        serial: report.androidSerial,
+        port: report.ports.floorControl,
+      });
+      console.log(`${input.ok ? '✓' : '✗'} ${'android input'.padEnd(22)} ${input.detail}`);
+      if (input.contact) console.log(`  ${''.padEnd(22)} observed: ${input.contact}`);
+      if (!input.ok) process.exitCode = 1;
+    }
     if (argv.includes('--verify-ios-launch') && report.iosUdid) {
       console.log('\nprobing a real WebDriverAgent launch (this builds WDA and takes a minute)…');
       const probe = classifyLaunchProbe(

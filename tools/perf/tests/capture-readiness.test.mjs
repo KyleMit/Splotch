@@ -73,6 +73,16 @@ describe('port resolution', () => {
     expect(decision.reason).toContain('39823');
   });
 
+  it('gives the floor control its own port rather than sharing the preview', () => {
+    // The phone loads it over the LAN while the preview server is also serving,
+    // so they cannot be the same port.
+    expect(resolvePort('floorControl', { holder: null, free: [] }).port).toBe(4177);
+    expect(resolvePort('floorControl', { holder: { pid: 1 }, free: [4187] })).toMatchObject({
+      port: 4187,
+      action: 'start',
+    });
+  });
+
   it('restarts a preview server only when this session owns it', () => {
     expect(resolvePort('preview', { holder: { pid: 1, ours: true }, free: [] })).toMatchObject({
       action: 'restart',

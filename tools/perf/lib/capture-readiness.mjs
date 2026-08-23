@@ -44,6 +44,9 @@ export const PORT_ROLES = {
   wda: { port: 8100, onConflict: 'shift', shiftTo: [8110, 8120, 8130] },
   androidCdp: { port: 9224, onConflict: 'shift', shiftTo: [9234, 9244] },
   inspector: { port: 9221, onConflict: 'shift', shiftTo: [9231, 9241] },
+  // The floor control the Android input check serves; the phone loads it over
+  // the LAN, so it needs a port of its own rather than sharing the preview's.
+  floorControl: { port: 4177, onConflict: 'shift', shiftTo: [4187, 4197] },
 };
 
 // Whether an Appium server already on the port can be borrowed.
