@@ -60,9 +60,9 @@ of diff on every edit. Which half of the split a skill belongs to follows from i
 
 * **Reference skills keep their bulk in `docs/` and stay thin routers.** `architecture` →
   `docs/ARCHITECTURE.md`, `api` → `docs/API.md`, `testing` → `docs/TESTING.md`, `mobile` →
-  `docs/MOBILE/`, `profiling` → `docs/PROFILING.md` + `docs/PROFILING-IPAD.md`. The content is
-  documentation a human would want anyway, it is read by lookup rather than start-to-finish, and one
-  copy means one diff.
+  `docs/MOBILE/`, `profiling` → `docs/PROFILING.md` + `docs/PROFILING-IPAD.md` +
+  `docs/PROFILING-ANDROID.md`. The content is documentation a human would want anyway, it is read by
+  lookup rather than start-to-finish, and one copy means one diff.
 * **Workflow skills keep their procedure inline**, however long it runs. A step the agent never read
   is a step it never runs, and an imperative runbook has no human reader that `docs/` would serve.
 
@@ -93,6 +93,7 @@ Remaining `docs/`:
 | `docs/PROFILING-CAMPAIGNS.md`    | Unattended physical-device capture: the preflight, and the setup mistakes that produce plausible wrong numbers without erroring — device identity, Guided Access, port contention, stale builds, input cadence, and which capture paths cannot be scored                                                                                                                                       |
 | `docs/PROFILING.md`              | The `npm run perf:*` harness — which command profiles what, how capture works, and reading a report into a bottleneck; the `profiling` skill routes here                                                                                                                                                                                                                                       |
 | `docs/PROFILING-IPAD.md`         | The physical-iPad profiling runbook — the highest-fidelity target (real WebKit + Apple GPU + 120 Hz); read before any on-device perf capture                                                                                                                                                                                                                                                   |
+| `docs/PROFILING-ANDROID.md`      | The physical-Android profiling toolchain — `dumpsys gfxinfo framestats`, Perfetto, and CDP `Tracing`; which one answers which question, and what each says that the app's own probe cannot                                                                                                                                                                                                     |
 | `docs/COMPATIBILITY.md`          | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                                                                                                                                                                                              |
 | `docs/CONTRIBUTING.md`           | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                                                                                                                                                                                    |
 | `docs/ISSUE-WORKFLOW.md`         | How the GitHub issue tracker is organized — issue format, label glossary (`type:*`/`area:*`/`priority:*`/meta), and the triage + won't-do flow                                                                                                                                                                                                                                                 |
