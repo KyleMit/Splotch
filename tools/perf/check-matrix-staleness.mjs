@@ -1,20 +1,19 @@
 // Fail when a matrix cell that CLAIMS to be a current measurement was captured
-// before the code it measures changed.
+// from product source that has since changed.
 //
 //   npm run check:matrix-staleness
 //   npm run check:matrix-staleness -- --manifest=<sources.json> --base=HEAD
 //
 // The performance matrix records the product commit each cell was captured at,
-// and nothing has ever compared it to the branch. That gap is not theoretical:
-// on 2026-08-22 `ipad-device-web` was captured at ae674d71 and four further
-// commits to the drawing engine landed the same evening, so the published rows —
-// and the epic that cited them as the one target on the corrected metric —
-// described a build nobody was running. It took a physical-device A/B to notice.
+// and nothing compared it to the branch. That gap is not theoretical: on
+// 2026-08-22 `ipad-device-web` was captured at ae674d71 and four further commits
+// to the drawing engine landed the same evening, so the published rows — and the
+// epic citing them as the one target on the corrected metric — described a build
+// nobody was running. It took a physical-device A/B to notice.
 //
 // A PRESERVED cell is exempt by construction: it is already labelled historical
-// evidence carried forward, so being behind is what it says it is. What this
-// checks is the other kind — a cell folded in from a real capture, which is
-// making a claim about the product as it stands.
+// evidence carried forward. What this checks is the other kind — a cell folded in
+// from a real capture, which is making a claim about the product as it stands.
 
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -22,55 +21,97 @@ import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 
 const DEFAULT_MANIFEST = 'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
 
-// The drawing gates measure the engine, so a commit there is what makes a cell's
-// number stale. `web/src` is reported alongside it for context rather than gated
-// on: a change to /admin cannot move a drawing frame, and gating on it would make
-// every capture stale within a day and train everyone to ignore this.
-export const ENGINE_PATH = 'web/src/lib/drawing';
-export const APP_PATH = 'web/src';
+// The whole client source tree, because that is what a capture measures. An
+// enumerated scope was tried first and missed by exactly the margin an enumeration
+// always does: gating on `web/src/lib/drawing` reported "current" across a commit
+// that changed DrawingCanvas.svelte and the drawing-audio scheduling, both on the
+// measured interaction path. A tree digest cannot miss a file nobody thought of.
+export const MEASURED_TREE = 'web/src';
 
-// A mode whose `drawing` is a string is preserved evidence; one carrying paths was
-// folded in from a capture and is therefore claiming currency.
-export function capturedCommits(target) {
+// Every provenance field a mode carries, so undo and action captures are held to
+// the same standard as drawing rather than going unchecked.
+export function modeProvenance(mode) {
   const commits = new Set();
-  for (const mode of target.modes ?? []) {
-    if (typeof mode.drawing === 'string' || !mode.drawing) continue;
-    if (mode.drawingProductCommit) commits.add(mode.drawingProductCommit);
+  if (typeof mode.drawing !== 'string' && mode.drawing && mode.drawingProductCommit) {
+    commits.add(mode.drawingProductCommit);
+  }
+  if (typeof mode.undoSource !== 'string' || mode.undoSource !== 'preserved') {
+    if (mode.undoProductCommit) commits.add(mode.undoProductCommit);
+  }
+  if (Array.isArray(mode.actionSources)) {
+    for (const source of mode.actionSources) {
+      if (source?.productCommit) commits.add(source.productCommit);
+    }
   }
   return [...commits];
 }
 
-export function assessManifest(manifest, commitsSince) {
+export function capturedCommits(target) {
+  const commits = new Set();
+  for (const mode of target.modes ?? []) {
+    for (const commit of modeProvenance(mode)) commits.add(commit);
+  }
+  return [...commits];
+}
+
+export function assessManifest(manifest, { treeAt, commitsSince }) {
+  const current = treeAt('HEAD_TREE');
   const rows = [];
   for (const target of manifest.targets ?? []) {
     for (const commit of capturedCommits(target)) {
-      const engine = commitsSince(commit, ENGINE_PATH);
+      const tree = treeAt(commit);
+      const verdict = !tree ? 'UNVERIFIABLE' : tree === current ? 'current' : 'STALE';
       rows.push({
         target: target.id,
         capturedAt: commit.slice(0, 12),
-        [`${ENGINE_PATH} commits since`]: engine,
-        [`${APP_PATH} commits since`]: commitsSince(commit, APP_PATH),
-        verdict: Number.isNaN(engine) ? 'UNVERIFIABLE' : engine > 0 ? 'STALE' : 'current',
+        [`${MEASURED_TREE} tree`]: tree ? tree.slice(0, 12) : '(unreachable)',
+        'engine commits since': commitsSince ? commitsSince(commit) : undefined,
+        verdict,
       });
     }
   }
   return rows;
 }
 
-function countCommitsSince(base) {
-  return (commit, path) => {
+function gitTreeReader(base) {
+  const currentTree = (() => {
     try {
-      const out = execFileSync('git', ['rev-list', '--count', `${commit}..${base}`, '--', path], {
+      return execFileSync('git', ['rev-parse', `${base}:${MEASURED_TREE}`], {
         cwd: ROOT,
         encoding: 'utf8',
-      });
-      return Number(out.trim());
+      }).trim();
     } catch {
-      // An unreachable commit is not "current" — it is UNVERIFIABLE, and the whole
-      // point of this check is that "no error" must never read as "fine". The
-      // common cause is a shallow clone: `actions/checkout` fetches depth 1 by
-      // default, and every rev-list against a real commit then fails.
-      return Number.NaN;
+      return null;
+    }
+  })();
+  return (commit) => {
+    if (commit === 'HEAD_TREE') return currentTree;
+    try {
+      return execFileSync('git', ['rev-parse', `${commit}:${MEASURED_TREE}`], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      }).trim();
+    } catch {
+      // Unreachable is UNVERIFIABLE, never "current" — a shallow clone makes every
+      // lookup fail, and reporting the matrix current there is the failure shape
+      // this exists to end.
+      return null;
+    }
+  };
+}
+
+function engineCommitCounter(base) {
+  return (commit) => {
+    try {
+      return Number(
+        execFileSync(
+          'git',
+          ['rev-list', '--count', `${commit}..${base}`, '--', 'web/src/lib/drawing'],
+          { cwd: ROOT, encoding: 'utf8' }
+        ).trim()
+      );
+    } catch {
+      return undefined;
     }
   };
 }
@@ -80,7 +121,10 @@ export async function checkMatrixStaleness({
   base = argFlag('base', 'HEAD'),
 } = {}) {
   const manifest = JSON.parse(readFileSync(`${ROOT}/${manifestPath}`, 'utf8'));
-  const rows = assessManifest(manifest, countCommitsSince(base));
+  const rows = assessManifest(manifest, {
+    treeAt: gitTreeReader(base),
+    commitsSince: engineCommitCounter(base),
+  });
   if (!rows.length) {
     console.log('No captured cells in the manifest — every target is preserved evidence.');
     return { rows, stale: [] };
@@ -92,7 +136,7 @@ export async function checkMatrixStaleness({
     fail(
       `${unverifiable.length} capture commit(s) are not reachable from ${base}: ` +
         `${unverifiable.map((row) => `${row.target} (${row.capturedAt})`).join(', ')}. ` +
-        'A shallow clone is the usual cause — this needs full history (fetch-depth: 0). ' +
+        'A shallow clone is the usual cause — this needs the referenced commits fetched. ' +
         'Refusing to report "current" for a commit that could not be checked.'
     );
   }
@@ -100,12 +144,12 @@ export async function checkMatrixStaleness({
   const stale = rows.filter((row) => row.verdict === 'STALE');
   if (stale.length) {
     fail(
-      `${stale.length} target(s) publish a capture taken before ${ENGINE_PATH} changed: ` +
-        `${stale.map((row) => `${row.target} (${row.capturedAt})`).join(', ')}. ` +
+      `${stale.length} target(s) publish a capture taken from ${MEASURED_TREE} that has since ` +
+        `changed: ${stale.map((row) => `${row.target} (${row.capturedAt})`).join(', ')}. ` +
         'Recapture them, or mark those modes preserved so they stop claiming currency.'
     );
   }
-  console.log(`\n${rows.length} captured cell group(s), none behind ${ENGINE_PATH}.`);
+  console.log(`\n${rows.length} captured cell group(s), all from the current ${MEASURED_TREE}.`);
   return { rows, stale };
 }
 

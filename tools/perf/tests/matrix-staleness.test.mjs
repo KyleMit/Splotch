@@ -1,73 +1,86 @@
 import { describe, expect, it } from 'vitest';
-import { assessManifest, capturedCommits, ENGINE_PATH } from '../check-matrix-staleness.mjs';
+import { assessManifest, capturedCommits, modeProvenance } from '../check-matrix-staleness.mjs';
 
 const target = (id, modes) => ({ id, modes });
-const captured = (commit) => ({
-  drawing: { pen: ['a.json'] },
-  drawingProductCommit: commit,
-});
+const captured = (commit) => ({ drawing: { pen: ['a.json'] }, drawingProductCommit: commit });
 const preserved = (commit) => ({ drawing: 'preserved', drawingProductCommit: commit });
 
-// Every commit is "behind" by however many the fixture says, keyed by path.
-const counter = (byPath) => (_commit, path) => byPath[path] ?? 0;
+// Digest per commit; 'HEAD_TREE' is the branch's current tree.
+const trees = (byCommit) => (commit) => byCommit[commit] ?? null;
+
+describe('modeProvenance', () => {
+  // A preserved cell is already labelled historical evidence carried forward, so
+  // being behind is what it says. Gating on it would make this permanently red.
+  it('ignores a preserved drawing capture', () => {
+    expect(modeProvenance(preserved('old'))).toEqual([]);
+  });
+
+  // Checking only drawing let undo and action captures go stale unnoticed.
+  it('covers undo and action provenance, not only drawing', () => {
+    const mode = {
+      drawing: { pen: ['a.json'] },
+      drawingProductCommit: 'aaa',
+      undoSource: 'a.json',
+      undoProductCommit: 'bbb',
+      actionSources: [{ source: 'x', productCommit: 'ccc' }],
+    };
+
+    expect(modeProvenance(mode).sort()).toEqual(['aaa', 'bbb', 'ccc']);
+  });
+});
 
 describe('capturedCommits', () => {
-  // A preserved cell is already labelled historical evidence carried forward, so
-  // being behind is what it says it is. Gating on it would make this check
-  // permanently red and train everyone to ignore it.
-  it('ignores preserved modes and reports only cells claiming currency', () => {
-    const t = target('ipad-device-web', [captured('aaa'), preserved('old'), captured('aaa')]);
-
-    expect(capturedCommits(t)).toEqual(['aaa']);
-  });
-
   it('reports every distinct capture commit a target carries', () => {
-    const t = target('ipad-device-native', [captured('aaa'), captured('bbb')]);
-
-    expect(capturedCommits(t)).toEqual(['aaa', 'bbb']);
-  });
-
-  it('reports nothing for a fully preserved target', () => {
-    expect(capturedCommits(target('android-device-web', [preserved('old')]))).toEqual([]);
+    expect(
+      capturedCommits(target('t', [captured('aaa'), captured('bbb'), preserved('old')]))
+    ).toEqual(['aaa', 'bbb']);
   });
 });
 
 describe('assessManifest', () => {
-  it('calls a capture stale once the engine has moved under it', () => {
-    const manifest = { targets: [target('ipad-device-web', [captured('ae674d71')])] };
+  // The regression this covers: gating on commits under web/src/lib/drawing
+  // reported "current" across a commit that changed DrawingCanvas.svelte and the
+  // drawing-audio scheduling — both on the measured interaction path, neither in
+  // that directory. A tree digest cannot miss a file nobody thought of.
+  it('calls a capture stale when the measured tree changed outside the engine', () => {
+    const manifest = { targets: [target('ipad-device-web', [captured('410371ea')])] };
 
-    const [row] = assessManifest(manifest, counter({ [ENGINE_PATH]: 4, 'web/src': 9 }));
+    const [row] = assessManifest(manifest, {
+      treeAt: trees({ '410371ea': 'oldtree', HEAD_TREE: 'newtree' }),
+      commitsSince: () => 0,
+    });
 
     expect(row.verdict).toBe('STALE');
-    expect(row[`${ENGINE_PATH} commits since`]).toBe(4);
+    expect(row['engine commits since']).toBe(0);
   });
 
-  // Gating on all of web/src would flag a capture because /admin changed, which
-  // cannot move a drawing frame.
-  it('does not call a capture stale for app changes outside the engine', () => {
+  it('calls a capture current when the measured tree is unchanged', () => {
     const manifest = { targets: [target('mac-chrome', [captured('abc')])] };
 
-    const [row] = assessManifest(manifest, counter({ [ENGINE_PATH]: 0, 'web/src': 12 }));
+    const [row] = assessManifest(manifest, {
+      treeAt: trees({ abc: 'sametree', HEAD_TREE: 'sametree' }),
+      commitsSince: () => 0,
+    });
 
     expect(row.verdict).toBe('current');
-    expect(row['web/src commits since']).toBe(12);
+  });
+
+  // "No error" must never read as "fine". A shallow clone makes every lookup fail,
+  // and reporting the matrix current there is the failure shape this exists to end.
+  it('reports an unreachable commit as UNVERIFIABLE, not current', () => {
+    const manifest = { targets: [target('mac-chrome', [captured('gone')])] };
+
+    const [row] = assessManifest(manifest, {
+      treeAt: trees({ HEAD_TREE: 'newtree' }),
+      commitsSince: () => undefined,
+    });
+
+    expect(row.verdict).toBe('UNVERIFIABLE');
   });
 
   it('reports nothing when every target is preserved', () => {
     const manifest = { targets: [target('android-device-web', [preserved('old')])] };
 
-    expect(assessManifest(manifest, counter({}))).toEqual([]);
-  });
-});
-
-describe('an unreachable capture commit', () => {
-  // "No error" must never read as "fine". A shallow clone makes every rev-list
-  // fail, and a zero there would report the whole matrix current.
-  it('is UNVERIFIABLE rather than current', () => {
-    const manifest = { targets: [target('mac-chrome', [captured('abc')])] };
-
-    const [row] = assessManifest(manifest, () => Number.NaN);
-
-    expect(row.verdict).toBe('UNVERIFIABLE');
+    expect(assessManifest(manifest, { treeAt: trees({}), commitsSince: () => 0 })).toEqual([]);
   });
 });
