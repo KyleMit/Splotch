@@ -25,6 +25,7 @@ import { basename, dirname, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { inputFidelity } from './ios/capture-xcuitest-screen.mjs';
+import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_GATE,
   lostFrameTimeShareGateFor,
@@ -70,30 +71,46 @@ function round(value, places = 2) {
 }
 
 // A campaign tree lays cells out as <target>/<mode>/<brush>-real-screen.json, so
-// the target is the leading directory. A flat corpus has none, and taking the
-// filename instead would invent a target per capture.
-export function targetOf(parsed, relativePath, fallback) {
-  const declared = parsed?.targetId ?? parsed?.target;
-  if (declared) return declared;
-  const segments = relativePath.split('/');
-  if (segments.length > 1) return segments[0];
-  return fallback ?? null;
+// the target is a leading path segment — but ONLY if it names a real target. The
+// tracked evidence corpus nests campaign directories, and taking the first segment
+// there reported the campaign NAME as the target: an iPad-web crayon capture at
+// 1.1% lost was scored against the default 1% and rendered FAIL, when the gate it
+// is actually held to is the 1.5% exception. A segment that is not a known target
+// is not a target.
+export function isKnownTarget(id) {
+  return Boolean(id && Object.hasOwn(CAMPAIGN_TARGETS, id));
 }
 
-// The tracked evidence corpus is flat and mixed-target, and its index is the only
-// thing that knows which target each file came from. Without reading it, one
-// `--target` gets applied to every capture in the directory — so an iPad crayon
-// exception silently governs a Mac capture, or the default gate silently governs
-// an exception-bearing one.
-export function evidenceIndexTargets(root) {
-  const indexPath = join(root, 'index.json');
-  if (!existsSync(indexPath)) return new Map();
-  try {
-    const index = JSON.parse(readFileSync(indexPath, 'utf8'));
-    return new Map((index.kept ?? []).map((entry) => [entry.file, entry.target]));
-  } catch {
-    return new Map();
+export function targetOf(parsed, relativePath, fallback) {
+  const declared = parsed?.targetId ?? parsed?.target;
+  if (isKnownTarget(declared)) return declared;
+  for (const segment of relativePath.split('/').slice(0, -1)) {
+    if (isKnownTarget(segment)) return segment;
   }
+  return isKnownTarget(fallback) ? fallback : null;
+}
+
+// Every evidence index under the corpus, keyed by the capture's path relative to
+// the corpus root. Reading only `<root>/index.json` found nothing for the nested
+// shape the corpus actually has — one campaign directory per promotion, each with
+// its own index — so the documented whole-corpus command fell through to the path
+// segment and mis-targeted every capture.
+export function evidenceIndexTargets(root) {
+  const targets = new Map();
+  for (const file of findCaptureFiles(root)) {
+    if (basename(file) !== 'index.json') continue;
+    let index;
+    try {
+      index = JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+      continue;
+    }
+    for (const entry of index.kept ?? []) {
+      if (!entry?.file || !isKnownTarget(entry.target)) continue;
+      targets.set(relative(root, join(dirname(file), entry.file)), entry.target);
+    }
+  }
+  return targets;
 }
 
 export function rescoreCapture(parsed, { name, targetId }) {
@@ -173,11 +190,11 @@ export async function rescoreCaptures({
     try {
       result = rescoreCapture(parsed, {
         name,
+        // The nearest evidence index wins: for a flat, mixed-target corpus it is
+        // the only thing that knows which target a capture came from.
         targetId:
-          targetOf(parsed, relative(root, file), null) ??
-          indexTargets.get(basename(file)) ??
-          targetId ??
-          null,
+          indexTargets.get(relative(root, file)) ??
+          targetOf(parsed, relative(root, file), targetId),
       });
     } catch (error) {
       skipped.push({ name, reason: error.message });

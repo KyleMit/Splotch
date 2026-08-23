@@ -250,3 +250,50 @@ describe('the served build is re-checked per capture', () => {
     expect(existsSync(join(dir, 'start.abc.js'))).toBe(true);
   });
 });
+
+describe('a nested evidence corpus', () => {
+  const nested = () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-nested-'));
+    for (const [campaign, file, target] of [
+      ['2026-08-23-ipad-main', 'ipad-device-web-crayon.json', 'ipad-device-web'],
+      ['2026-08-23-desktop-main', 'mac-chrome-crayon.json', 'mac-chrome'],
+    ]) {
+      mkdirSync(join(root, campaign), { recursive: true });
+      writeFileSync(join(root, campaign, file), '{}');
+      writeFileSync(
+        join(root, campaign, 'index.json'),
+        JSON.stringify({ kept: [{ file, target, brush: 'crayon' }] })
+      );
+    }
+    return root;
+  };
+
+  // The regression this covers: the corpus nests one directory per promotion, each
+  // with its own index, and only `<root>/index.json` was read. The documented
+  // whole-corpus command then fell through to the first path segment and reported
+  // the CAMPAIGN NAME as the target — so an iPad-web crayon capture at 1.1% lost
+  // was scored against the default 1% and rendered FAIL, when the gate it is held
+  // to is the 1.5% exception.
+  it('resolves each capture against its nearest index', () => {
+    const root = nested();
+
+    const targets = evidenceIndexTargets(root);
+
+    expect(targets.get('2026-08-23-ipad-main/ipad-device-web-crayon.json')).toBe('ipad-device-web');
+    expect(targets.get('2026-08-23-desktop-main/mac-chrome-crayon.json')).toBe('mac-chrome');
+  });
+
+  // A campaign directory name is not a target, and treating it as one is what
+  // applied the wrong gate.
+  it('refuses a path segment that is not a known target', () => {
+    expect(targetOf({}, '2026-08-23-ipad-main/ipad-device-web-crayon')).toBeNull();
+    expect(targetOf({}, 'ipad-device-web/landscape-light/crayon-real-screen')).toBe(
+      'ipad-device-web'
+    );
+  });
+
+  it('refuses an unknown declared target rather than gating on it', () => {
+    expect(targetOf({ targetId: 'not-a-real-target' }, 'x/y')).toBeNull();
+    expect(targetOf({ targetId: 'mac-safari' }, 'x/y')).toBe('mac-safari');
+  });
+});
