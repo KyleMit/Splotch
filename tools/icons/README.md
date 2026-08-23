@@ -1,21 +1,21 @@
 # Icon tooling
 
-This capability turns the app's SVG icon corpus into its typed name union and a human-reviewable
-gallery. Chroma classification is shared by the gallery and the application guard so the two cannot
-disagree about which icons are colorful spot illustrations.
+This capability turns the app's SVG icon corpus into its typed name union and keeps every icon on
+one canonical viewBox. Chroma classification lives here too, so the classifier and the application
+guard cannot disagree about which icons are colorful spot illustrations. The reviewable gallery of
+the shipped icon set is the app's own `/design` styleguide, not a generated page.
 
 ## Entry points
 
 | Entry point               | Public command             | Purpose                                        |
 | ------------------------- | -------------------------- | ---------------------------------------------- |
 | `gen-icon-names.mjs`      | `npm run gen:icon-names`   | Generate the typed `IconName` union            |
-| `gen-icon-sheet.mjs`      | `npm run gen:icon-sheet`   | Generate the icon-gallery scrapbook page       |
 | `rebase-icon-viewbox.mjs` | `npm run gen:icon-viewbox` | Rebase icons onto the canonical square viewBox |
 
 `lib/icon-chroma.mjs` owns painted-color parsing and spot/plain classification.
 `lib/icon-chroma.d.mts` provides its TypeScript declaration, and `tests/icon-chroma.test.mjs` covers
 the parser boundaries. `web/src/lib/components/Icon.svelte.test.ts` consumes the same classifier to
-guard the production icon set.
+guard the production icon set, and `/design` renders the same split for review.
 
 ## Name generation
 
@@ -30,28 +30,11 @@ After adding, deleting, or renaming an icon, run:
 npm run gen:icon-names
 ```
 
-## Gallery generation
-
-`gen-icon-sheet.mjs` reads and inlines the same SVG corpus, classifies each icon by painted chroma,
-and writes a self-contained HTML gallery. The default output is the gitignored
-`tools/.scrapbook-scratch/icons/index.html`; pass `--out FILE` after npm's separator to publish a
-specific path:
-
-```sh
-npm run gen:icon-sheet -- --out scrapbook/icons/index.html
-```
-
-The generator creates the destination directory and replaces the output file. The shared scrapbook
-chrome requires installed project dependencies, but generation needs no network. Unreadable SVG
-input fails the run, while malformed markup is inlined verbatim rather than rejected; the generator
-does not modify source icons.
-
 ## Maintenance
 
 Classification recognizes `fill`, `stroke`, and `stop-color` paint values in attributes and CSS.
 Keep `icon-chroma.mjs`, its declaration, focused tests, and the `Icon.svelte` guard aligned when the
-supported SVG paint syntax changes. The gallery may rewrite a single monochrome ink to
-`currentColor` in its inline copy only; production SVG bytes remain unchanged.
+supported SVG paint syntax changes.
 
 Run focused verification with:
 

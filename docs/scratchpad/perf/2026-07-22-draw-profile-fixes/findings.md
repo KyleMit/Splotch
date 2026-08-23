@@ -1,8 +1,8 @@
 # Draw-performance fixes — after-run vs the 2026-07-22 baseline
 
-Re-runs of the two baseline captures (`scrapbook/perf/2026-07-22-draw-profile/`, same commands, same
-emulation: 4× CPU throttle, headless SwiftShader — absolute ms are pessimistic, ratios are the
-signal) after implementing the baseline findings' recommendations 1–3 (ADR-0074):
+Re-runs of the two baseline captures (`docs/scratchpad/perf/2026-07-22-draw-profile/`, same
+commands, same emulation: 4× CPU throttle, headless SwiftShader — absolute ms are pessimistic,
+ratios are the signal) after implementing the baseline findings' recommendations 1–3 (ADR-0074):
 
 1. **Clear captures by paper swap, not copy** (+ a `paperPristine` guard so neither the clear fold
    nor the first post-clear stroke pays the fresh paper's ~30 MB backing-store allocation — the

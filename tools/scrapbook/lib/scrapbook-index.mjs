@@ -111,16 +111,6 @@ const REGISTRY = {
     kind: 'Performance matrix',
     count: () => null,
   },
-  icons: {
-    icon: 'more-colors',
-    hue: 'purple',
-    title: 'Icon gallery',
-    blurb:
-      'Every icon shipped in the app, rendered at size and split into the colorful spot illustrations and the monochrome UI glyphs that follow the current text color.',
-    entry: 'icons/index.html',
-    kind: 'Reference sheet',
-    count: () => null,
-  },
   'sound-design': {
     icon: 'sound',
     hue: 'yellow',
@@ -318,9 +308,10 @@ export function buildScrapbookIndex(scrapbookDir) {
     : '';
 
   const tagline =
-    `The keeper outputs of Splotch's generators — proof sheets, model bake-offs, and reference ` +
-    `galleries — committed to the repo and served live so a result survives the session that made ` +
-    `it, without spending API tokens to regenerate. Browse a collection below.`;
+    `The finished outputs of Splotch's generators — proof sheets, model bake-offs, reference ` +
+    `galleries, performance matrices — committed to the repo and served live so a result survives ` +
+    `the session that made it, without spending API tokens to regenerate. Browse a collection ` +
+    `below.`;
 
   const body = `${masthead({ title: 'Scrapbook', tagline, home: 'index.html', stats, decoration: inlineIcon('splotchy') })}
 <main>

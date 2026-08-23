@@ -10,7 +10,7 @@ import { themes, toCssVarName } from '../design/tokens';
 //
 // Forward: a fallback that drifts from its light value is invisible in the app
 // (the var always resolves) and only shows up where the raw file renders —
-// GitHub previews, gen-icon-sheet, a design-tool round-trip.
+// GitHub previews, a design-tool round-trip.
 //
 // Reverse: the realistic failure is an artist re-exporting an icon from source,
 // which silently wipes the var() and reverts the path to its baked light hex. No
