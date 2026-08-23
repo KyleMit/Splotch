@@ -7,7 +7,7 @@ produces **numbers that look fine and are wrong**.
 Start every run with:
 
 ```sh
-npm run perf:preflight -- --fix
+npm run perf:preflight -- --wake-android --verify-ios-launch
 ```
 
 It refuses to report ready while anything below is unresolved, reuses whatever is already running
@@ -157,7 +157,7 @@ a transport that cannot create it:
 
 ## The device going to sleep
 
-Android sleeps mid-campaign and locks. `npm run perf:preflight -- --fix` wakes it and sets
+Android sleeps mid-campaign and locks. `npm run perf:preflight -- --wake-android` wakes it and sets
 `svc power stayon true`, but **a device with a passcode cannot be unlocked from the host** — the
 preflight blocks and says so. For an overnight run, unlock it first and leave it on the charger.
 
@@ -252,11 +252,11 @@ its turn comes, and — more often — ready afterwards, when a result raises a 
 another capture can answer. Tearing one down between phases turns a two-minute verification into a
 restart.
 
-`npm run perf:preflight -- --fix --watch` holds both: it re-asserts Android's stay-awake every 60
-seconds and reports the moment either device goes away. It can only *observe* the iPad — nothing on
-the host can hold an iPad awake, so set **Settings → Display & Brightness → Auto-Lock → Never** on
-the device itself. An active XCUITest session keeps it awake during a capture; the gaps are the
-risk.
+`npm run perf:preflight -- --wake-android --hold-android-awake` holds both: it re-asserts Android's
+stay-awake every 60 seconds and reports the moment either device goes away. It can only *observe*
+the iPad — nothing on the host can hold an iPad awake, so set **Settings → Display & Brightness →
+Auto-Lock → Never** on the device itself. An active XCUITest session keeps it awake during a
+capture; the gaps are the risk.
 
 ## Do not tear the devices down when a campaign ends
 

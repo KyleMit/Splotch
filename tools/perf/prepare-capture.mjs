@@ -1,16 +1,16 @@
 // Preflight for a physical-device performance campaign.
 //
 //   npm run perf:preflight                    report only
-//   npm run perf:preflight -- --fix           also wake Android and hold it awake
-//   npm run perf:preflight -- --json          machine-readable, for a campaign runner
-//   npm run perf:preflight -- --watch         hold Android awake for the whole campaign
-//   npm run perf:preflight -- --probe         start a real WDA session first (slow, exclusive)
+//   npm run perf:preflight -- --wake-android        wake it and set stay-awake
+//   npm run perf:preflight -- --hold-android-awake  the same, re-asserted for the session
+//   npm run perf:preflight -- --verify-ios-launch   launch a real WDA session (slow, exclusive)
+//   npm run perf:preflight -- --json                machine-readable, for a campaign runner
 //
 // Every check here exists because a campaign produced numbers without it and the
 // numbers were wrong. See docs/PROFILING-CAMPAIGNS.md for what each failure looks
 // like when it is not caught.
 //
-// Everything except --probe is host-side, which is the gap --probe closes: a
+// Everything except --verify-ios-launch is host-side, which is the gap it closes: a
 // device blocked by Guided Access stays enumerated, answers ideviceinfo, keeps
 // its tunnel up and reports ready here, because none of those launch an app.
 //
@@ -94,7 +94,7 @@ function androidChecks({ fix }) {
     checks.push({
       name: 'android stays awake',
       status: 'warn',
-      detail: `would ${actions.join(' + ')} — re-run with --fix`,
+      detail: `would ${actions.join(' + ')} — re-run with --wake-android`,
     });
   } else {
     if (actions.includes('wake'))
@@ -350,7 +350,7 @@ export async function probeIosLaunch({ udid, appiumUrl, wdaPort }) {
 }
 
 export async function prepareCapture(argv = process.argv.slice(2)) {
-  const fix = argv.includes('--fix');
+  const fix = argv.includes('--wake-android');
   const android = androidChecks({ fix });
   const ios = iosChecks();
   const ports = await portChecks();
@@ -381,7 +381,7 @@ if (isMain(import.meta.url)) {
   runMain(async () => {
     const argv = process.argv.slice(2);
     const report = await prepareCapture(argv);
-    if (argv.includes('--probe') && report.iosUdid) {
+    if (argv.includes('--verify-ios-launch') && report.iosUdid) {
       console.log('\nprobing a real WebDriverAgent launch (this builds WDA and takes a minute)…');
       const probe = classifyLaunchProbe(
         await probeIosLaunch({
@@ -395,7 +395,7 @@ if (isMain(import.meta.url)) {
       );
       if (probe.status !== 'ok') process.exitCode = 1;
     }
-    if (argv.includes('--watch') && report.androidSerial) {
+    if (argv.includes('--hold-android-awake') && report.androidSerial) {
       process.exitCode = 0;
       await watchAndroid(report.androidSerial, { iosUdid: report.iosUdid });
     }
