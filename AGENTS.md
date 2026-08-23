@@ -353,6 +353,7 @@ Remaining `docs/`:
 | `docs/ISSUE-WORKFLOW.md`         | How the GitHub issue tracker is organized — issue format, label glossary (`type:*`/`area:*`/`priority:*`/meta), and the triage + won't-do flow                                                                                                                                                                                                                                                 |
 | `docs/AUDIT.md`                  | Transient staging for audit-skill findings (the `code-audit`, `extract-audit`, `lighthouse-audit`, and `session-audit` skills); `vet-audits` drains it into `type:audit` GitHub issues, which `fix-audits` burns down — or, for a backlog of hundreds, the `burn-down-audits` skill clears it in bulk. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
 | `docs/AUDIT-LOG.md`              | Committable history of every audit-skill run (index table of date · audit, linking to a per-run summary section)                                                                                                                                                                                                                                                                               |
+| `docs/audit-deferred/decisions/` | **Standing record of things deliberately NOT fixed** — one doc per finding, with the options considered and why the verdict was DROP. Read it before "fixing" an apparent defect that nobody has fixed: several are load-bearing on purpose, and the reasoning is only here. Distinct from `docs/AUDIT-DEFERRED.md`, which is the transient triage inbox those decisions were drained out of   |
 | `docs/DEPENDABOT.md`             | How dependency bumps arrive and get reviewed — the Dependabot config, the Claude auto-review workflow, its one-time secret setup, and why Dependabot-triggered runs fail silently when misconfigured                                                                                                                                                                                           |
 | `docs/PROMPTS.md`                | Reusable AI art prompts for assets                                                                                                                                                                                                                                                                                                                                                             |
 | `tools/store-drawings/README.md` | How store free-draw SVG authoring inputs become static named pointer-instruction functions, how colors and widths are selected, and how SVG→points→live-app fidelity is evaluated                                                                                                                                                                                                              |
@@ -366,6 +367,12 @@ Committed run outputs (contact sheets, Lighthouse reports, model/prompt tests) l
 avoids colliding with the Claude Code Artifact tool and release/build artifacts). Promote one with
 `npm run scrapbook:publish -- <source> <type>/<name>` (ephemeral tool scratch dirs stay gitignored);
 see `scrapbook/README.md` and [ADR-0059](docs/adrs/0059-committed-run-artifacts-github-pages.md).
+
+**An obvious-looking defect that nobody has fixed may already have been decided.** Check
+`docs/audit-deferred/decisions/` before changing it. Those docs record what was considered and
+rejected, and some of what looks accidental is deliberate — a hardcoded device serial that anchors
+the committed performance matrix to reproducible hardware, a magic port, a duplicated constant that
+crosses a bundle boundary. Reversing one of those silently costs more than leaving it.
 
 If you discover any doc, skill, or rule is out of date while working, update it as part of the same
 task — don't leave it stale.
