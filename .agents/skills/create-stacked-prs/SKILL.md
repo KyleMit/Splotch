@@ -121,21 +121,42 @@ Then put the regeneration in **one** PR, normally the top of the stack, and say 
 the PRs whose inputs feed it. Parallel edits to one generated artifact produce exactly the conflicts
 stacking exists to avoid.
 
-## CI will be red mid-stack, and that is expected
+## CI will be red mid-stack — first check whether that is survivable here
 
 An export added in PR 3 and consumed in PR 5 fails a dead-code check on PRs 3 and 4 only. A fix
 shipped downstream instead of amending leaves the PR that introduced the problem red until the stack
-merges in order. That is correct — but it looks like neglect, so say it explicitly:
+merges in order. Whether that is acceptable is a property of the **base branch**, not of stacks, so
+establish it before relying on it:
+
+```bash
+gh api repos/{owner}/{repo}/rules/branches/main --jq '.[].type' | sort -u
+```
+
+**If the base requires status checks, every PR in the stack must satisfy them.** GitHub evaluates
+branch protection and rulesets for each included PR when the merge runs, and bypassing them is not
+supported for stacks — admin privileges do not override it. A red lower PR then blocks the atomic
+merge, and a fix parked in the tip can never turn that lower check green. There the fix belongs in
+the layer that broke it, followed by a cascade rebase-and-push of every branch above — exactly the
+cost the no-commits-below rule exists to avoid, and the reason to check this before choosing where
+fixes go.
+
+`main` in this repo requires no status checks (its rules are `deletion` and `non_fast_forward`
+only), which is what makes the downstream-fix discipline workable here.
+
+Where mid-stack red is survivable, it still looks like neglect, so say so explicitly:
 
 * Note in the affected PR (or its tracking issue) which PR carries the fix and why it is not fixed
   in place.
-* Make sure the **top of the stack is green**. That is the check that matters.
+* Make sure the **top of the stack is green**. That is the check that describes what lands.
 
-### Why the tip is the ship gate
+### What a green tip does and does not prove
 
 If the chain is linear **and** the trunk sits exactly at the fork point (both proven above), the
 union of every PR in the stack *is* the tip commit. Merging the whole stack leaves the trunk at the
 tip's tree, so red checks on lower PRs do not describe anything that lands.
+
+That makes the tip a **content** gate — it tells you what the merge produces. It is not a
+**permission** gate: whether GitHub will let the stack merge at all is decided per PR, above.
 
 Three things to confirm before trusting a green tip:
 
@@ -199,7 +220,9 @@ gh stack merge --squash --yes   # one commit per PR; discards intra-PR history
 
 `--yes` skips the interactive wizard and is required non-interactively. The merge is **atomic and
 bottom-to-top**: if any PR cannot merge, none do. Only open-and-not-draft is checked client-side;
-branch protection and rulesets are evaluated by GitHub when the merge runs.
+branch protection and rulesets are evaluated by GitHub when the merge runs, per included PR, and a
+failure there is reported back rather than bypassed. A stacked PR also cannot be set to auto-merge
+once its requirements are met.
 
 **Pick by what the trunk already looks like.** `main` here is a merge-commit trunk, so `--merge` is
 the default choice. Never `--squash` a campaign whose per-commit history is the record — it
