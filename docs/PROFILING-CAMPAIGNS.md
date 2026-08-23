@@ -71,6 +71,20 @@ curl -sf -o /dev/null "http://127.0.0.1:4173$entry" || echo "stale manifest"
 
 A page that did hydrate exposes `window.__committedBrushMode`; a page that did not, does not.
 
+**A resolving manifest proves self-consistency, not whose build it is.** This host runs dozens of
+Codex worktrees, and a preview server left up by one of them keeps the canonical port for as long as
+it lives — on 2026-08-23, port 4173 was serving a *different worktree's* build from the night
+before, and every identity check above passes against it because that build is internally fine.
+`lsof -nP -iTCP:4173 -sTCP:LISTEN` names the process, and its command line names the checkout:
+
+```sh
+ps -o command= -p "$(lsof -tnP -iTCP:4173 -sTCP:LISTEN | head -1)"
+```
+
+If that path is not this checkout, do not capture against it. Serve your own build on a free port
+and pass `--url=`/`--probe-host=` explicitly; the campaign is happy to be pointed anywhere, which is
+exactly why the pointing has to be deliberate.
+
 ## Capture state that survives between runs
 
 **The brush is persisted.** A capture that assumes pen is the default draws its "pen" strokes with
@@ -155,6 +169,33 @@ a transport that cannot create it:
 | WebDriverAgent HTTP directly (iPad)  |           60–61 | Below the band; ~0.9 moves per frame.      |
 | Appium UiAutomator2 (Android Chrome) |              47 | Below the band. Do not score.              |
 
+## The preflight proves touch, not rotation
+
+`--verify-android-input` drives the floor control and reports a cadence in band. It never rotates
+the device, so **a rotation fault passes every preflight check and fails every landscape cell**. The
+2026-08-23 recapture opened on a green rig and lost all eight `android-device-web` landscape drawing
+cells before the first artifact was missed.
+
+Two distinct causes were behind it, and the first is the one that generalizes:
+
+* **`am force-stop` resets `user_rotation` to 0** on this Samsung under Android 16. The split
+  transport used to rotate and then force-stop Chrome, which undid the rotation it had just
+  asserted; the capture then aborted on the page disagreeing with the requested orientation and
+  wrote nothing. `androidPageLaunchSteps` now orders it stop → rotate → launch, and
+  `tools/perf/tests/split-capture.test.mjs` locks that order. Verify a rotation *after* whatever
+  restarts the app, never before.
+* **A control that is always in the DOM cannot be probed by presence.** `BrushMenu` renders its four
+  options unconditionally and only sets `hidden`, so the bootstrap's `menuStillOpen()` check was
+  true even when the menu was shut. Selecting a brush already closes the menu, so the close loop ran
+  its full three toggles on a closed menu and the odd click left it open — over the paper. It failed
+  only in landscape, where the flyout covers the canvas centre; portrait had been silently doing the
+  same thing for as long as the check existed. `tools/CLAUDE.md` records the identical failure for
+  `expandDrawer`: **probe visibility, not presence.**
+
+The canvas-centre guard is what caught it, and it is the reason this cost cells rather than
+producing plausible numbers — a menu over the paper otherwise yields a capture with frames and zero
+pointer events. Do not weaken that assertion to get a run to complete.
+
 ## The device going to sleep
 
 Android sleeps mid-campaign and locks. `npm run perf:preflight -- --wake-android` wakes it and sets
@@ -215,6 +256,47 @@ gates block and nowhere else. The cells keep whatever the estimator produced on 
 captured until they are captured again on the capture host. **A matrix number and a fresh capture of
 the same cell can legitimately disagree by more than the gate**; find out which one you are reading
 before treating a difference as a regression.
+
+### Rebuilding a handful of cells without recapturing the matrix
+
+The matrix is incrementally rebuildable, and nothing about the three commands says so — this is the
+loop. Every cell you do not recapture keeps its published number, because the manifest carries
+`"preserved"` for it and the generator copies that forward.
+
+```sh
+# 1. capture only what you want, scoped by mode and item
+npm run perf:campaign -- --target=android-device-web \
+  --modes=landscape-light,landscape-dark --items=crayon,eraser \
+  --device-id=<serial> --url=http://<lan>:<preview>/ --probe-host=http://<lan>:<probe> \
+  --output-root=perf-profiles/<campaign> --max-attempts=1
+
+# 2. fold ONLY those modes into the manifest — paths derived, never retyped
+npm run perf:campaign:sources -- --target=android-device-web \
+  --output-root=perf-profiles/<campaign> --product-commit=$(git rev-parse HEAD) \
+  --modes=landscape-light,landscape-dark \
+  --manifest=scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
+
+# 3. regenerate; every untouched cell keeps its preserved evidence
+npm run gen:performance-matrix -- scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
+```
+
+Two properties of step 2 decide how small an increment can be:
+
+* **The unit is a mode, not a cell.** `perf:campaign:sources` rewrites a mode only when all four
+  brushes *and* its action sweep are present and captured through that target's transport. This is
+  deliberate — a partially captured mode is not a captured one — so recapturing one brush leaves the
+  manifest untouched and the matrix unchanged. To move a single brush you still capture its whole
+  mode. Omit `--manifest=` to print what it *would* write and confirm the set before committing it.
+* **It is keyed off the artifacts on disk, not the ledger.** A cell that failed and wrote nothing is
+  simply absent, so a partial run degrades to "that mode was not folded" rather than to a mode
+  half-rewritten.
+
+Run `npm run perf:campaign:status -- --target=<id> --output-root=<root>` between steps 1 and 2. It
+decides completion from the runner's own artifact inspection rather than by counting ledger rows,
+which is what makes it trustworthy after a resumed run.
+
+Step 3 chains `check:matrix-staleness` in process, so a cell claiming to be a current measurement
+whose product source has since changed fails the regenerate rather than being published.
 
 Three things about `perf:campaign` that each cost a launch:
 
@@ -356,6 +438,28 @@ count before clearing, then rerun — cells that already landed are skipped on t
 the ledger.
 
 Make tool edits between targets, or on a branch the running campaign is not executing from.
+
+### The long-lived servers are the mirror image: they never reload
+
+A campaign re-reads the capture tool every cell. The **probe host does the opposite** — one
+`perf:device:serve` process serves every split-transport cell, and it holds `lib/page-bootstrap.mjs`
+in its module cache from the moment it started. Editing the injected page script therefore changes
+nothing until that server is restarted, and the next run measures the old bootstrap while its log
+and the source on disk both say otherwise.
+
+That combination is worse than either half alone. The campaign picks the edit up, the probe host
+does not, and the mismatch reads as "my fix did not work" — which invites a second, wrong fix on top
+of a correct one.
+
+Restart the host after any edit under `tools/perf/split-capture/lib/`, then prove the change is
+actually being served rather than assuming it:
+
+```sh
+curl -s http://<lan>:<probe port>/__probe/bootstrap.js | grep <something your edit added>
+```
+
+The same applies to `perf:serve`: it serves whatever `web/build` held when vite started resolving,
+so a rebuild wants a restart and the manifest check under *A build that is not the build you think*.
 
 ## Never run anything heavy on the host during a capture
 

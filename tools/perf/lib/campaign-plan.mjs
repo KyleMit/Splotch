@@ -29,6 +29,9 @@ const SCREEN_COMMAND = 'perf:ios:xcuitest:screen';
 // flag, so a split cell carries a different argument vocabulary rather than the
 // Appium one minus the parts that would be ignored.
 export const SPLIT_SCREEN_COMMAND = 'perf:device:frames';
+// Named because consumers branch on it: the split path captures drawing only, so
+// a mode it produces has no undo artifact to name.
+export const SPLIT_TRANSPORT = 'split';
 // Desktop rows run entirely on the capture host through Playwright. Orientation
 // is a viewport shape rather than a device rotation, and the matrix derives it
 // back from the recorded viewport, so the two geometries have to stay a matched
@@ -87,7 +90,7 @@ export const CAMPAIGN_TARGETS = {
     // ADR-0135: the Appium browser transport drives this device at 46.8 contact
     // moves/s against a 100-170 band, so every cell it produces fails fidelity and
     // cannot be scored. The split transport measures 116.6 on the same hardware.
-    transport: 'split',
+    transport: SPLIT_TRANSPORT,
     splitPlatform: 'android',
     runtime: 'web',
     actionsTransport: 'cdp',

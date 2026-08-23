@@ -2,7 +2,9 @@ import { connect } from 'node:net';
 import { describe, expect, it } from 'vitest';
 import {
   androidGestureInstructions,
+  androidPageLaunchSteps,
   androidRotationCommands,
+  CHROME_PACKAGE,
   swipeArgs,
 } from '../split-capture/lib/android-input.mjs';
 import {
@@ -84,6 +86,35 @@ describe('androidGestureInstructions', () => {
       '4',
       '60',
     ]);
+  });
+});
+
+describe('androidPageLaunchSteps', () => {
+  const indexOfArg = (steps, needle) =>
+    steps.findIndex((step) => step.args.some((arg) => arg.includes(needle)));
+
+  it('asserts the rotation after force-stopping the browser', () => {
+    const steps = androidPageLaunchSteps('LANDSCAPE', 'http://10.0.0.2:4186/');
+
+    // `am force-stop` returns user_rotation to 0 on Samsung/Android 16, so
+    // rotating before the stop lands every landscape cell in portrait and the
+    // capture aborts without writing an artifact.
+    expect(indexOfArg(steps, 'force-stop')).toBeLessThan(indexOfArg(steps, 'user_rotation'));
+  });
+
+  it('launches the page last, so the browser opens into the settled rotation', () => {
+    const steps = androidPageLaunchSteps('LANDSCAPE', 'http://10.0.0.2:4186/');
+
+    expect(indexOfArg(steps, 'user_rotation')).toBeLessThan(indexOfArg(steps, '4186'));
+    expect(steps.at(-1).args).toContain(CHROME_PACKAGE);
+    expect(steps.at(-1).settle).toBe('page');
+  });
+
+  it('settles after the stop and the rotation, which the page launch depends on', () => {
+    const steps = androidPageLaunchSteps('PORTRAIT', 'http://10.0.0.2:4186/');
+
+    expect(steps[indexOfArg(steps, 'force-stop')].settle).toBe('appStop');
+    expect(steps[indexOfArg(steps, 'user_rotation')].settle).toBe('rotation');
   });
 });
 

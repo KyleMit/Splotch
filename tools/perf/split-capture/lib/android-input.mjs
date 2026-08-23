@@ -100,3 +100,33 @@ export function androidRotationCommands(orientation) {
     ['shell', 'settings', 'put', 'system', 'user_rotation', String(rotation)],
   ];
 }
+
+export const CHROME_PACKAGE = 'com.android.chrome';
+
+// Rotation is asserted AFTER the browser is stopped, and the order is the whole
+// point. `am force-stop` returns `user_rotation` to 0 on Samsung/Android 16, so
+// rotating first and stopping second lands every landscape cell in portrait —
+// the capture then aborts on the page disagreeing with the requested
+// orientation, having written no artifact. Each step names the settle the caller
+// must honour before the next one; the durations stay policy for the caller.
+export function androidPageLaunchSteps(orientation, pageUrl) {
+  const [disableAutoRotate, setRotation] = androidRotationCommands(orientation);
+  return [
+    { args: ['shell', 'am', 'force-stop', CHROME_PACKAGE], settle: 'appStop' },
+    { args: disableAutoRotate, settle: null },
+    { args: setRotation, settle: 'rotation' },
+    {
+      args: [
+        'shell',
+        'am',
+        'start',
+        '-a',
+        'android.intent.action.VIEW',
+        '-d',
+        `'${pageUrl}'`,
+        CHROME_PACKAGE,
+      ],
+      settle: 'page',
+    },
+  ];
+}

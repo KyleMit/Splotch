@@ -150,4 +150,40 @@ describe('campaign sources', () => {
     expect(manifest.targets[0].modes[0].reason).toBe('untouched');
     expect(manifest.targets[0].modes[1].status).toBe('captured');
   });
+
+  it('names no undo source for the split transport, which captures drawing only', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+    const [entry] = sourcesFor('android-device-web', outputRoot);
+
+    // Its pen cell has no undo phase, so naming that artifact normalizes to null
+    // and drops the row rather than measuring it.
+    expect(entry.mode.undoSource).toBeUndefined();
+    expect(entry.mode.drawing.pen).toHaveLength(1);
+  });
+
+  it('carries a published undo measurement forward when the entry names none', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+    const entries = sourcesFor('android-device-web', outputRoot);
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              undoSource: 'preserved',
+              undoProductCommit: 'abc',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    expect(manifest.targets[0].modes[0].undoSource).toBe('preserved');
+    expect(manifest.targets[0].modes[0].undoProductCommit).toBe('abc');
+    expect(manifest.targets[0].modes[0].drawing.pen).toHaveLength(1);
+  });
 });

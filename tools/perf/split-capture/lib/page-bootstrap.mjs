@@ -109,7 +109,15 @@ export function pageBootstrapSource() {
       // every synthesized touch lands on the menu instead of the canvas — which
       // produced captures with frames but no pointer events at all. Close it,
       // then prove the paper is what a touch at the canvas centre would hit.
-      const menuStillOpen = () => !!document.querySelector(selector);
+      //
+      // Openness is read from layout, not from the option existing: BrushMenu
+      // renders its options unconditionally and only sets the hidden
+      // attribute, so a presence check is true even when the menu is shut.
+      // That check ran the
+      // toggle its full three times on an already-closed menu and left it open
+      // on the odd click — invisible in portrait, where the flyout misses the
+      // canvas centre, and fatal in landscape, where it covers it.
+      const menuStillOpen = () => !!document.querySelector(selector)?.offsetParent;
       for (let attempt = 0; attempt < 3 && menuStillOpen(); attempt++) {
         document.querySelector('#brushButton')?.click();
         await wait(500);

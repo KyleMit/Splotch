@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { esc } from '../lib/html.mjs';
 import { checkMatrixStaleness } from './check-matrix-staleness.mjs';
@@ -1106,6 +1107,26 @@ ${siteFooter({ home: '../../index.html' })}`;
 // command, so `gen:performance-matrix -- <manifest>` handed the path to the
 // checker and generated the DEFAULT manifest — exiting 0 having verified a
 // different file than it wrote.
+// dprint owns Markdown in this repo (ADR-0057), and its wrapping is not something
+// a renderer can be hand-tuned to match — every prose edit here would otherwise
+// have to reproduce the formatter's line breaks exactly. Formatting the emitted
+// file makes a regenerate idempotent against `dprint check`, so rebuilding the
+// report cannot be what turns CI red.
+function formatGeneratedMarkdown(path) {
+  // dprint's configured includes cover the repo, so a report generated outside it
+  // — a test fixture, an ad-hoc manifest in a temp directory — has no formatter to
+  // answer for and is left as rendered. Inside the repo the formatting IS the
+  // contract, so a failure there is fatal rather than skipped.
+  const insideRepo = !relative(ROOT, path).startsWith('..');
+  if (!insideRepo) return;
+  const result = spawnSync('npx', ['dprint', 'fmt', path], { cwd: ROOT, stdio: 'pipe' });
+  if (result.status !== 0) {
+    throw new Error(
+      `dprint could not format ${relative(ROOT, path)}: ${result.stderr?.toString().trim()}`
+    );
+  }
+}
+
 export async function generateDeploymentMatrixReport(manifestArg = process.argv[2]) {
   const manifestPath = manifestArg
     ? isAbsolute(manifestArg)
@@ -1117,6 +1138,7 @@ export async function generateDeploymentMatrixReport(manifestArg = process.argv[
   writeFileSync(join(outputDir, 'data.json'), `${JSON.stringify(matrix, null, 2)}\n`);
   writeFileSync(join(outputDir, 'index.md'), renderMarkdown(matrix));
   writeFileSync(join(outputDir, 'index.html'), renderReport(matrix).replace(/[ \t]+$/gm, ''));
+  formatGeneratedMarkdown(join(outputDir, 'index.md'));
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'data.json'))}`);
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'index.md'))}`);
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'index.html'))}`);
