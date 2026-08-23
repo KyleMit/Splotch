@@ -13,6 +13,7 @@ import {
   planCampaign,
   probeHostProblem,
 } from '../lib/campaign-plan.mjs';
+import { entryModulePath } from '../lib/profile-preview.mjs';
 import {
   ALREADY_VALID,
   FAILED,
@@ -351,5 +352,20 @@ describe('unscoreable ledger rows', () => {
 
     expect(attemptsFor(rows, 'landscape-light/crayon')).toBe(2);
     expect(isComplete(rows, 'landscape-light/crayon')).toBe(false);
+  });
+});
+
+describe('entryModulePath', () => {
+  it('finds the SvelteKit entry module a served page names', () => {
+    const html = '<html><body><script>import("/_app/immutable/entry/start.C3xK9a.js")</script>';
+
+    expect(entryModulePath(html)).toBe('/_app/immutable/entry/start.C3xK9a.js');
+  });
+
+  // Server-rendered markup answers every selector whether or not the app
+  // hydrated, so "the page loaded" proves nothing about the build behind it.
+  it('reports no entry for a page that names none', () => {
+    expect(entryModulePath('<html><body><canvas></canvas></body></html>')).toBeNull();
+    expect(entryModulePath(undefined)).toBeNull();
   });
 });

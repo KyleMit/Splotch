@@ -84,6 +84,7 @@
     "perf:analyze:chrome": "node tools/perf/analyze-chrome-trace.mjs",
     "perf:analyze:web-inspector": "node tools/perf/analyze-web-inspector.mjs",
     "perf:analyze:frames": "node tools/perf/analyze-frame-capture.mjs",
+    "perf:rescore": "node tools/perf/rescore-captures.mjs",
     "perf:web:frames": "PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/web/capture-local-frames.mjs",
     "perf:device:serve": "PUBLIC_ENABLE_DEV_HARNESS=true node tools/perf/split-capture/serve-probe-host.mjs",
     "perf:device:frames": "node tools/perf/split-capture/capture-device-frames.mjs",
@@ -406,7 +407,8 @@
     "audit:watch": "Live view of a running audit burndown: tail -f the run log, or -- --dash for a status summary refreshing every 10s",
     "prerelease": "check:coloring-assets + check:assets:manifest gates before release",
     "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the cut-release skill to draft notes first). Attaches no store artifacts — they cannot exist until this bump is committed",
-    "release:publish": "Attach the built .aab/.ipa to an existing GitHub Release, refusing any artifact whose embedded version does not match (run after the cut-release then build skills)"
+    "release:publish": "Attach the built .aab/.ipa to an existing GitHub Release, refusing any artifact whose embedded version does not match (run after the cut-release then build skills)",
+    "perf:rescore": "Re-derive every capture in a corpus from its raw frame table, offline and in seconds. Reads the `report` a capture carries — never the `summaries` it was written with, which were computed by whichever estimator the branch had at capture time — and re-scores through the SHIPPED scoring modules, so the answer is what the gate says rather than what a private reimplementation says. Handles all three envelopes (split transport, Appium runner, bare probe upload). This is how a metric correction is judged against every number already taken: ADR-0136 was validated across 43 captures this way before a line of product code changed, and trialling a NEW charge is the same operation — change the shipped charge on a branch and re-run. Prints the fidelity verdict beside every row, because a capture that fails it must not be scored however plausible its number looks. Flags: --corpus=<dir> (required), --filter=<substring>, --target=<matrix target id, to apply that cell's gate exception>, --json=<out>"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
