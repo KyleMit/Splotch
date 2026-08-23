@@ -24,7 +24,11 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSy
 import { basename, dirname, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
-import { inputFidelity } from './ios/capture-xcuitest-screen.mjs';
+import {
+  DEFAULT_CAPTURE_RUNTIME,
+  describeFidelityFailures,
+  inputFidelity,
+} from './lib/input-fidelity.mjs';
 import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_GATE,
@@ -125,15 +129,17 @@ export function rescoreCapture(parsed, { name, targetId }) {
   // explicitly excused from, and the table would say PASS or FAIL either way.
   const gateShare = targetId ? lostFrameTimeShareGateFor(targetId, brush) : null;
   const drawing = scoreDrawingRun(summaries.phases, gateShare ?? LOST_FRAME_TIME_SHARE_GATE);
-  const fidelity = inputFidelity(phase.input ?? {});
+  // A capture written before the artifact carried a runtime has to be told which
+  // table judges it, and the target it was filed under is the only record of that
+  // — the transport string alone does not separate an iPad WKWebView from an
+  // Android one. An unknown target falls back to the runtime every threshold was
+  // originally set from, so such a capture scores exactly as it did before.
+  const runtime =
+    parsed?.fidelity?.runtime ??
+    (targetId ? CAMPAIGN_TARGETS[targetId]?.captureRuntime : null) ??
+    DEFAULT_CAPTURE_RUNTIME;
+  const fidelity = inputFidelity(phase.input ?? {}, runtime);
   return { name, target: targetId, brush, gateShare, summaries, drawing, fidelity };
-}
-
-function failedChecks(fidelity) {
-  return Object.entries(fidelity.checks ?? {})
-    .filter(([, passed]) => !passed)
-    .map(([name]) => name)
-    .join('+');
 }
 
 function row(scored) {
@@ -154,11 +160,12 @@ function row(scored) {
     // its number looks, so the verdict is printed beside the number and not
     // behind a flag. The FAILING CHECKS are named rather than a bare FAIL,
     // because which one failed decides whether the number means anything: the
-    // pressure and contactGeometry thresholds are iPad-calibrated, so every
-    // desktop and Android capture fails them by construction and the matrix
-    // classes those targets advisory. `cadence` is the one that invalidates a
-    // number outright, and a bare FAIL hides which of the two you are looking at.
-    fidelity: scored.fidelity.passed ? 'pass' : failedChecks(scored.fidelity),
+    // pressure and contactGeometry thresholds have no calibrated expectation on
+    // Android or desktop, so every capture from those runtimes is reported
+    // `(uncalibrated)` on them and the matrix classes those targets advisory.
+    // `cadence` is the one that invalidates a number outright, and a bare FAIL
+    // hides which of the two you are looking at.
+    fidelity: scored.fidelity.passed ? 'pass' : describeFidelityFailures(scored.fidelity),
     gate: scored.gateShare === null ? 'UNSCORED' : scored.drawing.passed ? 'PASS' : 'FAIL',
   };
 }

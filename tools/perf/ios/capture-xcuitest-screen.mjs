@@ -4,6 +4,7 @@ import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mj
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
+import { captureRuntime, inputFidelity } from '../lib/input-fidelity.mjs';
 import { probeConfigScript } from './capture-webkit-frames.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
@@ -86,14 +87,6 @@ const SHORT_STROKE_ORIGINS = [
   [0.59, 0.38],
   [0.76, 0.5],
 ];
-
-// Calibrated against the schema-2 hand capture on the target iPad. These gate
-// whether a run exercised the physical touch path; they are not lag thresholds.
-export const FIDELITY_MOVES_PER_SECOND_MIN = 100;
-export const FIDELITY_MOVES_PER_SECOND_MAX = 170;
-export const FIDELITY_MOVE_GAP_P95_MAX_MS = 20;
-export const FIDELITY_CONTACT_SIZE_MIN_PX = 40;
-export const FIDELITY_CONTACT_SIZE_MAX_PX = 100;
 
 function sanitizeLabel(value) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
@@ -221,24 +214,6 @@ export function borrowedSessionDescriptor(sessionId, requestedCapabilities) {
         capabilities.platformVersion ?? capabilities['appium:platformVersion'],
     },
   };
-}
-
-export function inputFidelity(input = {}) {
-  const checks = {
-    trustedTouch: input.kinds === 'touch' && input.trust?.share === 1,
-    cadence:
-      input.movesPerSecond >= FIDELITY_MOVES_PER_SECOND_MIN &&
-      input.movesPerSecond <= FIDELITY_MOVES_PER_SECOND_MAX &&
-      input.moveGapP95Ms <= FIDELITY_MOVE_GAP_P95_MAX_MS,
-    coalescing: input.coalescedPerMove === 0,
-    pressure: input.pressure?.p50 === 0,
-    contactGeometry:
-      input.contactWidth?.p50 >= FIDELITY_CONTACT_SIZE_MIN_PX &&
-      input.contactWidth?.p50 <= FIDELITY_CONTACT_SIZE_MAX_PX &&
-      input.contactHeight?.p50 >= FIDELITY_CONTACT_SIZE_MIN_PX &&
-      input.contactHeight?.p50 <= FIDELITY_CONTACT_SIZE_MAX_PX,
-  };
-  return { passed: Object.values(checks).every(Boolean), checks };
 }
 
 export function summarizeLiveSurfaceTopology(surfaces) {
@@ -858,7 +833,14 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     const drawing = scoreDrawingRun(summaries.phases);
     const undo = summarizeUndoActions(undoActions, report.frames);
     const input = summaries.phases[0]?.input ?? {};
-    const fidelity = inputFidelity(input);
+    // Read from the negotiated session rather than from the flags: this command
+    // drives Android through a capabilities file as well as the iPad, so the
+    // platform is a property of the session that was actually opened.
+    const runtime = captureRuntime(
+      session.capabilities?.platformName ?? session.capabilities?.['appium:platformName'],
+      nativeApp
+    );
+    const fidelity = inputFidelity(input, runtime);
     const liveSurfaceTopology = summarizeLiveSurfaceTopology(
       await execute('return window.__drawingDebug.getLiveSurfaceTopology();')
     );

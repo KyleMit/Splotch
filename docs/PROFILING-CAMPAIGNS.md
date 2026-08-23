@@ -169,6 +169,28 @@ a transport that cannot create it:
 | WebDriverAgent HTTP directly (iPad)  |           60–61 | Below the band; ~0.9 moves per frame.      |
 | Appium UiAutomator2 (Android Chrome) |              47 | Below the band. Do not score.              |
 
+### A failed verdict has two meanings, and they need different work
+
+`inputFidelity` states its expectations **per capture runtime** (ADR-0139), because three of its
+five checks describe a runtime rather than describing faithful input. So read *which* check did not
+pass:
+
+* **A failed check is a bad run.** `cadence` says the app was barely driven and the number is
+  meaningless; `trustedTouch` says the input never went through the real touch path. Recapture.
+* **An `(uncalibrated)` check is a silent instrument.** No hand capture has recorded what that
+  runtime reports, so there is no expectation to judge against. Recapturing changes nothing; the fix
+  is to measure the runtime. It is **not** a pass — a capture resting on an unmeasured threshold is
+  as unscoreable as an under-driven one.
+
+Today every Android and desktop runtime is uncalibrated on `coalescing`, `pressure` and
+`contactGeometry`, which is why those targets are classed advisory and why `android-device-web`
+cannot be folded into the matrix yet. Issue 1218 is the hand capture that closes it.
+
+The one entry that is *inverted* rather than uncalibrated is `coalescing` on the Capacitor
+WKWebView, which expects more than zero coalesced samples where Safari expects none — measured on
+2026-08-23 with both runtimes driven at the same cadence on the same device. Do not widen that check
+to cover both; widening it retires it in Safari, where it does real work.
+
 ## The preflight proves touch, not rotation
 
 `--verify-android-input` drives the floor control and reports a cadence in band. It never rotates

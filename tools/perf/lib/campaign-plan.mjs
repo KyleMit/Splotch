@@ -43,32 +43,42 @@ const DESKTOP_PORTRAIT_VIEWPORT = '915x1366';
 const ACTIONS_APPIUM_COMMAND = 'perf:ios:xcuitest:actions';
 const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 
+// `captureRuntime` names which runtime's input-fidelity expectations a cell is
+// judged against — see tools/perf/lib/input-fidelity.mjs. It is stated per target
+// rather than derived from `runtime` plus the id, because the derivation would have
+// to parse a platform out of a name and would silently pick a wrong table for the
+// next target whose name does not follow the pattern.
 export const CAMPAIGN_TARGETS = {
   'ipad-simulator-web': {
+    captureRuntime: 'ios-safari',
     label: 'iPad Simulator · web',
     transport: 'appium',
     runtime: 'web',
     deviceClass: 'tablet',
   },
   'ipad-simulator-native': {
+    captureRuntime: 'ios-capacitor-webview',
     label: 'iPad Simulator · native',
     transport: 'appium',
     runtime: 'native',
     deviceClass: 'tablet',
   },
   'ipad-device-web': {
+    captureRuntime: 'ios-safari',
     label: 'iPad device · web',
     transport: 'appium',
     runtime: 'web',
     deviceClass: 'tablet',
   },
   'ipad-device-native': {
+    captureRuntime: 'ios-capacitor-webview',
     label: 'iPad device · native',
     transport: 'appium',
     runtime: 'native',
     deviceClass: 'tablet',
   },
   'android-emulator-web': {
+    captureRuntime: 'android-chrome',
     deviceClass: 'handset',
     label: 'Android emulator · web',
     transport: 'appium',
@@ -78,6 +88,7 @@ export const CAMPAIGN_TARGETS = {
     webviewClass: 'android.webkit.WebView',
   },
   'android-emulator-native': {
+    captureRuntime: 'android-capacitor-webview',
     deviceClass: 'handset',
     label: 'Android emulator · native',
     transport: 'appium',
@@ -85,6 +96,7 @@ export const CAMPAIGN_TARGETS = {
     webviewClass: 'android.webkit.WebView',
   },
   'android-device-web': {
+    captureRuntime: 'android-chrome',
     deviceClass: 'handset',
     label: 'Android device · web',
     // ADR-0135: the Appium browser transport drives this device at 46.8 contact
@@ -97,6 +109,7 @@ export const CAMPAIGN_TARGETS = {
     webviewClass: 'android.webkit.WebView',
   },
   'mac-chrome': {
+    captureRuntime: 'desktop-playwright',
     label: 'Mac · Chrome',
     transport: 'desktop',
     desktopEngine: 'chromium',
@@ -105,6 +118,7 @@ export const CAMPAIGN_TARGETS = {
     deviceClass: 'desktop',
   },
   'mac-safari': {
+    captureRuntime: 'desktop-playwright',
     label: 'Mac · Safari',
     transport: 'desktop',
     desktopEngine: 'webkit',
@@ -113,6 +127,7 @@ export const CAMPAIGN_TARGETS = {
     deviceClass: 'desktop',
   },
   'mac-firefox': {
+    captureRuntime: 'desktop-playwright',
     label: 'Mac · Firefox',
     transport: 'desktop',
     desktopEngine: 'firefox',
@@ -121,6 +136,7 @@ export const CAMPAIGN_TARGETS = {
     deviceClass: 'desktop',
   },
   'android-device-native': {
+    captureRuntime: 'android-capacitor-webview',
     deviceClass: 'handset',
     label: 'Android device · native',
     transport: 'appium',

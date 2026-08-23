@@ -69,8 +69,10 @@ For a full cross-target snapshot rather than a single capture, continue with the
 * **Read the fidelity verdict before the result.** A capture that parses is not a capture that can
   be scored. A cell that fails input fidelity must not be scored at all, however plausible its
   number looks. **Which check failed decides what the failure means**: `cadence` invalidates the
-  number outright, while `pressure` and `contactGeometry` are iPad-calibrated and every Android and
-  desktop capture fails them by construction, which is why those targets are classed advisory.
+  number outright, while a check reported `(uncalibrated)` says the instrument has no measured
+  expectation for that runtime — a gap closed by measuring the runtime, not by recapturing the cell.
+  Every Android and desktop capture is uncalibrated on `coalescing`, `pressure` and
+  `contactGeometry`, which is why those targets are classed advisory (ADR-0139).
 * **Restart a long-lived server after editing what it serves.** The campaign re-reads the capture
   tool every cell, but `perf:device:serve` holds the injected page bootstrap in its module cache and
   `perf:serve` holds the build it started with. The two together read as "my fix did nothing", which
