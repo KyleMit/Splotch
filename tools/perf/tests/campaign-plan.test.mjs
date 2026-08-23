@@ -16,7 +16,10 @@ import {
   probeHostProblem,
   resolvedProbeHostProblem,
 } from '../lib/campaign-plan.mjs';
-import { entryModulePath, servedBuildIdentityProblem } from '../lib/profile-preview.mjs';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { entryModulePath, servedBuildFingerprintProblem } from '../lib/profile-preview.mjs';
+import { ROOT as ROOT_DIR } from '../../lib/proc.mjs';
 import { campaignProgress } from '../campaign-status.mjs';
 import { isProbePlan } from '../run-campaign.mjs';
 import {
@@ -772,24 +775,51 @@ describe('isProbePlan', () => {
   });
 });
 
-describe('servedBuildIdentityProblem', () => {
-  const foreign = '/_app/immutable/entry/start.NotOurs.js';
+describe('servedBuildFingerprintProblem', () => {
+  const BUILD = join(ROOT_DIR, 'web', 'build');
+  const read = (url) => {
+    const path = new URL(url, 'http://x/').pathname;
+    return readFileSync(path === '/' ? join(BUILD, 'index.html') : join(BUILD, path), 'utf8');
+  };
+  const entryOf = (html) => /\/_app\/immutable\/entry\/start\.[^"']+\.js/.exec(html)[0];
 
-  // The regression this covers: `--url` skips buildAndPreview, and `--url` is the
-  // path every campaign cell takes — so the identity assertion covered only the
-  // path nobody uses. A coherent server serving ANOTHER checkout's build passes
-  // every other check, which is exactly what port 4173 was doing.
-  it('rejects a coherent server whose build is not this checkout’s', () => {
-    expect(servedBuildIdentityProblem('http://127.0.0.1:4173/', foreign)).toMatch(
+  it('accepts this checkout’s own build served byte for byte', async () => {
+    expect(
+      await servedBuildFingerprintProblem('http://x/', { fetchText: async (url) => read(url) })
+    ).toBeNull();
+  });
+
+  // The regression this covers: matching the ENTRY FILENAME is not identity. The
+  // entry is runtime plumbing that can be byte-identical while application chunks
+  // differ, so a foreign URL plus this checkout's entry path passed unchallenged.
+  it('rejects a build whose entry matches but whose application chunk differs', async () => {
+    const html = read('/');
+    const app = /\/_app\/immutable\/entry\/app\.[^"']+\.js/.exec(html + read(entryOf(html)))[0];
+    const fetchText = async (url) =>
+      String(url).includes(app) ? `${read(url)}\n/* different build */` : read(url);
+
+    expect(await servedBuildFingerprintProblem('http://x/', { fetchText })).toMatch(
+      /different content/
+    );
+  });
+
+  it('rejects a chunk this checkout does not have at all', async () => {
+    const fetchText = async (url) =>
+      String(url) === 'http://x/'
+        ? '<script>import("/_app/immutable/entry/start.NotOurs.js")</script>'
+        : '';
+
+    expect(await servedBuildFingerprintProblem('http://x/', { fetchText })).toMatch(
       /does not contain/
     );
   });
 
-  // `--url` also exists for an externally served historical build, which by
-  // definition is not in this checkout, so identity has an explicit opt-out.
-  it('allows a foreign build only when asked', () => {
+  it('skips the comparison only when a foreign build is explicitly allowed', async () => {
+    const fetchText = async () =>
+      '<script>import("/_app/immutable/entry/start.NotOurs.js")</script>';
+
     expect(
-      servedBuildIdentityProblem('http://127.0.0.1:4173/', foreign, { allowForeignBuild: true })
+      await servedBuildFingerprintProblem('http://x/', { fetchText, allowForeignBuild: true })
     ).toBeNull();
   });
 });

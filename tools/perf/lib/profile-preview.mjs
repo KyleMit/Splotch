@@ -8,7 +8,8 @@
 // a grandchild and leaks the port. freePort() clears out any stale leftover
 // server up front so every run serves the build it just produced.
 
-import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
@@ -36,10 +37,6 @@ export function entryModulePath(html) {
 // against someone else's product. Observed on 2026-08-22, where port 4173 was held
 // by a Codex worktree's preview for 85 minutes and the manifest check said fresh.
 // Only the local build output can settle it.
-function localBuildHasEntry(entry) {
-  return existsSync(join(ROOT, 'web', 'build', entry));
-}
-
 // Valid against ANY server, including the externally-served historical build that
 // `--url=` exists for, so this is the half of the check a `--url` capture can also
 // run. It cannot say whose build it is — only that the build is self-consistent.
@@ -64,17 +61,30 @@ async function assertServedManifestResolves(base) {
 // definition is not in this checkout. Everything else — above all the shared
 // preview every campaign cell points `--url` at — must prove identity, or the
 // guard covers only the path nobody uses.
-// Pure so the decision is testable: the CLI wrapper below exits the process, which
-// a test cannot catch.
-export function servedBuildIdentityProblem(base, entry, { allowForeignBuild = false } = {}) {
+const IMMUTABLE_REF = /\/_app\/immutable\/[A-Za-z0-9._\-/]+\.js/g;
+
+// Which served files to compare. The entry alone is not identity: it is runtime
+// plumbing that can be byte-identical while application chunks differ, so matching
+// its filename proved nothing — a foreign URL plus this checkout's entry path
+// passed. Everything the served page and the served entry actually reference is
+// fetched and compared instead.
+export function referencedChunks(html, entryModule) {
+  return [...new Set([...`${html}\n${entryModule}`.matchAll(IMMUTABLE_REF)].map(([ref]) => ref))];
+}
+
+function localDigest(chunk) {
+  const path = join(ROOT, 'web', 'build', chunk);
+  if (!existsSync(path)) return null;
+  return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+
+// Returns the first served file whose bytes are not this checkout's, or null.
+// Injected fetcher so the regression needs no network.
+export async function servedBuildFingerprintProblem(
+  base,
+  { allowForeignBuild = false, fetchText = defaultFetchText } = {}
+) {
   if (allowForeignBuild) return null;
-  // Checked HERE, per capture, and not only when perf:serve starts. The incident
-  // this guards overwrote web/build while a long-lived preview was already serving
-  // it, and a start-time check cannot see that: the server stays up, the manifest
-  // still resolves, and the entry is still in web/build, because the native strip
-  // removes the web-only files and leaves the chunks. Campaign cells go through
-  // --url and never re-enter runPerfServe, so the start-time check alone leaves
-  // every later cell reaching the export.
   if (buildDirHoldsNativeExport()) {
     return (
       'web/build holds the native static export, not the web build — a native build ' +
@@ -83,17 +93,47 @@ export function servedBuildIdentityProblem(base, entry, { allowForeignBuild = fa
       'Run `npm run perf:build` and restart the preview.'
     );
   }
-  if (localBuildHasEntry(entry)) return null;
-  return (
-    `${base} is serving ${entry}, which this checkout's web/build does not contain — ` +
-    'the port is held by another build. A capture against it would measure a different ' +
-    'product. Choose a free port rather than stopping a listener another session owns.'
-  );
+
+  const html = await fetchText(base);
+  const entry = entryModulePath(html);
+  const entryModule = entry ? await fetchText(new URL(entry, base)) : '';
+  const chunks = referencedChunks(html, entryModule);
+  if (!chunks.length) {
+    return `${base} references no application chunks — the preview is not serving a built app`;
+  }
+
+  for (const chunk of chunks) {
+    const expected = localDigest(chunk);
+    if (!expected) {
+      return (
+        `${base} is serving ${chunk}, which this checkout's web/build does not contain — ` +
+        'the port is held by another build. A capture against it would measure a different ' +
+        'product. Choose a free port rather than stopping a listener another session owns.'
+      );
+    }
+    const served = createHash('sha256')
+      .update(await fetchText(new URL(chunk, base)))
+      .digest('hex');
+    if (served !== expected) {
+      return (
+        `${base} is serving ${chunk} with different content from this checkout's web/build — ` +
+        'the build was replaced or partially overwritten. A capture against it would measure ' +
+        'a different product.'
+      );
+    }
+  }
+  return null;
+}
+
+async function defaultFetchText(url) {
+  const response = await fetch(url);
+  if (!response.ok) fail(`${url} returned ${response.status} — the served build is incomplete`);
+  return response.text();
 }
 
 export async function assertServedBuildIsFresh(base, { allowForeignBuild = false } = {}) {
   const entry = await assertServedManifestResolves(base);
-  const problem = servedBuildIdentityProblem(base, entry, { allowForeignBuild });
+  const problem = await servedBuildFingerprintProblem(base, { allowForeignBuild });
   if (problem) fail(problem);
   return entry;
 }
