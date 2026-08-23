@@ -130,6 +130,42 @@ export const CAMPAIGN_TARGETS = {
 // `android-chrome-cdp`) write their own.
 export const NATIVE_TRANSPORT = 'native-capacitor-webview';
 
+// Several debuggable WebViews can satisfy the context search, so a native capture
+// that attached to Chrome — or a web capture that attached to the installed app —
+// produces a well-formed artifact and exits zero. The runbook asks for this to be
+// eyeballed per cell; a queue of 20 is exactly where eyeballing stops happening.
+// Acceptance stays "a parseable artifact" so a red gate survives, but the artifact
+// has to be one of the thing the cell asked for.
+export function artifactMatchesRuntime(artifact, runtime) {
+  const isNative = artifact?.transport === NATIVE_TRANSPORT;
+  return runtime === 'native' ? isNative : !isNative;
+}
+
+// The split transport writes its artifact BEFORE it fails the fidelity gate, so a
+// capture that must not be scored still parses and still names the right runtime.
+// Acceptance has to read the verdict the artifact carries, or the campaign banks
+// exactly the unscoreable cells that transport exists to stop producing.
+//
+// A MISSING verdict is the subtle half. Tolerating it keeps the desktop transport
+// working, which genuinely reports none — but applied to a transport that always
+// writes one it fails open, and the cell it fails open on is the one whose verdict
+// is mandatory. So tolerance is granted per transport rather than globally, and a
+// runner that always writes a verdict has an absent one treated as no verdict at
+// all rather than as consent.
+export function artifactPassedFidelity(artifact, { verdictRequired = false } = {}) {
+  const passed = artifact?.fidelity?.passed;
+  if (passed === undefined) return !verdictRequired;
+  return passed === true;
+}
+
+// The commands that always write a `fidelity` block. Desktop capture does not, and
+// the action runners score a different contract, so neither can be held to one.
+const FIDELITY_REPORTING_COMMANDS = new Set([SCREEN_COMMAND, SPLIT_SCREEN_COMMAND]);
+
+export function commandReportsFidelity(command) {
+  return FIDELITY_REPORTING_COMMANDS.has(command);
+}
+
 // Classified rather than matched against a list of spellings. A set of exact
 // strings misses every other way to write the same address: `[::ffff:127.0.0.1]`
 // walked past the first version of this guard and the campaign ran on against a
