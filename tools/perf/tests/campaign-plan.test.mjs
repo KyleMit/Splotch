@@ -16,7 +16,9 @@ import {
   probeHostProblem,
   resolvedProbeHostProblem,
 } from '../lib/campaign-plan.mjs';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 import { join } from 'node:path';
 import { entryModulePath, servedBuildFingerprintProblem } from '../lib/profile-preview.mjs';
 import { ROOT as ROOT_DIR } from '../../lib/proc.mjs';
@@ -776,16 +778,36 @@ describe('isProbePlan', () => {
 });
 
 describe('servedBuildFingerprintProblem', () => {
-  const BUILD = join(ROOT_DIR, 'web', 'build');
-  const read = (url) => {
-    const path = new URL(url, 'http://x/').pathname;
-    return readFileSync(path === '/' ? join(BUILD, 'index.html') : join(BUILD, path), 'utf8');
+  // A synthetic build rather than the real web/build: CI's unit job runs no build,
+  // and a test that reads the real one passes only where a build happens to exist.
+  const fakeBuild = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-build-'));
+    mkdirSync(join(dir, '_app', 'immutable', 'entry'), { recursive: true });
+    writeFileSync(
+      join(dir, 'index.html'),
+      '<script>import("/_app/immutable/entry/start.Aaa.js")</script>'
+    );
+    writeFileSync(
+      join(dir, '_app', 'immutable', 'entry', 'start.Aaa.js'),
+      'import "/_app/immutable/entry/app.Bbb.js";'
+    );
+    writeFileSync(join(dir, '_app', 'immutable', 'entry', 'app.Bbb.js'), 'export const app = 1;');
+    for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
+    return dir;
   };
-  const entryOf = (html) => /\/_app\/immutable\/entry\/start\.[^"']+\.js/.exec(html)[0];
+  const serveFrom =
+    (dir, mutate = (path, body) => body) =>
+    async (url) => {
+      const path = new URL(url, 'http://x/').pathname;
+      const file = path === '/' ? join(dir, 'index.html') : join(dir, path);
+      return mutate(path, readFileSync(file, 'utf8'));
+    };
 
-  it('accepts this checkout’s own build served byte for byte', async () => {
+  it('accepts a build served byte for byte', async () => {
+    const dir = fakeBuild();
+
     expect(
-      await servedBuildFingerprintProblem('http://x/', { fetchText: async (url) => read(url) })
+      await servedBuildFingerprintProblem('http://x/', { fetchText: serveFrom(dir), buildDir: dir })
     ).toBeNull();
   });
 
@@ -793,33 +815,39 @@ describe('servedBuildFingerprintProblem', () => {
   // entry is runtime plumbing that can be byte-identical while application chunks
   // differ, so a foreign URL plus this checkout's entry path passed unchallenged.
   it('rejects a build whose entry matches but whose application chunk differs', async () => {
-    const html = read('/');
-    const app = /\/_app\/immutable\/entry\/app\.[^"']+\.js/.exec(html + read(entryOf(html)))[0];
-    const fetchText = async (url) =>
-      String(url).includes(app) ? `${read(url)}\n/* different build */` : read(url);
+    const dir = fakeBuild();
+    const fetchText = serveFrom(dir, (path, body) =>
+      path.endsWith('app.Bbb.js') ? `${body}\n/* different build */` : body
+    );
 
-    expect(await servedBuildFingerprintProblem('http://x/', { fetchText })).toMatch(
+    expect(await servedBuildFingerprintProblem('http://x/', { fetchText, buildDir: dir })).toMatch(
       /different content/
     );
   });
 
   it('rejects a chunk this checkout does not have at all', async () => {
+    const dir = fakeBuild();
     const fetchText = async (url) =>
-      String(url) === 'http://x/'
+      new URL(url, 'http://x/').pathname === '/'
         ? '<script>import("/_app/immutable/entry/start.NotOurs.js")</script>'
         : '';
 
-    expect(await servedBuildFingerprintProblem('http://x/', { fetchText })).toMatch(
+    expect(await servedBuildFingerprintProblem('http://x/', { fetchText, buildDir: dir })).toMatch(
       /does not contain/
     );
   });
 
   it('skips the comparison only when a foreign build is explicitly allowed', async () => {
+    const dir = fakeBuild();
     const fetchText = async () =>
       '<script>import("/_app/immutable/entry/start.NotOurs.js")</script>';
 
     expect(
-      await servedBuildFingerprintProblem('http://x/', { fetchText, allowForeignBuild: true })
+      await servedBuildFingerprintProblem('http://x/', {
+        fetchText,
+        buildDir: dir,
+        allowForeignBuild: true,
+      })
     ).toBeNull();
   });
 });

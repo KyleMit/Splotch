@@ -72,8 +72,8 @@ function referencedChunks(html, entryModule) {
   return [...new Set([...`${html}\n${entryModule}`.matchAll(IMMUTABLE_REF)].map(([ref]) => ref))];
 }
 
-function localDigest(chunk) {
-  const path = join(ROOT, 'web', 'build', chunk);
+function localDigest(chunk, buildDir) {
+  const path = join(buildDir, chunk);
   if (!existsSync(path)) return null;
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
@@ -82,10 +82,17 @@ function localDigest(chunk) {
 // Injected fetcher so the regression needs no network.
 export async function servedBuildFingerprintProblem(
   base,
-  { allowForeignBuild = false, fetchText = defaultFetchText } = {}
+  {
+    allowForeignBuild = false,
+    fetchText = defaultFetchText,
+    // Injected so a unit test can stand up a fake build rather than depending on
+    // one existing — CI's unit job does not run a build, and a test that reads
+    // web/build passes only on a machine that happens to have one.
+    buildDir = join(ROOT, 'web', 'build'),
+  } = {}
 ) {
   if (allowForeignBuild) return null;
-  if (buildDirHoldsNativeExport()) {
+  if (buildDirHoldsNativeExport(buildDir)) {
     return (
       'web/build holds the native static export, not the web build — a native build ' +
       '(build:cap, ios:run:device, android:run) overwrote it, possibly while this server ' +
@@ -103,7 +110,7 @@ export async function servedBuildFingerprintProblem(
   }
 
   for (const chunk of chunks) {
-    const expected = localDigest(chunk);
+    const expected = localDigest(chunk, buildDir);
     if (!expected) {
       return (
         `${base} is serving ${chunk}, which this checkout's web/build does not contain — ` +
