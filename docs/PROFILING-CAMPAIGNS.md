@@ -397,19 +397,54 @@ merged at 22:20. Measured on the same rig the following night:
 | `ae674d71` — what the matrix held |  5 | 48, 42, 47, **77**, 45     |    77 |
 | `main`                            |  7 | 47, 45, 47, 47, 45, 47, 47 |    47 |
 
+The `main` arm was **eight** captures, not seven. One passed input fidelity and came back with an
+estimated beat of 8 ms where the other seven sat at 17 ms, and it is excluded because those two
+regimes are not comparable — the same drawing charged against an 8.3 ms beat instead of 16.7 ms
+reads as a catastrophe. Its paint max was 42 ms, so excluding it does not flatter the result. State
+an exclusion like this rather than presenting only the survivors, or an honest regime check is
+indistinguishable from best-of selection.
+
 The old commit reproduces the straddle exactly. `main` shows no excursion in seven consecutive
 samples. The gate had already been fixed by the raster-queue extraction, and five candidate
 implementations had been written to attack a cost that no longer existed.
 
+### How to run the A/B without invalidating it
+
+Checking the capture commit out in the active worktree gets you that commit's **capture driver and
+scorer** as well as its product, and rebuilding overwrites the shared `web/build` underneath any
+preview a running rig is serving. Either makes the comparison meaningless, and the second disrupts
+whatever else is capturing.
+
+So: build the historical product in an **isolated worktree on its own port**, drive both arms with
+the **current** harness, and re-score both with the **current** scoring modules. Only the product
+may differ between them.
+
+```sh
+git worktree add /tmp/ab-<commit> <commit>
+cd /tmp/ab-<commit> && npm run perf:build
+npm run perf:serve -- --port=<free port> --strict-port &
+# drive from THIS checkout, pointing at that port
+npm run perf:ios:xcuitest:screen --ignore-scripts -- --url=http://<lan>:<free port>/ --no-serve …
+npm run perf:rescore -- --corpus=<both arms> --target=<the cell's target>
+```
+
+The historical arm is deliberately **not** this checkout's build, so it needs
+`--allow-foreign-build`; that flag exists for exactly this case. The invariant being protected is
+the *intended, independently verified* product commit — not current-worktree identity.
+
 The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
 `npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell
-currently claiming to be a measurement was taken before the engine changed — without a device.
+currently claiming to be a measurement was taken from source that has since changed — without a
+device, and `gen:performance-matrix` now runs it for you.
 
 ## Before believing a result
 
 1. Fidelity verdict passed, and the input cadence is in band.
-2. The served build's manifest resolves, and the build is **this checkout's web build** — not
-   another worktree's, and not the native static export `build:cap` leaves in the same directory.
+2. The served build is the one you intended, verified rather than assumed. A resolving manifest
+   proves only that a server is self-consistent; it says nothing about *whose* build it is, and
+   `build:cap` leaves a native static export in the same `web/build` a web build uses. Both are
+   checked on every capture, including the `--url` path — but a deliberately historical build is not
+   this checkout's, so identity there is asserted by you with `--allow-foreign-build`.
 3. The committed brush matches the requested one.
 4. At least three samples per cell — the within-config spread on a physical device is routinely
    comparable to the effect being measured.
