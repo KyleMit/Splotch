@@ -97,22 +97,50 @@ function stepScript(lines, stepName) {
   return script.join('\n');
 }
 
+// The stub resolves --body-file the way gh does and captures the bytes from
+// that exact path, so the body assertions describe what gh was handed rather
+// than whatever the step happened to leave in RUNNER_TEMP. Reading the
+// directory instead lets a step that names a missing or wrong file still
+// satisfy every assertion, while real gh would exit non-zero and the
+// unattended gate would file nothing.
+const GH_STUB = [
+  `printf '%s\\n' "$*" >>"$GH_CALL_LOG"`,
+  'if [[ "$1" == issue && "$2" == list ]]; then',
+  '  printf %s "$GH_EXISTING_ISSUE"',
+  '  exit 0',
+  'fi',
+  'body_file=""',
+  'awaiting=0',
+  'for arg in "$@"; do',
+  '  if [[ $awaiting == 1 ]]; then body_file="$arg"; awaiting=0; continue; fi',
+  '  case "$arg" in',
+  '    --body-file) awaiting=1 ;;',
+  '    --body-file=*) body_file="${arg#--body-file=}" ;;',
+  '  esac',
+  'done',
+  'if [[ $awaiting == 1 || -z "$body_file" ]]; then',
+  '  echo "gh: --body-file needs a value" >&2',
+  '  exit 1',
+  'fi',
+  'if [[ ! -r "$body_file" ]]; then',
+  '  echo "gh: cannot read $body_file" >&2',
+  '  exit 1',
+  'fi',
+  'cat "$body_file" >"$GH_BODY_CAPTURE"',
+].join('\n');
+
 function runFilingStep(script, stepEnv, existingIssue) {
   const root = mkdtempSync(join(tmpdir(), 'splotch-gate-filing-'));
   tempRoots.push(root);
   const stubBin = join(root, 'bin');
   const runnerTemp = join(root, 'runner-temp');
   const ghCallLog = join(root, 'gh-calls.log');
+  const ghBodyCapture = join(root, 'gh-body-capture.md');
   mkdirSync(stubBin);
   mkdirSync(runnerTemp);
   writeFileSync(ghCallLog, '');
-  writeExecutable(
-    join(stubBin, 'gh'),
-    [
-      `printf '%s\\n' "$*" >>"$GH_CALL_LOG"`,
-      'if [[ "$1" == issue && "$2" == list ]]; then printf %s "$GH_EXISTING_ISSUE"; fi',
-    ].join('\n')
-  );
+  writeFileSync(ghBodyCapture, '');
+  writeExecutable(join(stubBin, 'gh'), GH_STUB);
 
   const result = spawnSync(
     '/bin/bash',
@@ -121,6 +149,7 @@ function runFilingStep(script, stepEnv, existingIssue) {
       encoding: 'utf8',
       env: {
         ...stepEnv,
+        GH_BODY_CAPTURE: ghBodyCapture,
         GH_CALL_LOG: ghCallLog,
         GH_EXISTING_ISSUE: existingIssue,
         PATH: `${stubBin}:/usr/bin:/bin`,
@@ -129,9 +158,8 @@ function runFilingStep(script, stepEnv, existingIssue) {
     }
   );
 
-  const written = readdirSync(runnerTemp);
   return {
-    body: written.length === 1 ? readFileSync(join(runnerTemp, written[0]), 'utf8') : '',
+    body: readFileSync(ghBodyCapture, 'utf8'),
     ghCalls: readFileSync(ghCallLog, 'utf8'),
     result,
   };
@@ -476,6 +504,17 @@ describe('workflow hygiene', () => {
       expect(ghCalls).not.toContain('issue create');
       for (const excerpt of step.body) expect(body).toContain(excerpt);
     });
+  });
+
+  // Locks the harness itself. If the stub stops resolving --body-file, every
+  // case above keeps passing against a step that names a file gh cannot read.
+  it.each([
+    ['a path it cannot read', 'gh issue create --title T --body-file /nonexistent/gate-body.md'],
+    ['no value at all', 'gh issue create --title T --body-file'],
+  ])('fails a filing step that hands gh %s', (_label, script) => {
+    const { result } = runFilingStep(script, {}, '');
+
+    expect(result.status).not.toBe(0);
   });
 
   for (const { name, lines } of workflows) {
