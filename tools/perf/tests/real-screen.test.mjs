@@ -49,7 +49,9 @@ import {
   PAINT_MAX_GATE_MS,
   PAINT_P95_GATE_MS,
   PAINT_P99_GATE_MS,
+  LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
+  lostFrameTimeShareGateFor,
   drawingGateRows,
   scoreDrawingPhase,
   scoreDrawingRun,
@@ -416,6 +418,42 @@ describe('drawing acceptance gates', () => {
     expect(scoreDrawingPhase(phase(change)).passed).toBe(false);
   });
 
+  it('scores a cell with no exception at the single gate', () => {
+    expect(lostFrameTimeShareGateFor('android-device-web', 'crayon')).toBe(
+      LOST_FRAME_TIME_SHARE_GATE
+    );
+    expect(lostFrameTimeShareGateFor('ipad-device-web', 'pen')).toBe(LOST_FRAME_TIME_SHARE_GATE);
+  });
+
+  it('holds an excepted cell to its own budget without moving the others', () => {
+    const gateShare = lostFrameTimeShareGateFor('ipad-device-web', 'crayon');
+    expect(gateShare).toBeGreaterThan(LOST_FRAME_TIME_SHARE_GATE);
+
+    const overGate = phase({
+      starvation: { inContact: { lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE + 0.002 } },
+    });
+    expect(scoreDrawingPhase(overGate).passed).toBe(false);
+    expect(scoreDrawingPhase(overGate, gateShare).passed).toBe(true);
+  });
+
+  it('still fails an excepted cell that regresses past its own budget', () => {
+    const gateShare = lostFrameTimeShareGateFor('ipad-device-web', 'crayon');
+    const overException = phase({
+      starvation: { inContact: { lostFrameTimeShare: gateShare + 0.0001 } },
+    });
+
+    expect(scoreDrawingPhase(overException, gateShare).passed).toBe(false);
+  });
+
+  it('names every exception against a target and brush the matrix actually has', () => {
+    for (const cell of Object.keys(LOST_FRAME_TIME_SHARE_EXCEPTIONS)) {
+      const [targetId, brush] = cell.split(':');
+      expect(cell.split(':')).toHaveLength(2);
+      expect(targetId).toBeTruthy();
+      expect(['pen', 'crayon', 'magic', 'eraser']).toContain(brush);
+    }
+  });
+
   it('requires every captured phase to pass', () => {
     expect(
       scoreDrawingRun([
@@ -440,6 +478,32 @@ describe('observedFrameIntervalMs', () => {
     const frames = [...beat(180), ...beat(20, { from: 5000, interval: 300 })];
     expect(observedFrameIntervalMs(frames)).toBeCloseTo(16.7, 1);
   });
+
+  // The physical-iPad case: Safari holds 60 Hz for web content and emits an
+  // occasional short frame, which drags a low percentile below the rate the
+  // display actually held.
+  it('is unmoved by a minority of short frames on an otherwise steady beat', () => {
+    const frames = [...beat(190, { interval: 16.7 }), ...beat(10, { from: 9000, interval: 10 })];
+    expect(observedFrameIntervalMs(frames)).toBeCloseTo(16.7, 1);
+  });
+
+  // The physical-Android case: Chrome raises the rate under touch and falls back
+  // between strokes, so a capture is a mix of two refresh rates.
+  it('reports the rate a variable-refresh capture held for most of its frames', () => {
+    const frames = [...beat(140, { interval: 8.3 }), ...beat(60, { from: 5000, interval: 16.6 })];
+    expect(observedFrameIntervalMs(frames)).toBeCloseTo(8.3, 1);
+  });
+
+  it('falls back to the tenth percentile when no interval dominates', () => {
+    const frames = [
+      ...beat(40, { interval: 10 }),
+      ...beat(40, { from: 2000, interval: 20 }),
+      ...beat(40, { from: 4000, interval: 30 }),
+      ...beat(40, { from: 7000, interval: 40 }),
+      ...beat(40, { from: 11000, interval: 50 }),
+    ];
+    expect(observedFrameIntervalMs(frames)).toBeCloseTo(10, 0);
+  });
 });
 
 describe('frameStats', () => {
@@ -456,6 +520,38 @@ describe('frameStats', () => {
   it('charges only the beat-over-budget portion to lost time', () => {
     // One 116.7 ms frame against a 16.7 ms beat costs 100 ms of waiting.
     expect(frameStats([16.7, 116.7], 16.7).lostMs).toBeCloseTo(100, 0);
+  });
+
+  it('credits a late frame that the next frame gives back', () => {
+    // The ProMotion jitter pair: a 29 ms callback followed by a 4 ms one sums to
+    // two 16.7 ms beats, so the display never skipped a slot. 12.3 ms over budget
+    // less 12.7 ms repaid floors to zero.
+    expect(frameStats([16.7, 29, 4, 16.7], 16.7).lostMs).toBe(0);
+  });
+
+  it('still charges a missed slot that is never repaid', () => {
+    // Same 29 ms overshoot, but the next frame arrives on the beat rather than
+    // early, so nothing was given back and the excess stands.
+    expect(frameStats([16.7, 29, 16.7, 16.7], 16.7).lostMs).toBeCloseTo(12.3, 1);
+  });
+
+  it('does not credit across a stroke boundary', () => {
+    // The population passed to frameStats is FILTERED to in-contact intervals, so
+    // `deltas[i + 1]` is the next in-contact interval, which can belong to a later
+    // stroke. Crediting a 29 ms overshoot at the end of one stroke with a 4 ms
+    // interval at the start of the next hides real loss: nothing gave that time
+    // back, and the whole-window population charges it.
+    const contactDeltas = [29, 4];
+    const nextDeltas = [17, 16.7];
+
+    expect(frameStats(contactDeltas, 16.7, nextDeltas).lostMs).toBeCloseTo(12.33, 1);
+  });
+
+  it('credits only up to the charge, never below zero across a pair', () => {
+    // A 26 ms frame followed by a 1 ms one: 9.3 ms charged against 15.7 ms
+    // repaid must not turn into a negative charge that offsets real loss
+    // elsewhere in the capture.
+    expect(frameStats([26, 1, 116.7], 16.7).lostMs).toBeCloseTo(100, 0);
   });
 
   it('does not let an end-to-end regression raise its own frame budget', () => {

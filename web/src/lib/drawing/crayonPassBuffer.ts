@@ -117,7 +117,10 @@ export function crayonBufferIsDirty(target: CanvasRenderingContext2D) {
 // the transform the op was painted with. Conservative: quadratic/cubic control
 // points bound the curve's hull, the pad covers the stroke's half-width plus AA
 // bleed, and a transformed rect unions its mapped corners.
-function unionCrayonBounds(
+// The op's user-space box mapped into device pixels and clamped to the buffer,
+// or null when it falls outside. Shared by the bounds union and the mirror blit
+// so the two can never disagree about which pixels an op touched.
+function deviceRectFor(
   buf: CrayonPassBuffer,
   matrix: DOMMatrix | null,
   { x0, y0, x1, y1, pad }: { x0: number; y0: number; x1: number; y1: number; pad: number }
@@ -142,14 +145,22 @@ function unionCrayonBounds(
   y0 = Math.max(0, Math.floor(y0));
   x1 = Math.min(w, Math.ceil(x1));
   y1 = Math.min(h, Math.ceil(y1));
-  if (x1 <= x0 || y1 <= y0) return;
+  if (x1 <= x0 || y1 <= y0) return null;
+  return { x0, y0, x1, y1 };
+}
+
+function unionCrayonBounds(
+  buf: CrayonPassBuffer,
+  rect: { x0: number; y0: number; x1: number; y1: number } | null
+) {
+  if (!rect) return;
   const b = buf.bounds;
-  if (!b) buf.bounds = { x0, y0, x1, y1 };
+  if (!b) buf.bounds = { ...rect };
   else {
-    b.x0 = Math.min(b.x0, x0);
-    b.y0 = Math.min(b.y0, y0);
-    b.x1 = Math.max(b.x1, x1);
-    b.y1 = Math.max(b.y1, y1);
+    b.x0 = Math.min(b.x0, rect.x0);
+    b.y0 = Math.min(b.y0, rect.y0);
+    b.x1 = Math.max(b.x1, rect.x1);
+    b.y1 = Math.max(b.y1, rect.y1);
   }
 }
 
@@ -233,8 +244,31 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   buf.ctx.setTransform(matrix);
   buf.mirror?.setTransform(matrix);
   paintCrayon(buf.ctx, op);
-  if (buf.mirror) paintCrayon(buf.mirror, op);
   buf.dirty = true;
-  const bounds = opPaddedUserBounds(op);
-  unionCrayonBounds(buf, matrix, bounds);
+  const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
+  if (buf.mirror && rect) {
+    // The mirror's pixels are the buffer's pixels — same op, same seed, same
+    // patterns — so re-running the pattern fill to produce them is pure
+    // duplicate work. Clearing and copying the op's own rect gives byte-identical
+    // output for one blit instead of `passes` pattern-filled strokes, which on
+    // the default two-pass crayon halves the fills every op does.
+    const width = rect.x1 - rect.x0;
+    const height = rect.y1 - rect.y0;
+    buf.mirror.save();
+    buf.mirror.setTransform(1, 0, 0, 1, 0, 0);
+    buf.mirror.clearRect(rect.x0, rect.y0, width, height);
+    buf.mirror.drawImage(
+      buf.ctx.canvas,
+      rect.x0,
+      rect.y0,
+      width,
+      height,
+      rect.x0,
+      rect.y0,
+      width,
+      height
+    );
+    buf.mirror.restore();
+  }
+  unionCrayonBounds(buf, rect);
 }

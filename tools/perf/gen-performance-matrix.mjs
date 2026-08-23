@@ -11,7 +11,9 @@ import {
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import {
+  LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
+  lostFrameTimeShareGateFor,
   PAINT_MAX_GATE_MS,
   PAINT_P95_GATE_MS,
   PAINT_P99_GATE_MS,
@@ -135,11 +137,11 @@ function validateCaptureMode(profile, mode, source) {
   }
 }
 
-function normalizeDrawingRun(source, productCommit, sourceDirectory, mode) {
+function normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare) {
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
   const phases = profile.report ? summarizeRun(profile.report).phases : profile.summaries?.phases;
-  const scored = scoreDrawingRun(phases ?? []);
+  const scored = scoreDrawingRun(phases ?? [], gateShare);
   return {
     source,
     productCommit,
@@ -180,13 +182,14 @@ function aggregateDrawingRuns(runs) {
   };
 }
 
-function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode) {
+function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, targetId) {
   return Object.fromEntries(
     BRUSHES.map((brush) => {
+      const gateShare = lostFrameTimeShareGateFor(targetId, brush);
       const runs = (sources[brush] ?? []).map((source) =>
-        normalizeDrawingRun(source, productCommit, sourceDirectory, mode)
+        normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare)
       );
-      return [brush, { aggregate: aggregateDrawingRuns(runs), runs }];
+      return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
   );
 }
@@ -312,7 +315,8 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
         normalizedMode.drawing,
         normalizedMode.drawingProductCommit,
         sourceDirectory,
-        normalizedMode
+        normalizedMode,
+        target.id
       )
     ),
     undo: resolveSection(normalizedMode.undoSource, 'undo', () =>
@@ -456,6 +460,7 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
         paintP99Ms: PAINT_P99_GATE_MS,
         paintMaxMs: PAINT_MAX_GATE_MS,
         lostFrameTimeShare: LOST_FRAME_TIME_SHARE_GATE,
+        lostFrameTimeShareExceptions: LOST_FRAME_TIME_SHARE_EXCEPTIONS,
       },
       undo: {
         engineP95Ms: UNDO_ENGINE_P95_GATE_MS,
@@ -765,6 +770,18 @@ ${markdownTable(['Priority', 'Action', 'Rationale', 'Applicability', 'Status'], 
 `;
 }
 
+// Every cell held to something other than the single lost-frame gate, so a
+// reader never has to infer an exemption from a passing number.
+function renderLostFrameExceptionsMarkdown(exceptions) {
+  const entries = Object.entries(exceptions);
+  if (entries.length === 0) return '';
+  const lines = entries.map(([cell, { share, reason }]) => {
+    const [targetId, brush] = cell.split(':');
+    return `- **${BRUSH_LABELS[brush] ?? brush} on \`${targetId}\`** — ${fmtPercent(share)}. ${reason}`;
+  });
+  return `Cells held to a different lost-frame budget, and why (ADR-0137):\n\n${lines.join('\n')}\n`;
+}
+
 function renderMarkdown(matrix) {
   const rows = modeRows(matrix);
   const drawingRows = rows.map((target) => {
@@ -859,6 +876,7 @@ ${matrix.gates.undo.nextFrameMaxMs} ms. A discrete action passes at first-frame 
 ${matrix.gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${matrix.gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤
 ${matrix.gates.actions.postActionFrameMaxMs} ms.
 
+${renderLostFrameExceptionsMarkdown(matrix.gates.drawing.lostFrameTimeShareExceptions ?? {})}
 ## Capture limitations
 
 ${limitations || '- None recorded.'}

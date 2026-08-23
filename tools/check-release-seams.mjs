@@ -9,6 +9,10 @@ const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/boot/devHarnessSeam.ts',
   'web/src/lib/drawing/screenshot.ts',
   ENGINE_SOURCE_PATH,
+  // Carries `engine.draw`, which moved out of the engine when the per-frame
+  // raster queue was extracted. A measure in a file missing from this list is
+  // not scanned, so the derived token list silently loses it.
+  'web/src/lib/drawing/strokeRasterQueue.ts',
   'web/src/lib/drawing/undoHistory.ts',
   'web/src/lib/drawing/emptyScan.ts',
   'web/src/lib/storeCapture.ts',
