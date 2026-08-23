@@ -58,15 +58,26 @@ export async function assertServedManifestResolves(base) {
   return entry;
 }
 
-async function assertServedBuildIsFresh(base) {
+// `allowForeignBuild` exists for the one documented case that cannot satisfy
+// identity: `--url=` pointed at an externally served HISTORICAL build, which by
+// definition is not in this checkout. Everything else — above all the shared
+// preview every campaign cell points `--url` at — must prove identity, or the
+// guard covers only the path nobody uses.
+// Pure so the decision is testable: the CLI wrapper below exits the process, which
+// a test cannot catch.
+export function servedBuildIdentityProblem(base, entry, { allowForeignBuild = false } = {}) {
+  if (allowForeignBuild || localBuildHasEntry(entry)) return null;
+  return (
+    `${base} is serving ${entry}, which this checkout's web/build does not contain — ` +
+    'the port is held by another build. A capture against it would measure a different ' +
+    'product. Choose a free port rather than stopping a listener another session owns.'
+  );
+}
+
+export async function assertServedBuildIsFresh(base, { allowForeignBuild = false } = {}) {
   const entry = await assertServedManifestResolves(base);
-  if (!localBuildHasEntry(entry)) {
-    fail(
-      `${base} is serving ${entry}, which this checkout's web/build does not contain — ` +
-        'the port is held by another build. A capture against it would measure a different ' +
-        'product. Choose a free port rather than stopping a listener another session owns.'
-    );
-  }
+  const problem = servedBuildIdentityProblem(base, entry, { allowForeignBuild });
+  if (problem) fail(problem);
   return entry;
 }
 

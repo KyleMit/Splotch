@@ -11,7 +11,7 @@ import {
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilingUrl, runActionSweep, selectedActions } from '../ios/capture-xcuitest-actions.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
-import { assertServedManifestResolves, buildAndPreview } from '../lib/profile-preview.mjs';
+import { assertServedBuildIsFresh, buildAndPreview } from '../lib/profile-preview.mjs';
 import { ROOT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
@@ -82,6 +82,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         'label',
         'output',
         'report-only',
+        'allow-foreign-build',
         'theme',
       ],
     },
@@ -108,10 +109,11 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     : await buildAndPreview(port, { build });
   const { base, stop } = preview;
   // A `--url` capture skips buildAndPreview, which is where the build is normally
-  // proved — and that is the path every campaign cell takes.
+  // proved — and that is the path every campaign cell takes, so without this the
+  // identity assertion covered only the path nobody uses.
   if (externalUrl) {
     await waitForUrl(base, READY_TIMEOUT_MS);
-    await assertServedManifestResolves(base);
+    await assertServedBuildIsFresh(base, { allowForeignBuild: has('allow-foreign-build') });
   }
   let browser;
 

@@ -15,7 +15,7 @@ import {
   planCampaign,
   probeHostProblem,
 } from '../lib/campaign-plan.mjs';
-import { entryModulePath } from '../lib/profile-preview.mjs';
+import { entryModulePath, servedBuildIdentityProblem } from '../lib/profile-preview.mjs';
 import { campaignProgress } from '../campaign-status.mjs';
 import { isProbePlan } from '../run-campaign.mjs';
 import {
@@ -622,5 +622,27 @@ describe('isProbePlan', () => {
     expect(isProbePlan({ contactMs: 1, finish: false })).toBe(false);
     expect(isProbePlan({ label: 'run', contactMs: 1 })).toBe(false);
     expect(isProbePlan({ label: 'run', finish: false })).toBe(false);
+  });
+});
+
+describe('servedBuildIdentityProblem', () => {
+  const foreign = '/_app/immutable/entry/start.NotOurs.js';
+
+  // The regression this covers: `--url` skips buildAndPreview, and `--url` is the
+  // path every campaign cell takes — so the identity assertion covered only the
+  // path nobody uses. A coherent server serving ANOTHER checkout's build passes
+  // every other check, which is exactly what port 4173 was doing.
+  it('rejects a coherent server whose build is not this checkout’s', () => {
+    expect(servedBuildIdentityProblem('http://127.0.0.1:4173/', foreign)).toMatch(
+      /does not contain/
+    );
+  });
+
+  // `--url` also exists for an externally served historical build, which by
+  // definition is not in this checkout, so identity has an explicit opt-out.
+  it('allows a foreign build only when asked', () => {
+    expect(
+      servedBuildIdentityProblem('http://127.0.0.1:4173/', foreign, { allowForeignBuild: true })
+    ).toBeNull();
   });
 });
