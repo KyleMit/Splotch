@@ -12,6 +12,11 @@ export const FAILED = 'missing-or-invalid-json';
 // Distinct from FAILED so a resumed run recording an exhausted cell does not itself
 // count as another failed attempt the next time the ledger is read.
 export const EXHAUSTED = 'attempts-exhausted';
+// A capture that parsed and cannot be scored is not a missing artifact, and saying
+// so matters when the ledger is read later: a run of FAILED rows means the attempts
+// recorded nothing and the ledger is safe to clear, which is the opposite of true
+// here. It still spends an attempt.
+export const UNSCOREABLE = 'failed-input-fidelity';
 
 export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
   return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
@@ -31,7 +36,10 @@ export function parseLedger(text) {
 }
 
 export function attemptsFor(rows, cellId) {
-  return rows.filter((row) => row.cell === cellId && row.status?.startsWith(FAILED)).length;
+  return rows.filter(
+    (row) =>
+      row.cell === cellId && (row.status?.startsWith(FAILED) || row.status?.startsWith(UNSCOREABLE))
+  ).length;
 }
 
 export function isComplete(rows, cellId) {

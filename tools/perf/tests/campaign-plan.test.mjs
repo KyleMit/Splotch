@@ -5,14 +5,18 @@ import {
   CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   UNDO_COUNT,
+  SPLIT_SCREEN_COMMAND,
   artifactMatchesRuntime,
+  artifactPassedFidelity,
   artifactPath,
   campaignTarget,
   planCampaign,
+  probeHostProblem,
 } from '../lib/campaign-plan.mjs';
 import {
   ALREADY_VALID,
   FAILED,
+  UNSCOREABLE,
   attemptsFor,
   isComplete,
   nextAction,
@@ -236,5 +240,116 @@ describe('campaign ledger', () => {
       complete: [cells[0].id],
       outstanding: [cells[1].id],
     });
+  });
+});
+
+const SPLIT_HOST = {
+  deviceId: 'R5CRC3AVCXM',
+  probeHost: 'http://192.168.1.9:4175',
+  cdpPort: '9234',
+  url: 'http://127.0.0.1:4173/',
+};
+
+describe('split transport', () => {
+  const splitCells = (options = {}) =>
+    planCampaign('android-device-web', {
+      outputRoot: 'out',
+      host: SPLIT_HOST,
+      modes: ['landscape-light'],
+      ...options,
+    });
+
+  it('drives the physical Android drawing cells through the split transport', () => {
+    for (const cell of splitCells({ items: ['pen-undo', 'crayon', 'magic', 'eraser'] })) {
+      expect(cell.command).toBe(SPLIT_SCREEN_COMMAND);
+      expect(cell.args).toContain('--platform=android');
+      expect(cell.args).toContain('--device-serial=R5CRC3AVCXM');
+      expect(cell.args).toContain('--host=http://192.168.1.9:4175');
+    }
+  });
+
+  it('leaves Android browser actions on direct CDP, which the split path does not carry', () => {
+    const actions = splitCells({ items: ['actions'] })[0];
+
+    expect(actions.command).toBe('perf:android:browser:actions');
+    expect(actions.args).toContain('--cdp-port=9234');
+  });
+
+  it('never passes the split runner an Appium flag it would ignore', () => {
+    const [cell] = splitCells({ items: ['crayon'] });
+
+    for (const ignored of ['--appium-url', '--capabilities-file', '--device-id', '--url']) {
+      expect(cell.args.some((arg) => arg.startsWith(ignored))).toBe(false);
+    }
+  });
+
+  // A flag the runner silently drops is the shape of every defect this campaign
+  // found, so the omissions are asserted rather than left to the runner's tolerance.
+  it('omits the undo phase and --report-only, which the split runner does not implement', () => {
+    const [pen] = splitCells({ items: ['pen-undo'] });
+
+    expect(pen.args.some((arg) => arg.startsWith('--undo-count'))).toBe(false);
+    expect(pen.args).not.toContain('--report-only');
+  });
+
+  it('keeps the Appium targets on the Appium path', () => {
+    const [cell] = planCampaign('ipad-device-web', {
+      outputRoot: 'out',
+      host: HOST,
+      modes: ['landscape-light'],
+      items: ['crayon'],
+    });
+
+    expect(cell.command).toBe('perf:ios:xcuitest:screen');
+    expect(cell.args).toContain('--report-only');
+  });
+});
+
+describe('probeHostProblem', () => {
+  it('rejects a loopback address the device could never reach', () => {
+    expect(probeHostProblem('http://127.0.0.1:4175')).toMatch(/loopback/);
+    expect(probeHostProblem('http://localhost:4175')).toMatch(/loopback/);
+  });
+
+  it('rejects a missing or unparseable host', () => {
+    expect(probeHostProblem(undefined)).toMatch(/--probe-host=/);
+    expect(probeHostProblem('nonsense')).toMatch(/not a URL/);
+  });
+
+  it('accepts a LAN address', () => {
+    expect(probeHostProblem('http://192.168.1.9:4175')).toBeNull();
+  });
+});
+
+describe('artifactPassedFidelity', () => {
+  // The split runner writes the artifact and THEN fails the gate, so a capture that
+  // must not be scored parses and names the right runtime. Acceptance that reads
+  // only those two banks it.
+  it('rejects a capture that parsed and failed its fidelity verdict', () => {
+    expect(
+      artifactPassedFidelity({ transport: 'split-input-measurement', fidelity: { passed: false } })
+    ).toBe(false);
+  });
+
+  it('accepts a passing verdict and a path that reports none', () => {
+    expect(artifactPassedFidelity({ fidelity: { passed: true } })).toBe(true);
+    expect(artifactPassedFidelity({ transport: 'browser' })).toBe(true);
+  });
+});
+
+describe('unscoreable ledger rows', () => {
+  // "Every row is missing-or-invalid-json and no artifact was produced" is the read
+  // that makes clearing a ledger safe. A fidelity failure must not look like that.
+  it('spends an attempt without claiming the artifact was missing', () => {
+    const rows = parseLedger(
+      [
+        'timestamp\tcell\tstatus\tattempt\tartifact\tlog',
+        `t1\tlandscape-light/crayon\t${UNSCOREABLE}-exit-1\t1\ta\t-`,
+        `t2\tlandscape-light/crayon\t${FAILED}-exit-1\t2\ta\t-`,
+      ].join('\n')
+    );
+
+    expect(attemptsFor(rows, 'landscape-light/crayon')).toBe(2);
+    expect(isComplete(rows, 'landscape-light/crayon')).toBe(false);
   });
 });

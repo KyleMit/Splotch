@@ -23,8 +23,11 @@ import {
   CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   MAX_ATTEMPTS,
+  SPLIT_SCREEN_COMMAND,
   artifactMatchesRuntime,
+  artifactPassedFidelity,
   campaignTarget,
+  probeHostProblem,
   planCampaign,
 } from './lib/campaign-plan.mjs';
 import {
@@ -33,12 +36,14 @@ import {
   EXHAUSTED,
   FAILED,
   LEDGER_HEADER,
+  UNSCOREABLE,
   formatLedgerRow,
   nextAction,
   parseLedger,
 } from './lib/campaign-ledger.mjs';
 
 const SIMULATOR_SETTLE_MS = 5_000;
+const PROBE_HOST_TIMEOUT_MS = 5_000;
 
 function appendLedger(ledgerPath, row) {
   appendFileSync(
@@ -51,16 +56,22 @@ function absolute(path) {
   return isAbsolute(path) ? path : join(ROOT, path);
 }
 
-function artifactValid(path, runtime) {
+// Acceptance is deliberately not the child's exit code, so a valid red gate is kept
+// rather than retried until it turns green. A failed fidelity verdict is not a red
+// gate — it is a capture that cannot be scored at all — and it is reported
+// separately so the ledger says which of the two happened.
+function inspectArtifact(path, runtime) {
   const full = absolute(path);
-  if (!existsSync(full)) return false;
+  if (!existsSync(full)) return { ok: false, status: FAILED };
   let artifact;
   try {
     artifact = JSON.parse(readFileSync(full, 'utf8'));
   } catch {
-    return false;
+    return { ok: false, status: FAILED };
   }
-  return artifactMatchesRuntime(artifact, runtime);
+  if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
+  if (!artifactPassedFidelity(artifact)) return { ok: false, status: UNSCOREABLE };
+  return { ok: true, status: COMPLETE };
 }
 
 function rebootSimulator(udid) {
@@ -69,6 +80,20 @@ function rebootSimulator(udid) {
   // "Booted" in the device list precedes SpringBoard being ready; bootstatus waits
   // for the boot to actually complete, which is what a capture needs.
   spawnSync('xcrun', ['simctl', 'bootstatus', udid, '-b'], { stdio: 'ignore' });
+}
+
+// The device is what has to reach this URL, and only the device can prove that. The
+// host can prove the server is up and answering the probe protocol, which is the
+// half of the failure that is cheap to catch before a queue of cells times out.
+async function probeHostResponds(probeHost) {
+  try {
+    const response = await fetch(new URL('/__probe/plan', probeHost), {
+      signal: AbortSignal.timeout(PROBE_HOST_TIMEOUT_MS),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 function list(value) {
@@ -111,8 +136,25 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       deviceId: flag('device-id'),
       cdpPort: flag('cdp-port'),
       url: flag('url'),
+      probeHost: flag('probe-host'),
+      wdaUrl: flag('wda-url'),
     },
   });
+
+  // Asserted rather than started: the probe host outlives any one target's queue,
+  // and the repo's rule is to reuse a running listener rather than take over its
+  // lifecycle. A dry run is planning only and reaches no device.
+  if (!has('dry-run') && plan.some((cell) => cell.command === SPLIT_SCREEN_COMMAND)) {
+    const problem = probeHostProblem(flag('probe-host'));
+    if (problem) fail(problem);
+    const reachable = await probeHostResponds(flag('probe-host'));
+    if (!reachable) {
+      fail(
+        `the probe host at ${flag('probe-host')} did not answer — start it with ` +
+          "`npm run perf:device:serve` and pass this host's LAN address"
+      );
+    }
+  }
 
   if (has('dry-run')) {
     console.log(`${targetId}: ${plan.length} cells`);
@@ -137,7 +179,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
-      artifactValid: artifactValid(cell.artifact, runtime),
+      artifactValid: inspectArtifact(cell.artifact, runtime).ok,
       maxAttempts,
     });
 
@@ -178,14 +220,19 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         ['run', cell.command, '--ignore-scripts', '--', ...cell.args],
         { cwd: ROOT, stdio: 'inherit' }
       );
-      landed = artifactValid(cell.artifact, runtime);
+      const inspected = inspectArtifact(cell.artifact, runtime);
+      landed = inspected.ok;
       appendLedger(ledgerPath, {
         cell: cell.id,
-        status: `${landed ? COMPLETE : FAILED}-exit-${child.status}`,
+        status: `${inspected.status}-exit-${child.status}`,
         attempt,
         artifact: cell.artifact,
       });
-      console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);
+      if (inspected.status === UNSCOREABLE) {
+        console.log(`RETRY ${cell.id} — the capture failed input fidelity and cannot be scored`);
+      } else {
+        console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);
+      }
     }
 
     if (!landed) console.log(`P1    ${cell.id} — ${maxAttempts} attempts exhausted, continuing`);

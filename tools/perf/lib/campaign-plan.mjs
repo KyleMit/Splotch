@@ -25,6 +25,10 @@ export const UNDO_COUNT = 10;
 export const MAX_ATTEMPTS = 3;
 
 const SCREEN_COMMAND = 'perf:ios:xcuitest:screen';
+// ADR-0135's transport. Drawing only: it has no undo phase and no gate-reporting
+// flag, so a split cell carries a different argument vocabulary rather than the
+// Appium one minus the parts that would be ignored.
+export const SPLIT_SCREEN_COMMAND = 'perf:device:frames';
 const ACTIONS_APPIUM_COMMAND = 'perf:ios:xcuitest:actions';
 const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 
@@ -72,7 +76,11 @@ export const CAMPAIGN_TARGETS = {
   'android-device-web': {
     deviceClass: 'handset',
     label: 'Android device · web',
-    transport: 'appium',
+    // ADR-0135: the Appium browser transport drives this device at 46.8 contact
+    // moves/s against a 100-170 band, so every cell it produces fails fidelity and
+    // cannot be scored. The split transport measures 116.6 on the same hardware.
+    transport: 'split',
+    splitPlatform: 'android',
     runtime: 'web',
     actionsTransport: 'cdp',
     webviewClass: 'android.webkit.WebView',
@@ -90,6 +98,8 @@ export const CAMPAIGN_TARGETS = {
 // `android-chrome-cdp`) write their own.
 export const NATIVE_TRANSPORT = 'native-capacitor-webview';
 
+const LOOPBACK_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '::1', '[::1]', '0.0.0.0']);
+
 // Several debuggable WebViews can satisfy the context search, so a native capture
 // that attached to Chrome — or a web capture that attached to the installed app —
 // produces a well-formed artifact and exits zero. The runbook asks for this to be
@@ -99,6 +109,36 @@ export const NATIVE_TRANSPORT = 'native-capacitor-webview';
 export function artifactMatchesRuntime(artifact, runtime) {
   const isNative = artifact?.transport === NATIVE_TRANSPORT;
   return runtime === 'native' ? isNative : !isNative;
+}
+
+// The split transport writes its artifact BEFORE it fails the fidelity gate, so a
+// capture that must not be scored still parses and still names the right runtime.
+// Acceptance has to read the verdict the artifact carries, or the campaign banks
+// exactly the unscoreable cells that transport exists to stop producing. An
+// artifact from a path that reports no verdict is unchanged by this.
+export function artifactPassedFidelity(artifact) {
+  return artifact?.fidelity?.passed !== false;
+}
+
+// A loopback probe host reaches the capture host's own browser and never the
+// device, and the resulting failure reads as a page that would not load rather than
+// as a wrong address. Rejecting it up front is worth more than the queue of
+// identical timeouts it replaces. Reachability FROM the device cannot be proven
+// here; what can be is that the address could never have been right.
+export function probeHostProblem(probeHost) {
+  if (!probeHost) {
+    return 'pass --probe-host= — the split transport needs the probe host URL as the device sees it';
+  }
+  let parsed;
+  try {
+    parsed = new URL(probeHost);
+  } catch {
+    return `--probe-host=${probeHost} is not a URL`;
+  }
+  if (LOOPBACK_HOSTNAMES.has(parsed.hostname)) {
+    return `--probe-host=${probeHost} is a loopback address, which the device cannot reach — pass this host's LAN address`;
+  }
+  return null;
 }
 
 export function campaignTarget(targetId) {
@@ -143,6 +183,19 @@ export function artifactPath(outputRoot, targetId, mode, item) {
   return `${base}/${brush}-real-screen.json`;
 }
 
+// `--host` is the probe host as the DEVICE sees it, so it is a separate input from
+// the preview URL the Appium path passes: a loopback address reaches the host's own
+// browser and never the device, and fails as a page that will not load.
+function splitTransportArgs(target, host) {
+  const args = [`--platform=${target.splitPlatform}`];
+  if (target.splitPlatform === 'android' && host.deviceId) {
+    args.push(`--device-serial=${host.deviceId}`);
+  }
+  if (target.splitPlatform === 'ios' && host.wdaUrl) args.push(`--wda-url=${host.wdaUrl}`);
+  if (host.probeHost) args.push(`--host=${host.probeHost}`);
+  return args;
+}
+
 function transportArgs(target, host) {
   const args = [];
   if (host.appiumUrl) args.push(`--appium-url=${host.appiumUrl}`);
@@ -155,6 +208,19 @@ function transportArgs(target, host) {
     args.push(`--url=${host.url}`, '--no-serve');
   }
   return args;
+}
+
+// The split runner takes no undo phase and no --report-only. Emitting them anyway
+// would be silently dropped, which is the shape of every defect this campaign
+// found: a flag that looks like it asked for something and did not.
+function splitDrawingArgs(item, mode) {
+  const brush = item === 'pen-undo' ? 'pen' : item;
+  return [
+    `--brush=${brush}`,
+    `--gesture-repeats=${GESTURE_REPEATS}`,
+    `--orientation=${mode.orientation}`,
+    `--theme=${mode.theme}`,
+  ];
 }
 
 function drawingArgs(item, mode) {
@@ -186,28 +252,36 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         ? ACTIONS_CDP_COMMAND
         : isActions
           ? ACTIONS_APPIUM_COMMAND
-          : SCREEN_COMMAND;
+          : target.transport === 'split'
+            ? SPLIT_SCREEN_COMMAND
+            : SCREEN_COMMAND;
 
       // Direct CDP addresses the device itself and never borrows an Appium session.
+      const useSplit = !isActions && target.transport === 'split';
+
       const transport = useCdp
         ? [
             ...(host.deviceId ? [`--device-id=${host.deviceId}`] : []),
             ...(host.cdpPort ? [`--cdp-port=${host.cdpPort}`] : []),
             ...(host.url ? [`--url=${host.url}`, '--no-serve'] : []),
           ]
-        : transportArgs(target, host);
+        : useSplit
+          ? splitTransportArgs(target, host)
+          : transportArgs(target, host);
 
-      const specific = isActions
-        ? [
-            `--orientation=${mode.orientation}`,
-            `--theme=${mode.theme}`,
-            `--repeats=${ACTION_REPEATS}`,
-            // The Appium session exposes no device class for a physical device, so the
-            // gate ledger that is scoped to one cannot infer it. The campaign knows.
-            // Only the Appium runner reads it; the CDP one rejects unknown flags.
-            ...(useCdp ? [] : [`--device-class=${target.deviceClass}`]),
-          ]
-        : drawingArgs(item, mode);
+      const specific = useSplit
+        ? splitDrawingArgs(item, mode)
+        : isActions
+          ? [
+              `--orientation=${mode.orientation}`,
+              `--theme=${mode.theme}`,
+              `--repeats=${ACTION_REPEATS}`,
+              // The Appium session exposes no device class for a physical device, so the
+              // gate ledger that is scoped to one cannot infer it. The campaign knows.
+              // Only the Appium runner reads it; the CDP one rejects unknown flags.
+              ...(useCdp ? [] : [`--device-class=${target.deviceClass}`]),
+            ]
+          : drawingArgs(item, mode);
 
       plan.push({
         id: `${mode.id}/${item}`,
@@ -216,13 +290,13 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         item,
         artifact,
         command,
-        // --report-only keeps a valid red gate instead of stopping the queue on it.
         args: [
           ...transport,
           ...specific,
           `--label=${runLabel}`,
           `--output=${artifact}`,
-          '--report-only',
+          // --report-only keeps a valid red gate instead of stopping the queue on it.
+          ...(useSplit ? [] : ['--report-only']),
         ],
       });
     }

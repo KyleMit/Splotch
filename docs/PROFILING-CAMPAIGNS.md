@@ -226,18 +226,27 @@ Three things about `perf:campaign` that each cost a launch:
   and wrong after a misconfigured launch. Read `ledger.tsv` before clearing it: if every row is
   `missing-or-invalid-json-exit-1` and no artifact was produced, the attempts recorded nothing and
   deleting the ledger costs nothing.
-* **Its Android drawing transport is the one ADR-0135 measured at 46.8 moves/s**, below the 100–170
-  fidelity band. Cells captured that way must not be scored. Promoting the split input/measurement
-  transport into `tools/` is the fix; until then an Android recapture through the campaign produces
-  artifacts that parse — so the campaign accepts them — and still fail the fidelity verdict.
+* **`android-device-web` drawing goes through the split input/measurement transport**, which
+  requires `--probe-host=` — this host's LAN address, as the *device* sees it. A loopback address
+  reaches the capture host's own browser and never the phone; the campaign rejects one up front, and
+  asserts the probe host answers before the queue starts, because getting it wrong otherwise reads
+  as a page that would not load. Start the host with `npm run perf:device:serve` first.
 
-  Re-probed on 2026-08-22 and it reproduces exactly: **46.8 moves/s, 0.44 moves per frame**, with
-  `pressure` and `contactGeometry` both zero, failing on `cadence` and `contactGeometry`. Learn what
-  that costs before dismissing it as a harness detail — the capture then scores **11.5% lost frame
-  time**, and the published `android-device-web` rows read 10–12%. Those rows are not a measurement
-  of the product at all. At 0.44 moves per frame the app is barely being driven, and
-  `lostFrameTimeShare` prices the gaps between sparse input as lost frames. A red cell produced this
-  way looks exactly like a catastrophic regression and means nothing.
+  The transport it replaced is the one ADR-0135 measured at **46.8 moves/s**, below the 100–170
+  fidelity band. Re-probed on 2026-08-22 and it reproduces exactly: 46.8 moves/s, 0.44 moves per
+  frame, with `pressure` and `contactGeometry` both zero, failing on `cadence` and
+  `contactGeometry`. Learn what that costs before dismissing it as a harness detail — the capture
+  then scores **11.5% lost frame time**, and the published `android-device-web` rows read 10–12%.
+  Those rows are not a measurement of the product at all. At 0.44 moves per frame the app is barely
+  being driven, and `lostFrameTimeShare` prices the gaps between sparse input as lost frames. A red
+  cell produced this way looks exactly like a catastrophic regression and means nothing.
+
+* **A capture that fails input fidelity is no longer counted complete.** The split runner writes its
+  artifact and *then* fails the gate, so acceptance on "the artifact parses" banked exactly the
+  cells the transport exists to stop producing. The ledger now distinguishes them: a
+  `failed-input-fidelity` row spends an attempt but does not claim the artifact was missing — which
+  matters, because "every row is `missing-or-invalid-json` and no artifact was produced" is the read
+  that makes clearing a ledger safe.
 
 `perf:ios:xcuitest:screen` drives Android too, despite the name.
 
