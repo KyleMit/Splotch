@@ -5,7 +5,7 @@ drawing route. **Date:** 2026-07
 
 ## Context
 
-The 2026-07-22 draw-performance profile (`scrapbook/perf/2026-07-22-draw-profile/findings.md`,
+The 2026-07-22 draw-performance profile (`docs/scratchpad/perf/2026-07-22-draw-profile/findings.md`,
 high-DPI tablet emulation + 120 Hz undo scenarios, 4×-throttled software rendering) found that the
 only >1-frame hitches left in the interaction path were exactly the corners ADR-0069 accepted:
 

@@ -1,8 +1,8 @@
 # `/scrapbook` — committed run outputs, published live
 
-Durable home for the **keeper** outputs of Splotch's generators — coloring-book proof sheets,
-image-model bake-offs, the icon gallery, contact sheets, Lighthouse reports, and prompt/red-team
-reports — so they survive a session without being regenerated (which costs API tokens / time). See
+Durable home for the **polished, published** outputs of Splotch's generators — coloring-book proof
+sheets, image-model bake-offs, reference galleries, contact sheets, and performance reports — so
+they survive a session without being regenerated (which costs API tokens / time). See
 [ADR-0059](../docs/adrs/0059-committed-run-artifacts-github-pages.md) for why this exists and the
 alternatives that were rejected.
 
@@ -23,10 +23,20 @@ machine-generated run output kept on purpose.
 
 ## What belongs here
 
-Scrapbook is for **keeper run outputs** — a reviewable result a generator or profiling run produced
-that's worth viewing later without paying to regenerate it: proof sheets, model bake-offs, reference
-galleries, Lighthouse reports, profiling findings. It is **not** a dumping ground for source code,
-raw data dumps, or scratch output.
+Scrapbook is for **finished artifacts worth consuming** — a result someone would want to sit down
+and browse, rendered, months from now: proof sheets, model bake-offs, reference galleries,
+performance matrices. Every page here is on the public site, so each one earns a designed entry page
+in the shared chrome and a card on the index. It is **not** a dumping ground for source code, raw
+data dumps, or scratch output.
+
+**Working notes and audit trails go to [`docs/scratchpad/`](../docs/scratchpad/README.md) instead**
+— the raw evidence behind a result rather than the result itself: a single profiling run's findings,
+a flake hunt, an overnight triage sweep, a one-off audit contact sheet. That material is worth
+keeping and worth linking to from an ADR, but it doesn't support the public pages and doesn't belong
+on the index. The test: *would someone want to open this rendered, months from now?* is scrapbook;
+*would someone re-litigating this decision want to see the working?* is scratchpad. A scratchpad
+note that outgrows the folder can be promoted here with `scrapbook:publish` — it needs an entry page
+and a registry entry to earn a card.
 
 A publishable collection ships a **reachable entry page plus its assets** — not a bare data folder:
 
@@ -40,9 +50,8 @@ A publishable collection ships a **reachable entry page plus its assets** — no
   (`.json`, …) so they never clutter the listing — a folder of *only* data files still surfaces
   nothing, so promote the report, not the raw run.
 
-Everything regenerable and uninteresting stays in its gitignored scratch dir. When in doubt, ask
-"would someone want to open this rendered, months from now, instead of re-running the tool?" — if
-not, it doesn't belong here.
+Everything regenerable and uninteresting stays in its gitignored scratch dir; everything worth
+keeping but not worth publishing goes to `docs/scratchpad/`.
 
 ## Live URLs
 
@@ -69,12 +78,6 @@ The crayon-brush reference and acceptance art collection lives at
 `index.html` contact sheet, while `gen-comparison-sheet.mjs` produces `vs-current.html` from
 captures of the shipping brush; see the
 [generator README](../tools/asset-gen/crayon-reference/README.md) for the regeneration workflow.
-
-The icon gallery lives at `https://kylemit.github.io/Splotch/icons/` — `icons/index.html`, built by
-`npm run gen:icon-sheet` from the SVGs in `web/src/lib/icons/`, split into colorful spot icons and
-monochrome UI glyphs. Regenerate it straight into place with
-`npm run gen:icon-sheet -- --out scrapbook/icons/index.html` after adding or changing an app icon,
-then `npm run scrapbook:index`.
 
 The responsive app inventory lives at `https://kylemit.github.io/Splotch/page-inventory/`. It is
 built from a real Playwright session across four canonical Apple devices in both portrait and

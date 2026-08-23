@@ -7,8 +7,8 @@
 The icon corpus in `web/src/lib/icons/` accumulated a dozen coordinate grids from its sources:
 Material exports on `0 -960 960 960` and `0 0 24 24`, bespoke spot illustrations on `0 0 1254 1254`,
 `-86.5 0 959 959`, `2 2 56 56`, and so on. That variety hid two classes of defect found in the
-2026-08 alignment audit (the toolbar contact sheet in `scrapbook/icons/toolbar-alignment/`): icons
-whose artwork sat visibly off-center or off-keyline in its box, and non-obvious frames like
+2026-08 alignment audit (the toolbar contact sheet in `docs/scratchpad/icon-toolbar-alignment/`):
+icons whose artwork sat visibly off-center or off-keyline in its box, and non-obvious frames like
 `viewBox="0 -53 1015 1015"` whose numbers carry no meaning a reviewer can check.
 
 Two ways to standardize were considered:

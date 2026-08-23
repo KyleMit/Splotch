@@ -21,6 +21,20 @@
 > nothing published silently goes missing. Raw data (`.json`, …) and `assets/` stay unsurfaced, as
 > before. (Issue #490.)
 
+> **Amendment (2026-08-23):** the scope narrowed to **published artifacts worth consuming**. The
+> original framing — "keeper run outputs" — pulled in material that is worth keeping but not worth
+> browsing: a single profiling run's findings, an overnight triage sweep, a one-off audit contact
+> sheet. Those accumulated as index cards with no designed entry page, so the landing grid mixed
+> finished collections with raw evidence. That material now lives in **`docs/scratchpad/`**
+> (`perf/`, `triage/`, and the icon toolbar-alignment sheet were moved there), which is committed
+> and linkable from an ADR but not served and not on the index. The scrapbook keeps what earns an
+> entry page in the shared chrome and a card: proof sheets, bake-offs, reference galleries,
+> performance matrices. Test: *would someone want to open this rendered, months from now?* →
+> scrapbook; *would someone re-litigating this decision want to see the working?* → scratchpad. The
+> same pass removed the **icon gallery** collection and its `gen:icon-sheet` generator — the app's
+> own `/design` styleguide renders the shipped icon set live, so a generated copy could only go
+> stale. `docs/scratchpad/README.md` carries the split.
+
 ## Context
 
 Several Splotch generators produce **reviewable run outputs** worth keeping between sessions:

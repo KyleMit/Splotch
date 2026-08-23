@@ -11,6 +11,11 @@
 # hand-authored source — the index.html and any published HTML/CSS/JS reports
 # must not be reformatted. scrapbook/README.md is dprint-owned via *.md below.
 scrapbook/
+# Retained run output and audit trails in docs/scratchpad/ (ADR-0059) are the raw
+# evidence a tool emitted, kept verbatim so a later reader sees what the run
+# actually wrote. Same rule as scrapbook/ above; the notes are dprint-owned via
+# *.md below.
+docs/scratchpad/
 android/
 ios/
 pnpm-lock.yaml
