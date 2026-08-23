@@ -39,7 +39,7 @@ function localBuildHasEntry(entry) {
   return existsSync(join(ROOT, 'web', 'build', entry));
 }
 
-export async function assertServedBuildIsFresh(base) {
+async function assertServedBuildIsFresh(base) {
   const html = await fetch(base).then((response) => response.text());
   const entry = entryModulePath(html);
   if (!entry) {
