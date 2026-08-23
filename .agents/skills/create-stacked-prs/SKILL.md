@@ -275,8 +275,13 @@ the trunk by then.
 ## Notes
 
 * `gh pr stack` does not exist; the extension is top-level `gh stack`.
-* The public GraphQL schema exposes **no** stack mutations, so `gh stack` is the only programmatic
-  path — this cannot be hand-rolled against `gh api`.
+* The public GraphQL schema exposes **no** stack mutations, but REST does — `gh stack` is the
+  convenience client, not the only programmatic path. Stacks are listed and created at
+  `/repos/{owner}/{repo}/stacks`, extended with `POST …/stacks/{number}/add`, dissolved with
+  `POST …/stacks/{number}/unstack`, and landed with the asynchronous
+  `PUT /repos/{owner}/{repo}/pulls/{number}/merge-async`, which returns a UUID to poll at
+  `…/merge-async/{uuid}` until it reaches a terminal state. All of it is reachable through `gh api`
+  or a native REST call when the extension is unavailable.
 * A force-push that rewrites every branch does **not** break the stack association.
 * Merge queues split a group larger than its configured maximum across consecutive groups. `main`
   here has no merge queue, so stack size is unconstrained in practice.
