@@ -264,9 +264,10 @@ loop. Every cell you do not recapture keeps its published number, because the ma
 `"preserved"` for it and the generator copies that forward.
 
 ```sh
-# 1. capture only what you want, scoped by mode and item
+# 1. capture the modes you want. --items= narrows a DIAGNOSTIC run; a run whose
+#    output you intend to fold has to write the whole mode, so leave it off.
 npm run perf:campaign -- --target=android-device-web \
-  --modes=landscape-light,landscape-dark --items=crayon,eraser \
+  --modes=landscape-light,landscape-dark \
   --device-id=<serial> --url=http://<lan>:<preview>/ --probe-host=http://<lan>:<probe> \
   --output-root=perf-profiles/<campaign> --max-attempts=1
 
@@ -283,10 +284,13 @@ npm run gen:performance-matrix -- scrapbook/performance/2026-07-31-deployment-ta
 Two properties of step 2 decide how small an increment can be:
 
 * **The unit is a mode, not a cell.** `perf:campaign:sources` rewrites a mode only when all four
-  brushes *and* its action sweep are present and captured through that target's transport. This is
-  deliberate — a partially captured mode is not a captured one — so recapturing one brush leaves the
-  manifest untouched and the matrix unchanged. To move a single brush you still capture its whole
-  mode. Omit `--manifest=` to print what it *would* write and confirm the set before committing it.
+  brushes *and* its action sweep are present in that output root and captured through the target's
+  transport. This is deliberate — a partially captured mode is not a captured one — so a run
+  narrowed with `--items=` folds nothing and leaves the matrix unchanged unless the mode's other
+  artifacts are already sitting in the same `--output-root`. To move one brush you either recapture
+  its whole mode or point the fold at a root that already holds the rest. Omit `--manifest=` to
+  print what it *would* write: it names the missing items per mode, which is the cheapest way to
+  find out before you have edited anything.
 * **It is keyed off the artifacts on disk, not the ledger.** A cell that failed and wrote nothing is
   simply absent, so a partial run degrades to "that mode was not folded" rather than to a mode
   half-rewritten.

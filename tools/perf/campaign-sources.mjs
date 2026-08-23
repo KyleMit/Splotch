@@ -108,11 +108,21 @@ export function applyCampaignModes(manifest, targetId, entries) {
     // A transport that cannot capture a section leaves it off the entry, and the
     // mode keeps whatever it already published. Replacing the object wholesale
     // would discard that measurement without saying so.
+    //
+    // The commit has to be resolved here rather than copied, because undo
+    // provenance is usually implicit: a mode carrying `undoSource` alone lets the
+    // report fall back to its `drawingProductCommit`, and this merge is about to
+    // replace that with the commit the DRAWING was recaptured at. Copying the
+    // absent field would silently re-date the preserved undo rows to a commit
+    // they were never measured at, and the provenance table prints that date.
     const existing = target.modes[index];
     target.modes[index] = {
       ...entry.mode,
       ...(entry.mode.undoSource === undefined && existing.undoSource !== undefined
-        ? { undoSource: existing.undoSource, undoProductCommit: existing.undoProductCommit }
+        ? {
+            undoSource: existing.undoSource,
+            undoProductCommit: existing.undoProductCommit ?? existing.drawingProductCommit,
+          }
         : {}),
     };
   }

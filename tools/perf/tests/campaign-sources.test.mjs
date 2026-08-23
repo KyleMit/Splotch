@@ -186,4 +186,33 @@ describe('campaign sources', () => {
     expect(manifest.targets[0].modes[0].undoProductCommit).toBe('abc');
     expect(manifest.targets[0].modes[0].drawing.pen).toHaveLength(1);
   });
+
+  it('pins implicit undo provenance before the drawing commit moves under it', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+    const entries = sourcesFor('android-device-web', outputRoot);
+    // The shape every android-device-web mode actually has: an undo source with
+    // no commit of its own, so the report reads provenance off drawingProductCommit
+    // — which this merge is about to replace with the recapture's commit.
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              undoSource: 'preserved',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
+    expect(merged.undoProductCommit).toBe('aaaaaaaaaaaa');
+  });
 });
