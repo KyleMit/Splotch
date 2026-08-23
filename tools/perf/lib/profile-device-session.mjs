@@ -11,6 +11,7 @@
 
 import { fail, hasCommand, pollUntil, sleep } from '../../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../../lib/net.mjs';
+import { assertServedBuildIsFresh } from './profile-preview.mjs';
 import { spawnPerfServe } from '../serve-profile-build.mjs';
 import {
   PROXY_COMMAND,
@@ -58,9 +59,18 @@ const reachable = (url, timeoutMs) =>
     () => false
   );
 
-export async function ensurePreviewServer(url, port, allowSpawn) {
+// The build check runs here rather than in each device runner, because every iOS
+// device path reaches its preview through this function — and until it did, only
+// the two DESKTOP runners verified the build at all. A native export written after
+// a preview started, or a port held by another checkout, could reach a device cell
+// unchallenged.
+//
+// `allowForeignBuild` is the documented escape for an externally served historical
+// build, which by definition is not this checkout's.
+export async function ensurePreviewServer(url, port, allowSpawn, { allowForeignBuild } = {}) {
   if (await reachable(url, EXISTING_SERVER_PROBE_MS)) {
     console.log(`Serving already: ${url}`);
+    await assertServedBuildIsFresh(url, { allowForeignBuild });
     return null;
   }
   if (!allowSpawn) fail(`Nothing is serving ${url}. Start it with: npm run perf:serve`);
@@ -69,6 +79,7 @@ export async function ensurePreviewServer(url, port, allowSpawn) {
   // leave this waiting out its whole budget on a URL nothing ever binds.
   const server = spawnPerfServe(port);
   await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
+  await assertServedBuildIsFresh(url, { allowForeignBuild });
   console.log(`Serving: ${url}`);
   return server;
 }

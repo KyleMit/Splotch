@@ -452,6 +452,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'output',
         'report-only',
         'no-serve',
+        'allow-foreign-build',
         'orientation',
         'theme',
       ],
@@ -558,7 +559,11 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   process.once('SIGINT', onSigint);
   process.once('SIGTERM', onSigterm);
   try {
-    server = nativeApp ? null : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
+    server = nativeApp
+      ? null
+      : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'), {
+          allowForeignBuild: has('allow-foreign-build'),
+        });
     await client.request('GET', '/status');
     const session = sessionId
       ? borrowedSessionDescriptor(sessionId, requestedCapabilities)
