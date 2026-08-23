@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { foreignPortListeners, freePort, spawnViteServer } from '../../lib/vite-server.mjs';
-import { buildDirHoldsNativeExport } from '../serve-profile-build.mjs';
+import { buildDirHoldsNativeExport } from './build-variant.mjs';
 
 // A preview server left over from a previous build keeps the port and keeps
 // serving the SvelteKit manifest it loaded at startup, so the next capture

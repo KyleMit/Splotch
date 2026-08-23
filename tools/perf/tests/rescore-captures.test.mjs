@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { destinationBlocked, modeOf, selectEvidence } from '../keep-capture-evidence.mjs';
 import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
-import { buildDirHoldsNativeExport } from '../serve-profile-build.mjs';
+import { buildDirHoldsNativeExport } from '../lib/build-variant.mjs';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 
 // The real frame table is a tuple stream, not a record list, and phases are
