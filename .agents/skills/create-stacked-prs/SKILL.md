@@ -55,23 +55,35 @@ There is no documented or enforced maximum stack size — a 13-PR chain linked i
 
 ## Mechanics
 
+**Use the runner's native GitHub capability first.** Creating a PR, listing PR bases, and reading a
+head SHA are all operations the native GitHub skill and its MCP/app tools perform, and the root
+`CLAUDE.md` requires that path before the `gh` CLI — a sandboxed `gh` cannot reach the host's
+Keychain credentials, so a procedure that hardcodes it can fail before the stack is even built. The
+`gh` invocations below are the fallback, and the precise statement of what to ask the native tool
+for. `gh stack` is the one genuine exception: nothing native covers it (the REST surface underneath
+it is in the Notes).
+
 Create each PR against the branch below it:
 
 ```bash
 git checkout <previous-branch>
 git checkout -b <new-branch>
 git push -u origin <new-branch>
-gh pr create --base <previous-branch> --title "…" --body-file <path>
 ```
 
-Branches follow the repo convention — `claude/issue-<NN>-<slug>`. Use `--body-file`, not `--body`,
-for anything longer than a sentence: a body containing backticks, `$`, `*`, or quotes is mangled by
-shell expansion, and the failure arrives after you have written the whole thing. Follow the
+Then open the PR **with its base set to `<previous-branch>`** — the native create-PR tool, or as a
+fallback `gh pr create --base <previous-branch> --title "…" --body-file <path>`.
+
+Branches follow the repo convention — `claude/issue-<NN>-<slug>`. When falling back to the CLI, use
+`--body-file`, not `--body`, for anything longer than a sentence: a body containing backticks, `$`,
+`*`, or quotes is mangled by shell expansion, and the failure arrives after you have written the
+whole thing (a native tool takes the body as a parameter and has no such hazard). Follow the
 `pr-screenshots` skill for any PR that touches something visible in the UI, and give each PR the
 rich body the `burn-down-backlog` skill describes — summary, why, what changed, approach, testing,
 follow-ups — plus its position in the stack.
 
-Verify the chain after creating each PR. A wrong base is easy to miss and expensive later:
+Verify the chain after creating each PR — read every open PR's head and base branch, natively or
+with the CLI. A wrong base is easy to miss and expensive later:
 
 ```bash
 gh pr list --state open --limit 50 --json number,headRefName,baseRefName \
@@ -162,7 +174,7 @@ Three things to confirm before trusting a green tip:
 
 ```bash
 git rev-parse origin/branch-c                    # does CI's result describe the current head…
-gh pr view <tip-pr> --json headRefOid --jq .headRefOid   # …or a stale commit?
+gh pr view <tip-pr> --json headRefOid --jq .headRefOid   # …or a stale commit? (or read it natively)
 
 grep -lE "^[[:space:]]*(paths|paths-ignore):" .github/workflows/*.yml   # green covering less than it looks
 ```
