@@ -2,9 +2,11 @@
 // prints one reachable URL instead of vite's one-per-bound-interface list — see
 // docs/PROFILING-IPAD.md.
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
+import { WEB_ONLY_STATIC_FILES } from '../mobile/lib/static-export.mjs';
 
 const SERVE_ENTRY = join(ROOT, 'tools', 'perf', 'serve-profile-build.mjs');
 
@@ -17,7 +19,30 @@ const PREVIEW_PORT = 4173;
 // eslint-disable-next-line no-control-regex
 const stripAnsi = (line) => line.replace(/\u001B\[[0-9;]*m/g, '');
 
+// `build:cap` writes the native static export into the SAME `web/build` directory
+// the web build uses, so running any native build silently replaces what this
+// server serves. The freshness check in lib/profile-preview.mjs cannot catch it —
+// the served entry genuinely is in web/build — and a capture against the export
+// does not fail, it HANGS: the drawing route never reports ready and the runner
+// waits. Observed 2026-08-23, where `ios:run:device` left the export in place and
+// the next desktop cell sat at 0% CPU for eleven minutes.
+//
+// The export is defined by what it drops, so the web-only files are the
+// discriminator, read from the list the strip itself works from rather than
+// duplicated here.
+export function buildDirHoldsNativeExport(buildDir = join(ROOT, 'web', 'build')) {
+  if (!existsSync(join(buildDir, 'index.html'))) return false;
+  return WEB_ONLY_STATIC_FILES.every((file) => !existsSync(join(buildDir, file)));
+}
+
 export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
+  if (buildDirHoldsNativeExport()) {
+    fail(
+      'web/build holds the native static export, not the web build — a native build ' +
+        '(build:cap, ios:run:device, android:run) overwrote it. A capture against it hangs ' +
+        'rather than failing. Run `npm run perf:build` first.'
+    );
+  }
   const addresses = lanAddresses();
   const child = spawn(
     process.execPath,

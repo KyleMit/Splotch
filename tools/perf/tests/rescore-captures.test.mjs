@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { brushOf, rawReportOf, rescoreCapture } from '../rescore-captures.mjs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { modeOf, selectEvidence, targetOf } from '../keep-capture-evidence.mjs';
+import { buildDirHoldsNativeExport } from '../serve-profile-build.mjs';
+import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 
 // The real frame table is a tuple stream, not a record list, and phases are
 // declared separately — a fixture that gets that wrong scores as an empty run
@@ -115,5 +120,28 @@ describe('keep-capture-evidence', () => {
     ]);
 
     expect(kept.map((entry) => entry.file)).toEqual(['1', '3', '4']);
+  });
+});
+
+describe('buildDirHoldsNativeExport', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'splotch-build-'));
+
+  // `build:cap` writes the native export into the same web/build the web build
+  // uses, so a native build silently replaces what the preview server serves —
+  // and a capture against the export hangs rather than failing.
+  it('recognises the native export by the web-only files it drops', () => {
+    writeFileSync(join(dir, 'index.html'), '');
+
+    expect(buildDirHoldsNativeExport(dir)).toBe(true);
+  });
+
+  it('accepts a build that kept them', () => {
+    for (const file of WEB_ONLY_STATIC_FILES) writeFileSync(join(dir, file), '');
+
+    expect(buildDirHoldsNativeExport(dir)).toBe(false);
+  });
+
+  it('says nothing about a directory with no build in it', () => {
+    expect(buildDirHoldsNativeExport(join(dir, 'absent'))).toBe(false);
   });
 });

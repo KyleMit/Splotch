@@ -39,7 +39,10 @@ function localBuildHasEntry(entry) {
   return existsSync(join(ROOT, 'web', 'build', entry));
 }
 
-async function assertServedBuildIsFresh(base) {
+// Valid against ANY server, including the externally-served historical build that
+// `--url=` exists for, so this is the half of the check a `--url` capture can also
+// run. It cannot say whose build it is — only that the build is self-consistent.
+export async function assertServedManifestResolves(base) {
   const html = await fetch(base).then((response) => response.text());
   const entry = entryModulePath(html);
   if (!entry) {
@@ -52,6 +55,11 @@ async function assertServedBuildIsFresh(base) {
         'A capture against it would measure un-hydrated server-rendered markup.'
     );
   }
+  return entry;
+}
+
+async function assertServedBuildIsFresh(base) {
+  const entry = await assertServedManifestResolves(base);
   if (!localBuildHasEntry(entry)) {
     fail(
       `${base} is serving ${entry}, which this checkout's web/build does not contain — ` +

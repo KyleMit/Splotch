@@ -174,6 +174,12 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
   let browser;
   try {
     await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
+    // A `--url` capture skips buildAndPreview, which is where the build is
+    // normally proved. That is the path every campaign cell takes, so the half of
+    // the check that holds for any server runs here too: a page whose modules 404
+    // never hydrates, and because the drawing route is server-rendered the capture
+    // then measures dead markup instead of failing.
+    await assertServedManifestResolves(url);
     browser = await engine.launcher.launch({ headless });
     const context = await browser.newContext({
       viewport,

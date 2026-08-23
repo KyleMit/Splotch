@@ -11,7 +11,7 @@ import {
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilingUrl, runActionSweep, selectedActions } from '../ios/capture-xcuitest-actions.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
-import { buildAndPreview } from '../lib/profile-preview.mjs';
+import { assertServedManifestResolves, buildAndPreview } from '../lib/profile-preview.mjs';
 import { ROOT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
@@ -107,7 +107,12 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     ? { base: new URL(externalUrl).toString(), stop: () => {} }
     : await buildAndPreview(port, { build });
   const { base, stop } = preview;
-  if (externalUrl) await waitForUrl(base, READY_TIMEOUT_MS);
+  // A `--url` capture skips buildAndPreview, which is where the build is normally
+  // proved — and that is the path every campaign cell takes.
+  if (externalUrl) {
+    await waitForUrl(base, READY_TIMEOUT_MS);
+    await assertServedManifestResolves(base);
+  }
   let browser;
 
   try {
