@@ -42,7 +42,7 @@ export const NOTCH_INSET_THRESHOLD_PX = 30;
 // status-bar range, so depth alone can't split those two.
 export const IOS_NOTCH_INSET_THRESHOLD_PX = 40;
 
-export function notchInsetThreshold(platform: Platform): number {
+function notchInsetThreshold(platform: Platform): number {
   return platform === 'ios' ? IOS_NOTCH_INSET_THRESHOLD_PX : NOTCH_INSET_THRESHOLD_PX;
 }
 
