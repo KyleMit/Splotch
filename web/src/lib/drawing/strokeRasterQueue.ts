@@ -79,31 +79,47 @@ export function createStrokeRasterQueue<P extends RasterPointer>(deps: StrokeRas
     deps.onFlushed(speed);
   }
 
+  // The single place queued raster is drained, so BOTH the frame-scheduled path
+  // and the synchronous one are attributed to `engine.draw`. When only the rAF
+  // path was marked, the tail raster that a pointer-up flushes ran unmeasured:
+  // on a physical iPad, 37 of 40 strokes had no engine.draw measure between their
+  // final move and the lift, which under-reports engine JS in exactly the
+  // captures used for attribution.
+  //
+  // PERF_MARKS is a compile-time literal, so this branch and its mark strings
+  // fold away in a release build. Taking it as a runtime dependency instead
+  // would defeat that and retain the marks, which is what the release seam scan
+  // exists to catch.
+  function drainQueues() {
+    let drained = false;
+    for (const ps of deps.activePointers.values()) {
+      if (ps.pendingRaster.length > 0) drained = true;
+    }
+    if (!drained) return;
+    if (PERF_MARKS) performance.mark('engine.draw:start');
+    try {
+      for (const ps of deps.activePointers.values()) flushPointer(ps);
+    } finally {
+      if (PERF_MARKS) {
+        performance.mark('engine.draw:end');
+        performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
+      }
+    }
+  }
+
   function flushAll() {
     if (rasterFrame !== 0) {
       cancelAnimationFrame(rasterFrame);
       rasterFrame = 0;
     }
-    for (const ps of deps.activePointers.values()) flushPointer(ps);
+    drainQueues();
   }
 
   function schedule() {
     if (rasterFrame !== 0) return;
     rasterFrame = requestAnimationFrame(() => {
       rasterFrame = 0;
-      // PERF_MARKS is a compile-time literal, so this whole branch and its
-      // mark strings fold away in a release build. Taking it as a runtime
-      // dependency instead would defeat that and retain the marks, which is
-      // what the release seam scan exists to catch.
-      if (PERF_MARKS) performance.mark('engine.draw:start');
-      try {
-        for (const ps of deps.activePointers.values()) flushPointer(ps);
-      } finally {
-        if (PERF_MARKS) {
-          performance.mark('engine.draw:end');
-          performance.measure('engine.draw', 'engine.draw:start', 'engine.draw:end');
-        }
-      }
+      drainQueues();
     });
   }
 
