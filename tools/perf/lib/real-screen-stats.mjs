@@ -170,23 +170,27 @@ export function observedFrameIntervalMs(frames) {
 // costing a full beat and prices a late/early pair at its real overshoot only.
 // Chosen over scoring presentation deficit directly because this keeps the
 // charge's insensitivity to small beat-estimate error. See ADR-0136.
-function creditedLostMs(deltas, budgetMs, lateThresholdMs) {
+function creditedLostMs(deltas, budgetMs, lateThresholdMs, nextDeltas) {
   let total = 0;
   for (let index = 0; index < deltas.length; index += 1) {
     if (deltas[index] <= lateThresholdMs) continue;
-    const next = deltas[index + 1];
+    // `nextDeltas` carries the temporally adjacent successor. Falling back to
+    // `deltas[index + 1]` is correct ONLY for a contiguous array; a filtered
+    // population must supply it, or a stroke's last frame gets credited by the
+    // next stroke's first one.
+    const next = nextDeltas ? nextDeltas[index] : deltas[index + 1];
     const repaidMs = next === undefined ? 0 : Math.max(0, budgetMs - next);
     total += Math.max(0, deltas[index] - budgetMs - repaidMs);
   }
   return total;
 }
 
-export function frameStats(deltas, intervalMs) {
+export function frameStats(deltas, intervalMs, nextDeltas) {
   const budgetMs = Math.min(intervalMs, QUEUE_DELAY_LAG_MS);
   const lateThreshold = budgetMs * LATE_FRAME_MULTIPLE;
   const late = deltas.filter((delta) => delta > lateThreshold);
   const elapsedMs = round(sum(deltas));
-  const lostMs = round(creditedLostMs(deltas, budgetMs, lateThreshold));
+  const lostMs = round(creditedLostMs(deltas, budgetMs, lateThreshold, nextDeltas));
   return {
     frames: deltas.length,
     p50: percentile(deltas, 0.5),
@@ -542,6 +546,16 @@ function worstFrames(phaseSummaryInput, limit = WORST_FRAMES_REPORTED) {
   });
 }
 
+// The next recorded interval in time, regardless of which population it lands in.
+// Negative deltas mark a discontinuity the probe could not measure across, so
+// they end the chain rather than being skipped over.
+function nextDeltaAfter(phaseFrames, index) {
+  const next = phaseFrames[index + 1];
+  if (!next) return undefined;
+  const delta = next[FRAME_DT];
+  return delta < 0 ? undefined : delta;
+}
+
 function summarizePhase(phase, tables) {
   const { frames, events, measures, measureNames = [], intervalMs } = tables;
   const from = phase.startedAt;
@@ -560,6 +574,11 @@ function summarizePhase(phase, tables) {
   const contactDeltas = [];
   const betweenDeltas = [];
   const allDeltas = [];
+  // The interval that FOLLOWED each one in time, kept per population because the
+  // populations are filtered: `contactDeltas[i + 1]` can belong to a later stroke,
+  // and crediting across that boundary hides real loss (ADR-0136).
+  const contactNext = [];
+  const betweenNext = [];
   const lateWindows = [];
   const lateThreshold = intervalMs * LATE_FRAME_MULTIPLE;
   for (let i = 1; i < phaseFrames.length; i++) {
@@ -568,6 +587,7 @@ function summarizePhase(phase, tables) {
     allDeltas.push(delta);
     const drawing = phaseFrames[i][FRAME_CONTACT] && phaseFrames[i - 1][FRAME_CONTACT];
     (drawing ? contactDeltas : betweenDeltas).push(delta);
+    (drawing ? contactNext : betweenNext).push(nextDeltaAfter(phaseFrames, i));
     // Attribution windows span the whole phase now, not just the stroke: the worst
     // frames sit at the lift, which is not an in-contact interval.
     if (delta > lateThreshold) {
@@ -627,8 +647,9 @@ function summarizePhase(phase, tables) {
 
   const movesPerFrame = contactFrames ? round(canvasMoves.length / contactFrames) : 0;
   const contactSeconds = (phase.contactMs ?? 0) / 1000;
-  const pacing = frameStats(contactDeltas, intervalMs);
-  const betweenStrokes = frameStats(betweenDeltas, intervalMs);
+  const pacing = frameStats(contactDeltas, intervalMs, contactNext);
+  const betweenStrokes = frameStats(betweenDeltas, intervalMs, betweenNext);
+  // allDeltas is already contiguous, so its own successor is the adjacent one.
   const wholeWindow = frameStats(allDeltas, intervalMs);
   const commits = phaseMeasures.filter(
     (measure) => measureNames[measure[MEASURE_NAME]] === 'engine.commit'

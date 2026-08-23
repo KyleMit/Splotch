@@ -535,6 +535,18 @@ describe('frameStats', () => {
     expect(frameStats([16.7, 29, 16.7, 16.7], 16.7).lostMs).toBeCloseTo(12.3, 1);
   });
 
+  it('does not credit across a stroke boundary', () => {
+    // The population passed to frameStats is FILTERED to in-contact intervals, so
+    // `deltas[i + 1]` is the next in-contact interval, which can belong to a later
+    // stroke. Crediting a 29 ms overshoot at the end of one stroke with a 4 ms
+    // interval at the start of the next hides real loss: nothing gave that time
+    // back, and the whole-window population charges it.
+    const contactDeltas = [29, 4];
+    const nextDeltas = [17, 16.7];
+
+    expect(frameStats(contactDeltas, 16.7, nextDeltas).lostMs).toBeCloseTo(12.33, 1);
+  });
+
   it('credits only up to the charge, never below zero across a pair', () => {
     // A 26 ms frame followed by a 1 ms one: 9.3 ms charged against 15.7 ms
     // repaid must not turn into a negative charge that offsets real loss
