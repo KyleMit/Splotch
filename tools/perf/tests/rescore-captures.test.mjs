@@ -90,9 +90,19 @@ describe('keep-capture-evidence', () => {
     expect(targetOf({}, 'abase.1-crayon', 'ipad-device-web')).toBe('ipad-device-web');
   });
 
+  // The Appium envelope uses `mode` for its automation mode and records the real
+  // orientation under `automation`, so reading `mode` first labels an iPad capture
+  // with its run label instead of its cell.
   it('labels the mode from whichever shape the capture records it in', () => {
-    expect(modeOf({ mode: 'landscape-dark' })).toBe('landscape-dark');
     expect(modeOf({ orientation: 'LANDSCAPE', theme: 'dark' })).toBe('LANDSCAPE-dark');
+    expect(
+      modeOf({
+        mode: 'xcuitest:ipad-device-web-landscape-dark-crayon',
+        theme: 'dark',
+        automation: { orientation: 'LANDSCAPE' },
+      })
+    ).toBe('LANDSCAPE-dark');
+    expect(modeOf({ mode: 'landscape-dark' })).toBe('landscape-dark');
     expect(modeOf({})).toBe('unknown');
   });
 

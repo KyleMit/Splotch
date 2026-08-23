@@ -136,26 +136,26 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
           "drawing": {
             "pen": [
-              "perf-profiles/campaign/ipad-device-web/portrait-light/pen-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/campaign/ipad-device-web/portrait-light/crayon-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/campaign/ipad-device-web/portrait-light/magic-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/campaign/ipad-device-web/portrait-light/eraser-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/campaign/ipad-device-web/portrait-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/campaign-main/ipad-device-web/portrait-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/campaign/ipad-device-web/portrait-light/actions/actions.json",
-              "productCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+              "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
               "kind": "full"
             }
           ]
@@ -165,26 +165,26 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
           "drawing": {
             "pen": [
-              "perf-profiles/campaign/ipad-device-web/portrait-dark/pen-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/campaign/ipad-device-web/portrait-dark/crayon-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/campaign/ipad-device-web/portrait-dark/magic-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/campaign/ipad-device-web/portrait-dark/eraser-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/portrait-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/campaign/ipad-device-web/portrait-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/campaign/ipad-device-web/portrait-dark/actions/actions.json",
-              "productCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+              "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
               "kind": "full"
             }
           ]
@@ -194,26 +194,26 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
           "drawing": {
             "pen": [
-              "perf-profiles/campaign/ipad-device-web/landscape-light/pen-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/campaign/ipad-device-web/landscape-light/crayon-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/campaign/ipad-device-web/landscape-light/magic-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/campaign/ipad-device-web/landscape-light/eraser-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/campaign/ipad-device-web/landscape-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/campaign-main/ipad-device-web/landscape-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/campaign/ipad-device-web/landscape-light/actions/actions.json",
-              "productCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+              "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
               "kind": "full"
             }
           ]
@@ -223,26 +223,26 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
           "drawing": {
             "pen": [
-              "perf-profiles/campaign/ipad-device-web/landscape-dark/pen-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/campaign/ipad-device-web/landscape-dark/crayon-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/campaign/ipad-device-web/landscape-dark/magic-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/campaign/ipad-device-web/landscape-dark/eraser-real-screen.json"
+              "perf-profiles/campaign-main/ipad-device-web/landscape-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/campaign/ipad-device-web/landscape-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/campaign/ipad-device-web/landscape-dark/actions/actions.json",
-              "productCommit": "ae674d71bac62b4c8cbf6130a2b8982289e65c56",
+              "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
               "kind": "full"
             }
           ]
@@ -264,20 +264,58 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
-          "drawing": "preserved",
-          "undoSource": "preserved",
-          "actionSources": "preserved"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign-main/ipad-device-native/portrait-light/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "portrait-dark",
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
-          "drawing": "preserved",
-          "undoSource": "preserved",
-          "actionSources": "preserved"
+          "drawingProductCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign-main/ipad-device-native/portrait-dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/pen-real-screen.json",
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/actions/actions.json",
+              "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-light",

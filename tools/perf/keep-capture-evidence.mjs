@@ -33,11 +33,14 @@ export function targetOf(parsed, relativePath, fallback) {
   return fallback ?? 'unknown';
 }
 
-// orientation/theme is what a campaign artifact records. `mode` is checked only
-// after them because the Appium envelope already uses that key for its automation
-// mode, so reading it first labels an iPad capture "xcuitest:abase.1".
+// orientation/theme is what a campaign artifact records — top level on the split
+// and desktop transports, under `automation` on the Appium one. `mode` is checked
+// only after both, because the Appium envelope already uses that key for its
+// automation mode, so reading it first labels an iPad capture
+// "xcuitest:ipad-device-web-landscape-dark-crayon" instead of "LANDSCAPE-dark".
 export function modeOf(parsed) {
-  if (parsed?.orientation) return `${parsed.orientation}-${parsed.theme ?? 'light'}`;
+  const orientation = parsed?.orientation ?? parsed?.automation?.orientation;
+  if (orientation) return `${orientation}-${parsed?.theme ?? 'light'}`;
   if (parsed?.mode) return parsed.mode;
   return 'unknown';
 }
