@@ -30,6 +30,7 @@ import {
 } from '../lib/real-screen-stats.mjs';
 import {
   androidGestureInstructions,
+  androidNativeLaunchSteps,
   androidPageLaunchSteps,
   swipeArgs,
 } from './lib/android-input.mjs';
@@ -52,7 +53,6 @@ const GESTURE_TAIL_MS = 1_200;
 const WDA_SESSION_ATTEMPTS = 3;
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
 const APP_BUNDLE_ID = 'art.splotch.app';
-const ANDROID_APP_ACTIVITY = 'art.splotch.app/.MainActivity';
 const WDA_SESSION_SETTLE_MS = 2_500;
 const CONTACT_BANK_MS = 600_000;
 
@@ -94,14 +94,10 @@ function androidDriver({ serial, pageUrl, orientation, nativeApp }) {
         rotation: ROTATION_SETTLE_MS,
         page: PAGE_SETTLE_MS,
       };
-      if (nativeApp) {
-        adb(serial, ['shell', 'am', 'force-stop', APP_BUNDLE_ID]);
-        await sleep(APP_STOP_SETTLE_MS);
-        adb(serial, ['shell', 'am', 'start', '-n', ANDROID_APP_ACTIVITY]);
-        await sleep(PAGE_SETTLE_MS);
-        return;
-      }
-      for (const step of androidPageLaunchSteps(orientation, pageUrl)) {
+      const steps = nativeApp
+        ? androidNativeLaunchSteps(orientation)
+        : androidPageLaunchSteps(orientation, pageUrl);
+      for (const step of steps) {
         adb(serial, step.args);
         if (step.settle) await sleep(settles[step.settle]);
       }

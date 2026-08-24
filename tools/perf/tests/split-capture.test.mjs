@@ -2,6 +2,7 @@ import { connect } from 'node:net';
 import { describe, expect, it } from 'vitest';
 import {
   androidGestureInstructions,
+  androidNativeLaunchSteps,
   androidPageLaunchSteps,
   androidRotationCommands,
   CHROME_PACKAGE,
@@ -316,5 +317,28 @@ describe('the reading a hand capture is kept for', () => {
 
   it('survives an input block that is missing entirely', () => {
     expect(calibrationReading().movesPerSecond).toBeNull();
+  });
+});
+
+// The hand tool took the browser path regardless of --native-app, so it could
+// launch Chrome and then record `android-capacitor-webview` as the runtime the
+// reading calibrates. Correctly shaped, plausibly labelled, wrong browser.
+describe('launching the native app instead of the browser', () => {
+  const steps = androidNativeLaunchSteps('LANDSCAPE');
+  const flat = steps.flatMap((step) => step.args).join(' ');
+
+  it('never touches Chrome', () => {
+    expect(flat).not.toContain(CHROME_PACKAGE);
+  });
+
+  it('starts the app by activity, with no URL to navigate', () => {
+    expect(flat).toContain('art.splotch.app/.MainActivity');
+    expect(flat).not.toContain('android.intent.action.VIEW');
+  });
+
+  // Same ordering as the browser path, for the same unexplained-but-free reason
+  // recorded there: rotation is asserted while the app is stopped.
+  it('keeps the stop, rotate, launch ordering', () => {
+    expect(steps.map((step) => step.settle)).toEqual(['appStop', null, 'rotation', 'page']);
   });
 });

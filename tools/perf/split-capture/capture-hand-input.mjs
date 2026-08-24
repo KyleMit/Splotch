@@ -22,7 +22,7 @@ import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
-import { androidPageLaunchSteps } from './lib/android-input.mjs';
+import { androidNativeLaunchSteps, androidPageLaunchSteps } from './lib/android-input.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -78,13 +78,20 @@ async function pollFor(callback, timeoutMs) {
   return null;
 }
 
-async function openWithAdb({ serial, pageUrl, orientation }) {
+// `--native-app` decides the RUNTIME the artifact is judged as, so opening Chrome
+// here while recording `android-capacitor-webview` produces a calibration read off
+// the wrong browser — correctly shaped, plausibly labelled, and wrong. The opener
+// has to follow the flag.
+async function openWithAdb({ serial, pageUrl, orientation, nativeApp }) {
   const settles = {
     appStop: APP_STOP_SETTLE_MS,
     rotation: ROTATION_SETTLE_MS,
     page: PAGE_SETTLE_MS,
   };
-  for (const step of androidPageLaunchSteps(orientation, pageUrl)) {
+  const steps = nativeApp
+    ? androidNativeLaunchSteps(orientation)
+    : androidPageLaunchSteps(orientation, pageUrl);
+  for (const step of steps) {
     adb(serial, step.args);
     if (step.settle) await sleep(settles[step.settle]);
   }
@@ -168,7 +175,7 @@ export async function captureHandInput({
   });
 
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
-  if (opener === 'adb') await openWithAdb({ serial, pageUrl, orientation });
+  if (opener === 'adb') await openWithAdb({ serial, pageUrl, orientation, nativeApp });
   else announceManualOpen({ host, orientation, theme });
 
   const ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
