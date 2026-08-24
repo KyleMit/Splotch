@@ -462,40 +462,120 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
+          "drawingProductCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-light/eraser-real-screen.json"
+            ]
+          },
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign-1220/android-device-web/portrait-light/actions/actions.json",
+              "productCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+              "kind": "full"
+            }
+          ],
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "portrait-dark",
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
+          "drawingProductCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign-1220/android-device-web/portrait-dark/eraser-real-screen.json"
+            ]
+          },
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign-1220/android-device-web/portrait-dark/actions/actions.json",
+              "productCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+              "kind": "full"
+            }
+          ],
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
+          "drawingProductCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-light/eraser-real-screen.json"
+            ]
+          },
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign-1220/android-device-web/landscape-light/actions/actions.json",
+              "productCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+              "kind": "full"
+            }
+          ],
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": "preserved",
+          "drawingProductCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+          "drawing": {
+            "pen": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/campaign-1220/android-device-web/landscape-dark/eraser-real-screen.json"
+            ]
+          },
+          "actionSources": [
+            {
+              "source": "perf-profiles/campaign-1220/android-device-web/landscape-dark/actions/actions.json",
+              "productCommit": "a20d19f8d72c7c56cf990ba1c75c3d99c4aefc29",
+              "kind": "full"
+            }
+          ],
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
       ]
     },
