@@ -19,7 +19,8 @@ import {
   classifyInputCadence,
   describeContactSamples,
 } from '../split-capture/lib/input-verdict.mjs';
-import { calibrationReading } from '../split-capture/capture-hand-input.mjs';
+import { calibrationReading, handCaptureArtifact } from '../split-capture/capture-hand-input.mjs';
+import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
 
 const stroke = [
   { type: 'pointerMove', x: 10, y: 10, duration: 0 },
@@ -398,5 +399,42 @@ describe('the bootstrap setting the theme it was asked for', () => {
   // which it can only do if readiness carries the observed value.
   it('reports the resolved theme in the readiness payload', () => {
     expect(source).toContain('resolvedTheme: resolvedTheme()');
+  });
+});
+
+// `observedTheme` had no test. Deleting both writer assignments left the suite
+// green while recreating the exact gap the field closes: readiness knows the
+// theme and the saved file cannot prove it. Both envelopes are asserted, because
+// the hand capture is the one a person paid for.
+describe('what a saved artifact can prove about its own theme', () => {
+  const ready = { resolvedTheme: 'dark' };
+  const common = { brush: 'pen', orientation: 'LANDSCAPE', theme: 'dark', payload: {} };
+
+  it('records the theme the PAGE reported, on both writers', () => {
+    expect(drivenCaptureArtifact({ ...common, ready }).observedTheme).toBe('dark');
+    expect(handCaptureArtifact({ ...common, ready }).observedTheme).toBe('dark');
+  });
+
+  // The light/system case is why `report.meta.theme` cannot serve as provenance:
+  // the product stores the loosest preference that renders an appearance, so
+  // choosing the theme the OS already shows clears the override and leaves that
+  // field null. `observedTheme` still answers.
+  it('answers for a light capture whose report metadata is null', () => {
+    const artifact = drivenCaptureArtifact({
+      ...common,
+      theme: 'light',
+      ready: { resolvedTheme: 'light' },
+      payload: { report: { meta: { theme: null } } },
+    });
+
+    expect(artifact.report.meta.theme).toBeNull();
+    expect(artifact.observedTheme).toBe('light');
+  });
+
+  // Absent must read as absent rather than as the request, or the field becomes
+  // the very echo it replaced.
+  it('never falls back to the requested theme when the page reported none', () => {
+    expect(drivenCaptureArtifact({ ...common, ready: {} }).observedTheme).toBeNull();
+    expect(handCaptureArtifact({ ...common, ready: undefined }).observedTheme).toBeNull();
   });
 });

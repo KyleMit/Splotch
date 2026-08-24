@@ -199,6 +199,49 @@ async function pollFor(callback, timeoutMs) {
   return null;
 }
 
+// The artifact envelope, as a pure value. Extracted so the fields a later reader
+// TRUSTS can be asserted without a device: `observedTheme` had no test, and
+// deleting the assignment left the suite green while recreating the exact gap it
+// closes — the handshake knew the theme and the saved file could not prove it.
+export function drivenCaptureArtifact({
+  runLabel,
+  platform,
+  brush,
+  orientation,
+  theme,
+  ready,
+  nativeApp,
+  fidelity,
+  drawing,
+  summaries,
+  payload,
+}) {
+  return {
+    label: runLabel,
+    platform,
+    brush,
+    orientation,
+    theme,
+    // What the PAGE reported, read back at readiness. `theme` alone is a request,
+    // and `report.meta.theme` cannot answer either: the product stores the
+    // loosest preference that renders an appearance, so choosing the theme the OS
+    // already shows clears the override and leaves that field null. An artifact
+    // has to be able to prove which theme it measured without re-deriving it.
+    observedTheme: ready?.resolvedTheme ?? null,
+    nativeApp,
+    // A native run reaches the instrumented page over the LAN through the app's
+    // `server.url`, so its assets are not the bundled ones. Recorded because the
+    // difference is invisible in the numbers and material to what the cell means.
+    pageDelivery: nativeApp ? 'remote-probe-host' : 'browser',
+    transport: 'split-input-measurement',
+    fidelity,
+    drawing,
+    summaries,
+    report: payload?.report,
+    topology: payload?.topology ?? null,
+  };
+}
+
 export async function captureDeviceFrames({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
@@ -316,30 +359,20 @@ export async function captureDeviceFrames({
   // Orientation and theme are recorded because the performance matrix validates
   // a capture against the mode it was filed under and refuses one that cannot
   // prove which mode it measured.
-  const artifact = {
-    label: runLabel,
+  const artifact = drivenCaptureArtifact({
+    runLabel,
     platform,
     brush,
     orientation,
     theme,
-    // What the PAGE reported, read back at readiness. `theme` alone is a request,
-    // and `report.meta.theme` cannot answer either: the product stores the
-    // loosest preference that renders an appearance, so choosing the theme the OS
-    // already shows clears the override and leaves that field null. An artifact
-    // has to be able to prove which theme it measured without re-deriving it.
-    observedTheme: ready.resolvedTheme ?? null,
+    ready,
     nativeApp,
-    // A native run reaches the instrumented page over the LAN through the app's
-    // `server.url`, so its assets are not the bundled ones. Recorded because the
-    // difference is invisible in the numbers and material to what the cell means.
-    pageDelivery: nativeApp ? 'remote-probe-host' : 'browser',
-    transport: 'split-input-measurement',
     fidelity,
     drawing,
     summaries,
-    report: payload.report,
-    topology: payload.topology ?? null,
-  };
+    payload,
+  });
+
   if (output) {
     mkdirSync(dirname(join(ROOT, output)), { recursive: true });
     writeFileSync(join(ROOT, output), JSON.stringify(artifact, null, 2));

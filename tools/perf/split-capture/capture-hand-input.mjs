@@ -132,6 +132,47 @@ export function calibrationReading(input = {}) {
   };
 }
 
+// The artifact envelope, as a pure value — see drivenCaptureArtifact. A hand
+// capture is the one a person paid for, so what it can prove about itself later
+// matters more here than anywhere else.
+export function handCaptureArtifact({
+  runLabel,
+  runtime,
+  platform,
+  nativeApp,
+  brush,
+  orientation,
+  theme,
+  ready,
+  device,
+  seconds,
+  reading,
+  fidelity,
+  summaries,
+  payload,
+}) {
+  return {
+    label: runLabel,
+    handCapture: true,
+    runtime,
+    platform,
+    nativeApp,
+    brush,
+    orientation,
+    theme,
+    // The page's own answer, not the request — see capture-device-frames.
+    observedTheme: ready?.resolvedTheme ?? null,
+    device: device ?? null,
+    drawSeconds: seconds,
+    transport: 'human-finger',
+    reading,
+    fidelity,
+    summaries,
+    report: payload?.report,
+    topology: payload?.topology ?? null,
+  };
+}
+
 export async function captureHandInput({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
@@ -235,26 +276,23 @@ export async function captureHandInput({
       `${describeFidelityFailures(fidelity) || 'every check'} (${fidelity.runtime})`
   );
 
-  const artifact = {
-    label: runLabel,
-    handCapture: true,
+  const artifact = handCaptureArtifact({
+    runLabel,
     runtime,
     platform,
     nativeApp,
     brush,
     orientation,
     theme,
-    // The page's own answer, not the request — see capture-device-frames.
-    observedTheme: ready.resolvedTheme ?? null,
-    device: serial ?? null,
-    drawSeconds: seconds,
-    transport: 'human-finger',
+    ready,
+    device: serial,
+    seconds,
     reading,
     fidelity,
     summaries,
-    report: payload.report,
-    topology: payload.topology ?? null,
-  };
+    payload,
+  });
+
   if (output) {
     mkdirSync(dirname(join(ROOT, output)), { recursive: true });
     writeFileSync(join(ROOT, output), JSON.stringify(artifact, null, 2));
