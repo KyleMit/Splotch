@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { CAMPAIGN_TARGETS } from '../lib/campaign-plan.mjs';
+import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import {
   CAPTURE_RUNTIMES,
   DEFAULT_CAPTURE_RUNTIME,
@@ -128,6 +129,67 @@ describe('the 2026-08-23 iPad corpus', () => {
     const webview = verdicts.find((v) => v.target === 'ipad-device-native');
 
     expect(inputFidelity(webview.input, 'ios-safari').checks.coalescing).toBe(false);
+  });
+});
+
+// Recomputed from the RAW event rows rather than read from each capture's stored
+// summary. The summary is what the runner wrote; the rows are what the device
+// reported, and the whole argument for removing three checks is about what the
+// device reports.
+function handCorpus() {
+  const campaign = '2026-08-23-hand';
+  const index = JSON.parse(readFileSync(join(EVIDENCE, campaign, 'index.json'), 'utf8'));
+  return index.kept.map((entry) => {
+    const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, entry.file), 'utf8'));
+    return {
+      file: entry.file,
+      // The hand tool records the runtime top-level; the driven runner records it
+      // only inside the verdict. Reading one of them silently drops the control.
+      runtime: capture.runtime ?? capture.fidelity?.runtime,
+      byHand: capture.transport === 'human-finger',
+      input: summarizeRun(capture.report).phases?.[0]?.input ?? {},
+    };
+  });
+}
+
+// The justification for `android-chrome`'s three NOT_APPLICABLE entries is an
+// equivalence between what a real finger reports and what synthesized touch
+// reports. Asserting the entries alone would let someone delete the control, or
+// the whole corpus, without a test noticing — leaving three checks removed on
+// evidence that no longer exists.
+describe('the evidence that removed three Android checks', () => {
+  const corpus = handCorpus().filter((sample) => sample.runtime === 'android-chrome');
+  const hands = corpus.filter((sample) => sample.byHand);
+  const controls = corpus.filter((sample) => !sample.byHand);
+  const silent = (sample) => ({
+    pressure: sample.input.pressure?.p50,
+    width: sample.input.contactWidth?.p50,
+    height: sample.input.contactHeight?.p50,
+    coalesced: sample.input.coalescedPerMove,
+  });
+
+  it('still holds both sides of the comparison', () => {
+    expect(hands.length).toBeGreaterThanOrEqual(3);
+    expect(controls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // The claim is not "these values are 1/0/0/0". It is that a hand and a robot are
+  // INDISTINGUISHABLE here, which is what makes the checks carry no information.
+  it('reports the three silent checks identically for a hand and for a robot', () => {
+    const distinct = new Set(corpus.map((sample) => JSON.stringify(silent(sample))));
+
+    expect([...distinct]).toHaveLength(1);
+    expect(silent(hands[0])).toEqual({ pressure: 1, width: 0, height: 0, coalesced: 0 });
+  });
+
+  // And the checks that were KEPT must still separate them from a bad capture:
+  // every one of these was driven properly, by hand or by adb.
+  it('keeps a check that the same corpus can still pass', () => {
+    for (const sample of corpus) {
+      expect(sample.input.kinds, sample.file).toBe('touch');
+      expect(sample.input.trust?.share, sample.file).toBe(1);
+      expect(sample.input.movesPerSecond, sample.file).toBeGreaterThan(100);
+    }
   });
 });
 
