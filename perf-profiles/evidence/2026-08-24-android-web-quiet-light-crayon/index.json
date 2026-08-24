@@ -1,0 +1,14 @@
+{
+  "campaign": "2026-08-24-android-web-quiet-light-crayon",
+  "capturedFrom": "perf-profiles/campaign-1284-quiet",
+  "kept": [
+    {
+      "file": "android-device-web-crayon.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-light/crayon-real-screen.json"
+    }
+  ]
+}
