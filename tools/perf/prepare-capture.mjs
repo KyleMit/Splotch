@@ -331,6 +331,8 @@ const DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS = 5_000;
 // Kept small on purpose: the interesting lines are the innermost error, and a
 // whole Appium session log is megabytes of noise around them.
 const DIAGNOSTIC_LOG_EXCERPT_CHARS = 4_000;
+const DIAGNOSTIC_LOG_SETTLE_MS = 5_000;
+const DIAGNOSTIC_LOG_POLL_MS = 100;
 // A rotation is a physical animation on a real panel, and the page's own
 // dimensions do not update until it settles.
 const IOS_ROTATION_SETTLE_MS = 2_000;
@@ -484,7 +486,16 @@ export async function diagnoseLaunchFailure(
       signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
     }).catch(() => null);
 
-    const cause = classifyAppiumLog(log);
+    // The child's stdout reaches this process asynchronously, so classifying the
+    // instant the session request returns can read an empty log and report "no
+    // cause found" for a server that logged one a millisecond later. Wait for a
+    // cause to appear, bounded — the happy path exits as soon as the line lands.
+    const logDeadline = Date.now() + DIAGNOSTIC_LOG_SETTLE_MS;
+    let cause = classifyAppiumLog(log);
+    while (!cause && Date.now() < logDeadline) {
+      await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_LOG_POLL_MS));
+      cause = classifyAppiumLog(log);
+    }
     return {
       cause,
       diagnostic: cause
