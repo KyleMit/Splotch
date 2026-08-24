@@ -116,7 +116,7 @@ export function nextAction(
 // earlier run already proved were futile.
 // `startsWith`, because the runner suffixes every attempt row with the child's
 // exit code. An equality check here reads as correct and matches nothing.
-export function hasUncalibratedRuntime(rows, cellId) {
+function hasUncalibratedRuntime(rows, cellId) {
   return rows.some((row) => row.cell === cellId && row.status?.startsWith(UNCALIBRATED_RUNTIME));
 }
 

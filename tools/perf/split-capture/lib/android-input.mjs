@@ -138,7 +138,7 @@ export function androidPageLaunchSteps(orientation, pageUrl) {
   ];
 }
 
-export const APP_PACKAGE = 'art.splotch.app';
+const APP_PACKAGE = 'art.splotch.app';
 const APP_ACTIVITY = `${APP_PACKAGE}/.MainActivity`;
 
 // The native counterpart: the app reaches the instrumented page through its own
