@@ -38,13 +38,27 @@ describe('withActionControlScoreability', () => {
     expect(section).toMatchObject({ scoreable: true, controlLabel: 'idle frame control' });
   });
 
-  // A target that never ran a control sweep is not proven bad. It scores, because
-  // that is how it has always been read; what changes is that a FAILING control is
-  // now believed rather than dropped.
-  it('scores a section that carries no control row', () => {
+  // Fails closed. Without the control nothing separates product work from a sick
+  // host, which is the whole reason the control exists — so an absent row, or one
+  // whose verdict is anything but an explicit pass, leaves the section unscoreable.
+  // Defaulting a missing control to scoreable makes the check optional, and a check
+  // a capture can skip is not a check.
+  it('does not score a section that carries no control row', () => {
     const section = withActionControlScoreability({ results: [action('open settings', true)] });
 
-    expect(section).toMatchObject({ scoreable: true, controlLabel: null });
+    expect(section).toMatchObject({
+      scoreable: false,
+      controlLabel: null,
+      controlEvidence: 'absent',
+    });
+  });
+
+  it('does not score a control whose verdict is missing', () => {
+    const section = withActionControlScoreability({
+      results: [{ label: 'idle frame control' }, action('open settings', true)],
+    });
+
+    expect(section).toMatchObject({ scoreable: false, controlEvidence: 'failed' });
   });
 
   it('passes a missing section through untouched', () => {
@@ -84,7 +98,7 @@ describe('the published android-emulator-web rows', () => {
 describe('the rendered report', () => {
   it('marks an unattributable cell rather than colouring it by ratio', () => {
     expect(report).toContain('heat-cell unscoreable');
-    expect(report).toContain('this mode’s idle frame control failed its own gate');
+    expect(report).toContain('this mode’s idle frame control is failed');
     expect(report).toContain('>no control<');
   });
 

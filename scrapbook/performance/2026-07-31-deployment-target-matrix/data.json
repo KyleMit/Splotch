@@ -206,7 +206,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -264,7 +266,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -322,7 +326,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -380,7 +386,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1642,7 +1650,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -1691,7 +1700,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1749,7 +1760,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1807,7 +1820,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1865,7 +1880,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3127,7 +3144,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -3176,7 +3194,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3234,7 +3254,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3292,7 +3314,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3350,7 +3374,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4637,7 +4663,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -4686,7 +4713,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4744,7 +4773,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4802,7 +4833,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4860,7 +4893,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -6147,7 +6182,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]
@@ -6182,8 +6218,10 @@
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6194,24 +6232,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -6240,8 +6284,10 @@
                 "lostFrameTimeShare": 0.0214,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6252,24 +6298,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -6298,8 +6350,10 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6310,24 +6364,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -6356,8 +6416,10 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -6368,24 +6430,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7669,7 +7737,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -7692,8 +7761,10 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7704,24 +7775,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7750,8 +7827,10 @@
                 "lostFrameTimeShare": 0.0203,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7762,24 +7841,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7808,8 +7893,10 @@
                 "lostFrameTimeShare": 0.001,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7820,24 +7907,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -7866,8 +7959,10 @@
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
-                "failedFidelityChecks": [],
+                "scoreable": false,
+                "failedFidelityChecks": [
+                  "coalescing"
+                ],
                 "refreshRegime": "60hz",
                 "offRefreshRegime": false
               },
@@ -7878,24 +7973,30 @@
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
                     "runtime": "ios-capacitor-webview",
-                    "passed": true,
+                    "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": true,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
-                  "scoreable": true,
-                  "failedFidelityChecks": [],
+                  "scoreable": false,
+                  "failedFidelityChecks": [
+                    "coalescing"
+                  ],
                   "phases": [
                     {
                       "phase": "blank",
@@ -9179,7 +9280,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -9203,7 +9305,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9250,7 +9354,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9297,7 +9403,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9344,7 +9452,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9425,7 +9535,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9472,7 +9584,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9519,7 +9633,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9566,7 +9682,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9659,7 +9777,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -9706,7 +9826,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -9753,7 +9875,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -9800,7 +9924,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -11076,7 +11202,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -11105,7 +11232,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -11152,7 +11281,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -11199,7 +11330,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -11246,7 +11379,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12522,7 +12657,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -12551,7 +12687,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12598,7 +12736,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12645,7 +12785,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12692,7 +12834,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -13993,7 +14137,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -14022,7 +14167,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -14069,7 +14216,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -14116,7 +14265,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -14163,7 +14314,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -15464,7 +15617,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -15505,7 +15659,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -15553,7 +15709,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -15601,7 +15759,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -15649,7 +15809,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -16951,7 +17113,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -16980,7 +17143,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -17028,7 +17193,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -17076,7 +17243,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -17124,7 +17293,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18426,7 +18597,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -18455,7 +18627,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18503,7 +18677,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18551,7 +18727,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18599,7 +18777,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18681,7 +18861,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18729,7 +18911,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18777,7 +18961,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18825,7 +19011,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18919,7 +19107,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -18968,7 +19158,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -19017,7 +19209,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -19066,7 +19260,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20394,7 +20590,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -20423,7 +20620,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20472,7 +20671,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20521,7 +20722,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20570,7 +20773,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -21898,7 +22103,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -21927,7 +22133,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -21976,7 +22184,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -22025,7 +22235,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -22074,7 +22286,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -23052,7 +23266,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -23081,7 +23296,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -23130,7 +23347,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -23179,7 +23398,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -23228,7 +23449,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -24206,7 +24429,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -24247,7 +24471,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -24296,7 +24522,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -24345,7 +24573,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -24394,7 +24624,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25722,7 +25954,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -25751,7 +25984,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25800,7 +26035,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25849,7 +26086,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25898,7 +26137,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -27226,7 +27467,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -27255,7 +27497,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -27304,7 +27548,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -27353,7 +27599,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -27402,7 +27650,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28380,7 +28630,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -28409,7 +28660,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28458,7 +28711,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28507,7 +28762,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28556,7 +28813,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29534,7 +29793,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -29575,7 +29835,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29624,7 +29886,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29673,7 +29937,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29722,7 +29988,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -31050,7 +31318,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": false
+            "scoreable": false,
+            "controlEvidence": "failed"
           },
           "preservedSections": [
             "drawing",
@@ -31079,7 +31348,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -31128,7 +31399,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -31177,7 +31450,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -31226,7 +31501,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -32554,7 +32831,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": false
+            "scoreable": false,
+            "controlEvidence": "failed"
           },
           "preservedSections": [
             "drawing",
@@ -32583,7 +32861,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -32631,7 +32911,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -32679,7 +32961,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -32727,7 +33011,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33704,7 +33990,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -33733,7 +34020,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33781,7 +34070,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33829,7 +34120,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33877,7 +34170,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -34854,7 +35149,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -34895,7 +35191,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -34944,7 +35242,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -34993,7 +35293,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -35042,7 +35344,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36370,7 +36674,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -36399,7 +36704,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36448,7 +36755,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36497,7 +36806,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36546,7 +36857,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -37874,7 +38187,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -37903,7 +38217,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -37952,7 +38268,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -38001,7 +38319,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -38050,7 +38370,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -39028,7 +39350,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -39057,7 +39380,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -39106,7 +39431,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -39155,7 +39482,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -39204,7 +39533,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -40182,7 +40513,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -40237,7 +40569,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -40372,7 +40706,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -40507,7 +40843,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -40642,7 +40980,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -42017,7 +42357,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -42055,7 +42396,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -42190,7 +42533,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -42325,7 +42670,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -42460,7 +42807,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -43835,7 +44184,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -43873,7 +44223,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -44008,7 +44360,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -44143,7 +44497,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -44278,7 +44634,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -45678,7 +46036,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -45716,7 +46075,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -45851,7 +46212,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -45986,7 +46349,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -46121,7 +46486,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -47521,7 +47888,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]
@@ -47571,7 +47939,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -47706,7 +48076,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -47841,7 +48213,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -47976,7 +48350,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -49351,7 +49727,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -49389,7 +49766,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -49524,7 +49903,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -49659,7 +50040,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -49794,7 +50177,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -51169,7 +51554,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -51207,7 +51593,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -51342,7 +51730,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -51477,7 +51867,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -51612,7 +52004,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -53012,7 +53406,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -53050,7 +53445,9 @@
                     "intervalMs": 17,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -53185,7 +53582,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -53320,7 +53719,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -53455,7 +53856,9 @@
                     "intervalMs": 16,
                     "observed": "60hz",
                     "expected": "60hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -54855,7 +55258,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]
@@ -54905,7 +55309,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -55040,7 +55446,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -55175,7 +55583,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -55310,7 +55720,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -56685,7 +57097,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -56723,7 +57136,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -56858,7 +57273,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -56993,7 +57410,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -57128,7 +57547,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -58503,7 +58924,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -58541,7 +58963,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -58676,7 +59100,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -58811,7 +59237,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -58946,7 +59374,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -60346,7 +60776,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -60384,7 +60815,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -60519,7 +60952,9 @@
                     "intervalMs": 8.4,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -60654,7 +61089,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -60789,7 +61226,9 @@
                     "intervalMs": 8.42,
                     "observed": "120hz",
                     "expected": "120hz",
-                    "matched": true
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -62189,7 +62628,8 @@
               }
             ],
             "controlLabel": "idle frame control",
-            "scoreable": true
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]

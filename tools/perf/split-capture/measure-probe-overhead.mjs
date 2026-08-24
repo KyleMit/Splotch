@@ -1,6 +1,6 @@
 // Measure what the in-page probe costs the page it is measuring.
 //
-//   npm run perf:device:probe-overhead -- --device-serial=<serial> \
+//   npm run perf:device:probe-overhead -- --device-serial=<serial> --brush=crayon \
 //     --upstream=http://127.0.0.1:4196 --probe-host=http://127.0.0.1:4195
 //
 // Every real-screen capture runs with an injected probe that hooks pointer
@@ -51,6 +51,8 @@ const SWIPES_PER_SAMPLE = 12;
 // itself part of the answer rather than a reason to take fewer.
 const SAMPLES_PER_ARM = 3;
 const ARMS = ['control', 'probe'];
+const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
+const BRUSH_COMMIT_TIMEOUT_MS = 45_000;
 
 const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 
@@ -113,10 +115,18 @@ const FORWARDED_HEADERS = ['accept', 'accept-language', 'content-type', 'user-ag
 // undici reuses it. One retry covers that race; without it roughly one poll per
 // run failed, the bootstrap parsed the 502 body as its plan, and the probe arm
 // silently became a second control arm.
+//
+// Restricted to GET and HEAD. Retrying a POST replays a request the upstream may
+// already have processed — a duplicate report or a duplicate plan write — and a
+// blanket catch would also hide failures that have nothing to do with the
+// keep-alive race behind a second attempt that happens to succeed.
+const RETRYABLE_METHODS = new Set(['GET', 'HEAD']);
+
 async function forward(target, init) {
   try {
     return await fetch(target, init);
-  } catch {
+  } catch (error) {
+    if (!RETRYABLE_METHODS.has(init.method)) throw error;
     return fetch(target, init);
   }
 }
@@ -197,9 +207,42 @@ export function createOverheadHost({
   return { server, state };
 }
 
-async function runSample(serial, state, pageUrl, arm, geometry) {
-  const before = state.reports.length;
-  const errorsBefore = state.pageErrors.length;
+// The brush is persisted per origin and the arms share one, so whichever brush the
+// last page committed is the one the CONTROL arm draws with — and the control arm
+// runs first. An earlier revision left that to whatever the probe host's default
+// plan happened to be, which made the measured brush a property of run order rather
+// than of the run. It is now requested, committed through a probe-arm page, and
+// verified before any sample is taken.
+async function pollFor(callback, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const value = await callback().catch(() => null);
+    if (value) return value;
+    await sleep(POLL_INTERVAL_MS);
+  }
+  return null;
+}
+
+async function primeBrush(serial, pageUrl, probeHost, brush) {
+  // Reset first: the probe host keeps the last page's `ready` payload, and polling
+  // for a commit without clearing it reads the previous run's brush and calls it a
+  // success.
+  const plan = await fetch(`${probeHost}/__probe/control`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ brush, label: `overhead-${brush}`, finish: false, reset: true }),
+  });
+  if (!plan.ok) fail(`could not set the probe plan to ${brush}`);
+  await launchArm(serial, pageUrl, 'probe');
+  const committed = await pollFor(async () => {
+    const ready = await fetch(`${probeHost}/__probe/state`).then((response) => response.json());
+    return ready?.ready?.committed === brush ? ready.ready : null;
+  }, BRUSH_COMMIT_TIMEOUT_MS);
+  if (!committed) fail(`the page never committed ${brush}; measuring would compare two brushes`);
+  return brush;
+}
+
+async function launchArm(serial, pageUrl, arm) {
   adb(serial, ['shell', 'am', 'force-stop', CHROME_PACKAGE]);
   await sleep(APP_STOP_SETTLE_MS);
   adb(serial, [
@@ -209,12 +252,18 @@ async function runSample(serial, state, pageUrl, arm, geometry) {
     '-a',
     'android.intent.action.VIEW',
     '-d',
-    `'${pageUrl}?arm=${arm}&nonce=${Date.now()}'`,
+    `'${pageUrl}?arm=${arm}&nonce=${process.pid}-${arm}'`,
     CHROME_PACKAGE,
   ]);
+  await sleep(PAGE_SETTLE_MS);
+}
+
+async function runSample(serial, state, pageUrl, arm, geometry) {
+  const before = state.reports.length;
+  const errorsBefore = state.pageErrors.length;
   // Long enough for the probe arm's bootstrap to finish its setup, so the input
   // lands inside the counter's recording window in both arms.
-  await sleep(PAGE_SETTLE_MS);
+  await launchArm(serial, pageUrl, arm);
   for (let swipe = 0; swipe < SWIPES_PER_SAMPLE; swipe++) {
     adb(serial, [
       'shell',
@@ -230,11 +279,17 @@ async function runSample(serial, state, pageUrl, arm, geometry) {
   const deadline = Date.now() + UPLOAD_TIMEOUT_MS;
   while (Date.now() < deadline && state.reports.length === before) await sleep(POLL_INTERVAL_MS);
   const report = state.reports[before];
-  if (!report) return null;
+  if (!report) return { arm, invalid: 'no report uploaded' };
   const errors = state.pageErrors
     .slice(errorsBefore)
     .filter((entry) => entry.kind === 'error' || entry.kind === 'bootstrap');
-  return { arm, ...summarizeDeltas(report.deltas), pageErrors: errors.length };
+  // A probe arm whose bootstrap threw measured a page with no probe in it, which is
+  // a second control arm wearing the probe label. An earlier revision counted the
+  // errors and then included the row in the mean anyway.
+  if (errors.length > 0) {
+    return { arm, invalid: `${errors.length} page error(s): ${errors[0].message ?? 'unknown'}` };
+  }
+  return { arm, ...summarizeDeltas(report.deltas), pageErrors: 0 };
 }
 
 // Identical device-space coordinates in both arms, derived from the screen rather
@@ -263,29 +318,58 @@ export async function measureProbeOverhead({
   probeHost = argFlag('probe-host', DEFAULT_PROBE_HOST),
   address = argFlag('host-address', lanAddress()),
   samples = Number(argFlag('samples', SAMPLES_PER_ARM)),
+  brush = argFlag('brush', 'pen'),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
   if (!address) fail('no non-loopback IPv4 address found — pass --host-address=');
+  if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
 
   const { server, state } = createOverheadHost({ upstream, probeHost });
   await new Promise((resolve) => server.listen(port, '0.0.0.0', resolve));
   const geometry = centreSwipe(readScreenSize(serial));
   const pageUrl = `http://${address}:${port}/`;
   const rows = [];
+  const invalid = [];
   try {
+    const committedBrush = await primeBrush(serial, pageUrl, probeHost, brush);
     // Arms interleaved rather than blocked, so a device that warms or throttles
     // across the run cannot be mistaken for the probe.
     for (let sample = 0; sample < samples; sample++) {
       for (const arm of ARMS) {
         const row = await runSample(serial, state, pageUrl, arm, geometry);
-        if (row) rows.push({ sample: sample + 1, ...row });
-        else console.log(`sample ${sample + 1} ${arm}: no report uploaded`);
+        if (row.invalid) invalid.push({ sample: sample + 1, arm, reason: row.invalid });
+        else rows.push({ sample: sample + 1, brush: committedBrush, ...row });
       }
     }
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await shutDown(serial, server, probeHost);
+  }
+  // Every requested pair has to be valid. A comparison missing one arm of one sample
+  // is not the interleaved design it claims to be, and reporting a mean over
+  // whatever survived is how a broken run publishes an ordinary-looking number.
+  if (invalid.length > 0) {
+    for (const entry of invalid) {
+      console.error(`sample ${entry.sample} ${entry.arm}: ${entry.reason}`);
+    }
+    fail(`${invalid.length} of ${samples * ARMS.length} measurements were not valid`);
   }
   return rows;
+}
+
+// The last page keeps polling a `finish: false` plan every 400 ms, and
+// `server.close()` waits for that connection to drain — a run that measured cleanly
+// then hung for six minutes until Chrome was force-stopped. Both halves are closed
+// deterministically: the plan is finished so the page's own loop exits, and the
+// browser is stopped so nothing is left holding a socket.
+async function shutDown(serial, server, probeHost) {
+  await fetch(`${probeHost}/__probe/control`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ finish: true }),
+  }).catch(() => {});
+  adb(serial, ['shell', 'am', 'force-stop', CHROME_PACKAGE]);
+  server.closeAllConnections?.();
+  await new Promise((resolve) => server.close(resolve));
 }
 
 if (isMain(import.meta.url)) {
@@ -297,7 +381,7 @@ if (isMain(import.meta.url)) {
       if (!perSecond.length) continue;
       const mean = perSecond.reduce((total, value) => total + value, 0) / perSecond.length;
       console.log(
-        `${arm.padEnd(8)} frames/s ${mean.toFixed(2)} ` +
+        `${arm.padEnd(8)} ${rows[0].brush} frames/s ${mean.toFixed(2)} ` +
           `(${perSecond.map((value) => value.toFixed(2)).join(', ')})`
       );
     }

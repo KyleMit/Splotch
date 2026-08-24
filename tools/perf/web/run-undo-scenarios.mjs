@@ -48,7 +48,6 @@ import {
   COMMIT_GATE_PERCENTILE,
   confirmedBreach,
   evaluateCommitTiming,
-  HOST_SLOWDOWN_CAP,
 } from '../lib/undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 
@@ -804,11 +803,9 @@ function readRestoredHistoryOrSeed(historyPath) {
 // the device-calibrated verdict remains in ADR-0090. Chromium stays advisory
 // because its software canvas path cannot supply comparable absolute timings.
 function formatCommitBreach(scenario, timing) {
-  const gateTiming = timing.normalized
-    ? `gate ${f1(timing.gateP95Ms)} ms after ${f1(timing.slowdownFactor)}× ` +
-      `same-run renderer normalization (raw ${f1(timing.rawP95Ms)} ms · ` +
-      `draw total ${f1(scenario.draw.totalMs)} ms), `
-    : `commit p95 ${f1(timing.rawP95Ms)} ms, `;
+  const host =
+    timing.hostSlowdown === null ? '' : ` · host ${f1(timing.hostSlowdown)}× the reference run`;
+  const gateTiming = `commit p95 ${f1(timing.rawP95Ms)} ms${host}, `;
   return `  ${scenario.key}: ${gateTiming}max ${f1(scenario.draw.commitMaxMs)} ms`;
 }
 
@@ -908,18 +905,25 @@ function reportCommitGate(
       evaluateCommitTiming(second, { normalizeSharedRunnerCrayon }),
     ])
   );
-  const breaches = gated
-    ? measured.filter((scenario) => {
+  // A first-pass breach fails the job unless a SECOND measurement was taken and came
+  // back clean. A confirmation that could not be scored acquits nothing.
+  const dispositions = new Map(
+    measured
+      .filter((scenario) => timings.get(scenario.key).breached)
+      .map((scenario) => {
         const first = timings.get(scenario.key);
-        if (!first.breached) return false;
         const second = confirmedTimings.get(scenario.key);
-        return second ? confirmedBreach([first, second]) : true;
+        return [scenario.key, second ? confirmedBreach([first, second]) : 'unconfirmed'];
       })
+  );
+  const breaches = gated
+    ? measured.filter(
+        (scenario) =>
+          dispositions.get(scenario.key) !== 'acquitted' && dispositions.has(scenario.key)
+      )
     : [];
-  const unconfirmed = gated
-    ? measured
-        .filter((scenario) => timings.get(scenario.key).breached)
-        .filter((scenario) => !breaches.includes(scenario))
+  const acquitted = gated
+    ? measured.filter((scenario) => dispositions.get(scenario.key) === 'acquitted')
     : [];
   const base = {
     engine: engineName,
@@ -929,14 +933,22 @@ function reportCommitGate(
     breaches,
     scenarioTimings,
     confirmationTimings: [...confirmedTimings.values()],
+    breachDispositions: Object.fromEntries(dispositions),
   };
-  for (const scenario of unconfirmed) {
+  for (const scenario of acquitted) {
     const first = timings.get(scenario.key);
     const second = confirmedTimings.get(scenario.key);
     console.log(
       `Commit gate: ${scenario.key} breached once and not again — ` +
         `${first.gateP95Ms.toFixed(1)} ms then ${second.gateP95Ms.toFixed(1)} ms against ` +
         `${budgetMs} ms. Reported, not failed.`
+    );
+  }
+  for (const scenario of breaches) {
+    if (dispositions.get(scenario.key) !== 'unconfirmed') continue;
+    console.error(
+      `Commit gate: ${scenario.key} breached and its confirmation could not be scored. ` +
+        'Kept as a breach — an unscoreable second measurement acquits nothing.'
     );
   }
 
@@ -968,15 +980,9 @@ function reportCommitGate(
   const unevaluable = scenarioTimings.filter((timing) => !timing.evaluable);
   if (unevaluable.length > 0) {
     process.exitCode = 1;
-    const stalled = unevaluable.filter((timing) => timing.stalled);
     console.error(
-      `\n✗ Commit gate NOT EVALUATED on ${engineName}: ` +
-        (stalled.length > 0
-          ? `the host was more than ${HOST_SLOWDOWN_CAP}x slower than the calibrated runner for ` +
-            `${stalled.map((timing) => `${timing.key} (${timing.hostSlowdown.toFixed(1)}x)`).join(', ')}, ` +
-            'so its numbers are not comparable to anything and are refused rather than discounted.\n'
-          : `the same-run renderer control had no engine.draw samples for ` +
-            `${unevaluable.map((timing) => timing.key).join(', ')}.\n`)
+      `\n✗ Commit gate NOT EVALUATED on ${engineName}: no commit p95 for ` +
+        `${unevaluable.map((timing) => timing.key).join(', ')}.\n`
     );
     return {
       engine: engineName,

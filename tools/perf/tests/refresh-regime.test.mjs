@@ -7,6 +7,7 @@ import { OFF_REFRESH_REGIME, UNSCOREABLE, attemptsFor } from '../lib/campaign-le
 import {
   REFRESH_REGIMES,
   classifyRefreshRegime,
+  refreshRegimeBand,
   describeRefreshRegime,
   refreshRegimeVerdict,
 } from '../lib/refresh-regime.mjs';
@@ -23,8 +24,19 @@ function corpusBeats(campaign) {
 
 describe('classifyRefreshRegime', () => {
   it('recognizes the two rates this project captures at', () => {
-    expect(classifyRefreshRegime(REFRESH_REGIMES['60hz'])).toBe('60hz');
-    expect(classifyRefreshRegime(REFRESH_REGIMES['120hz'])).toBe('120hz');
+    expect(classifyRefreshRegime(REFRESH_REGIMES['60hz'].nominalMs)).toBe('60hz');
+    expect(classifyRefreshRegime(REFRESH_REGIMES['120hz'].nominalMs)).toBe('120hz');
+  });
+
+  // The bands are the measured spread plus a stated margin, not a percentage of
+  // nominal. An earlier revision used +/-20%, which accepted 13.3-20.0 ms and
+  // 6.7-10.0 ms — roughly 50-75 Hz and 100-150 Hz — from four captures per target.
+  it('stays close to what was measured rather than to a fraction of nominal', () => {
+    expect(refreshRegimeBand('60hz')).toEqual([14.5, 18.5]);
+    expect(classifyRefreshRegime(13.3)).toBeNull();
+    expect(classifyRefreshRegime(20)).toBeNull();
+    expect(classifyRefreshRegime(6.7)).toBeNull();
+    expect(classifyRefreshRegime(10)).toBeNull();
   });
 
   // The estimator reports whole-ish milliseconds, and the corpus spans 16-17 for a
@@ -99,14 +111,30 @@ describe('refreshRegimeVerdict', () => {
     expect(refreshRegimeVerdict(17, '120hz').matched).toBe(false);
   });
 
-  // Nothing to compare against is not a licence to reject, and not a claim that the
-  // capture is comparable either. It is recorded and scored, and the gap is closed
-  // by measuring the target rather than by guessing at it.
-  it('does not reject a target with no established regime', () => {
-    const verdict = refreshRegimeVerdict(33.3, null);
+  // Three outcomes, not two. A target with no established regime is NOT scoreable —
+  // nothing has characterized its beat, so there is nothing to compare against — but
+  // it is also not worth retrying, because a second capture cannot establish a
+  // regime the table does not hold. The campaign banks it; the matrix refuses to
+  // score it.
+  it('separates an unestablished regime from an off-regime capture', () => {
+    const unestablished = refreshRegimeVerdict(33.3, null);
 
-    expect(verdict).toMatchObject({ observed: null, expected: null, matched: true });
-    expect(describeRefreshRegime(verdict)).toBe('33.3 ms (unrecognized, no established regime)');
+    expect(unestablished).toMatchObject({
+      observed: null,
+      expected: null,
+      verdict: 'unestablished',
+      matched: true,
+      scoreable: false,
+    });
+    expect(describeRefreshRegime(unestablished)).toBe(
+      '33.3 ms (unrecognized, no established regime — not scoreable)'
+    );
+
+    const offRegime = refreshRegimeVerdict(8, '60hz');
+    expect(offRegime).toMatchObject({ verdict: 'off-regime', matched: false, scoreable: false });
+
+    const inRegime = refreshRegimeVerdict(17, '60hz');
+    expect(inRegime).toMatchObject({ verdict: 'in-regime', matched: true, scoreable: true });
   });
 
   // An unrecognized beat against an established regime is a mismatch: the capture

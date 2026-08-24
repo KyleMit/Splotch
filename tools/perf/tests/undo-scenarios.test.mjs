@@ -469,9 +469,12 @@ describe('engine selection', () => {
       'multi-finger',
       'crayon-scribbles',
     ]);
+    // Neither scenario is normalized: the divisor is off until its reference and cap
+    // are calibrated from a multi-run distribution (ADR-0140). The host control is
+    // still measured on the scenario the reference describes.
     expect(report.gate.scenarioTimings).toEqual([
-      expect.objectContaining({ key: 'multi-finger', normalized: false }),
-      expect.objectContaining({ key: 'crayon-scribbles', normalized: true }),
+      expect.objectContaining({ key: 'multi-finger', normalized: false, hostSlowdown: null }),
+      expect.objectContaining({ key: 'crayon-scribbles', normalized: false }),
     ]);
     expect(report.fastSetEvaluation).toBeNull();
   });

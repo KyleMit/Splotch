@@ -157,10 +157,11 @@ function row(scored) {
     brush: scored.brush,
     'mv/s': round(phase.input?.movesPerSecond, 1),
     beat: round(scored.summaries.intervalMs, 2),
-    // A capture measured in the other refresh regime is not comparable to the rest
-    // of the column, and its lost-frame share can be 6x wrong while every other
-    // value in the row looks ordinary.
-    regime: scored.regime.matched ? scored.regime.observed : `${scored.regime.observed}!`,
+    // Suffixed `?` when the capture is not scoreable on its beat — either it was
+    // measured in another regime, or its target has no established regime to compare
+    // against. Its lost-frame share can be 6x wrong while every other value in the
+    // row looks ordinary.
+    regime: scored.regime.scoreable ? scored.regime.observed : `${scored.regime.observed}?`,
     'paint p95': round(phase.paintLatencyMs?.p95, 1),
     'paint max': round(phase.paintLatencyMs?.max, 1),
     'lost %': round(lost * 100, 2),

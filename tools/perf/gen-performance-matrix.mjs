@@ -79,13 +79,21 @@ function loadPreservedEvidence(manifest, manifestDirectory) {
 }
 
 // A preserved drawing section is the published normalized result, and its runs
-// still carry the fidelity verdict they were captured with. Without re-deriving
-// scoreability from it, a preserved fidelity-failed cell rendered a bold product
-// FAIL while a freshly captured one with the identical verdict rendered
-// unscoreable — the same measurement, two contradictory claims, decided only by
-// which side of a recapture it landed on.
-export function withPreservedScoreability(section) {
-  if (!section || typeof section !== 'object') return section;
+// still carry the fidelity verdict they were captured with. Without acting on it, a
+// preserved fidelity-failed cell rendered a bold product FAIL while a freshly
+// captured one with the identical verdict rendered unscoreable — the same
+// measurement, two contradictory claims, decided only by which side of a recapture
+// it landed on.
+//
+// The verdict is not re-derived, because re-deriving needs the raw input samples and
+// a preserved cell has only normalized results. So the cell is not scored at all:
+// its published verdict is kept as provenance and the current one is unknown. Every
+// preserved drawing cell in the matrix today already fails some check, so this
+// changes no published number — it closes the case where a copied verdict that
+// happened to pass would have been read as a current one.
+export const PRESERVED_VERDICT_REASON = 'preserved: no current verdict';
+export function withPreservedScoreability(section, preserved = true) {
+  if (!preserved || !section || typeof section !== 'object') return section;
   const rescored = {};
   for (const [brush, entry] of Object.entries(section)) {
     const runs = entry?.runs ?? [];
@@ -93,11 +101,23 @@ export function withPreservedScoreability(section) {
       rescored[brush] = entry;
       continue;
     }
-    const failedFidelityChecks = [
+    // The verdict a preserved run carries was computed by whichever expectations
+    // its checkout held, and it cannot be re-derived because re-deriving needs raw
+    // input samples a preserved cell does not have. Keeping it under its own name
+    // says what it is; letting it drive `scoreable` would present a historical
+    // verdict as a judgement under current calibration, and `scoreable` is what the
+    // plots and the failure ranking read.
+    // `run.fidelity` is left in place. It is not only provenance: this matrix
+    // preserves cells from its own previously published `data.json`
+    // (`preservedEvidence.from`), so blanking the field here destroys the source
+    // the NEXT regeneration preserves from — the generator eats its own input. The
+    // "no current verdict" claim therefore lives on the aggregate, which is
+    // recomputed from the runs every time.
+    const publishedChecks = [
       ...new Set(
         runs.flatMap((run) =>
           Object.entries(run.fidelity?.checks ?? {})
-            .filter(([, passed]) => !passed)
+            .filter(([, passed]) => passed !== true)
             .map(([check]) => check)
         )
       ),
@@ -106,8 +126,10 @@ export function withPreservedScoreability(section) {
       ...entry,
       aggregate: {
         ...entry.aggregate,
-        scoreable: runs.every((run) => run.fidelity?.passed !== false),
-        failedFidelityChecks,
+        scoreable: false,
+        unscoreableReason: PRESERVED_VERDICT_REASON,
+        failedFidelityChecks: [],
+        publishedFidelityChecks: publishedChecks,
       },
     };
   }
@@ -242,7 +264,10 @@ function normalizeDrawingRun(
     // reason: the gates are 60 Hz-calibrated (ADR-0085) and lostFrameTimeShare
     // prices frames against the observed beat, so the same drawing charged against
     // 8.3 ms instead of 16.7 ms reads as a catastrophe.
-    scoreable: fidelity?.passed !== false && refreshRegime.matched,
+    // `scoreable`, not `matched`: a target whose regime has never been established
+    // cannot have its beat compared to anything, and scoring it anyway is the
+    // fail-open this guard exists to close.
+    scoreable: fidelity?.passed !== false && refreshRegime.scoreable,
     failedFidelityChecks,
     phases: scored.phases.map((phase) => ({
       phase: phase.phase,
@@ -285,7 +310,7 @@ function aggregateDrawingRuns(runs) {
     // disagree is `mixed`, which is worth seeing on its own: their numbers are not
     // comparable to each other, let alone to the column.
     refreshRegime: distinctRefreshRegime(runs),
-    offRefreshRegime: runs.some((run) => run.refreshRegime?.matched === false),
+    offRefreshRegime: runs.some((run) => run.refreshRegime?.scoreable === false),
   };
 }
 
@@ -298,6 +323,7 @@ function distinctRefreshRegime(runs) {
 // Fidelity and refresh regime are two separate reasons a cell cannot be scored, and
 // a label that named only the first rendered an empty parenthesis for the second.
 function unscoreableReasons(aggregate) {
+  if (aggregate.unscoreableReason) return [aggregate.unscoreableReason];
   const reasons = [...aggregate.failedFidelityChecks];
   if (aggregate.offRefreshRegime) reasons.push(`${aggregate.refreshRegime} beat`);
   return reasons;
@@ -387,13 +413,21 @@ function mergeActionResults(captures) {
 export function withActionControlScoreability(actions) {
   if (!actions || typeof actions !== 'object' || !Array.isArray(actions.results)) return actions;
   const control = actions.results.find((result) => ACTION_CONTROL_LABELS.has(result.label));
+  // Fails CLOSED. Without a control that is present and explicitly passing, nothing
+  // distinguishes product work from a sick host — which is the whole reason the
+  // control exists — so an absent row, or one whose `passed` is anything other than
+  // true, leaves the section unscoreable. An earlier revision defaulted a missing
+  // control to scoreable on the grounds that it was not proven bad; that reasoning
+  // makes the check optional, and a check a capture can skip is not a check.
+  //
+  // This costs nothing today: all 40 modes carrying actions in the matrix have a
+  // control row with a boolean verdict.
+  const scoreable = control?.passed === true;
   return {
     ...actions,
     controlLabel: control?.label ?? null,
-    // A section with no control row is not proven bad, and not proven good either.
-    // It scores, because that is how every target without a control sweep has always
-    // been read; what changes is that a FAILING control is now believed.
-    scoreable: control ? control.passed !== false : true,
+    scoreable,
+    controlEvidence: !control ? 'absent' : control.passed === true ? 'passed' : 'failed',
   };
 }
 
@@ -451,6 +485,10 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
     ...shared,
     drawingProductCommit: normalizedMode.drawingProductCommit,
     undoProductCommit: normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
+    // Applied only to a section that actually came from preserved evidence. A
+    // freshly normalized one already carries a verdict re-derived under current
+    // expectations, and blanking that would mark every cell in the matrix
+    // unscoreable.
     drawing: withPreservedScoreability(
       resolveSection(normalizedMode.drawing, 'drawing', () =>
         normalizeDrawing(
@@ -460,7 +498,8 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
           normalizedMode,
           target.id
         )
-      )
+      ),
+      preservedSections.includes('drawing')
     ),
     undo: resolveSection(normalizedMode.undoSource, 'undo', () =>
       normalizeUndo(
@@ -697,7 +736,12 @@ function drawingPlot(matrix, metric, gate, title) {
         // product-failure styling; the tooltip says why instead.
         const unscoreable = result.scoreable === false;
         const failed = !unscoreable && Number.isFinite(value) && value > gate;
-        const why = unscoreable ? ` · unscoreable: ${unscoreableReasons(result).join(', ')}` : '';
+        const published = result.publishedFidelityChecks?.length
+          ? ` · published verdict failed ${result.publishedFidelityChecks.join(', ')}`
+          : '';
+        const why = unscoreable
+          ? ` · unscoreable: ${unscoreableReasons(result).join(', ')}${published}`
+          : '';
         const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${why}`;
         const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
         return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${unscoreable ? ' unscoreable' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
@@ -785,7 +829,7 @@ function actionHeatmap(matrix) {
             ? result.passed
               ? 'PASS'
               : 'FAIL'
-            : 'unscoreable: this mode\u2019s idle frame control failed its own gate';
+            : `unscoreable: this mode\u2019s idle frame control is ${target.actions?.controlEvidence ?? 'absent'}`;
           const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
           const cellClass = attributable ? heatClass(ratio) : 'unscoreable';
           return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;

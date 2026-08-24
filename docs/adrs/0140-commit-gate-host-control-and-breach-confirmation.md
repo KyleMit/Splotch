@@ -55,23 +55,37 @@ false-negative risk by construction, which is an argument against reaching for m
 
 ## Decision
 
-**Express the host control in a unit that marking granularity cannot rescale.** The divisor becomes
-`draw.totalMs / CRAYON_DRAW_REFERENCE_TOTAL_MS`. The scenario replays a fixed recorded input, so
-total drawing time is a proxy for host speed; `draw.ops` is deliberately absent from the formula. A
-change to `engine.draw` granularity changes `ops` and cannot change `totalMs`, so the specific
-defect above cannot recur. The reference is 60,800 ms, from the healthy run in the evidence.
+**Do not normalize at all.** An earlier revision of this ADR re-expressed the control as
+`draw.totalMs / CRAYON_DRAW_REFERENCE_TOTAL_MS` and capped it at 4x. Re-expressing the unit was
+right — `draw.ops` is gone from the formula, so marking granularity can never rescale a divisor
+again — but review was right that fixing the unit does not fix the calibration. `60_800` came from a
+single passing rerun quoted in issue 1247, nothing measured supported the cap, and three runs of the
+same suite reported **8,135 / 9,685 / 13,843 ms** — host dependence far larger than the evidence the
+constants rested on.
 
-**Cap the control.** Past `HOST_SLOWDOWN_CAP` (4x) the run is not a slower host to compensate for,
-it is a host that stalled, and its numbers are not comparable to anything. Such a run is reported
-NOT EVALUATED rather than discounted into a guaranteed pass — the issue's "reject a run whose
-control shows the host was too degraded" option, applied where a control can actually see it.
+A divisor derived from one number can divide a real commit breach down to a pass, and
+`Math.max(1,
+…)` means it can only ever move a score in that direction. So the host control is
+**measured and reported and not applied**: every run records how slow its host was on the scenario
+the reference describes, which is how the multi-run `macos-latest` distribution gets collected from
+ordinary runs rather than from a special one. Every scenario timing in the artifact carries its
+measured slowdown, which is where that distribution comes from; `NORMALIZATION_ENABLED` turns it on
+once they have.
+
+That leaves the gate scoring the raw P95 — which is what it always did for five-finger, and which on
+a healthy runner sits at 1–2 ms against a 25 ms budget on both scenarios.
 
 **Confirm a breach before failing on it.** A scenario whose first pass breached is re-measured once,
 through the same `runUndoScenario` on the same page and build, and fails only if it breaches again.
-A stall does not reproduce; expensive stroke-end work does. A breach seen once is logged with both
-numbers and does not fail the job. This is the only mechanism the evidence supports for the
-five-finger half, and it protects the crayon half too. It costs one extra scenario per breach and
-nothing at all on a green run.
+A stall does not reproduce; expensive stroke-end work does. This is the only mechanism the evidence
+supports, it now carries the whole gate, and it costs one extra scenario per breach and nothing at
+all on a green run.
+
+**A confirmation that could not be scored acquits nothing.** `confirmedBreach` returns one of three
+values rather than a boolean. An earlier revision filtered to evaluable timings first, so an
+unevaluable second measurement left a single timing in the list, fell under the confirmation count,
+and the scenario was reported as "breached once and not again" — a real first-pass breach acquitted
+by a measurement that produced nothing. `unconfirmed` now keeps the breach and says so.
 
 **Exercise the gate against a captured fixture.**
 `tools/perf/tests/fixtures/undo-scenarios-webkit-fast.json` is the `draw` block of a real run. The
@@ -82,22 +96,25 @@ update.
 
 ## Consequences
 
-* \+ Crayon can fail again. Against the real capture the divisor is 1 rather than 924, so the gate
-  scores the raw P95 on a healthy host and discounts only a genuinely slower one.
+* \+ Crayon can fail again, and by the simplest possible route: nothing divides its score.
 * \+ A single shared-runner stall no longer turns `main` red or files an issue, without weakening
   what the gate measures — the budget, the percentile and the scenarios are unchanged.
 * \+ A stalled runner is now distinguishable in the output from a fast one that passed, instead of
   both reading as green.
-* − **The reference is still a constant tied to CI hardware.** It cannot drift by marking changes
-  any more, but it will drift if the scenario's recorded input changes or the runner image gets
-  materially faster. The fixture test pins the mark regime; nothing pins the input, and that is the
-  remaining soft spot.
+* − **A genuinely slow runner is now scored at face value.** That is the trade for removing an
+  uncalibrated divisor: a host slow enough to raise commit P95 above 25 ms fails the gate, and the
+  confirmation re-run is what stops a transient one doing it. If that turns out to flap, the fix is
+  the calibration this ADR declined to guess at, not a divisor chosen to make it stop.
+* − The reference constant survives as provenance for a number nothing currently divides by. It is
+  dead weight until someone collects the distribution, and it is kept because deleting it would
+  throw away the one data point that exists.
 * − A confirmation re-run roughly doubles the job's time on the failing path. That is the path that
   was already going to file an issue and cost someone an investigation.
 * − **The unconfirmed-breach path is verified by unit test and by construction, not end to end.**
   Forcing a first-pass breach that does not reproduce means inducing a stall on demand, which
   nothing here can do. What was verified on a real run: with the budget forced to 0, both scenarios
   breached, both were re-measured, and the gate failed on the confirmed breaches.
-* − Two scenarios in one gate are now treated differently — crayon normalized, five-finger not. That
-  asymmetry is deliberate and argued from the table above: they fail differently, so they are
-  protected differently. It is a thing a future reader will want this ADR for.
+* \+ Both scenarios are now treated identically, which is simpler than the asymmetry an earlier
+  revision proposed. The measurements that would have justified treating them differently — a 1.24x
+  host signal against a 66x P95 move — are the same measurements that say a divisor was never the
+  right instrument for either.

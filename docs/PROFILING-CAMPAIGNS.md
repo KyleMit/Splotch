@@ -200,8 +200,10 @@ every landscape cell**. The 2026-08-23 recapture opened on a green rig and lost 
 
 That flag now also drives a real rotation — the same stop, rotate, launch order a capture drives —
 and reads the orientation the **page** reports rather than the one the device was asked for. It
-restores the rotation settings it found. Verified both ways on the SM-G990U1: the correct order
-passes, and re-injecting the original defect (rotate, then `am force-stop`) is caught and named.
+restores the rotation settings it found. The passing path is verified on the SM-G990U1. The failing
+path was observed once, by injecting the reversed order, and **does not reproduce on demand** — see
+the rotation entry above; the check is verified against a synthetic mismatch in
+`tools/perf/tests/android-rotation.test.mjs` rather than against a device fault anyone can summon.
 
 The general rule outlives this particular hole: **a preflight proves the operations it performs.**
 The iPad still has no rotation check, and every trap below is one that some cheap check passed
@@ -209,12 +211,19 @@ through.
 
 Two distinct causes were behind it, and the first is the one that generalizes:
 
-* **`am force-stop` resets `user_rotation` to 0** on this Samsung under Android 16. The split
-  transport used to rotate and then force-stop Chrome, which undid the rotation it had just
-  asserted; the capture then aborted on the page disagreeing with the requested orientation and
-  wrote nothing. `androidPageLaunchSteps` now orders it stop → rotate → launch, and
-  `tools/perf/tests/split-capture.test.mjs` locks that order. Verify a rotation *after* whatever
-  restarts the app, never before.
+* **Something returns `user_rotation` to 0 across a relaunch, and it is not established what.** This
+  was recorded as "`am force-stop` resets `user_rotation` to 0 on this Samsung under Android 16",
+  and that specific claim does not reproduce: 8 trials on R5CRC3AVCXM kept it at 1 across
+  force-stop, with Chrome stopped, with Chrome foregrounded first, and across the whole rotate →
+  force-stop → launch sequence. The lost landscape cells were real and one fault injection did
+  observe a LANDSCAPE request returning PORTRAIT with the setting reading 0 — but that read came
+  after a relaunch, so it never isolated force-stop. Treat the ordering below as cheap insurance
+  against an unexplained failure rather than as a fix for a known mechanism, and **verify a rotation
+  by asking the page, not the setting**. The split transport used to rotate and then force-stop
+  Chrome, which undid the rotation it had just asserted; the capture then aborted on the page
+  disagreeing with the requested orientation and wrote nothing. `androidPageLaunchSteps` now orders
+  it stop → rotate → launch, and `tools/perf/tests/split-capture.test.mjs` locks that order. Verify
+  a rotation *after* whatever restarts the app, never before.
 * **A control that is always in the DOM cannot be probed by presence.** `BrushMenu` renders its four
   options unconditionally and only sets `hidden`, so the bootstrap's `menuStillOpen()` check was
   true even when the menu was shut. Selecting a brush already closes the menu, so the close loop ran
@@ -487,17 +496,25 @@ each:
 brushes, and p50, p95 and p99 are identical to the millisecond in every sample. Record it beside the
 Instruments finding and stop worrying about it.
 
-**The tail is the one place it shows.** On crayon the probe arm's single worst frame was 33.4 ms in
-all three samples against the control's 25.0 — four beats against three, reproducible to the tenth
-of a millisecond. It is one frame per twelve-second run and it did not appear on pen. Treat it as a
-lead rather than a result: three samples on one device and one brush, with a plausible cause (a
-buffer growth or an observer flush) that nothing here has confirmed.
+**A tail asymmetry appeared once and did not reproduce.** In the run above, crayon's probe arm had a
+single worst frame of 33.4 ms in all three samples against the control's 25.0 — four beats against
+three. Two later runs disagree. One produced control maxima of 25.1 / 33.3 / 25.0 ms against probe
+maxima of 33.3 / 16.8 / 16.8 ms, the opposite pattern. A third, taken with the brush primed and the
+display holding a steady 60 Hz, showed no tail in either arm: 16.8–16.9 ms worst, both arms, every
+sample, at 59.99 frames/s on both sides.
 
-Two limits worth stating rather than discovering later. The control still carries the counter, so
+**All three are three samples of a single-frame statistic**, which is exactly the shape that looks
+consistent by chance. Treat it as an unconfirmed lead, and do not quote the first run's internal
+consistency as evidence for it. The steady-state result is unaffected.
+
+Three limits worth stating rather than discovering later. The control still carries the counter, so
 this bounds the probe against a trivial rAF loop and not against a wholly uninstrumented page — that
-is inherent in needing a common clock. And the gesture is a plain centre swipe rather than the
+is inherent in needing a common clock. The gesture is a plain centre swipe rather than the
 calibrated trusted-gesture path, so it is a fair comparison between arms and not a scoreable
-capture.
+capture. And **the brush has to be primed and verified before the first sample**: the arms share one
+origin so the tool can compare like with like, which also means the control arm — which runs first —
+draws with whatever the previous page persisted unless something sets it. Pass `--brush=` and the
+run does that, and refuses to measure if the page never commits it.
 
 ## Do not edit the tools while a campaign is running
 

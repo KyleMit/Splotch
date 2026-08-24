@@ -80,8 +80,8 @@ describe('the 2026-08-23 iPad corpus', () => {
     }
   });
 
-  it('passes both iPad runtimes, with nothing left uncalibrated', () => {
-    for (const sample of verdicts) {
+  it('passes Safari with nothing left uncalibrated', () => {
+    for (const sample of verdicts.filter((v) => v.target === 'ipad-device-web')) {
       expect({ cell: `${sample.target}/${sample.brush}`, ...sample.fidelity }).toMatchObject({
         passed: true,
         uncalibrated: [],
@@ -89,14 +89,44 @@ describe('the 2026-08-23 iPad corpus', () => {
     }
   });
 
-  // The inverted entry must not become a widened one. Judging a Safari capture by
-  // the WKWebView's expectation has to fail, or the check has been retired on the
-  // target where it catches an under-driven WebDriverAgent transport.
-  it('still rejects a Safari capture judged as a WKWebView one, and the reverse', () => {
-    const safari = verdicts.find((v) => v.target === 'ipad-device-web');
+  // The WKWebView's own coalescing expectation is UNCALIBRATED, so the runtime does
+  // not pass — and must not, until a known-bad WKWebView capture establishes what
+  // separates a driven capture from an under-driven one there. Everything else about
+  // these captures is faithful, which is exactly the distinction `uncalibrated`
+  // exists to make: the instrument is silent, the capture is not bad.
+  it('holds the WKWebView unscoreable on coalescing alone', () => {
+    for (const sample of verdicts.filter((v) => v.target === 'ipad-device-native')) {
+      expect({ cell: `${sample.target}/${sample.brush}`, ...sample.fidelity }).toMatchObject({
+        passed: false,
+        uncalibrated: ['coalescing'],
+        checks: { trustedTouch: true, cadence: true, pressure: true, contactGeometry: true },
+      });
+    }
+  });
+
+  // The negative control that stopped `> 0` being adopted: an under-driven Android
+  // Capacitor WebView at 47.81 contact moves/s also reported more than zero
+  // coalesced samples, so an inverted expectation would have passed exactly the
+  // capture it exists to reject.
+  it('records why more-than-zero coalescing is not a discriminator', () => {
+    const underDrivenWebView = {
+      kinds: 'touch',
+      trust: { share: 1 },
+      movesPerSecond: 47.81,
+      moveGapP95Ms: 40,
+      coalescedPerMove: 1.05,
+    };
+
+    expect(inputFidelity(underDrivenWebView, 'ios-capacitor-webview').checks.coalescing).toBeNull();
+    expect(inputFidelity(underDrivenWebView, 'ios-capacitor-webview').passed).toBe(false);
+  });
+
+  // The Safari entry is untouched by any of that: it still has to reject a capture
+  // whose samples arrive coalesced, which is what catches an under-driven
+  // WebDriverAgent transport there.
+  it('still rejects a coalescing capture judged as Safari', () => {
     const webview = verdicts.find((v) => v.target === 'ipad-device-native');
 
-    expect(inputFidelity(safari.input, 'ios-capacitor-webview').checks.coalescing).toBe(false);
     expect(inputFidelity(webview.input, 'ios-safari').checks.coalescing).toBe(false);
   });
 });

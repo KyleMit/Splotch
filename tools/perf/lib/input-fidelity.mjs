@@ -55,7 +55,6 @@ const cadence = (input) =>
   input.moveGapP95Ms <= FIDELITY_MOVE_GAP_P95_MAX_MS;
 
 const noCoalescedSamples = (input) => input.coalescedPerMove === 0;
-const someCoalescedSamples = (input) => input.coalescedPerMove > 0;
 const noReportedPressure = (input) => input.pressure?.p50 === 0;
 
 const fingerSizedContact = (input) =>
@@ -84,14 +83,18 @@ const RUNTIME_EXPECTATIONS = {
     contactGeometry: fingerSizedContact,
   },
   'ios-capacitor-webview': {
-    // The same gesture at the same cadence through the Capacitor WKWebView packages
-    // 1.05-1.08 coalesced samples per move where Safari packages none — measured on
-    // 2026-08-23, four brushes, 114.7-118.4 contact moves/s against Safari's
-    // 115.9-118.6 on the same device the same night. The input is identical and the
-    // runtime's packaging of it is not, so the expectation is inverted rather than
-    // widened: widening it would retire the check in Safari, where it is the thing
-    // that catches an under-driven WebDriverAgent transport.
-    coalescing: someCoalescedSamples,
+    // The Capacitor WKWebView packages 1.05-1.08 coalesced samples per move where
+    // Safari packages none, measured on 2026-08-23 across four brushes at the same
+    // cadence on the same device the same night. That establishes the two runtimes
+    // report differently. It does NOT establish that `> 0` identifies a well-driven
+    // capture, and the negative control says it does not: the under-driven Android
+    // Capacitor WebView probe on 2026-08-23 recorded `coalescing: false` under the
+    // old `=== 0` rule at 47.81 contact moves/s — that is, more than zero coalesced
+    // samples — which an inverted expectation would have passed. A check satisfied
+    // by exactly the captures it exists to reject is not a check, so this stays
+    // uncalibrated until a WKWebView capture of a KNOWN-BAD transport establishes a
+    // discriminator.
+    coalescing: UNCALIBRATED,
     pressure: noReportedPressure,
     contactGeometry: fingerSizedContact,
   },

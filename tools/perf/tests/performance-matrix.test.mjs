@@ -641,7 +641,10 @@ describe('deployment matrix report', () => {
       // unscoreable.
       expect(mode.drawing.crayon.runs).toEqual(publishedDrawing.crayon.runs);
       expect(mode.drawing.crayon.aggregate).toMatchObject(publishedDrawing.crayon.aggregate);
-      expect(mode.drawing.crayon.aggregate.scoreable).toBe(true);
+      // Copied forward, and not scored: a preserved verdict cannot be re-derived
+      // under current expectations, so it is kept as provenance rather than allowed
+      // to drive the plots and the failure ranking.
+      expect(mode.drawing.crayon.aggregate.scoreable).toBe(false);
       expect(mode.preservedSections).toEqual(['drawing']);
       expect(matrix.preservedEvidence).toEqual({
         from: 'data.json',

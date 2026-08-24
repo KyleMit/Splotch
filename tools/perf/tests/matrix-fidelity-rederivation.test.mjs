@@ -63,24 +63,33 @@ describe('a matrix cell re-derives its input-fidelity verdict', () => {
 
     for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
       const run = runs[brush].runs[0];
-      // The verdict recorded at capture time failed on `coalescing`, because the
-      // expectation in force then described Safari (ADR-0139).
       expect(run.fidelity.runtime).toBe('ios-capacitor-webview');
-      expect(run.fidelity.passed).toBe(true);
-      expect(runs[brush].aggregate.failedFidelityChecks).toEqual([]);
-      expect(runs[brush].aggregate.scoreable).toBe(true);
+      // Everything the WKWebView has a calibrated expectation for passes. What holds
+      // it unscoreable is `coalescing`, which has none: the healthy corpus shows the
+      // runtime coalesces, and the under-driven Android WebView probe shows that
+      // coalescing does not separate a driven capture from an under-driven one
+      // (ADR-0139).
+      expect(run.fidelity.uncalibrated).toEqual(['coalescing']);
+      expect(run.fidelity.passed).toBe(false);
+      expect(runs[brush].aggregate.failedFidelityChecks).toEqual(['coalescing']);
+      expect(runs[brush].aggregate.scoreable).toBe(false);
     }
   });
 
-  // Making the target scoreable is not the same as making it pass, and the point of
-  // re-deriving is that a real cost stops hiding behind an unscoreable label: native
-  // crayon is roughly twice Safari's on the same device (#1236).
-  it('lets a real native cost render as a failure instead of as unscoreable', () => {
+  // Re-deriving still does work even though the verdict lands in the same place: the
+  // reason is now a named uncalibrated check rather than a stale Safari-shaped
+  // failure, so what would make this target scoreable is one negative-control
+  // capture rather than an unexplained recapture.
+  it('names the uncalibrated check rather than a stale failure', () => {
     const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
 
-    expect(runs.crayon.aggregate.lostFrameTimeShare).toBeGreaterThan(runs.crayon.gateShare);
-    expect(runs.crayon.aggregate.blankPassed).toBe(false);
-    expect(runs.pen.aggregate.blankPassed).toBe(true);
+    expect(runs.crayon.runs[0].fidelity.checks).toMatchObject({
+      trustedTouch: true,
+      cadence: true,
+      coalescing: null,
+      pressure: true,
+      contactGeometry: true,
+    });
   });
 
   it('leaves a Safari capture passing, judged by Safari expectations', () => {

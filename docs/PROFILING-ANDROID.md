@@ -168,8 +168,9 @@ marked JS work per frame are unchanged, the trace is not moving what it measures
 it converts an assumption into a number.
 
 The app's **own** probe has now been measured this way too — `npm run perf:device:probe-overhead`,
-written up in `docs/PROFILING-CAMPAIGNS.md`. Unmeasurable in steady state; one extra beat in the
-single worst frame on crayon, reproducibly.
+written up in `docs/PROFILING-CAMPAIGNS.md`. Unmeasurable in steady state. A tail asymmetry on
+crayon appeared in one run and inverted in the next, so it is an unconfirmed lead rather than a
+finding.
 
 Do this **before** quoting a Perfetto-traced capture as a performance result, not after.
 

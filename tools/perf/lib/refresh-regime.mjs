@@ -23,24 +23,35 @@
 // Nominal frame intervals. A regime is named for the presentation rate rather than
 // for the interval, because the interval is what varies and the rate is what the
 // gates were calibrated against.
+// Each band is the measured spread plus an explicit margin, not a percentage of the
+// nominal interval. An earlier revision used +/-20% of nominal, which accepted
+// 13.3-20.0 ms and 6.7-10.0 ms — roughly 50-75 Hz and 100-150 Hz — on the strength
+// of four captures per target spanning 16-17 ms and 8.30-8.42 ms. Nothing measured
+// justified those extremes, and a band that wide is a band that classifies a rate
+// nobody has seen.
+//
+// `observed` is the range the tracked corpus reports for targets established at that
+// regime; `marginMs` is the stated allowance on either side of it. A beat outside
+// the widened range is classified as no regime rather than snapped to the nearer
+// one, so widening a band is a deliberate edit with evidence attached.
 export const REFRESH_REGIMES = {
-  '60hz': 1000 / 60,
-  '120hz': 1000 / 120,
+  '60hz': { nominalMs: 1000 / 60, observedMs: [16, 17], marginMs: 1.5 },
+  '120hz': { nominalMs: 1000 / 120, observedMs: [8.3, 8.42], marginMs: 0.75 },
 };
 
-// Wide enough to absorb the estimator's own spread — the tracked corpus reports
-// 16-17 ms for 60 Hz targets and 8.30-8.42 ms for 120 Hz ones — and narrow enough
-// that the two bands cannot meet: 60 Hz spans 13.3-20.0 ms and 120 Hz 6.7-10.0 ms.
-const REFRESH_REGIME_TOLERANCE_FRACTION = 0.2;
+export function refreshRegimeBand(regime) {
+  const { observedMs, marginMs } = REFRESH_REGIMES[regime];
+  return [observedMs[0] - marginMs, observedMs[1] + marginMs];
+}
 
 // null rather than a nearest-match fallback: a beat that belongs to neither band is
 // a capture nobody has a budget for, and quietly filing it under the closer one is
 // the failure this module exists to stop.
 export function classifyRefreshRegime(intervalMs) {
   if (!Number.isFinite(intervalMs) || intervalMs <= 0) return null;
-  for (const [regime, nominalMs] of Object.entries(REFRESH_REGIMES)) {
-    const tolerance = nominalMs * REFRESH_REGIME_TOLERANCE_FRACTION;
-    if (Math.abs(intervalMs - nominalMs) <= tolerance) return regime;
+  for (const regime of Object.keys(REFRESH_REGIMES)) {
+    const [low, high] = refreshRegimeBand(regime);
+    if (intervalMs >= low && intervalMs <= high) return regime;
   }
   return null;
 }
@@ -51,25 +62,44 @@ export function classifyRefreshRegime(intervalMs) {
 // formed wherever the target is known: the campaign runner, the rescorer, and the
 // matrix generator.
 //
-// `expected` of null means no regime has been established for this target from
-// measured captures. That is not a pass by default and not a failure either: there
-// is nothing to compare against, so the observation is recorded and the capture is
-// scored. Establishing the regime is a measurement, exactly like calibrating an
-// input-fidelity threshold.
+// Three outcomes, not two. An earlier revision returned `matched: true` when no
+// regime had been established for the target, which scored a capture whose beat
+// nobody has characterized — the same fail-open that `campaign-plan.mjs` calls "not
+// a licence to score anything" two files away.
+//
+// `unestablished` is separated from `off-regime` because they call for different
+// work, and conflating them costs device time either way: an off-regime capture is
+// worth retrying, since a ProMotion panel presenting at the other rate that run is
+// exactly the kind of thing a second attempt fixes. An unestablished target cannot
+// be fixed by retrying at all — the gap is a missing measurement — so the campaign
+// banks the artifact and the matrix refuses to score the cell.
+const IN_REGIME = 'in-regime';
+const OFF_REGIME = 'off-regime';
+const UNESTABLISHED_REGIME = 'unestablished';
+
 export function refreshRegimeVerdict(intervalMs, expected = null) {
   const observed = classifyRefreshRegime(intervalMs);
+  const verdict =
+    expected === null ? UNESTABLISHED_REGIME : observed === expected ? IN_REGIME : OFF_REGIME;
   return {
     intervalMs: Number.isFinite(intervalMs) ? intervalMs : null,
     observed,
     expected,
-    matched: expected === null ? true : observed === expected,
+    verdict,
+    // Retained as the "is this the regime it should be" question alone, which is
+    // what the campaign runner retries on. Scoreability is a separate question and
+    // has its own field, because an unestablished target answers them differently.
+    matched: verdict !== OFF_REGIME,
+    scoreable: verdict === IN_REGIME,
   };
 }
 
 export function describeRefreshRegime(verdict) {
   const beat = verdict.intervalMs === null ? 'no beat' : `${verdict.intervalMs} ms`;
   const observed = verdict.observed ?? 'unrecognized';
-  if (verdict.expected === null) return `${beat} (${observed}, no established regime)`;
-  if (verdict.matched) return `${beat} (${observed})`;
+  if (verdict.verdict === UNESTABLISHED_REGIME) {
+    return `${beat} (${observed}, no established regime — not scoreable)`;
+  }
+  if (verdict.verdict === IN_REGIME) return `${beat} (${observed})`;
   return `${beat} (${observed}, expected ${verdict.expected})`;
 }

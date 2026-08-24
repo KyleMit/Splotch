@@ -27,9 +27,8 @@ nothing to do with how it was driven. This is the third instance of one shape, n
 complaint: `pressure` and `contactGeometry` cannot be satisfied by Chrome on Android (issue 1218),
 and `coalescing` cannot be satisfied by a Capacitor WKWebView (issue 1234).
 
-The WKWebView half is measurable without a human, and was measured. Same device, same night, same
-gesture, same brush, same build, from the tracked corpus at
-`perf-profiles/evidence/2026-08-23-ipad-main/`:
+The WKWebView half looked measurable without a human. Same device, same night, same gesture, same
+brush, same build, from the tracked corpus at `perf-profiles/evidence/2026-08-23-ipad-main/`:
 
 | Runtime                          | `coalescedPerMove` | contact moves/s | verdict  |
 | -------------------------------- | -----------------: | --------------: | -------- |
@@ -39,6 +38,14 @@ gesture, same brush, same build, from the tracked corpus at
 The cadence agrees to within a move per second across the two runtimes and moves-per-frame is ~2.0
 in both. **The input is being delivered identically**; the WKWebView packages it with coalesced
 samples where Safari does not.
+
+That establishes the two runtimes report differently. **It does not establish a discriminator**, and
+review caught the difference. Those four captures are all healthy, so they show what a good
+WKWebView capture looks like and say nothing about what a bad one looks like — and the negative
+control says `> 0` does not separate them: the under-driven Android Capacitor WebView probe of
+2026-08-23 recorded `coalescing: false` under the old `=== 0` rule at **47.81 contact moves/s**,
+which is more than zero coalesced samples. An inverted expectation would have passed exactly the
+capture the check exists to reject. A check satisfied by its own negative control is not a check.
 
 That verdict was never harmless. `perf:campaign` treats a failed verdict as `UNSCOREABLE` and
 retries the cell to exhaustion, so every native iPad cell spent three attempts of device time
@@ -90,9 +97,12 @@ What changes is that the verdict distinguishes two things that were one boolean:
 `describeFidelityFailures` names them apart, so a one-line verdict reads
 `cadence+pressure(uncalibrated)` rather than a flat list in which the two are indistinguishable.
 
-The entry for the WKWebView is **inverted, not widened**: it expects `coalescedPerMove > 0`. A
-Safari capture judged by it fails, and a WKWebView capture judged by Safari's fails, and a test
-asserts both — so the split cannot decay into having retired the check.
+**The WKWebView's `coalescing` is uncalibrated, not inverted.** An earlier revision of this ADR
+adopted `coalescedPerMove > 0` on the strength of the healthy corpus above; the negative control
+retired that. Inverting the expectation would have promoted the native-iPad runtime to scoreable on
+positive evidence alone, which is the same mistake as leaving a Safari-shaped threshold in place — a
+threshold nobody has shown can fail. It stays uncalibrated until a WKWebView capture of a known-bad
+transport establishes what separates the two.
 
 Expectations are set from tracked captures rather than from hand-written fixtures, and the test
 reads those captures directly. A fixture cannot go stale against a runtime that changed what it
@@ -100,12 +110,13 @@ reports; the corpus can, which is what ADR-0138 tracks it for.
 
 ## Consequences
 
-* \+ The sixteen `ipad-device-native` cells become formally scoreable. They were exactly as
-  scoreable before — the numbers do not move — but the campaign will now accept them on the first
-  attempt instead of burning three, and the matrix no longer publishes a whole target under a
-  verdict that says its captures cannot be trusted.
-* \+ Issue 1236 (crayon costing about twice as much in the WKWebView as in Safari) is stated against
-  a passing verdict rather than carrying a caveat that its evidence is not formally scoreable.
+* − **The sixteen `ipad-device-native` cells stay unscoreable**, and the campaign still spends three
+  attempts per cell reaching that verdict. What changes is that the verdict now says *why* —
+  `coalescing(uncalibrated)` rather than a bare failure — so the fix is legible as one
+  negative-control capture rather than as an unexplained rejection. Closing it is cheap and nobody
+  has done it yet.
+* − Issue 1236 (crayon costing about twice as much in the WKWebView as in Safari) still carries its
+  caveat that the evidence is not formally scoreable.
 * \+ Android's block is now legible. `android-device-web` reads
   `coalescing(uncalibrated)+pressure(uncalibrated)+contactGeometry(uncalibrated)` instead of a bare
   failure, which says what to do about it.
@@ -117,6 +128,12 @@ reports; the corpus can, which is what ADR-0138 tracks it for.
   calibration did. The mitigation is that every entry names the capture it was set from and the test
   reads the corpus rather than a fixture, so a runtime that changes its reporting fails a test
   instead of quietly failing captures.
+* \+ The bar an entry has to clear is now stated: a positive corpus shows what a good capture looks
+  like, and an expectation needs a **known-bad** capture too before it can decide anything. The
+  Safari entries predate this ADR and do not meet that bar either — they were set from a hand
+  capture with no negative control. They are left as they are because they are what the gate has
+  always used, and re-deriving them is its own measurement; the standard applies to entries added
+  from here.
 * − A capture from a runtime the table does not know throws rather than falling back. That is
   deliberate: a fallback would score a capture against a table nobody chose for it, which is the
   defect this ADR exists to remove.

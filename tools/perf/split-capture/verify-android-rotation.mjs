@@ -10,11 +10,24 @@
 // before a single artifact was missed. Rotation was asserted for the first time by
 // the capture itself, one cell into the queue.
 //
-// It drives the same launch sequence a capture drives — stop, rotate, launch, in
-// that order, because `am force-stop` returns `user_rotation` to 0 on this Samsung
-// under Android 16 — and it reads the orientation the PAGE reports rather than the
-// one the device was asked for. Trusting the request is how a landscape capture gets
-// filed as portrait.
+// It drives the same launch sequence a capture drives — stop, rotate, launch — and
+// reads the orientation the PAGE reports rather than the one the device was asked
+// for. Trusting the request is how a landscape capture gets filed as portrait.
+//
+// The order is deliberate but its stated cause is NOT established. `androidPageLaunchSteps`
+// says `am force-stop` returns `user_rotation` to 0 on this Samsung under Android 16;
+// a fault injection on 2026-08-23 did observe a LANDSCAPE request coming back
+// PORTRAIT with `user_rotation` reading 0, but that read happened after a subsequent
+// launch, so it does not isolate force-stop. Review could not reproduce it, and 8
+// further trials on R5CRC3AVCXM could not either: `user_rotation` stayed 1 across
+// force-stop with Chrome stopped, with Chrome foregrounded first, and across the full
+// rotate → force-stop → launch sequence.
+//
+// So treat stop-before-rotate as the cheap safe ordering rather than as a fix for a
+// known mechanism. The failure it guards against is real and was observed once; what
+// is unexplained is what caused it. That is also why this verification reads the
+// page rather than the setting — whatever the mechanism, the page is the thing a
+// capture depends on.
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import {
   androidPageLaunchSteps,

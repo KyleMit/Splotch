@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   generateDeploymentMatrixReport,
+  PRESERVED_VERDICT_REASON,
   withPreservedScoreability,
 } from '../gen-performance-matrix.mjs';
 
@@ -61,26 +62,42 @@ describe('withPreservedScoreability', () => {
   // fidelity-failed cell rendered a bold product FAIL while a freshly captured one
   // with the identical verdict rendered unscoreable — the same measurement making
   // two contradictory claims, decided only by which side of a recapture it fell on.
-  it('marks a preserved run unscoreable when its stored verdict failed', () => {
+  it('marks a preserved run unscoreable and keeps its published checks', () => {
     const rescored = withPreservedScoreability(
       section({ passed: false, checks: { coalescing: false, cadence: true } })
     );
 
     expect(rescored.crayon.aggregate.scoreable).toBe(false);
-    expect(rescored.crayon.aggregate.failedFidelityChecks).toEqual(['coalescing']);
+    expect(rescored.crayon.aggregate.publishedFidelityChecks).toEqual(['coalescing']);
+    expect(rescored.crayon.aggregate.failedFidelityChecks).toEqual([]);
   });
 
-  it('leaves a preserved run scoreable when its verdict passed', () => {
+  // A preserved verdict cannot be re-derived — that needs raw input samples a
+  // preserved cell does not have — so a passing one is not evidence under current
+  // expectations either. `scoreable` drives the plots and the failure ranking, and a
+  // copied historical verdict must not drive them.
+  it('does not let a passing historical verdict score under current calibration', () => {
     const rescored = withPreservedScoreability(section({ passed: true, checks: {} }));
 
-    expect(rescored.crayon.aggregate.scoreable).toBe(true);
+    expect(rescored.crayon.aggregate.scoreable).toBe(false);
+    expect(rescored.crayon.aggregate.unscoreableReason).toBe(PRESERVED_VERDICT_REASON);
   });
 
-  // The desktop transport writes no verdict at all, and an absent verdict is not a
-  // failed one.
-  it('leaves a run that reports no verdict scoreable', () => {
-    const rescored = withPreservedScoreability(section(undefined));
+  it('leaves the run-level verdict in place as provenance', () => {
+    const fidelity = { passed: false, checks: { coalescing: false } };
+    const rescored = withPreservedScoreability(section(fidelity));
 
-    expect(rescored.crayon.aggregate.scoreable).toBe(true);
+    // Load-bearing: this matrix preserves from its own published `data.json`, so
+    // blanking the field destroys the source the next regeneration preserves from.
+    expect(rescored.crayon.runs[0].fidelity).toEqual(fidelity);
+  });
+
+  // A freshly normalized section already carries a verdict re-derived under current
+  // expectations. Blanking that would mark every cell in the matrix unscoreable.
+  it('leaves a freshly normalized section alone', () => {
+    const fresh = section({ passed: true, checks: {} });
+    fresh.crayon.aggregate.scoreable = true;
+
+    expect(withPreservedScoreability(fresh, false)).toBe(fresh);
   });
 });
