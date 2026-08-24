@@ -599,6 +599,7 @@ describe('deployment matrix report', () => {
     );
 
     function publishReport(directory, mode = {}) {
+      const drawing = mode.drawing ?? publishedDrawing;
       writeFileSync(
         join(directory, 'data.json'),
         JSON.stringify({
@@ -606,7 +607,7 @@ describe('deployment matrix report', () => {
             {
               id: 'fixture',
               label: 'Fixture',
-              modes: [{ id: 'portrait-light', drawing: publishedDrawing, undo: null, ...mode }],
+              modes: [{ id: 'portrait-light', undo: null, ...mode, drawing }],
             },
           ],
         })
@@ -649,6 +650,51 @@ describe('deployment matrix report', () => {
       expect(matrix.preservedEvidence).toEqual({
         from: 'data.json',
         reason: 'The raw captures were local scratch and are gone.',
+      });
+    });
+
+    // The hazard this guards is structural and it already bit once: the committed
+    // matrix sets `preservedEvidence.from` to `data.json`, so the generator
+    // preserves from ITS OWN previous output. Anything a regeneration drops from a
+    // preserved run is dropped from the source the NEXT regeneration reads, and the
+    // loss compounds silently — a revision that moved the run-level fidelity verdict
+    // to a new key destroyed every historical verdict in one pass, recoverable only
+    // because git still had the file.
+    //
+    // So regenerating from your own output has to be a fixpoint. This feeds the
+    // first result back in as the published report and requires the second to match.
+    it('is a fixpoint when it preserves from its own output', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const withVerdicts = {
+        ...publishedDrawing,
+        crayon: {
+          ...publishedDrawing.crayon,
+          runs: [
+            {
+              ...publishedDrawing.crayon.runs[0],
+              fidelity: { passed: false, checks: { coalescing: false, cadence: true } },
+            },
+          ],
+        },
+      };
+      publishReport(manifestDirectory, { drawing: withVerdicts });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const first = normalizeMatrix(source, manifestDirectory);
+      writeFileSync(join(manifestDirectory, 'data.json'), JSON.stringify(first));
+      const second = normalizeMatrix(source, manifestDirectory);
+
+      expect(second.targets[0].modes[0].drawing).toEqual(first.targets[0].modes[0].drawing);
+      // Named separately from the deep-equal because this is the field that was
+      // lost: it is provenance AND the input the next regeneration preserves from.
+      expect(second.targets[0].modes[0].drawing.crayon.runs[0].fidelity).toEqual({
+        passed: false,
+        checks: { coalescing: false, cadence: true },
       });
     });
 

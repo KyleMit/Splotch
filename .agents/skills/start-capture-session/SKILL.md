@@ -8,6 +8,18 @@ description: Take over the physical iPad and Android capture rig at the start of
 There is one iPad and one Android phone, so capture sessions run **in sequence, not in parallel**. A
 session that starts takes the rig over completely; the previous one is finished.
 
+## In a fresh worktree, two things block before the preflight does
+
+Both are gitignored, so a new worktree has neither, and both fail in a way that does not name
+itself.
+
+* **`node_modules`.** A worktree gets none. `pnpm install --frozen-lockfile` takes seconds; without
+  it, `perf:serve` and every Playwright command die on a missing binary and the caller reports
+  `http://localhost:4173/ did not become ready within 90000ms` — a timeout, with the real error
+  scrolled off above it. Never `npm install` here (ADR-0119).
+* **`ios/local.xcconfig`.** The preflight names this one correctly and blocks on it, which is the
+  good case. Copy it from the main checkout; it holds a `DEVELOPMENT_TEAM` line and nothing else.
+
 ## Take the rig over
 
 ```sh
@@ -35,6 +47,12 @@ restores whatever it found, including deleting a setting that was never written.
 Fix whatever it blocks on before capturing anything. A blocked preflight exits non-zero and names
 the cause; two of the likely ones need a human at the device and cannot be cleared from the host —
 **Guided Access** (triple-click the side button, enter the passcode, End) and a locked phone.
+
+**Read the fidelity verdict as two questions, not one.** `cadence` and `trustedTouch` failing means
+the run was bad and a recapture may fix it. A check reported `(uncalibrated)` means the instrument
+has no measured expectation for that runtime, and no number of recaptures will change it — the fix
+is one known-bad capture of that runtime. Retrying an uncalibrated cell spends three attempts of
+device time to reach the same answer, which is what every physical-iPad native cell currently does.
 
 **A green preflight still does not mean every cell can be captured.** Rotation used to be the gap:
 the preflight proved touch and never rotation, so a device that would not turn passed every flag and

@@ -297,6 +297,27 @@ captured until they are captured again on the capture host. **A matrix number an
 the same cell can legitimately disagree by more than the gate**; find out which one you are reading
 before treating a difference as a regression.
 
+### The generator preserves from its own output
+
+`preservedEvidence.from` is `data.json` — **the matrix generator's preservation source is its own
+previous output.** So anything a regeneration drops from a preserved cell is dropped from the input
+the *next* regeneration reads, and the loss compounds with nothing to announce it.
+
+This is not hypothetical. A revision that moved the run-level `fidelity` verdict to a new key
+destroyed every preserved historical verdict in one pass, and it was recoverable only because git
+still had the file. If that had been committed, the provenance would have been gone for good.
+
+Two rules follow:
+
+* **Never drop or rename a field on a preserved run.** Derive what you need onto the aggregate,
+  which is recomputed from the runs each time.
+* **Check `git diff` on `data.json` after a regeneration**, not just the rendered pages. A field
+  disappearing from preserved runs looks like a smaller diff, not like a failure.
+
+`tools/perf/tests/performance-matrix.test.mjs` locks the fixpoint — it feeds a generated matrix back
+in as the published report and requires the second pass to match — but a test cannot see a field you
+never taught it about, so the diff is still worth reading.
+
 ### Rebuilding a handful of cells without recapturing the matrix
 
 The matrix is incrementally rebuildable, and nothing about the three commands says so — this is the
@@ -375,6 +396,44 @@ Three things about `perf:campaign` that each cost a launch:
   that makes clearing a ledger safe.
 
 `perf:ios:xcuitest:screen` drives Android too, despite the name.
+
+## What a corpus can and cannot establish
+
+Three of this campaign's own thresholds were argued from evidence that could not carry them, and all
+three failed the same way. They are worth recognizing before setting the next one.
+
+**A positive corpus is not a calibration.** Four healthy captures show what a good capture looks
+like. They say nothing about what a bad one looks like, so they cannot establish a threshold that
+has to tell the two apart. The Capacitor WKWebView's `coalescing` expectation was inverted to `> 0`
+on exactly that evidence — and the negative control refuted it outright: an under-driven Android
+Capacitor WebView at 47.81 contact moves/s also reports more than zero coalesced samples, so the
+inverted check would have passed the very capture it exists to reject. **A check needs a known-bad
+capture before it can decide anything.**
+
+**A number quoted in prose is not provenance.** The WebKit commit gate's normalization reference was
+taken from a passing rerun mentioned in an issue body. Three runs of the same fixed replay then
+reported 8,135 / 9,685 / 13,843 ms — a 1.7x spread, larger than the 1.24x host signal the divisor
+existed to correct for. A threshold's provenance has to be a run someone can point at, and a spread
+wide enough to swallow the effect means the constant is not ready.
+
+**An observation is not a mechanism.** A landscape capture came back portrait with `user_rotation`
+reading 0, and that was written up as "`am force-stop` resets `user_rotation`". The read happened
+after a subsequent relaunch, so it never isolated force-stop, and eight later trials could not
+reproduce the reset in any arrangement. The failure was real; the cause was invented to explain it.
+State what was observed, and keep a mitigation on the grounds that it is cheap rather than on the
+grounds that it fixes a mechanism nobody has shown.
+
+The shared shape: each one turned a *consistent* observation into a *general* claim. Consistency
+across three samples of a single-frame statistic is exactly what chance produces — the probe's "one
+extra beat on crayon in all three samples" inverted on the next run and vanished on the one after.
+
+### A fault injection that moves the gate is not a test of the gate
+
+Forcing `COMMIT_GATE_MS` to 0 to watch the commit gate fail proves the confirmed-breach path and
+nothing else: with the budget at zero, *both* passes breach, so the acquittal and unconfirmed paths
+are never exercised. A fault injection that changes the threshold changes which branch you are
+testing. Say which branch a demonstration actually covered, and leave the others to unit tests
+rather than implying the whole path was driven.
 
 ## Serialize the captures, but keep both devices alive
 
