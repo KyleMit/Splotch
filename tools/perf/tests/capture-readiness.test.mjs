@@ -8,6 +8,7 @@ import {
   resolvePort,
   summarize,
   pageFollowedRotation,
+  classifyAppiumLog,
 } from '../lib/capture-readiness.mjs';
 
 describe('iOS device identifiers', () => {
@@ -246,5 +247,47 @@ describe('what the launch probe reports once rotation is proven', () => {
       'followed a rotation'
     );
     expect(classifyLaunchProbe({ ok: true }).detail).not.toContain('followed a rotation');
+  });
+});
+
+// Captured from a real failure on the physical iPad, 2026-08-24. The HTTP payload
+// for this failure — message AND stacktrace — carried only Appium's outer
+// `xcodebuild failed with code 65`, so no pattern over the response could ever
+// have classified it. The cause appears in the server log and nowhere else.
+const AUTOMATION_DENIAL_LOG = [
+  '[XCUITest] Setting up remote logger for real device',
+  '[XCUITest] Error: Timed out while enabling automation mode',
+  '[XCUITest] Failed to create session. Will try to remove the WDA and start again',
+].join('\n');
+
+describe('classifying a WebDriverAgent launch failure from the server log', () => {
+  it('names the on-device automation prompt, which no host-side change can clear', () => {
+    const detail = classifyAppiumLog(AUTOMATION_DENIAL_LOG);
+
+    expect(detail).toContain('Enable UI Automation');
+    expect(detail).toContain('Look at the device');
+  });
+
+  // Absent is not the same as unrecognised, and neither is the same as a known
+  // cause — reporting the wrong one sends a human to the wrong place.
+  it('answers null for a log it does not recognise, and for no log at all', () => {
+    expect(classifyAppiumLog('[XCUITest] something else entirely')).toBeNull();
+    expect(classifyAppiumLog('')).toBeNull();
+    expect(classifyAppiumLog(undefined)).toBeNull();
+  });
+
+  it('prefers a cause read from the log over the generic outer message', () => {
+    const generic = classifyLaunchProbe({
+      ok: false,
+      message: 'xcodebuild failed with code 65',
+    });
+    const classified = classifyLaunchProbe({
+      ok: false,
+      message: 'xcodebuild failed with code 65',
+      logCause: classifyAppiumLog(AUTOMATION_DENIAL_LOG),
+    });
+
+    expect(generic.detail).toContain('cause is not one this knows');
+    expect(classified.detail).toContain('Enable UI Automation');
   });
 });

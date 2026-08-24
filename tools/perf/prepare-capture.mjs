@@ -19,7 +19,7 @@
 // It never stops a listener another session owns. Anything that cost a human
 // approval — the root-owned RemoteXPC tunnel above all — is reused where it is
 // already running, and anything cheap moves to a free port instead.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
@@ -320,6 +320,12 @@ export async function watchAndroid(
 // is opt-in rather than part of the default report, and it must not run while a
 // capture holds the device.
 const LAUNCH_PROBE_TIMEOUT_MS = 300_000;
+// Only paid on the failure path, and only once. A reused Appium writes its log to
+// whatever terminal started it, so the innermost cause is unreachable from here —
+// a server we start ourselves puts it on a pipe we own.
+const DIAGNOSTIC_APPIUM_PORT = 4799;
+const DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS = 30_000;
+const DIAGNOSTIC_APPIUM_POLL_MS = 500;
 // A rotation is a physical animation on a real panel, and the page's own
 // dimensions do not update until it settles.
 const IOS_ROTATION_SETTLE_MS = 2_000;
@@ -382,7 +388,48 @@ async function verifyIosRotation(appiumUrl, sessionId) {
   }
 }
 
-export async function probeIosLaunch({ udid, appiumUrl, wdaPort, verifyRotation = false }) {
+// Re-runs the failed session against an Appium we own, capturing its stdout, and
+// classifies the innermost cause from it. Returns null when it cannot get one —
+// a diagnostic that fails is not a finding, and must not overwrite the outer
+// message with a wrong story.
+async function diagnoseLaunchFailure(sessionBody) {
+  const appium = spawn('appium', ['--port', String(DIAGNOSTIC_APPIUM_PORT), '--log-timestamp'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let log = '';
+  appium.stdout?.on('data', (chunk) => (log += chunk));
+  appium.stderr?.on('data', (chunk) => (log += chunk));
+  try {
+    const deadline = Date.now() + DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS;
+    let ready = false;
+    while (!ready && Date.now() < deadline) {
+      ready = await fetch(`http://127.0.0.1:${DIAGNOSTIC_APPIUM_PORT}/status`)
+        .then((response) => response.ok)
+        .catch(() => false);
+      if (!ready) await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_POLL_MS));
+    }
+    if (!ready) return null;
+    await fetch(`http://127.0.0.1:${DIAGNOSTIC_APPIUM_PORT}/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(sessionBody),
+      signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
+    }).catch(() => null);
+    return classifyAppiumLog(log);
+  } catch {
+    return null;
+  } finally {
+    appium.kill();
+  }
+}
+
+export async function probeIosLaunch({
+  udid,
+  appiumUrl,
+  wdaPort,
+  verifyRotation = false,
+  diagnose = true,
+}) {
   const body = {
     capabilities: {
       alwaysMatch: {
@@ -407,7 +454,11 @@ export async function probeIosLaunch({ udid, appiumUrl, wdaPort, verifyRotation 
     });
     const payload = await response.json();
     const sessionId = payload.value?.sessionId;
-    if (!sessionId) return { ok: false, message: String(payload.value?.message ?? '') };
+    if (!sessionId) {
+      const message = String(payload.value?.message ?? '');
+      const logCause = diagnose ? await diagnoseLaunchFailure(body) : null;
+      return { ok: false, message, logCause };
+    }
     const rotation = verifyRotation
       ? await verifyIosRotation(appiumUrl, sessionId).catch((error) => ({
           ok: false,
