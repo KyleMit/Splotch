@@ -215,6 +215,7 @@ export function drivenCaptureArtifact({
   theme,
   ready,
   nativeApp,
+  requirePageIdentity = true,
   fidelity,
   drawing,
   summaries,
@@ -237,6 +238,10 @@ export function drivenCaptureArtifact({
     // `server.url`, so its assets are not the bundled ones. Recorded because the
     // difference is invisible in the numbers and material to what the cell means.
     pageDelivery: nativeApp ? 'remote-probe-host' : 'browser',
+    // Whether this capture could prove the page it measured was the one this run
+    // opened. A native WebView loads a build-time URL, so it cannot — recorded
+    // rather than assumed, because the guarantee genuinely differs by transport.
+    pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
     transport: 'split-input-measurement',
     fidelity,
     drawing,
@@ -281,11 +286,15 @@ export async function captureDeviceFrames({
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
+  // Only a page opened at a URL we chose can prove which run it belongs to. A
+  // native run cannot: the WebView loads the app's own `server.url`.
+  const requirePageIdentity = !nativeApp;
   await control(host, {
     brush,
     theme,
     label: runLabel,
     nonce,
+    requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
     finish: false,
     reset: true,
@@ -355,7 +364,7 @@ export async function captureDeviceFrames({
   const capturedAt = new URL(payload.report?.meta?.url ?? 'http://invalid/').searchParams.get(
     'probe'
   );
-  if (capturedAt !== nonce) {
+  if (requirePageIdentity && capturedAt !== nonce) {
     fail(
       `the report came from a page opened for ${capturedAt ?? 'an unknown run'}, not ${nonce} — ` +
         'a restored tab that adopted this plan is the usual cause'
@@ -395,6 +404,7 @@ export async function captureDeviceFrames({
     theme,
     ready,
     nativeApp,
+    requirePageIdentity,
     fidelity,
     drawing,
     summaries,

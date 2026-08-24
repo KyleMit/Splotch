@@ -146,6 +146,7 @@ export function handCaptureArtifact({
   runtime,
   platform,
   nativeApp,
+  requirePageIdentity = false,
   brush,
   orientation,
   theme,
@@ -168,6 +169,7 @@ export function handCaptureArtifact({
     theme,
     // The page's own answer, not the request — see capture-device-frames.
     observedTheme: ready?.resolvedTheme ?? null,
+    pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
     device: device ?? null,
     drawSeconds: seconds,
     transport: 'human-finger',
@@ -209,11 +211,17 @@ export async function captureHandInput({
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
+  // Only a page we opened at a URL we chose can prove which run it belongs to.
+  // A person opening the host by hand cannot carry a nonce, and a native WebView
+  // loads a build-time URL — so those ask for no proof and the artifact records
+  // that none was had.
+  const requirePageIdentity = opener === 'adb' && !nativeApp;
   await control(host, {
     brush,
     theme,
     label: runLabel,
     nonce,
+    requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
     finish: false,
     reset: true,
@@ -283,6 +291,7 @@ export async function captureHandInput({
     runtime,
     platform,
     nativeApp,
+    requirePageIdentity,
     brush,
     orientation,
     theme,

@@ -80,9 +80,22 @@ export function pageBootstrapSource() {
     // The launch URL carries the nonce, so the page can prove its own identity
     // rather than inheriting it. A page that cannot stands down silently: it is
     // not an error, it is a leftover.
+    // A page can only prove which run opened it when the URL it was opened with
+    // carried the nonce. The Capacitor WebView loads a server.url fixed at build
+    // time, and a hand capture is opened by a person typing the host - so for
+    // those the runner asks for no proof, and records that it did not get any.
+    // The browser path keeps a guarantee the native path cannot offer, and
+    // neither of them pretends otherwise.
     const openedFor = new URLSearchParams(location.search).get('probe');
-    if (openedFor !== nonce) {
+    if (plan.requirePageIdentity !== false && openedFor !== nonce) {
       await log({ kind: 'stale-page', openedFor, nonce });
+      // Standing down is not enough. Chrome restores every tab a previous cell
+      // left behind, so leftovers ACCUMULATE — a landscape cell reached ten of
+      // them, and the page the run actually opened reported ready and was then
+      // evicted before it could upload. Navigating away leaves a blank tab that
+      // will never run this again, which is the only part of that pile this
+      // page can do anything about.
+      location.replace('about:blank');
       return;
     }
     const sized = await until(() => {
