@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { CAMPAIGN_TARGETS } from '../lib/campaign-plan.mjs';
+import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import {
   CAPTURE_RUNTIMES,
   DEFAULT_CAPTURE_RUNTIME,
@@ -131,37 +132,160 @@ describe('the 2026-08-23 iPad corpus', () => {
   });
 });
 
-describe('the runtimes with no hand capture behind them', () => {
+// Recomputed from the RAW event rows rather than read from each capture's stored
+// summary. The summary is what the runner wrote; the rows are what the device
+// reported, and the whole argument for removing three checks is about what the
+// device reports.
+function handCorpus() {
+  const campaign = '2026-08-23-hand';
+  const index = JSON.parse(readFileSync(join(EVIDENCE, campaign, 'index.json'), 'utf8'));
+  return index.kept.map((entry) => {
+    const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, entry.file), 'utf8'));
+    return {
+      file: entry.file,
+      // The hand tool records the runtime top-level; the driven runner records it
+      // only inside the verdict. Reading one of them silently drops the control.
+      runtime: capture.runtime ?? capture.fidelity?.runtime,
+      byHand: capture.transport === 'human-finger',
+      input: summarizeRun(capture.report).phases?.[0]?.input ?? {},
+    };
+  });
+}
+
+// The justification for `android-chrome`'s three NOT_APPLICABLE entries is an
+// equivalence between what a real finger reports and what synthesized touch
+// reports. Asserting the entries alone would let someone delete the control, or
+// the whole corpus, without a test noticing — leaving three checks removed on
+// evidence that no longer exists.
+describe('the evidence that removed three Android checks', () => {
+  const corpus = handCorpus().filter((sample) => sample.runtime === 'android-chrome');
+  const hands = corpus.filter((sample) => sample.byHand);
+  const controls = corpus.filter((sample) => !sample.byHand);
+  const silent = (sample) => ({
+    pressure: sample.input.pressure?.p50,
+    width: sample.input.contactWidth?.p50,
+    height: sample.input.contactHeight?.p50,
+    coalesced: sample.input.coalescedPerMove,
+  });
+
+  it('still holds both sides of the comparison', () => {
+    expect(hands.length).toBeGreaterThanOrEqual(3);
+    expect(controls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // The claim is not "these values are 1/0/0/0". It is that a hand and a robot are
+  // INDISTINGUISHABLE here, which is what makes the checks carry no information.
+  it('reports the three silent checks identically for a hand and for a robot', () => {
+    const distinct = new Set(corpus.map((sample) => JSON.stringify(silent(sample))));
+
+    expect([...distinct]).toHaveLength(1);
+    expect(silent(hands[0])).toEqual({ pressure: 1, width: 0, height: 0, coalesced: 0 });
+  });
+
+  // And the checks that were KEPT must still separate them from a bad capture:
+  // every one of these was driven properly, by hand or by adb.
+  it('keeps a check that the same corpus can still pass', () => {
+    for (const sample of corpus) {
+      expect(sample.input.kinds, sample.file).toBe('touch');
+      expect(sample.input.trust?.share, sample.file).toBe(1);
+      expect(sample.input.movesPerSecond, sample.file).toBeGreaterThan(100);
+    }
+  });
+});
+
+describe('the runtime the 2026-08-23 hand corpus calibrated', () => {
   const android = verdictsFor('2026-08-23-android-split');
 
-  // Android keeps failing, exactly as it did before the table was split — issue
-  // 1218 is the hand capture that closes it. What changes is that the verdict now
-  // says the instrument is silent rather than implying the capture was bad, and an
-  // uncalibrated check must never read as a pass: doing so would bank the very
-  // cells the split transport exists to stop producing.
-  it('reports Android Chrome as uncalibrated rather than failed, and does not pass it', () => {
+  // Android Chrome reports pressure 1, no contact geometry and 0 coalesced
+  // samples for a real finger and for `adb shell input` alike, measured on the
+  // same phone the same night. Three checks that answer identically however the
+  // touch was made cannot tell the two apart, so they are not asked here — which
+  // is what makes these four captures scoreable at last.
+  it('passes a well-driven Android Chrome capture once its silent checks are named', () => {
     expect(android).toHaveLength(4);
     for (const sample of android) {
       expect(sample.input.movesPerSecond).toBeGreaterThan(100);
-      expect(sample.fidelity.passed).toBe(false);
-      expect(sample.fidelity.checks).toMatchObject({ trustedTouch: true, cadence: true });
-      expect(sample.fidelity.uncalibrated).toEqual(['coalescing', 'pressure', 'contactGeometry']);
-      expect(describeFidelityFailures(sample.fidelity)).toBe(
-        'coalescing(uncalibrated)+pressure(uncalibrated)+contactGeometry(uncalibrated)'
-      );
+      expect(sample.fidelity.passed).toBe(true);
+      expect(sample.fidelity.checks).toEqual({ trustedTouch: true, cadence: true });
+      expect(sample.fidelity.notApplicable).toEqual(['coalescing', 'pressure', 'contactGeometry']);
+      expect(describeFidelityFailures(sample.fidelity)).toBe('');
     }
   });
 
-  it('names the failing check apart from the uncalibrated ones', () => {
+  // The whole point of narrowing the verdict is that what remains still rejects
+  // the capture the campaign opened by finding.
+  it('still refuses the under-driven transport this campaign rejected', () => {
     const underDriven = inputFidelity(
       { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 46.8, moveGapP95Ms: 40 },
       'android-chrome'
     );
 
     expect(underDriven.passed).toBe(false);
-    expect(describeFidelityFailures(underDriven)).toBe(
-      'cadence+coalescing(uncalibrated)+pressure(uncalibrated)+contactGeometry(uncalibrated)'
+    expect(describeFidelityFailures(underDriven)).toBe('cadence');
+  });
+
+  // A not-applicable check is absent rather than present-and-true. Recording it
+  // as a pass would let a reader believe the runtime answered a question it was
+  // never asked.
+  it('omits a not-applicable check instead of passing it', () => {
+    const verdict = inputFidelity(
+      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 154.63, moveGapP95Ms: 16.5 },
+      'android-chrome'
     );
+
+    expect(Object.keys(verdict.checks)).toEqual(['trustedTouch', 'cadence']);
+    expect(verdict.uncalibrated).toEqual([]);
+  });
+
+  // Retiring the ceiling removed the gate's only finiteness guard. A capture whose
+  // window collapsed reports a non-finite rate, and the floor alone says yes to it
+  // — so the check that decides scoreability was more permissive than the
+  // diagnostic that merely describes.
+  it('refuses a rate that is not a finite measurement', () => {
+    for (const movesPerSecond of [Infinity, NaN, undefined, null]) {
+      const verdict = inputFidelity(
+        { kinds: 'touch', trust: { share: 1 }, movesPerSecond, moveGapP95Ms: 1 },
+        'android-chrome'
+      );
+
+      expect(verdict.checks.cadence, String(movesPerSecond)).toBe(false);
+      expect(verdict.passed, String(movesPerSecond)).toBe(false);
+    }
+  });
+
+  it('refuses a gap that is not a finite measurement', () => {
+    const verdict = inputFidelity(
+      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 154, moveGapP95Ms: Infinity },
+      'android-chrome'
+    );
+
+    expect(verdict.checks.cadence).toBe(false);
+  });
+
+  // Both hand captures that exceed the retired 170 ceiling are real fingers on
+  // real hardware — 178.0 on the phone, 268.4 on the iPad. A gate that rejects
+  // its own reference input is measuring the digitizer, not the fidelity.
+  it('accepts the rates a real hand actually produced on both devices', () => {
+    const phone = inputFidelity(
+      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 177.97, moveGapP95Ms: 16.7 },
+      'android-chrome'
+    );
+    const ipad = inputFidelity(
+      {
+        kinds: 'touch',
+        trust: { share: 1 },
+        movesPerSecond: 268.39,
+        moveGapP95Ms: 16,
+        coalescedPerMove: 0,
+        pressure: { p50: 0 },
+        contactWidth: { p50: 83.42 },
+        contactHeight: { p50: 83.42 },
+      },
+      'ios-safari'
+    );
+
+    expect(phone.checks.cadence).toBe(true);
+    expect(ipad.passed).toBe(true);
   });
 });
 

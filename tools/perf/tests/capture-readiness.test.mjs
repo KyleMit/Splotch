@@ -1,3 +1,7 @@
+import { spawn } from 'node:child_process';
+import { join } from 'node:path';
+import { ROOT } from '../../lib/proc.mjs';
+import { diagnoseLaunchFailure } from '../prepare-capture.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   androidWakeActions,
@@ -7,6 +11,8 @@ import {
   iosIdentifierProblem,
   resolvePort,
   summarize,
+  pageFollowedRotation,
+  classifyAppiumLog,
 } from '../lib/capture-readiness.mjs';
 
 describe('iOS device identifiers', () => {
@@ -213,4 +219,171 @@ describe('summarize', () => {
     expect(blocked.ready).toBe(false);
     expect(blocked.blockers).toEqual(['tunnel: not running']);
   });
+});
+
+// #1248 closed this hole on Android after a rotation fault passed every cheap
+// check and then failed all eight landscape cells. The iPad had no equivalent,
+// and half the matrix is landscape on both devices.
+describe('whether a page followed the device round', () => {
+  it('accepts a page whose dimensions match what was asked for', () => {
+    expect(pageFollowedRotation('LANDSCAPE', 1366, 934)).toBe(true);
+    expect(pageFollowedRotation('PORTRAIT', 934, 1366)).toBe(true);
+  });
+
+  // The device accepting the request is not the question. This is the exact
+  // shape observed on Android: the rotation is honoured, the page is not.
+  it('rejects a page still in the orientation it was asked to leave', () => {
+    expect(pageFollowedRotation('LANDSCAPE', 934, 1366)).toBe(false);
+    expect(pageFollowedRotation('PORTRAIT', 1366, 934)).toBe(false);
+  });
+
+  // A square or unreadable viewport answers neither way, and saying "failed"
+  // would send someone to Control Centre for a rotation lock that is not set.
+  it('declines to answer when the dimensions cannot decide it', () => {
+    expect(pageFollowedRotation('LANDSCAPE', 1024, 1024)).toBeNull();
+    expect(pageFollowedRotation('LANDSCAPE', undefined, 934)).toBeNull();
+  });
+});
+
+describe('what the launch probe reports once rotation is proven', () => {
+  it('says the page followed a rotation only when that was checked', () => {
+    expect(classifyLaunchProbe({ ok: true, rotationVerified: true }).detail).toContain(
+      'followed a rotation'
+    );
+    expect(classifyLaunchProbe({ ok: true }).detail).not.toContain('followed a rotation');
+  });
+});
+
+// Captured from a real failure on the physical iPad, 2026-08-24. The HTTP payload
+// for this failure — message AND stacktrace — carried only Appium's outer
+// `xcodebuild failed with code 65`, so no pattern over the response could ever
+// have classified it. The cause appears in the server log and nowhere else.
+const AUTOMATION_DENIAL_LOG = [
+  '[XCUITest] Setting up remote logger for real device',
+  '[XCUITest] Error: Timed out while enabling automation mode',
+  '[XCUITest] Failed to create session. Will try to remove the WDA and start again',
+].join('\n');
+
+describe('classifying a WebDriverAgent launch failure from the server log', () => {
+  it('names the on-device automation prompt, which no host-side change can clear', () => {
+    const detail = classifyAppiumLog(AUTOMATION_DENIAL_LOG);
+
+    expect(detail).toContain('Enable UI Automation');
+    expect(detail).toContain('Look at the device');
+  });
+
+  // Absent is not the same as unrecognised, and neither is the same as a known
+  // cause — reporting the wrong one sends a human to the wrong place.
+  it('answers null for a log it does not recognise, and for no log at all', () => {
+    expect(classifyAppiumLog('[XCUITest] something else entirely')).toBeNull();
+    expect(classifyAppiumLog('')).toBeNull();
+    expect(classifyAppiumLog(undefined)).toBeNull();
+  });
+
+  it('prefers a cause read from the log over the generic outer message', () => {
+    const generic = classifyLaunchProbe({
+      ok: false,
+      message: 'xcodebuild failed with code 65',
+    });
+    const classified = classifyLaunchProbe({
+      ok: false,
+      message: 'xcodebuild failed with code 65',
+      logCause: classifyAppiumLog(AUTOMATION_DENIAL_LOG),
+    });
+
+    expect(generic.detail).toContain('cause is not one this knows');
+    expect(classified.detail).toContain('Enable UI Automation');
+  });
+});
+
+// The integration the review found broken: the classifier recognised the fixture
+// while the path that has to DELIVER it returned nothing on a real blocked
+// device. Driven here with a controllable child, because the only other way to
+// reach this code is an iPad refusing automation.
+describe('the launch diagnostic end to end', () => {
+  const fakeAppium = (mode) => (port) =>
+    spawn(
+      process.execPath,
+      [join(ROOT, 'tools/perf/tests/fixtures/fake-appium.mjs'), String(port)],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, MODE: mode },
+      }
+    );
+
+  it('delivers the automation-mode cause the server logged', async () => {
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('denial') });
+
+    // Asserted FIRST so a failure prints why the diagnostic gave up, rather than
+    // only that `cause` was null — which is the same "clean negative hides a
+    // broken path" shape this whole diagnostic exists to avoid.
+    expect(probe.diagnostic).toBeNull();
+    expect(probe.cause).toContain('Enable UI Automation');
+  }, 60_000);
+
+  // "Ran and found nothing" and "never ran" must not read the same. They did,
+  // which is why a broken diagnostic looked like an unrecognised cause.
+  it('says so when the server logged nothing it knows', async () => {
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('silent') });
+
+    expect(probe.cause).toBeNull();
+    expect(probe.diagnostic).toContain('logged no cause');
+  }, 60_000);
+
+  it('reports a server that died instead of hanging on it', async () => {
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('crash') });
+
+    expect(probe.cause).toBeNull();
+    expect(probe.diagnostic).toContain('exited early');
+  }, 60_000);
+
+  // spawn reports a missing binary asynchronously, so this used to escape the
+  // try/catch and could take the preflight down with it.
+  it('survives a diagnostic binary that does not exist', async () => {
+    const probe = await diagnoseLaunchFailure(
+      {},
+      { spawnDiagnostic: () => spawn('definitely-not-a-real-binary-xyz', []) }
+    );
+
+    expect(probe.cause).toBeNull();
+    expect(probe.diagnostic).toContain('could not start');
+  }, 60_000);
+
+  it('tells the operator when the diagnostic itself failed', () => {
+    const detail = classifyLaunchProbe({
+      ok: false,
+      message: 'xcodebuild failed with code 65',
+      diagnostic: 'diagnostic server never became ready',
+    }).detail;
+
+    expect(detail).toContain('never became ready');
+  });
+});
+
+// Bounding how long teardown WAITS is not ensuring the child left. A server that
+// ignores SIGTERM outlived the old race: the function returned, its comment said
+// nothing was left behind, and the process kept listening.
+describe('tearing down a diagnostic server that will not go quietly', () => {
+  it('escalates past SIGTERM and leaves nothing running', async () => {
+    let child;
+    const probe = await diagnoseLaunchFailure(
+      {},
+      {
+        spawnDiagnostic: (port) => {
+          child = spawn(
+            process.execPath,
+            [join(ROOT, 'tools/perf/tests/fixtures/stubborn-appium.mjs'), String(port)],
+            { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+          );
+          return child;
+        },
+      }
+    );
+
+    expect(probe.cause).toBeNull();
+    // The assertion the review asked for: the child is gone, not merely awaited.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(child.killed || child.exitCode !== null || child.signalCode !== null).toBe(true);
+    expect(() => process.kill(child.pid, 0)).toThrow();
+  }, 60_000);
 });

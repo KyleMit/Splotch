@@ -1,0 +1,39 @@
+{
+  "campaign": "2026-08-24-android-web-recapture",
+  "capturedFrom": "perf-profiles/campaign-1220",
+  "kept": [
+    {
+      "file": "android-device-web-crayon.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "android-device-web-eraser.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "android-device-web-magic.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/magic-real-screen.json"
+    },
+    {
+      "file": "android-device-web-pen.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/pen-real-screen.json"
+    }
+  ],
+  "supersededForTheme": "SUPERSEDED for theme. These captures are real and their fidelity, cadence and frame numbers stand, but their theme labels are CLI echoes: the runner recorded --theme as provenance without ever setting or observing it, so every one of them measured whatever theme the previous run had persisted. The 1.82%-versus-0.69% crayon comparison read off them does not survive a controlled recapture, which measures 0.46 light against 0.45 dark. Kept because everything except the theme attribution is still evidence. See perf-profiles/evidence/2026-08-24-android-web-themed for the controlled run."
+}

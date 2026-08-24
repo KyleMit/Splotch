@@ -171,25 +171,45 @@ a transport that cannot create it:
 
 ### A failed verdict has two meanings, and they need different work
 
-`inputFidelity` states its expectations **per capture runtime** (ADR-0139), because three of its
-five checks describe a runtime rather than describing faithful input. So read *which* check did not
-pass:
+`inputFidelity` states its expectations **per capture runtime** (ADR-0139, amended by ADR-0141),
+because most of its checks describe a runtime rather than describing faithful input. So read *which*
+check did not pass, and in which of three ways:
 
 * **A failed check is a bad run.** `cadence` says the app was barely driven and the number is
   meaningless; `trustedTouch` says the input never went through the real touch path. Recapture.
-* **An `(uncalibrated)` check is a silent instrument.** No hand capture has recorded what that
-  runtime reports, so there is no expectation to judge against. Recapturing changes nothing; the fix
-  is to measure the runtime. It is **not** a pass — a capture resting on an unmeasured threshold is
-  as unscoreable as an under-driven one.
+* **An `(uncalibrated)` check is a silent instrument.** No capture has recorded what that runtime
+  reports, so there is no expectation to judge against. Recapturing changes nothing; the fix is to
+  measure the runtime. It is **not** a pass — a capture resting on an unmeasured threshold is as
+  unscoreable as an under-driven one.
+* **A check that is absent was never asked.** The runtime answers it identically for a real finger
+  and for synthesized touch, so it carries no information about how the capture was driven. That is
+  a measured finding, not a gap.
 
-Today every Android and desktop runtime is uncalibrated on `coalescing`, `pressure` and
-`contactGeometry`, which is why those targets are classed advisory and why `android-device-web`
-cannot be folded into the matrix yet. Issue 1218 is the hand capture that closes it.
+`android-chrome` is the third kind, established on 2026-08-23 by pairing a hand capture with an
+`adb`-driven one through the same probe: pressure 1 against 1, no contact geometry against none, 0
+coalesced samples against 0. Its verdict is `trustedTouch` and `cadence`, and its captures are
+scoreable. `android-capacitor-webview` and the desktop runtime remain uncalibrated.
 
-The one entry that is *inverted* rather than uncalibrated is `coalescing` on the Capacitor
-WKWebView, which expects more than zero coalesced samples where Safari expects none — measured on
-2026-08-23 with both runtimes driven at the same cadence on the same device. Do not widen that check
-to cover both; widening it retires it in Safari, where it does real work.
+The Capacitor WKWebView's `coalescing` entry is the standing uncalibrated one. An earlier revision
+inverted it — more than zero coalesced samples, where Safari expects none — on the strength of four
+healthy captures, and review refuted it with a negative control: the under-driven Android WebView
+probe recorded more than zero at 47.81 moves/s, so the inversion would have passed exactly the
+capture the check exists to reject. It stays uncalibrated until a known-bad WKWebView run exists
+(issue 1272). Do not widen it to cover both runtimes either; widening retires it in Safari, where it
+does real work.
+
+### A threshold set from the automation is not calibrated
+
+`cadence` carried a 100–170 band, and its ceiling was documented as rejecting input "faster than a
+hand". No hand had been measured. The band bracketed what the **automated** transport delivered, and
+when a person finally drew on both devices they produced 178.0 on the phone and 268.4 on the iPad —
+the gate rejecting a real finger on the very iPad it was calibrated from.
+
+The shape to watch for: a threshold whose reference class is *the captures we happen to take* rather
+than *the thing the check claims to describe*. It reads as calibrated, it has numbers behind it, and
+every one of those numbers came from the instrument rather than from the phenomenon. `cadence` is
+now a floor only (ADR-0141), and the floor has both sides measured — 46.8–61 moves/s for every
+rejected transport, 117.5 for the slowest hand.
 
 ## The preflight proves what it exercises, and nothing else
 
@@ -437,6 +457,77 @@ are never exercised. A fault injection that changes the threshold changes which 
 testing. Say which branch a demonstration actually covered, and leave the others to unit tests
 rather than implying the whole path was driven.
 
+### A test that greps the source is not a test of the behaviour
+
+Three findings in one review on 2026-08-24 were the same defect: a test asserting that code was
+*written* rather than that it *runs*. Disabling an entire feature with `if (false && …)` left eleven
+of them green; replacing a production dispatch with the bug it guarded against left all three of its
+tests green; deleting a field from both writers that record it left the suite green.
+
+Each read as thorough — real assertions, specific strings, named after the behaviour. None of them
+executed the code.
+
+The check is mechanical and takes a minute: **revert the fix and run the test.** If it still passes,
+it is documentation with an `expect()` in it. That applies to a generated source string as much as
+to a function — a bootstrap built as a template literal can be executed in a DOM fixture, which is
+slower than grepping it and is the only version that can fail.
+
+The related trap is a seam that only protects the far side of itself. Extracting a chooser and
+testing the chooser proves it picks correctly when handed the right value, which is never what was
+broken; the call site that hands it the value is the part that had the bug.
+
+### When the instrument changes, so does your explanation
+
+`landscape-light/magic` was explained three times in one day: a product signal about the light
+theme, then host load during the capture, then cross-run contamination. Only the third was right,
+and each of the first two was argued from data the next fix invalidated.
+
+The rule that would have prevented two retractions: **a number that moves when you change the
+instrument invalidates the EXPLANATION you gave for the old number, not just the number.** The
+temptation is to keep the story and swap the figure, because the story felt well-reasoned and the
+new data seems to fit it too. It does not fit it — it has not been compared against it.
+
+When a capture path changes, everything measured through it goes back to unknown, including the
+causes you assigned.
+
+### Audit a corpus for cross-run contamination
+
+A capture uploaded its report under whichever plan was current, and the report carried no run
+identity, so a page left over from an earlier cell could supply the frame tables for the current one
+(#1291). The artifact then agreed with itself: its brush, orientation and observed theme came from
+the page that was ready, and its numbers from a different page.
+
+Both halves are now checked, but old evidence is not. The report records the URL it was captured at,
+and that URL carries the run's nonce, so any corpus can be audited:
+
+```sh
+python3 - <<'EOF'
+import json, glob, os, re
+for f in glob.glob('perf-profiles/evidence/*/*.json'):
+    if os.path.basename(f) == 'index.json': continue
+    a = json.load(open(f))
+    url = ((a.get('report') or {}).get('meta') or {}).get('url') or ''
+    m = re.search(r'probe=([^&]*)', url)
+    if not m: continue                      # Appium/desktop transports carry no probe param
+    if not m.group(1).startswith(a.get('label', '')):
+        print('MISMATCH', os.path.relpath(f), '<-', m.group(1))
+EOF
+```
+
+A capture with no `probe` parameter is not a failure — the Appium and desktop transports do not use
+one, and a native or hand capture cannot (it records `pageIdentity: "unprovable"`).
+
+### Stopping a campaign does not lose the cells it banked
+
+A campaign resumes: re-run the same command and a cell whose artifact already parses is skipped.
+Deleting the output directory to "start clean" throws away work that was fine.
+
+The exception is the one that matters. **Discard when the capture path changed under you; resume
+when only time passed.** A cell captured by a tool that has since been fixed is a cell measured by a
+different instrument, and the ledger cannot tell — it records that an artifact parses, not what
+produced it (issue 1293). Until that is recorded, the distinction lives in the operator's head, so
+make it deliberately rather than reaching for `rm -rf` out of caution.
+
 ## Serialize the captures, but keep both devices alive
 
 **Never capture Android and iOS at the same time.** Both campaigns drive input from this host, and
@@ -619,6 +710,61 @@ curl -s http://<lan>:<probe port>/__probe/bootstrap.js | grep <something your ed
 
 The same applies to `perf:serve`: it serves whatever `web/build` held when vite started resolving,
 so a rebuild wants a restart and the manifest check under *A build that is not the build you think*.
+
+### `cap:sync` replaces the web build without saying so
+
+`npm run cap:sync` runs `build:cap`, which writes the **native static export** into `web/build` —
+the same directory `perf:serve` is serving from. So a native build silently replaces the web build
+under a running preview server, and nothing in the command you typed mentions the web target at all.
+
+This is the stale-manifest failure above with a cause nobody looks for: you did not rebuild, so it
+does not occur to you that a rebuild wants a restart. On 2026-08-24 it produced a **wrong filed
+issue** — a Capacitor WebView failed to hydrate against the probe host, the obvious explanation was
+that Capacitor could not load a remote page, and the actual explanation was that the server had been
+serving a 404ing manifest since the last `cap:sync`. The build-freshness guard caught it on the next
+capture, minutes after the issue was filed.
+
+After any `cap sync`, rebuild the web target **and restart the preview server** before capturing
+again.
+
+### Your control has to be concurrent, not remembered
+
+The same incident is worth reading a second way. The reasoning was: Safari loaded this page fine an
+hour ago, this WebView does not load it now, therefore the WebView is the difference. Safari's run
+was *before* the build broke. The variable that was compared on was not the variable that changed.
+
+A control that ran an hour ago is a memory, not a control. When something fails and a working case
+is the evidence that it should not have, re-run the working case **now**, on the same build and the
+same server — it costs one capture and it is the difference between a finding and a retraction.
+
+## Provenance a capture did not observe is not provenance
+
+An artifact records the mode it measured — orientation, theme, brush, runtime — and a reader trusts
+those fields to decide what a number means. Any one of them that is **copied from the request rather
+than read back from the page** is a label, not a measurement, and it fails silently in the direction
+that matters: the file looks complete and says the wrong thing.
+
+`--theme` was exactly this until 2026-08-24. The runner put it in the label and the artifact, never
+sent it to the page, and readiness checked only brush and orientation — so every capture measured
+whatever theme the previous run had persisted. Sixteen cells published theme-labelled rows, and a
+`1.82%` versus `0.69%` light-versus-dark crayon comparison was read off them and reported as a
+product signal. Controlled, the same cells measure **0.46 against 0.45**. There was no effect; there
+was a field nobody had checked.
+
+Two rules follow, and the second is the one that is easy to stop short of:
+
+* **Set it through the product surface and wait for the resolved state**, not for the click. The
+  theme is set through the same Settings controls a parent taps, and the page is polled until it
+  *resolves* to what was asked for.
+* **Put the observed value in the artifact, not just in the handshake.** Verifying at readiness
+  stops a mislabelled capture being written, and still leaves the file unable to answer "which theme
+  did you measure?" months later. `observedTheme` records what the page reported. Note that
+  `report.meta.theme` cannot serve: the product stores the loosest preference that renders an
+  appearance, so choosing the theme the OS already shows clears the override and leaves that field
+  `null` — which was every landscape-light cell.
+
+When adding a new mode dimension to a capture, the question is not "is it recorded?" but "did the
+page tell us, or did we tell ourselves?"
 
 ## Never run anything heavy on the host during a capture
 

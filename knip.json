@@ -17,6 +17,7 @@
     "netlify/**/*.ts",
     "tools/*.mjs",
     "tools/*/*.mjs",
+    "tools/perf/tests/fixtures/*.mjs",
     "tools/centerline-tracing/*.mjs",
     "tools/mobile/{android,ios}/*.mjs",
     "tools/perf/{web,android,ios,split-capture}/*.mjs",

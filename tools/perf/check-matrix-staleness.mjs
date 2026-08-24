@@ -44,6 +44,24 @@ export const MEASURED_SURFACE = [
   'pnpm-lock.yaml',
 ];
 
+// `web/tests` is excluded above on the principle that a spec cannot affect the
+// product. This repo colocates unit tests beside their source, so most specs are
+// under `web/src` and that exclusion missed them — which is not a hypothetical
+// margin. On 2026-08-23 a comment edit inside `web/src/lib/icons/tokenFallback.
+// test.ts` was the entire difference between five matrix targets and the current
+// tree, marking 100 cells stale and exiting the generator 1 on every regeneration
+// from then on.
+//
+// A tree hash cannot express "except these files", so the exception is applied
+// where the hashes already differ: name the differing files and ask whether any
+// of them ships. Any real source change still reads STALE, and a commit touching
+// both a spec and a source file reads STALE on the source file.
+const SPEC_FILE = /\.(test|spec)\.[^.]+$/;
+
+export function everyChangeIsASpec(paths) {
+  return paths.length > 0 && paths.every((path) => SPEC_FILE.test(path));
+}
+
 // Every provenance field a mode carries, so undo and action captures are held to
 // the same standard as drawing rather than going unchecked.
 export function modeProvenance(mode) {
@@ -70,19 +88,27 @@ export function capturedCommits(target) {
   return [...commits];
 }
 
-export function assessManifest(manifest, { surfaceAt, commitsSince }) {
+export function assessManifest(manifest, { surfaceAt, commitsSince, changedFilesSince }) {
   const current = surfaceAt('HEAD');
   const rows = [];
   for (const target of manifest.targets ?? []) {
     for (const commit of capturedCommits(target)) {
       const surface = surfaceAt(commit);
-      const verdict = !surface ? 'UNVERIFIABLE' : surface === current ? 'current' : 'STALE';
+      const specsOnly =
+        surface && surface !== current && changedFilesSince
+          ? everyChangeIsASpec(changedFilesSince(commit))
+          : false;
+      const verdict = !surface
+        ? 'UNVERIFIABLE'
+        : surface === current || specsOnly
+          ? 'current'
+          : 'STALE';
       rows.push({
         target: target.id,
         capturedAt: commit.slice(0, 12),
         'measured surface': surface ? surface.slice(0, 12) : '(unreachable)',
         'engine commits since': commitsSince ? commitsSince(commit) : undefined,
-        verdict,
+        verdict: specsOnly ? 'current (specs only)' : verdict,
       });
     }
   }
@@ -120,6 +146,25 @@ function gitSurfaceReader(base) {
   };
 }
 
+function changedFileReader(base) {
+  return (commit) => {
+    try {
+      return execFileSync(
+        'git',
+        ['diff', '--name-only', `${commit}`, base, '--', ...MEASURED_SURFACE],
+        { cwd: ROOT, encoding: 'utf8' }
+      )
+        .split('\n')
+        .filter(Boolean);
+    } catch {
+      // Unreadable is not "nothing changed": returning an empty list here would
+      // make `everyChangeIsASpec` false and leave the STALE verdict standing,
+      // which is the safe direction.
+      return [];
+    }
+  };
+}
+
 function engineCommitCounter(base) {
   return (commit) => {
     try {
@@ -144,6 +189,7 @@ export async function checkMatrixStaleness({
   const rows = assessManifest(manifest, {
     surfaceAt: gitSurfaceReader(base),
     commitsSince: engineCommitCounter(base),
+    changedFilesSince: changedFileReader(base),
   });
   if (!rows.length) {
     console.log('No captured cells in the manifest — every target is preserved evidence.');

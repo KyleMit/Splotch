@@ -23,6 +23,14 @@ export const UNSCOREABLE = 'failed-input-fidelity';
 // has a real chance of landing in the expected regime. It spends an attempt for the
 // same reason: a run of these is not an empty ledger.
 export const OFF_REFRESH_REGIME = 'off-refresh-regime';
+// A capture whose only obstacle is a check the instrument has no expectation for.
+// It parsed, it may have been driven perfectly, and it can never pass as things
+// stand — so unlike every other non-complete status it is NOT retried. The cost
+// of treating it as an ordinary failure is measured in device hours: a 20-cell
+// physical target spends 60 attempts to reach the same structural answer, on
+// hardware only one session can hold at a time. Closing it means measuring the
+// runtime, not recapturing the cell.
+export const UNCALIBRATED_RUNTIME = 'uncalibrated-runtime';
 
 export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
   return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
@@ -47,6 +55,7 @@ export function attemptsFor(rows, cellId) {
       row.cell === cellId &&
       (row.status?.startsWith(FAILED) ||
         row.status?.startsWith(UNSCOREABLE) ||
+        row.status?.startsWith(UNCALIBRATED_RUNTIME) ||
         row.status?.startsWith(OFF_REFRESH_REGIME))
   ).length;
 }
@@ -78,11 +87,37 @@ export function isComplete(rows, cellId) {
 // A cell that already produced a parseable artifact is never re-run: recapturing a
 // first valid result — a red gate included — would replace it with a different
 // number, which is the one thing a snapshot campaign must not do.
-export function nextAction(rows, cellId, { artifactValid, maxAttempts }) {
+// `runtimeStillUncalibrated` re-asks the question the ledger row answered when it
+// was written. Without it the row is terminal forever: seed one, calibrate the
+// runtime, and a resumed campaign still refuses to capture the cell under the new
+// instrument. That is not hypothetical — this campaign calibrated Android Chrome
+// one PR after introducing the status, which would have stranded every cell an
+// earlier run had already given up on.
+//
+// It defaults to true so a caller that does not ask keeps the conservative
+// behaviour, rather than silently reviving conclusions it cannot evaluate.
+export function nextAction(
+  rows,
+  cellId,
+  { artifactValid, maxAttempts, runtimeStillUncalibrated = true }
+) {
   if (artifactValid) return { action: 'skip', reason: ALREADY_VALID };
   const spent = attemptsFor(rows, cellId);
+  if (runtimeStillUncalibrated && hasUncalibratedRuntime(rows, cellId)) {
+    return { action: 'p1', reason: 'the runtime has no measured expectation', spent };
+  }
   if (spent >= maxAttempts) return { action: 'p1', reason: `${spent} attempts exhausted`, spent };
   return { action: 'run', attempt: spent + 1 };
+}
+
+// Read from any row for the cell rather than only the newest: the answer is a
+// property of the instrument and the runtime, so an earlier attempt establishing
+// it is as good as the last one, and a resumed run must not re-spend attempts an
+// earlier run already proved were futile.
+// `startsWith`, because the runner suffixes every attempt row with the child's
+// exit code. An equality check here reads as correct and matches nothing.
+function hasUncalibratedRuntime(rows, cellId) {
+  return rows.some((row) => row.cell === cellId && row.status?.startsWith(UNCALIBRATED_RUNTIME));
 }
 
 export function summarize(plan, rows, artifactValid) {
@@ -91,6 +126,10 @@ export function summarize(plan, rows, artifactValid) {
   const p1 = [];
   for (const cell of plan) {
     if (artifactValid(cell.artifact)) complete.push(cell.id);
+    // A cell held by an uncalibrated runtime is finished, not waiting: no further
+    // attempt can change it, so reporting it as outstanding would describe work
+    // that will never happen as work still to do.
+    else if (hasUncalibratedRuntime(rows, cell.id)) p1.push(cell.id);
     else if (attemptsFor(rows, cell.id) > 0 && !isComplete(rows, cell.id)) {
       (attemptsFor(rows, cell.id) >= 3 ? p1 : outstanding).push(cell.id);
     } else outstanding.push(cell.id);

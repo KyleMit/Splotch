@@ -3,7 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
-import { COMPLETE, FAILED, OFF_REFRESH_REGIME, UNSCOREABLE } from '../lib/campaign-ledger.mjs';
+import {
+  COMPLETE,
+  FAILED,
+  OFF_REFRESH_REGIME,
+  UNCALIBRATED_RUNTIME,
+  UNSCOREABLE,
+} from '../lib/campaign-ledger.mjs';
 import { inspectArtifact } from '../run-campaign.mjs';
 
 // This is the function that decides whether a cell is banked or spent again, and
@@ -131,5 +137,82 @@ describe('inspectArtifact', () => {
         status: COMPLETE,
       });
     });
+  });
+});
+
+// A 20-cell physical target spent 60 attempts reaching the same structural answer
+// before this distinction existed, on hardware only one session can hold.
+describe('a verdict no retry can change', () => {
+  const uncalibratedOnly = {
+    transport: 'browser',
+    fidelity: {
+      passed: false,
+      checks: { trustedTouch: true, cadence: true, coalescing: null },
+      uncalibrated: ['coalescing'],
+    },
+    summaries: { intervalMs: 17 },
+  };
+
+  it('separates a silent instrument from a capture that cannot be scored', () => {
+    expect(
+      inspectArtifact(artifactAt(uncalibratedOnly), 'web', { verdictRequired: true })
+    ).toMatchObject({ ok: false, status: UNCALIBRATED_RUNTIME });
+  });
+
+  // The ordering matters more than the new status does. A capture that was barely
+  // driven AND rests on an unmeasured threshold is a bad run first — calling it an
+  // instrument gap sends the next session to write a threshold when what actually
+  // happened is that the gesture never reached the canvas.
+  it('reports a badly driven capture as unscoreable even when checks are uncalibrated', () => {
+    const alsoUnderDriven = {
+      ...uncalibratedOnly,
+      fidelity: {
+        passed: false,
+        checks: { trustedTouch: true, cadence: false, coalescing: null },
+        uncalibrated: ['coalescing'],
+      },
+    };
+
+    expect(
+      inspectArtifact(artifactAt(alsoUnderDriven), 'web', { verdictRequired: true })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+
+  it('still calls an ordinary fidelity failure unscoreable', () => {
+    const badRun = {
+      ...uncalibratedOnly,
+      fidelity: {
+        passed: false,
+        checks: { trustedTouch: false, cadence: false },
+        uncalibrated: [],
+      },
+    };
+
+    expect(inspectArtifact(artifactAt(badRun), 'web', { verdictRequired: true })).toMatchObject({
+      ok: false,
+      status: UNSCOREABLE,
+    });
+  });
+});
+
+// The failing-open half of the same rule. A command that never measures a beat
+// must be exempt, and a command that does must NOT be — an artifact that should
+// carry one and does not is a broken capture, not an exempt one.
+describe('a capture with no beat to report', () => {
+  const noBeat = {
+    transport: 'android-chrome-cdp',
+    summaries: [{ action: 'idle frame control' }],
+  };
+
+  it('is accepted when its command measures no refresh regime', () => {
+    expect(
+      inspectArtifact(artifactAt(noBeat), 'web', { expectedRefreshRegime: null })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('is still refused when a regime was expected of it', () => {
+    expect(
+      inspectArtifact(artifactAt(noBeat), 'web', { expectedRefreshRegime: '120hz' })
+    ).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
   });
 });

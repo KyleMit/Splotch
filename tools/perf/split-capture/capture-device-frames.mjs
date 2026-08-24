@@ -18,6 +18,7 @@ import { dirname, join } from 'node:path';
 import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { nativeCanvasBounds, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -28,11 +29,7 @@ import {
   starvationRows,
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
-import {
-  androidGestureInstructions,
-  androidPageLaunchSteps,
-  swipeArgs,
-} from './lib/android-input.mjs';
+import { androidGestureInstructions, androidOpenSteps, swipeArgs } from './lib/android-input.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -44,12 +41,17 @@ const PAGE_SETTLE_MS = 6_000;
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PROBE_READY_TIMEOUT_MS = 90_000;
+// Shorter than the full budget on purpose: this is how long to wait before
+// deciding the launch did not land, not how long a slow page may take.
+const PROBE_READY_OPEN_TIMEOUT_MS = 30_000;
 const REPORT_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 1_000;
 // After the last pointerUp the engine still has queued raster work; ending the
 // phase immediately would clip it out of the capture.
 const GESTURE_TAIL_MS = 1_200;
 const WDA_SESSION_ATTEMPTS = 3;
+const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
+const APP_BUNDLE_ID = 'art.splotch.app';
 const WDA_SESSION_SETTLE_MS = 2_500;
 const CONTACT_BANK_MS = 600_000;
 
@@ -78,7 +80,12 @@ async function wda(wdaUrl, method, path, body) {
   return parsed.value;
 }
 
-function androidDriver({ serial, pageUrl, orientation }) {
+// A native run reaches the same instrumented page through the app's own WebView
+// rather than the browser, which needs the app built with `server.url` pointed at
+// the probe host. What that changes is asset DELIVERY, not the engine: the touch
+// path, the compositor and the frame loop are the WebView's either way. The
+// artifact says so rather than leaving a reader to assume a bundled build.
+function androidDriver({ serial, pageUrl, orientation, nativeApp }) {
   return {
     async openPage() {
       const settles = {
@@ -86,7 +93,7 @@ function androidDriver({ serial, pageUrl, orientation }) {
         rotation: ROTATION_SETTLE_MS,
         page: PAGE_SETTLE_MS,
       };
-      for (const step of androidPageLaunchSteps(orientation, pageUrl)) {
+      for (const step of androidOpenSteps({ nativeApp, orientation, pageUrl })) {
         adb(serial, step.args);
         if (step.settle) await sleep(settles[step.settle]);
       }
@@ -111,7 +118,7 @@ function androidDriver({ serial, pageUrl, orientation }) {
   };
 }
 
-function iosDriver({ wdaUrl, pageUrl }) {
+function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
   let sessionId = null;
   return {
     async openPage() {
@@ -125,17 +132,22 @@ function iosDriver({ wdaUrl, pageUrl }) {
       for (let attempt = 0; attempt < WDA_SESSION_ATTEMPTS; attempt += 1) {
         const created = await wda(wdaUrl, 'POST', '/session', {
           capabilities: {
-            alwaysMatch: { bundleId: 'com.apple.mobilesafari', shouldWaitForQuiescence: false },
+            alwaysMatch: {
+              bundleId: nativeApp ? APP_BUNDLE_ID : SAFARI_BUNDLE_ID,
+              shouldWaitForQuiescence: false,
+            },
           },
         });
         sessionId = created.sessionId;
         await sleep(WDA_SESSION_SETTLE_MS);
-        const opened = await wda(wdaUrl, 'POST', `/session/${sessionId}/url`, {
-          url: pageUrl,
-        }).then(
-          () => true,
-          () => false
-        );
+        // The native app loads the probe host from its own configuration, so
+        // there is no URL to navigate: launching it IS opening the page.
+        const opened = nativeApp
+          ? true
+          : await wda(wdaUrl, 'POST', `/session/${sessionId}/url`, { url: pageUrl }).then(
+              () => true,
+              () => false
+            );
         if (opened) break;
         await sleep(WDA_SESSION_SETTLE_MS);
       }
@@ -191,6 +203,54 @@ async function pollFor(callback, timeoutMs) {
   return null;
 }
 
+// The artifact envelope, as a pure value. Extracted so the fields a later reader
+// TRUSTS can be asserted without a device: `observedTheme` had no test, and
+// deleting the assignment left the suite green while recreating the exact gap it
+// closes — the handshake knew the theme and the saved file could not prove it.
+export function drivenCaptureArtifact({
+  runLabel,
+  platform,
+  brush,
+  orientation,
+  theme,
+  ready,
+  nativeApp,
+  requirePageIdentity = true,
+  fidelity,
+  drawing,
+  summaries,
+  payload,
+}) {
+  return {
+    label: runLabel,
+    platform,
+    brush,
+    orientation,
+    theme,
+    // What the PAGE reported, read back at readiness. `theme` alone is a request,
+    // and `report.meta.theme` cannot answer either: the product stores the
+    // loosest preference that renders an appearance, so choosing the theme the OS
+    // already shows clears the override and leaves that field null. An artifact
+    // has to be able to prove which theme it measured without re-deriving it.
+    observedTheme: ready?.resolvedTheme ?? null,
+    nativeApp,
+    // A native run reaches the instrumented page over the LAN through the app's
+    // `server.url`, so its assets are not the bundled ones. Recorded because the
+    // difference is invisible in the numbers and material to what the cell means.
+    pageDelivery: nativeApp ? 'remote-probe-host' : 'browser',
+    // Whether this capture could prove the page it measured was the one this run
+    // opened. A native WebView loads a build-time URL, so it cannot — recorded
+    // rather than assumed, because the guarantee genuinely differs by transport.
+    pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
+    transport: 'split-input-measurement',
+    fidelity,
+    drawing,
+    summaries,
+    report: payload?.report,
+    topology: payload?.topology ?? null,
+  };
+}
+
 export async function captureDeviceFrames({
   platform = argFlag('platform', 'android'),
   brush = argFlag('brush', 'pen'),
@@ -203,7 +263,11 @@ export async function captureDeviceFrames({
   label = argFlag('label'),
   output = argFlag('output'),
   reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
-  allowForeignBuild = argFlag('allow-foreign-build'),
+  allowForeignBuild = process.argv.includes('--allow-foreign-build'),
+  // `argFlag` only matches `--name=value`, so a BARE flag is invisible to it and
+  // reads as absent. A capture that silently ran against Safari while reporting a
+  // WebView runtime is the failure this shape produces.
+  nativeApp = process.argv.includes('--native-app'),
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
@@ -218,14 +282,19 @@ export async function captureDeviceFrames({
   // preview, so the build the device will load is checkable from here — and until
   // it was, only the desktop runners verified a build at all. A native export
   // written after the preview started reached device cells unchallenged.
-  await assertServedBuildIsFresh(host, { allowForeignBuild: allowForeignBuild !== undefined });
+  await assertServedBuildIsFresh(host, { allowForeignBuild });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
+  // Only a page opened at a URL we chose can prove which run it belongs to. A
+  // native run cannot: the WebView loads the app's own `server.url`.
+  const requirePageIdentity = !nativeApp;
   await control(host, {
     brush,
+    theme,
     label: runLabel,
     nonce,
+    requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
     finish: false,
     reset: true,
@@ -234,18 +303,37 @@ export async function captureDeviceFrames({
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
   const driver =
     platform === 'android'
-      ? androidDriver({ serial, pageUrl, orientation })
-      : iosDriver({ wdaUrl, pageUrl });
+      ? androidDriver({ serial, pageUrl, orientation, nativeApp })
+      : iosDriver({ wdaUrl, pageUrl, nativeApp });
 
   await driver.openPage();
 
-  const ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
+  // A launch does not always produce the page it asked for. Chrome restores the
+  // tabs a previous cell left behind, each re-runs the bootstrap, and with the
+  // identity guard in place those stand down correctly — but on a landscape cell
+  // the intended page then failed to appear at all, six leftovers standing down
+  // and no capture. Re-issuing the launch costs one settle when it was not
+  // needed, and is the difference between a banked cell and a P1 when it was.
+  let ready = await pollFor(
+    async () => (await probeState(host)).ready,
+    PROBE_READY_OPEN_TIMEOUT_MS
+  );
+  if (!ready) {
+    console.log('no page reported ready — re-opening');
+    await driver.openPage();
+    ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
+  }
   if (!ready) fail('the page never reported the probe ready');
   if (ready.committed && ready.committed !== brush) {
     fail(`the engine is on ${ready.committed}, not ${brush}`);
   }
   // The device rotates, the page does not always agree. Trusting the request
   // rather than the page is how a landscape capture gets filed as portrait.
+  // Theme used to be recorded from the REQUEST, so a light-labelled artifact
+  // could be written while the page stayed dark. It is now set through the
+  // product's Settings controls and read back before anything is measured.
+  const themeProblem = readinessThemeProblem(ready, theme);
+  if (themeProblem) fail(themeProblem);
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
   }
@@ -269,13 +357,25 @@ export async function captureDeviceFrames({
     fail('the capture recorded no pointer events — the gesture never reached the canvas');
   }
 
+  // Defence in depth for the same failure the bootstrap now refuses at the page:
+  // the report says which URL produced it, and that URL carries the nonce this
+  // run opened. A report whose URL names another cell is another cell's data
+  // however plausible its shape.
+  const capturedAt = new URL(payload.report?.meta?.url ?? 'http://invalid/').searchParams.get(
+    'probe'
+  );
+  if (requirePageIdentity && capturedAt !== nonce) {
+    fail(
+      `the report came from a page opened for ${capturedAt ?? 'an unknown run'}, not ${nonce} — ` +
+        'a restored tab that adopted this plan is the usual cause'
+    );
+  }
+
   const summaries = summarizeRun(payload.report);
   const drawing = scoreDrawingRun(summaries.phases);
-  // This path is browser-only on both platforms — it drives the OS's own trusted
-  // injection into Chrome or Safari, never a Capacitor WebView.
   const fidelity = inputFidelity(
     summaries.phases?.[0]?.input ?? {},
-    captureRuntime(platform, false)
+    captureRuntime(platform, nativeApp)
   );
 
   console.log(
@@ -296,19 +396,21 @@ export async function captureDeviceFrames({
   // Orientation and theme are recorded because the performance matrix validates
   // a capture against the mode it was filed under and refuses one that cannot
   // prove which mode it measured.
-  const artifact = {
-    label: runLabel,
+  const artifact = drivenCaptureArtifact({
+    runLabel,
     platform,
     brush,
     orientation,
     theme,
-    transport: 'split-input-measurement',
+    ready,
+    nativeApp,
+    requirePageIdentity,
     fidelity,
     drawing,
     summaries,
-    report: payload.report,
-    topology: payload.topology ?? null,
-  };
+    payload,
+  });
+
   if (output) {
     mkdirSync(dirname(join(ROOT, output)), { recursive: true });
     writeFileSync(join(ROOT, output), JSON.stringify(artifact, null, 2));

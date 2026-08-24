@@ -1,0 +1,15 @@
+{
+  "campaign": "2026-08-24-android-web-crayon-controlled-light",
+  "capturedFrom": "perf-profiles/campaign-1284-themed",
+  "kept": [
+    {
+      "file": "android-device-web-crayon.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-light/crayon-real-screen.json"
+    }
+  ],
+  "supersededForHostLoad": "SUPERSEDED for host quiet. These captures are real, fidelity-passing and theme-verified, but they were taken while test suites ran on the capture host -- forbidden by docs/PROFILING-CAMPAIGNS.md, and violated by the session that produced them. The only cell they put over the gate, landscape-light/magic at 2.71%, reads 0.90% when the same target is recaptured on an idle host, and six repeats put light and dark on top of each other. Kept as the evidence for that retraction. See 2026-08-24-android-web-quiet."
+}
