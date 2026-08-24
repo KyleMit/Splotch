@@ -202,6 +202,17 @@ export function describeFidelityFailures(fidelity) {
     .join('+');
 }
 
+// Whether this runtime still has any check with no measured expectation. The
+// campaign ledger asks, because "this cell cannot be scored" is a statement about
+// the INSTRUMENT rather than about the attempt — and an instrument changes. A
+// conclusion recorded before a runtime was calibrated must not outlive the
+// calibration.
+export function runtimeHasUncalibratedChecks(runtime) {
+  const expectations = RUNTIME_EXPECTATIONS[runtime];
+  if (!expectations) return false;
+  return Object.values(expectations).includes(UNCALIBRATED);
+}
+
 // Whether the ONLY thing standing between this verdict and a pass is a check the
 // instrument has no expectation for. Callers use it to tell a bad run from a
 // silent instrument: a bad run is worth retrying and this is not, because no

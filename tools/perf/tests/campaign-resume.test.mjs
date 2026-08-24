@@ -10,7 +10,10 @@ import {
   LEDGER_HEADER,
   UNCALIBRATED_RUNTIME,
   formatLedgerRow,
+  nextAction,
+  parseLedger,
 } from '../lib/campaign-ledger.mjs';
+import { runtimeHasUncalibratedChecks } from '../lib/input-fidelity.mjs';
 
 // Every case here resolves without spawning a capture: a cell that is already
 // valid, or one whose attempts the ledger says are gone. That is the whole point
@@ -135,5 +138,39 @@ describe('campaign resume', () => {
     const ledger = readFileSync(`${root}/ledger.tsv`, 'utf8');
     expect(ledger).toContain(EXHAUSTED);
     expect(ledger.split('\n').filter((line) => line.includes(`${FAILED}-exit-`))).toHaveLength(0);
+  });
+});
+
+// "This cell cannot be scored" is a statement about the INSTRUMENT, not about the
+// attempt — and an instrument changes. A conclusion recorded before a runtime was
+// calibrated must not outlive the calibration, or a resumed campaign refuses
+// forever to capture a cell that is now measurable.
+describe('an uncalibrated-runtime row after the runtime is calibrated', () => {
+  const rows = parseLedger(
+    formatLedgerRow({
+      timestamp: '2026-08-23T00:00:00.000Z',
+      cell: CELL,
+      status: `${UNCALIBRATED_RUNTIME}-exit-1`,
+      attempt: 1,
+      artifact: 'unused',
+    })
+  );
+  const decide = (runtimeStillUncalibrated) =>
+    nextAction(rows, CELL, { artifactValid: false, maxAttempts: 3, runtimeStillUncalibrated });
+
+  it('stays terminal while the runtime is still uncalibrated', () => {
+    expect(decide(true)).toMatchObject({ action: 'p1' });
+  });
+
+  it('becomes capturable once the runtime has been calibrated', () => {
+    expect(decide(false)).toMatchObject({ action: 'run' });
+  });
+
+  // The scenario is real rather than hypothetical: this campaign introduced the
+  // status one PR before calibrating Android Chrome.
+  it('reads android-chrome as calibrated and the WebViews as not', () => {
+    expect(runtimeHasUncalibratedChecks('android-chrome')).toBe(false);
+    expect(runtimeHasUncalibratedChecks('ios-capacitor-webview')).toBe(true);
+    expect(runtimeHasUncalibratedChecks('android-capacitor-webview')).toBe(true);
   });
 });

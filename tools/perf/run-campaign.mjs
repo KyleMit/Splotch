@@ -45,7 +45,10 @@ import {
   parseLedger,
 } from './lib/campaign-ledger.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
-import { onlyUncalibratedChecksFailed } from './lib/input-fidelity.mjs';
+import {
+  onlyUncalibratedChecksFailed,
+  runtimeHasUncalibratedChecks,
+} from './lib/input-fidelity.mjs';
 
 const SIMULATOR_SETTLE_MS = 5_000;
 const PROBE_HOST_TIMEOUT_MS = 5_000;
@@ -215,7 +218,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const rebootUdid = flag('reboot-simulator');
   const results = [];
 
-  const { runtime, refreshRegime } = campaignTarget(targetId);
+  // `runtime` is the target's SHELL (web or native) and decides artifact matching.
+  // `captureRuntime` names whose input-fidelity expectations apply, and is the one
+  // that can become calibrated — they are different questions and were briefly
+  // conflated here.
+  const { runtime, refreshRegime, captureRuntime: targetCaptureRuntime } = campaignTarget(targetId);
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
@@ -224,6 +231,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
       }).ok,
       maxAttempts,
+      runtimeStillUncalibrated: runtimeHasUncalibratedChecks(targetCaptureRuntime),
     });
 
     if (decision.action === 'skip') {

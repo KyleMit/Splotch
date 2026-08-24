@@ -87,10 +87,23 @@ export function isComplete(rows, cellId) {
 // A cell that already produced a parseable artifact is never re-run: recapturing a
 // first valid result — a red gate included — would replace it with a different
 // number, which is the one thing a snapshot campaign must not do.
-export function nextAction(rows, cellId, { artifactValid, maxAttempts }) {
+// `runtimeStillUncalibrated` re-asks the question the ledger row answered when it
+// was written. Without it the row is terminal forever: seed one, calibrate the
+// runtime, and a resumed campaign still refuses to capture the cell under the new
+// instrument. That is not hypothetical — this campaign calibrated Android Chrome
+// one PR after introducing the status, which would have stranded every cell an
+// earlier run had already given up on.
+//
+// It defaults to true so a caller that does not ask keeps the conservative
+// behaviour, rather than silently reviving conclusions it cannot evaluate.
+export function nextAction(
+  rows,
+  cellId,
+  { artifactValid, maxAttempts, runtimeStillUncalibrated = true }
+) {
   if (artifactValid) return { action: 'skip', reason: ALREADY_VALID };
   const spent = attemptsFor(rows, cellId);
-  if (hasUncalibratedRuntime(rows, cellId)) {
+  if (runtimeStillUncalibrated && hasUncalibratedRuntime(rows, cellId)) {
     return { action: 'p1', reason: 'the runtime has no measured expectation', spent };
   }
   if (spent >= maxAttempts) return { action: 'p1', reason: `${spent} attempts exhausted`, spent };
