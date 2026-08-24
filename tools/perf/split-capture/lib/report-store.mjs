@@ -17,7 +17,20 @@ export function keepIncomingReport(stored, incoming) {
   return eventCount(incoming) > eventCount(stored);
 }
 
-export function reportRejectionReason(stored, incoming) {
+// A report from a run that is no longer the current one. Readiness has always
+// been nonce-checked; the report was not, and the report carried no nonce at all
+// — so a page left over from an earlier run could upload its frame and event
+// tables under the CURRENT plan's label. The artifact then took its brush,
+// orientation and observed theme from the page that was ready, and its NUMBERS
+// from a different page. That is a plausible wrong number with every provenance
+// field agreeing, which is the shape this whole transport exists to prevent.
+//
+// Checked before thinness: a stale report is refused whatever its size, and
+// saying so names the run rather than blaming the event count.
+export function reportRejectionReason(stored, incoming, currentNonce) {
+  if (currentNonce && incoming?.nonce !== currentNonce) {
+    return `a report from ${incoming?.nonce ?? 'an unidentified run'}, not ${currentNonce}`;
+  }
   if (keepIncomingReport(stored, incoming)) return null;
   return `a thinner report (${eventCount(incoming)} <= ${eventCount(stored)} events)`;
 }

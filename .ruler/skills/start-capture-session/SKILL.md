@@ -8,17 +8,58 @@ description: Take over the physical iPad and Android capture rig at the start of
 There is one iPad and one Android phone, so capture sessions run **in sequence, not in parallel**. A
 session that starts takes the rig over completely; the previous one is finished.
 
-## In a fresh worktree, two things block before the preflight does
+## In a fresh worktree, three things block before the preflight does
 
-Both are gitignored, so a new worktree has neither, and both fail in a way that does not name
-itself.
+All three are gitignored, so a new worktree has none of them, and each fails in a way that does not
+name itself. Copy the last two from the main checkout.
 
 * **`node_modules`.** A worktree gets none. `pnpm install --frozen-lockfile` takes seconds; without
   it, `perf:serve` and every Playwright command die on a missing binary and the caller reports
   `http://localhost:4173/ did not become ready within 90000ms` — a timeout, with the real error
   scrolled off above it. Never `npm install` here (ADR-0119).
 * **`ios/local.xcconfig`.** The preflight names this one correctly and blocks on it, which is the
-  good case. Copy it from the main checkout; it holds a `DEVELOPMENT_TEAM` line and nothing else.
+  good case. It holds a `DEVELOPMENT_TEAM` line and nothing else.
+* **`android/local.properties`.** Only a native Android build needs it, so the preflight passes
+  without it and the failure waits until a Gradle task runs: `SDK location not found`. It names
+  itself once it arrives, but it arrives minutes into a build rather than at the preflight.
+
+## The iPad's automation prompt appears only while a launch is failing
+
+XCTest asks the iPad to *Enter iPad Passcode for XCTest / Enable UI Automation* **at the moment a
+WebDriverAgent session starts** — not at rest. So the device shows nothing wrong between runs, and a
+human asked to check it will correctly report that there is no prompt.
+
+That cost a session on 2026-08-24 twice over: once believing the iPad was unusable when a
+five-second tap would have cleared it, and once with a human looking at an apparently clean device
+while it was in exactly that state.
+
+If `--verify-ios-launch` reports the automation denial, run it again with someone watching the
+device — the prompt is on screen during that minute and nowhere else. The grant also expires on its
+own, so a rig that worked yesterday can need the tap again today.
+
+## A native capture over the probe host needs an ATS exception
+
+A Capacitor WebView reaches the instrumented page through `server.url`, which is a plain `http://`
+LAN address. iOS App Transport Security blocks that outright, and the failure is silent — the page
+simply never loads, with nothing on the host saying why. `NSAllowsArbitraryLoads` in
+`ios/App/App/Info.plist` clears it. Android needs `cleartext: true` in the Capacitor config, which
+is Android-only and does nothing for iOS.
+
+Both of those edits, and the `server.url` itself, are local capture scaffolding that must never be
+committed — `server.url` names one machine's LAN address.
+
+## Never commit what `cap sync` writes in a worktree
+
+`cap sync` regenerates `android/capacitor.settings.gradle` and `ios/App/CapApp-SPM/Package.swift`
+with paths **relative to the project it ran in**, and `cap:sync` additionally overwrites `web/build`
+with the native static export — so a preview server started before it keeps serving a manifest whose
+chunks now 404. A worktree sits several directories deeper than the main checkout, so every plugin
+path is rewritten from `../node_modules/...` to `../../../../node_modules/...`. The files are
+correct where they were generated and broken everywhere else, and nothing about the diff says so —
+it reads as an ordinary regeneration.
+
+Revert both after any native build from a worktree, and check `git status` before committing a
+capture session's work.
 
 ## Take the rig over
 
@@ -35,7 +76,7 @@ app or delivering a touch.
 | ------------------------ | --------------------------------------------------------------------------------------------------- |
 | `--wake-android`         | The phone is awake and stays awake. Writes stay-awake and a screen timeout, and does not undo them. |
 | `--verify-android-input` | A real touch reaches a page at usable cadence, **and** the device and a loaded page both rotate     |
-| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session — about a minute                                      |
+| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session **and turn** — about a minute                         |
 
 `--verify-android-input` takes about a minute: roughly 20 s for the touch cadence and another 40 s
 driving the page through landscape and back. Rotation is folded into it rather than given its own
@@ -56,10 +97,15 @@ device time to reach the same answer, which is what every physical-iPad native c
 
 **A green preflight still does not mean every cell can be captured.** Rotation used to be the gap:
 the preflight proved touch and never rotation, so a device that would not turn passed every flag and
-then failed every landscape cell — half the matrix. `--verify-android-input` now drives a real
-rotation and reads the orientation the **page** reports, so that particular hole is closed on
-Android. The iPad has no equivalent check, and neither device is proved against anything the
-verification does not itself exercise.
+then failed every landscape cell — half the matrix. Both devices are now driven through a real
+rotation, and both are judged on the orientation the **page** reports rather than on the request
+being accepted — those can disagree, and the disagreement is the failure. Neither device is proved
+against anything the verification does not itself exercise.
+
+The iPad's rotation is folded into `--verify-ios-launch` rather than given its own flag, because
+that launch already pays for a WebDriverAgent build and already runs Safari. A failure names the
+iPad's rotation lock, which is the cause a human can clear and the one a host-side check can never
+see.
 
 ## Reuse what cost a human, reclaim what is cheap
 

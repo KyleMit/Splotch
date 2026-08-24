@@ -19,14 +19,17 @@
 // It never stops a listener another session owns. Anything that cost a human
 // approval — the root-owned RemoteXPC tunnel above all — is reused where it is
 // already running, and anything cheap moves to a free port instead.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 import {
   androidWakeActions,
+  classifyAppiumLog,
   classifyLaunchProbe,
   iosIdentifierProblem,
+  pageFollowedRotation,
   PORT_ROLES,
   resolvePort,
   summarize,
@@ -319,8 +322,236 @@ export async function watchAndroid(
 // is opt-in rather than part of the default report, and it must not run while a
 // capture holds the device.
 const LAUNCH_PROBE_TIMEOUT_MS = 300_000;
+// Only paid on the failure path, and only once. A reused Appium writes its log to
+// whatever terminal started it, so the innermost cause is unreachable from here —
+// a server we start ourselves puts it on a pipe we own.
+const DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS = 30_000;
+const DIAGNOSTIC_APPIUM_POLL_MS = 500;
+const DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS = 5_000;
+// Kept small on purpose: the interesting lines are the innermost error, and a
+// whole Appium session log is megabytes of noise around them.
+const DIAGNOSTIC_LOG_EXCERPT_CHARS = 4_000;
+const DIAGNOSTIC_LOG_SETTLE_MS = 5_000;
+const DIAGNOSTIC_LOG_POLL_MS = 100;
+// A rotation is a physical animation on a real panel, and the page's own
+// dimensions do not update until it settles.
+const IOS_ROTATION_SETTLE_MS = 2_000;
+const IOS_ORIENTATIONS = ['LANDSCAPE', 'PORTRAIT'];
 
-export async function probeIosLaunch({ udid, appiumUrl, wdaPort }) {
+async function wdaSession(appiumUrl, sessionId, method, path, body) {
+  const response = await fetch(`${appiumUrl}/session/${sessionId}${path}`, {
+    method,
+    headers: body ? { 'content-type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const payload = await response.json();
+  if (payload.value?.error) throw new Error(String(payload.value.message ?? payload.value.error));
+  return payload.value;
+}
+
+// Half the matrix is landscape, and until #1248 nothing proved a device would
+// turn — a rotation fault passed every cheap check on Android and then failed
+// eight landscape cells. This is the iPad counterpart, and it asks the same
+// question that one does: not whether the OS accepted the request, but whether
+// the PAGE ended up in the orientation that was asked for. Those can differ, and
+// the difference is the whole failure mode.
+//
+// It reuses the launch probe's session rather than opening its own. That session
+// already costs about a minute of WebDriverAgent build, and it already runs
+// Safari, so the page this needs is one navigation away.
+async function verifyIosRotation(appiumUrl, sessionId) {
+  const original = await wdaSession(appiumUrl, sessionId, 'GET', '/orientation');
+  await wdaSession(appiumUrl, sessionId, 'POST', '/url', { url: 'about:blank' });
+  try {
+    for (const orientation of IOS_ORIENTATIONS) {
+      await wdaSession(appiumUrl, sessionId, 'POST', '/orientation', { orientation });
+      await new Promise((resolve) => setTimeout(resolve, IOS_ROTATION_SETTLE_MS));
+      const [width, height] = await wdaSession(appiumUrl, sessionId, 'POST', '/execute/sync', {
+        script: 'return [window.innerWidth, window.innerHeight]',
+        args: [],
+      });
+      const followed = pageFollowedRotation(orientation, width, height);
+      if (followed !== true) {
+        const reported =
+          followed === null
+            ? `${width}x${height}`
+            : `${height > width ? 'PORTRAIT' : 'LANDSCAPE'} (${width}x${height})`;
+        return {
+          ok: false,
+          message:
+            `the device was asked for ${orientation} and the page reports ${reported} ` +
+            "— check the iPad's rotation lock in Control Centre",
+        };
+      }
+    }
+    return { ok: true };
+  } finally {
+    // Restoring matters more here than on Android: the orientation a capture
+    // session inherits is the one a human left the iPad in, and silently leaving
+    // it portrait would change what the next cell measures.
+    await wdaSession(appiumUrl, sessionId, 'POST', '/orientation', {
+      orientation: original,
+    }).catch(() => null);
+  }
+}
+
+// A port nothing is listening on, proven by holding it ourselves and releasing
+// it immediately before the child claims it. A fixed port cannot be trusted: if
+// something else already answers there, the child can exit while `/status`
+// succeeds against the stranger, and the device session then goes to a server we
+// do not own and whose log we will never read.
+async function freeDiagnosticPort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.on('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+// Re-runs the failed session against an Appium we own, capturing its output, and
+// classifies the innermost cause from it. The HTTP response never carries that
+// cause — verified against a real failure — so the server log is the only source.
+//
+// Returns `{ cause, diagnostic }`. `cause` is null whenever this could not get an
+// answer, because a diagnostic that fails must not overwrite the outer message
+// with a wrong story. `diagnostic` says WHY it could not, so an integration
+// failure here is visible rather than looking like "no known cause".
+//
+// `spawnDiagnostic` is a seam: the whole path — spawn, wait for ready, send the
+// session, read the log, classify, tear down — is otherwise only reachable with a
+// real blocked device, which is how it shipped broken.
+export async function diagnoseLaunchFailure(
+  sessionBody,
+  { spawnDiagnostic = defaultDiagnosticAppium, retried = false } = {}
+) {
+  let port;
+  try {
+    port = await freeDiagnosticPort();
+  } catch {
+    return { cause: null, diagnostic: 'could not reserve a port for the diagnostic server' };
+  }
+
+  let child;
+  let log = '';
+  let exited = null;
+  try {
+    child = spawnDiagnostic(port);
+  } catch (error) {
+    return { cause: null, diagnostic: `could not start a diagnostic server: ${error.message}` };
+  }
+
+  // `spawn` reports a missing binary asynchronously on `error`, not by throwing,
+  // so a try/catch around it protects nothing and an unhandled event would take
+  // the preflight down with it.
+  let spawnError = null;
+  child.on('error', (error) => (spawnError = error));
+  child.on('exit', (code) => (exited = code));
+  child.stdout?.on('data', (chunk) => (log += chunk));
+  child.stderr?.on('data', (chunk) => (log += chunk));
+
+  try {
+    const deadline = Date.now() + DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS;
+    let ready = false;
+    while (!ready && Date.now() < deadline && !spawnError && exited === null) {
+      ready = await fetch(`http://127.0.0.1:${port}/status`)
+        .then((response) => response.ok)
+        .catch(() => false);
+      if (!ready) await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_POLL_MS));
+    }
+    if (spawnError) {
+      return {
+        cause: null,
+        diagnostic: `diagnostic server could not start: ${spawnError.message}`,
+      };
+    }
+    if (exited !== null) {
+      // The port was proven free and then released before the child claimed it,
+      // so a busy machine can take it in between. Worth one retry before
+      // reporting a dead server, because the alternative reads as "no cause
+      // found" for a reason that has nothing to do with the device.
+      if (!retried) {
+        return diagnoseLaunchFailure(sessionBody, { spawnDiagnostic, retried: true });
+      }
+      return { cause: null, diagnostic: `diagnostic server exited early with code ${exited}` };
+    }
+    if (!ready) return { cause: null, diagnostic: 'diagnostic server never became ready' };
+
+    await fetch(`http://127.0.0.1:${port}/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(sessionBody),
+      signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
+    }).catch(() => null);
+
+    // The child's stdout reaches this process asynchronously, so classifying the
+    // instant the session request returns can read an empty log and report "no
+    // cause found" for a server that logged one a millisecond later. Wait for a
+    // cause to appear, bounded — the happy path exits as soon as the line lands.
+    const logDeadline = Date.now() + DIAGNOSTIC_LOG_SETTLE_MS;
+    let cause = classifyAppiumLog(log);
+    while (!cause && Date.now() < logDeadline) {
+      await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_LOG_POLL_MS));
+      cause = classifyAppiumLog(log);
+    }
+    return {
+      cause,
+      diagnostic: cause
+        ? null
+        : `diagnostic server logged no cause this knows (${log.length} chars captured)`,
+      log: log.slice(-DIAGNOSTIC_LOG_EXCERPT_CHARS),
+    };
+  } catch (error) {
+    return { cause: null, diagnostic: `diagnostic failed: ${error.message}` };
+  } finally {
+    await terminateDiagnostic(child, () => exited);
+  }
+}
+
+// Waiting for an exit is not the same as ensuring one. A child that ignores
+// SIGTERM outlived the race this used to do: the function returned, the comment
+// claimed nothing was left behind, and the server kept the port. Appium can also
+// leave descendants, so the whole group is signalled where the platform allows
+// it, and SIGKILL follows a TERM that was not honoured.
+async function terminateDiagnostic(child, hasExited) {
+  const exitedNow = () => hasExited() !== null;
+  const settle = (ms) =>
+    Promise.race([
+      new Promise((resolve) => child.once('exit', resolve)),
+      new Promise((resolve) => setTimeout(resolve, ms)),
+    ]);
+
+  for (const signal of ['SIGTERM', 'SIGKILL']) {
+    if (exitedNow()) return true;
+    // Negative pid signals the process GROUP; a detached child is the only kind
+    // that has one, so a plain kill is the fallback rather than the exception.
+    try {
+      process.kill(-child.pid, signal);
+    } catch {
+      child.kill(signal);
+    }
+    await settle(DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS);
+  }
+  return exitedNow();
+}
+
+const defaultDiagnosticAppium = (port) =>
+  spawn('appium', ['--port', String(port), '--log-timestamp'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // Its own process group, so a server that spawns helpers is terminated whole
+    // rather than leaving descendants holding the port.
+    detached: true,
+  });
+
+export async function probeIosLaunch({
+  udid,
+  appiumUrl,
+  wdaPort,
+  verifyRotation = false,
+  diagnose = true,
+}) {
   const body = {
     capabilities: {
       alwaysMatch: {
@@ -345,9 +576,19 @@ export async function probeIosLaunch({ udid, appiumUrl, wdaPort }) {
     });
     const payload = await response.json();
     const sessionId = payload.value?.sessionId;
-    if (!sessionId) return { ok: false, message: String(payload.value?.message ?? '') };
+    if (!sessionId) {
+      const message = String(payload.value?.message ?? '');
+      const probe = diagnose ? await diagnoseLaunchFailure(body) : null;
+      return { ok: false, message, logCause: probe?.cause ?? null, diagnostic: probe?.diagnostic };
+    }
+    const rotation = verifyRotation
+      ? await verifyIosRotation(appiumUrl, sessionId).catch((error) => ({
+          ok: false,
+          message: error instanceof Error ? error.message : String(error),
+        }))
+      : null;
     await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
-    return { ok: true };
+    return rotation && !rotation.ok ? rotation : { ok: true, rotationVerified: verifyRotation };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) };
   }
@@ -410,12 +651,16 @@ if (isMain(import.meta.url)) {
       if (!rotation.ok) process.exitCode = 1;
     }
     if (argv.includes('--verify-ios-launch') && report.iosUdid) {
-      console.log('\nprobing a real WebDriverAgent launch (this builds WDA and takes a minute)…');
+      console.log(
+        '\nprobing a real WebDriverAgent launch and a rotation ' +
+          '(this builds WDA and takes a minute)…'
+      );
       const probe = classifyLaunchProbe(
         await probeIosLaunch({
           udid: report.iosUdid,
           appiumUrl: argFlag('appium-url', `http://127.0.0.1:${report.ports.appium}`),
           wdaPort: report.ports.wda,
+          verifyRotation: true,
         })
       );
       console.log(

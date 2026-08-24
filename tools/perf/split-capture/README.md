@@ -26,6 +26,7 @@ only has to be able to touch the screen.
 | ---------------------------- | -------------------------------------------------------------------------------------------------- |
 | `npm run perf:device:serve`  | Serves the perf build with the probe bootstrapped in, and collects the uploaded report             |
 | `npm run perf:device:frames` | Opens the page on the device, dispatches trusted touch, waits for the report, scores and writes it |
+| `npm run perf:device:hand`   | The same, with a **person** drawing in place of the injected touch — how a threshold gets measured |
 
 Run the host first; it binds `0.0.0.0` because the device loads it over the LAN.
 
@@ -46,6 +47,26 @@ npm run perf:device:frames -- --platform=android --device-serial=<serial> \
 For iPadOS, pass `--platform=ios --wda-url=http://127.0.0.1:8100` and leave `--device-serial` off;
 WebDriverAgent must already be running and reachable.
 
+## Calibrating from a hand
+
+`perf:device:hand` is `perf:device:frames` with the injection half removed. The page instruments and
+uploads itself identically, and a human draws instead of `adb shell input`. The symmetry is the
+point: a hand number is only a calibration for a driven capture if one instrument read both.
+
+It prints the verdict but never fails on it. A check the table records as uncalibrated not passing
+is the reason the capture is being taken, so exiting non-zero would be reporting the question as an
+error.
+
+The artifact keeps the probe's **raw event rows**, which is what makes a person's time reusable —
+every percentile and verdict is derived in Node, so a later revision of the expectation table
+re-reads the file rather than asking for another finger. Keep hand captures under
+`perf-profiles/evidence/` for that reason; its `index.json` carries each capture's reading and how
+it was drawn, because how hard a person scribbles moves the numbers a threshold is set from.
+
+The device cue matters more than it sounds. Whoever is drawing is holding the device, not watching
+the terminal, so the Android path buzzes once when the window opens and twice when it closes. There
+is no iOS equivalent, so an iPad run is driven by a person calling the start.
+
 ## Inputs and outputs
 
 `--host` is the probe host URL **as the device sees it** — a LAN address, not `127.0.0.1`. The
@@ -59,29 +80,27 @@ not the same as an artifact that can be scored. The campaign runner reads the `f
 artifact carries for exactly this reason, and records a fidelity failure as `failed-input-fidelity`
 rather than banking the cell.
 
-## The Android fidelity gate is not yet satisfiable
+## The Android fidelity gate, and how it was closed
 
 This transport fixes the defect that made Android cells meaningless — measured **116.6 contact moves
-per second** against Appium's 46.8, at 0.98 moves per frame — but a capture still fails the gate on
-two checks:
+per second** against Appium's 46.8, at 0.98 moves per frame. For a while a capture still could not
+be scored, because `pressure` and `contactGeometry` carried iPad-calibrated expectations that Chrome
+cannot satisfy, and widening them to let Android pass would have destroyed the only thing they are
+for.
 
-| Check             | Android via `adb` | Required  |
-| ----------------- | ----------------: | --------- |
-| `cadence`         |     116.6 moves/s | 100–170   |
-| `pressure`        |                 1 | exactly 0 |
-| `contactGeometry` |              0 px | 40–100 px |
+The answer came from measuring rather than widening (ADR-0141). A hand capture and an `adb`-driven
+capture, same phone, same night, same probe:
 
-Both failing thresholds are iPad-calibrated. `inputFidelity` says so in its own comment — they come
-from a hand capture on the target iPad, where Safari reports pressure 0 and a contact radius around
-74 px. Chrome reports pressure 1 for synthesized touch and no contact radius at all, so **no Android
-input path can satisfy them**, including Appium's (which fails `contactGeometry` too, and passes
-`pressure` only incidentally).
+| Check              | real finger | synthesized touch |
+| ------------------ | ----------: | ----------------: |
+| `pressure` p50     |           1 |                 1 |
+| `contactGeometry`  |        none |              none |
+| `coalescedPerMove` |           0 |                 0 |
 
-Do not widen the gate to make Android pass. What the checks are for is proving a run exercised the
-real touch path, and the honest fix is platform-scoped expectations calibrated the same way the iPad
-ones were: a hand capture on the Android device, drawn with a finger, read for what Chrome actually
-reports. Until that exists, an Android capture from this path is **better** than an Appium one on
-the axis that corrupted the numbers, and still not formally scoreable.
+Three checks that answer identically however the touch was made cannot tell a hand from a robot, so
+`android-chrome` does not ask them. Its verdict is `trustedTouch` and `cadence`, and `cadence` still
+rejects what this transport exists to replace: 46.8 moves/s for the Appium path, against 115.9
+driven here and 135.5–178.0 by hand.
 
 ## Failure behavior
 

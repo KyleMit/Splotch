@@ -138,6 +138,38 @@ export function androidPageLaunchSteps(orientation, pageUrl) {
   ];
 }
 
+const APP_PACKAGE = 'art.splotch.app';
+const APP_ACTIVITY = `${APP_PACKAGE}/.MainActivity`;
+
+// The native counterpart: the app reaches the instrumented page through its own
+// Capacitor `server.url`, so there is no URL to pass — launching it IS opening the
+// page. Rotation is asserted in the same position and for the same reason as the
+// browser path above.
+//
+// This lives beside the browser steps rather than being written out at each call
+// site, because the two callers that need it would otherwise each carry their own
+// copy of the package name and the launch order.
+export function androidNativeLaunchSteps(orientation) {
+  const [disableAutoRotate, setRotation] = androidRotationCommands(orientation);
+  return [
+    { args: ['shell', 'am', 'force-stop', APP_PACKAGE], settle: 'appStop' },
+    { args: disableAutoRotate, settle: null },
+    { args: setRotation, settle: 'rotation' },
+    { args: ['shell', 'am', 'start', '-n', APP_ACTIVITY], settle: 'page' },
+  ];
+}
+
+// Which launch a capture takes, as a value rather than as a branch inside a
+// driver. The branch used to live in each caller, so a test could exercise both
+// step factories and still not prove that `--native-app` reaches the native one
+// — which is exactly the regression that shipped: an opener ignoring the flag
+// captured Chrome and labelled it a WebView runtime.
+export function androidOpenSteps({ nativeApp, orientation, pageUrl }) {
+  return nativeApp
+    ? androidNativeLaunchSteps(orientation)
+    : androidPageLaunchSteps(orientation, pageUrl);
+}
+
 // The rotation settings a verification has to put back. `settings get` answers
 // `null` for a value that was never written, and writing the string "null" back
 // leaves the device with a setting it cannot parse — so an absent value is

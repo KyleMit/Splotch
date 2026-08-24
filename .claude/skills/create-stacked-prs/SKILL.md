@@ -207,8 +207,20 @@ gh extension install github/gh-stack   # if `gh stack` is missing
 gh stack link <pr-url-bottom> <pr-url-2> <pr-url-3>   # bottom → top
 ```
 
-* **Pass PR URLs.** Numbers work, but a leading numeric argument is read as a *stack* number when it
-  matches one, and branch-name arguments get pushed to the remote automatically.
+* **Pass PR URLs, and pass the URL the create step just printed — never one you predicted.** Numbers
+  work, but a leading numeric argument is read as a *stack* number when it matches one, and
+  branch-name arguments get pushed to the remote automatically.
+
+  The failure this prevents is not a typo. Writing the `link` call before the PR exists means
+  guessing its number, and PR numbers are shared with every issue and every other session's PRs — on
+  2026-08-24 a guessed number resolved to **an unrelated PR opened six minutes earlier**, whose base
+  was repointed into the stack. Nothing errors: linking a valid PR is a valid operation.
+
+  Repairing it is worse than avoiding it, because a PR cannot leave a stack while it is in one —
+  `gh pr edit --base` fails with *"Cannot change the base branch because the pull request is part of
+  a stack"*. The whole stack has to be dissolved with `gh stack unstack <number>`, the stray PR's
+  base restored, and the real chain relinked, which issues a new stack number. Capture the URL from
+  `gh pr create` and pass that.
 * If the bases are already chained correctly this is structurally a no-op — it creates the stack
   association without rewriting bases or moving branches. Confirm nothing moved:
   `git status

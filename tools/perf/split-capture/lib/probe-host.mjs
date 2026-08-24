@@ -78,7 +78,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     if (req.method === 'POST' && pathname.startsWith('/__probe/')) {
       const payload = await readBody(req);
       if (pathname === '/__probe/report') {
-        const rejection = reportRejectionReason(state.report, payload);
+        const rejection = reportRejectionReason(state.report, payload, state.plan.nonce);
         if (rejection) {
           log(`ignored ${rejection} for ${state.plan.label}`);
           return json(res, {});

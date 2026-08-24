@@ -10,6 +10,12 @@ import {
   parseCampaignOrientation,
   settingsSectionRow,
   themeRoundTripPlan,
+  COMPACT_SHELL_MARKER,
+  QUICK_NIGHT_TOGGLE,
+  SETTINGS_BUTTON,
+  SETTINGS_CLOSE_BUTTON,
+  SETTINGS_MODAL,
+  themeOption,
 } from '../lib/campaign-state.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 
@@ -219,5 +225,55 @@ describe('resolved theme expression', () => {
 
     expect(campaignState).toContain('${RESOLVED_THEME_EXPRESSION} === ${JSON.stringify(theme)}');
     expect(actions).toContain("${RESOLVED_THEME_EXPRESSION} === '${enabled ? 'dark' : 'light'}'");
+  });
+});
+
+// Every Settings selector both capture transports depend on, bound to the markup
+// that has to provide it. Two transports drive these controls — the Appium path
+// through a script channel, the split path from inside the page — and a rename in
+// SettingsModal, CompactShell or AppearanceSection would otherwise leave one
+// working and the other silently timing out until a device session found it.
+//
+// The constants are the single owner; this is what makes "owned here" a fact
+// rather than a comment.
+describe('the Settings selectors both transports share', () => {
+  const source = (path) => readFileSync(join(ROOT, 'web', 'src', 'lib', path), 'utf8');
+  const settingsModal = source('components/SettingsModal.svelte');
+  const settingsButton = source('components/SettingsButton.svelte');
+  const compactShell = source('components/settings/CompactShell.svelte');
+  const appearanceSection = source('components/settings/AppearanceSection.svelte');
+  const sections = source('components/settings/sections.ts');
+
+  it('finds the dialog and its close control in SettingsModal', () => {
+    expect(SETTINGS_MODAL).toBe('#settingsModal');
+    expect(settingsModal).toContain('id="settingsModal"');
+    expect(SETTINGS_CLOSE_BUTTON).toContain('aria-label="Close"');
+    expect(settingsModal).toContain('aria-label="Close"');
+  });
+
+  it('finds the button that opens it', () => {
+    expect(SETTINGS_BUTTON).toBe('button[aria-label="Settings"]');
+    expect(settingsButton).toContain('aria-label="Settings"');
+  });
+
+  it('finds the compact shell marker and its night toggle', () => {
+    expect(COMPACT_SHELL_MARKER.endsWith('.quick-toggles')).toBe(true);
+    expect(compactShell).toContain('class="quick-toggles"');
+    expect(QUICK_NIGHT_TOGGLE).toBe('#quickNightToggle');
+    expect(compactShell).toContain('id="quickNightToggle"');
+  });
+
+  // The sectioned shell's options carry literal ids, so the constant and the
+  // markup can be compared directly rather than by shape.
+  it('finds both theme options the campaign selects', () => {
+    for (const theme of ['light', 'dark']) {
+      expect(appearanceSection, theme).toContain(`id: '${themeOption(theme).slice(1)}'`);
+    }
+  });
+
+  it('finds the Appearance row the sectioned shell navigates through', () => {
+    expect(settingsSectionRow('appearance')).toContain('data-section="appearance"');
+    expect(settingsModal).toContain('data-section={section.id}');
+    expect(sections).toContain("id: 'appearance'");
   });
 });

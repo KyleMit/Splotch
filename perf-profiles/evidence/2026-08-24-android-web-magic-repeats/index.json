@@ -1,0 +1,61 @@
+{
+  "campaign": "2026-08-24-android-web-magic-repeats",
+  "capturedFrom": "perf-profiles/repeats-1290",
+  "why": "A REPEAT SET, not an ADR-0138 sample. ADR-0138 keeps one capture per target and brush because a metric's effect varies with the display and the workload; that rule cannot answer how much a single cell varies run to run, which is the question these exist for. Six captures of one cell, three per theme, taken minutes apart on an idle host with the theme set and verified. Light reads 0.23/0.66/0.90 against dark's 0.23/0.68/0.87 -- indistinguishable, and every one under the 1% gate. Read together with the superseded corpora: an earlier set of the same cell reached 2.71%, and those captures were taken while test suites were running on the capture host, which docs/PROFILING-CAMPAIGNS.md forbids. The spread that motivated issue 1290 has a known confound in it.",
+  "kept": [
+    {
+      "file": "magic-dark-1.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "observedTheme": "dark",
+      "fidelityPassed": true,
+      "lostFrameTimeShare": 0.0023
+    },
+    {
+      "file": "magic-dark-2.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "observedTheme": "dark",
+      "fidelityPassed": true,
+      "lostFrameTimeShare": 0.0068
+    },
+    {
+      "file": "magic-dark-3.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "observedTheme": "dark",
+      "fidelityPassed": true,
+      "lostFrameTimeShare": 0.0087
+    },
+    {
+      "file": "magic-light-1.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-light",
+      "observedTheme": "light",
+      "fidelityPassed": true,
+      "lostFrameTimeShare": 0.009
+    },
+    {
+      "file": "magic-light-2.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-light",
+      "observedTheme": "light",
+      "fidelityPassed": true,
+      "lostFrameTimeShare": 0.0066
+    },
+    {
+      "file": "magic-light-3.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-light",
+      "observedTheme": "light",
+      "fidelityPassed": true,
+      "lostFrameTimeShare": 0.0023
+    }
+  ]
+}

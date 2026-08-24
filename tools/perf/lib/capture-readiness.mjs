@@ -151,18 +151,86 @@ const LAUNCH_DENIAL_CAUSES = [
 // the most specific cause the log supports, falling back to the raw message
 // rather than guessing — a wrong guess here is what sends a campaign chasing a
 // signing problem that does not exist.
-export function classifyLaunchProbe({ ok, message = '' }) {
-  if (ok) return { status: 'ok', detail: 'a WebDriverAgent session started and closed cleanly' };
+// The page's own dimensions, not the orientation the device reports. Those can
+// disagree, and the disagreement IS the failure: on Android a device that
+// accepted a rotation request while its page stayed portrait passed every cheap
+// check and then failed all eight landscape cells. Asking the page is the only
+// question worth asking.
+export function pageFollowedRotation(requested, width, height) {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width === height) return null;
+  return (width > height ? 'LANDSCAPE' : 'PORTRAIT') === requested;
+}
+
+// The innermost cause of a WebDriverAgent launch failure never reaches the HTTP
+// response. Verified against a real failure on 2026-08-24: the payload — message
+// AND stacktrace — carries only Appium's outer `xcodebuild failed with code 65`,
+// while the actual cause was an on-device XCTest prompt. So this classifies the
+// Appium SERVER LOG, which is the only place the cause appears.
+//
+// Each entry is a line a real failure produced, not a guess at wording.
+const LAUNCH_LOG_CAUSES = [
+  {
+    pattern: /Timed out while enabling automation mode/i,
+    detail:
+      'the iPad is asking to enable UI automation. Look at the device: XCTest has put an ' +
+      '"Enter iPad Passcode for XCTest / Enable UI Automation" prompt on screen. Enter the ' +
+      'passcode there, then re-run. No host-side change will clear this.',
+  },
+  {
+    pattern: /Developer Mode disabled|developer mode is not enabled/i,
+    detail:
+      'Developer Mode is off on the iPad. Settings > Privacy & Security > Developer Mode, ' +
+      'then re-run.',
+  },
+  {
+    pattern: /device is locked|passcode/i,
+    detail: 'the iPad is locked. Unlock it and leave it awake, then re-run.',
+  },
+];
+
+// Returns the classified cause, or null when the log says nothing this knows —
+// which is different from the log being absent, and both are different from the
+// generic outer message.
+export function classifyAppiumLog(text) {
+  if (!text) return null;
+  for (const cause of LAUNCH_LOG_CAUSES) {
+    if (cause.pattern.test(text)) return cause.detail;
+  }
+  return null;
+}
+
+export function classifyLaunchProbe({
+  ok,
+  message = '',
+  rotationVerified = false,
+  logCause = null,
+  diagnostic = null,
+}) {
+  if (ok) {
+    return {
+      status: 'ok',
+      detail: rotationVerified
+        ? 'a WebDriverAgent session started, the page followed a rotation, and it closed cleanly'
+        : 'a WebDriverAgent session started and closed cleanly',
+    };
+  }
   for (const cause of LAUNCH_DENIAL_CAUSES) {
     if (cause.pattern.test(message)) return { status: 'blocked', detail: cause.detail };
   }
+  // A cause read from the server log outranks anything inferred from the outer
+  // message, because it is the innermost error rather than a wrapper.
+  if (logCause) return { status: 'blocked', detail: logCause };
   if (/xcodebuild failed with code 65/i.test(message)) {
     return {
       status: 'blocked',
       detail:
         'WebDriverAgent could not launch and the cause is not one this knows. Run the xcodebuild ' +
         'line from the Appium log by hand and read to the innermost "Underlying Error" — the build ' +
-        'itself usually succeeds, so this is rarely a signing problem.',
+        'itself usually succeeds, so this is rarely a signing problem.' +
+        // Without this, a diagnostic that never ran and one that ran and found
+        // nothing read identically — which is how a broken diagnostic looked
+        // like an unrecognised cause for a whole session.
+        (diagnostic ? ` (diagnostic: ${diagnostic})` : ''),
     };
   }
   return { status: 'blocked', detail: message.slice(0, 200) || 'the probe failed with no message' };

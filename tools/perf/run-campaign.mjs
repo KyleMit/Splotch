@@ -29,6 +29,7 @@ import {
   campaignTarget,
   resolvedProbeHostProblem,
   planCampaign,
+  splitTransportIdentityProblem,
 } from './lib/campaign-plan.mjs';
 import {
   ALREADY_VALID,
@@ -37,12 +38,17 @@ import {
   FAILED,
   LEDGER_HEADER,
   OFF_REFRESH_REGIME,
+  UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
   formatLedgerRow,
   nextAction,
   parseLedger,
 } from './lib/campaign-ledger.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import {
+  onlyUncalibratedChecksFailed,
+  runtimeHasUncalibratedChecks,
+} from './lib/input-fidelity.mjs';
 
 const SIMULATOR_SETTLE_MS = 5_000;
 const PROBE_HOST_TIMEOUT_MS = 5_000;
@@ -77,7 +83,10 @@ export function inspectArtifact(
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
   if (!artifactPassedFidelity(artifact, { verdictRequired })) {
-    return { ok: false, status: UNSCOREABLE };
+    return {
+      ok: false,
+      status: onlyUncalibratedChecksFailed(artifact?.fidelity) ? UNCALIBRATED_RUNTIME : UNSCOREABLE,
+    };
   }
   // Checked after fidelity so the more fundamental rejection is the one reported:
   // a capture that was barely driven has a meaningless beat as well as a meaningless
@@ -173,6 +182,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // and the repo's rule is to reuse a running listener rather than take over its
   // lifecycle. A dry run is planning only and reaches no device.
   if (!has('dry-run') && plan.some((cell) => cell.command === SPLIT_SCREEN_COMMAND)) {
+    const identityProblem = splitTransportIdentityProblem(campaignTarget(targetId), {
+      deviceId: flag('device-id'),
+      wdaUrl: flag('wda-url'),
+    });
+    if (identityProblem) fail(identityProblem);
     const problem = await resolvedProbeHostProblem(flag('probe-host'));
     if (problem) fail(problem);
     const reachable = await probeHostResponds(flag('probe-host'));
@@ -204,15 +218,20 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const rebootUdid = flag('reboot-simulator');
   const results = [];
 
-  const { runtime, refreshRegime } = campaignTarget(targetId);
+  // `runtime` is the target's SHELL (web or native) and decides artifact matching.
+  // `captureRuntime` names whose input-fidelity expectations apply, and is the one
+  // that can become calibrated — they are different questions and were briefly
+  // conflated here.
+  const { runtime, refreshRegime, captureRuntime: targetCaptureRuntime } = campaignTarget(targetId);
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
       artifactValid: inspectArtifact(cell.artifact, runtime, {
         verdictRequired: cell.reportsFidelity,
-        expectedRefreshRegime: refreshRegime,
+        expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
       }).ok,
       maxAttempts,
+      runtimeStillUncalibrated: runtimeHasUncalibratedChecks(targetCaptureRuntime),
     });
 
     if (decision.action === 'skip') {
@@ -240,7 +259,12 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     }
 
     let landed = false;
-    for (let attempt = decision.attempt; attempt <= maxAttempts && !landed; attempt++) {
+    let uncalibratedRuntime = false;
+    for (
+      let attempt = decision.attempt;
+      attempt <= maxAttempts && !landed && !uncalibratedRuntime;
+      attempt++
+    ) {
       if (rebootUdid) {
         rebootSimulator(rebootUdid);
         await sleep(SIMULATOR_SETTLE_MS);
@@ -254,7 +278,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       );
       const inspected = inspectArtifact(cell.artifact, runtime, {
         verdictRequired: cell.reportsFidelity,
-        expectedRefreshRegime: refreshRegime,
+        expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
       });
       landed = inspected.ok;
       appendLedger(ledgerPath, {
@@ -263,7 +287,13 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         attempt,
         artifact: cell.artifact,
       });
-      if (inspected.status === UNSCOREABLE) {
+      if (inspected.status === UNCALIBRATED_RUNTIME) {
+        uncalibratedRuntime = true;
+        console.log(
+          `P1    ${cell.id} — this runtime has no measured expectation for ` +
+            'its remaining fidelity checks, so no retry can change the verdict'
+        );
+      } else if (inspected.status === UNSCOREABLE) {
         console.log(`RETRY ${cell.id} — the capture failed input fidelity and cannot be scored`);
       } else if (inspected.status === OFF_REFRESH_REGIME) {
         console.log(
@@ -275,7 +305,9 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       }
     }
 
-    if (!landed) console.log(`P1    ${cell.id} — ${maxAttempts} attempts exhausted, continuing`);
+    if (!landed && !uncalibratedRuntime) {
+      console.log(`P1    ${cell.id} — ${maxAttempts} attempts exhausted, continuing`);
+    }
     results.push({ cell: cell.id, status: landed ? COMPLETE : 'p1' });
   }
 

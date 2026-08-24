@@ -1,7 +1,12 @@
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { connect } from 'node:net';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   androidGestureInstructions,
+  androidNativeLaunchSteps,
+  androidOpenSteps,
   androidPageLaunchSteps,
   androidRotationCommands,
   CHROME_PACKAGE,
@@ -11,12 +16,21 @@ import {
   closeFloorControlHost,
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
+import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
   classifyInputCadence,
   describeContactSamples,
 } from '../split-capture/lib/input-verdict.mjs';
+import {
+  calibrationReading,
+  handCaptureArtifact,
+  openWithAdb,
+} from '../split-capture/capture-hand-input.mjs';
+import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
+
+const directories = [];
 
 const stroke = [
   { type: 'pointerMove', x: 10, y: 10, duration: 0 },
@@ -207,8 +221,11 @@ describe('classifyInputCadence', () => {
     expect(classifyInputCadence({ movesPerSecond: 116.6, moveGapP95Ms: 11 }).ok).toBe(true);
   });
 
-  it('fails input faster than a hand', () => {
-    expect(classifyInputCadence({ movesPerSecond: 240, moveGapP95Ms: 4 }).ok).toBe(false);
+  // 240 was written as obviously-too-fast. A real finger on the target iPad
+  // measured 268.4 on 2026-08-23, so the rate this asserted on is one a hand
+  // produces — the ceiling is retired and an excess rate is reported instead.
+  it('accepts a rate above the retired ceiling, because a hand reaches it', () => {
+    expect(classifyInputCadence({ movesPerSecond: 240, moveGapP95Ms: 4 }).ok).toBe(true);
   });
 
   it('fails a stalling stream even when the mean rate looks fine', () => {
@@ -266,5 +283,306 @@ describe('closeFloorControlHost', () => {
 
     await expect(closeFloorControlHost(server)).resolves.toBeUndefined();
     expect(server.listening).toBe(false);
+  });
+});
+
+describe('the reading a hand capture is kept for', () => {
+  // Every field here is read back out of perf-profiles/evidence/*/index.json, so
+  // the test is against the names as much as the values.
+  const handInput = {
+    kinds: 'touch',
+    trust: { share: 1 },
+    movesPerSecond: 237.82,
+    moveGapP95Ms: 17,
+    movesPerFrame: 1.96,
+    coalescedPerMove: 0,
+    pressure: { p50: 0, p95: 0 },
+    contactWidth: { p50: 83.42 },
+    contactHeight: { p50: 83.42 },
+  };
+
+  it('flattens the probe input block into the fields a threshold is set from', () => {
+    expect(calibrationReading(handInput)).toEqual({
+      kinds: 'touch',
+      trustedShare: 1,
+      movesPerSecond: 237.82,
+      moveGapP95Ms: 17,
+      movesPerFrame: 1.96,
+      coalescedPerMove: 0,
+      pressureP50: 0,
+      pressureP95: 0,
+      contactWidthP50: 83.42,
+      contactHeightP50: 83.42,
+    });
+  });
+
+  // A runtime that reports nothing for a check is the finding, not a crash: Chrome
+  // reports no contact geometry at all, for a real finger and a synthetic one
+  // alike, and that absence is what makes the check inapplicable there.
+  it('records an absent measurement as null rather than throwing', () => {
+    const reading = calibrationReading({ kinds: 'touch', movesPerSecond: 154.63 });
+    expect(reading.contactWidthP50).toBeNull();
+    expect(reading.pressureP50).toBeNull();
+    expect(reading.trustedShare).toBeNull();
+    expect(reading.movesPerSecond).toBe(154.63);
+  });
+
+  it('survives an input block that is missing entirely', () => {
+    expect(calibrationReading().movesPerSecond).toBeNull();
+  });
+});
+
+// The hand tool took the browser path regardless of --native-app, so it could
+// launch Chrome and then record `android-capacitor-webview` as the runtime the
+// reading calibrates. Correctly shaped, plausibly labelled, wrong browser.
+// The previous version of these tests called the step factories directly, so
+// replacing the production dispatch with an unconditional browser launch left
+// all of them green — the regression could return under a passing suite. The
+// choice is now a value, and this asserts the choice.
+describe('which launch a capture takes', () => {
+  const args = { orientation: 'LANDSCAPE', pageUrl: 'http://host/?probe=n' };
+  const flat = (steps) => steps.flatMap((step) => step.args).join(' ');
+
+  it('reaches the app when the native flag is set', () => {
+    const steps = flat(androidOpenSteps({ ...args, nativeApp: true }));
+
+    expect(steps).toContain('art.splotch.app/.MainActivity');
+    expect(steps).not.toContain(CHROME_PACKAGE);
+  });
+
+  it('reaches the browser when it is not', () => {
+    const steps = flat(androidOpenSteps({ ...args, nativeApp: false }));
+
+    expect(steps).toContain(CHROME_PACKAGE);
+    expect(steps).toContain(args.pageUrl);
+    expect(steps).not.toContain('.MainActivity');
+  });
+
+  // An opener that ignores the flag is the shipped bug: it captured Chrome and
+  // the artifact recorded android-capacitor-webview.
+  it('never returns the same plan for both flag directions', () => {
+    expect(flat(androidOpenSteps({ ...args, nativeApp: true }))).not.toBe(
+      flat(androidOpenSteps({ ...args, nativeApp: false }))
+    );
+  });
+});
+
+describe('launching the native app instead of the browser', () => {
+  const steps = androidNativeLaunchSteps('LANDSCAPE');
+  const flat = steps.flatMap((step) => step.args).join(' ');
+
+  it('never touches Chrome', () => {
+    expect(flat).not.toContain(CHROME_PACKAGE);
+  });
+
+  it('starts the app by activity, with no URL to navigate', () => {
+    expect(flat).toContain('art.splotch.app/.MainActivity');
+    expect(flat).not.toContain('android.intent.action.VIEW');
+  });
+
+  // Same ordering as the browser path, for the same unexplained-but-free reason
+  // recorded there: rotation is asserted while the app is stopped.
+  it('keeps the stop, rotate, launch ordering', () => {
+    expect(steps.map((step) => step.settle)).toEqual(['appStop', null, 'rotation', 'page']);
+  });
+});
+
+// The theme behaviour is covered by tools/perf/tests/bootstrap-theme.test.mjs,
+// which EXECUTES the generated bootstrap in a DOM fixture. Source-substring
+// assertions lived here and survived disabling the whole theme branch, so they
+// were removed rather than kept alongside a test that works.
+
+describe('what a saved artifact can prove about its own theme', () => {
+  const ready = { resolvedTheme: 'dark' };
+  const common = { brush: 'pen', orientation: 'LANDSCAPE', theme: 'dark', payload: {} };
+
+  it('records the theme the PAGE reported, on both writers', () => {
+    expect(drivenCaptureArtifact({ ...common, ready }).observedTheme).toBe('dark');
+    expect(handCaptureArtifact({ ...common, ready }).observedTheme).toBe('dark');
+  });
+
+  // The light/system case is why `report.meta.theme` cannot serve as provenance:
+  // the product stores the loosest preference that renders an appearance, so
+  // choosing the theme the OS already shows clears the override and leaves that
+  // field null. `observedTheme` still answers.
+  it('answers for a light capture whose report metadata is null', () => {
+    const artifact = drivenCaptureArtifact({
+      ...common,
+      theme: 'light',
+      ready: { resolvedTheme: 'light' },
+      payload: { report: { meta: { theme: null } } },
+    });
+
+    expect(artifact.report.meta.theme).toBeNull();
+    expect(artifact.observedTheme).toBe('light');
+  });
+
+  // Absent must read as absent rather than as the request, or the field becomes
+  // the very echo it replaced.
+  it('never falls back to the requested theme when the page reported none', () => {
+    expect(drivenCaptureArtifact({ ...common, ready: {} }).observedTheme).toBeNull();
+    expect(handCaptureArtifact({ ...common, ready: undefined }).observedTheme).toBeNull();
+  });
+});
+
+// The cross-run race, which produced eleven artifacts whose mode came from one
+// page and whose frame tables came from another. Readiness was nonce-checked
+// from the start; the report was not, and carried no nonce to check.
+describe('a report from a run that is no longer current', () => {
+  const withEvents = (n, nonce) => ({ nonce, report: { events: Array.from({ length: n }) } });
+
+  it('is refused even when it is FATTER than what is stored', () => {
+    const rejection = reportRejectionReason(
+      withEvents(10, 'old-run'),
+      withEvents(500, 'old-run'),
+      'new-run'
+    );
+
+    expect(rejection).toContain('old-run');
+    expect(rejection).toContain('new-run');
+  });
+
+  // The thinness rule must not be what refuses it, or the log blames the event
+  // count for a provenance failure and the next reader goes looking in the wrong
+  // place.
+  it('names the run rather than the event count', () => {
+    expect(reportRejectionReason(null, withEvents(500, 'old-run'), 'new-run')).not.toContain(
+      'thinner'
+    );
+  });
+
+  it('refuses a report that identifies no run at all', () => {
+    expect(reportRejectionReason(null, { report: { events: [] } }, 'new-run')).toContain(
+      'unidentified'
+    );
+  });
+
+  it('accepts the run that is current, and still applies thinness within it', () => {
+    expect(reportRejectionReason(null, withEvents(500, 'new-run'), 'new-run')).toBeNull();
+    expect(
+      reportRejectionReason(withEvents(500, 'new-run'), withEvents(1, 'new-run'), 'new-run')
+    ).toContain('thinner');
+  });
+
+  // An error report is how a failed run reports itself, and it has to survive the
+  // check or a real failure is silently discarded.
+  it('accepts an error report from the current run', () => {
+    expect(reportRejectionReason(null, { nonce: 'new-run', error: 'boom' }, 'new-run')).toBeNull();
+  });
+
+  it('carries the nonce on both the success and error paths of the bootstrap', () => {
+    const source = pageBootstrapSource();
+
+    expect(source).toContain('nonce,\n      report,');
+    expect(source).toContain("post('/__probe/report', { nonce, error:");
+  });
+});
+
+// The wiring, not the rule. The rejection rule can be perfect while the host
+// forgets to hand it the current nonce — which is how this shipped: readiness
+// checked the nonce, the report path never received one.
+describe('the probe host refusing a stale run over HTTP', () => {
+  const started = [];
+
+  afterEach(async () => {
+    for (const server of started.splice(0)) await new Promise((r) => server.close(r));
+  });
+
+  async function hostAt(reportDir) {
+    const { server, state } = createProbeHost({
+      upstream: 'http://127.0.0.1:1',
+      reportDir,
+      log: () => {},
+    });
+    started.push(server);
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    return { base: `http://127.0.0.1:${server.address().port}`, state };
+  }
+
+  const postReport = (base, body) =>
+    fetch(`${base}/__probe/report`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('keeps a report from the current run and refuses one from another', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base, state } = await hostAt(directory);
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: 'cell', nonce: 'new-run', reset: true }),
+    });
+
+    await postReport(base, { nonce: 'new-run', report: { events: [1, 2, 3] } });
+    expect(state.report?.report.events).toHaveLength(3);
+
+    // Fatter, and from the run that just ended. The old code kept it.
+    await postReport(base, { nonce: 'old-run', report: { events: Array.from({ length: 99 }) } });
+
+    expect(state.report?.report.events).toHaveLength(3);
+    expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).nonce).toBe('new-run');
+  });
+});
+
+// The CALL SITE, not the chooser. Asserting androidOpenSteps in isolation proved
+// it picks correctly when handed the right value and left the original bug fully
+// reachable: passing `nativeApp: false` at this call opens Chrome while the
+// artifact is still labelled android-capacitor-webview, and every test passed.
+describe('the hand capture opening what its flag asked for', () => {
+  const commands = async (nativeApp) => {
+    const calls = [];
+    await openWithAdb({
+      serial: 'SERIAL',
+      pageUrl: 'http://host/?probe=n',
+      orientation: 'PORTRAIT',
+      nativeApp,
+      exec: (serial, args) => calls.push([serial, ...args].join(' ')),
+    });
+    return calls.join(' | ');
+  };
+
+  it('reaches the app package when --native-app was parsed', async () => {
+    const issued = await commands(true);
+
+    expect(issued).toContain('art.splotch.app/.MainActivity');
+    expect(issued).not.toContain(CHROME_PACKAGE);
+  }, 20_000);
+
+  it('reaches the browser when it was not', async () => {
+    const issued = await commands(false);
+
+    expect(issued).toContain(CHROME_PACKAGE);
+    expect(issued).not.toContain('.MainActivity');
+  }, 20_000);
+
+  it('sends every command to the serial it was given', async () => {
+    expect(await commands(true)).toContain('SERIAL');
+  }, 20_000);
+});
+
+// The hole the nonce check could not close. Chrome restores tabs across the
+// force-stop a launch performs; a restored tab re-runs the bootstrap, reads the
+// CURRENT plan and adopts its nonce, so it is indistinguishable from the page
+// the run opened — while carrying the previous cell's URL and receiving almost
+// none of the injected touch. One banked a cell with 517 events where its
+// neighbours had 7104.
+describe('a page that only adopted the plan', () => {
+  const source = pageBootstrapSource();
+
+  it('makes the page prove which run OPENED it', () => {
+    expect(source).toContain("new URLSearchParams(location.search).get('probe')");
+    expect(source).toContain('openedFor !== nonce');
+  });
+
+  // Standing down silently matters: a leftover tab is not a failure, and
+  // reporting it as one would bury the real error for the page that IS current.
+  it('stands the leftover down rather than failing the run', () => {
+    expect(source).toContain("kind: 'stale-page'");
+    expect(source.indexOf('openedFor !== nonce')).toBeLessThan(
+      source.indexOf("post('/__probe/ready'")
+    );
   });
 });
