@@ -12,6 +12,16 @@
 // (ADR-0073) allows `script-src 'self'` and does not allow `unsafe-eval`, so
 // nothing about the policy has to be relaxed to measure the page.
 import { BRUSH_BUTTON_BY_MODE } from '../../ios/capture-xcuitest-screen.mjs';
+import {
+  COMPACT_SHELL_MARKER,
+  QUICK_NIGHT_TOGGLE,
+  RESOLVED_THEME_EXPRESSION,
+  SETTINGS_BUTTON,
+  SETTINGS_CLOSE_BUTTON,
+  SETTINGS_MODAL,
+  settingsSectionRow,
+  themeOption,
+} from '../../lib/campaign-state.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
 // enough not to spin, short enough that a finished gesture is not left banking
@@ -20,6 +30,9 @@ const PLAN_POLL_MS = 400;
 const READY_TIMEOUT_MS = 25_000;
 const HYDRATION_TIMEOUT_MS = 20_000;
 const BRUSH_COMMIT_TIMEOUT_MS = 12_000;
+const THEME_TIMEOUT_MS = 20_000;
+// Long enough that a landed click opens the dialog before another is sent.
+const SETTINGS_OPEN_RETRY_MS = 400;
 const BRUSH_ATTEMPTS = 4;
 // The probe's own row accessors page through its ring buffers; this is the slice
 // size, not a cap on the capture.
@@ -123,6 +136,50 @@ export function pageBootstrapSource() {
         await wait(500);
       }
     }
+    // The theme was recorded as provenance and never set or observed, so a
+    // capture requested as dark could be written with a dark label while the page
+    // stayed on whatever theme the previous run persisted. It is driven through
+    // the product's own Settings controls — the same elements a parent taps —
+    // rather than by writing state the UI cannot reach.
+    const resolvedTheme = () => ${RESOLVED_THEME_EXPRESSION};
+    if (plan.theme && resolvedTheme() !== plan.theme) {
+      if (!(await until(() => document.querySelector('${SETTINGS_MODAL}')))) {
+        throw new Error('no Settings shell to set the theme with');
+      }
+      // The dialog mounts closed, and a click before the shell hydrates is a
+      // silent no-op — so keep clicking while it stays shut rather than trusting
+      // one to land.
+      const opened = await until(() => {
+        if (document.querySelector('${SETTINGS_MODAL}')?.open === true) return true;
+        document.querySelector('${SETTINGS_BUTTON}')?.click();
+        return false;
+      }, ${THEME_TIMEOUT_MS});
+      if (!opened) throw new Error('Settings never opened for the theme');
+
+      const compact = !!document.querySelector('${COMPACT_SHELL_MARKER}');
+      if (compact) {
+        // CompactShell offers Night Mode as one toggle rather than a three-way
+        // picker, so aim at the resolved appearance instead of a named option.
+        const wantsDark = plan.theme === 'dark';
+        const toggle = document.querySelector('${QUICK_NIGHT_TOGGLE}');
+        if (toggle?.getAttribute('aria-checked') !== String(wantsDark)) toggle?.click();
+      } else {
+        if (!document.querySelector('${themeOption('light')}')) {
+          const row = document.querySelector(${JSON.stringify(settingsSectionRow('appearance'))});
+          if (!row) throw new Error('Settings did not expose the Appearance section');
+          row.click();
+          await until(() => document.querySelector('${themeOption('light')}'));
+        }
+        document.querySelector('#themeOption-' + plan.theme)?.click();
+      }
+
+      const settled = await until(() => resolvedTheme() === plan.theme, ${THEME_TIMEOUT_MS});
+      if (!settled) throw new Error('the page never resolved to ' + plan.theme);
+      document.querySelector('${SETTINGS_CLOSE_BUTTON}')?.click();
+      await until(() => document.querySelector('${SETTINGS_MODAL}')?.open !== true);
+      await wait(${SETTINGS_OPEN_RETRY_MS});
+    }
+
     // The eraser needs something to erase, or it measures clearing blank paper.
     if (plan.brush === 'eraser') {
       for (const canvas of document.querySelectorAll('canvas[data-live-tile]')) {
@@ -157,6 +214,9 @@ export function pageBootstrapSource() {
       nonce,
       brush: plan.brush,
       committed: window.__committedBrushMode?.() ?? null,
+      // Reported so the runner can refuse a mismatch BEFORE a person or a device
+      // spends the capture, rather than labelling the artifact from the request.
+      resolvedTheme: resolvedTheme(),
       geometry: {
         canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
         viewport: { width: innerWidth, height: innerHeight },

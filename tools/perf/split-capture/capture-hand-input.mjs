@@ -167,6 +167,7 @@ export async function captureHandInput({
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
   await control(host, {
     brush,
+    theme,
     label: runLabel,
     nonce,
     contactMs: CONTACT_BANK_MS,
@@ -182,6 +183,15 @@ export async function captureHandInput({
   if (!ready) fail('the page never reported the probe ready');
   if (ready.committed && ready.committed !== brush) {
     fail(`the engine is on ${ready.committed}, not ${brush}`);
+  }
+  // Theme used to be recorded from the REQUEST, so a light-labelled artifact
+  // could be written while the page stayed dark. It is now set through the
+  // product's Settings controls and read back before anything is measured.
+  if (ready.resolvedTheme && ready.resolvedTheme !== theme) {
+    fail(`the page resolved to ${ready.resolvedTheme}, not the requested ${theme}`);
+  }
+  if (!ready.resolvedTheme) {
+    fail('the page did not report a resolved theme — it cannot prove which theme it measured');
   }
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);

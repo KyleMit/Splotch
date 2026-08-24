@@ -13,7 +13,16 @@ export const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
 // A landscape phone gets CompactShell: quick toggles and a pointer to portrait
 // instead of the section list (COMPACT_QUERY in SettingsModal.svelte). Its
 // controls are different elements, not missing ones.
-const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
+// Exported because the split-capture bootstrap has to do the same setup INSIDE
+// the page: it has no script channel to drive these helpers through, and the
+// route's CSP forbids eval, so its control flow is written separately against
+// these same selectors. The selectors and the resolution rule stay owned here.
+export const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
+export const SETTINGS_MODAL = '#settingsModal';
+export const SETTINGS_BUTTON = 'button[aria-label="Settings"]';
+export const SETTINGS_CLOSE_BUTTON = '#settingsModal button[aria-label="Close"]';
+export const QUICK_NIGHT_TOGGLE = '#quickNightToggle';
+export const themeOption = (theme) => `#themeOption-${theme}`;
 
 export async function settingsShellIsCompact(execute) {
   return execute(`return document.querySelector('${COMPACT_SHELL_MARKER}') !== null;`);
