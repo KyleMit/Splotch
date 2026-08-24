@@ -17,6 +17,7 @@ import {
   classifyInputCadence,
   describeContactSamples,
 } from '../split-capture/lib/input-verdict.mjs';
+import { calibrationReading } from '../split-capture/capture-hand-input.mjs';
 
 const stroke = [
   { type: 'pointerMove', x: 10, y: 10, duration: 0 },
@@ -266,5 +267,51 @@ describe('closeFloorControlHost', () => {
 
     await expect(closeFloorControlHost(server)).resolves.toBeUndefined();
     expect(server.listening).toBe(false);
+  });
+});
+
+describe('the reading a hand capture is kept for', () => {
+  // Every field here is read back out of perf-profiles/evidence/*/index.json, so
+  // the test is against the names as much as the values.
+  const handInput = {
+    kinds: 'touch',
+    trust: { share: 1 },
+    movesPerSecond: 237.82,
+    moveGapP95Ms: 17,
+    movesPerFrame: 1.96,
+    coalescedPerMove: 0,
+    pressure: { p50: 0, p95: 0 },
+    contactWidth: { p50: 83.42 },
+    contactHeight: { p50: 83.42 },
+  };
+
+  it('flattens the probe input block into the fields a threshold is set from', () => {
+    expect(calibrationReading(handInput)).toEqual({
+      kinds: 'touch',
+      trustedShare: 1,
+      movesPerSecond: 237.82,
+      moveGapP95Ms: 17,
+      movesPerFrame: 1.96,
+      coalescedPerMove: 0,
+      pressureP50: 0,
+      pressureP95: 0,
+      contactWidthP50: 83.42,
+      contactHeightP50: 83.42,
+    });
+  });
+
+  // A runtime that reports nothing for a check is the finding, not a crash: Chrome
+  // reports no contact geometry at all, for a real finger and a synthetic one
+  // alike, and that absence is what makes the check inapplicable there.
+  it('records an absent measurement as null rather than throwing', () => {
+    const reading = calibrationReading({ kinds: 'touch', movesPerSecond: 154.63 });
+    expect(reading.contactWidthP50).toBeNull();
+    expect(reading.pressureP50).toBeNull();
+    expect(reading.trustedShare).toBeNull();
+    expect(reading.movesPerSecond).toBe(154.63);
+  });
+
+  it('survives an input block that is missing entirely', () => {
+    expect(calibrationReading().movesPerSecond).toBeNull();
   });
 });

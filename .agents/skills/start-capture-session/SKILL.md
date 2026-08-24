@@ -8,17 +8,31 @@ description: Take over the physical iPad and Android capture rig at the start of
 There is one iPad and one Android phone, so capture sessions run **in sequence, not in parallel**. A
 session that starts takes the rig over completely; the previous one is finished.
 
-## In a fresh worktree, two things block before the preflight does
+## In a fresh worktree, three things block before the preflight does
 
-Both are gitignored, so a new worktree has neither, and both fail in a way that does not name
-itself.
+All three are gitignored, so a new worktree has none of them, and each fails in a way that does not
+name itself. Copy the last two from the main checkout.
 
 * **`node_modules`.** A worktree gets none. `pnpm install --frozen-lockfile` takes seconds; without
   it, `perf:serve` and every Playwright command die on a missing binary and the caller reports
   `http://localhost:4173/ did not become ready within 90000ms` — a timeout, with the real error
   scrolled off above it. Never `npm install` here (ADR-0119).
 * **`ios/local.xcconfig`.** The preflight names this one correctly and blocks on it, which is the
-  good case. Copy it from the main checkout; it holds a `DEVELOPMENT_TEAM` line and nothing else.
+  good case. It holds a `DEVELOPMENT_TEAM` line and nothing else.
+* **`android/local.properties`.** Only a native Android build needs it, so the preflight passes
+  without it and the failure waits until a Gradle task runs: `SDK location not found`. It names
+  itself once it arrives, but it arrives minutes into a build rather than at the preflight.
+
+## Never commit what `cap sync` writes in a worktree
+
+`cap sync` regenerates `android/capacitor.settings.gradle` and `ios/App/CapApp-SPM/Package.swift`
+with paths **relative to the project it ran in**. A worktree sits several directories deeper than
+the main checkout, so every plugin path is rewritten from `../node_modules/...` to
+`../../../../node_modules/...`. The files are correct where they were generated and broken
+everywhere else, and nothing about the diff says so — it reads as an ordinary regeneration.
+
+Revert both after any native build from a worktree, and check `git status` before committing a
+capture session's work.
 
 ## Take the rig over
 

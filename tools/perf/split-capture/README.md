@@ -26,6 +26,7 @@ only has to be able to touch the screen.
 | ---------------------------- | -------------------------------------------------------------------------------------------------- |
 | `npm run perf:device:serve`  | Serves the perf build with the probe bootstrapped in, and collects the uploaded report             |
 | `npm run perf:device:frames` | Opens the page on the device, dispatches trusted touch, waits for the report, scores and writes it |
+| `npm run perf:device:hand`   | The same, with a **person** drawing in place of the injected touch — how a threshold gets measured |
 
 Run the host first; it binds `0.0.0.0` because the device loads it over the LAN.
 
@@ -45,6 +46,26 @@ npm run perf:device:frames -- --platform=android --device-serial=<serial> \
 
 For iPadOS, pass `--platform=ios --wda-url=http://127.0.0.1:8100` and leave `--device-serial` off;
 WebDriverAgent must already be running and reachable.
+
+## Calibrating from a hand
+
+`perf:device:hand` is `perf:device:frames` with the injection half removed. The page instruments and
+uploads itself identically, and a human draws instead of `adb shell input`. The symmetry is the
+point: a hand number is only a calibration for a driven capture if one instrument read both.
+
+It prints the verdict but never fails on it. A check the table records as uncalibrated not passing
+is the reason the capture is being taken, so exiting non-zero would be reporting the question as an
+error.
+
+The artifact keeps the probe's **raw event rows**, which is what makes a person's time reusable —
+every percentile and verdict is derived in Node, so a later revision of the expectation table
+re-reads the file rather than asking for another finger. Keep hand captures under
+`perf-profiles/evidence/` for that reason; its `index.json` carries each capture's reading and how
+it was drawn, because how hard a person scribbles moves the numbers a threshold is set from.
+
+The device cue matters more than it sounds. Whoever is drawing is holding the device, not watching
+the terminal, so the Android path buzzes once when the window opens and twice when it closes. There
+is no iOS equivalent, so an iPad run is driven by a person calling the start.
 
 ## Inputs and outputs
 

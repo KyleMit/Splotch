@@ -1,0 +1,187 @@
+{
+  "campaign": "2026-08-23-hand",
+  "transport": "human-finger",
+  "why": "The measurement input fidelity thresholds are set from. Every percentile is derived in Node from the raw event rows kept here, so a later revision of the expectation table re-reads these files instead of asking for another hand capture.",
+  "devices": {
+    "android": "Samsung SM-G990U1 (R5CRC3AVCXM), Chrome, 120 Hz",
+    "ios": "iPad Pro 12.9-inch 5th gen (00008103-0006202E3CF1001E), Safari, ProMotion"
+  },
+  "kept": [
+    {
+      "file": "android-chrome-a.json",
+      "runtime": "android-chrome",
+      "brush": "pen",
+      "orientation": "PORTRAIT",
+      "device": "R5CRC3AVCXM",
+      "drawSeconds": 30,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 154.63,
+        "moveGapP95Ms": 16.5,
+        "movesPerFrame": 1.31,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 0,
+        "contactHeightP50": 0
+      },
+      "fidelityPassed": false,
+      "note": "Drawn with brush and colour changes mid-run. The reading counts canvas-targeted events only, so the menu taps are excluded from it \u2014 but the frame and paint numbers in this file are mixed-brush and are not a product result."
+    },
+    {
+      "file": "android-chrome-b.json",
+      "runtime": "android-chrome",
+      "brush": "pen",
+      "orientation": "PORTRAIT",
+      "device": "R5CRC3AVCXM",
+      "drawSeconds": 30,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 153.98,
+        "moveGapP95Ms": 16.7,
+        "movesPerFrame": 1.3,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 0,
+        "contactHeightP50": 0
+      },
+      "fidelityPassed": false,
+      "note": "Drawn with brush and colour changes mid-run, as above."
+    },
+    {
+      "file": "android-chrome-c-clean.json",
+      "runtime": "android-chrome",
+      "brush": "pen",
+      "orientation": "PORTRAIT",
+      "device": "R5CRC3AVCXM",
+      "drawSeconds": 30,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 177.97,
+        "moveGapP95Ms": 16.7,
+        "movesPerFrame": 1.54,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 0,
+        "contactHeightP50": 0
+      },
+      "fidelityPassed": false,
+      "note": "One brush, no UI interaction \u2014 the control that shows the brush switching in a and b did not move the reading."
+    },
+    {
+      "file": "android-chrome-d-clean.json",
+      "runtime": "android-chrome",
+      "brush": "pen",
+      "orientation": "PORTRAIT",
+      "device": "R5CRC3AVCXM",
+      "drawSeconds": 30,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 135.53,
+        "moveGapP95Ms": 16.6,
+        "movesPerFrame": 1.18,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 0,
+        "contactHeightP50": 0
+      },
+      "fidelityPassed": false,
+      "note": "One brush, drawn unhurriedly. The slowest clean Android sample."
+    },
+    {
+      "file": "android-chrome-e-fast.json",
+      "runtime": "android-chrome",
+      "brush": "pen",
+      "orientation": "PORTRAIT",
+      "device": "R5CRC3AVCXM",
+      "drawSeconds": 30,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 175.53,
+        "moveGapP95Ms": 16.7,
+        "movesPerFrame": 1.47,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 0,
+        "contactHeightP50": 0
+      },
+      "fidelityPassed": false,
+      "note": "Deliberately vigorous, to find the ceiling a hand can reach."
+    },
+    {
+      "file": "ios-safari-a.json",
+      "runtime": "ios-safari",
+      "brush": "pen",
+      "orientation": "LANDSCAPE",
+      "device": "00008103-0006202E3CF1001E",
+      "drawSeconds": 40,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 237.82,
+        "moveGapP95Ms": 17,
+        "movesPerFrame": 1.96,
+        "coalescedPerMove": 0,
+        "pressureP50": 0,
+        "pressureP95": 0,
+        "contactWidthP50": 83.42,
+        "contactHeightP50": 83.42
+      },
+      "fidelityPassed": false,
+      "note": "Normal drawing pace."
+    },
+    {
+      "file": "ios-safari-b.json",
+      "runtime": "ios-safari",
+      "brush": "pen",
+      "orientation": "LANDSCAPE",
+      "device": "00008103-0006202E3CF1001E",
+      "drawSeconds": 35,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 268.39,
+        "moveGapP95Ms": 16,
+        "movesPerFrame": 2.33,
+        "coalescedPerMove": 0,
+        "pressureP50": 0,
+        "pressureP95": 0,
+        "contactWidthP50": 83.42,
+        "contactHeightP50": 83.42
+      },
+      "fidelityPassed": false,
+      "note": "Vigorous."
+    },
+    {
+      "file": "ios-safari-c-slow.json",
+      "runtime": "ios-safari",
+      "brush": "pen",
+      "orientation": "LANDSCAPE",
+      "device": "00008103-0006202E3CF1001E",
+      "drawSeconds": 35,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 117.47,
+        "moveGapP95Ms": 9,
+        "movesPerFrame": 1.89,
+        "coalescedPerMove": 0,
+        "pressureP50": 0,
+        "pressureP95": 0,
+        "contactWidthP50": 62.56,
+        "contactHeightP50": 62.56
+      },
+      "fidelityPassed": true,
+      "note": "Deliberately slow and gentle \u2014 the floor of human cadence, and the only sample of the eight that passes the gate as it stood."
+    }
+  ]
+}
