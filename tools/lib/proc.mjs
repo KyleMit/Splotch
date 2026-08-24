@@ -58,6 +58,11 @@ export function requireEnv(name, hint) {
   return value;
 }
 
+// Reads `--name=value` ONLY. A bare `--name` is invisible to this and comes back
+// as the fallback, so `argFlag('x') !== undefined` is never true for one — use
+// `process.argv.includes('--x')` for a boolean flag. Worth stating here because
+// the failure is silent and directional: a bare `--native-app` read as absent
+// captured Safari while the artifact reported a WebView runtime.
 export function argFlag(name, fallback) {
   const prefix = `--${name}=`;
   return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length) ?? fallback;

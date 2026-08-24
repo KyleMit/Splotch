@@ -2,16 +2,16 @@
 // came from.
 //
 // The verdict used to be five checks with one calibration, taken from a schema-2
-// hand capture in Safari on the target iPad. Three of the five describe that
-// runtime rather than describing faithful input, so a well-driven capture from any
-// other runtime is marked unscoreable for a reason that has nothing to do with how
-// it was driven: `coalescing` requires zero coalesced samples, which is what Safari
-// reports and the Capacitor WKWebView does not; `pressure` and `contactGeometry`
-// come from what Safari reports for a finger, which Chrome on Android does not.
+// hand capture in Safari on the target iPad. Four of the five turned out to
+// describe that iPad rather than describing faithful input: `coalescing`,
+// `pressure` and `contactGeometry` report what Safari reports for a finger, and
+// `cadence`'s upper bound reported what that iPad's digitizer samples at.
 //
 // Splitting the table per runtime separates two questions that were being answered
 // by one boolean — was this capture driven properly, and did it come from the
-// runtime the thresholds describe.
+// runtime the thresholds describe. The 2026-08-23 hand corpus is what turned the
+// second question from an argument into a measurement, on both devices and from
+// both sides: a real finger, and a synthesized touch read by the same instrument.
 
 // A check with no measured expectation for a runtime. It is NOT a pass: a capture
 // whose verdict rests on an unmeasured threshold cannot be scored, exactly as one
@@ -20,10 +20,24 @@
 // closed by measuring the runtime, not by re-running the capture.
 const UNCALIBRATED = 'uncalibrated';
 
-// Calibrated against the schema-2 hand capture on the target iPad. These gate
-// whether a run exercised the physical touch path; they are not lag thresholds.
+// A check whose runtime reports the SAME value for a real finger and for
+// synthesized touch. It carries no information about how a capture was driven,
+// so it is not part of the verdict at all — which is a different statement from
+// UNCALIBRATED. An uncalibrated check is a gap the instrument could still close
+// by measuring; a not-applicable one has been measured and found to be silent.
+const NOT_APPLICABLE = 'not-applicable';
+
+// The floor is the half of cadence that discriminates, and it is measured from
+// both sides: every transport this campaign rejected delivers 46.8-61 contact
+// moves/s, and the slowest capture a human hand has produced is 117.5 (ADR-0141).
+// 100 sits in that gap.
+//
+// There is no ceiling. One existed at 170 on the reasoning that a faster stream
+// is "faster than a hand", and the 2026-08-23 hand corpus refutes it on both
+// devices: a real finger reaches 178.0 on the phone and 268.4 on the iPad, while
+// nothing has ever been observed failing by excess. Cadence excess is reported
+// by `classifyInputCadence` and does not decide the verdict.
 export const FIDELITY_MOVES_PER_SECOND_MIN = 100;
-export const FIDELITY_MOVES_PER_SECOND_MAX = 170;
 export const FIDELITY_MOVE_GAP_P95_MAX_MS = 20;
 const FIDELITY_CONTACT_SIZE_MIN_PX = 40;
 const FIDELITY_CONTACT_SIZE_MAX_PX = 100;
@@ -49,9 +63,16 @@ export function captureRuntime(platformName, nativeApp) {
 
 const trustedTouch = (input) => input.kinds === 'touch' && input.trust?.share === 1;
 
+// Both measurements must be FINITE, which the retired ceiling used to enforce as
+// a side effect. Without it `movesPerSecond: Infinity` satisfied the floor and a
+// malformed or zero-window reading could be banked as scoreable — while
+// `classifyInputCadence`, the diagnostic, rejected the same value. The gate that
+// decides scoreability must not be more permissive than the one that only
+// reports.
 const cadence = (input) =>
+  Number.isFinite(input.movesPerSecond) &&
+  Number.isFinite(input.moveGapP95Ms) &&
   input.movesPerSecond >= FIDELITY_MOVES_PER_SECOND_MIN &&
-  input.movesPerSecond <= FIDELITY_MOVES_PER_SECOND_MAX &&
   input.moveGapP95Ms <= FIDELITY_MOVE_GAP_P95_MAX_MS;
 
 const noCoalescedSamples = (input) => input.coalescedPerMove === 0;
@@ -63,17 +84,13 @@ const fingerSizedContact = (input) =>
   input.contactHeight?.p50 >= FIDELITY_CONTACT_SIZE_MIN_PX &&
   input.contactHeight?.p50 <= FIDELITY_CONTACT_SIZE_MAX_PX;
 
-// `trustedTouch` and `cadence` are runtime-independent by measurement, not by
-// assumption: the 2026-08-23 corpus reports a trusted-touch share of 1 and
-// 114.7-119.7 contact moves/s on both iPad runtimes and on Android Chrome through
-// the split transport. The other three differ per runtime and are stated per
-// runtime, each with the capture that set it.
+// `trustedTouch` is runtime-independent by measurement. `cadence` is so only in
+// its floor: the hand corpus shows the rate a finger produces is set by the
+// device's touch sampling, 135.5-178.0 on the phone against 117.5-268.4 on the
+// iPad, so an upper bound describes hardware rather than fidelity. The floor
+// describes fidelity on both and is what this table relies on.
 //
-// Every Android expectation is UNCALIBRATED because no Android capture has yet
-// recorded what a real finger reports there — issue 1218 is that measurement, and
-// it needs a human hand. Chrome reports pressure 1 and no contact radius for
-// synthesized touch, so leaving the iPad numbers in place would not have been a
-// weaker threshold, it would have been a threshold describing a different browser.
+// The other three are stated per runtime, each with the capture that set it.
 const RUNTIME_EXPECTATIONS = {
   'ios-safari': {
     // Safari delivers one pointermove per sample with nothing coalesced behind it.
@@ -99,10 +116,25 @@ const RUNTIME_EXPECTATIONS = {
     contactGeometry: fingerSizedContact,
   },
   'android-chrome': {
-    coalescing: UNCALIBRATED,
-    pressure: UNCALIBRATED,
-    contactGeometry: UNCALIBRATED,
+    // Measured on the same phone the same night, a real finger and `adb shell
+    // input` report these IDENTICALLY: pressure p50 1 against 1, no contact
+    // geometry at all against none, 0 coalesced samples per move against 0. A
+    // check that cannot tell a hand from a robot is not a weak check, it is not
+    // a check — so these are excluded from the verdict rather than recorded as a
+    // gap in it. Issue 1218 asked for exactly this answer as its alternative to
+    // thresholds, and required it be established by measurement.
+    //
+    // What is left still separates a driven capture from an under-driven one:
+    // 46.8 moves/s for the Appium transport this campaign rejected, against
+    // 115.9 driven through the split path and 135.5-178.0 by hand.
+    coalescing: NOT_APPLICABLE,
+    pressure: NOT_APPLICABLE,
+    contactGeometry: NOT_APPLICABLE,
   },
+  // The Android WebView is very likely to report what Chrome reports, and this
+  // campaign retracted three thresholds argued from exactly that kind of
+  // likelihood. It stays uncalibrated until a capture in this runtime is read —
+  // issue 1275, now that the transport into it works.
   'android-capacitor-webview': {
     coalescing: UNCALIBRATED,
     pressure: UNCALIBRATED,
@@ -124,26 +156,38 @@ const RUNTIME_EXPECTATIONS = {
 // check that has no expectation for this runtime. `null` is falsy, so a consumer
 // that filters for failing checks still names it — and `uncalibrated` lets one that
 // cares say which kind of not-passing it is.
+//
+// A not-applicable check is ABSENT from `checks` rather than present and true: it
+// was never asked, so there is no answer to record. Consumers iterate the keys,
+// which is why absence reads correctly everywhere a value would have had to be
+// special-cased.
 export function inputFidelity(input = {}, runtime = DEFAULT_CAPTURE_RUNTIME) {
   const expectations = RUNTIME_EXPECTATIONS[runtime];
   if (!expectations) throw new Error(`Unknown capture runtime: ${runtime}`);
   const checks = {
     trustedTouch: trustedTouch(input),
     cadence: cadence(input),
-    coalescing: null,
-    pressure: null,
-    contactGeometry: null,
   };
   const uncalibrated = [];
+  const notApplicable = [];
   for (const [name, expectation] of Object.entries(expectations)) {
-    if (expectation === UNCALIBRATED) uncalibrated.push(name);
-    else checks[name] = expectation(input);
+    if (expectation === NOT_APPLICABLE) {
+      notApplicable.push(name);
+      continue;
+    }
+    if (expectation === UNCALIBRATED) {
+      uncalibrated.push(name);
+      checks[name] = null;
+      continue;
+    }
+    checks[name] = expectation(input);
   }
   return {
     runtime,
     passed: Object.values(checks).every((check) => check === true),
     checks,
     uncalibrated,
+    notApplicable,
   };
 }
 
@@ -156,4 +200,33 @@ export function describeFidelityFailures(fidelity) {
     .filter(([, passed]) => passed !== true)
     .map(([name]) => (uncalibrated.has(name) ? `${name}(uncalibrated)` : name))
     .join('+');
+}
+
+// Whether this runtime still has any check with no measured expectation. The
+// campaign ledger asks, because "this cell cannot be scored" is a statement about
+// the INSTRUMENT rather than about the attempt — and an instrument changes. A
+// conclusion recorded before a runtime was calibrated must not outlive the
+// calibration.
+export function runtimeHasUncalibratedChecks(runtime) {
+  const expectations = RUNTIME_EXPECTATIONS[runtime];
+  if (!expectations) return false;
+  return Object.values(expectations).includes(UNCALIBRATED);
+}
+
+// Whether the ONLY thing standing between this verdict and a pass is a check the
+// instrument has no expectation for. Callers use it to tell a bad run from a
+// silent instrument: a bad run is worth retrying and this is not, because no
+// number of recaptures adds an expectation that was never measured.
+//
+// A capture failing `cadence` AND carrying uncalibrated checks is a bad run
+// first. Reporting it as an instrument gap would send the next session to write
+// a threshold when what actually happened is that the app was barely driven.
+export function onlyUncalibratedChecksFailed(fidelity) {
+  if (fidelity?.passed !== false) return false;
+  const uncalibrated = new Set(fidelity?.uncalibrated ?? []);
+  if (uncalibrated.size === 0) return false;
+  const notPassing = Object.entries(fidelity?.checks ?? {})
+    .filter(([, check]) => check !== true)
+    .map(([name]) => name);
+  return notPassing.length > 0 && notPassing.every((name) => uncalibrated.has(name));
 }
