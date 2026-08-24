@@ -103,12 +103,19 @@ export function androidRotationCommands(orientation) {
 
 export const CHROME_PACKAGE = 'com.android.chrome';
 
-// Rotation is asserted AFTER the browser is stopped, and the order is the whole
-// point. `am force-stop` returns `user_rotation` to 0 on Samsung/Android 16, so
-// rotating first and stopping second lands every landscape cell in portrait —
-// the capture then aborts on the page disagreeing with the requested
-// orientation, having written no artifact. Each step names the settle the caller
-// must honour before the next one; the durations stay policy for the caller.
+// Rotation is asserted AFTER the browser is stopped. The ordering was adopted when a
+// 2026-08-23 recapture lost every landscape cell — the page disagreed with the
+// requested orientation and no artifact was written — and it was attributed to
+// `am force-stop` returning `user_rotation` to 0 on Samsung/Android 16.
+//
+// That attribution did not survive re-testing: 8 trials on R5CRC3AVCXM kept
+// `user_rotation` at 1 across force-stop, including with Chrome foregrounded first
+// and across the whole rotate → force-stop → launch sequence. The failure was real;
+// its mechanism is unexplained. Keep this order because it is free and cannot be the
+// cause of what was seen, not because the reset is established.
+//
+// Each step names the settle the caller must honour before the next one; the
+// durations stay policy for the caller.
 export function androidPageLaunchSteps(orientation, pageUrl) {
   const [disableAutoRotate, setRotation] = androidRotationCommands(orientation);
   return [
@@ -129,4 +136,44 @@ export function androidPageLaunchSteps(orientation, pageUrl) {
       settle: 'page',
     },
   ];
+}
+
+// The rotation settings a verification has to put back. `settings get` answers
+// `null` for a value that was never written, and writing the string "null" back
+// leaves the device with a setting it cannot parse — so an absent value is
+// restored by deleting the setting rather than by writing what was read.
+export function androidRotationRestoreCommands(previous) {
+  return ['accelerometer_rotation', 'user_rotation'].map((key) => {
+    const value = previous?.[key];
+    return value === null || value === undefined || value === 'null'
+      ? ['shell', 'settings', 'delete', 'system', key]
+      : ['shell', 'settings', 'put', 'system', key, String(value)];
+  });
+}
+
+// A rotation fault passes every other preflight check: enumeration, stay-awake,
+// and a touch at usable cadence are all true of a device that will not turn, and
+// then every landscape cell fails. The verdict names the orientation that did not
+// arrive, because "rotation is broken" and "landscape specifically does not stick"
+// send a session to different places.
+export function androidRotationVerdict(observations) {
+  const wrong = observations.filter(
+    (observation) => observation.observed !== observation.requested
+  );
+  if (wrong.length === 0) {
+    return {
+      ok: true,
+      detail: `page followed the device through ${observations.map((o) => o.requested.toLowerCase()).join(' and ')}`,
+    };
+  }
+  const described = wrong
+    .map(
+      (observation) =>
+        `${observation.requested.toLowerCase()} came back as ${(observation.observed ?? 'nothing').toLowerCase()}`
+    )
+    .join('; ');
+  return {
+    ok: false,
+    detail: `${described}. Every landscape cell will fail; the device or the page is not following user_rotation.`,
+  };
 }

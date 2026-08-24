@@ -10,13 +10,14 @@
 // target iPad — Safari reports pressure 0 and a ~74px contact radius, Chrome
 // reports pressure 1 and no radius at all. Failing Android on an iPad-shaped
 // expectation would make this check noise, and widening the expectation to make
-// Android pass would destroy the only thing it is for. Calibrating them per
-// platform is its own job.
+// Android pass would destroy the only thing it is for. Those three checks are now
+// stated per runtime and Android's are recorded UNCALIBRATED until a hand capture
+// sets them; cadence is the one this verdict is built from either way.
 import {
   FIDELITY_MOVE_GAP_P95_MAX_MS,
   FIDELITY_MOVES_PER_SECOND_MAX,
   FIDELITY_MOVES_PER_SECOND_MIN,
-} from '../../ios/capture-xcuitest-screen.mjs';
+} from '../../lib/input-fidelity.mjs';
 
 export function classifyInputCadence(input = {}) {
   const moves = input.movesPerSecond;

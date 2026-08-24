@@ -14,7 +14,8 @@
 // and it needs no product build.
 import { networkInterfaces } from 'node:os';
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
-import { inputFidelity, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidGestureInstructions, swipeArgs } from './lib/android-input.mjs';
 import { classifyInputCadence, describeContactSamples } from './lib/input-verdict.mjs';
@@ -126,9 +127,10 @@ export async function verifyAndroidInput({
       input,
       summaries,
       report: uploaded.report,
-      // Reported for completeness; its pressure and contactGeometry checks are
-      // calibrated for the iPad, so they are not what decides this.
-      fidelity: inputFidelity(input),
+      // Reported for completeness; Chrome on Android has no calibrated expectation
+      // for coalescing, pressure or contact geometry yet, so cadence is what
+      // decides this.
+      fidelity: inputFidelity(input, 'android-chrome'),
     };
   } finally {
     await closeFloorControlHost(server);

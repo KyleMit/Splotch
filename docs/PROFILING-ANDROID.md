@@ -32,6 +32,15 @@ observe. When the two disagree, that disagreement *is* the finding.
 
 Always present, no setup, no root, and it costs nothing to leave on.
 
+**It answers for the native app and not for the browser target.** `com.android.chrome` reports
+`Total frames rendered: 0` while its page is being drawn on, because Chrome composites web content
+outside the Android view system's pipeline that `gfxinfo` instruments. That is the target's property
+rather than a mistake in the command: the same sequence against `com.android.settings` reports 298
+frames over a comparable gesture. `dumpsys SurfaceFlinger --latency` is not the fallback either — on
+Android 16 it returns all-zero rows for Chrome's surface and only the refresh period is real. For a
+browser-target question, use the page's own probe or CDP; see the observer-effect section in
+`docs/PROFILING-CAMPAIGNS.md` for what to do when the probe is the thing in question.
+
 ```sh
 adb -s <serial> shell dumpsys gfxinfo art.splotch.app reset      # zero the counters first
 # …drive the interaction…
@@ -157,6 +166,11 @@ The technique does transfer, and it is cheap. Capture the same gesture three way
 `gfxinfo` only, full Perfetto — and score all three with the app's own probe. If input cadence and
 marked JS work per frame are unchanged, the trace is not moving what it measures. Ten minutes, and
 it converts an assumption into a number.
+
+The app's **own** probe has now been measured this way too — `npm run perf:device:probe-overhead`,
+written up in `docs/PROFILING-CAMPAIGNS.md`. Unmeasurable in steady state. A tail asymmetry on
+crayon appeared in one run and inverted in the next, so it is an unconfirmed lead rather than a
+finding.
 
 Do this **before** quoting a Perfetto-traced capture as a performance result, not after.
 

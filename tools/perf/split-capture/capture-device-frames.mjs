@@ -17,11 +17,9 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
-import {
-  inputFidelity,
-  nativeCanvasBounds,
-  trustedGestureActions,
-} from '../ios/capture-xcuitest-screen.mjs';
+import { nativeCanvasBounds, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
+import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import {
   engineRows,
@@ -273,17 +271,27 @@ export async function captureDeviceFrames({
 
   const summaries = summarizeRun(payload.report);
   const drawing = scoreDrawingRun(summaries.phases);
-  const fidelity = inputFidelity(summaries.phases?.[0]?.input ?? {});
+  // This path is browser-only on both platforms — it drives the OS's own trusted
+  // injection into Chrome or Safari, never a Capacitor WebView.
+  const fidelity = inputFidelity(
+    summaries.phases?.[0]?.input ?? {},
+    captureRuntime(platform, false)
+  );
 
-  console.log(`\n${runLabel} — observed frame beat: ${summaries.intervalMs} ms`);
+  console.log(
+    `\n${runLabel} — observed frame beat: ` +
+      `${describeRefreshRegime(refreshRegimeVerdict(summaries.intervalMs))}`
+  );
   console.table(pacingRows(summaries.phases));
   console.table(inputRows(summaries.phases));
   console.table(engineRows(summaries.phases));
   console.table(starvationRows(summaries.phases));
   console.table(drawingGateRows(drawing));
   console.log(
-    `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} · ${JSON.stringify(fidelity.checks)}`
+    `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} (${fidelity.runtime}) · ` +
+      `${JSON.stringify(fidelity.checks)}`
   );
+  if (!fidelity.passed) console.log(`  not passing: ${describeFidelityFailures(fidelity)}`);
 
   // Orientation and theme are recorded because the performance matrix validates
   // a capture against the mode it was filed under and refuses one that cannot

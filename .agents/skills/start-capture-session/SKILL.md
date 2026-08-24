@@ -8,6 +8,18 @@ description: Take over the physical iPad and Android capture rig at the start of
 There is one iPad and one Android phone, so capture sessions run **in sequence, not in parallel**. A
 session that starts takes the rig over completely; the previous one is finished.
 
+## In a fresh worktree, two things block before the preflight does
+
+Both are gitignored, so a new worktree has neither, and both fail in a way that does not name
+itself.
+
+* **`node_modules`.** A worktree gets none. `pnpm install --frozen-lockfile` takes seconds; without
+  it, `perf:serve` and every Playwright command die on a missing binary and the caller reports
+  `http://localhost:4173/ did not become ready within 90000ms` — a timeout, with the real error
+  scrolled off above it. Never `npm install` here (ADR-0119).
+* **`ios/local.xcconfig`.** The preflight names this one correctly and blocks on it, which is the
+  good case. Copy it from the main checkout; it holds a `DEVELOPMENT_TEAM` line and nothing else.
+
 ## Take the rig over
 
 ```sh
@@ -19,20 +31,35 @@ Everything else the preflight checks is host-side, and that is exactly how a blo
 ready: enumeration, `ideviceinfo`, the tunnel, and every port check pass without ever launching an
 app or delivering a touch.
 
-| Flag                     | Proves                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------ |
-| `--wake-android`         | The phone is awake and stays awake. **The only flag that writes to a device.** |
-| `--verify-android-input` | A real touch reaches a page at usable cadence — about 20 s                     |
-| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session — about a minute                 |
+| Flag                     | Proves                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------- |
+| `--wake-android`         | The phone is awake and stays awake. Writes stay-awake and a screen timeout, and does not undo them. |
+| `--verify-android-input` | A real touch reaches a page at usable cadence, **and** the device and a loaded page both rotate     |
+| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session — about a minute                                      |
+
+`--verify-android-input` takes about a minute: roughly 20 s for the touch cadence and another 40 s
+driving the page through landscape and back. Rotation is folded into it rather than given its own
+flag on purpose — the promise it used to make, *a real touch reaches a page at usable cadence*, was
+true and irrelevant for the half of the matrix that is landscape, and a rig must not be declarable
+ready on a device that will not turn. It writes `user_rotation` and `accelerometer_rotation` and
+restores whatever it found, including deleting a setting that was never written.
 
 Fix whatever it blocks on before capturing anything. A blocked preflight exits non-zero and names
 the cause; two of the likely ones need a human at the device and cannot be cleared from the host —
 **Guided Access** (triple-click the side button, enter the passcode, End) and a locked phone.
 
-**A green preflight does not mean every cell can be captured.** It proves touch, never rotation, so
-a device that will not turn still passes all three flags and then fails every landscape cell — which
-is half the matrix. Tracked as issue 1248. Until it verifies rotation, capture one landscape cell
-first and confirm it writes an artifact before queueing a target.
+**Read the fidelity verdict as two questions, not one.** `cadence` and `trustedTouch` failing means
+the run was bad and a recapture may fix it. A check reported `(uncalibrated)` means the instrument
+has no measured expectation for that runtime, and no number of recaptures will change it — the fix
+is one known-bad capture of that runtime. Retrying an uncalibrated cell spends three attempts of
+device time to reach the same answer, which is what every physical-iPad native cell currently does.
+
+**A green preflight still does not mean every cell can be captured.** Rotation used to be the gap:
+the preflight proved touch and never rotation, so a device that would not turn passed every flag and
+then failed every landscape cell — half the matrix. `--verify-android-input` now drives a real
+rotation and reads the orientation the **page** reports, so that particular hole is closed on
+Android. The iPad has no equivalent check, and neither device is proved against anything the
+verification does not itself exercise.
 
 ## Reuse what cost a human, reclaim what is cheap
 
@@ -69,8 +96,10 @@ For a full cross-target snapshot rather than a single capture, continue with the
 * **Read the fidelity verdict before the result.** A capture that parses is not a capture that can
   be scored. A cell that fails input fidelity must not be scored at all, however plausible its
   number looks. **Which check failed decides what the failure means**: `cadence` invalidates the
-  number outright, while `pressure` and `contactGeometry` are iPad-calibrated and every Android and
-  desktop capture fails them by construction, which is why those targets are classed advisory.
+  number outright, while a check reported `(uncalibrated)` says the instrument has no measured
+  expectation for that runtime — a gap closed by measuring the runtime, not by recapturing the cell.
+  Every Android and desktop capture is uncalibrated on `coalescing`, `pressure` and
+  `contactGeometry`, which is why those targets are classed advisory (ADR-0139).
 * **Restart a long-lived server after editing what it serves.** The campaign re-reads the capture
   tool every cell, but `perf:device:serve` holds the injected page bootstrap in its module cache and
   `perf:serve` holds the build it started with. The two together read as "my fix did nothing", which

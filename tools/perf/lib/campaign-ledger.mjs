@@ -17,6 +17,12 @@ export const EXHAUSTED = 'attempts-exhausted';
 // recorded nothing and the ledger is safe to clear, which is the opposite of true
 // here. It still spends an attempt.
 export const UNSCOREABLE = 'failed-input-fidelity';
+// A capture measured at a refresh rate the target is not scored against. Like
+// UNSCOREABLE it parsed and cannot be compared, and unlike it the capture itself is
+// fine — a ProMotion panel simply presented at the other rate that run, so a retry
+// has a real chance of landing in the expected regime. It spends an attempt for the
+// same reason: a run of these is not an empty ledger.
+export const OFF_REFRESH_REGIME = 'off-refresh-regime';
 
 export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
   return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
@@ -38,7 +44,10 @@ export function parseLedger(text) {
 export function attemptsFor(rows, cellId) {
   return rows.filter(
     (row) =>
-      row.cell === cellId && (row.status?.startsWith(FAILED) || row.status?.startsWith(UNSCOREABLE))
+      row.cell === cellId &&
+      (row.status?.startsWith(FAILED) ||
+        row.status?.startsWith(UNSCOREABLE) ||
+        row.status?.startsWith(OFF_REFRESH_REGIME))
   ).length;
 }
 

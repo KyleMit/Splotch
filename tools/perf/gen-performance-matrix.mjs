@@ -12,6 +12,9 @@ import {
   summarizeActions,
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
+import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
+import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -33,6 +36,12 @@ const DEFAULT_MANIFEST = join(
 );
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const BRUSH_LABELS = { pen: 'Pen', crayon: 'Crayon', magic: 'Magic', eraser: 'Eraser' };
+// `idle frame control` performs no interaction. It exists to prove the target can
+// hold frames at rest, so that every other action's score means something — and it
+// was excluded from the comparison without ever being consulted. On
+// android-emulator-web it fails its own gate in both portrait modes (frame p95
+// 50.0 and 33.3 ms against a 20 ms gate), so those two modes' 24-of-50 and
+// 26-of-50 action failures are not attributable to the product at all.
 const ACTION_CONTROL_LABELS = new Set(['idle frame control']);
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const THEMES = ['light', 'dark'];
@@ -70,13 +79,21 @@ function loadPreservedEvidence(manifest, manifestDirectory) {
 }
 
 // A preserved drawing section is the published normalized result, and its runs
-// still carry the fidelity verdict they were captured with. Without re-deriving
-// scoreability from it, a preserved fidelity-failed cell rendered a bold product
-// FAIL while a freshly captured one with the identical verdict rendered
-// unscoreable — the same measurement, two contradictory claims, decided only by
-// which side of a recapture it landed on.
-export function withPreservedScoreability(section) {
-  if (!section || typeof section !== 'object') return section;
+// still carry the fidelity verdict they were captured with. Without acting on it, a
+// preserved fidelity-failed cell rendered a bold product FAIL while a freshly
+// captured one with the identical verdict rendered unscoreable — the same
+// measurement, two contradictory claims, decided only by which side of a recapture
+// it landed on.
+//
+// The verdict is not re-derived, because re-deriving needs the raw input samples and
+// a preserved cell has only normalized results. So the cell is not scored at all:
+// its published verdict is kept as provenance and the current one is unknown. Every
+// preserved drawing cell in the matrix today already fails some check, so this
+// changes no published number — it closes the case where a copied verdict that
+// happened to pass would have been read as a current one.
+export const PRESERVED_VERDICT_REASON = 'preserved: no current verdict';
+export function withPreservedScoreability(section, preserved = true) {
+  if (!preserved || !section || typeof section !== 'object') return section;
   const rescored = {};
   for (const [brush, entry] of Object.entries(section)) {
     const runs = entry?.runs ?? [];
@@ -84,11 +101,23 @@ export function withPreservedScoreability(section) {
       rescored[brush] = entry;
       continue;
     }
-    const failedFidelityChecks = [
+    // The verdict a preserved run carries was computed by whichever expectations
+    // its checkout held, and it cannot be re-derived because re-deriving needs raw
+    // input samples a preserved cell does not have. Keeping it under its own name
+    // says what it is; letting it drive `scoreable` would present a historical
+    // verdict as a judgement under current calibration, and `scoreable` is what the
+    // plots and the failure ranking read.
+    // `run.fidelity` is left in place. It is not only provenance: this matrix
+    // preserves cells from its own previously published `data.json`
+    // (`preservedEvidence.from`), so blanking the field here destroys the source
+    // the NEXT regeneration preserves from — the generator eats its own input. The
+    // "no current verdict" claim therefore lives on the aggregate, which is
+    // recomputed from the runs every time.
+    const publishedChecks = [
       ...new Set(
         runs.flatMap((run) =>
           Object.entries(run.fidelity?.checks ?? {})
-            .filter(([, passed]) => !passed)
+            .filter(([, passed]) => passed !== true)
             .map(([check]) => check)
         )
       ),
@@ -97,8 +126,10 @@ export function withPreservedScoreability(section) {
       ...entry,
       aggregate: {
         ...entry.aggregate,
-        scoreable: runs.every((run) => run.fidelity?.passed !== false),
-        failedFidelityChecks,
+        scoreable: false,
+        unscoreableReason: PRESERVED_VERDICT_REASON,
+        failedFidelityChecks: [],
+        publishedFidelityChecks: publishedChecks,
       },
     };
   }
@@ -175,22 +206,68 @@ function validateCaptureMode(profile, mode, source) {
   }
 }
 
-function normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare) {
+// The verdict a capture recorded is the one its runner computed on the day, from
+// whatever expectations that checkout held. The matrix already re-scores every
+// drawing table with the current gates for exactly that reason, and leaving the
+// fidelity verdict frozen means a correction to the expectations reaches published
+// cells only through device time. So it is re-derived here too, from the input the
+// capture recorded and the runtime the target declares.
+//
+// Only when the capture carried a verdict at all. A runner that writes none — the
+// desktop transport — is not held to one, the same carve-out `artifactPassedFidelity`
+// makes; deriving one for it would mark every desktop cell unscoreable on a
+// trusted-touch check that Playwright cannot satisfy by construction.
+//
+// A PRESERVED cell keeps the verdict it was published with, because re-deriving one
+// needs the raw input samples and a preserved cell has only normalized results — the
+// same reason it keeps its published scores rather than being re-scored. So a target
+// captured on both sides of a recapture can show a fresh mode judged by the current
+// expectations beside a preserved mode judged by the ones in force when it was taken.
+// That is the standing cost of preserved evidence (ADR-0138), marked as such in the
+// matrix, and it resolves when the mode is recaptured — not a second verdict for the
+// same measurement.
+function rederiveFidelity(profile, phases, captureRuntime) {
+  if (!profile.fidelity) return null;
+  return inputFidelity(phases?.[0]?.input ?? {}, captureRuntime);
+}
+
+function normalizeDrawingRun(
+  source,
+  productCommit,
+  sourceDirectory,
+  mode,
+  gateShare,
+  { expectedRefreshRegime, captureRuntime }
+) {
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
-  const phases = profile.report ? summarizeRun(profile.report).phases : profile.summaries?.phases;
+  const summaries = profile.report ? summarizeRun(profile.report) : profile.summaries;
+  const phases = summaries?.phases;
   const scored = scoreDrawingRun(phases ?? [], gateShare);
-  const failedFidelityChecks = Object.entries(profile.fidelity?.checks ?? {})
-    .filter(([, passed]) => !passed)
+  const refreshRegime = refreshRegimeVerdict(summaries?.intervalMs, expectedRefreshRegime);
+  const fidelity = rederiveFidelity(profile, phases, captureRuntime);
+  const failedFidelityChecks = Object.entries(fidelity?.checks ?? {})
+    .filter(([, passed]) => passed !== true)
     .map(([check]) => check);
   return {
     source,
     productCommit,
-    fidelity: profile.fidelity ?? null,
+    fidelity,
+    // Published so a cell can be audited for the regime it was scored against.
+    // Preserved cells carry normalized results and no beat, which is exactly why a
+    // 6x-wrong number could not be told from a real one after the fact.
+    refreshRegime,
     // A capture whose input fidelity failed is not a product pass or fail — the
     // capture runner's own contract calls it unscoreable, and rendering it as an
-    // ordinary measurement launders a rejected input path into a product claim.
-    scoreable: profile.fidelity?.passed !== false,
+    // ordinary measurement launders a rejected input path into a product claim. A
+    // capture measured at the other refresh rate is unscoreable for the neighbouring
+    // reason: the gates are 60 Hz-calibrated (ADR-0085) and lostFrameTimeShare
+    // prices frames against the observed beat, so the same drawing charged against
+    // 8.3 ms instead of 16.7 ms reads as a catastrophe.
+    // `scoreable`, not `matched`: a target whose regime has never been established
+    // cannot have its beat compared to anything, and scoring it anyway is the
+    // fail-open this guard exists to close.
+    scoreable: fidelity?.passed !== false && refreshRegime.scoreable,
     failedFidelityChecks,
     phases: scored.phases.map((phase) => ({
       phase: phase.phase,
@@ -229,7 +306,27 @@ function aggregateDrawingRuns(runs) {
     failedFidelityChecks: [
       ...new Set(runs.flatMap((run) => run.failedFidelityChecks ?? [])),
     ].sort(),
+    // The regime the samples behind this cell were measured in. A cell whose runs
+    // disagree is `mixed`, which is worth seeing on its own: their numbers are not
+    // comparable to each other, let alone to the column.
+    refreshRegime: distinctRefreshRegime(runs),
+    offRefreshRegime: runs.some((run) => run.refreshRegime?.scoreable === false),
   };
+}
+
+function distinctRefreshRegime(runs) {
+  const observed = [...new Set(runs.map((run) => run.refreshRegime?.observed ?? null))];
+  if (observed.length === 0) return null;
+  return observed.length === 1 ? observed[0] : 'mixed';
+}
+
+// Fidelity and refresh regime are two separate reasons a cell cannot be scored, and
+// a label that named only the first rendered an empty parenthesis for the second.
+function unscoreableReasons(aggregate) {
+  if (aggregate.unscoreableReason) return [aggregate.unscoreableReason];
+  const reasons = [...aggregate.failedFidelityChecks];
+  if (aggregate.offRefreshRegime) reasons.push(`${aggregate.refreshRegime} beat`);
+  return reasons;
 }
 
 function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, targetId) {
@@ -237,7 +334,10 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
     BRUSHES.map((brush) => {
       const gateShare = lostFrameTimeShareGateFor(targetId, brush);
       const runs = (sources[brush] ?? []).map((source) =>
-        normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare)
+        normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare, {
+          expectedRefreshRegime: CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null,
+          captureRuntime: CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? DEFAULT_CAPTURE_RUNTIME,
+        })
       );
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
@@ -306,6 +406,31 @@ function mergeActionResults(captures) {
   return [...byLabel.values()];
 }
 
+// The control's verdict is read off the results the section already carries, so a
+// PRESERVED action section is judged the same way a freshly normalized one is —
+// unlike a fidelity verdict, this needs no raw capture, only the row that is
+// already published.
+export function withActionControlScoreability(actions) {
+  if (!actions || typeof actions !== 'object' || !Array.isArray(actions.results)) return actions;
+  const control = actions.results.find((result) => ACTION_CONTROL_LABELS.has(result.label));
+  // Fails CLOSED. Without a control that is present and explicitly passing, nothing
+  // distinguishes product work from a sick host — which is the whole reason the
+  // control exists — so an absent row, or one whose `passed` is anything other than
+  // true, leaves the section unscoreable. An earlier revision defaulted a missing
+  // control to scoreable on the grounds that it was not proven bad; that reasoning
+  // makes the check optional, and a check a capture can skip is not a check.
+  //
+  // This costs nothing today: all 40 modes carrying actions in the matrix have a
+  // control row with a boolean verdict.
+  const scoreable = control?.passed === true;
+  return {
+    ...actions,
+    controlLabel: control?.label ?? null,
+    scoreable,
+    controlEvidence: !control ? 'absent' : control.passed === true ? 'passed' : 'failed',
+  };
+}
+
 function normalizeActions(sources, finalProductCommit, sourceDirectory, mode) {
   if (!sources?.length) return null;
   const captures = sources.map((source) => normalizeActionCapture(source, sourceDirectory, mode));
@@ -360,6 +485,10 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
     ...shared,
     drawingProductCommit: normalizedMode.drawingProductCommit,
     undoProductCommit: normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
+    // Applied only to a section that actually came from preserved evidence. A
+    // freshly normalized one already carries a verdict re-derived under current
+    // expectations, and blanking that would mark every cell in the matrix
+    // unscoreable.
     drawing: withPreservedScoreability(
       resolveSection(normalizedMode.drawing, 'drawing', () =>
         normalizeDrawing(
@@ -369,7 +498,8 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
           normalizedMode,
           target.id
         )
-      )
+      ),
+      preservedSections.includes('drawing')
     ),
     undo: resolveSection(normalizedMode.undoSource, 'undo', () =>
       normalizeUndo(
@@ -379,12 +509,14 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
         normalizedMode
       )
     ),
-    actions: resolveSection(normalizedMode.actionSources, 'actions', () =>
-      normalizeActions(
-        normalizedMode.actionSources,
-        finalProductCommit,
-        sourceDirectory,
-        normalizedMode
+    actions: withActionControlScoreability(
+      resolveSection(normalizedMode.actionSources, 'actions', () =>
+        normalizeActions(
+          normalizedMode.actionSources,
+          finalProductCommit,
+          sourceDirectory,
+          normalizedMode
+        )
       )
     ),
     ...(preservedSections.length ? { preservedSections } : {}),
@@ -604,7 +736,13 @@ function drawingPlot(matrix, metric, gate, title) {
         // product-failure styling; the tooltip says why instead.
         const unscoreable = result.scoreable === false;
         const failed = !unscoreable && Number.isFinite(value) && value > gate;
-        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms`;
+        const published = result.publishedFidelityChecks?.length
+          ? ` · published verdict failed ${result.publishedFidelityChecks.join(', ')}`
+          : '';
+        const why = unscoreable
+          ? ` · unscoreable: ${unscoreableReasons(result).join(', ')}${published}`
+          : '';
+        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${why}`;
         const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
         return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${unscoreable ? ' unscoreable' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
       }).join('');
@@ -672,6 +810,10 @@ function actionHeatmap(matrix) {
           result,
         ])
       );
+      // A mode whose idle control failed cannot attribute any action score to the
+      // product, so its cells are marked rather than coloured by ratio — the same
+      // treatment a fidelity-failed drawing cell gets, for the same reason.
+      const attributable = target.actions?.scoreable !== false;
       const cells = labels
         .map((label, index) => {
           const result = resultsByLabel.get(label);
@@ -683,13 +825,23 @@ function actionHeatmap(matrix) {
           }
           const ratio = actionRatio(result, matrix.gates.actions);
           const provenance = result.productCommit ? ` · measured at ${result.productCommit}` : '';
-          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${result.passed ? 'PASS' : 'FAIL'}${provenance}`;
-          return `<span class="heat-cell ${heatClass(ratio)}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+          const verdict = attributable
+            ? result.passed
+              ? 'PASS'
+              : 'FAIL'
+            : `unscoreable: this mode\u2019s idle frame control is ${target.actions?.controlEvidence ?? 'absent'}`;
+          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+          const cellClass = attributable ? heatClass(ratio) : 'unscoreable';
+          return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
         })
         .join('');
       const comparableResults = target.actions ? comparableActionResults(target.actions) : [];
       const passingCount = comparableResults.filter((result) => result.passed).length;
-      const score = target.actions ? `${passingCount}/${comparableResults.length}` : '—';
+      const score = !target.actions
+        ? '—'
+        : attributable
+          ? `${passingCount}/${comparableResults.length}`
+          : 'no control';
       return `<div class="heat-row${target.firstTargetMode ? ' target-break' : ''}"><div class="heat-label"><span>${esc(target.targetLabel)}<small>${esc(target.modeLabel)}</small></span><b>${score}</b></div><div class="heat-cells">${cells}</div></div>`;
     })
     .join('');
@@ -704,7 +856,12 @@ function actionHeatmap(matrix) {
 }
 
 function rankedActionFailures(matrix) {
-  const captured = modeRows(matrix).filter((target) => target.actions);
+  // A mode whose control failed is left out entirely rather than counted as a
+  // failing mode. Counting it is how "the worst cases cluster on the Android
+  // emulator" became a reading of the product rather than of the emulator.
+  const captured = modeRows(matrix).filter(
+    (target) => target.actions && target.actions.scoreable !== false
+  );
   const labels = comparableActionLabels(captured);
   const ranked = labels
     .map((label) => {
@@ -855,7 +1012,7 @@ function renderMarkdown(matrix) {
         // the runner rejects; the failed check is named so the reader can see
         // which one rather than inferring it from a target-level advisory label.
         if (aggregate.scoreable === false) {
-          return `_unscoreable (${aggregate.failedFidelityChecks.join(', ')})_: ${value}`;
+          return `_unscoreable (${unscoreableReasons(aggregate).join(', ')})_: ${value}`;
         }
         return aggregate.blankPassed ? value : `**FAIL ${value}**`;
       }),
@@ -964,9 +1121,11 @@ ${markdownTable(['Target', 'Timing', 'Result', 'Product commit'], undoRows)}
 
 ## Discrete actions
 
-The idle-frame profiling control remains in normalized data but is excluded below. The post-action
-column is \`P95 / max\` in milliseconds. Full per-action timing and provenance are available in
-the interactive matrix and normalized JSON.
+The idle-frame profiling control is excluded from the columns below and **consulted** rather than
+merely dropped: it performs no interaction, so a mode where it fails its own gate cannot attribute
+any action score to the product. Such a mode is marked \`no control\` and left out of the
+cross-mode failure ranking. The post-action column is \`P95 / max\` in milliseconds. Full
+per-action timing and provenance are available in the interactive matrix and normalized JSON.
 
 ${markdownTable(['Target', 'Passing', 'At final commit', 'Worst first P95', 'Worst post P95 / max', 'Failed actions'], actionRows)}
 
@@ -1016,12 +1175,16 @@ function releaseGateSentence(matrix) {
     : failing
       ? `${failing} of ${scoreable.length} brush aggregates over gate`
       : `all ${scoreable.length} brush aggregates inside gate`;
-  const caveat = unscoreable ? `, ${unscoreable} unscoreable (failed input fidelity)` : '';
+  const offRegime = aggregates.filter((aggregate) => aggregate.offRefreshRegime).length;
+  const why = offRegime
+    ? `failed input fidelity or were measured off this target's refresh regime`
+    : 'failed input fidelity';
+  const caveat = unscoreable ? `, ${unscoreable} unscoreable (${why})` : '';
   return `${gate.label} is the calibrated release gate — ${coverage}, ${verdict}${caveat}.`;
 }
 
 const EXTRA_CSS = `
-.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.target-modes{list-style:none;padding:0;margin:12px 0 0}.target-modes li{padding:8px 0;border-top:1px solid var(--hair)}.target-modes li>div{display:flex;justify-content:space-between;gap:8px;align-items:center}.target-modes b{font-size:.72rem}.target-modes small{display:block;margin-top:3px;color:var(--muted);font-size:.68rem}.target-modes .unavailable{opacity:.72}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-row.target-break,.heat-row.target-break{margin-top:10px}.plot-row.unavailable{opacity:.65}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.plot-dot.unscoreable{background:transparent;border-color:var(--dot);box-shadow:0 0 0 1px var(--card);opacity:.75}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:210px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label span small{display:block;color:var(--faint);font-weight:400}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block}.heat-cell.missing{background:var(--card-2)}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:170px max-content}.heat-label span{max-width:140px;overflow:hidden;text-overflow:ellipsis}}
+.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.target-modes{list-style:none;padding:0;margin:12px 0 0}.target-modes li{padding:8px 0;border-top:1px solid var(--hair)}.target-modes li>div{display:flex;justify-content:space-between;gap:8px;align-items:center}.target-modes b{font-size:.72rem}.target-modes small{display:block;margin-top:3px;color:var(--muted);font-size:.68rem}.target-modes .unavailable{opacity:.72}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-row.target-break,.heat-row.target-break{margin-top:10px}.plot-row.unavailable{opacity:.65}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.plot-dot.unscoreable{background:transparent;border-color:var(--dot);box-shadow:0 0 0 1px var(--card);opacity:.75}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:210px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label span small{display:block;color:var(--faint);font-weight:400}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block}.heat-cell.missing{background:var(--card-2)}.heat-cell.unscoreable{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--hair-strong)}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:170px max-content}.heat-label span{max-width:140px;overflow:hidden;text-overflow:ellipsis}}
 .candidate-actions th,.candidate-actions td{text-align:left;vertical-align:top}
 `;
 
@@ -1083,7 +1246,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>${actionCount}-action failure fingerprint</h2><span class="desc">Color is the worst ratio across first P95, post P95, and post max</span></div>
-  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span></div>
+  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span><span><i class="heat-cell unscoreable"></i>no control</span></div>
   ${actionHeatmap(matrix)}
 
   <div class="ranked-grid">
@@ -1092,7 +1255,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: every sample behind it failed its input-fidelity gate, so the number describes an input path the capture runner rejects and is neither a pass nor a failure. Its tooltip names the failed check. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. Profiling controls such as the idle-frame sample remain in normalized data but are omitted from the user-action comparison.</p></div>
+  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({

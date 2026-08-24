@@ -46,6 +46,7 @@ import { toMiB } from '../lib/performance-units.mjs';
 import {
   COMMIT_GATE_MS,
   COMMIT_GATE_PERCENTILE,
+  confirmedBreach,
   evaluateCommitTiming,
 } from '../lib/undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
@@ -674,9 +675,24 @@ export async function runUndoScenarios() {
       metrics,
     });
 
+    // A first-pass breach is re-measured before it is believed. The gate's
+    // percentile over ~21 commit samples resolves to the second-highest sample, so
+    // two adjacent slow commits set it — which is what a scheduling stall on a
+    // shared runner produces, and it does not reproduce. Re-running costs one
+    // scenario and only happens on the path that would otherwise turn main red.
+    const confirmations = await confirmBreaches({
+      page,
+      base,
+      results,
+      scenarios,
+      timeline,
+      normalizeSharedRunnerCrayon: suite === 'fast',
+      enforcesCoverage: engine.gated,
+    });
     const gate = reportCommitGate(results, {
       normalizeSharedRunnerCrayon: suite === 'fast',
       enforcesCoverage: engine.gated,
+      confirmations,
     });
     const fullRun =
       requestedKeys.length === ALL_UNDO_SCENARIO_KEYS.length &&
@@ -787,11 +803,9 @@ function readRestoredHistoryOrSeed(historyPath) {
 // the device-calibrated verdict remains in ADR-0090. Chromium stays advisory
 // because its software canvas path cannot supply comparable absolute timings.
 function formatCommitBreach(scenario, timing) {
-  const gateTiming = timing.normalized
-    ? `gate ${f1(timing.gateP95Ms)} ms after ${f1(timing.slowdownFactor)}× ` +
-      `same-run renderer normalization (raw ${f1(timing.rawP95Ms)} ms · ` +
-      `draw ${f1(timing.drawMsPerCall)} ms/call), `
-    : `commit p95 ${f1(timing.rawP95Ms)} ms, `;
+  const host =
+    timing.hostSlowdown === null ? '' : ` · host ${f1(timing.hostSlowdown)}× the reference run`;
+  const gateTiming = `commit p95 ${f1(timing.rawP95Ms)} ms${host}, `;
   return `  ${scenario.key}: ${gateTiming}max ${f1(scenario.draw.commitMaxMs)} ms`;
 }
 
@@ -820,9 +834,60 @@ function reportMissingCommitSamples(measured) {
   return { breaches: [], evaluated: false };
 }
 
+// Re-measures every scenario whose first pass breached, and returns the second
+// timing per key. Only the breaching scenarios are re-run: a green suite costs
+// nothing, and a red one costs one extra scenario per breach.
+//
+// The re-run goes through the same `runUndoScenario` the first pass used, on the
+// same page and the same build, so the two measurements differ in nothing except
+// when they were taken — which is the whole question being asked.
+async function confirmBreaches({
+  page,
+  base,
+  results,
+  scenarios,
+  timeline,
+  normalizeSharedRunnerCrayon,
+  enforcesCoverage,
+}) {
+  if (!enforcesCoverage) return new Map();
+  const suspects = results.filter(
+    (result) =>
+      !result.skipped && evaluateCommitTiming(result, { normalizeSharedRunnerCrayon }).breached
+  );
+  const confirmations = new Map();
+  for (const suspect of suspects) {
+    const scenario = scenarios.find((candidate) => candidate.key === suspect.key);
+    if (!scenario) continue;
+    console.log(`Re-measuring ${suspect.key}: its first pass breached, confirming before failing.`);
+    try {
+      const second = await runUndoScenario(page, base, scenario);
+      confirmations.set(suspect.key, second);
+    } catch (error) {
+      // A re-run that could not complete is not a confirmation and not an
+      // acquittal. Left absent, so the gate reports the scenario unconfirmed
+      // rather than quietly passing it.
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Could not re-measure ${suspect.key}: ${message}`);
+    }
+    if (timeline) {
+      try {
+        timeline.append(await collectMeasures(page));
+      } catch {
+        // The stitched timeline is diagnostic; a failed drain must not sink the run.
+      }
+    }
+  }
+  return confirmations;
+}
+
 function reportCommitGate(
   results,
-  { normalizeSharedRunnerCrayon = false, enforcesCoverage = engine.gated } = {}
+  {
+    normalizeSharedRunnerCrayon = false,
+    enforcesCoverage = engine.gated,
+    confirmations = new Map(),
+  } = {}
 ) {
   const budgetMs = COMMIT_GATE_MS;
   const { gated } = engine;
@@ -832,7 +897,39 @@ function reportCommitGate(
     evaluateCommitTiming(scenario, { normalizeSharedRunnerCrayon })
   );
   const timings = new Map(scenarioTimings.map((timing) => [timing.key, timing]));
-  const breaches = gated ? measured.filter((scenario) => timings.get(scenario.key).breached) : [];
+  // A scenario fails only when every measurement of it breached. One breach out of
+  // two is the shared runner; two out of two is the work.
+  const confirmedTimings = new Map(
+    [...confirmations].map(([key, second]) => [
+      key,
+      evaluateCommitTiming(second, { normalizeSharedRunnerCrayon }),
+    ])
+  );
+  // A first-pass breach fails the job unless a SECOND measurement was taken and came
+  // back clean. A confirmation that could not be scored acquits nothing.
+  const dispositions = new Map(
+    measured
+      .filter((scenario) => timings.get(scenario.key).breached)
+      .map((scenario) => {
+        const first = timings.get(scenario.key);
+        const second = confirmedTimings.get(scenario.key);
+        return [scenario.key, second ? confirmedBreach([first, second]) : 'unconfirmed'];
+      })
+  );
+  const breaches = gated
+    ? measured.filter(
+        (scenario) =>
+          dispositions.get(scenario.key) !== 'acquitted' && dispositions.has(scenario.key)
+      )
+    : [];
+  const acquitted = gated
+    ? measured.filter((scenario) => dispositions.get(scenario.key) === 'acquitted')
+    : [];
+  // EVERY return spreads this rather than rebuilding it. Two paths used to
+  // hand-assemble a smaller object — the unevaluable one and the final red-breach
+  // one — which are exactly the paths where the disposition is worth reading: a run
+  // exited red while `undo-scenarios.json` could not say whether the confirmation
+  // breached or could not be scored.
   const base = {
     engine: engineName,
     gated,
@@ -840,7 +937,25 @@ function reportCommitGate(
     percentile: COMMIT_GATE_PERCENTILE,
     breaches,
     scenarioTimings,
+    confirmationTimings: [...confirmedTimings.values()],
+    breachDispositions: Object.fromEntries(dispositions),
   };
+  for (const scenario of acquitted) {
+    const first = timings.get(scenario.key);
+    const second = confirmedTimings.get(scenario.key);
+    console.log(
+      `Commit gate: ${scenario.key} breached once and not again — ` +
+        `${first.gateP95Ms.toFixed(1)} ms then ${second.gateP95Ms.toFixed(1)} ms against ` +
+        `${budgetMs} ms. Reported, not failed.`
+    );
+  }
+  for (const scenario of breaches) {
+    if (dispositions.get(scenario.key) !== 'unconfirmed') continue;
+    console.error(
+      `Commit gate: ${scenario.key} breached and its confirmation could not be scored. ` +
+        'Kept as a breach — an unscoreable second measurement acquits nothing.'
+    );
+  }
 
   // Ordered most-specific-cause-first, so a run that never completed a scenario
   // is not reported as a marks-less bundle.
@@ -867,22 +982,20 @@ function reportCommitGate(
     return base;
   }
 
+  // Unreachable while normalization is off: `commitP95Ms` falls back to 0 rather
+  // than to undefined, so `evaluable` is currently always true and a run with no
+  // samples is caught by `reportMissingCommitSamples` above instead. The branch is
+  // kept because `NORMALIZATION_ENABLED` makes a timing unevaluable again the moment
+  // the divisor returns (ADR-0140) — so it is a guard for a switch, not a path any
+  // test drives today.
   const unevaluable = scenarioTimings.filter((timing) => !timing.evaluable);
   if (unevaluable.length > 0) {
     process.exitCode = 1;
     console.error(
-      `\n✗ Commit gate NOT EVALUATED on ${engineName}: the same-run renderer control ` +
-        `had no engine.draw samples for ${unevaluable.map((timing) => timing.key).join(', ')}.\n`
+      `\n✗ Commit gate NOT EVALUATED on ${engineName}: no commit p95 for ` +
+        `${unevaluable.map((timing) => timing.key).join(', ')}.\n`
     );
-    return {
-      engine: engineName,
-      gated,
-      budgetMs,
-      percentile: COMMIT_GATE_PERCENTILE,
-      breaches,
-      scenarioTimings,
-      evaluated: false,
-    };
+    return { ...base, evaluated: false };
   }
 
   if (breaches.length === 0) {
@@ -903,14 +1016,7 @@ function reportCommitGate(
   for (const scenario of breaches) {
     console.error(formatCommitBreach(scenario, timings.get(scenario.key)));
   }
-  return {
-    engine: engineName,
-    gated,
-    budgetMs,
-    percentile: COMMIT_GATE_PERCENTILE,
-    breaches,
-    scenarioTimings,
-  };
+  return base;
 }
 
 function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {

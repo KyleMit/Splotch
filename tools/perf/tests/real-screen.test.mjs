@@ -27,7 +27,6 @@ import {
   cacheEvictionAcceptable,
   capturedDeviceId,
   dismissInstallBannerForMeasurement,
-  inputFidelity,
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
@@ -1123,22 +1122,6 @@ describe('trusted XCUITest input', () => {
     expect(native['appium:bundleId']).toBe(appId);
     expect(native).not.toHaveProperty('browserName');
     expect(native).not.toHaveProperty('appium:safariInitialUrl');
-  });
-
-  it('accepts the calibrated trusted-touch signature and rejects untrusted input', () => {
-    const input = {
-      kinds: 'touch',
-      movesPerSecond: 121,
-      moveGapP95Ms: 9,
-      coalescedPerMove: 0,
-      trust: { share: 1 },
-      pressure: { p50: 0 },
-      contactWidth: { p50: 73.76 },
-      contactHeight: { p50: 73.76 },
-    };
-
-    expect(inputFidelity(input).passed).toBe(true);
-    expect(inputFidelity({ ...input, trust: { share: 0 } }).passed).toBe(false);
   });
 
   it('records the maximum live-surface area and groups boundary-size variants', () => {

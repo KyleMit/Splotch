@@ -169,21 +169,63 @@ a transport that cannot create it:
 | WebDriverAgent HTTP directly (iPad)  |           60–61 | Below the band; ~0.9 moves per frame.      |
 | Appium UiAutomator2 (Android Chrome) |              47 | Below the band. Do not score.              |
 
-## The preflight proves touch, not rotation
+### A failed verdict has two meanings, and they need different work
 
-`--verify-android-input` drives the floor control and reports a cadence in band. It never rotates
-the device, so **a rotation fault passes every preflight check and fails every landscape cell**. The
-2026-08-23 recapture opened on a green rig and lost all eight `android-device-web` landscape drawing
-cells before the first artifact was missed.
+`inputFidelity` states its expectations **per capture runtime** (ADR-0139), because three of its
+five checks describe a runtime rather than describing faithful input. So read *which* check did not
+pass:
+
+* **A failed check is a bad run.** `cadence` says the app was barely driven and the number is
+  meaningless; `trustedTouch` says the input never went through the real touch path. Recapture.
+* **An `(uncalibrated)` check is a silent instrument.** No hand capture has recorded what that
+  runtime reports, so there is no expectation to judge against. Recapturing changes nothing; the fix
+  is to measure the runtime. It is **not** a pass — a capture resting on an unmeasured threshold is
+  as unscoreable as an under-driven one.
+
+Today every Android and desktop runtime is uncalibrated on `coalescing`, `pressure` and
+`contactGeometry`, which is why those targets are classed advisory and why `android-device-web`
+cannot be folded into the matrix yet. Issue 1218 is the hand capture that closes it.
+
+The one entry that is *inverted* rather than uncalibrated is `coalescing` on the Capacitor
+WKWebView, which expects more than zero coalesced samples where Safari expects none — measured on
+2026-08-23 with both runtimes driven at the same cadence on the same device. Do not widen that check
+to cover both; widening it retires it in Safari, where it does real work.
+
+## The preflight proves what it exercises, and nothing else
+
+`--verify-android-input` used to drive the floor control and report a cadence in band, and nothing
+more. It never rotated the device, so **a rotation fault passed every preflight check and failed
+every landscape cell**. The 2026-08-23 recapture opened on a green rig and lost all eight
+`android-device-web` landscape drawing cells before the first artifact was missed.
+
+That flag now also drives a real rotation — the same stop, rotate, launch order a capture drives —
+and reads the orientation the **page** reports rather than the one the device was asked for. It
+restores the rotation settings it found. The passing path is verified on the SM-G990U1. The failing
+path was observed once, by injecting the reversed order, and **does not reproduce on demand** — see
+the rotation entry above; the check is verified against a synthetic mismatch in
+`tools/perf/tests/android-rotation.test.mjs` rather than against a device fault anyone can summon.
+
+The general rule outlives this particular hole: **a preflight proves the operations it performs.**
+The iPad still has no rotation check, and every trap below is one that some cheap check passed
+through.
 
 Two distinct causes were behind it, and the first is the one that generalizes:
 
-* **`am force-stop` resets `user_rotation` to 0** on this Samsung under Android 16. The split
-  transport used to rotate and then force-stop Chrome, which undid the rotation it had just
-  asserted; the capture then aborted on the page disagreeing with the requested orientation and
-  wrote nothing. `androidPageLaunchSteps` now orders it stop → rotate → launch, and
-  `tools/perf/tests/split-capture.test.mjs` locks that order. Verify a rotation *after* whatever
-  restarts the app, never before.
+* **Something returns `user_rotation` to 0 across a relaunch, and it is not established what.** This
+  was recorded as "`am force-stop` resets `user_rotation` to 0 on this Samsung under Android 16",
+  and that specific claim does not reproduce: 8 trials on R5CRC3AVCXM kept it at 1 across
+  force-stop, with Chrome stopped, with Chrome foregrounded first, and across the whole rotate →
+  force-stop → launch sequence. The lost landscape cells were real and one fault injection did
+  observe a LANDSCAPE request returning PORTRAIT with the setting reading 0 — but that read came
+  after a relaunch, so it never isolated force-stop. Treat the ordering below as cheap insurance
+  against an unexplained failure rather than as a fix for a known mechanism, and **verify a rotation
+  by asking the page, not the setting**. What was observed is that the split transport rotated and
+  then force-stopped Chrome, and the capture aborted on the page disagreeing with the requested
+  orientation and wrote nothing — the page mismatch is the fact; which step undid the rotation, or
+  whether the rotation was ever applied, is not established. `androidPageLaunchSteps` now orders it
+  stop → rotate → launch and `tools/perf/tests/split-capture.test.mjs` locks that order, because
+  asserting a rotation *after* whatever restarts the app is free and cannot be the cause of what was
+  seen.
 * **A control that is always in the DOM cannot be probed by presence.** `BrushMenu` renders its four
   options unconditionally and only sets `hidden`, so the bootstrap's `menuStillOpen()` check was
   true even when the menu was shut. Selecting a brush already closes the menu, so the close loop ran
@@ -256,6 +298,27 @@ gates block and nowhere else. The cells keep whatever the estimator produced on 
 captured until they are captured again on the capture host. **A matrix number and a fresh capture of
 the same cell can legitimately disagree by more than the gate**; find out which one you are reading
 before treating a difference as a regression.
+
+### The generator preserves from its own output
+
+`preservedEvidence.from` is `data.json` — **the matrix generator's preservation source is its own
+previous output.** So anything a regeneration drops from a preserved cell is dropped from the input
+the *next* regeneration reads, and the loss compounds with nothing to announce it.
+
+This is not hypothetical. A revision that moved the run-level `fidelity` verdict to a new key
+destroyed every preserved historical verdict in one pass, and it was recoverable only because git
+still had the file. If that had been committed, the provenance would have been gone for good.
+
+Two rules follow:
+
+* **Never drop or rename a field on a preserved run.** Derive what you need onto the aggregate,
+  which is recomputed from the runs each time.
+* **Check `git diff` on `data.json` after a regeneration**, not just the rendered pages. A field
+  disappearing from preserved runs looks like a smaller diff, not like a failure.
+
+`tools/perf/tests/performance-matrix.test.mjs` locks the fixpoint — it feeds a generated matrix back
+in as the published report and requires the second pass to match — but a test cannot see a field you
+never taught it about, so the diff is still worth reading.
 
 ### Rebuilding a handful of cells without recapturing the matrix
 
@@ -335,6 +398,44 @@ Three things about `perf:campaign` that each cost a launch:
   that makes clearing a ledger safe.
 
 `perf:ios:xcuitest:screen` drives Android too, despite the name.
+
+## What a corpus can and cannot establish
+
+Three of this campaign's own thresholds were argued from evidence that could not carry them, and all
+three failed the same way. They are worth recognizing before setting the next one.
+
+**A positive corpus is not a calibration.** Four healthy captures show what a good capture looks
+like. They say nothing about what a bad one looks like, so they cannot establish a threshold that
+has to tell the two apart. The Capacitor WKWebView's `coalescing` expectation was inverted to `> 0`
+on exactly that evidence — and the negative control refuted it outright: an under-driven Android
+Capacitor WebView at 47.81 contact moves/s also reports more than zero coalesced samples, so the
+inverted check would have passed the very capture it exists to reject. **A check needs a known-bad
+capture before it can decide anything.**
+
+**A number quoted in prose is not provenance.** The WebKit commit gate's normalization reference was
+taken from a passing rerun mentioned in an issue body. Three runs of the same fixed replay then
+reported 8,135 / 9,685 / 13,843 ms — a 1.7x spread, larger than the 1.24x host signal the divisor
+existed to correct for. A threshold's provenance has to be a run someone can point at, and a spread
+wide enough to swallow the effect means the constant is not ready.
+
+**An observation is not a mechanism.** A landscape capture came back portrait with `user_rotation`
+reading 0, and that was written up as "`am force-stop` resets `user_rotation`". The read happened
+after a subsequent relaunch, so it never isolated force-stop, and eight later trials could not
+reproduce the reset in any arrangement. The failure was real; the cause was invented to explain it.
+State what was observed, and keep a mitigation on the grounds that it is cheap rather than on the
+grounds that it fixes a mechanism nobody has shown.
+
+The shared shape: each one turned a *consistent* observation into a *general* claim. Consistency
+across three samples of a single-frame statistic is exactly what chance produces — the probe's "one
+extra beat on crayon in all three samples" inverted on the next run and vanished on the one after.
+
+### A fault injection that moves the gate is not a test of the gate
+
+Forcing `COMMIT_GATE_MS` to 0 to watch the commit gate fail proves the confirmed-breach path and
+nothing else: with the budget at zero, *both* passes breach, so the acquittal and unconfirmed paths
+are never exercised. A fault injection that changes the threshold changes which branch you are
+testing. Say which branch a demonstration actually covered, and leave the others to unit tests
+rather than implying the whole path was driven.
 
 ## Serialize the captures, but keep both devices alive
 
@@ -421,6 +522,60 @@ reason to care and should not narrow a capture; budget for the export and parse 
 The general rule this belongs to: when instrumentation might be changing what it measures, measure
 it. The app's own probe scored against a no-trace control answers it in ten minutes, and the same
 technique applies to the in-page probe and `PERF_MARKS`.
+
+## The in-page probe's own observer effect
+
+Every real-screen capture runs with an injected probe that hooks pointer events,
+`requestAnimationFrame` and performance marks on the drawing hot path — code the shipped app does
+not run, executing inside the loop being measured. It was measured the same way, with
+`npm run perf:device:probe-overhead`.
+
+The awkward part is that the probe cannot score the arm that has no probe, and on this phone neither
+platform-side clock answers for a browser target. Both were tried:
+
+| Instrument                                 | On `com.android.chrome` while its page is drawn on                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `dumpsys gfxinfo … framestats`             | **0 frames rendered** — Chrome composites web content outside the view-system pipeline |
+| `dumpsys SurfaceFlinger --latency <layer>` | all-zero rows on Android 16; only the refresh period is real                           |
+
+That is a property of the target, not of the method: the same `gfxinfo` command against
+`com.android.settings` over the same kind of gesture reports 298 frames. **`gfxinfo` is for the
+native app, not for the browser target** — `docs/PROFILING-ANDROID.md` says so now.
+
+So the common clock is a minimal `requestAnimationFrame` counter injected into *both* arms. It is
+not free, but it is identical in both, so it cancels — the probe is the single variable. Same page,
+same origin (so the persisted brush carries), same OS-driven gesture at identical device
+coordinates, arms interleaved so device warming cannot be mistaken for the probe, three samples
+each:
+
+| Brush  | Control frames/s          | Probe frames/s            | Worst frame, control |      Worst frame, probe |
+| ------ | ------------------------- | ------------------------- | -------------------: | ----------------------: |
+| pen    | 90.09 (90.21/89.77/90.30) | 90.13 (90.09/90.01/90.29) |  16.8, 17.0, 25.1 ms |     25.0, 25.0, 25.0 ms |
+| crayon | 89.98 (90.20/89.68/90.05) | 90.03 (89.71/90.21/90.16) |  25.0, 25.1, 25.0 ms | **33.4, 33.4, 33.4 ms** |
+
+**In steady state it is unmeasurable.** The arms interleave inside each other's spread on both
+brushes, and p50, p95 and p99 are identical to the millisecond in every sample. Record it beside the
+Instruments finding and stop worrying about it.
+
+**A tail asymmetry appeared once and did not reproduce.** In the run above, crayon's probe arm had a
+single worst frame of 33.4 ms in all three samples against the control's 25.0 — four beats against
+three. Two later runs disagree. One produced control maxima of 25.1 / 33.3 / 25.0 ms against probe
+maxima of 33.3 / 16.8 / 16.8 ms, the opposite pattern. A third, taken with the brush primed and the
+display holding a steady 60 Hz, showed no tail in either arm: 16.8–16.9 ms worst, both arms, every
+sample, at 59.99 frames/s on both sides.
+
+**All three are three samples of a single-frame statistic**, which is exactly the shape that looks
+consistent by chance. Treat it as an unconfirmed lead, and do not quote the first run's internal
+consistency as evidence for it. The steady-state result is unaffected.
+
+Three limits worth stating rather than discovering later. The control still carries the counter, so
+this bounds the probe against a trivial rAF loop and not against a wholly uninstrumented page — that
+is inherent in needing a common clock. The gesture is a plain centre swipe rather than the
+calibrated trusted-gesture path, so it is a fair comparison between arms and not a scoreable
+capture. And **the brush has to be primed and verified before the first sample**: the arms share one
+origin so the tool can compare like with like, which also means the control arm — which runs first —
+draws with whatever the previous page persisted unless something sets it. Pass `--brush=` and the
+run does that, and refuses to measure if the page never commits it.
 
 ## Do not edit the tools while a campaign is running
 

@@ -62,6 +62,13 @@ runs on every capture that starts its own preview — see below.
 cannot import Node modules. Tests remain in `tests/` and cover entry points, probes, gates, and
 artifact contracts.
 
+`tests/fixtures/` holds real captures kept so a gate is exercised against what the app actually
+emits. `undo-scenarios-webkit-fast.json` is the `draw` block of a real `perf:web:undo:webkit:fast`
+run, and it exists because the commit gate's normalization silently rescaled by three orders of
+magnitude when `engine.draw` marking changed granularity, against a unit test whose hand-written
+fixture could not notice (ADR-0140). Regenerate it from a fresh run's `undo-scenarios.json` rather
+than editing it by hand.
+
 The exact issue #975 manifest preserves two established cross-platform owners instead of extracting
 new modules during this behavior-preserving move: `ios/capture-xcuitest-actions.mjs` owns the action
 plan consumed by the web and Android runners, and `ios/capture-webkit-frames.mjs` owns the probe

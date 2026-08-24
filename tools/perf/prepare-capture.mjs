@@ -4,7 +4,8 @@
 //   npm run perf:preflight -- --wake-android        wake it and set stay-awake
 //   npm run perf:preflight -- --hold-android-awake  the same, re-asserted for the session
 //   npm run perf:preflight -- --verify-ios-launch   launch a real WDA session (slow, exclusive)
-//   npm run perf:preflight -- --verify-android-input drive a real touch and read the cadence
+//   npm run perf:preflight -- --verify-android-input drive a real touch, read the cadence, and
+//                                                    prove the device and page both rotate
 //   npm run perf:preflight -- --json                machine-readable, for a campaign runner
 //
 // Every check here exists because a campaign produced numbers without it and the
@@ -31,6 +32,7 @@ import {
   summarize,
 } from './lib/capture-readiness.mjs';
 import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
+import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
 
 const ANDROID_STAY_AWAKE_TIMEOUT_MS = 1_800_000;
 // Android clears stay-awake on its own across a USB reconnect or a reboot, and a
@@ -394,6 +396,18 @@ if (isMain(import.meta.url)) {
       console.log(`${input.ok ? '✓' : '✗'} ${'android input'.padEnd(22)} ${input.detail}`);
       if (input.contact) console.log(`  ${''.padEnd(22)} observed: ${input.contact}`);
       if (!input.ok) process.exitCode = 1;
+
+      // Folded into the same flag rather than given its own, because the promise
+      // this flag was making — "a real touch reaches a page at usable cadence" —
+      // was true and irrelevant for half the matrix. A rig must not be declarable
+      // ready on a device that will not turn.
+      console.log('\nverifying the device and page both rotate…');
+      const rotation = await verifyAndroidRotation({
+        serial: report.androidSerial,
+        port: report.ports.floorControl,
+      });
+      console.log(`${rotation.ok ? '✓' : '✗'} ${'android rotation'.padEnd(22)} ${rotation.detail}`);
+      if (!rotation.ok) process.exitCode = 1;
     }
     if (argv.includes('--verify-ios-launch') && report.iosUdid) {
       console.log('\nprobing a real WebDriverAgent launch (this builds WDA and takes a minute)…');

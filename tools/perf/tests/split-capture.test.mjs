@@ -96,9 +96,12 @@ describe('androidPageLaunchSteps', () => {
   it('asserts the rotation after force-stopping the browser', () => {
     const steps = androidPageLaunchSteps('LANDSCAPE', 'http://10.0.0.2:4186/');
 
-    // `am force-stop` returns user_rotation to 0 on Samsung/Android 16, so
-    // rotating before the stop lands every landscape cell in portrait and the
-    // capture aborts without writing an artifact.
+    // A 2026-08-23 recapture rotated before the stop and lost every landscape cell:
+    // the page disagreed with the requested orientation and the capture aborted
+    // without writing an artifact. It was attributed to `am force-stop` returning
+    // user_rotation to 0 on Samsung/Android 16, and that did not reproduce in 8
+    // later trials. The order is pinned because it is free and cannot be the cause
+    // of what was seen — see androidPageLaunchSteps.
     expect(indexOfArg(steps, 'force-stop')).toBeLessThan(indexOfArg(steps, 'user_rotation'));
   });
 

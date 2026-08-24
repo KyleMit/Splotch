@@ -181,7 +181,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -189,6 +191,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -196,7 +199,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -229,7 +241,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.015,
               "runs": [
@@ -237,6 +251,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -244,7 +259,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -277,7 +301,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -285,6 +311,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -292,7 +319,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -325,7 +361,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -333,6 +371,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -340,7 +379,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1600,7 +1648,10 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -1624,7 +1675,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -1632,6 +1685,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1639,7 +1693,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1672,7 +1735,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.015,
               "runs": [
@@ -1680,6 +1745,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1687,7 +1753,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1720,7 +1795,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -1728,6 +1805,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1735,7 +1813,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -1768,7 +1855,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -1776,6 +1865,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -1783,7 +1873,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3043,7 +3142,10 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -3067,7 +3169,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -3075,6 +3179,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3082,7 +3187,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3115,7 +3229,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.015,
               "runs": [
@@ -3123,6 +3239,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3130,7 +3247,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3163,7 +3289,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -3171,6 +3299,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3178,7 +3307,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -3211,7 +3349,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -3219,6 +3359,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -3226,7 +3367,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4511,7 +4661,10 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -4535,7 +4688,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -4543,6 +4698,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4550,7 +4706,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4583,7 +4748,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.015,
               "runs": [
@@ -4591,6 +4758,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4598,7 +4766,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4631,7 +4808,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -4639,6 +4818,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4646,7 +4826,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -4679,7 +4868,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -4687,6 +4878,7 @@
                   "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-safari",
                     "passed": true,
                     "checks": {
                       "trustedTouch": true,
@@ -4694,7 +4886,16 @@
                       "coalescing": true,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": []
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": true,
                   "failedFidelityChecks": [],
@@ -5979,7 +6180,10 @@
                 "source": "perf-profiles/campaign-main/ipad-device-web/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]
@@ -6017,7 +6221,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -6025,14 +6231,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -6069,7 +6287,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -6077,14 +6297,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -6121,7 +6353,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -6129,14 +6363,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -6173,7 +6419,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -6181,14 +6429,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -7475,7 +7735,10 @@
                 "source": "perf-profiles/campaign-main/ipad-device-native/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -7501,7 +7764,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -7509,14 +7774,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -7553,7 +7830,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -7561,14 +7840,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -7605,7 +7896,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -7613,14 +7906,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -7657,7 +7962,9 @@
                 "scoreable": false,
                 "failedFidelityChecks": [
                   "coalescing"
-                ]
+                ],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -7665,14 +7972,26 @@
                   "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": {
+                    "runtime": "ios-capacitor-webview",
                     "passed": false,
                     "checks": {
                       "trustedTouch": true,
                       "cadence": true,
-                      "coalescing": false,
+                      "coalescing": null,
                       "pressure": true,
                       "contactGeometry": true
-                    }
+                    },
+                    "uncalibrated": [
+                      "coalescing"
+                    ]
+                  },
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
                   },
                   "scoreable": false,
                   "failedFidelityChecks": [
@@ -8959,7 +9278,10 @@
                 "source": "perf-profiles/campaign-main/ipad-device-native/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -8983,7 +9305,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9030,7 +9354,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9077,7 +9403,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9124,7 +9452,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9205,7 +9535,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9252,7 +9584,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9299,7 +9633,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9346,7 +9682,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "coalescing"
                 ]
               },
@@ -9439,7 +9777,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -9486,7 +9826,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -9533,7 +9875,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -9580,7 +9924,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -10854,7 +11200,10 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -10883,7 +11232,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -10930,7 +11281,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -10977,7 +11330,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -11024,7 +11379,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12298,7 +12655,10 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -12327,7 +12687,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12374,7 +12736,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12421,7 +12785,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -12468,7 +12834,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -13767,7 +14135,10 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -13796,7 +14167,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -13843,7 +14216,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -13890,7 +14265,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -13937,7 +14314,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence"
                 ]
               },
@@ -15236,7 +15615,10 @@
                 "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -15277,7 +15659,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -15325,7 +15709,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -15373,7 +15759,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -15421,7 +15809,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -16721,7 +17111,10 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -16750,7 +17143,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -16798,7 +17193,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -16846,7 +17243,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -16894,7 +17293,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18194,7 +18595,10 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -18223,7 +18627,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18271,7 +18677,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18319,7 +18727,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18367,7 +18777,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18449,7 +18861,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18497,7 +18911,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18545,7 +18961,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18593,7 +19011,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing"
                 ]
@@ -18687,7 +19107,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -18736,7 +19158,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -18785,7 +19209,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -18834,7 +19260,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20160,7 +20588,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -20189,7 +20620,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20238,7 +20671,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20287,7 +20722,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -20336,7 +20773,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -21662,7 +22101,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -21691,7 +22133,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -21740,7 +22184,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -21789,7 +22235,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -21838,7 +22286,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -22814,7 +23264,10 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-light/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -22843,7 +23296,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -22892,7 +23347,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -22941,7 +23398,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -22990,7 +23449,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -23966,7 +24427,10 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-web/landscape-dark/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -24007,7 +24471,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -24056,7 +24522,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -24105,7 +24573,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -24154,7 +24624,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25480,7 +25952,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -25509,7 +25984,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25558,7 +26035,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25607,7 +26086,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -25656,7 +26137,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -26982,7 +27465,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -27011,7 +27497,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -27060,7 +27548,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -27109,7 +27599,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -27158,7 +27650,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28134,7 +28628,10 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-native/landscape-light/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -28163,7 +28660,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28212,7 +28711,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28261,7 +28762,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -28310,7 +28813,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29286,7 +29791,10 @@
                 "source": "perf-profiles/2026-08-21-physical-devices/android-device-native/landscape-dark/actions/actions.json",
                 "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -29327,7 +29835,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29376,7 +29886,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29425,7 +29937,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -29474,7 +29988,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -30800,7 +31316,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": false,
+            "controlEvidence": "failed"
           },
           "preservedSections": [
             "drawing",
@@ -30829,7 +31348,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -30878,7 +31399,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -30927,7 +31450,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -30976,7 +31501,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -32302,7 +32829,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": false,
+            "controlEvidence": "failed"
           },
           "preservedSections": [
             "drawing",
@@ -32331,7 +32861,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -32379,7 +32911,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -32427,7 +32961,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -32475,7 +33011,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33450,7 +33988,10 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -33479,7 +34020,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33527,7 +34070,9 @@
                 "blankPassed": false,
                 "allPhasesPassed": false,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33575,7 +34120,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -33623,7 +34170,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "contactGeometry"
                 ]
@@ -34598,7 +35147,10 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -34639,7 +35191,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -34688,7 +35242,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -34737,7 +35293,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -34786,7 +35344,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36112,7 +36672,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -36141,7 +36704,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36190,7 +36755,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36239,7 +36806,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -36288,7 +36857,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -37614,7 +38185,10 @@
                 "source": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -37643,7 +38217,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -37692,7 +38268,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -37741,7 +38319,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -37790,7 +38370,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -38766,7 +39348,10 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -38795,7 +39380,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -38844,7 +39431,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -38893,7 +39482,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -38942,7 +39533,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": false,
-                "failedFidelityChecks": [
+                "failedFidelityChecks": [],
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": [
                   "cadence",
                   "coalescing",
                   "contactGeometry"
@@ -39918,7 +40511,10 @@
                 "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           },
           "preservedSections": [
             "drawing",
@@ -39959,7 +40555,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -39967,6 +40565,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -40086,7 +40692,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -40094,6 +40702,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -40213,7 +40829,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -40221,6 +40839,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -40340,7 +40966,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -40348,6 +40976,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -41719,7 +42355,10 @@
                 "source": "perf-profiles/campaign/mac-chrome/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -41743,7 +42382,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -41751,6 +42392,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -41870,7 +42519,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -41878,6 +42529,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -41997,7 +42656,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -42005,6 +42666,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -42124,7 +42793,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -42132,6 +42803,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/portrait-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -43503,7 +44182,10 @@
                 "source": "perf-profiles/campaign/mac-chrome/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -43527,7 +44209,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -43535,6 +44219,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -43654,7 +44346,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -43662,6 +44356,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -43781,7 +44483,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -43789,6 +44493,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -43908,7 +44620,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -43916,6 +44630,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -45312,7 +46034,10 @@
                 "source": "perf-profiles/campaign/mac-chrome/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -45336,7 +46061,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -45344,6 +46071,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -45463,7 +46198,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -45471,6 +46208,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -45590,7 +46335,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -45598,6 +46345,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -45717,7 +46472,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -45725,6 +46482,14 @@
                   "source": "perf-profiles/campaign/mac-chrome/landscape-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -47121,7 +47886,10 @@
                 "source": "perf-profiles/campaign/mac-chrome/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]
@@ -47157,7 +47925,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -47165,6 +47935,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -47284,7 +48062,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -47292,6 +48072,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -47411,7 +48199,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -47419,6 +48209,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -47538,7 +48336,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -47546,6 +48346,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -48917,7 +49725,10 @@
                 "source": "perf-profiles/campaign/mac-safari/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -48941,7 +49752,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -48949,6 +49762,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -49068,7 +49889,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -49076,6 +49899,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -49195,7 +50026,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -49203,6 +50036,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -49322,7 +50163,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -49330,6 +50173,14 @@
                   "source": "perf-profiles/campaign/mac-safari/portrait-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -50701,7 +51552,10 @@
                 "source": "perf-profiles/campaign/mac-safari/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -50725,7 +51579,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -50733,6 +51589,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -50852,7 +51716,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -50860,6 +51726,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -50979,7 +51853,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -50987,6 +51863,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -51106,7 +51990,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -51114,6 +52000,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -52510,7 +53404,10 @@
                 "source": "perf-profiles/campaign/mac-safari/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -52534,7 +53431,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -52542,6 +53441,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 17,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -52661,7 +53568,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -52669,6 +53578,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -52788,7 +53705,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -52796,6 +53715,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -52915,7 +53842,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "60hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -52923,6 +53852,14 @@
                   "source": "perf-profiles/campaign/mac-safari/landscape-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 16,
+                    "observed": "60hz",
+                    "expected": "60hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -54319,7 +55256,10 @@
                 "source": "perf-profiles/campaign/mac-safari/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]
@@ -54355,7 +55295,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -54363,6 +55305,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -54482,7 +55432,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -54490,6 +55442,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -54609,7 +55569,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -54617,6 +55579,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -54736,7 +55706,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -54744,6 +55716,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -56115,7 +57095,10 @@
                 "source": "perf-profiles/campaign/mac-firefox/portrait-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -56139,7 +57122,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -56147,6 +57132,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -56266,7 +57259,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -56274,6 +57269,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -56393,7 +57396,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -56401,6 +57406,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -56520,7 +57533,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -56528,6 +57543,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/portrait-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -57899,7 +58922,10 @@
                 "source": "perf-profiles/campaign/mac-firefox/portrait-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -57923,7 +58949,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -57931,6 +58959,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-light/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -58050,7 +59086,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -58058,6 +59096,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-light/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -58177,7 +59223,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -58185,6 +59233,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-light/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -58304,7 +59360,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -58312,6 +59370,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-light/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -59708,7 +60774,10 @@
                 "source": "perf-profiles/campaign/mac-firefox/landscape-light/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         },
         {
@@ -59732,7 +60801,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -59740,6 +60811,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-dark/pen-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -59859,7 +60938,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -59867,6 +60948,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-dark/crayon-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.4,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -59986,7 +61075,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -59994,6 +61085,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-dark/magic-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -60113,7 +61212,9 @@
                 "blankPassed": true,
                 "allPhasesPassed": true,
                 "scoreable": true,
-                "failedFidelityChecks": []
+                "failedFidelityChecks": [],
+                "refreshRegime": "120hz",
+                "offRefreshRegime": false
               },
               "gateShare": 0.01,
               "runs": [
@@ -60121,6 +61222,14 @@
                   "source": "perf-profiles/campaign/mac-firefox/landscape-dark/eraser-real-screen.json",
                   "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9",
                   "fidelity": null,
+                  "refreshRegime": {
+                    "intervalMs": 8.42,
+                    "observed": "120hz",
+                    "expected": "120hz",
+                    "verdict": "in-regime",
+                    "matched": true,
+                    "scoreable": true
+                  },
                   "scoreable": true,
                   "failedFidelityChecks": [],
                   "phases": [
@@ -61517,7 +62626,10 @@
                 "source": "perf-profiles/campaign/mac-firefox/landscape-dark/actions/actions.json",
                 "productCommit": "6e211ddc4f27aed28f4864c7486d4410be44d2b9"
               }
-            ]
+            ],
+            "controlLabel": "idle frame control",
+            "scoreable": true,
+            "controlEvidence": "passed"
           }
         }
       ]
