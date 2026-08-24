@@ -204,6 +204,7 @@ export function classifyLaunchProbe({
   message = '',
   rotationVerified = false,
   logCause = null,
+  diagnostic = null,
 }) {
   if (ok) {
     return {
@@ -225,7 +226,11 @@ export function classifyLaunchProbe({
       detail:
         'WebDriverAgent could not launch and the cause is not one this knows. Run the xcodebuild ' +
         'line from the Appium log by hand and read to the innermost "Underlying Error" — the build ' +
-        'itself usually succeeds, so this is rarely a signing problem.',
+        'itself usually succeeds, so this is rarely a signing problem.' +
+        // Without this, a diagnostic that never ran and one that ran and found
+        // nothing read identically — which is how a broken diagnostic looked
+        // like an unrecognised cause for a whole session.
+        (diagnostic ? ` (diagnostic: ${diagnostic})` : ''),
     };
   }
   return { status: 'blocked', detail: message.slice(0, 200) || 'the probe failed with no message' };

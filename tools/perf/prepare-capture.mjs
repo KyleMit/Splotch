@@ -20,11 +20,13 @@
 // approval — the root-owned RemoteXPC tunnel above all — is reused where it is
 // already running, and anything cheap moves to a free port instead.
 import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 import {
   androidWakeActions,
+  classifyAppiumLog,
   classifyLaunchProbe,
   iosIdentifierProblem,
   pageFollowedRotation,
@@ -323,9 +325,12 @@ const LAUNCH_PROBE_TIMEOUT_MS = 300_000;
 // Only paid on the failure path, and only once. A reused Appium writes its log to
 // whatever terminal started it, so the innermost cause is unreachable from here —
 // a server we start ourselves puts it on a pipe we own.
-const DIAGNOSTIC_APPIUM_PORT = 4799;
 const DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS = 30_000;
 const DIAGNOSTIC_APPIUM_POLL_MS = 500;
+const DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS = 5_000;
+// Kept small on purpose: the interesting lines are the innermost error, and a
+// whole Appium session log is megabytes of noise around them.
+const DIAGNOSTIC_LOG_EXCERPT_CHARS = 4_000;
 // A rotation is a physical animation on a real panel, and the page's own
 // dimensions do not update until it settles.
 const IOS_ROTATION_SETTLE_MS = 2_000;
@@ -388,40 +393,117 @@ async function verifyIosRotation(appiumUrl, sessionId) {
   }
 }
 
-// Re-runs the failed session against an Appium we own, capturing its stdout, and
-// classifies the innermost cause from it. Returns null when it cannot get one —
-// a diagnostic that fails is not a finding, and must not overwrite the outer
-// message with a wrong story.
-async function diagnoseLaunchFailure(sessionBody) {
-  const appium = spawn('appium', ['--port', String(DIAGNOSTIC_APPIUM_PORT), '--log-timestamp'], {
-    stdio: ['ignore', 'pipe', 'pipe'],
+// A port nothing is listening on, proven by holding it ourselves and releasing
+// it immediately before the child claims it. A fixed port cannot be trusted: if
+// something else already answers there, the child can exit while `/status`
+// succeeds against the stranger, and the device session then goes to a server we
+// do not own and whose log we will never read.
+async function freeDiagnosticPort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.on('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
   });
+}
+
+// Re-runs the failed session against an Appium we own, capturing its output, and
+// classifies the innermost cause from it. The HTTP response never carries that
+// cause — verified against a real failure — so the server log is the only source.
+//
+// Returns `{ cause, diagnostic }`. `cause` is null whenever this could not get an
+// answer, because a diagnostic that fails must not overwrite the outer message
+// with a wrong story. `diagnostic` says WHY it could not, so an integration
+// failure here is visible rather than looking like "no known cause".
+//
+// `spawnDiagnostic` is a seam: the whole path — spawn, wait for ready, send the
+// session, read the log, classify, tear down — is otherwise only reachable with a
+// real blocked device, which is how it shipped broken.
+export async function diagnoseLaunchFailure(
+  sessionBody,
+  { spawnDiagnostic = defaultDiagnosticAppium } = {}
+) {
+  let port;
+  try {
+    port = await freeDiagnosticPort();
+  } catch {
+    return { cause: null, diagnostic: 'could not reserve a port for the diagnostic server' };
+  }
+
+  let child;
   let log = '';
-  appium.stdout?.on('data', (chunk) => (log += chunk));
-  appium.stderr?.on('data', (chunk) => (log += chunk));
+  let exited = null;
+  try {
+    child = spawnDiagnostic(port);
+  } catch (error) {
+    return { cause: null, diagnostic: `could not start a diagnostic server: ${error.message}` };
+  }
+
+  // `spawn` reports a missing binary asynchronously on `error`, not by throwing,
+  // so a try/catch around it protects nothing and an unhandled event would take
+  // the preflight down with it.
+  let spawnError = null;
+  child.on('error', (error) => (spawnError = error));
+  child.on('exit', (code) => (exited = code));
+  child.stdout?.on('data', (chunk) => (log += chunk));
+  child.stderr?.on('data', (chunk) => (log += chunk));
+
   try {
     const deadline = Date.now() + DIAGNOSTIC_APPIUM_READY_TIMEOUT_MS;
     let ready = false;
-    while (!ready && Date.now() < deadline) {
-      ready = await fetch(`http://127.0.0.1:${DIAGNOSTIC_APPIUM_PORT}/status`)
+    while (!ready && Date.now() < deadline && !spawnError && exited === null) {
+      ready = await fetch(`http://127.0.0.1:${port}/status`)
         .then((response) => response.ok)
         .catch(() => false);
       if (!ready) await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_POLL_MS));
     }
-    if (!ready) return null;
-    await fetch(`http://127.0.0.1:${DIAGNOSTIC_APPIUM_PORT}/session`, {
+    if (spawnError) {
+      return {
+        cause: null,
+        diagnostic: `diagnostic server could not start: ${spawnError.message}`,
+      };
+    }
+    if (exited !== null) {
+      return { cause: null, diagnostic: `diagnostic server exited early with code ${exited}` };
+    }
+    if (!ready) return { cause: null, diagnostic: 'diagnostic server never became ready' };
+
+    await fetch(`http://127.0.0.1:${port}/session`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(sessionBody),
       signal: AbortSignal.timeout(LAUNCH_PROBE_TIMEOUT_MS),
     }).catch(() => null);
-    return classifyAppiumLog(log);
-  } catch {
-    return null;
+
+    const cause = classifyAppiumLog(log);
+    return {
+      cause,
+      diagnostic: cause
+        ? null
+        : `diagnostic server logged no cause this knows (${log.length} chars captured)`,
+      log: log.slice(-DIAGNOSTIC_LOG_EXCERPT_CHARS),
+    };
+  } catch (error) {
+    return { cause: null, diagnostic: `diagnostic failed: ${error.message}` };
   } finally {
-    appium.kill();
+    if (exited === null) {
+      child.kill();
+      // Awaited so the failure path cannot leave a server holding a port behind
+      // it — the preflight resolves ports for everything that runs next.
+      await Promise.race([
+        new Promise((resolve) => child.once('exit', resolve)),
+        new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS)),
+      ]);
+    }
   }
 }
+
+const defaultDiagnosticAppium = (port) =>
+  spawn('appium', ['--port', String(port), '--log-timestamp'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
 export async function probeIosLaunch({
   udid,
@@ -456,8 +538,8 @@ export async function probeIosLaunch({
     const sessionId = payload.value?.sessionId;
     if (!sessionId) {
       const message = String(payload.value?.message ?? '');
-      const logCause = diagnose ? await diagnoseLaunchFailure(body) : null;
-      return { ok: false, message, logCause };
+      const probe = diagnose ? await diagnoseLaunchFailure(body) : null;
+      return { ok: false, message, logCause: probe?.cause ?? null, diagnostic: probe?.diagnostic };
     }
     const rotation = verifyRotation
       ? await verifyIosRotation(appiumUrl, sessionId).catch((error) => ({
