@@ -226,9 +226,8 @@ An **Android emulator is the one exception**, and it belongs on its own environm
 one. It does run — headless, under software emulation, since the container has no `/dev/kvm` — but
 it costs ~5 GB of snapshot, takes 6-8 minutes to boot, and cannot render Splotch's WebView. The
 setup script provisions it only when `SPLOTCH_CLOUD_PROFILE` lists `android`, so this environment is
-unaffected. See [`docs/CLOUD/ANDROID-EMULATOR.md`](ANDROID-EMULATOR.md) for what it can and cannot
-do before creating one, and [ADR-0141](../adrs/0141-android-emulator-in-cloud-sessions.md) for the
-decision.
+unaffected. See [`.claude/cloud/ANDROID-EMULATOR.md`](../../.claude/cloud/ANDROID-EMULATOR.md) for
+what it can and cannot do — read it before creating one.
 
 Only Playwright's **Chromium** is installed in a cloud session (no WebKit/Firefox), so
 engine-divergent CSS (containment as a containing block, top-layer, `:has` edge cases) can't be

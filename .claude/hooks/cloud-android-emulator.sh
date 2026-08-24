@@ -9,7 +9,7 @@ set -uo pipefail
 # minutes: there is no accelerator (a Firecracker microVM exposes no /dev/kvm and
 # no vmx/svm), so every guest instruction is interpreted by QEMU's TCG, and an AVD
 # snapshot cannot be restored under TCG to skip it. Starting at t=0 is the only
-# "ready at launch" available. See docs/CLOUD/ANDROID-EMULATOR.md and ADR-0141.
+# "ready at launch" available. See .claude/cloud/ANDROID-EMULATOR.md.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
@@ -26,7 +26,7 @@ BOOT_LOG=/tmp/splotch-emulator-boot.log
 
 if [ ! -x "$ANDROID_SDK_ROOT/emulator/emulator" ]; then
   echo "Android profile is on but $ANDROID_SDK_ROOT/emulator/emulator is missing —" \
-       "the environment's setup script did not finish. See docs/CLOUD/ANDROID-EMULATOR.md."
+       "the environment's setup script did not finish. See .claude/cloud/ANDROID-EMULATOR.md."
   exit 0
 fi
 
@@ -62,6 +62,6 @@ Android emulator (Claude Code on the web, android profile):
    dialogs as expected, and never read a performance number off it — see the
    \`profiling\` skill for targets that can be scored.
 
-docs/CLOUD/ANDROID-EMULATOR.md has the capability limits, including which parts of
+.claude/cloud/ANDROID-EMULATOR.md has the capability limits, including which parts of
 Splotch will not render here.
 EOF

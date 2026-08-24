@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Android emulator provisioning for a cloud environment (see docs/CLOUD/ANDROID-EMULATOR.md, ADR-0141).
+# Android emulator provisioning for a cloud environment (see .claude/cloud/ANDROID-EMULATOR.md).
 #
 # Sourced by .claude/cloud/setup.sh only when SPLOTCH_CLOUD_PROFILE lists `android`, so the
 # ~5 GB this lands stays off the default box. Everything installed here goes into the
 # environment snapshot; the per-session cost is the cold boot the SessionStart hook starts
 # (.claude/hooks/cloud-android-emulator.sh), because AVD snapshots cannot be restored under
-# TCG — ADR-0141 records why.
+# TCG — .claude/cloud/ANDROID-EMULATOR.md records why.
 #
 # Best-effort like its caller: a blocked download must warn, never block session startup.
 set -uo pipefail

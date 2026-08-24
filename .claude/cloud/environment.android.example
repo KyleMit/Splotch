@@ -1,5 +1,5 @@
-# Claude Code on the web — the **android** environment (reference; see docs/CLOUD/ANDROID-EMULATOR.md,
-# ADR-0141). This is a SECOND environment, alongside the default one in environment.example.
+# Claude Code on the web — the **android** environment (reference; see .claude/cloud/ANDROID-EMULATOR.md).
+# This is a SECOND environment, alongside the default one in environment.example.
 #
 # Keep it separate rather than adding the profile to the default box: the emulator toolchain costs
 # ~5 GB of snapshot and several minutes of setup, and the emulator itself is slow enough that a

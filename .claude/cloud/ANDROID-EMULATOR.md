@@ -3,8 +3,10 @@
 An Android emulator **does** run in a Claude Code on the web container, on a dedicated environment
 that opts in. It is also slow enough, and limited enough, that it is the wrong tool for most of what
 you would want an Android device for. Read the [capability table](#what-it-can-and-cannot-do) before
-standing one up — [ADR-0141](../adrs/0141-android-emulator-in-cloud-sessions.md) records the
-decision and the measurements behind it.
+standing one up.
+
+Everything here was measured in a cloud session, not inferred. Where a claim rules something out,
+the command output that ruled it out is quoted.
 
 ## Why it is slow: there is no accelerator
 
@@ -76,7 +78,8 @@ the emulator is genuinely working. It is specifically Chromium that will not sur
 **So: this environment is for the Android toolchain, not for looking at Splotch.** Building,
 signing, installing, `adb` inspection, manifest and permission checks, and native-shell behaviour
 that does not depend on WebView paint are all in reach. Seeing the drawing canvas is not; use a
-physical device or the [phone preview tunnel](Claude.md#previewing-the-dev-server-on-a-phone), which
+physical device or the
+[phone preview tunnel](../../docs/CLOUD/Claude.md#previewing-the-dev-server-on-a-phone), which
 serves the real app to a real browser and costs none of this.
 
 ### Expect "isn't responding" dialogs
@@ -108,8 +111,21 @@ environments run the same committed setup script; a single env var separates the
 Set `SPLOTCH_CLOUD_PROFILE=android` in the android environment's dialog and add `dl.google.com` to
 its allowed domains. Leave the var unset everywhere else — every piece above is inert without it,
 which is what keeps the default box lean. `docs/CLOUD/Claude.md`,
-["Committing the environment config"](Claude.md#committing-the-environment-config), covers why these
-files are the reviewable copy of a cloud object that has no as-code provisioning.
+["Committing the environment config"](../../docs/CLOUD/Claude.md#committing-the-environment-config),
+covers why these files are the reviewable copy of a cloud object that has no as-code provisioning.
+
+Three choices here are worth stating, because each had a plausible alternative:
+
+* **A profile var, not a second setup script.** A separate `setup-android.sh` would have to repeat
+  the shared steps (pnpm, Playwright, chisel), and those two copies drift. Dispatching on
+  `SPLOTCH_CLOUD_PROFILE` keeps one entry point and makes the extras additive — a future use case
+  adds a profile rather than another script.
+* **Deltas, not a full second config file.** `environment.android.example` records only what differs
+  from `environment.example`, for the same reason: two full copies of the shared allowed-domains and
+  env list would diverge silently.
+* **A tuned AVD, not a stock Pixel profile.** 720x1280 / 320 dpi / 4 GB instead of 1080x2340 / 440
+  dpi / 1536 MB. Fewer pixels through SwiftShader is what most reduces the ANR dialogs, and baking
+  it into provisioning means no session has to rediscover it.
 
 ### Why the boot starts at session start
 
@@ -139,7 +155,7 @@ until [ "$(adb -s emulator-5554 shell getprop sys.boot_completed | tr -d '\r')" 
 ```
 
 Never `sleep`-poll it in a loop of short waits — see `docs/CLOUD/Claude.md`,
-["Bounding long-running work"](Claude.md#bounding-long-running-work).
+["Bounding long-running work"](../../docs/CLOUD/Claude.md#bounding-long-running-work).
 
 ## Running Splotch on it by hand
 
@@ -163,9 +179,9 @@ The constraint is the missing accelerator, and nothing inside the container can 
 that actually solve it are all outside:
 
 * **A physical device** — the only target that can be profiled at all
-  ([`docs/PROFILING-ANDROID.md`](../PROFILING-ANDROID.md)).
+  ([`docs/PROFILING-ANDROID.md`](../../docs/PROFILING-ANDROID.md)).
 * **A cloud device farm** (Firebase Test Lab, or a hosted device cloud) driven from the session over
   the network — real hardware, no local virtualization, and the natural home for
-  [Maestro](../TESTING.md) smoke runs.
+  [Maestro](../../docs/TESTING.md) smoke runs.
 * **A CI runner with nested virtualization enabled**, where the stock KVM-accelerated emulator runs
   normally.

@@ -62,7 +62,7 @@ fi
 # Optional per-environment extras. SPLOTCH_CLOUD_PROFILE is a comma-separated list set in the
 # environment dialog, so one committed setup script serves several environments and the default
 # box stays lean — the android profile alone adds ~5 GB and several minutes to the snapshot build.
-# See .claude/cloud/environment.android.example and docs/CLOUD/ANDROID-EMULATOR.md.
+# See .claude/cloud/environment.android.example and .claude/cloud/ANDROID-EMULATOR.md.
 case ",${SPLOTCH_CLOUD_PROFILE:-}," in
   *,android,*)
     # shellcheck source=./setup-android-emulator.sh
