@@ -247,6 +247,8 @@ export async function captureHandInput({
     brush,
     orientation,
     theme,
+    // The page's own answer, not the request — see capture-device-frames.
+    observedTheme: ready.resolvedTheme ?? null,
     device: serial ?? null,
     drawSeconds: seconds,
     transport: 'human-finger',

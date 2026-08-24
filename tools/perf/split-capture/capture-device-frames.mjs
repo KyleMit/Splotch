@@ -330,6 +330,12 @@ export async function captureDeviceFrames({
     brush,
     orientation,
     theme,
+    // What the PAGE reported, read back at readiness. `theme` alone is a request,
+    // and `report.meta.theme` cannot answer either: the product stores the
+    // loosest preference that renders an appearance, so choosing the theme the OS
+    // already shows clears the override and leaves that field null. An artifact
+    // has to be able to prove which theme it measured without re-deriving it.
+    observedTheme: ready.resolvedTheme ?? null,
     nativeApp,
     // A native run reaches the instrumented page over the LAN through the app's
     // `server.url`, so its assets are not the bundled ones. Recorded because the
