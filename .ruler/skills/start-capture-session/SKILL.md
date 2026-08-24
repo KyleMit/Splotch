@@ -23,6 +23,20 @@ name itself. Copy the last two from the main checkout.
   without it and the failure waits until a Gradle task runs: `SDK location not found`. It names
   itself once it arrives, but it arrives minutes into a build rather than at the preflight.
 
+## The iPad's automation prompt appears only while a launch is failing
+
+XCTest asks the iPad to *Enter iPad Passcode for XCTest / Enable UI Automation* **at the moment a
+WebDriverAgent session starts** — not at rest. So the device shows nothing wrong between runs, and a
+human asked to check it will correctly report that there is no prompt.
+
+That cost a session on 2026-08-24 twice over: once believing the iPad was unusable when a
+five-second tap would have cleared it, and once with a human looking at an apparently clean device
+while it was in exactly that state.
+
+If `--verify-ios-launch` reports the automation denial, run it again with someone watching the
+device — the prompt is on screen during that minute and nowhere else. The grant also expires on its
+own, so a rig that worked yesterday can need the tap again today.
+
 ## A native capture over the probe host needs an ATS exception
 
 A Capacitor WebView reaches the instrumented page through `server.url`, which is a plain `http://`

@@ -457,6 +457,77 @@ are never exercised. A fault injection that changes the threshold changes which 
 testing. Say which branch a demonstration actually covered, and leave the others to unit tests
 rather than implying the whole path was driven.
 
+### A test that greps the source is not a test of the behaviour
+
+Three findings in one review on 2026-08-24 were the same defect: a test asserting that code was
+*written* rather than that it *runs*. Disabling an entire feature with `if (false && …)` left eleven
+of them green; replacing a production dispatch with the bug it guarded against left all three of its
+tests green; deleting a field from both writers that record it left the suite green.
+
+Each read as thorough — real assertions, specific strings, named after the behaviour. None of them
+executed the code.
+
+The check is mechanical and takes a minute: **revert the fix and run the test.** If it still passes,
+it is documentation with an `expect()` in it. That applies to a generated source string as much as
+to a function — a bootstrap built as a template literal can be executed in a DOM fixture, which is
+slower than grepping it and is the only version that can fail.
+
+The related trap is a seam that only protects the far side of itself. Extracting a chooser and
+testing the chooser proves it picks correctly when handed the right value, which is never what was
+broken; the call site that hands it the value is the part that had the bug.
+
+### When the instrument changes, so does your explanation
+
+`landscape-light/magic` was explained three times in one day: a product signal about the light
+theme, then host load during the capture, then cross-run contamination. Only the third was right,
+and each of the first two was argued from data the next fix invalidated.
+
+The rule that would have prevented two retractions: **a number that moves when you change the
+instrument invalidates the EXPLANATION you gave for the old number, not just the number.** The
+temptation is to keep the story and swap the figure, because the story felt well-reasoned and the
+new data seems to fit it too. It does not fit it — it has not been compared against it.
+
+When a capture path changes, everything measured through it goes back to unknown, including the
+causes you assigned.
+
+### Audit a corpus for cross-run contamination
+
+A capture uploaded its report under whichever plan was current, and the report carried no run
+identity, so a page left over from an earlier cell could supply the frame tables for the current one
+(#1291). The artifact then agreed with itself: its brush, orientation and observed theme came from
+the page that was ready, and its numbers from a different page.
+
+Both halves are now checked, but old evidence is not. The report records the URL it was captured at,
+and that URL carries the run's nonce, so any corpus can be audited:
+
+```sh
+python3 - <<'EOF'
+import json, glob, os, re
+for f in glob.glob('perf-profiles/evidence/*/*.json'):
+    if os.path.basename(f) == 'index.json': continue
+    a = json.load(open(f))
+    url = ((a.get('report') or {}).get('meta') or {}).get('url') or ''
+    m = re.search(r'probe=([^&]*)', url)
+    if not m: continue                      # Appium/desktop transports carry no probe param
+    if not m.group(1).startswith(a.get('label', '')):
+        print('MISMATCH', os.path.relpath(f), '<-', m.group(1))
+EOF
+```
+
+A capture with no `probe` parameter is not a failure — the Appium and desktop transports do not use
+one, and a native or hand capture cannot (it records `pageIdentity: "unprovable"`).
+
+### Stopping a campaign does not lose the cells it banked
+
+A campaign resumes: re-run the same command and a cell whose artifact already parses is skipped.
+Deleting the output directory to "start clean" throws away work that was fine.
+
+The exception is the one that matters. **Discard when the capture path changed under you; resume
+when only time passed.** A cell captured by a tool that has since been fixed is a cell measured by a
+different instrument, and the ledger cannot tell — it records that an artifact parses, not what
+produced it (issue 1293). Until that is recorded, the distinction lives in the operator's head, so
+make it deliberately rather than reaching for `rm -rf` out of caution.
+
 ## Serialize the captures, but keep both devices alive
 
 **Never capture Android and iOS at the same time.** Both campaigns drive input from this host, and

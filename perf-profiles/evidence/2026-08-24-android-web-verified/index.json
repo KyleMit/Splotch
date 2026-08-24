@@ -1,0 +1,39 @@
+{
+  "campaign": "2026-08-24-android-web-verified",
+  "capturedFrom": "perf-profiles/campaign-1291",
+  "kept": [
+    {
+      "file": "android-device-web-crayon.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "android-device-web-eraser.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "android-device-web-magic.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/magic-real-screen.json"
+    },
+    {
+      "file": "android-device-web-pen.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/pen-real-screen.json"
+    }
+  ],
+  "why": "The first android-device-web captures whose provenance is fully checkable. Each proves which run opened its page (pageIdentity: proven-by-url), reports the theme the page RESOLVED to rather than the one requested, and was taken on an idle host. Every earlier corpus here fails at least one of those and is marked accordingly. PORTRAIT ONLY, by construction: landscape drawing cannot be captured on this transport (issue 1294) and is published unscoreable rather than carrying values from when it appeared to pass. Note that a plain evidence:keep sampled a FAILED landscape eraser into this corpus on the first attempt -- the sampling rule picks one capture per brush and does not prefer a passing one, which is worth knowing before trusting any corpus built from a partial campaign."
+}
