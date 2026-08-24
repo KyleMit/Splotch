@@ -314,9 +314,12 @@ describe('the launch diagnostic end to end', () => {
   it('delivers the automation-mode cause the server logged', async () => {
     const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('denial') });
 
-    expect(probe.cause).toContain('Enable UI Automation');
+    // Asserted FIRST so a failure prints why the diagnostic gave up, rather than
+    // only that `cause` was null — which is the same "clean negative hides a
+    // broken path" shape this whole diagnostic exists to avoid.
     expect(probe.diagnostic).toBeNull();
-  }, 40_000);
+    expect(probe.cause).toContain('Enable UI Automation');
+  }, 60_000);
 
   // "Ran and found nothing" and "never ran" must not read the same. They did,
   // which is why a broken diagnostic looked like an unrecognised cause.
@@ -325,14 +328,14 @@ describe('the launch diagnostic end to end', () => {
 
     expect(probe.cause).toBeNull();
     expect(probe.diagnostic).toContain('logged no cause');
-  }, 40_000);
+  }, 60_000);
 
   it('reports a server that died instead of hanging on it', async () => {
     const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('crash') });
 
     expect(probe.cause).toBeNull();
     expect(probe.diagnostic).toContain('exited early');
-  }, 40_000);
+  }, 60_000);
 
   // spawn reports a missing binary asynchronously, so this used to escape the
   // try/catch and could take the preflight down with it.
@@ -344,7 +347,7 @@ describe('the launch diagnostic end to end', () => {
 
     expect(probe.cause).toBeNull();
     expect(probe.diagnostic).toContain('could not start');
-  }, 40_000);
+  }, 60_000);
 
   it('tells the operator when the diagnostic itself failed', () => {
     const detail = classifyLaunchProbe({

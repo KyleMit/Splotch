@@ -138,5 +138,8 @@ describe('a regenerated matrix leaves the format gate green', () => {
 
     expect(check.stdout?.toString() ?? '', check.stderr?.toString()).not.toContain('--- ');
     expect(check.status).toBe(0);
-  });
+    // Spawns dprint twice — once through the generator, once to check it. Warm
+    // locally, and comfortably over vitest's 5s default on a cold CI runner,
+    // where this failed for eight PRs before anyone read the timing.
+  }, 60_000);
 });

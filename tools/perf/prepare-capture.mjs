@@ -423,7 +423,7 @@ async function freeDiagnosticPort() {
 // real blocked device, which is how it shipped broken.
 export async function diagnoseLaunchFailure(
   sessionBody,
-  { spawnDiagnostic = defaultDiagnosticAppium } = {}
+  { spawnDiagnostic = defaultDiagnosticAppium, retried = false } = {}
 ) {
   let port;
   try {
@@ -466,6 +466,13 @@ export async function diagnoseLaunchFailure(
       };
     }
     if (exited !== null) {
+      // The port was proven free and then released before the child claimed it,
+      // so a busy machine can take it in between. Worth one retry before
+      // reporting a dead server, because the alternative reads as "no cause
+      // found" for a reason that has nothing to do with the device.
+      if (!retried) {
+        return diagnoseLaunchFailure(sessionBody, { spawnDiagnostic, retried: true });
+      }
       return { cause: null, diagnostic: `diagnostic server exited early with code ${exited}` };
     }
     if (!ready) return { cause: null, diagnostic: 'diagnostic server never became ready' };
