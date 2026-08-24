@@ -224,7 +224,7 @@ USB device in a cloud container, so the `ios:*` and on-device `test:android` scr
 
 An **Android emulator is the one exception**, and it belongs on its own environment rather than this
 one. It does run — headless, under software emulation, since the container has no `/dev/kvm` — but
-it costs ~5 GB of snapshot, takes 6-8 minutes to boot, and cannot render Splotch's WebView. The
+it costs ~5 GB of snapshot, takes ~20 minutes to boot, and cannot render Splotch's WebView. The
 setup script provisions it only when `SPLOTCH_CLOUD_PROFILE` lists `android`, so this environment is
 unaffected. See [`.claude/cloud/ANDROID-EMULATOR.md`](../../.claude/cloud/ANDROID-EMULATOR.md) for
 what it can and cannot do — read it before creating one.

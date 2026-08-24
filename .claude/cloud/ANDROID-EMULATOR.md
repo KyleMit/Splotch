@@ -41,7 +41,7 @@ Measured on a 4-vCPU / 15 GB session, AVD `splotch_cloud` (API 34, AOSP `default
 
 | Capability                                            | Status | Notes                                         |
 | ----------------------------------------------------- | ------ | --------------------------------------------- |
-| Emulator boots to `sys.boot_completed=1`              | ✅     | 350-500 s cold, single-threaded TCG           |
+| Emulator boots to `sys.boot_completed=1`              | ✅     | ~21 min cold; highly variable                 |
 | `adb` device online, shell, `getprop`, `logcat`       | ✅     | Fully functional                              |
 | `adb install` an APK                                  | ✅     | ~20 s for Splotch's 12 MB debug APK           |
 | `am start` an activity; launcher and system UI render | ✅     | `screencap` returns real frames               |
@@ -146,21 +146,52 @@ does not read the log will report a snapshot restore that never happened. Do not
 without grepping for `Failed to load snapshot`.
 
 Because there is no fast path, the SessionStart hook starts the cold boot in the background at t=0
-and returns immediately. That is the whole of "ready at launch": by the time a session has read some
-code and built an APK, the device is usually up. Do other work first, then block on it **once**:
+and returns immediately. That is the whole of "ready at launch", and it buys less than it sounds
+like: two clean fresh-userdata boots measured **1279 s and ~1309 s** (`Boot completed in 1278690 ms`
+in the emulator log), i.e. **~21 minutes**, one with `-gpu swiftshader_indirect` and one with
+`-gpu guest` — the GL backend makes no difference. Earlier, faster figures on this page's history
+came from AVDs whose data partition was already initialised; a **first** boot pays the full package
+scan on a single interpreted core, and that is what a fresh session gets. Treat ~20 minutes as the
+planning number and expect variance around it.
+
+So: start other work immediately, and come back to the device rather than waiting on it. When you do
+wait, block **under a deadline** — never bare:
 
 ```bash
-adb -s emulator-5554 wait-for-device
-until [ "$(adb -s emulator-5554 shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; do sleep 10; done
+timeout 540 bash -c 'adb -s emulator-5554 wait-for-device && until [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = 1 ]; do sleep 10; done' \
+  && echo "emulator ready" \
+  || echo "not ready in 540s — read /tmp/splotch-emulator-boot.log; if it is still booting, run this again"
 ```
 
-Never `sleep`-poll it in a loop of short waits — see `docs/CLOUD/Claude.md`,
-["Bounding long-running work"](../../docs/CLOUD/Claude.md#bounding-long-running-work).
+**Both stages hang forever on a dead emulator**, so neither may be run bare. `wait-for-device` never
+returns if the emulator died before registering with adb, and the `sys.boot_completed` loop never
+exits if it registered but never finished booting — each returns 124 under `timeout` rather than
+ever completing. The 540 s deadline sits under the environment's 600 s foreground Bash limit on
+purpose: past that limit Claude *detaches* a command rather than killing it, which would leave
+exactly the unbounded background task the deadline exists to prevent (`docs/CLOUD/Claude.md`,
+["Bounding long-running work"](../../docs/CLOUD/Claude.md#bounding-long-running-work)).
+
+**Expiry is the normal case, not a failure.** At ~21 minutes of boot against a 540 s bound, a wait
+started early needs **two or three rounds**; that is the price of never leaving an unbounded command
+behind. Before re-running, confirm the boot is still progressing rather than wedged — a healthy
+guest keeps producing lines here:
+
+```bash
+adb -s emulator-5554 logcat -d -t 5     # advancing = still booting; run the wait again
+```
+
+A guest that is genuinely stuck shows adb `device` (or `offline`) with a static logcat and no
+`Boot completed` in `/tmp/splotch-emulator-boot.log`. Never run two emulators against one AVD to
+"hurry it up" — they share `userdata-qemu.img`, and the corruption costs another full cold boot.
+
+`adb` itself resolves because provisioning symlinks it into `/usr/local/bin`; nothing exported by
+the setup script survives into a session, and `platform-tools` is not on the default PATH. If that
+step warned, call `$ANDROID_SDK_ROOT/platform-tools/adb` by its full path instead.
 
 ## Running Splotch on it by hand
 
 ```bash
-export ANDROID_SDK_ROOT=/opt/android-sdk PATH="$PATH:/opt/android-sdk/platform-tools"
+export ANDROID_SDK_ROOT=/opt/android-sdk   # adb is already on PATH via /usr/local/bin
 npm run build:cap                       # static native export
 npx cap sync android
 echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
