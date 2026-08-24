@@ -37,12 +37,14 @@ import {
   FAILED,
   LEDGER_HEADER,
   OFF_REFRESH_REGIME,
+  UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
   formatLedgerRow,
   nextAction,
   parseLedger,
 } from './lib/campaign-ledger.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { onlyUncalibratedChecksFailed } from './lib/input-fidelity.mjs';
 
 const SIMULATOR_SETTLE_MS = 5_000;
 const PROBE_HOST_TIMEOUT_MS = 5_000;
@@ -77,7 +79,10 @@ export function inspectArtifact(
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
   if (!artifactPassedFidelity(artifact, { verdictRequired })) {
-    return { ok: false, status: UNSCOREABLE };
+    return {
+      ok: false,
+      status: onlyUncalibratedChecksFailed(artifact?.fidelity) ? UNCALIBRATED_RUNTIME : UNSCOREABLE,
+    };
   }
   // Checked after fidelity so the more fundamental rejection is the one reported:
   // a capture that was barely driven has a meaningless beat as well as a meaningless
@@ -240,7 +245,12 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     }
 
     let landed = false;
-    for (let attempt = decision.attempt; attempt <= maxAttempts && !landed; attempt++) {
+    let uncalibratedRuntime = false;
+    for (
+      let attempt = decision.attempt;
+      attempt <= maxAttempts && !landed && !uncalibratedRuntime;
+      attempt++
+    ) {
       if (rebootUdid) {
         rebootSimulator(rebootUdid);
         await sleep(SIMULATOR_SETTLE_MS);
@@ -263,7 +273,13 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         attempt,
         artifact: cell.artifact,
       });
-      if (inspected.status === UNSCOREABLE) {
+      if (inspected.status === UNCALIBRATED_RUNTIME) {
+        uncalibratedRuntime = true;
+        console.log(
+          `P1    ${cell.id} — this runtime has no measured expectation for ` +
+            'its remaining fidelity checks, so no retry can change the verdict'
+        );
+      } else if (inspected.status === UNSCOREABLE) {
         console.log(`RETRY ${cell.id} — the capture failed input fidelity and cannot be scored`);
       } else if (inspected.status === OFF_REFRESH_REGIME) {
         console.log(
@@ -275,7 +291,9 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       }
     }
 
-    if (!landed) console.log(`P1    ${cell.id} — ${maxAttempts} attempts exhausted, continuing`);
+    if (!landed && !uncalibratedRuntime) {
+      console.log(`P1    ${cell.id} — ${maxAttempts} attempts exhausted, continuing`);
+    }
     results.push({ cell: cell.id, status: landed ? COMPLETE : 'p1' });
   }
 

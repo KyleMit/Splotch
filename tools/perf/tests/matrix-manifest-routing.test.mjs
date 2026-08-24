@@ -1,7 +1,9 @@
-import { mkdtempSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, existsSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { join, relative } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import { ROOT } from '../../lib/proc.mjs';
 import {
   generateDeploymentMatrixReport,
   PRESERVED_VERDICT_REASON,
@@ -99,5 +101,42 @@ describe('withPreservedScoreability', () => {
     fresh.crayon.aggregate.scoreable = true;
 
     expect(withPreservedScoreability(fresh, false)).toBe(fresh);
+  });
+});
+
+// The generated Markdown is rendered by hand — table cells padded to a column
+// width the renderer computes — and dprint reformats it. Without the generator
+// formatting its own output, every regeneration leaves `dprint check` red for
+// whoever touches the repo next, which is what issue 1239 reported.
+//
+// This has to run INSIDE the repo: `formatGeneratedMarkdown` deliberately skips a
+// path dprint's includes do not cover, so a temp-directory fixture would pass
+// whether the call is there or not.
+//
+// And the scratch directory must NOT be gitignored, however tempting that is for
+// a crashed run: dprint honours .gitignore, so hiding the directory makes the
+// formatter find no files — which both breaks the generator and would leave this
+// test passing without exercising anything. Verified by fault injection: removing
+// the `formatGeneratedMarkdown` call fails this test and nothing else.
+describe('a regenerated matrix leaves the format gate green', () => {
+  const scratches = [];
+
+  afterEach(() => {
+    for (const dir of scratches.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('writes Markdown dprint accepts unchanged', async () => {
+    const dir = mkdtempSync(join(ROOT, '.matrix-format-'));
+    scratches.push(dir);
+
+    await generateDeploymentMatrixReport(manifestIn(dir));
+
+    const check = spawnSync('npx', ['dprint', 'check', relative(ROOT, join(dir, 'index.md'))], {
+      cwd: ROOT,
+      stdio: 'pipe',
+    });
+
+    expect(check.stdout?.toString() ?? '', check.stderr?.toString()).not.toContain('--- ');
+    expect(check.status).toBe(0);
   });
 });

@@ -193,3 +193,21 @@ export function describeFidelityFailures(fidelity) {
     .map(([name]) => (uncalibrated.has(name) ? `${name}(uncalibrated)` : name))
     .join('+');
 }
+
+// Whether the ONLY thing standing between this verdict and a pass is a check the
+// instrument has no expectation for. Callers use it to tell a bad run from a
+// silent instrument: a bad run is worth retrying and this is not, because no
+// number of recaptures adds an expectation that was never measured.
+//
+// A capture failing `cadence` AND carrying uncalibrated checks is a bad run
+// first. Reporting it as an instrument gap would send the next session to write
+// a threshold when what actually happened is that the app was barely driven.
+export function onlyUncalibratedChecksFailed(fidelity) {
+  if (fidelity?.passed !== false) return false;
+  const uncalibrated = new Set(fidelity?.uncalibrated ?? []);
+  if (uncalibrated.size === 0) return false;
+  const notPassing = Object.entries(fidelity?.checks ?? {})
+    .filter(([, check]) => check !== true)
+    .map(([name]) => name);
+  return notPassing.length > 0 && notPassing.every((name) => uncalibrated.has(name));
+}

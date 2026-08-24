@@ -4,7 +4,13 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runCampaign } from '../run-campaign.mjs';
 import { MAX_ATTEMPTS, artifactPath, campaignTarget } from '../lib/campaign-plan.mjs';
-import { EXHAUSTED, FAILED, LEDGER_HEADER, formatLedgerRow } from '../lib/campaign-ledger.mjs';
+import {
+  EXHAUSTED,
+  FAILED,
+  LEDGER_HEADER,
+  UNCALIBRATED_RUNTIME,
+  formatLedgerRow,
+} from '../lib/campaign-ledger.mjs';
 
 // Every case here resolves without spawning a capture: a cell that is already
 // valid, or one whose attempts the ledger says are gone. That is the whole point
@@ -32,6 +38,18 @@ function seedLedger(path, failures) {
     })
   );
   writeFileSync(path, [LEDGER_HEADER.join('\t'), ...rows].join('\n') + '\n');
+}
+
+function seedLedgerRow(path, status) {
+  mkdirSync(dirname(path), { recursive: true });
+  const row = formatLedgerRow({
+    timestamp: '2026-08-23T00:00:00.000Z',
+    cell: CELL,
+    status,
+    attempt: 1,
+    artifact: 'unused',
+  });
+  writeFileSync(path, [LEDGER_HEADER.join('\t'), row].join('\n') + '\n');
 }
 
 function run(targetId, root, extra = []) {
@@ -100,5 +118,22 @@ describe('campaign resume', () => {
     const { ran } = await run('android-emulator-web', root, ['--max-attempts=1']);
 
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
+  });
+
+  // One attempt, not three. The cell is held by an instrument that has no
+  // expectation for its runtime, and recapturing cannot supply one — so a resumed
+  // run must not spend the remaining budget rediscovering that. The row carries
+  // the runner's `-exit-N` suffix, which is how it is written in a real ledger and
+  // the reason this is matched by prefix rather than equality.
+  it('does not retry a cell whose runtime has no measured expectation', async () => {
+    const root = scratch();
+    seedLedgerRow(`${root}/ledger.tsv`, `${UNCALIBRATED_RUNTIME}-exit-1`);
+
+    const { ran } = await run('ipad-simulator-native', root);
+
+    expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
+    const ledger = readFileSync(`${root}/ledger.tsv`, 'utf8');
+    expect(ledger).toContain(EXHAUSTED);
+    expect(ledger.split('\n').filter((line) => line.includes(`${FAILED}-exit-`))).toHaveLength(0);
   });
 });
