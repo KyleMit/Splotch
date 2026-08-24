@@ -219,8 +219,16 @@ bash .claude/cloud/setup.sh
 
 The script installs the chromium E2E browser and caches the chisel tunnel client (so the per-session
 `curl` the tunnel steps below would otherwise need is skipped). Keep it under ~5 min so the cache
-builds. **Skip the Android/iOS/Capacitor toolchains** — there's no emulator, Xcode, or USB device in
-a cloud container, so the `android:*` / `ios:*` / `test:android` scripts can't run there.
+builds. **Skip the Android/iOS/Capacitor toolchains on this environment** — there's no Xcode and no
+USB device in a cloud container, so the `ios:*` and on-device `test:android` scripts can't run here.
+
+An **Android emulator is the one exception**, and it belongs on its own environment rather than this
+one. It does run — headless, under software emulation, since the container has no `/dev/kvm` — but
+it costs ~5 GB of snapshot, takes 6-8 minutes to boot, and cannot render Splotch's WebView. The
+setup script provisions it only when `SPLOTCH_CLOUD_PROFILE` lists `android`, so this environment is
+unaffected. See [`docs/CLOUD/ANDROID-EMULATOR.md`](ANDROID-EMULATOR.md) for what it can and cannot
+do before creating one, and [ADR-0141](../adrs/0141-android-emulator-in-cloud-sessions.md) for the
+decision.
 
 Only Playwright's **Chromium** is installed in a cloud session (no WebKit/Firefox), so
 engine-divergent CSS (containment as a containing block, top-layer, `:has` edge cases) can't be
@@ -244,6 +252,13 @@ There is **no** official as-code or CLI provisioning for these environments — 
 env vars, and setup script are edited only in the web dialog. The committed record of how to fill
 that dialog lives in [`.claude/cloud/environment.example`](../../.claude/cloud/environment.example);
 paste from it. Secret **values** stay in the dialog and are never committed.
+
+A second environment records only its **deltas** from that file, so the shared parts stay in one
+place:
+[`.claude/cloud/environment.android.example`](../../.claude/cloud/environment.android.example) is
+the worked example. Both point the dialog's Setup script field at the same
+`bash .claude/cloud/setup.sh`; what differs is `SPLOTCH_CLOUD_PROFILE`, which the script dispatches
+on. Add a profile rather than a second setup script when a use case needs extra tooling.
 
 ### Allowlist additions for E2E
 

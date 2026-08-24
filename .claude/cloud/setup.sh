@@ -59,6 +59,18 @@ if ! command -v chisel >/dev/null 2>&1; then
     || warn "chisel install skipped — check github release-asset egress"
 fi
 
+# Optional per-environment extras. SPLOTCH_CLOUD_PROFILE is a comma-separated list set in the
+# environment dialog, so one committed setup script serves several environments and the default
+# box stays lean — the android profile alone adds ~5 GB and several minutes to the snapshot build.
+# See .claude/cloud/environment.android.example and docs/CLOUD/ANDROID-EMULATOR.md.
+case ",${SPLOTCH_CLOUD_PROFILE:-}," in
+  *,android,*)
+    # shellcheck source=./setup-android-emulator.sh
+    . "$PWD/.claude/cloud/setup-android-emulator.sh" \
+      || warn "android emulator provisioning failed — the android profile's environment has no working emulator"
+    ;;
+esac
+
 if [ "${#warnings[@]}" -gt 0 ]; then
   {
     echo ""
