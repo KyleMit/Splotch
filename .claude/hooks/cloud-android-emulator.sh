@@ -5,7 +5,7 @@ set -uo pipefail
 # SPLOTCH_CLOUD_PROFILE lists `android`. Starts the emulator's cold boot in the
 # background at session start and tells Claude how to wait for it.
 #
-# The boot is started here rather than left to the agent because it takes 6-8
+# The boot is started here rather than left to the agent because it takes ~20
 # minutes: there is no accelerator (a Firecracker microVM exposes no /dev/kvm and
 # no vmx/svm), so every guest instruction is interpreted by QEMU's TCG, and an AVD
 # snapshot cannot be restored under TCG to skip it. Starting at t=0 is the only
