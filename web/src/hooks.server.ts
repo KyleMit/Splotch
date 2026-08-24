@@ -10,7 +10,12 @@ import {
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
-import { securityHeadersFor } from '$lib/server/securityHeaders';
+import { devHarnessEnabled } from '$lib/devHarness';
+import {
+  allowSameOriginFraming,
+  FRAMEABLE_ROUTE,
+  securityHeadersFor,
+} from '$lib/server/securityHeaders';
 
 // The native apps load from a WebView origin (https://localhost on Android,
 // capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
@@ -73,6 +78,10 @@ const handleSecurityHeaders: Handle = async ({ event, resolve }) => {
   // and those are the responses that need this set.
   if (!building && !event.url.pathname.startsWith('/api/')) {
     applyHeaders(response, securityHeadersFor(event.url.pathname));
+  }
+
+  if (devHarnessEnabled() && event.url.pathname === FRAMEABLE_ROUTE) {
+    allowSameOriginFraming(response);
   }
 
   return response;

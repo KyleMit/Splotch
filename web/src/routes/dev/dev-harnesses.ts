@@ -11,6 +11,12 @@ export const DEV_HARNESSES: DevHarness[] = [
     blurb: 'Bare canvas harness driven by the Playwright specs.',
   },
   {
+    href: '/dev/notch',
+    name: 'Notch & safe area',
+    blurb:
+      'Every distinct env(safe-area-inset-*) profile, each orientation the device offers, with the live HUD laid out under those insets and the hardware drawn over it.',
+  },
+  {
     href: '/dev/store-frames',
     name: 'Store frames',
     blurb:

@@ -19,6 +19,8 @@ const appCss = readFileSync(join(srcDir, 'app.css'), 'utf8');
 // the sweep by matching it exactly rather than by line number.
 const SEED_PATTERN = /--safe-area-(top|right|bottom|left):\s*env\(safe-area-inset-\1,\s*0px\)/g;
 
+const CALL_PATTERN = /env\(safe-area-inset-(top|right|bottom|left)\)/;
+
 function collectSources(dir: string, found: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
@@ -42,9 +44,11 @@ describe('safe-area inset custom properties', () => {
   it('no source outside that seed calls env(safe-area-inset-*) directly', () => {
     const offenders = collectSources(srcDir)
       .map((path) => ({ path, body: readFileSync(path, 'utf8').replace(SEED_PATTERN, '') }))
-      // A comment may still name env() — it is the function this seam wraps, and
-      // the prose explaining that is worth more than a mechanical ban.
-      .filter(({ body }) => stripComments(body).includes('env(safe-area-inset-'))
+      // Only a real edge name is a call. Comments and page copy discuss the
+      // function this seam wraps — `env(safe-area-inset-*)` with a literal star
+      // is prose, not CSS, and explaining the seam is worth more than a
+      // mechanical ban on naming it.
+      .filter(({ body }) => CALL_PATTERN.test(stripComments(body)))
       .map(({ path }) => path.slice(srcDir.length));
     expect(offenders).toEqual([]);
   });
