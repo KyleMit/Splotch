@@ -1,0 +1,32 @@
+# Claude Code on the web — the iOS-facing environment (reference; see docs/CLOUD/Claude.md,
+# "Working an iOS change from a cloud session").
+#
+# A DELTA on environment.example, not a replacement: create a second environment, configure it
+# exactly as environment.example describes, then apply the additions below. Everything the base
+# environment sets — the allowlist entries, the secrets, BASH_DEFAULT_TIMEOUT_MS — still applies.
+#
+# Why a separate environment rather than a flag on the default one: WebKit costs 293 MB unpacked
+# plus a GStreamer apt set on every setup-script run, and buys nothing for the ~90% of sessions
+# that never touch iOS. The split is the whole point — the default box stays lean, and this one is
+# provisioned only when the work is iOS-shaped.
+#
+# What this environment does NOT provide: an iOS Simulator. There is no such thing on Linux —
+# CoreSimulator is macOS-only and the container has no nested virtualization to run macOS in
+# (measured: no /dev/kvm, no vmx/svm CPU flags, no loadable-module support). This environment
+# gets you Safari's actual engine at iOS viewports, which covers the WebView layer Splotch
+# ships; the native shell still needs a Mac. docs/CLOUD/Claude.md has the full split.
+
+[allowed-domains]
+# No additions. WebKit downloads from the same two hosts the base environment already allows
+# (cdn.playwright.dev, playwright.download.prss.microsoft.com).
+
+[env]
+# Adds WebKit to the engines .claude/cloud/setup.sh installs. Space-separated; the setup script
+# rejects anything outside chromium/webkit/firefox and falls back to chromium.
+# Chromium stays in the list — the E2E global setup launches it regardless of the project under
+# test, so a webkit-only box fails before the first WebKit spec runs.
+SPLOTCH_CLOUD_BROWSERS=chromium webkit
+
+[setup-script]
+# Unchanged from environment.example — the same committed script reads the variable above.
+bash .claude/cloud/setup.sh

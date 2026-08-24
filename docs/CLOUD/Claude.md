@@ -255,6 +255,65 @@ cdn.playwright.dev
 playwright.download.prss.microsoft.com
 ```
 
+## Working an iOS change from a cloud session
+
+**There is no iOS Simulator here, and there is no way to get one.** The simulator is CoreSimulator,
+a macOS framework that runs iOS binaries against the Darwin kernel; it has no Linux port, and the
+usual escape hatch — run macOS in a VM — is closed twice over. Measured in a session on 2026-08-24:
+no `/dev/kvm`, no `vmx`/`svm` CPU flags (the container is itself a guest in a Firecracker microVM,
+so hardware virt is not passed through), no `/lib/modules` and no `modprobe`, which also rules out
+Darling, whose Mach IPC layer is a loadable kernel module. Software-only TCG emulation of a Mac is
+not a workaround at 4 vCPUs, and Apple's licence restricts macOS to Apple hardware regardless.
+
+What that costs is narrower than it sounds. Splotch's iOS app is a Capacitor WebView around the same
+static bundle the web build produces (ADR-0001), so the simulator answers exactly two questions the
+cloud can't: does the Xcode project compile, and do the native plugins behave. The WebView layer —
+every pixel a child actually sees — is reachable here.
+
+### What does work in a cloud session
+
+* **`npm run cap:sync` runs fully on Linux.** Verified end to end: it builds the `CAPACITOR=true`
+  bundle, copies it into `ios/App/App/public`, rewrites `capacitor.config.json`, and regenerates
+  `Package.swift` with all eight iOS plugins resolved. So a change to the web layer can be synced
+  and inspected as the native tree will actually receive it, without a Mac.
+* **Real WebKit at iOS viewports**, via the environment in
+  [`.claude/cloud/environment-webkit.example`](../../.claude/cloud/environment-webkit.example).
+  Playwright's WebKit is a genuine WebKit build — not a Chromium in a costume — so it catches the
+  engine-specific breakage that Chromium cannot: `<dialog>` behaviour, the missing
+  `requestIdleCallback` that `lib/idle.ts` exists to work around, Safari's canvas and CSS quirks.
+  Point it at `ios/App/App/public` and you are running the exact bytes the App Store build ships, in
+  the engine that will run them.
+
+`npm run test:webkit:smoke` runs here, with one known cloud-only flake: the Color Picker case fails
+against the production preview because the boot-hidden overlay queue
+(`lib/boot/bootHiddenOverlays.ts`) mounts one overlay per idle slice, and a 4-vCPU container drains
+that queue slower than a macOS runner does. Measured on 2026-08-24: `#color-picker` is absent at 3 s
+and present at 8 s, against the spec's 5 s `expect` timeout. The Settings case passes because
+Settings is handed over eagerly rather than queued. Nothing is wrong with the app — re-run that one
+case with `DEV_SERVER=1`, where it passes, and judge the tier on the other five.
+
+The honest gap: Playwright's Linux WebKit is built against GTK/WPE, not Apple's ports, so it is the
+right *engine* but not the right *platform*. Expect it to catch spec-level and engine-level
+regressions and not to reproduce Apple-specific compositing, Metal-backed canvas behaviour, or frame
+timing. **Never read a performance number off it** — the perf WebKit gates in `test.yml` run on
+`macos-latest` for exactly this reason, and moving them to Linux to save runner minutes would
+silently change what the numbers mean.
+
+### When you actually need the simulator
+
+Dispatch it. [`.github/workflows/ios-deploy.yml`](../../.github/workflows/ios-deploy.yml) already
+does the whole job on a `macos-latest` runner — compiles the Release simulator app, boots an iPhone,
+installs the Debug build, and asserts via Maestro that the WebView painted — and it carries
+`workflow_dispatch`, so a cloud session can trigger it against the current branch and read the
+result and screenshot artifacts back. That is the supported path from here to a real simulator, at
+roughly 13 minutes of macOS runner time per run. Treat it as the expensive tier it is: get the
+change right under WebKit first, dispatch once to confirm.
+
+Managed device clouds (Appetize, BrowserStack, Sauce Labs) are reachable from the cloud egress and
+would also work, but they need a built `.app` or `.ipa` — which needs a Mac — so they solve a
+distribution problem, not this one. For Splotch they add a subscription on top of a macOS runner the
+repo already pays for.
+
 ## Previewing the dev server on a phone
 
 Because there's no inbound forwarding, viewing the running app on a phone needs an **outbound**

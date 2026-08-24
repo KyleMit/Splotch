@@ -5,6 +5,9 @@
 # (verified against the Claude Code on the web docs, 2026-06). This file is the committed,
 # reviewable record of how the environment should be configured; paste from it into the
 # dialog. Secret VALUES live only in the dialog and must never be committed.
+#
+# This is the DEFAULT environment. environment-webkit.example is a delta on this one for an
+# iOS-facing environment that also carries Playwright's WebKit; apply this file first, then that.
 
 [allowed-domains]
 # Trusted defaults (npm, GitHub, package registries) are implicit. Add:

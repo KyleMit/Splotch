@@ -33,18 +33,33 @@ warn() {
 corepack enable pnpm && corepack install \
   || warn "pnpm setup skipped — the SessionStart hook's install will fail until corepack can provision pnpm"
 
-# Chromium-only Playwright browser for the E2E tier. Derive the version from the repo's
-# @playwright/test (package.json) so the installed Chromium revision matches what
+# Playwright browsers for the E2E tier. Derive the version from the repo's
+# @playwright/test (package.json) so the installed revisions match what
 # playwright-core resolves at test time. A hard-coded version drifts silently — e.g.
 # pinning 1.60.0 (Chromium 1223) while the repo resolves 1.61.x (Chromium 1228) leaves
-# the pinned revision absent, the #1 cloud-session E2E failure. driver.mjs and
-# playwright.config.ts self-heal past a stale snapshot, but keeping this in sync avoids
-# needing the fallback at all.
+# the pinned revision absent, the #1 cloud-session E2E failure. The same drift arrives
+# for free from the base image, which pre-bakes its own revision into
+# PLAYWRIGHT_BROWSERS_PATH: a session that skips this step runs whatever Chromium the
+# image happened to ship. driver.mjs and playwright.config.ts self-heal past a stale
+# snapshot, but keeping this in sync avoids needing the fallback at all.
+#
+# SPLOTCH_CLOUD_BROWSERS selects which engines this environment pays for, so the
+# iOS-facing environment can carry WebKit without every box downloading it (293 MB
+# unpacked, plus a GStreamer apt set). Set it in the environment dialog — see
+# environment-webkit.example. Unset means Chromium only, the shape every other
+# environment wants.
 # Needs cdn.playwright.dev + playwright.download.prss.microsoft.com on the allowlist.
+PW_BROWSERS="${SPLOTCH_CLOUD_BROWSERS:-chromium}"
 PW_VERSION="$(node -p "require('./package.json').devDependencies['@playwright/test'].replace(/^[^0-9]*/, '')" 2>/dev/null || true)"
+if [[ ! "$PW_BROWSERS" =~ ^(chromium|webkit|firefox)( (chromium|webkit|firefox))*$ ]]; then
+  warn "SPLOTCH_CLOUD_BROWSERS='${PW_BROWSERS}' is not a space-separated list of chromium/webkit/firefox — falling back to chromium"
+  PW_BROWSERS=chromium
+fi
 if [[ "$PW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  npx --yes "playwright@${PW_VERSION}" install --with-deps chromium \
-    || warn "playwright browser install skipped — allowlist cdn.playwright.dev?"
+  # Word-split is intended: each engine is a separate `playwright install` argument.
+  # shellcheck disable=SC2086
+  npx --yes "playwright@${PW_VERSION}" install --with-deps $PW_BROWSERS \
+    || warn "playwright browser install skipped (${PW_BROWSERS}) — allowlist cdn.playwright.dev?"
 else
   warn "playwright browser install skipped — could not derive a numeric @playwright/test version from package.json"
 fi
