@@ -22,7 +22,7 @@ import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
-import { androidNativeLaunchSteps, androidPageLaunchSteps } from './lib/android-input.mjs';
+import { androidOpenSteps } from './lib/android-input.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -88,10 +88,7 @@ async function openWithAdb({ serial, pageUrl, orientation, nativeApp }) {
     rotation: ROTATION_SETTLE_MS,
     page: PAGE_SETTLE_MS,
   };
-  const steps = nativeApp
-    ? androidNativeLaunchSteps(orientation)
-    : androidPageLaunchSteps(orientation, pageUrl);
-  for (const step of steps) {
+  for (const step of androidOpenSteps({ nativeApp, orientation, pageUrl })) {
     adb(serial, step.args);
     if (step.settle) await sleep(settles[step.settle]);
   }

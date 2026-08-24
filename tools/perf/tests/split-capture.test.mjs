@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   androidGestureInstructions,
   androidNativeLaunchSteps,
+  androidOpenSteps,
   androidPageLaunchSteps,
   androidRotationCommands,
   CHROME_PACKAGE,
@@ -323,6 +324,38 @@ describe('the reading a hand capture is kept for', () => {
 // The hand tool took the browser path regardless of --native-app, so it could
 // launch Chrome and then record `android-capacitor-webview` as the runtime the
 // reading calibrates. Correctly shaped, plausibly labelled, wrong browser.
+// The previous version of these tests called the step factories directly, so
+// replacing the production dispatch with an unconditional browser launch left
+// all of them green — the regression could return under a passing suite. The
+// choice is now a value, and this asserts the choice.
+describe('which launch a capture takes', () => {
+  const args = { orientation: 'LANDSCAPE', pageUrl: 'http://host/?probe=n' };
+  const flat = (steps) => steps.flatMap((step) => step.args).join(' ');
+
+  it('reaches the app when the native flag is set', () => {
+    const steps = flat(androidOpenSteps({ ...args, nativeApp: true }));
+
+    expect(steps).toContain('art.splotch.app/.MainActivity');
+    expect(steps).not.toContain(CHROME_PACKAGE);
+  });
+
+  it('reaches the browser when it is not', () => {
+    const steps = flat(androidOpenSteps({ ...args, nativeApp: false }));
+
+    expect(steps).toContain(CHROME_PACKAGE);
+    expect(steps).toContain(args.pageUrl);
+    expect(steps).not.toContain('.MainActivity');
+  });
+
+  // An opener that ignores the flag is the shipped bug: it captured Chrome and
+  // the artifact recorded android-capacitor-webview.
+  it('never returns the same plan for both flag directions', () => {
+    expect(flat(androidOpenSteps({ ...args, nativeApp: true }))).not.toBe(
+      flat(androidOpenSteps({ ...args, nativeApp: false }))
+    );
+  });
+});
+
 describe('launching the native app instead of the browser', () => {
   const steps = androidNativeLaunchSteps('LANDSCAPE');
   const flat = steps.flatMap((step) => step.args).join(' ');

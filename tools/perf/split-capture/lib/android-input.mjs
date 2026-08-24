@@ -159,6 +159,17 @@ export function androidNativeLaunchSteps(orientation) {
   ];
 }
 
+// Which launch a capture takes, as a value rather than as a branch inside a
+// driver. The branch used to live in each caller, so a test could exercise both
+// step factories and still not prove that `--native-app` reaches the native one
+// — which is exactly the regression that shipped: an opener ignoring the flag
+// captured Chrome and labelled it a WebView runtime.
+export function androidOpenSteps({ nativeApp, orientation, pageUrl }) {
+  return nativeApp
+    ? androidNativeLaunchSteps(orientation)
+    : androidPageLaunchSteps(orientation, pageUrl);
+}
+
 // The rotation settings a verification has to put back. `settings get` answers
 // `null` for a value that was never written, and writing the string "null" back
 // leaves the device with a setting it cannot parse — so an absent value is

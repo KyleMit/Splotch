@@ -28,12 +28,7 @@ import {
   starvationRows,
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
-import {
-  androidGestureInstructions,
-  androidNativeLaunchSteps,
-  androidPageLaunchSteps,
-  swipeArgs,
-} from './lib/android-input.mjs';
+import { androidGestureInstructions, androidOpenSteps, swipeArgs } from './lib/android-input.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -94,10 +89,7 @@ function androidDriver({ serial, pageUrl, orientation, nativeApp }) {
         rotation: ROTATION_SETTLE_MS,
         page: PAGE_SETTLE_MS,
       };
-      const steps = nativeApp
-        ? androidNativeLaunchSteps(orientation)
-        : androidPageLaunchSteps(orientation, pageUrl);
-      for (const step of steps) {
+      for (const step of androidOpenSteps({ nativeApp, orientation, pageUrl })) {
         adb(serial, step.args);
         if (step.settle) await sleep(settles[step.settle]);
       }
