@@ -250,12 +250,17 @@ export function pageBootstrapSource() {
     report.measures = read('measures', counts.measures);
     window.__probe.stop();
     await post('/__probe/report', {
+      // The run this report belongs to. Readiness was nonce-checked from the
+      // start and the report was not, so a page from an earlier run could upload
+      // its frame and event tables under the CURRENT plan's label — the artifact
+      // then took its mode from one page and its numbers from another.
+      nonce,
       report,
       topology: window.__drawingDebug?.getLiveSurfaceTopology?.() ?? null,
     });
   } catch (error) {
     await log({ kind: 'bootstrap', message: String(error?.message ?? error) });
-    await post('/__probe/report', { error: String(error?.message ?? error) });
+    await post('/__probe/report', { nonce, error: String(error?.message ?? error) });
   }
 })();
 `;

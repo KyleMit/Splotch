@@ -1,5 +1,8 @@
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { connect } from 'node:net';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   androidGestureInstructions,
   androidNativeLaunchSteps,
@@ -13,6 +16,7 @@ import {
   closeFloorControlHost,
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
+import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
@@ -21,6 +25,8 @@ import {
 } from '../split-capture/lib/input-verdict.mjs';
 import { calibrationReading, handCaptureArtifact } from '../split-capture/capture-hand-input.mjs';
 import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
+
+const directories = [];
 
 const stroke = [
   { type: 'pointerMove', x: 10, y: 10, duration: 0 },
@@ -412,5 +418,107 @@ describe('what a saved artifact can prove about its own theme', () => {
   it('never falls back to the requested theme when the page reported none', () => {
     expect(drivenCaptureArtifact({ ...common, ready: {} }).observedTheme).toBeNull();
     expect(handCaptureArtifact({ ...common, ready: undefined }).observedTheme).toBeNull();
+  });
+});
+
+// The cross-run race, which produced eleven artifacts whose mode came from one
+// page and whose frame tables came from another. Readiness was nonce-checked
+// from the start; the report was not, and carried no nonce to check.
+describe('a report from a run that is no longer current', () => {
+  const withEvents = (n, nonce) => ({ nonce, report: { events: Array.from({ length: n }) } });
+
+  it('is refused even when it is FATTER than what is stored', () => {
+    const rejection = reportRejectionReason(
+      withEvents(10, 'old-run'),
+      withEvents(500, 'old-run'),
+      'new-run'
+    );
+
+    expect(rejection).toContain('old-run');
+    expect(rejection).toContain('new-run');
+  });
+
+  // The thinness rule must not be what refuses it, or the log blames the event
+  // count for a provenance failure and the next reader goes looking in the wrong
+  // place.
+  it('names the run rather than the event count', () => {
+    expect(reportRejectionReason(null, withEvents(500, 'old-run'), 'new-run')).not.toContain(
+      'thinner'
+    );
+  });
+
+  it('refuses a report that identifies no run at all', () => {
+    expect(reportRejectionReason(null, { report: { events: [] } }, 'new-run')).toContain(
+      'unidentified'
+    );
+  });
+
+  it('accepts the run that is current, and still applies thinness within it', () => {
+    expect(reportRejectionReason(null, withEvents(500, 'new-run'), 'new-run')).toBeNull();
+    expect(
+      reportRejectionReason(withEvents(500, 'new-run'), withEvents(1, 'new-run'), 'new-run')
+    ).toContain('thinner');
+  });
+
+  // An error report is how a failed run reports itself, and it has to survive the
+  // check or a real failure is silently discarded.
+  it('accepts an error report from the current run', () => {
+    expect(reportRejectionReason(null, { nonce: 'new-run', error: 'boom' }, 'new-run')).toBeNull();
+  });
+
+  it('carries the nonce on both the success and error paths of the bootstrap', () => {
+    const source = pageBootstrapSource();
+
+    expect(source).toContain('nonce,\n      report,');
+    expect(source).toContain("post('/__probe/report', { nonce, error:");
+  });
+});
+
+// The wiring, not the rule. The rejection rule can be perfect while the host
+// forgets to hand it the current nonce — which is how this shipped: readiness
+// checked the nonce, the report path never received one.
+describe('the probe host refusing a stale run over HTTP', () => {
+  const started = [];
+
+  afterEach(async () => {
+    for (const server of started.splice(0)) await new Promise((r) => server.close(r));
+  });
+
+  async function hostAt(reportDir) {
+    const { server, state } = createProbeHost({
+      upstream: 'http://127.0.0.1:1',
+      reportDir,
+      log: () => {},
+    });
+    started.push(server);
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    return { base: `http://127.0.0.1:${server.address().port}`, state };
+  }
+
+  const postReport = (base, body) =>
+    fetch(`${base}/__probe/report`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('keeps a report from the current run and refuses one from another', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base, state } = await hostAt(directory);
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: 'cell', nonce: 'new-run', reset: true }),
+    });
+
+    await postReport(base, { nonce: 'new-run', report: { events: [1, 2, 3] } });
+    expect(state.report?.report.events).toHaveLength(3);
+
+    // Fatter, and from the run that just ended. The old code kept it.
+    await postReport(base, { nonce: 'old-run', report: { events: Array.from({ length: 99 }) } });
+
+    expect(state.report?.report.events).toHaveLength(3);
+    expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).nonce).toBe('new-run');
   });
 });
