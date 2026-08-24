@@ -200,7 +200,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -260,7 +261,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -320,7 +322,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -380,7 +383,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1694,7 +1698,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1754,7 +1759,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1814,7 +1820,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -1874,7 +1881,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3188,7 +3196,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3248,7 +3257,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3308,7 +3318,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -3368,7 +3379,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4707,7 +4719,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4767,7 +4780,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4827,7 +4841,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -4887,7 +4902,8 @@
                       "pressure": true,
                       "contactGeometry": true
                     },
-                    "uncalibrated": []
+                    "uncalibrated": [],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6242,7 +6258,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6308,7 +6325,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6374,7 +6392,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -6440,7 +6459,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7785,7 +7805,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7851,7 +7872,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7917,7 +7939,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
@@ -7983,7 +8006,8 @@
                     },
                     "uncalibrated": [
                       "coalescing"
-                    ]
+                    ],
+                    "notApplicable": []
                   },
                   "refreshRegime": {
                     "intervalMs": 17,
