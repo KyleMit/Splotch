@@ -104,9 +104,7 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(actionsPanelSource).toContain(
       `bottom: calc(${PANEL_INSET}px + var(--safe-area-bottom))`
     );
-    expect(actionsPanelSource).toContain(
-      `left: calc(${PANEL_INSET}px + var(--safe-area-left))`
-    );
+    expect(actionsPanelSource).toContain(`left: calc(${PANEL_INSET}px + var(--safe-area-left))`);
     expect(actionsPanelSource).toContain(
       `left: calc(var(--palette-landscape-width) + ${PANEL_INSET}px + var(--safe-area-left))`
     );

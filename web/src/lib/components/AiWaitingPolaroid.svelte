@@ -83,9 +83,7 @@
 
     position: fixed;
     top: calc(var(--polaroid-headroom) + var(--safe-area-top));
-    left: calc(
-      var(--palette-landscape-width) + var(--polaroid-clearance) + var(--safe-area-left)
-    );
+    left: calc(var(--palette-landscape-width) + var(--polaroid-clearance) + var(--safe-area-left));
     z-index: var(--z-waiting-polaroid);
     width: var(--polaroid-width);
     padding: 7px 7px 8px;

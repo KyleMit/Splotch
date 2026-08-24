@@ -252,11 +252,7 @@
        second thing needing its own frame. */
     --result-top-bound: max(var(--safe-area-top), var(--result-gutter));
     --result-bottom-bound: max(var(--safe-area-bottom), var(--result-gutter));
-    --result-side-bound: max(
-      var(--safe-area-left),
-      var(--safe-area-right),
-      var(--result-gutter)
-    );
+    --result-side-bound: max(var(--safe-area-left), var(--safe-area-right), var(--result-gutter));
 
     --result-card-max-h: calc(100dvh - var(--result-top-bound) - var(--result-bottom-bound));
     --result-stage-max-h: calc(var(--result-card-max-h) - var(--result-footer-reserve));
