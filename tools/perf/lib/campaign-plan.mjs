@@ -209,7 +209,16 @@ export function commandReportsFidelity(command) {
 // fidelity comment above gives: tolerating a missing value globally fails open on
 // exactly the capture whose value is mandatory. A drawing artifact with no beat
 // is still refused.
-const REFRESH_REGIME_REPORTING_COMMANDS = new Set([SCREEN_COMMAND, SPLIT_SCREEN_COMMAND]);
+// Every command that WRITES `summaries.intervalMs`, which is the desktop runner
+// too — it was omitted at first, and the omission failed open on the three Mac
+// targets, all of which declare a regime. An exemption list is the wrong shape to
+// get wrong quietly: a missing entry reads as "this command measures no beat"
+// rather than as a mistake.
+const REFRESH_REGIME_REPORTING_COMMANDS = new Set([
+  SCREEN_COMMAND,
+  SPLIT_SCREEN_COMMAND,
+  DESKTOP_SCREEN_COMMAND,
+]);
 
 export function commandReportsRefreshRegime(command) {
   return REFRESH_REGIME_REPORTING_COMMANDS.has(command);

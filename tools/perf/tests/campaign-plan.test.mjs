@@ -953,4 +953,22 @@ describe('which commands can answer for a refresh regime', () => {
     expect(commandReportsRefreshRegime('perf:android:browser:actions')).toBe(false);
     expect(commandReportsRefreshRegime('perf:ios:xcuitest:actions')).toBe(false);
   });
+
+  // The desktop drawing runner writes `summaries.intervalMs` like the others and
+  // was omitted from the exemption set, so mac-chrome, mac-safari and mac-firefox
+  // — all of which declare a regime — silently stopped checking it. Asserted
+  // through the PLAN rather than the predicate, because that is where the
+  // omission actually reached a scored cell.
+  it('asks the desktop drawing runner too, on every target that declares a regime', () => {
+    expect(commandReportsRefreshRegime('perf:web:frames')).toBe(true);
+
+    for (const target of ['mac-chrome', 'mac-safari', 'mac-firefox']) {
+      const cell = planCampaign(target, { outputRoot: 'unused' }).find(
+        (candidate) => candidate.command === 'perf:web:frames'
+      );
+
+      expect(cell, target).toBeDefined();
+      expect(cell.reportsRefreshRegime, target).toBe(true);
+    }
+  });
 });
