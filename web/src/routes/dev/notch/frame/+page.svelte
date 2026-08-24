@@ -8,6 +8,7 @@
   import { page } from '$app/state';
   import { SAFE_AREA_EDGES, SAFE_AREA_PROPERTIES, ZERO_INSETS } from '$lib/platform/safeArea';
   import { DEVICE_PROFILES } from '../lib/devices';
+  import { NOTCH_FRAME_READY_ATTRIBUTE } from '../lib/frameReady';
   import { isOrientation } from '../lib/orientations';
 
   // One scenario's worth of the real HUD, rendered at the device's own CSS
@@ -44,9 +45,10 @@
       root.style.setProperty(SAFE_AREA_PROPERTIES[edge], `${insets[edge]}px`);
     }
     window.dispatchEvent(new Event('resize'));
-    return () => {
-      for (const edge of SAFE_AREA_EDGES) root.style.removeProperty(SAFE_AREA_PROPERTIES[edge]);
-    };
+
+    // Raised only after the insets are in place and the layout store has
+    // re-measured, so an un-veiled tile is always showing the finished layout.
+    root.setAttribute(NOTCH_FRAME_READY_ATTRIBUTE, '');
   });
 </script>
 

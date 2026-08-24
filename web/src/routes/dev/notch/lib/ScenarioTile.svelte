@@ -2,6 +2,7 @@
   import type { DeviceProfile } from './deviceProfile';
   import DeviceChrome from './DeviceChrome.svelte';
   import { diagnose, unreclaimedInsetPx } from './diagnostics';
+  import { isFrameReady } from './frameReady';
   import { ORIENTATION_LABELS, isLandscape, type Orientation } from './orientations';
 
   // One device held one way: the live HUD in an iframe at the device's own CSS
@@ -29,6 +30,49 @@
     insets ? `${insets.top} · ${insets.right} · ${insets.bottom} · ${insets.left}` : ''
   );
 
+  let slotEl = $state<HTMLDivElement | undefined>();
+  let iframeEl = $state<HTMLIFrameElement | undefined>();
+  let near = $state(false);
+  let ready = $state(false);
+  let timedOut = $state(false);
+
+  // Each frame is a whole app document, so a page of sixty is sixty boots. The
+  // browser's own lazy-loading margin is wide enough to start most of them at
+  // once on a first scroll through; this narrower band keeps it to the few
+  // sections either side of the reader.
+  const NEAR_VIEWPORT_MARGIN_PX = 600;
+  const READY_POLL_MS = 150;
+  // Generous: a cold dev server compiles the route on the first frame that asks
+  // for it. Past this the tile says it gave up rather than claiming to be busy.
+  const READY_TIMEOUT_MS = 60_000;
+
+  $effect(() => {
+    if (!slotEl || near) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) near = true;
+      },
+      { rootMargin: `${NEAR_VIEWPORT_MARGIN_PX}px` }
+    );
+    observer.observe(slotEl);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (!iframeEl || ready) return;
+    const startedAt = performance.now();
+    const poll = window.setInterval(() => {
+      if (isFrameReady(iframeEl)) {
+        ready = true;
+        window.clearInterval(poll);
+      } else if (performance.now() - startedAt > READY_TIMEOUT_MS) {
+        timedOut = true;
+        window.clearInterval(poll);
+      }
+    }, READY_POLL_MS);
+    return () => window.clearInterval(poll);
+  });
+
   const diagnosis = $derived(diagnose(profile, orientation));
   const unreclaimed = $derived(unreclaimedInsetPx(profile, orientation));
 
@@ -55,7 +99,7 @@
 
 {#if insets}
   <figure class="tile">
-    <div class="slot" style:width="{budgetPx}px" style:height="{budgetPx}px">
+    <div class="slot" bind:this={slotEl} style:width="{budgetPx}px" style:height="{budgetPx}px">
       <div class="viewport" style:width="{width * scale}px" style:height="{height * scale}px">
         <div
           class="screen"
@@ -63,10 +107,13 @@
           style:height="{height}px"
           style:scale={String(scale)}
         >
-          <!-- lazy so a page of sixty scenarios does not boot sixty HUDs at once;
-             each one is a full app document. -->
-          <iframe {src} title="{profile.label} · {ORIENTATION_LABELS[orientation]}" loading="lazy"
-          ></iframe>
+          {#if near}
+            <iframe
+              bind:this={iframeEl}
+              {src}
+              title="{profile.label} · {ORIENTATION_LABELS[orientation]}"
+            ></iframe>
+          {/if}
           <DeviceChrome {profile} {orientation} {width} {height} {insets} />
           <!-- The claimable region: everything outside this outline is what the OS
              says you may not use. A control drawn outside it is the bug. -->
@@ -77,6 +124,11 @@
           ></div>
         </div>
       </div>
+      {#if !ready}
+        <div class="veil" class:failed={timedOut}>
+          <span>{timedOut ? 'frame never became ready' : 'loading…'}</span>
+        </div>
+      {/if}
     </div>
     <figcaption>
       <span class="orientation">{ORIENTATION_LABELS[orientation]}</span>
@@ -103,6 +155,7 @@
   /* A square slot the size of the longest edge, so portrait and landscape tiles
      in one row share a baseline instead of stair-stepping. */
   .slot {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -134,6 +187,24 @@
 
   /* Border width is divided by the tile scale so the outline stays the same
      thickness on screen whatever size the tiles are set to. */
+  /* Sits over the whole slot, outside the scaled screen, so its label reads at
+     a fixed size whatever the tile scale is. */
+  .veil {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--notch-page-ground);
+    color: var(--notch-muted);
+    font-size: var(--font-size-sm);
+    text-align: center;
+  }
+
+  .veil.failed {
+    color: #ff9d9d;
+  }
+
   .safe-outline {
     position: absolute;
     border: var(--outline-width) dashed var(--notch-safe-outline);
