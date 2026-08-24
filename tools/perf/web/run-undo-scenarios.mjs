@@ -925,6 +925,11 @@ function reportCommitGate(
   const acquitted = gated
     ? measured.filter((scenario) => dispositions.get(scenario.key) === 'acquitted')
     : [];
+  // EVERY return spreads this rather than rebuilding it. Two paths used to
+  // hand-assemble a smaller object — the unevaluable one and the final red-breach
+  // one — which are exactly the paths where the disposition is worth reading: a run
+  // exited red while `undo-scenarios.json` could not say whether the confirmation
+  // breached or could not be scored.
   const base = {
     engine: engineName,
     gated,
@@ -977,6 +982,12 @@ function reportCommitGate(
     return base;
   }
 
+  // Unreachable while normalization is off: `commitP95Ms` falls back to 0 rather
+  // than to undefined, so `evaluable` is currently always true and a run with no
+  // samples is caught by `reportMissingCommitSamples` above instead. The branch is
+  // kept because `NORMALIZATION_ENABLED` makes a timing unevaluable again the moment
+  // the divisor returns (ADR-0140) — so it is a guard for a switch, not a path any
+  // test drives today.
   const unevaluable = scenarioTimings.filter((timing) => !timing.evaluable);
   if (unevaluable.length > 0) {
     process.exitCode = 1;
@@ -984,15 +995,7 @@ function reportCommitGate(
       `\n✗ Commit gate NOT EVALUATED on ${engineName}: no commit p95 for ` +
         `${unevaluable.map((timing) => timing.key).join(', ')}.\n`
     );
-    return {
-      engine: engineName,
-      gated,
-      budgetMs,
-      percentile: COMMIT_GATE_PERCENTILE,
-      breaches,
-      scenarioTimings,
-      evaluated: false,
-    };
+    return { ...base, evaluated: false };
   }
 
   if (breaches.length === 0) {
@@ -1013,14 +1016,7 @@ function reportCommitGate(
   for (const scenario of breaches) {
     console.error(formatCommitBreach(scenario, timings.get(scenario.key)));
   }
-  return {
-    engine: engineName,
-    gated,
-    budgetMs,
-    percentile: COMMIT_GATE_PERCENTILE,
-    breaches,
-    scenarioTimings,
-  };
+  return base;
 }
 
 function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {

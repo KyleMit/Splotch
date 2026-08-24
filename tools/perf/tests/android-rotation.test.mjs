@@ -16,10 +16,13 @@ describe('androidRotationVerdict', () => {
     expect(verdict.detail).toContain('landscape and portrait');
   });
 
-  // Measured on the physical SM-G990U1 by injecting the original defect — rotate,
-  // then `am force-stop`, which returns `user_rotation` to 0 on this Samsung under
-  // Android 16. The page came back PORTRAIT for a LANDSCAPE request, which is the
-  // fault that cost all eight landscape drawing cells on a green rig.
+  // The shape observed once on the physical SM-G990U1: a LANDSCAPE request came back
+  // PORTRAIT, which is the fault that cost all eight landscape drawing cells on a
+  // green rig. It was attributed to `am force-stop` returning `user_rotation` to 0,
+  // and that attribution did not survive re-testing — 8 later trials kept it at 1 in
+  // every arrangement. The mismatch this asserts is real; its cause is unexplained,
+  // and this case is a synthetic injection rather than a device fault anyone can
+  // summon on demand.
   it('fails, naming the orientation that did not arrive', () => {
     const verdict = androidRotationVerdict([
       { requested: 'LANDSCAPE', observed: 'PORTRAIT' },

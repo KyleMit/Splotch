@@ -219,11 +219,13 @@ Two distinct causes were behind it, and the first is the one that generalizes:
   observe a LANDSCAPE request returning PORTRAIT with the setting reading 0 — but that read came
   after a relaunch, so it never isolated force-stop. Treat the ordering below as cheap insurance
   against an unexplained failure rather than as a fix for a known mechanism, and **verify a rotation
-  by asking the page, not the setting**. The split transport used to rotate and then force-stop
-  Chrome, which undid the rotation it had just asserted; the capture then aborted on the page
-  disagreeing with the requested orientation and wrote nothing. `androidPageLaunchSteps` now orders
-  it stop → rotate → launch, and `tools/perf/tests/split-capture.test.mjs` locks that order. Verify
-  a rotation *after* whatever restarts the app, never before.
+  by asking the page, not the setting**. What was observed is that the split transport rotated and
+  then force-stopped Chrome, and the capture aborted on the page disagreeing with the requested
+  orientation and wrote nothing — the page mismatch is the fact; which step undid the rotation, or
+  whether the rotation was ever applied, is not established. `androidPageLaunchSteps` now orders it
+  stop → rotate → launch and `tools/perf/tests/split-capture.test.mjs` locks that order, because
+  asserting a rotation *after* whatever restarts the app is free and cannot be the cause of what was
+  seen.
 * **A control that is always in the DOM cannot be probed by presence.** `BrushMenu` renders its four
   options unconditionally and only sets `hidden`, so the bootstrap's `menuStillOpen()` check was
   true even when the menu was shut. Selecting a brush already closes the menu, so the close loop ran

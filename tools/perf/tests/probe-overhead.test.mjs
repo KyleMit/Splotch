@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   centreSwipe,
+  isKeepAliveRace,
   percentile,
+  shouldRetryForward,
   summarizeDeltas,
 } from '../split-capture/measure-probe-overhead.mjs';
 
@@ -46,5 +48,48 @@ describe('centreSwipe', () => {
 
     expect(centreSwipe(screen)).toEqual({ x0: 270, y0: 1170, x1: 810, y1: 1287 });
     expect(centreSwipe(screen)).toEqual(centreSwipe(screen));
+  });
+});
+
+describe('the forward retry', () => {
+  // The race it exists for: the bootstrap polls its plan every 400 ms for the length
+  // of a run, and Node's default 5 s keep-alive timeout closes an idle upstream
+  // socket at the moment undici reuses it.
+  it('retries a keep-alive socket failure on an idempotent request', () => {
+    for (const error of [
+      { code: 'UND_ERR_SOCKET' },
+      { code: 'ECONNRESET' },
+      { cause: { code: 'ECONNRESET' } },
+      new Error('socket hang up'),
+      Object.assign(new Error('fetch failed'), { cause: new Error('other side closed') }),
+    ]) {
+      expect(isKeepAliveRace(error)).toBe(true);
+      expect(shouldRetryForward('GET', error)).toBe(true);
+    }
+  });
+
+  // The narrower point, and the one a blanket catch got wrong: a GET that failed for
+  // any other reason must surface. Retrying it papers over a real fault with a
+  // second attempt that happens to succeed, records nothing, and the sample is
+  // reported clean — the same silent recovery this tool exists to expose.
+  it('does not retry a GET that failed for any other reason', () => {
+    for (const error of [
+      { code: 'ENOTFOUND' },
+      { code: 'ECONNREFUSED' },
+      { cause: { code: 'ECONNREFUSED' } },
+      { code: 'ABORT_ERR' },
+      new Error('certificate has expired'),
+    ]) {
+      expect(isKeepAliveRace(error)).toBe(false);
+      expect(shouldRetryForward('GET', error)).toBe(false);
+    }
+  });
+
+  // Replaying a POST duplicates a report or a plan write the upstream may already
+  // have processed, whatever the failure was.
+  it('never retries a non-idempotent method, even on the race', () => {
+    for (const method of ['POST', 'PUT', 'DELETE']) {
+      expect(shouldRetryForward(method, { code: 'UND_ERR_SOCKET' })).toBe(false);
+    }
   });
 });

@@ -542,6 +542,16 @@ describe('the commit gate', () => {
     const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
     expect(report.gate.breaches).toEqual(['multi-finger']);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('max 56.0 ms'));
+    // The red path is exactly where the disposition is worth reading, and it used to
+    // be the path that dropped it: two returns rebuilt a smaller object by hand, so
+    // a run exited 1 while the artifact could not say whether the confirmation
+    // breached too or could not be scored at all.
+    expect(report.gate.breachDispositions).toEqual({ 'multi-finger': 'confirmed' });
+    expect(report.gate.confirmationTimings).toHaveLength(1);
+    expect(report.gate.confirmationTimings[0]).toMatchObject({
+      key: 'multi-finger',
+      breached: true,
+    });
   });
 
   it('retains but does not fail one isolated shared-runner outlier', async () => {
@@ -595,6 +605,9 @@ describe('the commit gate', () => {
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({ evaluated: false, breaches: [] });
+    // Carried on the no-samples path too, for the same reason.
+    expect(gate.breachDispositions).toEqual({});
+    expect(gate.confirmationTimings).toEqual([]);
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT EVALUATED on webkit'));
     expect(error).toHaveBeenCalledWith(expect.stringContaining('npm run perf:web:undo:webkit'));

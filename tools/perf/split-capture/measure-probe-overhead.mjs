@@ -116,17 +116,40 @@ const FORWARDED_HEADERS = ['accept', 'accept-language', 'content-type', 'user-ag
 // run failed, the bootstrap parsed the 502 body as its plan, and the probe arm
 // silently became a second control arm.
 //
-// Restricted to GET and HEAD. Retrying a POST replays a request the upstream may
-// already have processed — a duplicate report or a duplicate plan write — and a
-// blanket catch would also hide failures that have nothing to do with the
-// keep-alive race behind a second attempt that happens to succeed.
+// Restricted to GET and HEAD, and to the keep-alive race specifically. Retrying a
+// POST replays a request the upstream may already have processed — a duplicate
+// report or a duplicate plan write. Retrying an arbitrary GET failure is the
+// subtler mistake: a transient DNS or connect failure on the HTML, the bootstrap or
+// a plan poll would be papered over by a second attempt that happens to succeed,
+// nothing would record it, and the sample would be reported as clean. That is the
+// same class of silent recovery this whole tool exists to expose.
 const RETRYABLE_METHODS = new Set(['GET', 'HEAD']);
 
-async function forward(target, init) {
+// undici surfaces a socket the upstream closed under keep-alive as one of these.
+// Anything else — DNS, connection refused, TLS, abort — is a real failure and is
+// allowed to surface as a 502, which the page then reports and the run refuses.
+const KEEP_ALIVE_ERROR_CODES = new Set(['UND_ERR_SOCKET', 'ECONNRESET', 'EPIPE']);
+
+export function isKeepAliveRace(error) {
+  const codes = [error?.code, error?.cause?.code].filter(Boolean);
+  if (codes.some((code) => KEEP_ALIVE_ERROR_CODES.has(code))) return true;
+  const message = `${error?.message ?? ''} ${error?.cause?.message ?? ''}`;
+  return /other side closed|socket hang up/i.test(message);
+}
+
+export function shouldRetryForward(method, error) {
+  return RETRYABLE_METHODS.has(method) && isKeepAliveRace(error);
+}
+
+// Every retry is recorded, even the tolerated one. A run that needed several says
+// something about the host that a clean-looking table would hide, and the summary
+// prints them so a reader is never told a sample was untroubled when it was not.
+async function forward(target, init, state) {
   try {
     return await fetch(target, init);
   } catch (error) {
-    if (!RETRYABLE_METHODS.has(init.method)) throw error;
+    if (!shouldRetryForward(init.method, error)) throw error;
+    state.retries.push({ target, method: init.method, code: error?.code ?? error?.cause?.code });
     return fetch(target, init);
   }
 }
@@ -137,7 +160,7 @@ export function createOverheadHost({
   warmupMs = COUNTER_WARMUP_MS,
   windowMs = DRIVE_WINDOW_MS,
 }) {
-  const state = { reports: [], pageErrors: [] };
+  const state = { reports: [], pageErrors: [], retries: [] };
   const counter = counterSource(warmupMs, windowMs);
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -173,11 +196,11 @@ export function createOverheadHost({
     );
     let response;
     try {
-      response = await forward(`${origin}${url.pathname}${url.search}`, {
-        method: req.method,
-        headers: forwarded,
-        body,
-      });
+      response = await forward(
+        `${origin}${url.pathname}${url.search}`,
+        { method: req.method, headers: forwarded, body },
+        state
+      );
     } catch (error) {
       // Named rather than swallowed: a silent 502 here is served to the bootstrap,
       // which parses it as its plan and gives up — a probe arm with no probe in it,
@@ -261,6 +284,7 @@ async function launchArm(serial, pageUrl, arm) {
 async function runSample(serial, state, pageUrl, arm, geometry) {
   const before = state.reports.length;
   const errorsBefore = state.pageErrors.length;
+  const retriesBefore = state.retries.length;
   // Long enough for the probe arm's bootstrap to finish its setup, so the input
   // lands inside the counter's recording window in both arms.
   await launchArm(serial, pageUrl, arm);
@@ -289,7 +313,12 @@ async function runSample(serial, state, pageUrl, arm, geometry) {
   if (errors.length > 0) {
     return { arm, invalid: `${errors.length} page error(s): ${errors[0].message ?? 'unknown'}` };
   }
-  return { arm, ...summarizeDeltas(report.deltas), pageErrors: 0 };
+  return {
+    arm,
+    ...summarizeDeltas(report.deltas),
+    pageErrors: 0,
+    keepAliveRetries: state.retries.length - retriesBefore,
+  };
 }
 
 // Identical device-space coordinates in both arms, derived from the screen rather
