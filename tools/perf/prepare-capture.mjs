@@ -488,21 +488,43 @@ export async function diagnoseLaunchFailure(
   } catch (error) {
     return { cause: null, diagnostic: `diagnostic failed: ${error.message}` };
   } finally {
-    if (exited === null) {
-      child.kill();
-      // Awaited so the failure path cannot leave a server holding a port behind
-      // it — the preflight resolves ports for everything that runs next.
-      await Promise.race([
-        new Promise((resolve) => child.once('exit', resolve)),
-        new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS)),
-      ]);
-    }
+    await terminateDiagnostic(child, () => exited);
   }
+}
+
+// Waiting for an exit is not the same as ensuring one. A child that ignores
+// SIGTERM outlived the race this used to do: the function returned, the comment
+// claimed nothing was left behind, and the server kept the port. Appium can also
+// leave descendants, so the whole group is signalled where the platform allows
+// it, and SIGKILL follows a TERM that was not honoured.
+async function terminateDiagnostic(child, hasExited) {
+  const exitedNow = () => hasExited() !== null;
+  const settle = (ms) =>
+    Promise.race([
+      new Promise((resolve) => child.once('exit', resolve)),
+      new Promise((resolve) => setTimeout(resolve, ms)),
+    ]);
+
+  for (const signal of ['SIGTERM', 'SIGKILL']) {
+    if (exitedNow()) return true;
+    // Negative pid signals the process GROUP; a detached child is the only kind
+    // that has one, so a plain kill is the fallback rather than the exception.
+    try {
+      process.kill(-child.pid, signal);
+    } catch {
+      child.kill(signal);
+    }
+    await settle(DIAGNOSTIC_APPIUM_EXIT_TIMEOUT_MS);
+  }
+  return exitedNow();
 }
 
 const defaultDiagnosticAppium = (port) =>
   spawn('appium', ['--port', String(port), '--log-timestamp'], {
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Its own process group, so a server that spawns helpers is terminated whole
+    // rather than leaving descendants holding the port.
+    detached: true,
   });
 
 export async function probeIosLaunch({

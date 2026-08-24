@@ -356,3 +356,31 @@ describe('the launch diagnostic end to end', () => {
     expect(detail).toContain('never became ready');
   });
 });
+
+// Bounding how long teardown WAITS is not ensuring the child left. A server that
+// ignores SIGTERM outlived the old race: the function returned, its comment said
+// nothing was left behind, and the process kept listening.
+describe('tearing down a diagnostic server that will not go quietly', () => {
+  it('escalates past SIGTERM and leaves nothing running', async () => {
+    let child;
+    const probe = await diagnoseLaunchFailure(
+      {},
+      {
+        spawnDiagnostic: (port) => {
+          child = spawn(
+            process.execPath,
+            [join(ROOT, 'tools/perf/tests/fixtures/stubborn-appium.mjs'), String(port)],
+            { stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+          );
+          return child;
+        },
+      }
+    );
+
+    expect(probe.cause).toBeNull();
+    // The assertion the review asked for: the child is gone, not merely awaited.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(child.killed || child.exitCode !== null || child.signalCode !== null).toBe(true);
+    expect(() => process.kill(child.pid, 0)).toThrow();
+  }, 60_000);
+});
