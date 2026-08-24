@@ -151,8 +151,25 @@ const LAUNCH_DENIAL_CAUSES = [
 // the most specific cause the log supports, falling back to the raw message
 // rather than guessing — a wrong guess here is what sends a campaign chasing a
 // signing problem that does not exist.
-export function classifyLaunchProbe({ ok, message = '' }) {
-  if (ok) return { status: 'ok', detail: 'a WebDriverAgent session started and closed cleanly' };
+// The page's own dimensions, not the orientation the device reports. Those can
+// disagree, and the disagreement IS the failure: on Android a device that
+// accepted a rotation request while its page stayed portrait passed every cheap
+// check and then failed all eight landscape cells. Asking the page is the only
+// question worth asking.
+export function pageFollowedRotation(requested, width, height) {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width === height) return null;
+  return (width > height ? 'LANDSCAPE' : 'PORTRAIT') === requested;
+}
+
+export function classifyLaunchProbe({ ok, message = '', rotationVerified = false }) {
+  if (ok) {
+    return {
+      status: 'ok',
+      detail: rotationVerified
+        ? 'a WebDriverAgent session started, the page followed a rotation, and it closed cleanly'
+        : 'a WebDriverAgent session started and closed cleanly',
+    };
+  }
   for (const cause of LAUNCH_DENIAL_CAUSES) {
     if (cause.pattern.test(message)) return { status: 'blocked', detail: cause.detail };
   }

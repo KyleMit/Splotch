@@ -27,6 +27,7 @@ import {
   androidWakeActions,
   classifyLaunchProbe,
   iosIdentifierProblem,
+  pageFollowedRotation,
   PORT_ROLES,
   resolvePort,
   summarize,
@@ -319,8 +320,69 @@ export async function watchAndroid(
 // is opt-in rather than part of the default report, and it must not run while a
 // capture holds the device.
 const LAUNCH_PROBE_TIMEOUT_MS = 300_000;
+// A rotation is a physical animation on a real panel, and the page's own
+// dimensions do not update until it settles.
+const IOS_ROTATION_SETTLE_MS = 2_000;
+const IOS_ORIENTATIONS = ['LANDSCAPE', 'PORTRAIT'];
 
-export async function probeIosLaunch({ udid, appiumUrl, wdaPort }) {
+async function wdaSession(appiumUrl, sessionId, method, path, body) {
+  const response = await fetch(`${appiumUrl}/session/${sessionId}${path}`, {
+    method,
+    headers: body ? { 'content-type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const payload = await response.json();
+  if (payload.value?.error) throw new Error(String(payload.value.message ?? payload.value.error));
+  return payload.value;
+}
+
+// Half the matrix is landscape, and until #1248 nothing proved a device would
+// turn — a rotation fault passed every cheap check on Android and then failed
+// eight landscape cells. This is the iPad counterpart, and it asks the same
+// question that one does: not whether the OS accepted the request, but whether
+// the PAGE ended up in the orientation that was asked for. Those can differ, and
+// the difference is the whole failure mode.
+//
+// It reuses the launch probe's session rather than opening its own. That session
+// already costs about a minute of WebDriverAgent build, and it already runs
+// Safari, so the page this needs is one navigation away.
+async function verifyIosRotation(appiumUrl, sessionId) {
+  const original = await wdaSession(appiumUrl, sessionId, 'GET', '/orientation');
+  await wdaSession(appiumUrl, sessionId, 'POST', '/url', { url: 'about:blank' });
+  try {
+    for (const orientation of IOS_ORIENTATIONS) {
+      await wdaSession(appiumUrl, sessionId, 'POST', '/orientation', { orientation });
+      await new Promise((resolve) => setTimeout(resolve, IOS_ROTATION_SETTLE_MS));
+      const [width, height] = await wdaSession(appiumUrl, sessionId, 'POST', '/execute/sync', {
+        script: 'return [window.innerWidth, window.innerHeight]',
+        args: [],
+      });
+      const followed = pageFollowedRotation(orientation, width, height);
+      if (followed !== true) {
+        const reported =
+          followed === null
+            ? `${width}x${height}`
+            : `${height > width ? 'PORTRAIT' : 'LANDSCAPE'} (${width}x${height})`;
+        return {
+          ok: false,
+          message:
+            `the device was asked for ${orientation} and the page reports ${reported} ` +
+            "— check the iPad's rotation lock in Control Centre",
+        };
+      }
+    }
+    return { ok: true };
+  } finally {
+    // Restoring matters more here than on Android: the orientation a capture
+    // session inherits is the one a human left the iPad in, and silently leaving
+    // it portrait would change what the next cell measures.
+    await wdaSession(appiumUrl, sessionId, 'POST', '/orientation', {
+      orientation: original,
+    }).catch(() => null);
+  }
+}
+
+export async function probeIosLaunch({ udid, appiumUrl, wdaPort, verifyRotation = false }) {
   const body = {
     capabilities: {
       alwaysMatch: {
@@ -346,8 +408,14 @@ export async function probeIosLaunch({ udid, appiumUrl, wdaPort }) {
     const payload = await response.json();
     const sessionId = payload.value?.sessionId;
     if (!sessionId) return { ok: false, message: String(payload.value?.message ?? '') };
+    const rotation = verifyRotation
+      ? await verifyIosRotation(appiumUrl, sessionId).catch((error) => ({
+          ok: false,
+          message: error instanceof Error ? error.message : String(error),
+        }))
+      : null;
     await fetch(`${appiumUrl}/session/${sessionId}`, { method: 'DELETE' });
-    return { ok: true };
+    return rotation && !rotation.ok ? rotation : { ok: true, rotationVerified: verifyRotation };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) };
   }
@@ -410,12 +478,16 @@ if (isMain(import.meta.url)) {
       if (!rotation.ok) process.exitCode = 1;
     }
     if (argv.includes('--verify-ios-launch') && report.iosUdid) {
-      console.log('\nprobing a real WebDriverAgent launch (this builds WDA and takes a minute)…');
+      console.log(
+        '\nprobing a real WebDriverAgent launch and a rotation ' +
+          '(this builds WDA and takes a minute)…'
+      );
       const probe = classifyLaunchProbe(
         await probeIosLaunch({
           udid: report.iosUdid,
           appiumUrl: argFlag('appium-url', `http://127.0.0.1:${report.ports.appium}`),
           wdaPort: report.ports.wda,
+          verifyRotation: true,
         })
       );
       console.log(

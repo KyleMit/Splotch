@@ -49,7 +49,7 @@ app or delivering a touch.
 | ------------------------ | --------------------------------------------------------------------------------------------------- |
 | `--wake-android`         | The phone is awake and stays awake. Writes stay-awake and a screen timeout, and does not undo them. |
 | `--verify-android-input` | A real touch reaches a page at usable cadence, **and** the device and a loaded page both rotate     |
-| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session — about a minute                                      |
+| `--verify-ios-launch`    | The iPad will accept a WebDriverAgent session **and turn** — about a minute                         |
 
 `--verify-android-input` takes about a minute: roughly 20 s for the touch cadence and another 40 s
 driving the page through landscape and back. Rotation is folded into it rather than given its own
@@ -70,10 +70,15 @@ device time to reach the same answer, which is what every physical-iPad native c
 
 **A green preflight still does not mean every cell can be captured.** Rotation used to be the gap:
 the preflight proved touch and never rotation, so a device that would not turn passed every flag and
-then failed every landscape cell — half the matrix. `--verify-android-input` now drives a real
-rotation and reads the orientation the **page** reports, so that particular hole is closed on
-Android. The iPad has no equivalent check, and neither device is proved against anything the
-verification does not itself exercise.
+then failed every landscape cell — half the matrix. Both devices are now driven through a real
+rotation, and both are judged on the orientation the **page** reports rather than on the request
+being accepted — those can disagree, and the disagreement is the failure. Neither device is proved
+against anything the verification does not itself exercise.
+
+The iPad's rotation is folded into `--verify-ios-launch` rather than given its own flag, because
+that launch already pays for a WebDriverAgent build and already runs Safari. A failure names the
+iPad's rotation lock, which is the cause a human can clear and the one a host-side check can never
+see.
 
 ## Reuse what cost a human, reclaim what is cheap
 

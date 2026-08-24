@@ -7,6 +7,7 @@ import {
   iosIdentifierProblem,
   resolvePort,
   summarize,
+  pageFollowedRotation,
 } from '../lib/capture-readiness.mjs';
 
 describe('iOS device identifiers', () => {
@@ -212,5 +213,38 @@ describe('summarize', () => {
     const blocked = summarize([{ name: 'tunnel', status: 'blocked', detail: 'not running' }]);
     expect(blocked.ready).toBe(false);
     expect(blocked.blockers).toEqual(['tunnel: not running']);
+  });
+});
+
+// #1248 closed this hole on Android after a rotation fault passed every cheap
+// check and then failed all eight landscape cells. The iPad had no equivalent,
+// and half the matrix is landscape on both devices.
+describe('whether a page followed the device round', () => {
+  it('accepts a page whose dimensions match what was asked for', () => {
+    expect(pageFollowedRotation('LANDSCAPE', 1366, 934)).toBe(true);
+    expect(pageFollowedRotation('PORTRAIT', 934, 1366)).toBe(true);
+  });
+
+  // The device accepting the request is not the question. This is the exact
+  // shape observed on Android: the rotation is honoured, the page is not.
+  it('rejects a page still in the orientation it was asked to leave', () => {
+    expect(pageFollowedRotation('LANDSCAPE', 934, 1366)).toBe(false);
+    expect(pageFollowedRotation('PORTRAIT', 1366, 934)).toBe(false);
+  });
+
+  // A square or unreadable viewport answers neither way, and saying "failed"
+  // would send someone to Control Centre for a rotation lock that is not set.
+  it('declines to answer when the dimensions cannot decide it', () => {
+    expect(pageFollowedRotation('LANDSCAPE', 1024, 1024)).toBeNull();
+    expect(pageFollowedRotation('LANDSCAPE', undefined, 934)).toBeNull();
+  });
+});
+
+describe('what the launch probe reports once rotation is proven', () => {
+  it('says the page followed a rotation only when that was checked', () => {
+    expect(classifyLaunchProbe({ ok: true, rotationVerified: true }).detail).toContain(
+      'followed a rotation'
+    );
+    expect(classifyLaunchProbe({ ok: true }).detail).not.toContain('followed a rotation');
   });
 });
