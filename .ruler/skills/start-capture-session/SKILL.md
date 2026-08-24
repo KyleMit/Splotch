@@ -23,13 +23,26 @@ name itself. Copy the last two from the main checkout.
   without it and the failure waits until a Gradle task runs: `SDK location not found`. It names
   itself once it arrives, but it arrives minutes into a build rather than at the preflight.
 
+## A native capture over the probe host needs an ATS exception
+
+A Capacitor WebView reaches the instrumented page through `server.url`, which is a plain `http://`
+LAN address. iOS App Transport Security blocks that outright, and the failure is silent — the page
+simply never loads, with nothing on the host saying why. `NSAllowsArbitraryLoads` in
+`ios/App/App/Info.plist` clears it. Android needs `cleartext: true` in the Capacitor config, which
+is Android-only and does nothing for iOS.
+
+Both of those edits, and the `server.url` itself, are local capture scaffolding that must never be
+committed — `server.url` names one machine's LAN address.
+
 ## Never commit what `cap sync` writes in a worktree
 
 `cap sync` regenerates `android/capacitor.settings.gradle` and `ios/App/CapApp-SPM/Package.swift`
-with paths **relative to the project it ran in**. A worktree sits several directories deeper than
-the main checkout, so every plugin path is rewritten from `../node_modules/...` to
-`../../../../node_modules/...`. The files are correct where they were generated and broken
-everywhere else, and nothing about the diff says so — it reads as an ordinary regeneration.
+with paths **relative to the project it ran in**, and `cap:sync` additionally overwrites `web/build`
+with the native static export — so a preview server started before it keeps serving a manifest whose
+chunks now 404. A worktree sits several directories deeper than the main checkout, so every plugin
+path is rewritten from `../node_modules/...` to `../../../../node_modules/...`. The files are
+correct where they were generated and broken everywhere else, and nothing about the diff says so —
+it reads as an ordinary regeneration.
 
 Revert both after any native build from a worktree, and check `git status` before committing a
 capture session's work.

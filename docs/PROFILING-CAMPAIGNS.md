@@ -640,6 +640,61 @@ curl -s http://<lan>:<probe port>/__probe/bootstrap.js | grep <something your ed
 The same applies to `perf:serve`: it serves whatever `web/build` held when vite started resolving,
 so a rebuild wants a restart and the manifest check under *A build that is not the build you think*.
 
+### `cap:sync` replaces the web build without saying so
+
+`npm run cap:sync` runs `build:cap`, which writes the **native static export** into `web/build` —
+the same directory `perf:serve` is serving from. So a native build silently replaces the web build
+under a running preview server, and nothing in the command you typed mentions the web target at all.
+
+This is the stale-manifest failure above with a cause nobody looks for: you did not rebuild, so it
+does not occur to you that a rebuild wants a restart. On 2026-08-24 it produced a **wrong filed
+issue** — a Capacitor WebView failed to hydrate against the probe host, the obvious explanation was
+that Capacitor could not load a remote page, and the actual explanation was that the server had been
+serving a 404ing manifest since the last `cap:sync`. The build-freshness guard caught it on the next
+capture, minutes after the issue was filed.
+
+After any `cap sync`, rebuild the web target **and restart the preview server** before capturing
+again.
+
+### Your control has to be concurrent, not remembered
+
+The same incident is worth reading a second way. The reasoning was: Safari loaded this page fine an
+hour ago, this WebView does not load it now, therefore the WebView is the difference. Safari's run
+was *before* the build broke. The variable that was compared on was not the variable that changed.
+
+A control that ran an hour ago is a memory, not a control. When something fails and a working case
+is the evidence that it should not have, re-run the working case **now**, on the same build and the
+same server — it costs one capture and it is the difference between a finding and a retraction.
+
+## Provenance a capture did not observe is not provenance
+
+An artifact records the mode it measured — orientation, theme, brush, runtime — and a reader trusts
+those fields to decide what a number means. Any one of them that is **copied from the request rather
+than read back from the page** is a label, not a measurement, and it fails silently in the direction
+that matters: the file looks complete and says the wrong thing.
+
+`--theme` was exactly this until 2026-08-24. The runner put it in the label and the artifact, never
+sent it to the page, and readiness checked only brush and orientation — so every capture measured
+whatever theme the previous run had persisted. Sixteen cells published theme-labelled rows, and a
+`1.82%` versus `0.69%` light-versus-dark crayon comparison was read off them and reported as a
+product signal. Controlled, the same cells measure **0.46 against 0.45**. There was no effect; there
+was a field nobody had checked.
+
+Two rules follow, and the second is the one that is easy to stop short of:
+
+* **Set it through the product surface and wait for the resolved state**, not for the click. The
+  theme is set through the same Settings controls a parent taps, and the page is polled until it
+  *resolves* to what was asked for.
+* **Put the observed value in the artifact, not just in the handshake.** Verifying at readiness
+  stops a mislabelled capture being written, and still leaves the file unable to answer "which theme
+  did you measure?" months later. `observedTheme` records what the page reported. Note that
+  `report.meta.theme` cannot serve: the product stores the loosest preference that renders an
+  appearance, so choosing the theme the OS already shows clears the override and leaves that field
+  `null` — which was every landscape-light cell.
+
+When adding a new mode dimension to a capture, the question is not "is it recorded?" but "did the
+page tell us, or did we tell ourselves?"
+
 ## Never run anything heavy on the host during a capture
 
 The host drives the input dispatch. A test suite, a build, or a second campaign competing for CPU
