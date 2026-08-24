@@ -79,6 +79,22 @@ body {
   scrollbar-color: var(--icon-muted) transparent;
 }
 
+/* The OS safe-area insets, seeded once here so every consumer in the app reads
+   a custom property instead of calling env() directly. env() itself is only
+   overridable through CDP (Emulation.setSafeAreaInsetsOverride), which reaches
+   Playwright and nothing else; one level of indirection lets the /dev/notch
+   harness re-declare these four on a subtree and render the real HUD as any
+   device sees it. The 0px fallbacks keep a declaration valid on an engine with
+   no env() support, where an unresolved var() would otherwise fall all the way
+   back to the property's initial value. safeArea.ts declares the same four
+   names for its JS-side probe; safeArea.test.ts fails if the two sets drift. */
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
 /* Shared first-paint width of the landscape Color Palette. The palette and
    Actions Panel both consume it before ResizeObserver can publish the measured
    width; actionButtonLayout.fallback.test.ts guards these literals against the
@@ -142,9 +158,9 @@ body {
      inset the flow content (palette + canvas) back out of the cutout. The Notch
      Band fills the top inset; the bottom edge stays full-bleed for more canvas
      (the bottom-anchored buttons clear the home indicator themselves). */
-  padding-top: env(safe-area-inset-top);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  padding-top: var(--safe-area-top);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
   /* Paint those inset strips with the palette bar's surface, not the darker
      --app-bg, so the top safe-area band reads as a seamless extension of the
      bar instead of a dark line above it (stark in dark mode: --app-bg #17171d
@@ -256,7 +272,7 @@ body {
   --report-strip-tap: 44px;
   --report-strip-reserve: calc(
     var(--report-strip-gap) + (var(--report-strip-height) + var(--report-strip-tap)) / 2 +
-      env(safe-area-inset-bottom)
+      var(--safe-area-bottom)
   );
 }
 
@@ -405,7 +421,7 @@ body {
     calc(
       (
           100vw - var(--palette-landscape-width) - 128px - var(--action-btn-first-paint-gap-total) -
-            env(safe-area-inset-left) - env(safe-area-inset-right)
+            var(--safe-area-left) - var(--safe-area-right)
         ) /
         var(--action-btn-first-paint-count)
     )
@@ -437,7 +453,7 @@ body {
     /* 208px = palette clearance + worst-case panel chrome + palette bar. */
     --action-btn-fallback: min(
       calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
-      calc((100vh - 208px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 6)
+      calc((100vh - 208px - var(--safe-area-top) - var(--safe-area-bottom)) / 6)
     );
   }
 }

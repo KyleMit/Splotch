@@ -92,18 +92,18 @@
     top: 0;
     left: 0;
     right: 0;
-    height: env(safe-area-inset-top);
+    height: var(--safe-area-top);
   }
   .notch-band--left {
     top: 0;
     bottom: 0;
     left: 0;
-    width: env(safe-area-inset-left);
+    width: var(--safe-area-left);
   }
   .notch-band--right {
     top: 0;
     bottom: 0;
     right: 0;
-    width: env(safe-area-inset-right);
+    width: var(--safe-area-right);
   }
 </style>

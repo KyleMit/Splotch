@@ -12,6 +12,7 @@ import {
 import { network } from '$lib/state/network.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 import type { Orientation } from '$lib/platform';
+import { safeAreaLength } from '$lib/platform/safeArea';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
@@ -220,12 +221,12 @@ export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
       ? {
           viewportExtent: `${inputs.viewportHeight}px`,
           paletteExtent: inputs.paletteHeight,
-          insets: 'env(safe-area-inset-top) - env(safe-area-inset-bottom)',
+          insets: `${safeAreaLength('top')} - ${safeAreaLength('bottom')}`,
         }
       : {
           viewportExtent: '100vw',
           paletteExtent: inputs.paletteWidth,
-          insets: 'env(safe-area-inset-left) - env(safe-area-inset-right)',
+          insets: `${safeAreaLength('left')} - ${safeAreaLength('right')}`,
         };
   const fixedCost = fixedRowCost(orientation, buttonCount, axis.paletteExtent);
   const budget = `${axis.viewportExtent} - ${fixedCost}px - ${axis.insets}`;

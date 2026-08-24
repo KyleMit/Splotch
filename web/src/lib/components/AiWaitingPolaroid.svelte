@@ -82,9 +82,9 @@
     --polaroid-muted-ink: rgba(0, 0, 0, 0.55);
 
     position: fixed;
-    top: calc(var(--polaroid-headroom) + env(safe-area-inset-top));
+    top: calc(var(--polaroid-headroom) + var(--safe-area-top));
     left: calc(
-      var(--palette-landscape-width) + var(--polaroid-clearance) + env(safe-area-inset-left)
+      var(--palette-landscape-width) + var(--polaroid-clearance) + var(--safe-area-left)
     );
     z-index: var(--z-waiting-polaroid);
     width: var(--polaroid-width);
@@ -105,8 +105,8 @@
      rather than beside it. */
   @media (orientation: portrait) {
     .ai-waiting-polaroid {
-      top: calc(var(--palette-portrait-height) + 16px + env(safe-area-inset-top));
-      left: calc(16px + env(safe-area-inset-left));
+      top: calc(var(--palette-portrait-height) + 16px + var(--safe-area-top));
+      left: calc(16px + var(--safe-area-left));
     }
   }
 
