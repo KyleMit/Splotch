@@ -15,6 +15,8 @@ import {
   planCampaign,
   probeHostProblem,
   resolvedProbeHostProblem,
+  splitTransportIdentityProblem,
+  commandReportsRefreshRegime,
 } from '../lib/campaign-plan.mjs';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -903,5 +905,52 @@ describe('resolvedProbeHostProblem', () => {
     };
 
     expect(await resolvedProbeHostProblem('http://127.0.0.1:4175', { lookup })).toMatch(/loopback/);
+  });
+});
+
+// The campaign accepts --device-id and forwards --device-serial to the child. An
+// operator who passes the child's spelling has it silently dropped, and then every
+// cell fails on a message naming a flag they did not type. That cost a 20-cell
+// target sixty attempts of real device time on 2026-08-23.
+describe('a split-transport target without its device identity', () => {
+  const android = { id: 'android-device-web', transport: 'split', splitPlatform: 'android' };
+  const ios = { id: 'ipad-device-web', transport: 'split', splitPlatform: 'ios' };
+
+  it('refuses to start, and names the flag the campaign actually takes', () => {
+    const problem = splitTransportIdentityProblem(android, {});
+
+    expect(problem).toContain('--device-id');
+    expect(problem).toContain('android-device-web');
+  });
+
+  it('names WebDriverAgent for the iOS half', () => {
+    expect(splitTransportIdentityProblem(ios, {})).toContain('--wda-url');
+  });
+
+  it('is satisfied once the identity is supplied', () => {
+    expect(splitTransportIdentityProblem(android, { deviceId: 'R5CRC3AVCXM' })).toBeNull();
+    expect(splitTransportIdentityProblem(ios, { wdaUrl: 'http://127.0.0.1:8110' })).toBeNull();
+  });
+
+  // Every other transport carries its identity differently, and answering for
+  // them here would reject a target this has no business judging.
+  it('says nothing about a target that does not use the split transport', () => {
+    expect(splitTransportIdentityProblem({ id: 'mac-chrome' }, {})).toBeNull();
+  });
+});
+
+// A drawing capture records `summaries` as an object carrying `intervalMs`. The
+// action runner records `summaries` as a LIST of per-action rows and measures no
+// beat at all — so asking it for one produced "unrecognized", and every actions
+// cell on a target that declares a regime was retried to exhaustion and thrown
+// away. Six targets declare one; that was 24 unbankable cells.
+describe('which commands can answer for a refresh regime', () => {
+  it('asks the drawing capture commands, which measure a beat', () => {
+    expect(commandReportsRefreshRegime(SPLIT_SCREEN_COMMAND)).toBe(true);
+  });
+
+  it('does not ask the action runner, which measures none', () => {
+    expect(commandReportsRefreshRegime('perf:android:browser:actions')).toBe(false);
+    expect(commandReportsRefreshRegime('perf:ios:xcuitest:actions')).toBe(false);
   });
 });

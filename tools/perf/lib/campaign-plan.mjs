@@ -200,6 +200,21 @@ export function commandReportsFidelity(command) {
   return FIDELITY_REPORTING_COMMANDS.has(command);
 }
 
+// The same asymmetry, for the beat. A drawing capture records `summaries` as an
+// object carrying `intervalMs`; the action runner records `summaries` as a LIST
+// of per-action rows and measures no beat at all, so asking it for one yields
+// "unrecognized" and a cell that can never be banked however many times it runs.
+//
+// Granted per command rather than by absence of the field, for the reason the
+// fidelity comment above gives: tolerating a missing value globally fails open on
+// exactly the capture whose value is mandatory. A drawing artifact with no beat
+// is still refused.
+const REFRESH_REGIME_REPORTING_COMMANDS = new Set([SCREEN_COMMAND, SPLIT_SCREEN_COMMAND]);
+
+export function commandReportsRefreshRegime(command) {
+  return REFRESH_REGIME_REPORTING_COMMANDS.has(command);
+}
+
 // Classified rather than matched against a list of spellings. A set of exact
 // strings misses every other way to write the same address: `[::ffff:127.0.0.1]`
 // walked past the first version of this guard and the campaign ran on against a
@@ -371,6 +386,31 @@ export function artifactPath(outputRoot, targetId, mode, item) {
 // `--host` is the probe host as the DEVICE sees it, so it is a separate input from
 // the preview URL the Appium path passes: a loopback address reaches the host's own
 // browser and never the device, and fails as a page that will not load.
+// The identity a split-transport target cannot be driven without, named as the
+// campaign's own flag rather than as the flag the child command takes. Those
+// differ — the campaign accepts `--device-id` and forwards `--device-serial` —
+// and an operator who passes the child's spelling gets it silently ignored, then
+// watches every cell fail on a message naming a flag they did not type. That cost
+// a 20-cell target sixty attempts on 2026-08-23 before anyone read the child's
+// stderr closely enough to notice.
+export function splitTransportIdentityProblem(target, host) {
+  if (target?.transport !== 'split') return null;
+  if (target.splitPlatform === 'android' && !host?.deviceId) {
+    return (
+      `${target.id} drives its drawing cells over the split transport and needs the phone's ` +
+      'serial. Pass --device-id=<serial> (the campaign spells it --device-id even though ' +
+      'perf:device:frames takes --device-serial).'
+    );
+  }
+  if (target.splitPlatform === 'ios' && !host?.wdaUrl) {
+    return (
+      `${target.id} drives its drawing cells over the split transport and needs a running ` +
+      'WebDriverAgent. Pass --wda-url=<url>.'
+    );
+  }
+  return null;
+}
+
 function splitTransportArgs(target, host) {
   const args = [`--platform=${target.splitPlatform}`];
   if (target.splitPlatform === 'android' && host.deviceId) {
@@ -516,6 +556,7 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         artifact,
         command,
         reportsFidelity: commandReportsFidelity(command),
+        reportsRefreshRegime: commandReportsRefreshRegime(command),
         args,
       });
     }

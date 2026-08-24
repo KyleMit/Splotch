@@ -29,6 +29,7 @@ import {
   campaignTarget,
   resolvedProbeHostProblem,
   planCampaign,
+  splitTransportIdentityProblem,
 } from './lib/campaign-plan.mjs';
 import {
   ALREADY_VALID,
@@ -178,6 +179,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // and the repo's rule is to reuse a running listener rather than take over its
   // lifecycle. A dry run is planning only and reaches no device.
   if (!has('dry-run') && plan.some((cell) => cell.command === SPLIT_SCREEN_COMMAND)) {
+    const identityProblem = splitTransportIdentityProblem(campaignTarget(targetId), {
+      deviceId: flag('device-id'),
+      wdaUrl: flag('wda-url'),
+    });
+    if (identityProblem) fail(identityProblem);
     const problem = await resolvedProbeHostProblem(flag('probe-host'));
     if (problem) fail(problem);
     const reachable = await probeHostResponds(flag('probe-host'));
@@ -215,7 +221,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     const decision = nextAction(spentRows, cell.id, {
       artifactValid: inspectArtifact(cell.artifact, runtime, {
         verdictRequired: cell.reportsFidelity,
-        expectedRefreshRegime: refreshRegime,
+        expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
       }).ok,
       maxAttempts,
     });
@@ -264,7 +270,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       );
       const inspected = inspectArtifact(cell.artifact, runtime, {
         verdictRequired: cell.reportsFidelity,
-        expectedRefreshRegime: refreshRegime,
+        expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
       });
       landed = inspected.ok;
       appendLedger(ledgerPath, {

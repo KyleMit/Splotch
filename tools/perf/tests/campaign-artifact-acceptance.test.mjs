@@ -194,3 +194,25 @@ describe('a verdict no retry can change', () => {
     });
   });
 });
+
+// The failing-open half of the same rule. A command that never measures a beat
+// must be exempt, and a command that does must NOT be — an artifact that should
+// carry one and does not is a broken capture, not an exempt one.
+describe('a capture with no beat to report', () => {
+  const noBeat = {
+    transport: 'android-chrome-cdp',
+    summaries: [{ action: 'idle frame control' }],
+  };
+
+  it('is accepted when its command measures no refresh regime', () => {
+    expect(
+      inspectArtifact(artifactAt(noBeat), 'web', { expectedRefreshRegime: null })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('is still refused when a regime was expected of it', () => {
+    expect(
+      inspectArtifact(artifactAt(noBeat), 'web', { expectedRefreshRegime: '120hz' })
+    ).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
+  });
+});
