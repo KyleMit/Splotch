@@ -19,10 +19,13 @@ dl.google.com                                    # SDK cmdline-tools, platform-t
 # .claude/hooks/cloud-android-emulator.sh. Absent or empty on every other environment.
 SPLOTCH_CLOUD_PROFILE=android
 # Non-secret overrides, all optional — the defaults below are what the scripts assume.
+# No PATH entry is needed for adb: provisioning symlinks it into /usr/local/bin, which is already
+# on the default PATH. Nothing the setup script exports survives into a session, so a PATH var set
+# here would not help anyway.
 ANDROID_SDK_ROOT=/opt/android-sdk
 SPLOTCH_AVD_NAME=splotch_cloud
 SPLOTCH_EMULATOR_PORT=5554
-# The emulator's cold boot runs 6-8 minutes and an APK install on it runs ~20s, so the default
+# The emulator's cold boot runs ~20 minutes and an APK install on it runs ~20s, so the default
 # environment's already-raised Bash timeout matters more here, not less. Keep it at least this high.
 BASH_DEFAULT_TIMEOUT_MS=600000
 

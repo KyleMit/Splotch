@@ -77,6 +77,14 @@ install_sdk_packages() {
     "$SYSTEM_IMAGE" >/dev/null
 }
 
+# A session inherits none of this script's exports — they die with the setup process — and
+# platform-tools is not on the default PATH, so without this every `adb` in a fresh session is
+# `command not found`. /usr/local/bin is on the default PATH and already holds chisel from the
+# shared setup, so a symlink there is what makes the repo's plain `adb …` calls resolve.
+link_adb_onto_path() {
+  ln -sf "$ANDROID_SDK_ROOT/platform-tools/adb" /usr/local/bin/adb
+}
+
 # Written into the AVD after avdmanager creates it. A stock Pixel profile boots at 1080x2340/440dpi
 # with 1536 MB, and under TCG that combination reliably trips the system_server ANR watchdog while
 # SwiftShader composites. Fewer pixels and more headroom is the difference between a usable device
@@ -88,7 +96,6 @@ configure_avd_hardware() {
     -e 's/^hw\.lcd\.height *=.*/hw.lcd.height = 1280/' \
     -e 's/^hw\.lcd\.density *=.*/hw.lcd.density = 320/' \
     -e 's/^hw\.ramSize *=.*/hw.ramSize = 4096M/' \
-    -e 's/^vm\.heapSize *=.*/vm.heapSize = 512/' \
     "$config"
 }
 
@@ -111,6 +118,8 @@ install_emulator_system_libraries \
 if install_command_line_tools; then
   install_sdk_packages \
     || emulator_warn "android SDK packages skipped — check dl.google.com egress; no emulator or system image installed"
+  link_adb_onto_path \
+    || emulator_warn "adb was not linked onto PATH — sessions must call ${ANDROID_SDK_ROOT}/platform-tools/adb by its full path"
   create_avd \
     || emulator_warn "AVD '${AVD_NAME}' was not created — create it by hand before starting the emulator"
 else
