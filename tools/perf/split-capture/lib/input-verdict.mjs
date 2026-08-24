@@ -8,14 +8,17 @@
 // Cadence is the verdict. Pressure and contact geometry are reported but do NOT
 // decide it, because their thresholds were calibrated from a hand capture on the
 // target iPad — Safari reports pressure 0 and a ~74px contact radius, Chrome
-// reports pressure 1 and no radius at all. Failing Android on an iPad-shaped
-// expectation would make this check noise, and widening the expectation to make
-// Android pass would destroy the only thing it is for. Those three checks are now
-// stated per runtime and Android's are recorded UNCALIBRATED until a hand capture
-// sets them; cadence is the one this verdict is built from either way.
+// reports pressure 1 and no radius at all, for a real finger and a synthesized
+// touch alike. Failing Android on an iPad-shaped expectation would make this
+// check noise, and widening the expectation to make Android pass would destroy
+// the only thing it is for. Those three are now stated per runtime.
+//
+// Cadence itself is a FLOOR, not a band. The ceiling it used to carry claimed a
+// faster stream was "faster than a hand", and the hand corpus measured 178.0 on
+// this phone and 268.4 on the iPad (ADR-0141). An excess rate is still worth
+// saying out loud, so it is reported without failing the run.
 import {
   FIDELITY_MOVE_GAP_P95_MAX_MS,
-  FIDELITY_MOVES_PER_SECOND_MAX,
   FIDELITY_MOVES_PER_SECOND_MIN,
 } from '../../lib/input-fidelity.mjs';
 
@@ -36,15 +39,9 @@ export function classifyInputCadence(input = {}) {
     return {
       ok: false,
       detail:
-        `${rate}, below the ${FIDELITY_MOVES_PER_SECOND_MIN}-${FIDELITY_MOVES_PER_SECOND_MAX} band. ` +
+        `${rate}, below the ${FIDELITY_MOVES_PER_SECOND_MIN} floor. ` +
         'Captures through this transport cannot be scored: the app is barely driven, and lost-frame ' +
         'time prices the gaps between samples as dropped frames.',
-    };
-  }
-  if (moves > FIDELITY_MOVES_PER_SECOND_MAX) {
-    return {
-      ok: false,
-      detail: `${rate}, above the ${FIDELITY_MOVES_PER_SECOND_MAX} ceiling — faster than a hand, so the capture is not representative.`,
     };
   }
   if (Number.isFinite(gapP95) && gapP95 > FIDELITY_MOVE_GAP_P95_MAX_MS) {
@@ -53,7 +50,7 @@ export function classifyInputCadence(input = {}) {
       detail: `${rate} on average, but a p95 gap of ${gapP95} ms — the stream stalls, so the rate is a mean over bursts rather than a steady cadence.`,
     };
   }
-  return { ok: true, detail: `${rate}, within the trusted-input band` };
+  return { ok: true, detail: `${rate}, at or above the trusted-input floor` };
 }
 
 // Reported alongside the verdict, never as part of it. Values a platform cannot

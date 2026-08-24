@@ -80,29 +80,27 @@ not the same as an artifact that can be scored. The campaign runner reads the `f
 artifact carries for exactly this reason, and records a fidelity failure as `failed-input-fidelity`
 rather than banking the cell.
 
-## The Android fidelity gate is not yet satisfiable
+## The Android fidelity gate, and how it was closed
 
 This transport fixes the defect that made Android cells meaningless — measured **116.6 contact moves
-per second** against Appium's 46.8, at 0.98 moves per frame — but a capture still fails the gate on
-two checks:
+per second** against Appium's 46.8, at 0.98 moves per frame. For a while a capture still could not
+be scored, because `pressure` and `contactGeometry` carried iPad-calibrated expectations that Chrome
+cannot satisfy, and widening them to let Android pass would have destroyed the only thing they are
+for.
 
-| Check             | Android via `adb` | Required  |
-| ----------------- | ----------------: | --------- |
-| `cadence`         |     116.6 moves/s | 100–170   |
-| `pressure`        |                 1 | exactly 0 |
-| `contactGeometry` |              0 px | 40–100 px |
+The answer came from measuring rather than widening (ADR-0141). A hand capture and an `adb`-driven
+capture, same phone, same night, same probe:
 
-Both failing thresholds are iPad-calibrated. `inputFidelity` says so in its own comment — they come
-from a hand capture on the target iPad, where Safari reports pressure 0 and a contact radius around
-74 px. Chrome reports pressure 1 for synthesized touch and no contact radius at all, so **no Android
-input path can satisfy them**, including Appium's (which fails `contactGeometry` too, and passes
-`pressure` only incidentally).
+| Check              | real finger | synthesized touch |
+| ------------------ | ----------: | ----------------: |
+| `pressure` p50     |           1 |                 1 |
+| `contactGeometry`  |        none |              none |
+| `coalescedPerMove` |           0 |                 0 |
 
-Do not widen the gate to make Android pass. What the checks are for is proving a run exercised the
-real touch path, and the honest fix is platform-scoped expectations calibrated the same way the iPad
-ones were: a hand capture on the Android device, drawn with a finger, read for what Chrome actually
-reports. Until that exists, an Android capture from this path is **better** than an Appium one on
-the axis that corrupted the numbers, and still not formally scoreable.
+Three checks that answer identically however the touch was made cannot tell a hand from a robot, so
+`android-chrome` does not ask them. Its verdict is `trustedTouch` and `cadence`, and `cadence` still
+rejects what this transport exists to replace: 46.8 moves/s for the Appium path, against 115.9
+driven here and 135.5–178.0 by hand.
 
 ## Failure behavior
 

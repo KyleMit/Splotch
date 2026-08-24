@@ -131,37 +131,74 @@ describe('the 2026-08-23 iPad corpus', () => {
   });
 });
 
-describe('the runtimes with no hand capture behind them', () => {
+describe('the runtime the 2026-08-23 hand corpus calibrated', () => {
   const android = verdictsFor('2026-08-23-android-split');
 
-  // Android keeps failing, exactly as it did before the table was split — issue
-  // 1218 is the hand capture that closes it. What changes is that the verdict now
-  // says the instrument is silent rather than implying the capture was bad, and an
-  // uncalibrated check must never read as a pass: doing so would bank the very
-  // cells the split transport exists to stop producing.
-  it('reports Android Chrome as uncalibrated rather than failed, and does not pass it', () => {
+  // Android Chrome reports pressure 1, no contact geometry and 0 coalesced
+  // samples for a real finger and for `adb shell input` alike, measured on the
+  // same phone the same night. Three checks that answer identically however the
+  // touch was made cannot tell the two apart, so they are not asked here — which
+  // is what makes these four captures scoreable at last.
+  it('passes a well-driven Android Chrome capture once its silent checks are named', () => {
     expect(android).toHaveLength(4);
     for (const sample of android) {
       expect(sample.input.movesPerSecond).toBeGreaterThan(100);
-      expect(sample.fidelity.passed).toBe(false);
-      expect(sample.fidelity.checks).toMatchObject({ trustedTouch: true, cadence: true });
-      expect(sample.fidelity.uncalibrated).toEqual(['coalescing', 'pressure', 'contactGeometry']);
-      expect(describeFidelityFailures(sample.fidelity)).toBe(
-        'coalescing(uncalibrated)+pressure(uncalibrated)+contactGeometry(uncalibrated)'
-      );
+      expect(sample.fidelity.passed).toBe(true);
+      expect(sample.fidelity.checks).toEqual({ trustedTouch: true, cadence: true });
+      expect(sample.fidelity.notApplicable).toEqual(['coalescing', 'pressure', 'contactGeometry']);
+      expect(describeFidelityFailures(sample.fidelity)).toBe('');
     }
   });
 
-  it('names the failing check apart from the uncalibrated ones', () => {
+  // The whole point of narrowing the verdict is that what remains still rejects
+  // the capture the campaign opened by finding.
+  it('still refuses the under-driven transport this campaign rejected', () => {
     const underDriven = inputFidelity(
       { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 46.8, moveGapP95Ms: 40 },
       'android-chrome'
     );
 
     expect(underDriven.passed).toBe(false);
-    expect(describeFidelityFailures(underDriven)).toBe(
-      'cadence+coalescing(uncalibrated)+pressure(uncalibrated)+contactGeometry(uncalibrated)'
+    expect(describeFidelityFailures(underDriven)).toBe('cadence');
+  });
+
+  // A not-applicable check is absent rather than present-and-true. Recording it
+  // as a pass would let a reader believe the runtime answered a question it was
+  // never asked.
+  it('omits a not-applicable check instead of passing it', () => {
+    const verdict = inputFidelity(
+      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 154.63, moveGapP95Ms: 16.5 },
+      'android-chrome'
     );
+
+    expect(Object.keys(verdict.checks)).toEqual(['trustedTouch', 'cadence']);
+    expect(verdict.uncalibrated).toEqual([]);
+  });
+
+  // Both hand captures that exceed the retired 170 ceiling are real fingers on
+  // real hardware — 178.0 on the phone, 268.4 on the iPad. A gate that rejects
+  // its own reference input is measuring the digitizer, not the fidelity.
+  it('accepts the rates a real hand actually produced on both devices', () => {
+    const phone = inputFidelity(
+      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 177.97, moveGapP95Ms: 16.7 },
+      'android-chrome'
+    );
+    const ipad = inputFidelity(
+      {
+        kinds: 'touch',
+        trust: { share: 1 },
+        movesPerSecond: 268.39,
+        moveGapP95Ms: 16,
+        coalescedPerMove: 0,
+        pressure: { p50: 0 },
+        contactWidth: { p50: 83.42 },
+        contactHeight: { p50: 83.42 },
+      },
+      'ios-safari'
+    );
+
+    expect(phone.checks.cadence).toBe(true);
+    expect(ipad.passed).toBe(true);
   });
 });
 

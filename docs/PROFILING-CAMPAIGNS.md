@@ -171,25 +171,45 @@ a transport that cannot create it:
 
 ### A failed verdict has two meanings, and they need different work
 
-`inputFidelity` states its expectations **per capture runtime** (ADR-0139), because three of its
-five checks describe a runtime rather than describing faithful input. So read *which* check did not
-pass:
+`inputFidelity` states its expectations **per capture runtime** (ADR-0139, amended by ADR-0141),
+because most of its checks describe a runtime rather than describing faithful input. So read *which*
+check did not pass, and in which of three ways:
 
 * **A failed check is a bad run.** `cadence` says the app was barely driven and the number is
   meaningless; `trustedTouch` says the input never went through the real touch path. Recapture.
-* **An `(uncalibrated)` check is a silent instrument.** No hand capture has recorded what that
-  runtime reports, so there is no expectation to judge against. Recapturing changes nothing; the fix
-  is to measure the runtime. It is **not** a pass — a capture resting on an unmeasured threshold is
-  as unscoreable as an under-driven one.
+* **An `(uncalibrated)` check is a silent instrument.** No capture has recorded what that runtime
+  reports, so there is no expectation to judge against. Recapturing changes nothing; the fix is to
+  measure the runtime. It is **not** a pass — a capture resting on an unmeasured threshold is as
+  unscoreable as an under-driven one.
+* **A check that is absent was never asked.** The runtime answers it identically for a real finger
+  and for synthesized touch, so it carries no information about how the capture was driven. That is
+  a measured finding, not a gap.
 
-Today every Android and desktop runtime is uncalibrated on `coalescing`, `pressure` and
-`contactGeometry`, which is why those targets are classed advisory and why `android-device-web`
-cannot be folded into the matrix yet. Issue 1218 is the hand capture that closes it.
+`android-chrome` is the third kind, established on 2026-08-23 by pairing a hand capture with an
+`adb`-driven one through the same probe: pressure 1 against 1, no contact geometry against none, 0
+coalesced samples against 0. Its verdict is `trustedTouch` and `cadence`, and its captures are
+scoreable. `android-capacitor-webview` and the desktop runtime remain uncalibrated.
 
-The one entry that is *inverted* rather than uncalibrated is `coalescing` on the Capacitor
-WKWebView, which expects more than zero coalesced samples where Safari expects none — measured on
-2026-08-23 with both runtimes driven at the same cadence on the same device. Do not widen that check
-to cover both; widening it retires it in Safari, where it does real work.
+The Capacitor WKWebView's `coalescing` entry is the standing uncalibrated one. An earlier revision
+inverted it — more than zero coalesced samples, where Safari expects none — on the strength of four
+healthy captures, and review refuted it with a negative control: the under-driven Android WebView
+probe recorded more than zero at 47.81 moves/s, so the inversion would have passed exactly the
+capture the check exists to reject. It stays uncalibrated until a known-bad WKWebView run exists
+(issue 1272). Do not widen it to cover both runtimes either; widening retires it in Safari, where it
+does real work.
+
+### A threshold set from the automation is not calibrated
+
+`cadence` carried a 100–170 band, and its ceiling was documented as rejecting input "faster than a
+hand". No hand had been measured. The band bracketed what the **automated** transport delivered, and
+when a person finally drew on both devices they produced 178.0 on the phone and 268.4 on the iPad —
+the gate rejecting a real finger on the very iPad it was calibrated from.
+
+The shape to watch for: a threshold whose reference class is *the captures we happen to take* rather
+than *the thing the check claims to describe*. It reads as calibrated, it has numbers behind it, and
+every one of those numbers came from the instrument rather than from the phenomenon. `cadence` is
+now a floor only (ADR-0141), and the floor has both sides measured — 46.8–61 moves/s for every
+rejected transport, 117.5 for the slowest hand.
 
 ## The preflight proves what it exercises, and nothing else
 

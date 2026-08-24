@@ -1,7 +1,7 @@
 {
   "campaign": "2026-08-23-hand",
   "transport": "human-finger",
-  "why": "The measurement input fidelity thresholds are set from. Every percentile is derived in Node from the raw event rows kept here, so a later revision of the expectation table re-reads these files instead of asking for another hand capture.",
+  "why": "The measurement input fidelity thresholds are set from. Every percentile is derived in Node from the raw event rows kept here, so a later revision of the expectation table re-reads these files instead of asking for another hand capture. One entry is deliberately not a hand capture: a threshold that has to tell a finger from a robot needs the robot on record too.",
   "devices": {
     "android": "Samsung SM-G990U1 (R5CRC3AVCXM), Chrome, 120 Hz",
     "ios": "iPad Pro 12.9-inch 5th gen (00008103-0006202E3CF1001E), Safari, ProMotion"
@@ -182,6 +182,28 @@
       },
       "fidelityPassed": true,
       "note": "Deliberately slow and gentle \u2014 the floor of human cadence, and the only sample of the eight that passes the gate as it stood."
+    },
+    {
+      "file": "synthetic-android-chrome.json",
+      "runtime": "android-chrome",
+      "brush": "pen",
+      "orientation": "PORTRAIT",
+      "device": "R5CRC3AVCXM",
+      "drawSeconds": null,
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 115.93,
+        "moveGapP95Ms": 10,
+        "movesPerFrame": 0.97,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 0,
+        "contactHeightP50": 0
+      },
+      "fidelityPassed": false,
+      "note": "NOT a hand capture \u2014 the synthesized `adb shell input` control, captured through the same probe minutes after the hand runs. It is the negative side of the android-chrome argument: pressure, contact geometry and coalescing come back identical to a real finger, which is what makes those three checks inapplicable in this runtime rather than merely unmeasured."
     }
   ]
 }

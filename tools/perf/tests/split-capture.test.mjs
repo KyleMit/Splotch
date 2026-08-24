@@ -208,8 +208,11 @@ describe('classifyInputCadence', () => {
     expect(classifyInputCadence({ movesPerSecond: 116.6, moveGapP95Ms: 11 }).ok).toBe(true);
   });
 
-  it('fails input faster than a hand', () => {
-    expect(classifyInputCadence({ movesPerSecond: 240, moveGapP95Ms: 4 }).ok).toBe(false);
+  // 240 was written as obviously-too-fast. A real finger on the target iPad
+  // measured 268.4 on 2026-08-23, so the rate this asserted on is one a hand
+  // produces — the ceiling is retired and an excess rate is reported instead.
+  it('accepts a rate above the retired ceiling, because a hand reaches it', () => {
+    expect(classifyInputCadence({ movesPerSecond: 240, moveGapP95Ms: 4 }).ok).toBe(true);
   });
 
   it('fails a stalling stream even when the mean rate looks fine', () => {
