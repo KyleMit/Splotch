@@ -1,3 +1,7 @@
+import { spawn } from 'node:child_process';
+import { join } from 'node:path';
+import { ROOT } from '../../lib/proc.mjs';
+import { diagnoseLaunchFailure } from '../prepare-capture.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   androidWakeActions,
@@ -289,5 +293,66 @@ describe('classifying a WebDriverAgent launch failure from the server log', () =
 
     expect(generic.detail).toContain('cause is not one this knows');
     expect(classified.detail).toContain('Enable UI Automation');
+  });
+});
+
+// The integration the review found broken: the classifier recognised the fixture
+// while the path that has to DELIVER it returned nothing on a real blocked
+// device. Driven here with a controllable child, because the only other way to
+// reach this code is an iPad refusing automation.
+describe('the launch diagnostic end to end', () => {
+  const fakeAppium = (mode) => (port) =>
+    spawn(
+      process.execPath,
+      [join(ROOT, 'tools/perf/tests/fixtures/fake-appium.mjs'), String(port)],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, MODE: mode },
+      }
+    );
+
+  it('delivers the automation-mode cause the server logged', async () => {
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('denial') });
+
+    expect(probe.cause).toContain('Enable UI Automation');
+    expect(probe.diagnostic).toBeNull();
+  }, 40_000);
+
+  // "Ran and found nothing" and "never ran" must not read the same. They did,
+  // which is why a broken diagnostic looked like an unrecognised cause.
+  it('says so when the server logged nothing it knows', async () => {
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('silent') });
+
+    expect(probe.cause).toBeNull();
+    expect(probe.diagnostic).toContain('logged no cause');
+  }, 40_000);
+
+  it('reports a server that died instead of hanging on it', async () => {
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('crash') });
+
+    expect(probe.cause).toBeNull();
+    expect(probe.diagnostic).toContain('exited early');
+  }, 40_000);
+
+  // spawn reports a missing binary asynchronously, so this used to escape the
+  // try/catch and could take the preflight down with it.
+  it('survives a diagnostic binary that does not exist', async () => {
+    const probe = await diagnoseLaunchFailure(
+      {},
+      { spawnDiagnostic: () => spawn('definitely-not-a-real-binary-xyz', []) }
+    );
+
+    expect(probe.cause).toBeNull();
+    expect(probe.diagnostic).toContain('could not start');
+  }, 40_000);
+
+  it('tells the operator when the diagnostic itself failed', () => {
+    const detail = classifyLaunchProbe({
+      ok: false,
+      message: 'xcodebuild failed with code 65',
+      diagnostic: 'diagnostic server never became ready',
+    }).detail;
+
+    expect(detail).toContain('never became ready');
   });
 });
