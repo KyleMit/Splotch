@@ -63,7 +63,15 @@ export function captureRuntime(platformName, nativeApp) {
 
 const trustedTouch = (input) => input.kinds === 'touch' && input.trust?.share === 1;
 
+// Both measurements must be FINITE, which the retired ceiling used to enforce as
+// a side effect. Without it `movesPerSecond: Infinity` satisfied the floor and a
+// malformed or zero-window reading could be banked as scoreable — while
+// `classifyInputCadence`, the diagnostic, rejected the same value. The gate that
+// decides scoreability must not be more permissive than the one that only
+// reports.
 const cadence = (input) =>
+  Number.isFinite(input.movesPerSecond) &&
+  Number.isFinite(input.moveGapP95Ms) &&
   input.movesPerSecond >= FIDELITY_MOVES_PER_SECOND_MIN &&
   input.moveGapP95Ms <= FIDELITY_MOVE_GAP_P95_MAX_MS;
 

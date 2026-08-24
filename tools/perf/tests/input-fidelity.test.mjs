@@ -175,6 +175,31 @@ describe('the runtime the 2026-08-23 hand corpus calibrated', () => {
     expect(verdict.uncalibrated).toEqual([]);
   });
 
+  // Retiring the ceiling removed the gate's only finiteness guard. A capture whose
+  // window collapsed reports a non-finite rate, and the floor alone says yes to it
+  // — so the check that decides scoreability was more permissive than the
+  // diagnostic that merely describes.
+  it('refuses a rate that is not a finite measurement', () => {
+    for (const movesPerSecond of [Infinity, NaN, undefined, null]) {
+      const verdict = inputFidelity(
+        { kinds: 'touch', trust: { share: 1 }, movesPerSecond, moveGapP95Ms: 1 },
+        'android-chrome'
+      );
+
+      expect(verdict.checks.cadence, String(movesPerSecond)).toBe(false);
+      expect(verdict.passed, String(movesPerSecond)).toBe(false);
+    }
+  });
+
+  it('refuses a gap that is not a finite measurement', () => {
+    const verdict = inputFidelity(
+      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 154, moveGapP95Ms: Infinity },
+      'android-chrome'
+    );
+
+    expect(verdict.checks.cadence).toBe(false);
+  });
+
   // Both hand captures that exceed the retired 170 ceiling are real fingers on
   // real hardware — 178.0 on the phone, 268.4 on the iPad. A gate that rejects
   // its own reference input is measuring the digitizer, not the fidelity.
