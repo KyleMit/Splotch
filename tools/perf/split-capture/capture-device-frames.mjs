@@ -50,6 +50,9 @@ const POLL_INTERVAL_MS = 1_000;
 // phase immediately would clip it out of the capture.
 const GESTURE_TAIL_MS = 1_200;
 const WDA_SESSION_ATTEMPTS = 3;
+const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
+const APP_BUNDLE_ID = 'art.splotch.app';
+const ANDROID_APP_ACTIVITY = 'art.splotch.app/.MainActivity';
 const WDA_SESSION_SETTLE_MS = 2_500;
 const CONTACT_BANK_MS = 600_000;
 
@@ -78,7 +81,12 @@ async function wda(wdaUrl, method, path, body) {
   return parsed.value;
 }
 
-function androidDriver({ serial, pageUrl, orientation }) {
+// A native run reaches the same instrumented page through the app's own WebView
+// rather than the browser, which needs the app built with `server.url` pointed at
+// the probe host. What that changes is asset DELIVERY, not the engine: the touch
+// path, the compositor and the frame loop are the WebView's either way. The
+// artifact says so rather than leaving a reader to assume a bundled build.
+function androidDriver({ serial, pageUrl, orientation, nativeApp }) {
   return {
     async openPage() {
       const settles = {
@@ -86,6 +94,13 @@ function androidDriver({ serial, pageUrl, orientation }) {
         rotation: ROTATION_SETTLE_MS,
         page: PAGE_SETTLE_MS,
       };
+      if (nativeApp) {
+        adb(serial, ['shell', 'am', 'force-stop', APP_BUNDLE_ID]);
+        await sleep(APP_STOP_SETTLE_MS);
+        adb(serial, ['shell', 'am', 'start', '-n', ANDROID_APP_ACTIVITY]);
+        await sleep(PAGE_SETTLE_MS);
+        return;
+      }
       for (const step of androidPageLaunchSteps(orientation, pageUrl)) {
         adb(serial, step.args);
         if (step.settle) await sleep(settles[step.settle]);
@@ -111,7 +126,7 @@ function androidDriver({ serial, pageUrl, orientation }) {
   };
 }
 
-function iosDriver({ wdaUrl, pageUrl }) {
+function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
   let sessionId = null;
   return {
     async openPage() {
@@ -125,17 +140,22 @@ function iosDriver({ wdaUrl, pageUrl }) {
       for (let attempt = 0; attempt < WDA_SESSION_ATTEMPTS; attempt += 1) {
         const created = await wda(wdaUrl, 'POST', '/session', {
           capabilities: {
-            alwaysMatch: { bundleId: 'com.apple.mobilesafari', shouldWaitForQuiescence: false },
+            alwaysMatch: {
+              bundleId: nativeApp ? APP_BUNDLE_ID : SAFARI_BUNDLE_ID,
+              shouldWaitForQuiescence: false,
+            },
           },
         });
         sessionId = created.sessionId;
         await sleep(WDA_SESSION_SETTLE_MS);
-        const opened = await wda(wdaUrl, 'POST', `/session/${sessionId}/url`, {
-          url: pageUrl,
-        }).then(
-          () => true,
-          () => false
-        );
+        // The native app loads the probe host from its own configuration, so
+        // there is no URL to navigate: launching it IS opening the page.
+        const opened = nativeApp
+          ? true
+          : await wda(wdaUrl, 'POST', `/session/${sessionId}/url`, { url: pageUrl }).then(
+              () => true,
+              () => false
+            );
         if (opened) break;
         await sleep(WDA_SESSION_SETTLE_MS);
       }
@@ -203,7 +223,11 @@ export async function captureDeviceFrames({
   label = argFlag('label'),
   output = argFlag('output'),
   reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
-  allowForeignBuild = argFlag('allow-foreign-build'),
+  allowForeignBuild = process.argv.includes('--allow-foreign-build'),
+  // `argFlag` only matches `--name=value`, so a BARE flag is invisible to it and
+  // reads as absent. A capture that silently ran against Safari while reporting a
+  // WebView runtime is the failure this shape produces.
+  nativeApp = process.argv.includes('--native-app'),
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
@@ -218,7 +242,7 @@ export async function captureDeviceFrames({
   // preview, so the build the device will load is checkable from here — and until
   // it was, only the desktop runners verified a build at all. A native export
   // written after the preview started reached device cells unchallenged.
-  await assertServedBuildIsFresh(host, { allowForeignBuild: allowForeignBuild !== undefined });
+  await assertServedBuildIsFresh(host, { allowForeignBuild });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
@@ -234,8 +258,8 @@ export async function captureDeviceFrames({
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
   const driver =
     platform === 'android'
-      ? androidDriver({ serial, pageUrl, orientation })
-      : iosDriver({ wdaUrl, pageUrl });
+      ? androidDriver({ serial, pageUrl, orientation, nativeApp })
+      : iosDriver({ wdaUrl, pageUrl, nativeApp });
 
   await driver.openPage();
 
@@ -271,11 +295,9 @@ export async function captureDeviceFrames({
 
   const summaries = summarizeRun(payload.report);
   const drawing = scoreDrawingRun(summaries.phases);
-  // This path is browser-only on both platforms — it drives the OS's own trusted
-  // injection into Chrome or Safari, never a Capacitor WebView.
   const fidelity = inputFidelity(
     summaries.phases?.[0]?.input ?? {},
-    captureRuntime(platform, false)
+    captureRuntime(platform, nativeApp)
   );
 
   console.log(
@@ -302,6 +324,11 @@ export async function captureDeviceFrames({
     brush,
     orientation,
     theme,
+    nativeApp,
+    // A native run reaches the instrumented page over the LAN through the app's
+    // `server.url`, so its assets are not the bundled ones. Recorded because the
+    // difference is invisible in the numbers and material to what the cell means.
+    pageDelivery: nativeApp ? 'remote-probe-host' : 'browser',
     transport: 'split-input-measurement',
     fidelity,
     drawing,

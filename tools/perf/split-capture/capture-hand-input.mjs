@@ -136,7 +136,8 @@ export async function captureHandInput({
   seconds = Number(argFlag('seconds', DEFAULT_DRAW_SECONDS)),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
-  nativeApp = argFlag('native-app') !== undefined,
+  // `argFlag` matches `--name=value` only, so a bare flag has to be read from argv.
+  nativeApp = process.argv.includes('--native-app'),
   opener = argFlag('open', argFlag('platform', 'android') === 'android' ? 'adb' : 'manual'),
   label = argFlag('label'),
   output = argFlag('output'),
