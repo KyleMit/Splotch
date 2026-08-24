@@ -13,10 +13,13 @@ export const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
 // A landscape phone gets CompactShell: quick toggles and a pointer to portrait
 // instead of the section list (COMPACT_QUERY in SettingsModal.svelte). Its
 // controls are different elements, not missing ones.
-// Exported because the split-capture bootstrap has to do the same setup INSIDE
-// the page: it has no script channel to drive these helpers through, and the
-// route's CSP forbids eval, so its control flow is written separately against
-// these same selectors. The selectors and the resolution rule stay owned here.
+// One owner for every Settings selector both capture transports touch. The
+// split-capture bootstrap has to do this setup INSIDE the page — it has no
+// script channel to drive these helpers through, and the route's CSP forbids
+// eval — so its control FLOW is written separately, against these same
+// constants. The helpers below consume them too; when they carried their own
+// copies, "owned here" was a comment rather than a fact, and a Settings rename
+// could leave one transport working while the other silently timed out.
 export const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
 export const SETTINGS_MODAL = '#settingsModal';
 export const SETTINGS_BUTTON = 'button[aria-label="Settings"]';
@@ -29,7 +32,7 @@ export async function settingsShellIsCompact(execute) {
 }
 
 export const settingsSectionRow = (section) =>
-  `#settingsModal button[data-section=${JSON.stringify(section)}]`;
+  `${SETTINGS_MODAL} button[data-section=${JSON.stringify(section)}]`;
 
 export function parseCampaignTheme(value) {
   if (value === undefined) return null;
@@ -117,15 +120,15 @@ async function openAppearanceSettings(execute, hint) {
   // it stays closed rather than trusting one click to land.
   await waitForUi(
     execute,
-    `document.querySelector('#settingsModal') !== null`,
+    `document.querySelector('${SETTINGS_MODAL}') !== null`,
     `Settings shell for ${hint}`
   );
   const opened = await pollUntil(
     async () => {
-      if (await execute(`return document.querySelector('#settingsModal')?.open === true;`)) {
+      if (await execute(`return document.querySelector('${SETTINGS_MODAL}')?.open === true;`)) {
         return true;
       }
-      await clickSetupElement(execute, 'button[aria-label="Settings"]').catch(() => {});
+      await clickSetupElement(execute, SETTINGS_BUTTON).catch(() => {});
       return false;
     },
     READY_TIMEOUT_MS,
@@ -135,7 +138,7 @@ async function openAppearanceSettings(execute, hint) {
   // The compact shell has no sections to navigate to — its theme and orientation
   // controls sit on the one pane that just opened.
   if (await settingsShellIsCompact(execute)) return true;
-  if (!(await execute(`return document.querySelector('#themeOption-light') !== null;`))) {
+  if (!(await execute(`return document.querySelector('${themeOption('light')}') !== null;`))) {
     const selector = settingsSectionRow('appearance');
     if (!(await execute(`return document.querySelector(${JSON.stringify(selector)}) !== null;`))) {
       throw new Error('Settings did not expose the Appearance section');
@@ -143,7 +146,7 @@ async function openAppearanceSettings(execute, hint) {
     await clickSetupElement(execute, selector);
     await waitForUi(
       execute,
-      `document.querySelector('#themeOption-light') !== null`,
+      `document.querySelector('${themeOption('light')}') !== null`,
       `Appearance section for ${hint}`
     );
   }
@@ -151,10 +154,10 @@ async function openAppearanceSettings(execute, hint) {
 }
 
 async function closeSettings(execute, hint) {
-  await clickSetupElement(execute, '#settingsModal button[aria-label="Close"]');
+  await clickSetupElement(execute, SETTINGS_CLOSE_BUTTON);
   await waitForUi(
     execute,
-    `document.querySelector('#settingsModal')?.open !== true`,
+    `document.querySelector('${SETTINGS_MODAL}')?.open !== true`,
     `Settings to close after ${hint}`
   );
   await sleep(SETUP_SETTLE_MS);
@@ -169,11 +172,11 @@ export async function ensureCampaignTheme(execute, theme) {
       // theme picker, so aim at the resolved theme instead of a named option.
       const wantsDark = theme === 'dark';
       const alreadySet = await execute(
-        `return document.querySelector('#quickNightToggle')?.getAttribute('aria-checked') === '${wantsDark}';`
+        `return document.querySelector('${QUICK_NIGHT_TOGGLE}')?.getAttribute('aria-checked') === '${wantsDark}';`
       );
-      if (!alreadySet) await clickSetupElement(execute, '#quickNightToggle');
+      if (!alreadySet) await clickSetupElement(execute, QUICK_NIGHT_TOGGLE);
     } else {
-      await clickSetupElement(execute, `#themeOption-${theme}`);
+      await clickSetupElement(execute, themeOption(theme));
     }
     await waitForUi(
       execute,
