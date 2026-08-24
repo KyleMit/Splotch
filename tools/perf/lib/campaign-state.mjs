@@ -69,6 +69,24 @@ export const RESOLVED_THEME_EXPRESSION =
   ' ? document.documentElement.dataset.theme' +
   " : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))";
 
+// Why a readiness payload may not be scored, or null when it may. Pure so the
+// refusal can be tested without a device — the runners previously inlined this
+// and nothing exercised either branch.
+//
+// Absence is refused as firmly as a mismatch: a page that cannot say which theme
+// it is showing cannot prove what it measured, and treating silence as consent
+// is how the request-echo defect worked in the first place.
+export function readinessThemeProblem(ready, requestedTheme) {
+  const observed = ready?.resolvedTheme;
+  if (!observed) {
+    return 'the page did not report a resolved theme — it cannot prove which theme it measured';
+  }
+  if (requestedTheme && observed !== requestedTheme) {
+    return `the page resolved to ${observed}, not the requested ${requestedTheme}`;
+  }
+  return null;
+}
+
 export async function readResolvedTheme(execute) {
   return execute(`return ${RESOLVED_THEME_EXPRESSION};`);
 }

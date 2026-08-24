@@ -19,6 +19,7 @@ import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
+import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
@@ -225,12 +226,8 @@ export async function captureHandInput({
   // Theme used to be recorded from the REQUEST, so a light-labelled artifact
   // could be written while the page stayed dark. It is now set through the
   // product's Settings controls and read back before anything is measured.
-  if (ready.resolvedTheme && ready.resolvedTheme !== theme) {
-    fail(`the page resolved to ${ready.resolvedTheme}, not the requested ${theme}`);
-  }
-  if (!ready.resolvedTheme) {
-    fail('the page did not report a resolved theme — it cannot prove which theme it measured');
-  }
+  const themeProblem = readinessThemeProblem(ready, theme);
+  if (themeProblem) fail(themeProblem);
   if (ready.geometry?.orientation && ready.geometry.orientation !== orientation) {
     fail(`the page is ${ready.geometry.orientation}, not the requested ${orientation}`);
   }

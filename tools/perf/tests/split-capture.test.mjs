@@ -377,35 +377,11 @@ describe('launching the native app instead of the browser', () => {
   });
 });
 
-// Theme was recorded from the REQUEST and never set or observed: every tracked
-// capture carries `report.meta.theme: null`, so a dark-labelled artifact could be
-// written while the page stayed on whatever the previous run persisted. The
-// bootstrap is a string built in Node, so its contract is asserted here.
-describe('the bootstrap setting the theme it was asked for', () => {
-  const source = pageBootstrapSource();
+// The theme behaviour is covered by tools/perf/tests/bootstrap-theme.test.mjs,
+// which EXECUTES the generated bootstrap in a DOM fixture. Source-substring
+// assertions lived here and survived disabling the whole theme branch, so they
+// were removed rather than kept alongside a test that works.
 
-  it('drives the product Settings controls rather than writing state', () => {
-    expect(source).toContain('#settingsModal');
-    expect(source).toContain('#quickNightToggle');
-    expect(source).toContain("'#themeOption-' + plan.theme");
-  });
-
-  it('waits for the page to RESOLVE to the requested theme', () => {
-    expect(source).toContain('resolvedTheme() === plan.theme');
-    expect(source).toContain('the page never resolved to');
-  });
-
-  // The runner refuses a mismatch before a person or a device spends the capture,
-  // which it can only do if readiness carries the observed value.
-  it('reports the resolved theme in the readiness payload', () => {
-    expect(source).toContain('resolvedTheme: resolvedTheme()');
-  });
-});
-
-// `observedTheme` had no test. Deleting both writer assignments left the suite
-// green while recreating the exact gap the field closes: readiness knows the
-// theme and the saved file cannot prove it. Both envelopes are asserted, because
-// the hand capture is the one a person paid for.
 describe('what a saved artifact can prove about its own theme', () => {
   const ready = { resolvedTheme: 'dark' };
   const common = { brush: 'pen', orientation: 'LANDSCAPE', theme: 'dark', payload: {} };
