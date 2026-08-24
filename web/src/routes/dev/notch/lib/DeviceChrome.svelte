@@ -102,6 +102,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
+    --chrome-glyph: #ffffff;
   }
 
   /* Masks the tile's square corners down to the device's radius by painting the
@@ -111,9 +112,13 @@
     position: absolute;
     inset: 0;
     border-radius: var(--corner);
-    box-shadow: 0 0 0 400px var(--notch-page-ground);
+    box-shadow: 0 0 0 400px var(--app-bg);
   }
 
+  /* Hardware illustration, not product chrome: a camera cutout is black and the
+     system glyphs over it are white on every device in the matrix, whatever
+     theme the browser previewing them is in — the same reason the store-frame
+     art pins its values. Theme tokens would repaint physical hardware. */
   .cutout {
     position: absolute;
     background: #05050a;
@@ -138,8 +143,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: var(--notch-glyph);
-    font-size: 11px;
+    color: var(--chrome-glyph);
+    font-size: var(--font-size-xs);
     font-weight: 600;
     font-family: var(--font-family);
   }
@@ -180,7 +185,7 @@
     translate: -50% 0;
     height: 5px;
     border-radius: 999px;
-    background: var(--notch-glyph);
+    background: var(--chrome-glyph);
     opacity: 0.75;
   }
 </style>

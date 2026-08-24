@@ -1,6 +1,10 @@
 <script lang="ts">
   import { DEVICE_PROFILES } from './lib/devices';
-  import { SYMMETRIC_LANDSCAPE_NOTE, supportedOrientations } from './lib/deviceProfile';
+  import {
+    SYMMETRIC_LANDSCAPE_NOTE,
+    sizeClassOf,
+    supportedOrientations,
+  } from './lib/deviceProfile';
   import ScenarioTile from './lib/ScenarioTile.svelte';
 
   // Every distinct safe-area profile the app can land in, held one way at a
@@ -29,15 +33,23 @@
     <h1>Notch &amp; safe area</h1>
     <p class="lede">
       One section per distinct <code>env(safe-area-inset-*)</code> profile, one tile per orientation the
-      device actually offers. Each tile is the live HUD in an iframe at that device's CSS viewport, with
-      the four insets overridden — so the Notch Band, the palette, and every corner control lay themselves
-      out exactly as they would on the hardware.
+      device actually offers. Each tile is the live HUD in an iframe at that device's CSS viewport, under
+      that device's insets and rotation angle, so the Notch Band, the palette and every corner control
+      lay themselves out against the geometry the device would give them.
+    </p>
+    <p class="lede">
+      <strong>A web-layout model, not the native app.</strong> Frames run the ordinary web build, so
+      <code>isNative()</code> is false and no Capacitor plugin runs. A native-only effect reaches a tile
+      only where it changes the geometry and this harness models it explicitly — one does: Android native
+      hides the status bar in landscape, and those tiles are drawn with that inset already reclaimed.
+      Native status-bar icon styling changes no geometry and is absent.
     </p>
     <p class="lede">
       The dashed outline is the claimable region. Hardware is drawn over the top: a cutout, the
       status glyphs, the home indicator. <strong>{SYMMETRIC_LANDSCAPE_NOTE}</strong> The two landscape
-      tiles for an iPhone therefore receive identical numbers and differ only in where the hardware really
-      is — compare them against each other.
+      tiles for an iPhone therefore receive identical numbers, which is why the band covers both sides
+      there — neither strip is claimable, so covering both cannot land on the wrong one. Where the two
+      sides differ, as on Android, the rotation angle picks.
     </p>
 
     <div class="controls">
@@ -61,6 +73,7 @@
         <span class="badge" data-confidence={profile.confidence}>{profile.confidence}</span>
         <span class="badge surface">{profile.surface}</span>
         <span class="viewport">{profile.viewport.width} × {profile.viewport.height}</span>
+        <span class="badge">{sizeClassOf(profile)}</span>
       </div>
       <p class="models">{profile.models.join(' · ')}</p>
       <p class="notes">{profile.notes}</p>
@@ -75,20 +88,29 @@
 </div>
 
 <style>
-  /* Local palette, so the harness reads as its own surface rather than borrowing
-     the app's drawing chrome, and so the tiles' overlay colors have one home. */
+  /* The harness reads the themed app tokens like every other route rather than
+     pinning its own palette, so it follows the parent's night-mode preference.
+     Only the two values below have no token to read.
+
+     The safe-area outline is a measurement annotation, not product chrome —
+     there is no token for "instrument overlay", and it has to stay legible on
+     both papers and over a tile of any drawing colour, which is what the
+     alpha buys. rgb() rather than hex is not linter evasion: an opaque hex
+     could not do this job. */
   .harness {
-    --notch-page-ground: #14141a;
-    --notch-panel: #1d1d25;
-    --notch-body: #c8c8d4;
-    --notch-muted: #8a8a9a;
-    --notch-glyph: #ffffff;
     --notch-safe-outline: rgb(120 220 255 / 65%);
+    /* The one raw pair: there is no warn token in the ramp — amber is the
+       product's missing status colour, the same gap AdminConsole's persistence
+       banner documents — and both warn surfaces here (a medium-confidence
+       badge, a wrong-edge-adjacent verdict) need the same pair. Declared once
+       so ScenarioTile inherits it instead of restating the hexes. */
+    --notch-warn-wash: #5a4210;
+    --notch-warn-ink: #ffd479;
 
     min-height: 100vh;
     padding: var(--space-6);
-    background: var(--notch-page-ground);
-    color: var(--notch-body);
+    background: var(--app-bg);
+    color: var(--text-strong);
     font-family: var(--font-family);
   }
 
@@ -102,14 +124,14 @@
   }
 
   .back {
-    color: var(--notch-muted);
+    color: var(--text-soft);
     font-size: var(--font-size-sm);
     text-decoration: none;
   }
 
   h1 {
     margin: var(--space-2) 0 var(--space-3);
-    color: #fff;
+    color: var(--text-strong);
     font-size: var(--font-size-xl);
   }
 
@@ -121,7 +143,7 @@
 
   code {
     font-family: var(--font-mono);
-    color: #fff;
+    color: var(--text-strong);
   }
 
   .controls {
@@ -143,14 +165,14 @@
     font: inherit;
     padding: 2px 6px;
     color: inherit;
-    background: var(--notch-panel);
-    border: var(--border-width) solid #33333f;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
     border-radius: var(--radius-sm);
   }
 
   section {
     padding: var(--space-5) 0 var(--space-6);
-    border-top: var(--border-width) solid #2a2a34;
+    border-top: var(--border-width) solid var(--border);
   }
 
   .meta {
@@ -162,7 +184,7 @@
 
   h2 {
     margin: 0;
-    color: #fff;
+    color: var(--text-strong);
     font-size: var(--font-size-lg);
   }
 
@@ -172,27 +194,27 @@
     font-size: var(--font-size-xs);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    background: #2f2f3c;
-    color: var(--notch-body);
+    background: var(--surface-hover);
+    color: var(--text-strong);
   }
 
   /* A medium or low badge is a standing instruction to verify on hardware before
      trusting the tile, so it has to be visible without reading the note. */
   .badge[data-confidence='medium'] {
-    background: #5a4210;
-    color: #ffd479;
+    background: var(--notch-warn-wash);
+    color: var(--notch-warn-ink);
   }
 
   .badge[data-confidence='low'] {
-    background: #5a1a1a;
-    color: #ff9d9d;
+    background: var(--danger-wash);
+    color: var(--danger-text);
   }
 
   .viewport,
   .models,
   .notes {
     font-size: var(--font-size-sm);
-    color: var(--notch-muted);
+    color: var(--text-soft);
   }
 
   .models {

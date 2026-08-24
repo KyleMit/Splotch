@@ -105,32 +105,86 @@ landscape height (24–28dp).
 `densityDpi`, rescaling the viewport *and* every CSS px inset together. One OnePlus device declares
 three status bar heights by `sw` qualifier. Read `env()` live; never cache or hardcode.
 
-## Open defect: the band paints on the wrong edge in landscape
+## How the landscape band picks its edge
 
-`cutoutEdge()` in `lib/platform/notchBand.ts` picks the landscape band edge by taking the deeper
-side inset:
+In portrait the cutout is at the top and there is nothing to decide. Landscape is where it gets
+hard, and the rule that reads as obvious — paint whichever side inset is deeper — is wrong on both
+platforms, for unrelated reasons:
 
-```ts
-return input.insetRight >= input.insetLeft ? { edge: 'right', ... } : { edge: 'left', ... };
-```
+* **iOS reports both landscape sides with the same value**, whichever side the cutout is physically
+  on. `insetRight >= insetLeft` is therefore always true, so the band always painted right: correct
+  on one rotation, wrong on the other.
+* **Android with 3-button navigation** moves the nav bar to the side *opposite* the camera, where at
+  48dp it is deeper than the cutout's ~38dp. The rule picked the nav bar in *both* rotations,
+  painting the drawing colour behind the back/home/recents buttons.
 
-That rule fails on both platforms, for different reasons:
+`landscapeBandEdges()` in `lib/platform/notchBand.ts` now keys on **symmetry**, not depth:
 
-* **iOS** reports the two sides *equal*, so `>=` is always true and the band always paints right —
-  correct on `landscape-right`, wrong on `landscape-left`. Half of all landscape use.
-* **Android with 3-button navigation** moves the nav bar to the side *opposite* the camera in
-  landscape, where it is deeper (48dp) than the cutout (~38dp). The rule then picks the nav bar in
-  *both* rotations, painting the drawing colour behind the back/home/recents buttons and leaving the
-  camera strip bare.
+| The two side insets        | What the band does | Why                                                                                                                                                |
+| -------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Equal                      | Paint **both**     | This is exactly the case the app cannot resolve — and both strips are already outside the content box, so covering both spends no claimable screen |
+| Different, angle 90        | Paint **left**     | The sides are distinguishable and the rotation says which                                                                                          |
+| Different, angle 270       | Paint **right**    |                                                                                                                                                    |
+| Different, no usable angle | Paint **nothing**  | A band on the wrong edge is worse than no band: it spends claimable screen *and* leaves the cutout bare                                            |
 
-Painting the wrong edge is worse than painting nothing: it spends claimable screen on a colour bar
-*and* leaves the strip the band exists to fill unpainted.
+### The rotation angle, and the one version that disagreed
 
-CSS alone cannot fix this — on iOS the information is genuinely absent. A fix needs a native signal
-(`screen.orientation.angle` plus knowledge of where the camera sits), or a decision to paint both
-sides in landscape, or to drop the landscape band. That is a product call, so the current behaviour
-is pinned rather than changed: `devices.test.ts` asserts `wrongSide === true` for both cases, so a
-fix is a deliberate, visible change to a test that names the defect.
+`screen.orientation.angle` is at the browser floor (Chrome 38 / Safari 16.4), is already in the
+compatibility register, and is already read by `lib/drawing/engine.ts`. The angle is the
+**device's** rotation *counter-clockwise* from natural, so **90 puts the natural top edge — and the
+cutout — on the LEFT**, and 270 on the right.
+
+That sign is the whole question, and it is worth knowing how it was settled, because the obvious
+sources disagree:
+
+* The [W3C Screen Orientation spec](https://www.w3.org/TR/screen-orientation/) says "rotated
+  counter-clockwise from its natural orientation" — which reads either way depending on whether you
+  picture the device or the content turning. It is not sufficient on its own.
+* The [WHATWG Compatibility Standard](https://compat.spec.whatwg.org/) is, because it chains
+  `window.orientation` to the same angle and states the direction unambiguously: "`90` represents a
+  rotation 90 degrees counterclockwise from the natural orientation."
+* [AOSP `Display.getRotation()`](https://developer.android.com/reference/android/view/Display#getRotation())
+  agrees, in inverted vocabulary: "if the device is rotated 90 degrees counter-clockwise … the
+  returned value here will be `Surface.ROTATION_90`". Chromium passes that straight through. Android
+  calls it a clockwise *graphics* rotation and W3C a counter-clockwise *screen* rotation — the same
+  pose in opposite frames of reference, and the source of most of the confusion online.
+* Measured, on the same page in the same pose
+  ([W3C issue 247](https://lists.w3.org/Archives/Public/public-webapps-github/2023Apr/0185.html)):
+  turning the device clockwise (notch to the right) reported **270** on Chrome and Firefox for
+  Android.
+
+**The trap:** [WebKit bug 254863](https://bugs.webkit.org/show_bug.cgi?id=254863) comment 8 states
+the opposite mapping — 90 = notch right. That was an accurate description of **iOS 16.4**, which
+shipped the inverted mapping against a spec that at the time permitted either. It was corrected
+three days later in [bug 255388](https://bugs.webkit.org/show_bug.cgi?id=255388) (WebKit
+`262940@main`), and the spec was pinned counter-clockwise in
+[w3c/screen-orientation#248](https://github.com/w3c/screen-orientation/pull/248). Anything written
+before **April 2023** is unreliable on this point.
+
+iOS 16.4 is this app's *floor*, so the one OS version that reports the inverted angle is a device we
+support. That is a large part of why iOS takes the paint-both branch rather than the angle branch:
+on iOS the angle is never consulted, so the 16.4 inversion cannot reach the band at all. Android's
+mapping has no such history.
+
+**Not yet verified on hardware.** The post-fix iOS mapping is inferred from WebKit's current source
+plus Apple's `UIInterfaceOrientation` semantics; no public measurement on a real notched iPhone
+exists. It does not currently affect the band (iOS never reads the angle), but it would if that
+branch ever changed. The measurement is cheap: log `screen.orientation.angle` beside
+`env(safe-area-inset-left)`/`-right` in both landscape rotations — the deeper inset is the notch
+side. Also note Safari 17 changed iPad's *natural* orientation to landscape, which reshuffles the
+angle mapping there; no iPad has a cutout, so nothing in the band depends on it.
+
+## What the harness models, and what it does not
+
+The `/dev/notch` frames run the ordinary **web** build, so `isNative()` is false and no Capacitor
+plugin executes. A native-only behaviour reaches a tile only when it changes geometry *and* the
+harness models it explicitly. One does today: Android native hides the status bar in landscape
+(`statusBarHiddenFor`), so `appliedInsets()` in the harness zeroes that top inset before rendering —
+otherwise a tile shows a strip of padding the shipped app does not have. Native status-bar icon
+styling changes no geometry and is simply absent.
+
+The device numbers in `DEVICE_PROFILES` stay untouched research; `appliedInsets()` layers the app's
+own policy on top by calling the app's own function, so the two cannot drift.
 
 ## Adding a device
 

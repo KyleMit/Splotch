@@ -6,7 +6,9 @@ import {
   bandColor,
   hasNotch,
   statusBarStyleForBand,
-  cutoutEdge,
+  bandEdges,
+  CUTOUT_LEFT_ANGLE,
+  CUTOUT_RIGHT_ANGLE,
   statusBarHiddenFor,
   computeNotchBandState,
   NOTCH_INSET_THRESHOLD_PX,
@@ -32,6 +34,7 @@ const NO_CUTOUT: NotchBandInput = {
   insetTop: 0,
   insetLeft: 0,
   insetRight: 0,
+  orientationAngle: 0,
   activeColor: '#AB71E1',
   eraser: false,
   paperColor: PAPER_COLORS.light,
@@ -146,31 +149,70 @@ describe('applyStatusBar', () => {
   });
 });
 
-describe('cutoutEdge', () => {
+describe('bandEdges', () => {
+  const landscape = { ...NO_CUTOUT, orientation: 'landscape' as const, insetTop: 0 };
+
   it('uses the top inset in portrait', () => {
-    expect(cutoutEdge({ ...NO_CUTOUT, insetTop: NOTCH_INSET })).toEqual({
-      edge: 'top',
-      inset: NOTCH_INSET,
-    });
+    expect(bandEdges({ ...NO_CUTOUT, insetTop: NOTCH_INSET })).toEqual(['top']);
   });
 
-  it('follows the hole-punch to the right side in landscape', () => {
-    // Physical top rotated to the right edge; the long top edge stays clear.
-    expect(
-      cutoutEdge({ ...NO_CUTOUT, orientation: 'landscape', insetTop: 0, insetRight: NOTCH_INSET })
-    ).toEqual({ edge: 'right', inset: NOTCH_INSET });
+  it('paints nothing in portrait below the notch threshold', () => {
+    expect(bandEdges({ ...NO_CUTOUT, insetTop: BEZEL_INSET })).toEqual([]);
   });
 
-  it('follows the hole-punch to the left side in landscape', () => {
+  // iOS insets both landscape sides with the same value whichever side the
+  // cutout is on, so neither the insets nor the angle can be trusted to pick
+  // one — and neither strip is claimable, so painting both spends nothing.
+  it('paints both sides when the two insets are indistinguishable', () => {
+    expect(bandEdges({ ...landscape, insetLeft: NOTCH_INSET, insetRight: NOTCH_INSET })).toEqual([
+      'left',
+      'right',
+    ]);
+  });
+
+  it('leaves an indistinguishable pair alone below the threshold', () => {
+    expect(bandEdges({ ...landscape, insetLeft: BEZEL_INSET, insetRight: BEZEL_INSET })).toEqual(
+      []
+    );
+  });
+
+  // Asymmetric sides mean the deeper one may be a nav bar rather than the
+  // cutout, so the rotation angle picks, not the depth.
+  it('follows the angle to the left side, not the deeper inset', () => {
     expect(
-      cutoutEdge({ ...NO_CUTOUT, orientation: 'landscape', insetTop: 0, insetLeft: NOTCH_INSET })
-    ).toEqual({ edge: 'left', inset: NOTCH_INSET });
+      bandEdges({
+        ...landscape,
+        insetLeft: NOTCH_INSET,
+        insetRight: NOTCH_INSET + 10,
+        orientationAngle: CUTOUT_LEFT_ANGLE,
+      })
+    ).toEqual(['left']);
+  });
+
+  it('follows the angle to the right side, not the deeper inset', () => {
+    expect(
+      bandEdges({
+        ...landscape,
+        insetLeft: NOTCH_INSET + 10,
+        insetRight: NOTCH_INSET,
+        orientationAngle: CUTOUT_RIGHT_ANGLE,
+      })
+    ).toEqual(['right']);
+  });
+
+  // A wrong band spends claimable screen and leaves the cutout bare, so an
+  // angle that names neither side paints nothing rather than guessing.
+  it('paints nothing when an asymmetric pair has no usable angle', () => {
+    expect(
+      bandEdges({ ...landscape, insetLeft: NOTCH_INSET, insetRight: 0, orientationAngle: 0 })
+    ).toEqual([]);
   });
 
   it('ignores the top inset entirely in landscape', () => {
     // Even if a stale top inset lingers, landscape never bands the long top edge.
-    const { edge } = cutoutEdge({ ...NO_CUTOUT, orientation: 'landscape', insetTop: NOTCH_INSET });
-    expect(edge).not.toBe('top');
+    expect(
+      bandEdges({ ...NO_CUTOUT, orientation: 'landscape', insetTop: NOTCH_INSET })
+    ).not.toContain('top');
   });
 });
 
@@ -269,6 +311,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
       orientation: 'landscape',
       insetTop: NOTCH_INSET,
       insetLeft: NOTCH_INSET,
+      orientationAngle: CUTOUT_LEFT_ANGLE,
       activeColor: '#62A2E9',
     });
     expect(state.backgroundColors).toEqual({
@@ -279,7 +322,12 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
     expect(state.statusBarHidden).toBe(true);
   });
 
-  it('paints only the tie-breaking right edge when both side insets match', () => {
+  // This test used to assert the tie-break that was the defect: with matching
+  // side insets the old rule always picked the right edge, so on the rotation
+  // whose cutout was on the left it painted the wrong strip. Matching insets
+  // are precisely the case the app cannot resolve — and both strips are already
+  // outside the content box, so covering both spends no claimable screen.
+  it('paints both sides when the side insets are indistinguishable', () => {
     const state = computeNotchBandState({
       ...NO_CUTOUT,
       orientation: 'landscape',
@@ -288,7 +336,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
     });
     expect(state.backgroundColors).toEqual({
       top: 'transparent',
-      left: 'transparent',
+      left: '#AB71E1',
       right: '#AB71E1',
     });
   });

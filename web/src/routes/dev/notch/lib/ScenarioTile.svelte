@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { DeviceProfile } from './deviceProfile';
   import DeviceChrome from './DeviceChrome.svelte';
-  import { diagnose, unreclaimedInsetPx } from './diagnostics';
+  import { appliedInsets, bandVerdict, diagnose, unreclaimedInsetPx } from './diagnostics';
   import { isFrameReady } from './frameReady';
   import { ORIENTATION_LABELS, isLandscape, type Orientation } from './orientations';
 
@@ -17,7 +17,14 @@
 
   let { profile, orientation, budgetPx }: Props = $props();
 
-  const insets = $derived(profile.insets[orientation]);
+  // What the app lays out against: the device's insets with the app's own
+  // status-bar policy applied. On Android native landscape the app hides the
+  // status bar, so the top inset the device reports is not the one the shipped
+  // app sees — a tile drawn from the raw numbers would show padding that does
+  // not exist on the device.
+  const insets = $derived(appliedInsets(profile, orientation));
+  const deviceInsets = $derived(profile.insets[orientation]);
+  const statusBarHidden = $derived(!!insets && !!deviceInsets && insets.top !== deviceInsets.top);
   const landscape = $derived(isLandscape(orientation));
   const width = $derived(landscape ? profile.viewport.height : profile.viewport.width);
   const height = $derived(landscape ? profile.viewport.width : profile.viewport.height);
@@ -81,19 +88,25 @@
   // colour bar while leaving the strip it exists to fill unpainted.
   const verdict = $derived.by(() => {
     if (!diagnosis) return null;
-    if (diagnosis.wrongSide) {
+    const painted = diagnosis.bandEdges;
+    if (diagnosis.missesCutout) {
       return {
         level: 'bad' as const,
-        text: `band on ${diagnosis.bandEdge}, cutout on ${diagnosis.cutoutScreenEdge}`,
+        text: `band on ${painted.join(' + ')}, cutout on ${diagnosis.cutoutScreenEdge}`,
       };
     }
     if (diagnosis.insetWithoutCutout) {
-      return { level: 'warn' as const, text: `band on ${diagnosis.bandEdge}, no cutout there` };
+      return { level: 'warn' as const, text: `band on ${painted.join(' + ')}, no cutout there` };
     }
-    if (diagnosis.bandEdge) {
-      return { level: 'good' as const, text: `band on ${diagnosis.bandEdge}` };
+    if (painted.length > 0) {
+      return { level: 'good' as const, text: `band on ${painted.join(' + ')}` };
     }
-    return { level: 'none' as const, text: 'no band' };
+    // No band is the right answer on a device with no cutout; on one that HAS a
+    // cutout it is a gap, and bandVerdict is the thing that names why.
+    const gap = bandVerdict(profile, orientation)?.cause;
+    return gap
+      ? { level: 'warn' as const, text: `no band — ${gap}` }
+      : { level: 'none' as const, text: 'no band' };
   });
 </script>
 
@@ -135,6 +148,11 @@
       <span class="readout" title="top · right · bottom · left">{readout}</span>
       {#if verdict}
         <span class="verdict" data-level={verdict.level}>{verdict.text}</span>
+      {/if}
+      {#if statusBarHidden}
+        <span class="unreclaimed"
+          >status bar hidden by the app ({deviceInsets?.top}px reclaimed)</span
+        >
       {/if}
       {#if unreclaimed > 0}
         <span class="unreclaimed">{unreclaimed}px given up, not reclaimed</span>
@@ -195,14 +213,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--notch-page-ground);
-    color: var(--notch-muted);
+    background: var(--app-bg);
+    color: var(--text-soft);
     font-size: var(--font-size-sm);
     text-align: center;
   }
 
   .veil.failed {
-    color: #ff9d9d;
+    color: var(--danger-text);
   }
 
   .safe-outline {
@@ -221,13 +239,13 @@
 
   .orientation {
     font-size: var(--font-size-sm);
-    color: var(--notch-body);
+    color: var(--text-strong);
   }
 
   .readout {
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
-    color: var(--notch-muted);
+    color: var(--text-soft);
   }
 
   .verdict {
@@ -237,27 +255,27 @@
   }
 
   .verdict[data-level='good'] {
-    color: #9ee6a8;
-    background: #1d3a22;
+    color: var(--success-text);
+    background: var(--success-wash);
   }
 
   .verdict[data-level='bad'] {
-    color: #ff9d9d;
-    background: #4d1616;
+    color: var(--danger-text);
+    background: var(--danger-wash);
   }
 
   .verdict[data-level='warn'] {
-    color: #ffd479;
-    background: #4d3810;
+    color: var(--notch-warn-ink);
+    background: var(--notch-warn-wash);
   }
 
   .verdict[data-level='none'] {
-    color: var(--notch-muted);
-    background: #2a2a34;
+    color: var(--text-soft);
+    background: var(--surface-hover);
   }
 
   .unreclaimed {
     font-size: var(--font-size-xs);
-    color: var(--notch-muted);
+    color: var(--text-soft);
   }
 </style>

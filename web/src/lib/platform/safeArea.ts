@@ -36,11 +36,6 @@ export function safeAreaLength(edge: SafeAreaEdge): string {
   return `var(${SAFE_AREA_PROPERTIES[edge]})`;
 }
 
-/** Inline `style` text setting all four inset properties to explicit pixel values. */
-export function safeAreaOverrideStyle(insets: SafeAreaInsets): string {
-  return SAFE_AREA_EDGES.map((edge) => `${SAFE_AREA_PROPERTIES[edge]}:${insets[edge]}px`).join(';');
-}
-
 let safeAreaProbe: HTMLDivElement | undefined;
 
 export function measureSafeAreaInsets(): SafeAreaInsets {

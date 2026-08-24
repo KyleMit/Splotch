@@ -25,9 +25,13 @@ export const ORIENTATION_LABELS = {
   'portrait-upside-down': 'Portrait upside-down',
 } as const satisfies Record<Orientation, string>;
 
-// Degrees clockwise from portrait, matching screen.orientation.angle's frame of
-// reference — the chrome overlay rotates the device's portrait-space cutout
-// geometry by this much to place it on the screen.
+// screen.orientation.angle for each pose. The angle is the device's rotation
+// COUNTER-clockwise from natural, so landscape-left — the device turned
+// counter-clockwise onto its left edge, carrying the cutout there — is 90.
+//
+// The chrome overlay also rotates the portrait-space cutout geometry by this
+// much to place it on screen, which works out because rotating the device
+// counter-clockwise rotates its contents clockwise by the same amount.
 export const ORIENTATION_ANGLES = {
   portrait: 0,
   'landscape-left': 90,

@@ -244,6 +244,46 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     sources: IPAD_SOURCES,
   },
   {
+    id: 'ipad-mini',
+    label: 'iPad mini',
+    models: ['iPad mini 6', 'iPad mini 7 (A17 Pro)'],
+    platform: 'ios',
+    surface: 'native',
+    viewport: { width: 744, height: 1133 },
+    cornerRadiusPx: 21,
+    cutout: NO_CUTOUT,
+    insets: {
+      portrait: { top: 24, right: 0, bottom: 20, left: 0 },
+      'landscape-left': { top: 24, right: 0, bottom: 20, left: 0 },
+      'landscape-right': { top: 24, right: 0, bottom: 20, left: 0 },
+      'portrait-upside-down': { top: 24, right: 0, bottom: 20, left: 0 },
+    },
+    confidence: 'high',
+    notes:
+      'Same inset tuple as the 11-inch iPads at the narrowest tablet viewport shipping — 744 is the closest any tablet gets to the 600px phone boundary, so it is where a tablet layout is most likely to run out of room. iPadOS still reports a regular size class here; it does not behave like a large phone.',
+    sources: IPAD_SOURCES,
+  },
+  {
+    id: 'ipad-13-inch',
+    label: 'iPad Pro 13-inch',
+    models: ['iPad Pro 13" (M4/M5)', 'iPad Pro 12.9" (3rd–6th gen)', 'iPad Air 13"'],
+    platform: 'ios',
+    surface: 'native',
+    viewport: { width: 1032, height: 1376 },
+    cornerRadiusPx: 18,
+    cutout: NO_CUTOUT,
+    insets: {
+      portrait: { top: 24, right: 0, bottom: 20, left: 0 },
+      'landscape-left': { top: 24, right: 0, bottom: 20, left: 0 },
+      'landscape-right': { top: 24, right: 0, bottom: 20, left: 0 },
+      'portrait-upside-down': { top: 24, right: 0, bottom: 20, left: 0 },
+    },
+    confidence: 'medium',
+    notes:
+      'The only profile whose shorter side clears LARGE_TABLET_MIN_SIDE_PX, so it is the only one that renders the largeTablet action-button step (68/62 rather than 60/55). Its inset tuple is identical to every other home-indicator iPad, which is exactly why an inset-only dataset would drop it and never exercise that branch.',
+    sources: IPAD_SOURCES,
+  },
+  {
     id: 'ipad-safari-tab',
     label: 'iPad · Safari tab',
     models: ['Any home-indicator iPad, in a browser tab rather than installed'],
@@ -344,7 +384,7 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     },
     confidence: 'high',
     notes:
-      'The scenario that breaks any "deepest side inset is the cutout" rule. With 3-button navigation the nav bar leaves the bottom edge in landscape and takes a side — the opposite side from the camera — so left and right are both non-zero and the DEEPER one is the nav bar. A band that follows the deeper inset paints the drawing colour behind the back/home/recents buttons and leaves the camera strip bare.',
+      'The scenario that breaks any "deepest side inset is the cutout" rule, and the reason the band cannot simply paint both sides. With 3-button navigation the nav bar leaves the bottom edge in landscape and takes a side — the opposite side from the camera — so left and right are both non-zero and the DEEPER one is the nav bar. Following the deeper inset would paint the drawing colour behind the back/home/recents buttons and leave the camera strip bare; painting both would paint over the buttons too. Here the rotation angle decides, which it can because the two sides are distinguishable.',
     sources: [
       'https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBar.java',
     ],

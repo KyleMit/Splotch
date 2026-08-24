@@ -8,8 +8,9 @@
   import { page } from '$app/state';
   import { SAFE_AREA_EDGES, SAFE_AREA_PROPERTIES, ZERO_INSETS } from '$lib/platform/safeArea';
   import { DEVICE_PROFILES } from '../lib/devices';
+  import { appliedInsets } from '../lib/diagnostics';
   import { NOTCH_FRAME_READY_ATTRIBUTE } from '../lib/frameReady';
-  import { isOrientation } from '../lib/orientations';
+  import { ORIENTATION_ANGLES, isOrientation } from '../lib/orientations';
 
   // One scenario's worth of the real HUD, rendered at the device's own CSS
   // viewport under that device's insets. The gallery mounts this in an <iframe>
@@ -23,7 +24,9 @@
   );
   const requested = $derived(page.url.searchParams.get('orientation'));
   const orientation = $derived(isOrientation(requested) ? requested : 'portrait');
-  const insets = $derived(profile?.insets[orientation] ?? ZERO_INSETS);
+  // The insets the app lays out against — the device's, with the app's own
+  // status-bar policy applied (see appliedInsets).
+  const insets = $derived((profile && appliedInsets(profile, orientation)) ?? ZERO_INSETS);
 
   // The drawing route's own app-surface locks, so the preview lays out under the
   // same rules as the real page rather than as a scrolling document.
@@ -39,6 +42,27 @@
   // the numbers it published are the frame's real (zero) insets. A synthetic
   // resize is how we make it re-read: the store already treats resize as
   // "re-measure everything", so this needs no test-only export to reach into it.
+  // The rotation this tile depicts, reported the way the OS would.
+  //
+  // screen.orientation belongs to the screen, not the frame, so every tile would
+  // otherwise read the developer's monitor at angle 0 — and the Notch Band needs
+  // the angle to tell the two landscape rotations apart on a device whose insets
+  // cannot. Redefining the getter on the instance keeps this entirely inside the
+  // dev-only preview: production keeps no override seam for it, unlike the
+  // engine's simulated-rotation harness, which has no DOM state to drive.
+  $effect(() => {
+    const screenOrientation = window.screen?.orientation;
+    if (!screenOrientation) return;
+    const angle = ORIENTATION_ANGLES[orientation];
+    try {
+      Object.defineProperty(screenOrientation, 'angle', { get: () => angle, configurable: true });
+    } catch {
+      // An engine that refuses leaves the tile on the real angle; the readout
+      // and the verdict below it still come from the dataset, so the tile is
+      // wrong rather than silently plausible only if this ever fires.
+    }
+  });
+
   $effect(() => {
     const root = document.documentElement;
     for (const edge of SAFE_AREA_EDGES) {

@@ -1,3 +1,4 @@
+import { actionButtonSizeClass, type ActionButtonSizeClass } from '$lib/breakpoints';
 import type { SafeAreaInsets } from '$lib/platform/safeArea';
 import type { Orientation } from './orientations';
 
@@ -19,6 +20,7 @@ export type CutoutKind = 'none' | 'notch' | 'dynamic-island' | 'hole-punch' | 't
 // this on the chrome overlay so the illustration shows where the camera actually
 // is — which, on iOS landscape, is the one thing the insets themselves cannot
 // tell you (left and right report identically; see SYMMETRIC_LANDSCAPE_NOTE).
+// It is how a tile can be checked against the band the app painted.
 export interface Cutout {
   kind: CutoutKind;
   /** 0 = flush against the device's left edge, 1 = its right edge. */
@@ -57,7 +59,7 @@ export interface DeviceProfile {
 
 export const SYMMETRIC_LANDSCAPE_NOTE =
   'iOS insets BOTH sides in landscape with the same value, whichever side the cutout is ' +
-  'physically on, so CSS cannot tell the two landscape rotations apart.';
+  'physically on, so the insets alone cannot tell the two landscape rotations apart.';
 
 export function insetsFor(
   profile: DeviceProfile,
@@ -68,4 +70,15 @@ export function insetsFor(
 
 export function supportedOrientations(profile: DeviceProfile): Orientation[] {
   return Object.keys(profile.insets) as Orientation[];
+}
+
+// The action-button step this viewport renders. Derived rather than stored, so a
+// profile cannot claim a class its dimensions don't produce.
+//
+// This is why the dataset is not deduplicated by inset tuple alone: every
+// home-indicator iPad reports the same four numbers, and the 13-inch is still
+// the only one that crosses LARGE_TABLET_MIN_SIDE_PX into the largeTablet step.
+// Equal insets, different layout — devices.test.ts requires all three classes.
+export function sizeClassOf(profile: DeviceProfile): ActionButtonSizeClass {
+  return actionButtonSizeClass(Math.min(profile.viewport.width, profile.viewport.height));
 }

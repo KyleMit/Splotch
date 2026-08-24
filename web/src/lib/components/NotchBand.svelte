@@ -12,6 +12,10 @@
   // matter so the band can follow the hole-punch as it rotates from the top
   // (portrait) to a side (landscape); the shared layout module re-measures
   // them on every resize and orientation event.
+  //
+  // The rotation angle rides along because the insets alone cannot say which
+  // side a landscape cutout is on — iOS reports both sides identically. See
+  // landscapeBandEdges for the rule the two feed.
   const band = $derived(
     computeNotchBandState({
       platform: getPlatform(),
@@ -20,6 +24,7 @@
       insetTop: layout.safeArea.top,
       insetLeft: layout.safeArea.left,
       insetRight: layout.safeArea.right,
+      orientationAngle: layout.orientationAngle,
       activeColor: colors.activeColor,
       eraser: toolState.brush === 'eraser',
       paperColor: PAPER_COLORS[resolvedTheme()],
