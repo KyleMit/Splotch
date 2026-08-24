@@ -69,7 +69,15 @@ function paintShell({ compact, startingTheme }) {
   modal.append(close);
 }
 
+// The bootstrap now refuses to act for a page it was not opened for, so the
+// fixture has to give the page the identity the plan names — which is the
+// behaviour under test as much as the theme is.
+function openedFor(nonce) {
+  window.happyDOM?.setURL?.(`http://probe-host.test/?probe=${encodeURIComponent(nonce)}`);
+}
+
 function runBootstrap(plan) {
+  openedFor(plan.nonce);
   const posted = [];
   let readyResolve;
   const readyPosted = new Promise((resolve) => (readyResolve = resolve));
@@ -187,4 +195,34 @@ describe('refusing a readiness payload the theme cannot be trusted from', () => 
     expect(readinessThemeProblem({}, undefined)).toContain('cannot prove');
     expect(readinessThemeProblem({ resolvedTheme: 'light' }, undefined)).toBeNull();
   });
+});
+
+// The guard itself, through the same executed bootstrap: a page that was opened
+// for another run must do nothing at all — not report ready, not upload — and
+// must say why, so a run that produces no capture is diagnosable.
+describe('a page opened for a different run', () => {
+  it(
+    'stands down without reporting ready',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+      window.happyDOM?.setURL?.('http://probe-host.test/?probe=an-earlier-cell');
+
+      const posted = [];
+      global.fetch = vi.fn(async (path, init) => {
+        if (path === '/__probe/plan')
+          return { json: async () => ({ brush: 'pen', nonce: 'this-cell' }) };
+        posted.push({ path, body: init?.body ? JSON.parse(init.body) : null });
+        return { json: async () => ({}) };
+      });
+
+      new Function(pageBootstrapSource())();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
+      expect(posted.some((call) => call.path === '/__probe/report')).toBe(false);
+      const stood = posted.find((call) => call.body?.kind === 'stale-page');
+      expect(stood?.body).toMatchObject({ openedFor: 'an-earlier-cell', nonce: 'this-cell' });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
 });

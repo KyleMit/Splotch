@@ -70,6 +70,21 @@ export function pageBootstrapSource() {
     // Each run stamps a nonce so only the page that started under it reports;
     // otherwise a suspended tab's near-empty tables overwrite the real capture.
     const nonce = plan.nonce;
+    // The page must be the one this run OPENED, not merely a page that read this
+    // run's plan. Chrome restores tabs across the force-stop a launch does, and a
+    // restored tab re-runs this bootstrap, reads the CURRENT plan, adopts its
+    // nonce and reports ready — while carrying the previous cell's URL and
+    // receiving almost none of the injected touch. One such page banked a cell
+    // with 517 events where its neighbours had 7104.
+    //
+    // The launch URL carries the nonce, so the page can prove its own identity
+    // rather than inheriting it. A page that cannot stands down silently: it is
+    // not an error, it is a leftover.
+    const openedFor = new URLSearchParams(location.search).get('probe');
+    if (openedFor !== nonce) {
+      await log({ kind: 'stale-page', openedFor, nonce });
+      return;
+    }
     const sized = await until(() => {
       const canvas = document.querySelector('#drawingCanvas');
       return canvas && canvas.getBoundingClientRect().width > 0;

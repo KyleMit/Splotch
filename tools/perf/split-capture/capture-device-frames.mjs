@@ -41,6 +41,9 @@ const PAGE_SETTLE_MS = 6_000;
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PROBE_READY_TIMEOUT_MS = 90_000;
+// Shorter than the full budget on purpose: this is how long to wait before
+// deciding the launch did not land, not how long a slow page may take.
+const PROBE_READY_OPEN_TIMEOUT_MS = 30_000;
 const REPORT_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 1_000;
 // After the last pointerUp the engine still has queued raster work; ending the
@@ -296,7 +299,21 @@ export async function captureDeviceFrames({
 
   await driver.openPage();
 
-  const ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
+  // A launch does not always produce the page it asked for. Chrome restores the
+  // tabs a previous cell left behind, each re-runs the bootstrap, and with the
+  // identity guard in place those stand down correctly — but on a landscape cell
+  // the intended page then failed to appear at all, six leftovers standing down
+  // and no capture. Re-issuing the launch costs one settle when it was not
+  // needed, and is the difference between a banked cell and a P1 when it was.
+  let ready = await pollFor(
+    async () => (await probeState(host)).ready,
+    PROBE_READY_OPEN_TIMEOUT_MS
+  );
+  if (!ready) {
+    console.log('no page reported ready — re-opening');
+    await driver.openPage();
+    ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
+  }
   if (!ready) fail('the page never reported the probe ready');
   if (ready.committed && ready.committed !== brush) {
     fail(`the engine is on ${ready.committed}, not ${brush}`);
@@ -329,6 +346,20 @@ export async function captureDeviceFrames({
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the gesture never reached the canvas');
+  }
+
+  // Defence in depth for the same failure the bootstrap now refuses at the page:
+  // the report says which URL produced it, and that URL carries the nonce this
+  // run opened. A report whose URL names another cell is another cell's data
+  // however plausible its shape.
+  const capturedAt = new URL(payload.report?.meta?.url ?? 'http://invalid/').searchParams.get(
+    'probe'
+  );
+  if (capturedAt !== nonce) {
+    fail(
+      `the report came from a page opened for ${capturedAt ?? 'an unknown run'}, not ${nonce} — ` +
+        'a restored tab that adopted this plan is the usual cause'
+    );
   }
 
   const summaries = summarizeRun(payload.report);

@@ -562,3 +562,27 @@ describe('the hand capture opening what its flag asked for', () => {
     expect(await commands(true)).toContain('SERIAL');
   }, 20_000);
 });
+
+// The hole the nonce check could not close. Chrome restores tabs across the
+// force-stop a launch performs; a restored tab re-runs the bootstrap, reads the
+// CURRENT plan and adopts its nonce, so it is indistinguishable from the page
+// the run opened — while carrying the previous cell's URL and receiving almost
+// none of the injected touch. One banked a cell with 517 events where its
+// neighbours had 7104.
+describe('a page that only adopted the plan', () => {
+  const source = pageBootstrapSource();
+
+  it('makes the page prove which run OPENED it', () => {
+    expect(source).toContain("new URLSearchParams(location.search).get('probe')");
+    expect(source).toContain('openedFor !== nonce');
+  });
+
+  // Standing down silently matters: a leftover tab is not a failure, and
+  // reporting it as one would bury the real error for the page that IS current.
+  it('stands the leftover down rather than failing the run', () => {
+    expect(source).toContain("kind: 'stale-page'");
+    expect(source.indexOf('openedFor !== nonce')).toBeLessThan(
+      source.indexOf("post('/__probe/ready'")
+    );
+  });
+});
