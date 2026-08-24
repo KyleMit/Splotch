@@ -32,3 +32,18 @@ export const PHONE_MAX_WIDTH_PX = 540;
 // their second step here; a CSS media query cannot import it, so each one
 // restates it and dialogTabletScaling.test.ts holds them to this value.
 export const LARGE_TABLET_MIN_SIDE_PX = 1000;
+
+// The action-button step a viewport renders, classified by its *shorter* side so
+// a device keeps its step through a rotation.
+//
+// It lives here rather than in actionButtonLayout.ts — which owns the pixel
+// values and re-exports this — because it reads only the boundaries above, and
+// this module is deliberately free of `$app` so a Playwright spec can import it.
+// actionButtonLayout.ts pulls in the settings and network stores, which a spec
+// running under Node cannot resolve.
+export type ActionButtonSizeClass = 'phone' | 'tablet' | 'largeTablet';
+
+export function actionButtonSizeClass(shorterViewportSidePx: number): ActionButtonSizeClass {
+  if (shorterViewportSidePx >= LARGE_TABLET_MIN_SIDE_PX) return 'largeTablet';
+  return shorterViewportSidePx >= TABLET_MIN_SIDE_PX ? 'tablet' : 'phone';
+}

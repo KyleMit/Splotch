@@ -5,7 +5,7 @@ import { error } from '@sveltejs/kit';
 // Server-rendered /dev/* routes need a runtime gate because their modules remain
 // in the server build. Client seams use the compile-time __DEV_HARNESS__ literal
 // instead so ordinary bundles can remove them entirely.
-function devHarnessEnabled(): boolean {
+export function devHarnessEnabled(): boolean {
   return dev || env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
 }
 

@@ -102,13 +102,11 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
 
   it('panel inset literals match PANEL_INSET', () => {
     expect(actionsPanelSource).toContain(
-      `bottom: calc(${PANEL_INSET}px + env(safe-area-inset-bottom))`
+      `bottom: calc(${PANEL_INSET}px + var(--safe-area-bottom))`
     );
+    expect(actionsPanelSource).toContain(`left: calc(${PANEL_INSET}px + var(--safe-area-left))`);
     expect(actionsPanelSource).toContain(
-      `left: calc(${PANEL_INSET}px + env(safe-area-inset-left))`
-    );
-    expect(actionsPanelSource).toContain(
-      `left: calc(var(--palette-landscape-width) + ${PANEL_INSET}px + env(safe-area-inset-left))`
+      `left: calc(var(--palette-landscape-width) + ${PANEL_INSET}px + var(--safe-area-left))`
     );
   });
 

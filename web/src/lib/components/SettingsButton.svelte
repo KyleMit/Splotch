@@ -27,8 +27,8 @@
 <style>
   .settings-button {
     position: fixed;
-    bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
-    right: calc(var(--space-2) + env(safe-area-inset-right));
+    bottom: calc(var(--space-2) + var(--safe-area-bottom));
+    right: calc(var(--space-2) + var(--safe-area-right));
     z-index: var(--z-corner-button);
   }
 </style>

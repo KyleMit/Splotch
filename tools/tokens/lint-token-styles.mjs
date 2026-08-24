@@ -52,6 +52,16 @@ const BASELINE = new Map(
     // (wash, ink, border, code chip) stay pinned on both themes; the WHY
     // comment lives on .flash-warning.
     'lib/components/admin/AdminConsole.svelte': 4,
+    // Notch harness (dev harness): the one warn pair. Amber is the ramp's
+    // missing status colour — the same gap AdminConsole's persistence banner
+    // documents — and both warn surfaces here (a medium-confidence badge, a
+    // verdict) read it from these two declarations rather than restating it.
+    'routes/dev/notch/+page.svelte': 2,
+    // Notch harness hardware illustration: a camera cutout is black and the
+    // system glyphs over it are white on every device in the matrix, whatever
+    // theme the previewing browser is in — theme tokens would repaint physical
+    // hardware. The WHY comment lives on .cutout.
+    'routes/dev/notch/lib/DeviceChrome.svelte': 2,
     // Store marketing art (dev harness): the benefit chip stays white on the
     // frame's fixed light gradient — store screenshots must render identically
     // whatever theme the previewing browser is in, so theme tokens are the

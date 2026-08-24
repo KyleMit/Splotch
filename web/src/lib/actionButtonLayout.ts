@@ -12,13 +12,19 @@ import {
 import { network } from '$lib/state/network.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 import type { Orientation } from '$lib/platform';
+import { safeAreaLength } from '$lib/platform/safeArea';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
   landscapeSingleColumnMediaQuery,
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from '$lib/design/trimGeometry';
-import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+import {
+  actionButtonSizeClass,
+  LARGE_TABLET_MIN_SIDE_PX,
+  TABLET_MIN_SIDE_PX,
+  type ActionButtonSizeClass,
+} from '$lib/breakpoints';
 
 export const ACTION_BUTTON_GAP = 12;
 
@@ -28,7 +34,9 @@ export const ACTION_BUTTON_GAP = 12;
 // slider multiplies whichever step applies (ACTION_BUTTON_SCALE_*), so every
 // screen still starts at the slider's centre with its whole range either way —
 // the step decides what that centre is worth in pixels.
-export type ActionButtonSizeClass = 'phone' | 'tablet' | 'largeTablet';
+// Re-exported so this module stays the one place layout code reaches for the
+// step; the classifier itself lives beside the boundaries it reads.
+export { actionButtonSizeClass, type ActionButtonSizeClass };
 
 // The tablet step is also the Color Swatch touch target per orientation.
 export const ACTION_BUTTON_BASE_PX = {
@@ -65,13 +73,6 @@ export const ACTION_BUTTON_SIZE_CLASS_MEDIA_QUERIES = {
   }px)`,
   largeTablet: `(min-width: ${LARGE_TABLET_MIN_SIDE_PX}px) and (min-height: ${LARGE_TABLET_MIN_SIDE_PX}px)`,
 } as const satisfies Partial<Record<ActionButtonSizeClass, string>>;
-
-// Classified by the viewport's *shorter* side, so a device keeps its step
-// through a rotation.
-export function actionButtonSizeClass(shorterViewportSidePx: number): ActionButtonSizeClass {
-  if (shorterViewportSidePx >= LARGE_TABLET_MIN_SIDE_PX) return 'largeTablet';
-  return shorterViewportSidePx >= TABLET_MIN_SIDE_PX ? 'tablet' : 'phone';
-}
 
 // The step the slider ceiling measures against. It reads the visible viewport
 // while the CSS above reads the layout one, which can disagree by the height of
@@ -220,12 +221,12 @@ export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
       ? {
           viewportExtent: `${inputs.viewportHeight}px`,
           paletteExtent: inputs.paletteHeight,
-          insets: 'env(safe-area-inset-top) - env(safe-area-inset-bottom)',
+          insets: `${safeAreaLength('top')} - ${safeAreaLength('bottom')}`,
         }
       : {
           viewportExtent: '100vw',
           paletteExtent: inputs.paletteWidth,
-          insets: 'env(safe-area-inset-left) - env(safe-area-inset-right)',
+          insets: `${safeAreaLength('left')} - ${safeAreaLength('right')}`,
         };
   const fixedCost = fixedRowCost(orientation, buttonCount, axis.paletteExtent);
   const budget = `${axis.viewportExtent} - ${fixedCost}px - ${axis.insets}`;

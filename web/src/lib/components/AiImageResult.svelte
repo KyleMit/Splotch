@@ -250,13 +250,9 @@
        room the disclosure strip hangs in (app.css). The strip lives inside the
        bottom bound rather than under it — it is the card's own fine print, not a
        second thing needing its own frame. */
-    --result-top-bound: max(env(safe-area-inset-top), var(--result-gutter));
-    --result-bottom-bound: max(env(safe-area-inset-bottom), var(--result-gutter));
-    --result-side-bound: max(
-      env(safe-area-inset-left),
-      env(safe-area-inset-right),
-      var(--result-gutter)
-    );
+    --result-top-bound: max(var(--safe-area-top), var(--result-gutter));
+    --result-bottom-bound: max(var(--safe-area-bottom), var(--result-gutter));
+    --result-side-bound: max(var(--safe-area-left), var(--safe-area-right), var(--result-gutter));
 
     --result-card-max-h: calc(100dvh - var(--result-top-bound) - var(--result-bottom-bound));
     --result-stage-max-h: calc(var(--result-card-max-h) - var(--result-footer-reserve));

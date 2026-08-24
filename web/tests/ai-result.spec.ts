@@ -3,6 +3,7 @@ import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { aiOutputFor } from './artifacts/ai-output-fixtures';
+import { overrideSafeAreaInsets } from './cdp';
 import {
   invokeAiGeneration,
   keepDrawingBlockPx,
@@ -124,13 +125,11 @@ async function cardBounds(page: Page) {
   return { top, bottom, side };
 }
 
-// Chromium emulates env(safe-area-inset-*) only over CDP — there is no viewport
-// option for it — so this is the one seam that can render the app as a notched
-// phone sees it. Returns what CSS actually resolved, so a caller can prove the
-// override landed rather than assuming it.
+// Returns what CSS actually resolved, so a caller can prove the override landed
+// rather than assuming it. The override itself is overrideSafeAreaInsets in
+// cdp.ts — shared, and careful to send all eight keys.
 async function emulateSafeAreaInsets(page: Page, insets: { top: number; bottom: number }) {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('Emulation.setSafeAreaInsetsOverride' as never, { insets } as never);
+  await overrideSafeAreaInsets(page, { ...insets, left: 0, right: 0 });
   const [top, bottom] = await resolveLengths(page, 'body', [
     'env(safe-area-inset-top)',
     'env(safe-area-inset-bottom)',

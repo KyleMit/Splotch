@@ -17,6 +17,7 @@ interface LayoutState {
   paletteMeasurement: PaletteMeasurement;
   orientation: Orientation;
   safeArea: SafeAreaInsets;
+  orientationAngle: number;
   viewportWidth: number;
   viewportHeight: number;
 }
@@ -37,6 +38,11 @@ function readViewportOrientation(): Orientation {
 
 function readCssOrientation(): Orientation {
   return (portraitQuery?.matches ?? false) ? 'portrait' : 'landscape';
+}
+
+function readOrientationAngle(): number {
+  const angle = screen.orientation?.angle;
+  return typeof angle === 'number' ? angle : 0;
 }
 
 function readOrientation(): Orientation {
@@ -65,6 +71,11 @@ export const layout: LayoutState = $state({
   orientation: browser ? readOrientation() : 'landscape',
 
   safeArea: { ...ZERO_INSETS },
+
+  // screen.orientation.angle, or 0 where the API is absent. Distinguishes the
+  // two landscape rotations, which the insets alone cannot on iOS — the Notch
+  // Band needs it to know which side the cutout is on (lib/platform/notchBand).
+  orientationAngle: browser ? readOrientationAngle() : 0,
 
   // Viewport dimensions in CSS px, for JS-side layout math (e.g. the dynamic
   // Button Size ceiling in Settings). 0 during prerender; synced from
@@ -96,6 +107,7 @@ function syncViewport() {
   document.documentElement.dataset.orientation = readCssOrientation();
   // Per-field assign so equal re-measurements don't wake dependents.
   Object.assign(layout.safeArea, measureSafeAreaInsets());
+  layout.orientationAngle = readOrientationAngle();
   layout.viewportWidth = window.innerWidth;
   layout.viewportHeight = window.innerHeight;
 }

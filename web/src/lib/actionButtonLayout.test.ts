@@ -337,7 +337,7 @@ const CSS_TOKEN_PATTERN = /min|calc|[-+*/(),]|\d+(?:\.\d+)?/g;
 
 function tokenizeCssLength(expr: string, viewportWidth: number, basePx: number): string[] {
   const resolved = expr
-    .replace(/env\(safe-area-inset-\w+\)/g, '0px')
+    .replace(/var\(--safe-area-\w+\)/g, '0px')
     .replace('var(--action-btn-scale, 1)', '1')
     .replace(`var(${ACTION_BUTTON_BASE_PROPERTY})`, `${basePx}px`)
     .replace('100vw', `${viewportWidth}px`)

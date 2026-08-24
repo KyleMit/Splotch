@@ -25,6 +25,7 @@
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
+  import { safeAreaLength } from '$lib/platform/safeArea';
   import {
     PANEL_INSET,
     MAX_ACTION_BUTTON_COUNT,
@@ -83,14 +84,14 @@
   //
   // The inline left wins over the stylesheet, so the safe-area inset has to ride
   // along in this value or it's lost: .app-container's padding-left shifts the
-  // palette right by env(safe-area-inset-left) (the Android landscape hole-punch),
+  // palette right by var(--safe-area-left) (the Android landscape hole-punch),
   // and the measured width doesn't include that padding — so we clear inset + width.
   const landscapePaletteWidth = $derived(resolvedLandscapePaletteWidth());
   const portraitPaletteHeight = $derived(resolvedPortraitPaletteHeight());
   const leftOffset = $derived(
     !browser || isPortrait
       ? undefined
-      : `calc(${landscapePaletteWidth + PANEL_INSET}px + env(safe-area-inset-left))`
+      : `calc(${landscapePaletteWidth + PANEL_INSET}px + ${safeAreaLength('left')})`
   );
 
   // Cap the button size so the expanded panel always fits the screen —
@@ -535,8 +536,8 @@
 <style>
   .actions-panel {
     position: fixed;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    left: calc(var(--palette-landscape-width) + 8px + env(safe-area-inset-left));
+    bottom: calc(8px + var(--safe-area-bottom));
+    left: calc(var(--palette-landscape-width) + 8px + var(--safe-area-left));
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -569,7 +570,7 @@
   @media (orientation: portrait) {
     .actions-panel {
       flex-direction: column-reverse;
-      left: calc(8px + env(safe-area-inset-left));
+      left: calc(8px + var(--safe-area-left));
     }
   }
 

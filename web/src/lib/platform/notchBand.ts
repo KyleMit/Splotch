@@ -44,6 +44,17 @@ export type StatusBarStyle = 'DARK' | 'LIGHT';
 // in portrait and rotates to a side (left or right) in landscape.
 export type NotchEdge = 'top' | 'left' | 'right';
 
+// screen.orientation.angle values that put the device's natural top edge — and
+// with it the cutout — on each side of the screen.
+//
+// The angle is the device's rotation counter-clockwise from natural, so 90 is a
+// counter-clockwise quarter turn and carries the top edge to the LEFT. Settled
+// against the W3C Screen Orientation spec, the WHATWG Compatibility Standard's
+// window.orientation mapping, AOSP's Display.getRotation(), and current WebKit;
+// docs/SAFE-AREA.md carries the citations and the one version that disagreed.
+export const CUTOUT_LEFT_ANGLE = 90;
+export const CUTOUT_RIGHT_ANGLE = 270;
+
 export interface NotchBandInput {
   platform: Platform;
   native: boolean;
@@ -54,6 +65,12 @@ export interface NotchBandInput {
   insetLeft: number;
   /** Measured env(safe-area-inset-right), in CSS px. */
   insetRight: number;
+  /**
+   * screen.orientation.angle, or 0 where the API is absent. The only signal
+   * that distinguishes the two landscape rotations when the insets cannot —
+   * see landscapeBandEdges.
+   */
+  orientationAngle: number;
   /** Current drawing color, always a valid hex. */
   activeColor: string;
   eraser: boolean;
@@ -92,18 +109,45 @@ export function statusBarStyleForBand(color: string): StatusBarStyle {
   return isLightColor(color) ? 'LIGHT' : 'DARK';
 }
 
-// Which edge holds the cutout, and how deep its inset is. In portrait the
-// hole-punch is at the top. In landscape the device's physical top edge rotates
-// to a side, so the cutout inset moves off the top onto the left or right —
-// whichever side the rotation landed it on (read from the measured insets). The
-// long top edge in landscape is never the cutout, so it gets no band.
-export function cutoutEdge(input: NotchBandInput): { edge: NotchEdge; inset: number } {
-  if (input.orientation === 'landscape') {
-    return input.insetRight >= input.insetLeft
-      ? { edge: 'right', inset: input.insetRight }
-      : { edge: 'left', inset: input.insetLeft };
+// Every edge the band fills. In portrait the hole-punch is at the top and the
+// question is trivial. Landscape is where it is not: the cutout moves onto a
+// side, and the deepest side inset is NOT reliably the cutout.
+//
+// Two failures taught this rule, both of them "deepest side wins" going wrong:
+//   • iOS insets BOTH landscape sides with the same value whichever side the
+//     cutout is physically on, so the comparison always resolved right and was
+//     wrong on one of the two rotations.
+//   • Android with 3-button navigation moves the nav bar to the side opposite
+//     the camera, where it is deeper than the cutout — so the comparison picked
+//     the nav bar in both rotations and painted the drawing colour behind the
+//     back/home/recents buttons.
+//
+// So: when the two sides report the same inset, paint both. That is exactly the
+// case where the app cannot tell them apart, and it costs nothing to be safe —
+// both strips are already outside the content box, so neither is claimable
+// screen we would be spending. When they differ, the sides are distinguishable
+// and the rotation angle says which one the cutout is on.
+//
+// An angle that names neither side (0, 180, or no Screen Orientation API at
+// all) leaves an asymmetric pair unresolved, and there the band paints nothing.
+// A band on the wrong edge is worse than no band: it spends claimable screen AND
+// leaves the strip it exists to fill bare.
+function landscapeBandEdges(input: NotchBandInput): NotchEdge[] {
+  if (input.insetLeft === input.insetRight) {
+    return hasNotch(input.insetLeft) ? ['left', 'right'] : [];
   }
-  return { edge: 'top', inset: input.insetTop };
+  if (input.orientationAngle === CUTOUT_LEFT_ANGLE) {
+    return hasNotch(input.insetLeft) ? ['left'] : [];
+  }
+  if (input.orientationAngle === CUTOUT_RIGHT_ANGLE) {
+    return hasNotch(input.insetRight) ? ['right'] : [];
+  }
+  return [];
+}
+
+export function bandEdges(input: NotchBandInput): NotchEdge[] {
+  if (input.orientation === 'landscape') return landscapeBandEdges(input);
+  return hasNotch(input.insetTop) ? ['top'] : [];
 }
 
 // Android landscape: hide the status bar to reclaim the long top edge as canvas.
@@ -136,13 +180,13 @@ export function applyStatusBar(
 
 export function computeNotchBandState(input: NotchBandInput): NotchBandState {
   const color = bandColor(input.activeColor, input.eraser, input.paperColor);
-  const { edge, inset } = cutoutEdge(input);
-  const show = hasNotch(inset);
+  const edges = bandEdges(input);
+  const show = edges.length > 0;
   return {
     backgroundColors: {
-      top: show && edge === 'top' ? color : 'transparent',
-      left: show && edge === 'left' ? color : 'transparent',
-      right: show && edge === 'right' ? color : 'transparent',
+      top: edges.includes('top') ? color : 'transparent',
+      left: edges.includes('left') ? color : 'transparent',
+      right: edges.includes('right') ? color : 'transparent',
     },
     // Always reflect the color in theme-color — it's the Android-web mechanism
     // and a no-op everywhere else.

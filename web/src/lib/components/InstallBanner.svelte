@@ -194,7 +194,7 @@
   .install-banner {
     position: fixed;
     left: 50%;
-    bottom: calc(16px + env(safe-area-inset-bottom));
+    bottom: calc(16px + var(--safe-area-bottom));
     transform: translateX(-50%);
     /* Above the corner controls (--z-panel, --z-corner-button): on phones
        the banner overlaps them, and the auto-clear keeps that takeover short. */
