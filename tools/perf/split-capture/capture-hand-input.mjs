@@ -83,14 +83,19 @@ async function pollFor(callback, timeoutMs) {
 // here while recording `android-capacitor-webview` produces a calibration read off
 // the wrong browser — correctly shaped, plausibly labelled, and wrong. The opener
 // has to follow the flag.
-async function openWithAdb({ serial, pageUrl, orientation, nativeApp }) {
+// `exec` is injected so this call site can be tested. Asserting the chooser in
+// isolation proved it picks correctly when handed the right value, and left the
+// original bug reachable: passing `nativeApp: false` HERE opens Chrome while
+// `captureRuntime(platform, nativeApp)` still labels the artifact a WebView
+// runtime, and the suite stayed green.
+export async function openWithAdb({ serial, pageUrl, orientation, nativeApp, exec = adb }) {
   const settles = {
     appStop: APP_STOP_SETTLE_MS,
     rotation: ROTATION_SETTLE_MS,
     page: PAGE_SETTLE_MS,
   };
   for (const step of androidOpenSteps({ nativeApp, orientation, pageUrl })) {
-    adb(serial, step.args);
+    exec(serial, step.args);
     if (step.settle) await sleep(settles[step.settle]);
   }
 }

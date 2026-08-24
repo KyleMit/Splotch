@@ -23,7 +23,11 @@ import {
   classifyInputCadence,
   describeContactSamples,
 } from '../split-capture/lib/input-verdict.mjs';
-import { calibrationReading, handCaptureArtifact } from '../split-capture/capture-hand-input.mjs';
+import {
+  calibrationReading,
+  handCaptureArtifact,
+  openWithAdb,
+} from '../split-capture/capture-hand-input.mjs';
 import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
 
 const directories = [];
@@ -521,4 +525,40 @@ describe('the probe host refusing a stale run over HTTP', () => {
     expect(state.report?.report.events).toHaveLength(3);
     expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).nonce).toBe('new-run');
   });
+});
+
+// The CALL SITE, not the chooser. Asserting androidOpenSteps in isolation proved
+// it picks correctly when handed the right value and left the original bug fully
+// reachable: passing `nativeApp: false` at this call opens Chrome while the
+// artifact is still labelled android-capacitor-webview, and every test passed.
+describe('the hand capture opening what its flag asked for', () => {
+  const commands = async (nativeApp) => {
+    const calls = [];
+    await openWithAdb({
+      serial: 'SERIAL',
+      pageUrl: 'http://host/?probe=n',
+      orientation: 'PORTRAIT',
+      nativeApp,
+      exec: (serial, args) => calls.push([serial, ...args].join(' ')),
+    });
+    return calls.join(' | ');
+  };
+
+  it('reaches the app package when --native-app was parsed', async () => {
+    const issued = await commands(true);
+
+    expect(issued).toContain('art.splotch.app/.MainActivity');
+    expect(issued).not.toContain(CHROME_PACKAGE);
+  }, 20_000);
+
+  it('reaches the browser when it was not', async () => {
+    const issued = await commands(false);
+
+    expect(issued).toContain(CHROME_PACKAGE);
+    expect(issued).not.toContain('.MainActivity');
+  }, 20_000);
+
+  it('sends every command to the serial it was given', async () => {
+    expect(await commands(true)).toContain('SERIAL');
+  }, 20_000);
 });
