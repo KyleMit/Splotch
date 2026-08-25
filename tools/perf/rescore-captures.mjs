@@ -20,7 +20,7 @@
 // branch and run this over the corpus. That is how the credited charge was
 // judged, and it exercises the real code path rather than a parallel one.
 
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
