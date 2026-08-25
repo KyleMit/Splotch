@@ -646,6 +646,31 @@ describe('the probe host refusing a stale run over HTTP', () => {
     expect(state.report?.report.events).toHaveLength(3);
     expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).nonce).toBe('new-run');
   });
+
+  // Issue 1306's last bullet: the ERROR report — the one that exists to stop a
+  // number being trusted — is held to the same nonce gate as a data report. A
+  // stale run's error must not stand in for this run's diagnosis, and this
+  // run's error must not lose to any earlier report's thickness.
+  it('accepts the current run’s error report and refuses a stale run’s', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base, state } = await hostAt(directory);
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: 'cell', nonce: 'new-run', reset: true }),
+    });
+
+    await postReport(base, { nonce: 'old-run', error: 'a stale run exploding' });
+    expect(state.report).toBeNull();
+
+    await postReport(base, { nonce: 'new-run', report: { events: Array.from({ length: 50 }) } });
+    await postReport(base, { nonce: 'new-run', error: 'no sized #drawingCanvas' });
+    expect(state.report?.error).toBe('no sized #drawingCanvas');
+    expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).error).toBe(
+      'no sized #drawingCanvas'
+    );
+  });
 });
 
 // The CALL SITE, not the chooser. Asserting androidOpenSteps in isolation proved
