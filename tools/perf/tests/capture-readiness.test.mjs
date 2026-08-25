@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
-import { diagnoseLaunchFailure } from '../prepare-capture.mjs';
+import { diagnoseLaunchFailure, terminateDiagnostic } from '../prepare-capture.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   androidWakeActions,
@@ -358,6 +358,32 @@ describe('the launch diagnostic end to end', () => {
 
     expect(detail).toContain('never became ready');
   });
+});
+
+// The mirror-image defect (issue 1309): a child that HONOURS SIGTERM exits
+// with `code === null, signal === 'SIGTERM'`, and tracking only the code left
+// it indistinguishable from a child still running — teardown escalated to
+// SIGKILL against a corpse and then waited out the full escalation timeout
+// with no exit event left to arrive. 5.53 s for a child that was already gone.
+describe('tearing down a diagnostic server that goes quietly', () => {
+  it('returns promptly after a signal exit instead of waiting out the escalation', async () => {
+    const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let exited = null;
+    child.on('exit', (code, signal) => (exited = { code, signal }));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const startedAt = Date.now();
+    const gone = await terminateDiagnostic(child, () => exited);
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(gone).toBe(true);
+    expect(exited).toMatchObject({ code: null, signal: 'SIGTERM' });
+    // Well under one 5 s escalation wait: the broken shape spent the full
+    // SIGKILL settle on a child that had already left.
+    expect(elapsedMs).toBeLessThan(3_000);
+  }, 15_000);
 });
 
 // Bounding how long teardown WAITS is not ensuring the child left. A server that

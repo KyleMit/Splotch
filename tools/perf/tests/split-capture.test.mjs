@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
@@ -43,6 +43,14 @@ import {
 import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
 
 const directories = [];
+
+// The per-describe teardowns close servers; the temp directories pushed above
+// were never removed and accumulated across runs (issue 1309).
+afterEach(() => {
+  for (const directory of directories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 const stroke = [
   { type: 'pointerMove', x: 10, y: 10, duration: 0 },

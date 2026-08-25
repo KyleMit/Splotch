@@ -1,9 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { applyCampaignModes, campaignModeSources } from '../campaign-sources.mjs';
 import { artifactPath } from '../lib/campaign-plan.mjs';
+import { ROOT } from '../../lib/proc.mjs';
 
 const temporaryDirectories = [];
 
@@ -214,5 +215,21 @@ describe('campaign sources', () => {
     const merged = manifest.targets[0].modes[0];
     expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
     expect(merged.undoProductCommit).toBe('aaaaaaaaaaaa');
+  });
+});
+
+// Issue 1309: the tracked manifest drifted from the folder's own
+// `JSON.stringify(..., null, 2)` form (46 \uXXXX escapes, 230 extra bytes), so
+// the next generated update carried avoidable churn. A later fold restored the
+// canonical form; this pins it so hand edits cannot reintroduce the drift.
+describe('the tracked matrix manifest', () => {
+  it('matches the folder’s canonical serialization byte for byte', () => {
+    const manifestPath = join(
+      ROOT,
+      'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json'
+    );
+    const raw = readFileSync(manifestPath, 'utf8');
+
+    expect(raw).toBe(`${JSON.stringify(JSON.parse(raw), null, 2)}\n`);
   });
 });

@@ -448,7 +448,12 @@ export async function diagnoseLaunchFailure(
   // the preflight down with it.
   let spawnError = null;
   child.on('error', (error) => (spawnError = error));
-  child.on('exit', (code) => (exited = code));
+  // Both halves of the exit event: a child terminated by signal reports
+  // `code === null, signal === 'SIGTERM'`, and recording only the code left
+  // `exited` null — a signal-killed server was indistinguishable from one
+  // still running, so teardown re-signalled a corpse and waited out its full
+  // escalation timeout (issue 1309).
+  child.on('exit', (code, signal) => (exited = { code, signal }));
   child.stdout?.on('data', (chunk) => (log += chunk));
   child.stderr?.on('data', (chunk) => (log += chunk));
 
@@ -475,7 +480,8 @@ export async function diagnoseLaunchFailure(
       if (!retried) {
         return diagnoseLaunchFailure(sessionBody, { spawnDiagnostic, retried: true });
       }
-      return { cause: null, diagnostic: `diagnostic server exited early with code ${exited}` };
+      const how = exited.signal ? `signal ${exited.signal}` : `code ${exited.code}`;
+      return { cause: null, diagnostic: `diagnostic server exited early with ${how}` };
     }
     if (!ready) return { cause: null, diagnostic: 'diagnostic server never became ready' };
 
@@ -515,8 +521,15 @@ export async function diagnoseLaunchFailure(
 // claimed nothing was left behind, and the server kept the port. Appium can also
 // leave descendants, so the whole group is signalled where the platform allows
 // it, and SIGKILL follows a TERM that was not honoured.
-async function terminateDiagnostic(child, hasExited) {
-  const exitedNow = () => hasExited() !== null;
+// The child's own exitCode/signalCode are consulted beside the caller's
+// tracking: an exit that lands between the check and the settle has already
+// fired its event, and waiting on a corpse's next exit runs out the full
+// escalation timeout with nothing to wait for.
+// Exported for its bounded-teardown test; production reaches it through
+// diagnoseLaunchFailure's finally.
+export async function terminateDiagnostic(child, hasExited) {
+  const exitedNow = () =>
+    hasExited() !== null || child.exitCode !== null || child.signalCode !== null;
   const settle = (ms) =>
     Promise.race([
       new Promise((resolve) => child.once('exit', resolve)),
