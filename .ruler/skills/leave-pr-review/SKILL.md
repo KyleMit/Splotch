@@ -121,8 +121,8 @@ the equivalent `gh api` pending-review endpoints. Preserve the same single-revie
 head-OID recheck, and `COMMENT`-only rules.
 
 Afterwards, present the review in the chat reply — each finding with its severity and `file:line`,
-the review event, and the overall verdict — so the user sees what landed without opening GitHub, and
-know that working through those comments is the job of `address-pr-review` on the other side.
+the review event, and the overall verdict — so the user sees what landed without opening GitHub.
+Working through those comments is the job of `address-pr-review` on the other side.
 
 ## `mode=chat` — present in chat, post nothing
 
@@ -144,7 +144,7 @@ point of this mode. If the user never says go, the review stays in chat.
 If the user asks for backlog issues rather than PR comments, split the surviving findings by
 severity:
 
-* **Each `blocking` finding gets its own issue** — the P1 tier is independently actionable work, so
+* **Each `blocking` finding gets its own issue** — that tier is independently actionable work, so
   each one gets its own title and body in the repo's issue format (`docs/ISSUE-WORKFLOW.md` — one
   `type:*`, applicable `area:*`, and normally `priority:high`).
 * **Everything else bundles into one general PR-feedback issue** — a single issue titled for the PR,
@@ -158,6 +158,11 @@ issue numbers when done.
 ## Implementing the fixes instead
 
 If the user says to implement the findings rather than post them:
+
+Inside an active stacked campaign, this path changes shape: basing a fix-up PR on the reviewed PR's
+head would add a commit below the top of the stack once it merges — branch off the current tip and
+follow `address-pr-review`'s stacked-campaign flow (one feedback PR at the tip) instead. Outside a
+stack:
 
 1. Branch off the PR's checked-out head: `git checkout -b <head-branch>-review-fixes`.
 2. Implement each finding — smallest correct change matching the surrounding style, one commit per
