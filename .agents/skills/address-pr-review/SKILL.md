@@ -23,9 +23,9 @@ destructive data changes, spending money, or acting outside the named PR; those 
 ## Setup
 
 1. **Identify the PR.** Use the PR the user named, or the open PR for the current branch. If the
-   branch has no open PR, say so and stop — there is nothing to review. Then check whether the PR
-   sits in an active stacked campaign — that widens the sweep and moves where fixes commit (see "In
-   a stacked campaign" below).
+   branch has no open PR, say so and stop — there is nothing to review. Once identified, check
+   whether the PR sits in an active stacked campaign — that widens the sweep and moves where fixes
+   commit (see "In a stacked campaign" below).
 2. **Check out the PR's head branch** and make sure the working tree is clean and up to date with
    the remote (`git pull origin <branch>`). Fixes commit onto this branch; never mix them with
    unrelated local work.
@@ -59,9 +59,13 @@ destructive data changes, spending money, or acting outside the named PR; those 
 
 A PR opened by the `create-stacked-prs` skill is one layer of a chained campaign, and two of this
 skill's defaults change inside one. Detect it before touching anything: list the open PRs' head and
-base branches — if the identified PR's base is another open PR's head, or its head is another open
-PR's base, it is part of a stack (a registered `gh stack` link confirms it, but chained bases alone
-are enough).
+base branches — chained bases (the identified PR's base is another open PR's head, or its head is
+another open PR's base) signal a stack. Chained bases alone are not proof: a lone fix-up PR based on
+a reviewed PR's head (`leave-pr-review`'s implement path), or any two-PR chain with no registered
+stack link and no campaign shape behind it, stays on the default flow — a plain fix-up pair carries
+no linear-history contract that a commit below would break. Treat the chain as a campaign when it is
+three or more PRs long, a `gh stack` link is registered, or the PR bodies name their position in a
+stack.
 
 * **The sweep covers the whole campaign, not one PR.** Reviewers leave feedback wherever the diff
   they cared about lives, so fetch all three comment kinds (Setup step 3) from **every open PR in
@@ -81,10 +85,13 @@ are enough).
   if the campaign has since stacked new work on top, the feedback PR is frozen like any other layer
   and the new round starts a fresh feedback PR at the new tip.
 
-One scoped exception: an orchestrator may direct this skill at a **single PR that is itself the
-current tip with nothing above it** — `implement-issue-stack`'s per-issue review rounds address each
-PR before the next one stacks on top. There the default applies: fixes commit onto that PR's own
-branch, since no rule forbids commits at the tip and the feedback is scoped to that layer.
+One scoped exception, keyed on the scoping of the invocation rather than on who invokes: when the
+invocation **explicitly restricts this skill to a single PR that is the current tip with nothing
+above it** — as `implement-issue-stack`'s per-issue review rounds do, addressing each PR before the
+next one stacks on top — the default applies: fixes commit onto that PR's own branch, since no rule
+forbids commits at the tip and the feedback is scoped to that layer. A bare request that merely
+*names* the tip PR is not that scoping: inside an active stack it still gets the whole-campaign
+sweep and the feedback PR above.
 
 Everything else in this skill applies unchanged. Replies still go **on the original thread, on
 whichever PR of the campaign carries it**, naming the pushed commit in the feedback PR, and threads
