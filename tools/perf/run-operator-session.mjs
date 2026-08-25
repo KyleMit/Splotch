@@ -9,14 +9,20 @@
 //   grant         launch one WebDriverAgent session while the operator watches the
 //                 iPad — the "Enter iPad Passcode / Enable UI Automation" prompt only
 //                 exists during a launch, never at rest. Every attempt is appended to
-//                 a grant log so the grant's unknown lifetime can eventually be
-//                 established from data (issue 1299).
+//                 a TRACKED grant log so the grant's unknown lifetime can eventually
+//                 be established from data (issue 1299).
 //   android-hand  real-finger captures inside the installed Android Capacitor WebView
-//   ios-hand      the same inside the iPad Capacitor WebView (issue 1275)
+//   ios-hand      the same inside the iPad Capacitor WebView (issue 1275). The app is
+//                 launched deterministically through devicectl — never "whatever is
+//                 foregrounded", which once put a Safari capture under a WKWebView
+//                 label — and the capture tool refuses an artifact whose user agent
+//                 contradicts the labelled runtime.
 //
-// Each capture runs `perf:device:hand` in a child process, so one failed cell
-// costs that cell rather than the session. The rig it brings up — preview, probe
-// host, Appium — is left running on purpose (see the start-capture-session skill).
+// Devices and ports come from the preflight's own resolution (prepareCapture),
+// not from a third copy of the port table. Each capture runs `perf:device:hand`
+// in a child process, so one failed cell costs that cell rather than the
+// session. The rig it brings up — preview, probe host, Appium — is left running
+// on purpose (see the start-capture-session skill).
 import { spawn, spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
@@ -32,27 +38,26 @@ import {
   runMain,
 } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
-import { foreignPortListeners } from '../lib/vite-server.mjs';
 import { classifyLaunchProbe } from './lib/capture-readiness.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
-import { probeIosLaunch } from './prepare-capture.mjs';
+import { DEFAULT_PROBE_PORT } from './split-capture/serve-probe-host.mjs';
+import { prepareCapture, probeIosLaunch } from './prepare-capture.mjs';
 
 const STEP_NAMES = ['grant', 'android-hand', 'ios-hand'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
 const DEFAULT_BRUSHES = ['pen', 'crayon'];
 const DEFAULT_DRAW_SECONDS = 25;
-const PREVIEW_PORT = 4173;
-const PROBE_PORT = 4175;
-const APPIUM_PORT = 4723;
-const WDA_PORT = 8100;
 const SERVER_READY_TIMEOUT_MS = 90_000;
 // One retry, because the expected failure is the operator missing the prompt's
 // one-minute window — anything structural repeats identically on attempt two.
 const GRANT_MAX_ATTEMPTS = 2;
-const OUTPUT_DIR = join('perf-profiles', 'split-capture', 'hand-native');
+const OUTPUT_ROOT = join('perf-profiles', 'split-capture', 'hand-native');
 const LOG_DIR = join(ROOT, 'perf-profiles', 'operator-logs');
-const GRANT_LOG = join(LOG_DIR, 'ipad-grant-log.tsv');
+// Tracked (perf-profiles/evidence is the one un-gitignored perf path), because
+// this file IS the longitudinal dataset issue 1299 wants: an untracked log is
+// one `rm -rf perf-profiles` from erasing the only grant-lifetime evidence.
+const GRANT_LOG = join(ROOT, 'perf-profiles', 'evidence', 'operator', 'ipad-grant-log.tsv');
 
 export function operatorSessionPlan({
   steps = STEP_NAMES,
@@ -81,63 +86,61 @@ export function operatorSessionPlan({
   if (steps.includes('grant')) {
     items.push({
       step: 'grant',
+      device: iosUdid,
       skipped: iosUdid ? null : 'no iPad enumerated (idevice_id -l)',
     });
   }
   const handSteps = [
-    ['android-hand', 'android', androidSerial ? null : 'no Android device attached (adb devices)'],
-    ['ios-hand', 'ios', iosUdid ? null : 'no iPad enumerated (idevice_id -l)'],
+    [
+      'android-hand',
+      'android',
+      androidSerial,
+      androidSerial ? null : 'no Android device attached (adb devices)',
+    ],
+    ['ios-hand', 'ios', iosUdid, iosUdid ? null : 'no iPad enumerated (idevice_id -l)'],
   ];
-  for (const [step, platform, skipped] of handSteps) {
+  for (const [step, platform, device, skipped] of handSteps) {
     if (!steps.includes(step)) continue;
     for (const orientation of orientations) {
       for (const brush of brushes) {
-        items.push({ step, platform, brush, orientation, theme, skipped });
+        items.push({ step, platform, device, brush, orientation, theme, skipped });
       }
     }
   }
   return items;
 }
 
-export function handCaptureArgs({ platform, brush, orientation, theme, seconds, host, serial }) {
+export function handCaptureArgs({
+  platform,
+  brush,
+  orientation,
+  theme,
+  seconds,
+  host,
+  device,
+  outputDir,
+}) {
   const label = `hand-${platform}-native-${brush}-${orientation.toLowerCase()}-${theme}`;
+  const output = join(outputDir, `${label}.json`);
   return {
     label,
-    output: join(OUTPUT_DIR, `${label}.json`),
+    output,
     args: [
       join(ROOT, 'tools', 'perf', 'split-capture', 'capture-hand-input.mjs'),
       `--platform=${platform}`,
       '--native-app',
-      `--open=${platform === 'android' ? 'adb' : 'manual'}`,
+      `--open=${platform === 'android' ? 'adb' : 'devicectl'}`,
       `--host=${host}`,
       `--brush=${brush}`,
       `--orientation=${orientation}`,
       `--theme=${theme}`,
       `--seconds=${seconds}`,
       `--label=${label}`,
-      `--output=${join(OUTPUT_DIR, `${label}.json`)}`,
-      ...(platform === 'android' ? [`--device-serial=${serial}`] : []),
+      `--output=${output}`,
+      platform === 'android' ? `--device-serial=${device}` : `--device-udid=${device}`,
     ],
   };
 }
-
-function firstLine(command, args) {
-  const out = spawnSync(command, args, { encoding: 'utf8' });
-  if (out.error || out.status !== 0) return null;
-  return out.stdout.split('\n').map((line) => line.trim())[0] || null;
-}
-
-function detectAndroidSerial() {
-  const out = spawnSync('adb', ['devices'], { encoding: 'utf8' });
-  if (out.error) return null;
-  const row = out.stdout
-    .split('\n')
-    .slice(1)
-    .find((line) => line.trim().endsWith('device'));
-  return row ? row.split('\t')[0].trim() : null;
-}
-
-const detectIosUdid = () => (hasCommand('idevice_id') ? firstLine('idevice_id', ['-l']) : null);
 
 async function urlAnswers(url) {
   return fetch(url, { signal: AbortSignal.timeout(2_000) })
@@ -158,20 +161,9 @@ function spawnDetached(command, args, logName, env = {}) {
   return child;
 }
 
-function refuseForeignListener(port, role) {
-  const foreign = foreignPortListeners(port, ROOT);
-  if (foreign.length) {
-    fail(
-      `port ${port} (${role}) is held by a listener outside this checkout (pid ${foreign.join(', ')}). ` +
-        'Capturing against it would measure a different product — stop it yourself or serve elsewhere.'
-    );
-  }
-}
-
-async function ensurePreview() {
-  if (await urlAnswers(`http://127.0.0.1:${PREVIEW_PORT}/`)) {
-    refuseForeignListener(PREVIEW_PORT, 'preview');
-    console.log(`  preview ${PREVIEW_PORT} — reused`);
+async function ensurePreview(port) {
+  if (await urlAnswers(`http://127.0.0.1:${port}/`)) {
+    console.log(`  preview ${port} — reused`);
     return;
   }
   if (!existsSync(join(ROOT, 'web', 'build')) || buildDirHoldsNativeExport()) {
@@ -180,47 +172,65 @@ async function ensurePreview() {
   }
   spawnDetached(
     process.execPath,
-    [join(ROOT, 'tools', 'perf', 'serve-profile-build.mjs'), '--strict-port'],
+    [join(ROOT, 'tools', 'perf', 'serve-profile-build.mjs'), `--port=${port}`, '--strict-port'],
     'preview.log',
     { PUBLIC_ENABLE_DEV_HARNESS: 'true' }
   );
-  await waitForUrl(`http://127.0.0.1:${PREVIEW_PORT}/`, SERVER_READY_TIMEOUT_MS);
-  console.log(`  preview ${PREVIEW_PORT} — started`);
+  await waitForUrl(`http://127.0.0.1:${port}/`, SERVER_READY_TIMEOUT_MS);
+  console.log(`  preview ${port} — started`);
 }
 
-async function ensureProbeHost() {
-  if (await urlAnswers(`http://127.0.0.1:${PROBE_PORT}/__probe/state`)) {
-    refuseForeignListener(PROBE_PORT, 'probe host');
-    console.log(`  probe host ${PROBE_PORT} — reused`);
+async function ensureProbeHost(port, previewPort) {
+  if (await urlAnswers(`http://127.0.0.1:${port}/__probe/state`)) {
+    console.log(`  probe host ${port} — reused`);
     return;
   }
   spawnDetached(
     process.execPath,
-    [join(ROOT, 'tools', 'perf', 'split-capture', 'serve-probe-host.mjs')],
+    [
+      join(ROOT, 'tools', 'perf', 'split-capture', 'serve-probe-host.mjs'),
+      `--port=${port}`,
+      `--upstream=http://127.0.0.1:${previewPort}`,
+    ],
     'probe-host.log',
     { PUBLIC_ENABLE_DEV_HARNESS: 'true' }
   );
-  await waitForUrl(`http://127.0.0.1:${PROBE_PORT}/__probe/state`, SERVER_READY_TIMEOUT_MS);
-  console.log(`  probe host ${PROBE_PORT} — started`);
+  await waitForUrl(`http://127.0.0.1:${port}/__probe/state`, SERVER_READY_TIMEOUT_MS);
+  console.log(`  probe host ${port} — started`);
 }
 
-async function ensureAppium() {
-  if (await urlAnswers(`http://127.0.0.1:${APPIUM_PORT}/status`)) {
-    console.log(`  appium ${APPIUM_PORT} — reused`);
+async function ensureAppium(port) {
+  if (await urlAnswers(`http://127.0.0.1:${port}/status`)) {
+    console.log(`  appium ${port} — reused (the preflight already vetted the holder)`);
     return;
   }
-  spawnDetached('appium', ['--port', String(APPIUM_PORT), '--log-timestamp'], 'appium.log');
-  await waitForUrl(`http://127.0.0.1:${APPIUM_PORT}/status`, SERVER_READY_TIMEOUT_MS);
-  console.log(`  appium ${APPIUM_PORT} — started`);
+  if (!hasCommand('appium')) fail('appium is not installed — npm install -g appium');
+  spawnDetached('appium', ['--port', String(port), '--log-timestamp'], 'appium.log');
+  await waitForUrl(`http://127.0.0.1:${port}/status`, SERVER_READY_TIMEOUT_MS);
+  console.log(`  appium ${port} — started`);
 }
 
-function recordGrantAttempt(outcome, detail) {
-  mkdirSync(LOG_DIR, { recursive: true });
-  if (!existsSync(GRANT_LOG)) appendFileSync(GRANT_LOG, 'timestamp\toutcome\tdetail\n');
-  appendFileSync(GRANT_LOG, `${new Date().toISOString()}\t${outcome}\t${detail}\n`);
+// One row per WDA launch attempt: the only dataset that can ever answer how
+// long an automation grant lasts. Values are flattened to single-line fields so
+// a multi-sentence Appium message cannot break the TSV.
+export function grantLogLine({ timestamp, udid, outcome, detail }) {
+  const cell = (value) =>
+    String(value ?? '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  return `${cell(timestamp)}\t${cell(udid)}\t${cell(outcome)}\t${cell(detail)}\n`;
 }
 
-async function runGrantStep({ udid, ask }) {
+function recordGrantAttempt(udid, outcome, detail) {
+  mkdirSync(join(ROOT, 'perf-profiles', 'evidence', 'operator'), { recursive: true });
+  if (!existsSync(GRANT_LOG)) appendFileSync(GRANT_LOG, 'timestamp\tudid\toutcome\tdetail\n');
+  appendFileSync(
+    GRANT_LOG,
+    grantLogLine({ timestamp: new Date().toISOString(), udid, outcome, detail })
+  );
+}
+
+async function runGrantStep({ udid, appiumPort, wdaPort, ask }) {
   console.log('\n== iPad automation grant ==');
   console.log('  A WebDriverAgent session is about to launch (~1 minute, it builds WDA).');
   console.log('  WATCH THE IPAD THE WHOLE TIME. If it shows "Enter iPad Passcode for');
@@ -231,15 +241,15 @@ async function runGrantStep({ udid, ask }) {
     const probe = classifyLaunchProbe(
       await probeIosLaunch({
         udid,
-        appiumUrl: `http://127.0.0.1:${APPIUM_PORT}`,
-        wdaPort: WDA_PORT,
+        appiumUrl: `http://127.0.0.1:${appiumPort}`,
+        wdaPort,
         verifyRotation: false,
       })
     );
-    recordGrantAttempt(probe.status, probe.detail);
+    recordGrantAttempt(udid, probe.status, probe.detail);
     if (probe.status === 'ok') {
       console.log('  ✓ the iPad accepted an automation session — the grant is armed.');
-      console.log(`    Logged to ${GRANT_LOG} (issue 1299 wants this history).`);
+      console.log(`    Logged to ${GRANT_LOG} (issue 1299 wants this history — commit it).`);
       return { status: 'pass', detail: probe.detail };
     }
     console.log(`  ✗ ${probe.detail}`);
@@ -250,7 +260,7 @@ async function runGrantStep({ udid, ask }) {
   return { status: 'fail', detail: 'the iPad refused an automation session twice' };
 }
 
-function announceHandStep(platform, host) {
+function announceHandStep(platform) {
   if (platform === 'android') {
     console.log('\n== Android WebView hand captures ==');
     console.log('  The installed profiling build is launched for you over adb. When the');
@@ -258,77 +268,97 @@ function announceHandStep(platform, host) {
     return;
   }
   console.log('\n== iPad WebView hand captures ==');
-  console.log('  Unlock the iPad and open the profiling Splotch app (the install whose');
-  console.log(`  server.url points at ${host}). Ignore the "open this URL" line the tool`);
-  console.log('  prints — for a native capture the app IS the page. If no capture starts');
-  console.log('  within a minute, the installed build predates this rig: rebuild per');
-  console.log('  docs/PROFILING-CAMPAIGNS.md and the start-capture-session skill.');
+  console.log('  Unlock the iPad and leave it alone: the harness relaunches the installed');
+  console.log('  Splotch profiling app itself before each capture — do NOT open Safari or');
+  console.log('  any URL. Watch this terminal: when it prints READY and starts counting');
+  console.log('  down, draw with ONE FINGER until it says done.');
 }
 
-async function runHandItem(item, { host, serial, seconds, ask }) {
-  const { label, output, args } = handCaptureArgs({ ...item, seconds, host, serial });
+export async function runHandItem(item, { host, seconds, outputDir, ask, spawnChild = spawnSync }) {
+  if (!item.device) {
+    return { status: 'fail', detail: `the ${item.platform} device disappeared mid-session` };
+  }
+  const { label, output, args } = handCaptureArgs({ ...item, seconds, host, outputDir });
   console.log(`\n-- ${label} (${seconds}s of drawing) --`);
   await ask('  Press Enter when ready to draw… ');
-  const child = spawnSync(process.execPath, args, { cwd: ROOT, stdio: 'inherit' });
+  const child = spawnChild(process.execPath, args, { cwd: ROOT, stdio: 'inherit' });
   return child.status === 0
     ? { status: 'pass', detail: output }
     : { status: 'fail', detail: `exit ${child.status} — rerun with --steps=${item.step}` };
 }
 
 export async function runOperatorSession() {
+  const planOnly = process.argv.includes('--plan');
+  // The preflight is the authority on device identity, port resolution, and the
+  // Android wake state — the skill's rule is to take its answers rather than
+  // re-deriving them. --plan skips it so the checklist works offline.
+  const report = planOnly
+    ? { androidSerial: null, iosUdid: null, ports: null, ready: true, blockers: [] }
+    : await prepareCapture(['--wake-android']);
   const plan = parseOrFail(() =>
     operatorSessionPlan({
       steps: argFlag('steps', STEP_NAMES.join(',')).split(','),
       brushes: argFlag('brushes', DEFAULT_BRUSHES.join(',')).split(','),
       orientations: argFlag('orientations', 'PORTRAIT').split(','),
       theme: argFlag('theme', 'light'),
-      androidSerial: detectAndroidSerial(),
-      iosUdid: detectIosUdid(),
+      androidSerial: planOnly ? 'planned' : report.androidSerial,
+      iosUdid: planOnly ? 'planned' : report.iosUdid,
     })
   );
-  const seconds = Number(argFlag('seconds', DEFAULT_DRAW_SECONDS));
-  const lan = lanAddresses()[0];
-  if (!lan) fail('no LAN address — the devices cannot reach a probe host on this machine');
-  const host = `http://${lan}:${PROBE_PORT}`;
 
-  console.log('Operator session — the inputs only a human at the devices can give.\n');
+  console.log('\nOperator session — the inputs only a human at the devices can give.\n');
   console.table(
-    plan.map(({ step, brush, orientation, skipped }) => ({
+    plan.map(({ step, device, brush, orientation, skipped }) => ({
       step,
+      device: skipped ? '' : (device ?? ''),
       brush: brush ?? '',
       orientation: orientation ?? '',
       status: skipped ? `SKIP: ${skipped}` : 'queued',
     }))
   );
-  if (process.argv.includes('--plan')) return plan;
+  if (planOnly) return plan;
+  if (!report.ready) fail(`the preflight is blocking:\n  ${report.blockers.join('\n  ')}`);
+
+  const seconds = Number(argFlag('seconds', DEFAULT_DRAW_SECONDS));
+  const lan = lanAddresses()[0];
+  if (!lan) fail('no LAN address — the devices cannot reach a probe host on this machine');
+  const probePort = Number(argFlag('probe-port', DEFAULT_PROBE_PORT));
+  const host = `http://${lan}:${probePort}`;
+  const outputDir = join(OUTPUT_ROOT, new Date().toISOString().replaceAll(':', '-'));
 
   const active = plan.filter((item) => !item.skipped);
   if (active.length === 0) fail('nothing to do — every step is skipped');
 
-  console.log('Bringing the rig up (reused where already running, left running after):');
+  console.log('\nBringing the rig up (reused where already running, left running after):');
   if (active.some((item) => item.step !== 'grant')) {
-    await ensurePreview();
-    await ensureProbeHost();
+    await ensurePreview(report.ports.preview);
+    await ensureProbeHost(probePort, report.ports.preview);
   }
-  if (active.some((item) => item.step === 'grant')) await ensureAppium();
+  if (active.some((item) => item.step === 'grant')) await ensureAppium(report.ports.appium);
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   const ask = (question) => rl.question(question);
   const results = [];
   try {
-    const serial = detectAndroidSerial();
-    const udid = detectIosUdid();
     let announced = null;
     for (const item of active) {
       if (item.step === 'grant') {
-        results.push({ item, ...(await runGrantStep({ udid, ask })) });
+        results.push({
+          item,
+          ...(await runGrantStep({
+            udid: item.device,
+            appiumPort: report.ports.appium,
+            wdaPort: report.ports.wda,
+            ask,
+          })),
+        });
         continue;
       }
       if (announced !== item.step) {
-        announceHandStep(item.platform, host);
+        announceHandStep(item.platform);
         announced = item.step;
       }
-      results.push({ item, ...(await runHandItem(item, { host, serial, seconds, ask })) });
+      results.push({ item, ...(await runHandItem(item, { host, seconds, outputDir, ask })) });
     }
   } finally {
     rl.close();
@@ -347,7 +377,7 @@ export async function runOperatorSession() {
   const handPasses = results.filter(({ item, status }) => item.brush && status === 'pass');
   if (handPasses.length) {
     console.log('\nNext steps for the captures:');
-    console.log(`  npm run perf:evidence:keep -- --corpus=${OUTPUT_DIR} --campaign=hand-native`);
+    console.log(`  npm run perf:evidence:keep -- --corpus=${outputDir} --campaign=<name>`);
     console.log('  Then post the calibration readings to issue 1275.');
   }
   console.log('\nThe rig stays up. The campaign can continue unattended from here.');

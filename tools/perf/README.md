@@ -13,6 +13,14 @@ complete flag and output descriptions.
   stopping a listener another session owns. `lib/capture-readiness.mjs` holds the decisions as pure
   functions so they are testable without a device. The failures it exists to prevent are catalogued
   in [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
+* `perf:operator` (`run-operator-session.mjs`) is the guided session for the two capture inputs only
+  a human at the devices can give: arming the iPad automation grant (the passcode prompt exists only
+  during a WebDriverAgent launch — issue 1299; every attempt is appended to the tracked grant log
+  under `perf-profiles/evidence/operator/`) and real-finger calibration captures inside the
+  installed Capacitor WebViews (issue 1275). It takes devices and ports from `perf:preflight`'s own
+  resolution, launches the iPad app deterministically through `devicectl` rather than trusting the
+  foregrounded app, and each capture refuses an artifact whose user agent contradicts the labelled
+  runtime.
 * Root analyzers consume existing evidence: `perf:analyze:chrome`, `perf:analyze:web-inspector`, and
   `perf:analyze:frames`.
 * `perf:rescore` (`rescore-captures.mjs`) re-derives a whole corpus of captures from their raw frame
