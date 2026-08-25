@@ -67,14 +67,15 @@ staging file, `fix-audits` burns the issues down.
 
 These augment the built-in PR flows rather than replacing them.
 
-| Skill                   | Use when you are…                                                                  |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `create-stacked-prs`    | **Sequencing** a multi-issue campaign into a chain of stacked PRs                  |
-| `pr-screenshots`        | **Opening** a PR that touches UI — screenshot/before-after/gif conventions         |
-| `leave-pr-review`       | **Authoring** a review of someone's PR — local checkout, empirical verification    |
-| `address-pr-review`     | **Receiving** a review — triage every comment, fix or rebut, reply and resolve     |
-| `implement-issue-stack` | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-claude` |
-| `triage-dependabot-prs` | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest |
+| Skill                        | Use when you are…                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------- |
+| `create-stacked-prs`         | **Sequencing** a multi-issue campaign into a chain of stacked PRs                  |
+| `pr-screenshots`             | **Opening** a PR that touches UI — screenshot/before-after/gif conventions         |
+| `create-pr-feedback-handoff` | **Handing off** this session's PRs to an independent reviewer — builds the prompt  |
+| `leave-pr-review`            | **Authoring** a review — local checkout, empirical verification, posts by default  |
+| `address-pr-review`          | **Receiving** a review — triage every comment, fix or rebut, reply and resolve     |
+| `implement-issue-stack`      | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-claude` |
+| `triage-dependabot-prs`      | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest |
 
 `create-stacked-prs` comes first in that table for a reason: it decides the *shape* of the campaign
 before any single PR exists, and every later skill in the group has to respect that shape. Its one
@@ -84,6 +85,13 @@ every fix in a single feedback PR at the tip, reused across review rounds, inste
 onto the reviewed branch. Read `create-stacked-prs` first anyway — it defines the shape that mode
 preserves. `implement-issue-stack` is the unattended Codex orchestrator for the same shape; this one
 is the by-hand procedure, in either agent.
+
+`create-pr-feedback-handoff` sits between authoring and review: at the end of a session it
+enumerates every PR produced (the whole chain, in a stack), adds the session's own doubts as extra
+focus areas, and emits the prompt that has an independent agent run `leave-pr-review` — full sweep
+first, focus areas after. `leave-pr-review` posts its findings by default (invoking it is the
+authorization; `mode=chat` and `mode=issues` redirect them), and `address-pr-review` then works the
+comments on the author's side.
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and

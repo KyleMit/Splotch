@@ -100,12 +100,12 @@ this skill is the user's standing approval to open the PR** — don't pause to a
    > Run the `leave-pr-review` skill on PR #`<N>` in `kylemit/splotch`. Finish by posting your
    > findings as an inline review on the PR.
 
-   `leave-pr-review` normally holds a hard gate — it posts only after a typed human go-ahead. Here
-   that go-ahead is **pre-granted**: instruct the subagent that it **must always finish by leaving
-   its comments on the PR** (a single pending review submitted with `add_comment_to_pending_review`
-   * submit), and must never end by asking whether to post or by leaving the review only in chat.
-     Wait for the subagent to finish before continuing — its comments are the input to the next
-     step.
+   `leave-pr-review` posts by default — invoking it is the authorization to leave the comments on
+   the PR as a single pending review, submitted via `add_comment_to_pending_review` per finding.
+   Still spell out that the subagent must **always finish by posting** and must never end by asking
+   whether to post or by leaving the review only in chat — an orchestrated reviewer that stalls in
+   chat stalls the pipeline. Wait for the subagent to finish before continuing — its comments are
+   the input to the next step.
 
 3. **Address the review — back on the main thread.** Now run the `address-pr-review` skill against
    the same PR: triage every comment the subagent left, fix the valid ones and reply with the fix,
