@@ -6,6 +6,13 @@ import { pointerWasResumed } from '$lib/drawing/strokeMath';
 // control exit irreversibly turns the press into a drag.
 const TAP_MOVEMENT_TOLERANCE_PX = 8;
 
+// How long after a finished press its trailing synthesized click is consumed.
+// The click is NOT dispatched synchronously after pointerup — on-device it
+// arrived two tasks later (+2ms), which made a zero-delay timer clear too
+// early and double-fire the control — and legacy WebKit could delay synthesis
+// by its 350ms double-tap window, so the consume window must outlast both.
+const PRESS_CLICK_CONSUME_WINDOW_MS = 700;
+
 // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of a
 // pen TAP anywhere on the page: the stroke's pointer events still arrive, the
 // engine paints it, but the system never presents those frames — the ink is
@@ -154,10 +161,17 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (typeof current !== 'function') current.onPressCancel?.();
   };
 
+  // A trailing synthesized click is consumed by the press that produced it —
+  // whether that press activated or was deliberately cancelled (a drag-off) —
+  // so it can never double-fire or resurrect a rejected drag. One press
+  // consumes at most one click, inside a bounded window.
+  let pressConsumesClickUntil = 0;
+
   function finishPress(shouldActivate: boolean) {
     if (!press) return;
     stream?.release(press.pointerId);
     press = undefined;
+    pressConsumesClickUntil = performance.now() + PRESS_CLICK_CONSUME_WINDOW_MS;
     if (shouldActivate) activate();
     else cancelPreparation();
   }
@@ -215,9 +229,25 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     press.lastTime = now;
   }
 
+  // iPadOS expands touch targets: a finger landing a hair outside the control
+  // still gets its whole pointer stream targeted at the control by WebKit's own
+  // hit-test (observed on-device: down and up delivered 1px above the undo
+  // button, with the synthesized click landing inside it). A geometric re-test
+  // with the raw coordinates vetoes that snap — and the detail>=1 click guard
+  // below has already removed the browser's fallback — so the control plays its
+  // press feedback and then swallows the tap. A press that never travelled
+  // activates on the browser's targeting alone; the re-test still gates
+  // releases that actually moved.
+  function pressStayedPut(e: PointerEvent): boolean {
+    return (
+      press !== undefined &&
+      Math.hypot(e.clientX - press.startX, e.clientY - press.startY) <= TAP_MOVEMENT_TOLERANCE_PX
+    );
+  }
+
   function up(e: PointerEvent) {
     if (!press || e.pointerId !== press.pointerId) return;
-    finishPress(!press.dragged && eventHitsControl(e));
+    finishPress(!press.dragged && (pressStayedPut(e) || eventHitsControl(e)));
   }
 
   function cancel(e: PointerEvent) {
@@ -240,8 +270,23 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (typeof current !== 'function') current.onPressStart?.();
   }
 
+  // detail 0 is keyboard/assistive-tech activation. A detail>=1 click with no
+  // press to consume it is iOS resolving a near-miss tap to this control after
+  // touch-target expansion aimed the pointer stream elsewhere — observed
+  // on-device as a click synthesized dead-center on the undo button while its
+  // pointerdown landed a pixel outside (issue 1237). The browser's tap
+  // resolution is the authority; discarding it leaves a control that plays no
+  // feedback and does nothing.
   const click = (e: MouseEvent) => {
-    if (e.detail === 0) activate();
+    if (e.detail === 0) {
+      activate();
+      return;
+    }
+    if (performance.now() < pressConsumesClickUntil) {
+      pressConsumesClickUntil = 0;
+      return;
+    }
+    activate();
   };
   // Direct pointer-id routing keeps the drawing hot path at one window handler.
   const stream = ownerWindow

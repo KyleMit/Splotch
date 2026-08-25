@@ -255,11 +255,24 @@ describe('scribbleTap', () => {
     expect(activate).toHaveBeenCalledTimes(1);
   });
 
-  it('does not activate when the same pointer releases outside the control', () => {
+  // iPadOS snaps a near-miss touch onto the control: the browser targets the
+  // whole pointer stream at it while a raw elementFromPoint still reports the
+  // neighbor. A press that never travelled must trust the browser's targeting
+  // — on-device this was a tap 1px above the undo button playing its press
+  // animation and doing nothing (issue 1237).
+  it('activates a stationary press even when the raw hit-test misses the control', () => {
     const { el, activate } = tapElement();
     vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
-    el.dispatchEvent(pointerEvent('pointerdown', 1));
-    window.dispatchEvent(pointerEvent('pointerup', 1));
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 39, clientY: 947 }));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 39, clientY: 947 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not activate when the pointer travels and releases outside the control', () => {
+    const { el, activate } = tapElement();
+    vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 10, clientY: 10 }));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 40, clientY: 10 }));
     expect(activate).not.toHaveBeenCalled();
   });
 
@@ -271,7 +284,44 @@ describe('scribbleTap', () => {
     el.dispatchEvent(pointerEvent('pointerleave', 1, { clientX: 30, clientY: 10 }));
     window.dispatchEvent(pointerEvent('pointermove', 1, { clientX: 10, clientY: 10 }));
     window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 10, clientY: 10 }));
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
     expect(activate).not.toHaveBeenCalled();
+  });
+
+  // The other face of the iPadOS near-miss (issue 1237): touch-target expansion
+  // can aim the pointer stream at a neighbor while WebKit still synthesizes the
+  // click on this control. With no press to consume it, the click is the
+  // browser's tap resolution and must activate — discarding it left a button
+  // that played no feedback and did nothing.
+  it('activates on a browser-resolved click whose pointer stream missed the control', () => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  // The consuming window exists because the synthesized click is NOT dispatched
+  // synchronously with the pointerup — on-device it arrived two tasks later,
+  // where a zero-delay timer had already expired and the control double-fired
+  // (drawer expanded on pointerup, collapsed again on the click).
+  it('consumes the trailing click even when it arrives a task later', () => {
+    const { el, activate } = tapElement();
+    const base = performance.now();
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointerup', 1));
+    vi.spyOn(performance, 'now').mockReturnValue(base + 5);
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets a click activate once the consume window has expired', () => {
+    const { el, activate } = tapElement();
+    const base = performance.now();
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointerup', 1));
+    expect(activate).toHaveBeenCalledTimes(1);
+    vi.spyOn(performance, 'now').mockReturnValue(base + 1e6);
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).toHaveBeenCalledTimes(2);
   });
 
   it('stops hit-testing moves once the press is known to be dragged', () => {
