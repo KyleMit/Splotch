@@ -23,7 +23,9 @@ destructive data changes, spending money, or acting outside the named PR; those 
 ## Setup
 
 1. **Identify the PR.** Use the PR the user named, or the open PR for the current branch. If the
-   branch has no open PR, say so and stop — there is nothing to review.
+   branch has no open PR, say so and stop — there is nothing to review. Then check whether the PR
+   sits in an active stacked campaign — that widens the sweep and moves where fixes commit (see "In
+   a stacked campaign" below).
 2. **Check out the PR's head branch** and make sure the working tree is clean and up to date with
    the remote (`git pull origin <branch>`). Fixes commit onto this branch; never mix them with
    unrelated local work.
@@ -52,6 +54,43 @@ destructive data changes, spending money, or acting outside the named PR; those 
    `<!-- splotch-claude-review:` identifies that independent review. Include the marked review body
    itself and every inline comment belonging to that review ID even though GitHub reports your own
    account as its author.
+
+## In a stacked campaign — sweep the whole stack, fix at the tip
+
+A PR opened by the `create-stacked-prs` skill is one layer of a chained campaign, and two of this
+skill's defaults change inside one. Detect it before touching anything: list the open PRs' head and
+base branches — if the identified PR's base is another open PR's head, or its head is another open
+PR's base, it is part of a stack (a registered `gh stack` link confirms it, but chained bases alone
+are enough).
+
+* **The sweep covers the whole campaign, not one PR.** Reviewers leave feedback wherever the diff
+  they cared about lives, so fetch all three comment kinds (Setup step 3) from **every open PR in
+  the chain** and triage them as one worklist — one plan, one ordering pass, one composed
+  verification run.
+* **Fixes never commit onto a reviewed branch.** The stack's load-bearing rule — never add a commit
+  to a PR once a PR sits above it — overrides Setup step 2 and the fix flow's commit target. Every
+  fix from the sweep lands in a **single feedback PR stacked on the current tip**: branch off the
+  tip PR's head (name it for the campaign, e.g. `claude/<campaign-slug>-review-feedback`), one
+  commit per finding, then open the PR with its base set to the tip's branch and link it into the
+  stack when one is registered (append with the recorded stack number — mechanics in
+  `create-stacked-prs`). A dedicated feedback PR also keeps each work PR's diff scoped to its own
+  change — cross-campaign fixes don't belong inside the tip PR's diff.
+* **Subsequent rounds reuse the same feedback PR.** Once the campaign's feedback PR exists at the
+  top of the stack, every later review round — including review of the feedback PR itself — commits
+  onto it rather than opening another PR. That stays legal precisely because nothing sits above it;
+  if the campaign has since stacked new work on top, the feedback PR is frozen like any other layer
+  and the new round starts a fresh feedback PR at the new tip.
+
+One scoped exception: an orchestrator may direct this skill at a **single PR that is itself the
+current tip with nothing above it** — `implement-issue-stack`'s per-issue review rounds address each
+PR before the next one stacks on top. There the default applies: fixes commit onto that PR's own
+branch, since no rule forbids commits at the tip and the feedback is scoped to that layer.
+
+Everything else in this skill applies unchanged. Replies still go **on the original thread, on
+whichever PR of the campaign carries it**, naming the pushed commit in the feedback PR, and threads
+still get resolved. Give the feedback PR's body an index of what it addresses — each source PR and
+the comments taken from it (references to the campaign's own PRs are deliberate, so those
+`#`-numbers stay unescaped).
 
 ## Plan the order before starting
 

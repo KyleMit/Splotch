@@ -168,6 +168,12 @@ Record only durable **method** knowledge in the skill (how to audit, how to read
 to avoid). Do **not** record specific findings there — those live in `docs/AUDIT.md` and go stale as
 they're fixed.
 
+This section covers the learning whose durable home is the audit skill's **own file**. A run also
+surfaces lessons that belong elsewhere — a doc that misled, a script that failed unhelpfully, a
+harness papercut, a trap in the code itself. Those are the `self-heal` skill's territory: invoke it
+to judge durability and write each lesson into the home the next tripped-up session will actually
+see.
+
 ## Scheduled runs (Claude Routines)
 
 Every audit skill also runs **automatically** on a schedule, via Claude Code Routines — scheduled

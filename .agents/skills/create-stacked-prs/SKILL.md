@@ -186,10 +186,13 @@ never be green beforehand; they are not a reason to hold the stack.
 
 ## Responding to review
 
-Work the feedback with the `address-pr-review` skill, with one deviation it does not assume: **its
-fixes normally commit onto the reviewed PR's own branch, and in a stack that is the one thing you
-must not do.** Collect the fixes into a **single new PR at the top of the stack**, one commit per
-finding, so each fix is reviewable on its own and nothing below is amended.
+Work the feedback with the `address-pr-review` skill — its stacked-campaign mode exists for exactly
+this shape, and it detects the chain itself. Inside a stack it sweeps the feedback from **every open
+PR in the campaign** into one worklist, collects the fixes into a **single feedback PR stacked on
+the current tip** (one commit per finding — its default of committing onto the reviewed PR's own
+branch is the one thing the no-commits-below rule forbids), links that PR into the stack, and
+commits **each subsequent review round onto that same feedback PR** for as long as it remains the
+top. The feedback PR is the sweep-up PR planned above — expect it, don't treat it as a failure.
 
 Everything else in that skill still applies — fetch inline comments, review summaries, *and*
 conversation comments (a review body can carry findings that never appear as an inline thread),

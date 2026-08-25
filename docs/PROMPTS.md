@@ -269,12 +269,15 @@ of the run until the deferred backlog is fully reviewed
 
 ## Self Heal
 
+The ad-hoc form of what is now the `self-heal` skill — prefer invoking the skill, which also covers
+lessons whose durable home is outside the skill that ran (docs, scripts, harness, ADRs).
+
 ```md
-self heal. what went well / poorly this session? what can be added or removed to the burn down agent
-skill that would improve future runs?
+run the self-heal skill. what went well / poorly this session? what should be made durable — and
+where — so future runs get it for free?
 
 before making any changes, checkout main and pull the latest changes and branch off of there. I
-merged PR ###, so create a new PR with any findings / improvements for the skill
+merged PR ###, so create a new PR with the healed findings / improvements
 ```
 
 ## Invoke codex burn down with approvals

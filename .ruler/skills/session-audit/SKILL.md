@@ -13,6 +13,10 @@ This is a **retrospective on one session**, not a sweep of the codebase. Run it 
 working session, before `/clear`. Its whole value is aggregation across many runs, so honesty per
 run matters more than volume.
 
+Sibling: the `self-heal` skill is the apply-now counterpart. A lesson whose fix and durable home are
+already clear gets applied there directly, in the same session; file here when the finding needs
+adversarial vetting, cross-session aggregation, or a later fix agent.
+
 ## How to audit
 
 Work from evidence, not vibes. Your in-the-moment sense of "what felt slow" misses the friction that

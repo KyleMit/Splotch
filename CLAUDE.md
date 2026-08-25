@@ -280,6 +280,7 @@ for the authoritative registry.
 | `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                           |
 | `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, gated posting, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`) |
 | `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                       |
+| `self-heal`                             | wrapping up a session that hit hiccups, surprises, or hard-won lessons — judges which are durable and writes each into the home the next tripped-up session will actually see                                            |
 
 That table covers the highest-traffic skills. The **full catalog** — every skill, grouped by the
 workflow it belongs to and how related skills chain together (the audit lifecycle, the PR flow,
