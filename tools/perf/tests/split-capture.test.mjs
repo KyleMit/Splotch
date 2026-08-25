@@ -34,6 +34,7 @@ import {
 } from '../split-capture/lib/input-verdict.mjs';
 import {
   calibrationReading,
+  firstContactFailure,
   handCaptureArtifact,
   openWithAdb,
 } from '../split-capture/capture-hand-input.mjs';
@@ -540,6 +541,35 @@ describe('the probe host refusing a stale run over HTTP', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+
+  // Issue 1316: a locked iPad and an installed clean bundled build both look
+  // like a successful devicectl launch followed by silence. The counter is the
+  // signal the runner separates them with, so it has to count and to reset.
+  it('counts plan requests and zeroes the count on a plan reset', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(0);
+    await fetch(`${base}/__probe/plan`);
+    await fetch(`${base}/__probe/plan`);
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(2);
+
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nonce: 'next-run', reset: true }),
+    });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(0);
+  });
+
+  it('names both operator-fixable causes when a launch never phones home', () => {
+    const message = firstContactFailure('http://192.168.40.53:4175');
+
+    expect(message).toContain('http://192.168.40.53:4175');
+    expect(message).toContain('locked');
+    expect(message).toContain('perf:build:cap');
+  });
 
   it('keeps a report from the current run and refuses one from another', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));

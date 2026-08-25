@@ -35,6 +35,13 @@ const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PAGE_SETTLE_MS = 6_000;
 const PROBE_READY_TIMEOUT_MS = 180_000;
+// A launched app that will contact the probe host does so within a few seconds
+// of the launch; one that never will — a locked iPad (devicectl reports the
+// launch as successful anyway) or an installed clean bundled build that renders
+// the app perfectly and never loads the probe host — is silent forever. Fifteen
+// seconds separates the two without eating the operator's capture window the
+// way the full three-minute ready poll did twice on 2026-08-25 (issue 1316).
+const FIRST_CONTACT_TIMEOUT_MS = 15_000;
 const REPORT_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 1_000;
 // The probe ends a phase on its own once the banked contact time runs out; a
@@ -151,6 +158,23 @@ export function openWithDevicectl({ udid, exec = capture }) {
     udid,
     APP_BUNDLE_ID,
   ]);
+}
+
+// What silence after a devicectl launch means, in the operator's terms. First
+// contact is any request for the plan, not proof of identity — a page that asks
+// for the plan may still fail readiness — but a launch that produces NO request
+// is one of exactly two operator-fixable states, and both look identical on the
+// device.
+export function firstContactFailure(host) {
+  return (
+    `the launched app never phoned home — no request for the probe plan reached ${host} ` +
+    `within ${FIRST_CONTACT_TIMEOUT_MS / 1000}s. Two usual causes:\n` +
+    '  - the iPad is locked: devicectl reports a successful launch even behind a locked\n' +
+    '    screen, and the WebView then never loads. Unlock the iPad and re-run this step.\n' +
+    `  - the installed build cannot do a probe capture: a clean bundled build renders the\n` +
+    `    drawing app perfectly and never contacts ${host}. Install the server.url profiling\n` +
+    '    build (npm run perf:build:cap, then npm run ios:run:device) and re-run.'
+  );
 }
 
 async function countDown(seconds) {
@@ -285,6 +309,15 @@ export async function captureHandInput({
   if (opener === 'adb') await openWithAdb({ serial, pageUrl, orientation, nativeApp });
   else if (opener === 'devicectl') {
     openWithDevicectl({ udid });
+    console.log(`  Launched the installed app; waiting for it to load ${host} …`);
+    // The reset in the control call above zeroed the counter, so any request
+    // now is this launch (or a leftover — either way, a reachable page).
+    const contacted = await pollFor(
+      async () => ((await probeState(host)).planRequests > 0 ? true : null),
+      FIRST_CONTACT_TIMEOUT_MS
+    );
+    if (!contacted) fail(firstContactFailure(host));
+    console.log('  The app reached the probe host; waiting for the page to report ready …');
     await sleep(PAGE_SETTLE_MS);
   } else announceManualOpen({ host, orientation, theme });
 

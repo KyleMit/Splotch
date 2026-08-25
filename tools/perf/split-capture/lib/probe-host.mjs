@@ -54,12 +54,21 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     report: null,
     progress: null,
     pulse: null,
+    // How many times ANY page asked for the plan since the last reset. First
+    // contact, not identity: a launched app that never loads the page makes no
+    // request at all, and that silence is what the runner needs to detect fast
+    // (issue 1316 — a locked iPad and a clean bundled build both look like a
+    // successful launch followed by three minutes of nothing).
+    planRequests: 0,
   };
 
   const server = createServer(async (req, res) => {
     const { pathname } = new URL(req.url, 'http://localhost');
 
-    if (pathname === '/__probe/plan') return json(res, state.plan);
+    if (pathname === '/__probe/plan') {
+      state.planRequests += 1;
+      return json(res, state.plan);
+    }
     // Where a stale page parks itself. Standing down to about:blank left a husk
     // nothing could prove ownership of — and closing unproven pages is exactly
     // the operator-tab hazard the litter clearer must not have. A husk on this
@@ -72,7 +81,12 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
       return res.end('<!doctype html><title>stood down</title>');
     }
     if (pathname === '/__probe/state') {
-      return json(res, { ready: state.progress, hasReport: !!state.report, pulse: state.pulse });
+      return json(res, {
+        ready: state.progress,
+        hasReport: !!state.report,
+        pulse: state.pulse,
+        planRequests: state.planRequests,
+      });
     }
     if (pathname === '/__probe/bootstrap.js') return script(res, pageBootstrapSource());
     if (pathname === '/__probe/probe.js') {
@@ -85,6 +99,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         state.report = null;
         state.progress = null;
         state.pulse = null;
+        state.planRequests = 0;
         delete state.plan.reset;
       }
       return json(res, state.plan);
