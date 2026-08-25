@@ -26,7 +26,11 @@ import {
   tryCapture,
 } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
-import { nativeCanvasBounds, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import {
+  STROKES_PER_GESTURE_REPEAT,
+  nativeCanvasBounds,
+  trustedGestureActions,
+} from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
@@ -201,20 +205,17 @@ export function androidDriver({
         offset: { x: geometry.screenX * geometry.dpr, y: geometry.screenY * geometry.dpr },
       };
     },
-    async dispatch({ bounds, densityScale, offset }, repeats, gestureOptions) {
+    async dispatch({ bounds, densityScale, offset }, repeats) {
       await frontRunPage('before dispatch');
       if (!nativeApp) {
         // Nothing may stay attached while input is measured; a forward that was
         // never established (activation unavailable) has nothing to remove.
         forward('adb', ['-s', serial, 'forward', '--remove', `tcp:${cdpPort}`]);
       }
-      const instructions = androidGestureInstructions(
-        trustedGestureActions(bounds, repeats, 0, gestureOptions),
-        {
-          densityScale,
-          offset,
-        }
-      );
+      const instructions = androidGestureInstructions(trustedGestureActions(bounds, repeats, 0), {
+        densityScale,
+        offset,
+      });
       for (const instruction of instructions) {
         if (instruction.kind === 'pause') await sleep(instruction.durationMs);
         else exec(serial, swipeArgs(instruction));
@@ -283,14 +284,14 @@ function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
         offset: { x: 0, y: 0 },
       };
     },
-    async dispatch({ bounds }, repeats, gestureOptions) {
+    async dispatch({ bounds }, repeats) {
       await wda(wdaUrl, 'POST', `/session/${sessionId}/actions`, {
         actions: [
           {
             type: 'pointer',
             id: 'finger',
             parameters: { pointerType: 'touch' },
-            actions: trustedGestureActions(bounds, repeats, 0, gestureOptions),
+            actions: trustedGestureActions(bounds, repeats, 0),
           },
         ],
       });
@@ -339,15 +340,20 @@ export function drivenCaptureArtifact({
     // refuses a banked cell recording a count other than its contract (issue
     // 1297).
     gestureRepeats,
-    // Which geometry the repeats replayed (issue 1292): 'per-repeat-offsets'
-    // for the eraser, 'fixed-geometry' otherwise. Artifacts predating the field
-    // were all fixed-geometry, including eraser cells — their passes 2..N erased
-    // nothing, so pre-field eraser numbers are optimistic and not comparable to
-    // per-repeat-offset ones.
+    // How the repeats were fed ink (issue 1292): 'fixed-geometry-refilled' for
+    // the eraser — identical geometry every pass, tiles refilled between passes
+    // — and 'fixed-geometry' otherwise. Artifacts predating the field were all
+    // unrefilled fixed-geometry, so their eraser passes 2..N erased nothing and
+    // those numbers are optimistic and not comparable to refilled ones. (A
+    // 'per-repeat-offsets' value existed briefly inside the unmerged stack and
+    // never captured a cell.)
     gesturePlan: gesturePlan ?? null,
     // The verified eraser-fill evidence (issue 1302); null for other brushes
     // and for captures predating verification.
     eraserFill: ready?.eraserFill ?? null,
+    // Per-pass refill evidence (issue 1292): one entry per between-pass refill,
+    // each carrying its own verification result.
+    eraserRefills: payload?.eraserRefills ?? null,
     // What the PAGE reported, read back at readiness. `theme` alone is a request,
     // and `report.meta.theme` cannot answer either: the product stores the
     // loosest preference that renders an appearance, so choosing the theme the OS
@@ -421,6 +427,15 @@ export async function captureDeviceFrames({
     nonce,
     requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
+    // The page refills the tiles between gesture passes so every pass erases
+    // real ink (issue 1292) — the plan carries how the host groups strokes.
+    eraserRefill:
+      brush === 'eraser'
+        ? {
+            everyStrokes: STROKES_PER_GESTURE_REPEAT,
+            totalStrokes: repeats * STROKES_PER_GESTURE_REPEAT,
+          }
+        : null,
     finish: false,
     reset: true,
   });
@@ -466,11 +481,7 @@ export async function captureDeviceFrames({
   const geometry = await driver.boundsFrom(ready.geometry);
   console.log(`canvas ${JSON.stringify(geometry.bounds)} scale ${geometry.densityScale}`);
 
-  // The eraser offsets each repeat so later passes cross un-erased ink instead
-  // of re-tracing pixels pass 1 already made transparent (issue 1292); every
-  // other brush keeps the fixed plan, whose cells' meaning must not change.
-  const varyPerRepeat = brush === 'eraser';
-  await driver.dispatch(geometry, repeats, { varyPerRepeat });
+  await driver.dispatch(geometry, repeats);
   await sleep(GESTURE_TAIL_MS);
   const pulsed = await probeState(host).catch(() => null);
   const inputProblem = zeroInputProblem(pulsed?.pulse);
@@ -539,7 +550,7 @@ export async function captureDeviceFrames({
     orientation,
     theme,
     gestureRepeats: repeats,
-    gesturePlan: varyPerRepeat ? 'per-repeat-offsets' : 'fixed-geometry',
+    gesturePlan: brush === 'eraser' ? 'fixed-geometry-refilled' : 'fixed-geometry',
     ready,
     nativeApp,
     requirePageIdentity,

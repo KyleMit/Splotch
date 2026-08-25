@@ -481,23 +481,27 @@ describe('what a saved artifact can prove about its own theme', () => {
     expect(drivenCaptureArtifact({ ...common, ready, gestureRepeats: 10 }).gestureRepeats).toBe(10);
   });
 
-  // Issue 1292: eraser repeats are offset so later passes cross un-erased ink,
-  // which makes old and new eraser numbers incomparable — so the artifact says
-  // which plan drove it, and carries the verified-fill evidence (issue 1302).
-  it('records the gesture plan and the eraser-fill evidence the page reported', () => {
+  // Issue 1292: eraser passes get real ink from between-pass refills, which
+  // makes old and new eraser numbers incomparable — so the artifact says which
+  // plan drove it, and carries the verified-fill and per-refill evidence.
+  it('records the gesture plan and both kinds of eraser evidence', () => {
     const eraserFill = { tiles: 16, backings: ['100x80'], transparentTiles: [] };
+    const eraserRefills = [{ afterStroke: 10, pending: false, transparentTiles: [] }];
     const artifact = drivenCaptureArtifact({
       ...common,
       brush: 'eraser',
-      gesturePlan: 'per-repeat-offsets',
+      gesturePlan: 'fixed-geometry-refilled',
       ready: { ...ready, eraserFill },
+      payload: { eraserRefills },
     });
 
-    expect(artifact.gesturePlan).toBe('per-repeat-offsets');
+    expect(artifact.gesturePlan).toBe('fixed-geometry-refilled');
     expect(artifact.eraserFill).toEqual(eraserFill);
+    expect(artifact.eraserRefills).toEqual(eraserRefills);
     expect(drivenCaptureArtifact({ ...common, ready })).toMatchObject({
       gesturePlan: null,
       eraserFill: null,
+      eraserRefills: null,
     });
   });
 });

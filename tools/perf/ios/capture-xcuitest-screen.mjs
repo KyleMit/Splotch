@@ -4,6 +4,7 @@ import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mj
 import {
   ERASER_FILL_BACKING_TIMEOUT_MS,
   eraserFillFunctionSource,
+  eraserRefillFunctionSource,
 } from '../lib/eraser-fill.mjs';
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
@@ -92,35 +93,18 @@ const SHORT_STROKE_ORIGINS = [
   [0.59, 0.38],
   [0.76, 0.5],
 ];
-// Per-repeat offsets exist for the eraser (issue 1292): a fixed plan re-traces
-// identical geometry every pass, so passes 2..N drag the eraser across pixels
-// pass 1 already made transparent and measure erasing nothing. Offsetting each
-// repeat walks every stroke through fresh ink instead. Every other brush keeps
-// the fixed plan — drawing over your own stroke is still drawing, and changing
-// their geometry would silently change what those cells measure.
-//
-// The long-seed stride must not resonate with the 0.5 SPACING BETWEEN THE TWO
-// SEEDS, not merely with 1: the review of the first cut proved 0.37 lands
-// repeats 4-9 within Δseed 0.02 of the other family — a ~80%-erased band. With
-// two seeds and ten repeats the best attainable minimum separation is 1/20,
-// and 0.35 attains it exactly: the twenty per-repeat seeds are all distinct
-// multiples of 0.05. Long seeds wrap the full [0,1) seed space deliberately —
-// the y mapping (0.35 + seed*0.15 ± 0.18) keeps ANY seed inside the canvas.
-const LONG_SEED_REPEAT_STRIDE = 0.35;
-// Short origins wrap inside exactly the envelope the fixed origins span, so an
-// offset stroke's endpoint (+45/+70 px) fits wherever the fixed plan's own
-// maxima fit. The strides are exact 3/10 and 7/10 of each band's span, so ten
-// repeats land on ten distinct multiples of span/10 — minimum separation
-// span/10 of the band, by construction, in both axes.
-const SHORT_ORIGIN_BAND_X = [0.18, 0.76];
-const SHORT_ORIGIN_BAND_Y = [0.2, 0.67];
-const SHORT_ORIGIN_REPEAT_STRIDE_X = ((SHORT_ORIGIN_BAND_X[1] - SHORT_ORIGIN_BAND_X[0]) * 3) / 10;
-const SHORT_ORIGIN_REPEAT_STRIDE_Y = ((SHORT_ORIGIN_BAND_Y[1] - SHORT_ORIGIN_BAND_Y[0]) * 7) / 10;
-
-function wrapWithin(value, [min, max]) {
-  const span = max - min;
-  return min + ((((value - min) % span) + span) % span);
-}
+// The eraser keeps this fixed geometry too, on purpose. The first cut of issue
+// 1292 offset each repeat so later passes would cross fresh ink; review round
+// 2's measurement retired the whole approach: even the optimal placement
+// schedule (searched numerically over rank-1 lattices and continuous Kronecker
+// generators against the exact parallel-lane metric) attains a 7 px minimum
+// lane distance against a 16 px eraser on a 700x300 landscape canvas, and the
+// canvas SATURATES by pass 5 — fresh-path fractions 100/55/10/20/7/0/0/0/0/0%.
+// Ten identical-work passes cannot stay fresh in that geometry no matter where
+// the strokes go. Fresh ink comes from refilling the tiles between passes
+// instead (eraser-fill.mjs), which also restores identical geometry across
+// brushes.
+export const STROKES_PER_GESTURE_REPEAT = LONG_STROKE_SEEDS.length + SHORT_STROKE_ORIGINS.length;
 
 function sanitizeLabel(value) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
@@ -194,36 +178,14 @@ function addShortStroke(actions, bounds, [xFraction, yFraction]) {
   actions.push({ type: 'pause', duration: SHORT_STROKE_PAUSE_MS });
 }
 
-export function trustedGestureActions(
-  bounds,
-  repeats = 1,
-  repeatPauseMs = 0,
-  { varyPerRepeat = false } = {}
-) {
+export function trustedGestureActions(bounds, repeats = 1, repeatPauseMs = 0) {
   const actions = [];
   for (let repeat = 0; repeat < repeats; repeat++) {
     if (repeat > 0 && repeatPauseMs > 0) {
       actions.push({ type: 'pause', duration: repeatPauseMs });
     }
-    // Shift zero takes the literal fixed values, not a wrap of them — the fixed
-    // plan must stay byte-identical for every brush (wrapWithin at shift 0 can
-    // move an origin by one ulp, which a new-vs-new equality test cannot see).
-    const shift = varyPerRepeat ? repeat : 0;
-    for (const seed of LONG_STROKE_SEEDS) {
-      addLongStroke(actions, bounds, shift === 0 ? seed : (seed + shift * LONG_SEED_REPEAT_STRIDE) % 1);
-    }
-    for (const [xFraction, yFraction] of SHORT_STROKE_ORIGINS) {
-      addShortStroke(
-        actions,
-        bounds,
-        shift === 0
-          ? [xFraction, yFraction]
-          : [
-              wrapWithin(xFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_X, SHORT_ORIGIN_BAND_X),
-              wrapWithin(yFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_Y, SHORT_ORIGIN_BAND_Y),
-            ]
-      );
-    }
+    for (const seed of LONG_STROKE_SEEDS) addLongStroke(actions, bounds, seed);
+    for (const origin of SHORT_STROKE_ORIGINS) addShortStroke(actions, bounds, origin);
   }
   return actions;
 }
@@ -793,6 +755,13 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       eraserFill = await fillVerified();
       await sleep(AFTER_GESTURE_SETTLE_MS);
       eraserFill = await fillVerified();
+      // The page refills between gesture passes so every pass erases real ink
+      // (issue 1292); the refill log is read back after the sweep.
+      await execute(
+        `${eraserFillFunctionSource()}\n${eraserRefillFunctionSource()}\n` +
+          `armEraserRefill(${STROKES_PER_GESTURE_REPEAT}, ` +
+          `${gestureRepeats * STROKES_PER_GESTURE_REPEAT}, fillEraserInk); return true;`
+      );
     }
 
     await execute(
@@ -844,14 +813,14 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           type: 'pointer',
           id: 'finger',
           parameters: { pointerType: 'touch' },
-          actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs, {
-            varyPerRepeat: brush === 'eraser',
-          }),
+          actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs),
         },
       ],
     });
     await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
     await sleep(AFTER_GESTURE_SETTLE_MS);
+    const eraserRefills =
+      brush === 'eraser' ? await execute('return window.__eraserRefills ?? null;') : null;
     if (historySettleMs > 0) await sleep(historySettleMs);
     let rotation = null;
     if (has('rotate-before-undo')) {
@@ -941,15 +910,17 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       appUrl,
       transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
       theme,
-      // Same top-level home the split artifact uses for both fields, so the
+      // Same top-level home the split artifact uses for these fields, so the
       // shared reader needs no second location (the review caught gesturePlan
       // reproducing the gestureRepeats top-level/automation split).
-      // Which geometry the repeats replayed (issue 1292): the eraser offsets
-      // every repeat so later passes cross un-erased ink; other brushes keep
-      // the fixed plan. Old artifacts lack the field and are fixed-geometry.
-      gesturePlan: brush === 'eraser' ? 'per-repeat-offsets' : 'fixed-geometry',
+      // How the repeats were fed ink (issue 1292): identical geometry every
+      // pass, tiles refilled between passes for the eraser. Old artifacts lack
+      // the field and are unrefilled fixed-geometry.
+      gesturePlan: brush === 'eraser' ? 'fixed-geometry-refilled' : 'fixed-geometry',
       // The verified-fill evidence (issue 1302); null for every other brush.
       eraserFill,
+      // Per-pass refill evidence (issue 1292), read back from the page.
+      eraserRefills,
       mode: `xcuitest:${label}`,
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),

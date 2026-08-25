@@ -40,6 +40,54 @@ export const ERASER_FILL_BACKING_TIMEOUT_MS = 4_000;
 // sixteen out of GPU raster in the last half-second before the eraser cell
 // measures tile rendering cost — a verification must not change the thing
 // being measured.
+// Refill the tiles after each gesture pass, so every pass erases real ink
+// (issue 1292). Placement schedules cannot do this job: measured against the
+// exact parallel-lane metric, the optimal schedule still saturates a 700x300
+// landscape canvas by pass 5 (fresh-path fractions 100/55/10/20/7/0/0/0/0/0%),
+// because ten passes of lanes simply exceed the reachable area. Refilling
+// restores full ink between passes and keeps the eraser's geometry identical
+// to every other brush's fixed plan.
+//
+// The refill runs in the pointer-up gap after a pass's last stroke — never in
+// contact, so lostFrameTimeShare (charged over in-contact intervals only) does
+// not price it; the next stroke starts at least a stroke-pause later. The last
+// pass's final pointerup deliberately does not refill: there is nothing left
+// to erase, and painting fresh ink under the closing probe would be work the
+// capture never asked for. Each refill's verification result is kept on
+// `window.__eraserRefills` and travels home in the report, so the artifact can
+// prove every pass had ink — an anomalous refill (pending or transparent) is
+// recorded rather than thrown, because aborting mid-gesture would destroy the
+// capture the evidence exists to judge.
+export function eraserRefillFunctionSource() {
+  return `function armEraserRefill(everyStrokes, totalStrokes, fillEraserInk) {
+    const refills = [];
+    window.__eraserRefills = refills;
+    let strokes = 0;
+    window.addEventListener(
+      'pointerup',
+      (event) => {
+        if (!event.target || !event.target.closest || !event.target.closest('.canvas-stack')) {
+          return;
+        }
+        strokes += 1;
+        if (strokes % everyStrokes !== 0 || strokes >= totalStrokes) return;
+        try {
+          const result = fillEraserInk();
+          refills.push({
+            afterStroke: strokes,
+            pending: !!result.pending,
+            transparentTiles: result.transparentTiles ?? [],
+          });
+        } catch (error) {
+          refills.push({ afterStroke: strokes, error: String((error && error.message) || error) });
+        }
+      },
+      true
+    );
+    return refills;
+  }`;
+}
+
 export function eraserFillFunctionSource() {
   return `function fillEraserInk() {
     const tiles = [...document.querySelectorAll('canvas[data-live-tile]')];

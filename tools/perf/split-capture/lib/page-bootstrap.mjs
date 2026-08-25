@@ -26,6 +26,7 @@ import {
 import {
   ERASER_FILL_BACKING_TIMEOUT_MS,
   eraserFillFunctionSource,
+  eraserRefillFunctionSource,
 } from '../../lib/eraser-fill.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
@@ -246,6 +247,12 @@ export function pageBootstrapSource() {
       // point-in-time verification already blessed; refilling and re-proving at
       // the last moment closes that window.
       await fillVerified();
+      // The plan says how the host groups strokes into passes; the page refills
+      // between passes so every pass erases real ink (issue 1292).
+      if (plan.eraserRefill) {
+        ${eraserRefillFunctionSource()}
+        armEraserRefill(plan.eraserRefill.everyStrokes, plan.eraserRefill.totalStrokes, fillEraserInk);
+      }
     }
 
     window.__probePhases = 'blank';
@@ -332,6 +339,8 @@ export function pageBootstrapSource() {
       nonce,
       report,
       topology: window.__drawingDebug?.getLiveSurfaceTopology?.() ?? null,
+      // Per-pass refill evidence (issue 1292); null for every non-eraser run.
+      eraserRefills: window.__eraserRefills ?? null,
     });
   } catch (error) {
     await log({ kind: 'bootstrap', message: String(error?.message ?? error) });

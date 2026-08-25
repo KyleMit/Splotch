@@ -30,6 +30,7 @@ import {
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
+  STROKES_PER_GESTURE_REPEAT,
   summarizeLiveSurfaceTopology,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
@@ -1169,93 +1170,18 @@ describe('trusted XCUITest input', () => {
     ).toHaveLength(2);
   });
 
-  // Issue 1292: a fixed plan re-traces identical geometry, so eraser passes 2..N
-  // erase pixels pass 1 already made transparent. Per-repeat offsets give each
-  // pass fresh ink — asserted as SEPARATION, not mere difference: the first cut
-  // passed a difference test while a stride resonance left repeats 4-9 within a
-  // fiftieth of a band of earlier passes, re-erasing a mostly-cleared lane.
-  // Strokes are read back from the emitted actions (each stroke's initial move
-  // precedes its pointerDown; every repeat is 2 long then 8 short strokes), so
-  // this measures the plan rather than restating its derivation.
-  function strokeStarts(actions, bounds, repeats) {
-    const starts = [];
-    actions.forEach((action, index) => {
-      if (action.type !== 'pointerDown') return;
-      const move = actions[index - 1];
-      starts.push({
-        xFraction: (move.x - bounds.x) / bounds.width,
-        yFraction: (move.y - bounds.y) / bounds.height,
-      });
-    });
-    const perRepeat = starts.length / repeats;
-    return { starts, perRepeat };
-  }
-
-  const circularGap = (a, b) => Math.min(Math.abs(a - b), 1 - Math.abs(a - b));
-  const minPairwise = (values, distance) => {
-    let min = Infinity;
-    for (let i = 0; i < values.length; i++) {
-      for (let j = i + 1; j < values.length; j++)
-        min = Math.min(min, distance(values[i], values[j]));
-    }
-    return min;
-  };
-
-  it('separates every repeat’s strokes instead of merely changing them', () => {
+  // Issue 1292's fix rides this structure: the plan tells the page how many
+  // strokes make one pass (STROKES_PER_GESTURE_REPEAT) so it can refill the
+  // tiles between passes. The count is derived from the same arrays the plan
+  // walks, and this pins the emitted actions to it.
+  it('emits exactly the exported strokes-per-repeat, every repeat', () => {
     const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
-    const repeats = 10;
-    const varied = trustedGestureActions(bounds, repeats, 0, { varyPerRepeat: true });
-    const fixed = trustedGestureActions(bounds, repeats, 0);
-    const perAction = varied.length / repeats;
-    expect(varied.slice(0, perAction)).toEqual(fixed.slice(0, perAction));
+    const repeats = 3;
+    const actions = trustedGestureActions(bounds, repeats, 0);
 
-    const { starts, perRepeat } = strokeStarts(varied, bounds, repeats);
-    // Long strokes: initial y encodes the seed (0.28 + seed * 0.18). Twenty
-    // seeds across two families and ten repeats can separate by at most 1/20;
-    // the stride must attain it rather than resonate with the 0.5 seed spacing.
-    const longSeeds = [];
-    for (let repeat = 0; repeat < repeats; repeat++) {
-      for (const slot of [0, 1]) {
-        longSeeds.push((starts[repeat * perRepeat + slot].yFraction - 0.28) / 0.18);
-      }
-    }
-    expect(minPairwise(longSeeds, circularGap)).toBeGreaterThanOrEqual(0.05 - 1e-9);
-
-    // Short strokes: each slot's ten origins land on distinct multiples of a
-    // tenth of its band in both axes.
-    for (let slot = 2; slot < perRepeat; slot++) {
-      const xs = [];
-      const ys = [];
-      for (let repeat = 0; repeat < repeats; repeat++) {
-        xs.push(starts[repeat * perRepeat + slot].xFraction);
-        ys.push(starts[repeat * perRepeat + slot].yFraction);
-      }
-      const linear = (a, b) => Math.abs(a - b);
-      expect(minPairwise(xs, linear)).toBeGreaterThanOrEqual((0.76 - 0.18) / 10 - 1e-9);
-      expect(minPairwise(ys, linear)).toBeGreaterThanOrEqual((0.67 - 0.2) / 10 - 1e-9);
-    }
-  });
-
-  // Bounds are pinned on PHONE geometry — the fleet's tightest canvases in
-  // device pixels, portrait and landscape — not the roomy iPad fixture, since
-  // the short-stroke end adds a raw +45/+70 px that only tight geometry tests.
-  it.each([
-    ['phone portrait', { x: 0, y: 0, width: 990, height: 1562 }],
-    ['phone landscape', { x: 0, y: 0, width: 2000, height: 825 }],
-  ])('keeps every offset stroke inside the canvas on %s', (_name, bounds) => {
-    const varied = trustedGestureActions(bounds, 10, 0, { varyPerRepeat: true });
-    const moves = varied.filter((action) => action.type === 'pointerMove');
-
-    expect(moves.length).toBeGreaterThan(0);
-    expect(
-      moves.every(
-        (action) =>
-          action.x >= bounds.x &&
-          action.x <= bounds.x + bounds.width &&
-          action.y >= bounds.y &&
-          action.y <= bounds.y + bounds.height
-      )
-    ).toBe(true);
+    expect(actions.filter((action) => action.type === 'pointerDown')).toHaveLength(
+      repeats * STROKES_PER_GESTURE_REPEAT
+    );
   });
 
   it('only permits Apple-account provisioning when explicitly requested', () => {

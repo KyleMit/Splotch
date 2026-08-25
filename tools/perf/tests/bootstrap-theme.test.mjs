@@ -310,18 +310,23 @@ describe('the bootstrap verifying the eraser fill', () => {
   }
 
   it(
-    'fills the live tiles and reports the verified evidence with readiness',
+    'fills, refills between passes, and reports both kinds of evidence',
     async () => {
       const tiles = paintEraserShell([
         { backing: '100x80', width: 100, height: 80 },
         { backing: '90x70', width: 90, height: 70 },
       ]);
 
-      const { readyPosted } = runBootstrap({
+      const plan = {
         brush: 'eraser',
         theme: 'light',
         nonce: 'eraser-fill-run',
-      });
+        finish: false,
+        // Two strokes per pass, four strokes total: one refill boundary at
+        // stroke 2, and the final stroke must not refill.
+        eraserRefill: { everyStrokes: 2, totalStrokes: 4 },
+      };
+      const { readyPosted, posted } = runBootstrap(plan);
       const ready = await readyPosted;
 
       expect(ready.eraserFill).toEqual({
@@ -329,13 +334,30 @@ describe('the bootstrap verifying the eraser fill', () => {
         backings: ['100x80', '90x70'],
         transparentTiles: [],
       });
-      // Filled twice: once up front and once after the settle, so a wipe
-      // inside that window is repaired and re-proved before readiness.
+      // Filled twice before readiness: once up front and once after the
+      // settle, so a wipe inside that window is repaired and re-proved.
       expect(tiles[0].context.fillRects).toEqual([
         [0, 0, 100, 80],
         [0, 0, 100, 80],
       ]);
       expect(tiles[1].context.fillStyle).toBe('#7c4dff');
+
+      const stack = document.querySelector('.canvas-stack');
+      for (let strokeIndex = 0; strokeIndex < 4; strokeIndex++) {
+        stack.dispatchEvent(new Event('pointerup', { bubbles: true }));
+      }
+      plan.finish = true;
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+
+      expect(report.body.eraserRefills).toEqual([
+        { afterStroke: 2, pending: false, transparentTiles: [] },
+      ]);
+      // The refill is the third fill; the final stroke deliberately adds none.
+      expect(tiles[0].context.fillRects).toHaveLength(3);
     },
     BOOTSTRAP_TIMEOUT_MS
   );

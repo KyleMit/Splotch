@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ERASER_FILL_COLOR, eraserFillFunctionSource } from '../lib/eraser-fill.mjs';
+import {
+  ERASER_FILL_COLOR,
+  eraserFillFunctionSource,
+  eraserRefillFunctionSource,
+} from '../lib/eraser-fill.mjs';
 
 // The fill runs inside a capture page, so the source is executed here against a
 // stubbed DOM — the same standard bootstrap-theme.test.mjs set: prove it runs,
@@ -139,5 +143,77 @@ describe('the verified eraser fill', () => {
     const result = runFill([fakeTile(), partial]);
 
     expect(result.transparentTiles).toEqual([1]);
+  });
+});
+
+// Issue 1292: placement schedules cannot keep ten passes fresh (the measured
+// optimum still saturates a landscape phone by pass 5), so the page refills
+// between passes instead. Executed against a stub window: the counter must see
+// only canvas strokes, refill exactly at pass boundaries, skip the final
+// stroke, and record an anomalous refill rather than aborting the capture.
+describe('the between-pass eraser refill', () => {
+  function armed({ everyStrokes, totalStrokes, fill }) {
+    const listeners = [];
+    const windowStub = {
+      addEventListener: (type, handler, capture) => listeners.push({ type, handler, capture }),
+    };
+    const refills = new Function(
+      'window',
+      `${eraserRefillFunctionSource()}\nreturn armEraserRefill(${everyStrokes}, ${totalStrokes}, arguments[1]);`
+    )(windowStub, fill);
+    const onStack = { closest: (selector) => (selector === '.canvas-stack' ? {} : null) };
+    const offStack = { closest: () => null };
+    return {
+      refills,
+      windowStub,
+      listener: listeners[0],
+      stroke: () => listeners[0].handler({ target: onStack }),
+      uiTap: () => listeners[0].handler({ target: offStack }),
+    };
+  }
+
+  it('refills at every pass boundary except the last, counting only canvas strokes', () => {
+    const fills = [];
+    const { refills, listener, stroke, uiTap, windowStub } = armed({
+      everyStrokes: 3,
+      totalStrokes: 9,
+      fill: () => {
+        fills.push('fill');
+        return { tiles: 2, transparentTiles: [] };
+      },
+    });
+
+    expect(listener).toMatchObject({ type: 'pointerup', capture: true });
+    expect(windowStub === undefined).toBe(false);
+    for (let strokeIndex = 0; strokeIndex < 9; strokeIndex++) {
+      uiTap();
+      stroke();
+    }
+
+    expect(fills).toHaveLength(2);
+    expect(refills.map((entry) => entry.afterStroke)).toEqual([3, 6]);
+    expect(refills.every((entry) => entry.pending === false)).toBe(true);
+  });
+
+  it('records an anomalous refill instead of aborting the capture', () => {
+    let calls = 0;
+    const { refills, stroke } = armed({
+      everyStrokes: 2,
+      totalStrokes: 8,
+      fill: () => {
+        calls += 1;
+        if (calls === 1) return { pending: ['100x80 vs 300x150'] };
+        if (calls === 2) return { tiles: 2, transparentTiles: [1] };
+        throw new Error('tiles vanished');
+      },
+    });
+
+    for (let strokeIndex = 0; strokeIndex < 7; strokeIndex++) stroke();
+
+    expect(refills).toEqual([
+      { afterStroke: 2, pending: true, transparentTiles: [] },
+      { afterStroke: 4, pending: false, transparentTiles: [1] },
+      { afterStroke: 6, error: 'tiles vanished' },
+    ]);
   });
 });

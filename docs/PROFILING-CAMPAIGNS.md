@@ -115,15 +115,18 @@ names the setting. Check with `adb shell dumpsys display | grep -o 'renderFrameR
 phone that should boost to 120 reporting 60 is the tell — and clear it with
 `adb shell settings delete system peak_refresh_rate` and the same for `min_refresh_rate`.
 
-**Eraser cells before the per-repeat-offset plan are optimistic by an unknown amount.** The fixed
-gesture plan replays identical geometry every pass, so eraser passes 2..N dragged the eraser across
-pixels pass 1 had already made transparent — roughly nine tenths of a ten-repeat eraser cell
-measured erasing nothing (issue 1292). The eraser now offsets every repeat so each pass crosses
-fresh ink, and its setup fill is verified rather than trusted (issue 1302) with the evidence
-recorded in the artifact (`eraserFill`). Artifacts record which plan drove them (`gesturePlan`:
-`per-repeat-offsets` for the eraser, `fixed-geometry` otherwise; absent means fixed-geometry) — do
-not compare an eraser number across that boundary, and treat the matrix's pre-offset eraser column
-as superseded once the campaign-end recapture lands.
+**Eraser cells before the between-pass refill are optimistic by an unknown amount.** The gesture
+plan replays identical geometry every pass, so eraser passes 2..N dragged the eraser across pixels
+pass 1 had already made transparent — roughly nine tenths of a ten-repeat eraser cell measured
+erasing nothing (issue 1292). The fix is refills, not geometry: the page refills the tiles in the
+pointer-up gap after each pass (outside the in-contact charge), so every pass erases full real ink
+with geometry identical to every other brush — moving the strokes instead was measured and retired,
+because even the optimal placement schedule saturates a landscape phone canvas by pass 5. The setup
+fill is verified rather than trusted (issue 1302), each refill re-verifies, and the artifact records
+all of it (`eraserFill`, `eraserRefills`, and `gesturePlan`: `fixed-geometry-refilled` for the
+eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). Do not compare an
+eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
+once the campaign-end recapture lands.
 
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and
