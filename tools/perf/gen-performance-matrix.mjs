@@ -384,16 +384,23 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
   };
 }
 
-function normalizeActionCapture(spec, sourceDirectory, mode) {
+function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   const profile = readJson(sourcePath(spec.source, sourceDirectory));
   validateCaptureMode(profile, mode, spec.source);
   const labels = spec.labels ? new Set(spec.labels) : null;
   // A capture is re-scored under its own recorded gate exceptions (ADR-0090
   // amendment); one without the field — every capture predating it, and every
   // non-iOS target — stays on the base gates.
+  // Rotation first-frame applicability keys on the capture RUNTIME, never the
+  // transport — `transport: "browser"` is the Appium web transport generally,
+  // and Android Chrome over Appium must stay gated (ADR-0142). The target's
+  // declared runtime is authoritative for campaign cells; the artifact's own
+  // recorded runtime answers for a capture folded outside a declared target.
+  // An artifact with neither stays fully gated.
+  const runtime = CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? profile.captureRuntime ?? null;
   const summaries = profile.samples
     ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
-        rotationFirstFrameNa(profile.transport, label)
+        rotationFirstFrameNa(runtime, label)
       )
     : profile.summaries;
   const results = summaries
@@ -457,9 +464,11 @@ export function withActionControlScoreability(actions) {
   };
 }
 
-function normalizeActions(sources, finalProductCommit, sourceDirectory, mode) {
+function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, targetId) {
   if (!sources?.length) return null;
-  const captures = sources.map((source) => normalizeActionCapture(source, sourceDirectory, mode));
+  const captures = sources.map((source) =>
+    normalizeActionCapture(source, sourceDirectory, mode, targetId)
+  );
   const results = mergeActionResults(captures);
   const comparableResults = results.filter((result) => !ACTION_CONTROL_LABELS.has(result.label));
   return {
@@ -549,7 +558,8 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
           normalizedMode.actionSources,
           finalProductCommit,
           sourceDirectory,
-          normalizedMode
+          normalizedMode,
+          target.id
         )
       )
     ),
@@ -1097,11 +1107,16 @@ function renderMarkdown(matrix) {
     }
     const comparable = comparableActionResults(target.actions);
     const failures = comparable.filter((result) => !result.passed).map((result) => result.label);
+    // When every comparable first frame is declared N/A the aggregate is a
+    // declared non-measurement, not an absent one — render it apart from the
+    // "—" that means "not measured".
+    const allFirstFramesNa =
+      comparable.length > 0 && comparable.every((result) => result.firstFrame?.na === true);
     return [
       label,
       `${comparable.filter((result) => result.passed).length} / ${comparable.length}`,
       `${target.actions.finalProductCommitActionCount} / ${comparable.length}`,
-      fmt(target.actions.worst.firstFrameP95),
+      allFirstFramesNa ? 'N/A' : fmt(target.actions.worst.firstFrameP95),
       `${fmt(target.actions.worst.postActionFrameP95)} / ${fmt(target.actions.worst.postActionFrameMax)}`,
       failures.length ? failures.join('; ') : 'None',
     ];

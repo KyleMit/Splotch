@@ -41,6 +41,7 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  rotationActionLabel,
   rotationFirstFrameNa,
   summarizeActionGroup,
   summarizeActions,
@@ -376,25 +377,35 @@ describe('discrete action response', () => {
   // ADR-0142: on iPad Safari `resize` lands in the rendering turn whose rAF the
   // probe records, so a rotation first frame reads 0-2 ms by construction. The
   // gate is declared not-applicable there instead of passing on a structural 0.
+  // Applicability keys on the capture RUNTIME: `transport: "browser"` is the
+  // Appium web transport generally — Android Chrome over Appium records it too,
+  // and that runtime must keep the gate (real 0.1-54 ms dynamic range).
   describe('rotation first-frame applicability', () => {
-    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+    const rotationLabel = `with ink: ${rotationActionLabel('PORTRAIT', 'LANDSCAPE')}`;
 
-    it('marks only orientation-change labels, only on the Safari transport', () => {
-      expect(rotationFirstFrameNa('browser', rotationLabel)).toBe(true);
+    it('marks only orientation-change labels, only on the ios-safari runtime', () => {
+      expect(rotationFirstFrameNa('ios-safari', rotationLabel)).toBe(true);
       expect(
-        rotationFirstFrameNa('browser', 'empty after clear: LANDSCAPE to PORTRAIT rotation')
+        rotationFirstFrameNa(
+          'ios-safari',
+          `empty after clear: ${rotationActionLabel('LANDSCAPE', 'PORTRAIT')}`
+        )
       ).toBe(true);
-      expect(rotationFirstFrameNa('browser', 'undo clear after blank rotation')).toBe(false);
-      expect(rotationFirstFrameNa('browser', 'clear restored drawing after blank rotation')).toBe(
-        false
-      );
-      expect(rotationFirstFrameNa('native-capacitor-webview', rotationLabel)).toBe(false);
-      expect(rotationFirstFrameNa('android-chrome-cdp', rotationLabel)).toBe(false);
+      expect(rotationFirstFrameNa('ios-safari', 'undo clear after blank rotation')).toBe(false);
+      expect(
+        rotationFirstFrameNa('ios-safari', 'clear restored drawing after blank rotation')
+      ).toBe(false);
+      expect(rotationFirstFrameNa('ios-capacitor-webview', rotationLabel)).toBe(false);
+      // The trap: an Appium-driven Android Chrome artifact records the same
+      // `transport: "browser"` the iPad Safari sweep does. The runtime key is
+      // what keeps its gate live.
+      expect(rotationFirstFrameNa('android-chrome', rotationLabel)).toBe(false);
+      expect(rotationFirstFrameNa('browser', rotationLabel)).toBe(false);
       expect(rotationFirstFrameNa(undefined, rotationLabel)).toBe(false);
     });
 
     it('skips the first-frame gate and records na for a Safari rotation row', () => {
-      const naFor = (label) => rotationFirstFrameNa('browser', label);
+      const naFor = (label) => rotationFirstFrameNa('ios-safari', label);
       const summaries = summarizeActions(
         [{ ...clean(rotationLabel), firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 100 }],
         [],
@@ -407,8 +418,8 @@ describe('discrete action response', () => {
       expect(actionRows(summaries)[0]['first p95']).toBe('n/a');
     });
 
-    it('keeps the gate live for the same rotation on a gated transport', () => {
-      const naFor = (label) => rotationFirstFrameNa('android-chrome-cdp', label);
+    it('keeps the gate live for the same rotation on a gated runtime', () => {
+      const naFor = (label) => rotationFirstFrameNa('android-chrome', label);
       const summaries = summarizeActions(
         [{ ...clean(rotationLabel), firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 1 }],
         [],
@@ -421,7 +432,7 @@ describe('discrete action response', () => {
     });
 
     it('still fails a Safari rotation row on the post-action frame gates', () => {
-      const naFor = (label) => rotationFirstFrameNa('browser', label);
+      const naFor = (label) => rotationFirstFrameNa('ios-safari', label);
       const summaries = summarizeActions(
         [
           {

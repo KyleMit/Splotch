@@ -164,12 +164,20 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport }
+  { orientation, theme, summaries, samples, transport, captureRuntime }
 ) {
   const path = join(directory, name);
   writeFileSync(
     path,
-    JSON.stringify({ orientation, theme, repeats: 4, summaries, samples, transport })
+    JSON.stringify({
+      orientation,
+      theme,
+      repeats: 4,
+      summaries,
+      samples,
+      transport,
+      captureRuntime,
+    })
   );
   return name;
 }
@@ -269,11 +277,13 @@ describe('deployment matrix report', () => {
     expect(actions.results.some((result) => result.label === warmupOnlyLabel)).toBe(false);
   });
 
-  // ADR-0142 amendment (issue 1324): a Safari rotation first frame is 0-2 ms by
-  // construction, so it is declared N/A instead of publishing a green 0. The
-  // same label on any other transport — or in a pre-change artifact recording no
-  // transport — keeps its gate.
-  it('declares Safari rotation first frames not-applicable and keeps other transports gated', () => {
+  // ADR-0142 amendment (issue 1324): an iPad Safari rotation first frame is
+  // 0-2 ms by construction, so it is declared N/A instead of publishing a green
+  // 0. Applicability keys on the capture RUNTIME — `transport: "browser"` is
+  // the Appium web transport generally, and an Android Chrome artifact records
+  // it too, so an artifact carrying that transport but no ios-safari runtime
+  // (and no target declaring one) must keep its gate.
+  it('declares Safari rotation first frames not-applicable and keeps other runtimes gated', () => {
     const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
     temporaryDirectories.push(manifestDirectory);
     const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
@@ -285,11 +295,13 @@ describe('deployment matrix report', () => {
       orientation: 'PORTRAIT',
       theme: 'light',
       transport: 'browser',
+      captureRuntime: 'ios-safari',
       samples: rotationSamples,
     });
-    const untransportedSource = writeActionCapture(manifestDirectory, 'legacy-actions.json', {
+    const appiumAndroidSource = writeActionCapture(manifestDirectory, 'android-actions.json', {
       orientation: 'PORTRAIT',
       theme: 'dark',
+      transport: 'browser',
       samples: rotationSamples,
     });
     const matrix = normalizeMatrix(
@@ -298,22 +310,24 @@ describe('deployment matrix report', () => {
           actionSources: [{ source: safariSource, productCommit: 'final123', kind: 'full' }],
         }),
         capturedManifestMode(modeSpecs[1], {
-          actionSources: [{ source: untransportedSource, productCommit: 'final123', kind: 'full' }],
+          actionSources: [{ source: appiumAndroidSource, productCommit: 'final123', kind: 'full' }],
         }),
         ...modeSpecs.slice(2).map((spec) => unavailableMode(spec)),
       ]),
       manifestDirectory
     );
     const safariResult = matrix.targets[0].modes[0].actions.results[0];
-    const legacyResult = matrix.targets[0].modes[1].actions.results[0];
+    const androidResult = matrix.targets[0].modes[1].actions.results[0];
 
     expect(safariResult).toMatchObject({ label: rotationLabel, passed: true });
     expect(safariResult.firstFrame.na).toBe(true);
     expect(matrix.targets[0].modes[0].actions.worst.firstFrameP95).toBeNull();
-    expect(legacyResult.firstFrame.na).toBeUndefined();
-    expect(legacyResult.passed).toBe(false);
+    expect(androidResult.firstFrame.na).toBeUndefined();
+    expect(androidResult.passed).toBe(false);
     const html = renderReport(matrix);
     expect(html).toContain('first P95 N/A');
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain('N/A');
   });
 
   it('identifies cumulative provenance in the Markdown summary', () => {
