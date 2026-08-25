@@ -13,7 +13,7 @@ export const LOST_FRAME_TIME_SHARE_EXCEPTIONS = {
   'ipad-device-web:crayon': {
     share: 0.015,
     reason:
-      'Crayon deposits wax through pattern-filled strokes that cannot be merged across pointermoves, ' +
+      'Crayon deposits wax through pattern-filled strokes that Safari prices per path-length, so the web build cannot merge them across pointermoves (the native WKWebView prices per op and merges per frame instead — ADR-0137 as amended), ' +
       'so it pays a per-move cost every other brush coalesces away, and mirror-by-blit already took ' +
       'it from 2.11%. Across all four orientation/theme modes its median is 1.11-1.17%, but a single ' +
       'capture of landscape-light measured 1.40% and re-measured to 1.17% over three samples. A ' +

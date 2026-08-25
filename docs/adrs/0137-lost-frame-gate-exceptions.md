@@ -46,12 +46,17 @@ look subtractive — and it only *matched* mirror-by-blit rather than beating it
 evidence that the blend **mode** is not where the residual lives. It leaves the two preview planes
 themselves untested; see below.
 
-Crayon is the one brush whose ops cannot be coalesced. Every other brush paints one shape per op, so
-a frame's worth of pointermoves merges into a single path and the per-op cost disappears. Crayon
-deposits wax through pattern-filled strokes whose texture is built per segment; merging a frame's
-moves into one longer path paints a larger dirty region per `stroke()` call and made things *worse*,
-not better — 1.57% to 2.11% when tried directly. The engine exempts crayon from merging for that
-measured reason.
+Crayon is the one brush whose op shape is a live cost knob rather than a free coalesce. Every other
+brush paints one shape per op, so a frame's worth of pointermoves merges into a single path and the
+per-op cost disappears. Crayon deposits wax through pattern-filled strokes whose texture is built
+per segment, and which side of the trade wins is a property of the runtime: in Safari, merging a
+frame's moves into one longer path paints a larger dirty region per `stroke()` call and made things
+*worse* — 1.57% to 2.11% when tried directly — so the web build keeps one op per pointermove. The
+native WKWebView prices the trade the other way (per-op overhead dominates), and the 2026-08-25
+issue-1236 A/B measured per-frame merging at 1.46%/0.99% against a 1.74% per-move control on the
+same iPad, so the native build merges crayon per frame (`crayonOpGranularity` in
+`strokeRasterQueue.ts`, chosen from `__IS_CAPACITOR__`). This paragraph's original claim — that
+crayon cannot be merged anywhere — was a Safari measurement generalized past its runtime.
 
 The remaining per-op work is already close to minimal. Wax tiles and the patterns built from them
 are cached per (colour, pass) with a warm-up pump that spreads tile construction across frames, so

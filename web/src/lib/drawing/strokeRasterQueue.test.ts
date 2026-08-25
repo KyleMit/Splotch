@@ -27,20 +27,22 @@ const pointer = (overrides: Partial<TestPointer> = {}): TestPointer => ({
 
 function harness(
   pointers: Map<number, TestPointer>,
-  crayonOpGranularity: 'per-move' | 'per-frame' = 'per-move'
+  crayonOpGranularity: 'per-move' | 'per-frame' = 'per-move',
+  pointerWasResumed: (elapsed: number, jump: number, edge: number) => boolean = () => false
 ) {
   const stroked: { points: { x: number; y: number }[]; moveCount: number }[] = [];
+  const restarted: { x: number; y: number }[] = [];
   const queue = createStrokeRasterQueue<TestPointer>({
     activePointers: pointers,
     crayonOpGranularity,
     paperMinEdge: () => 1000,
-    pointerWasResumed: () => false,
-    restartStrokeIfResumed: () => {},
+    pointerWasResumed,
+    restartStrokeIfResumed: (_ps, point) => restarted.push(point),
     strokeSpeed: () => 0,
     strokeSegments: (_ps, points, moveCount) => stroked.push({ points, moveCount }),
     onFlushed: () => {},
   });
-  return { queue, stroked };
+  return { queue, stroked, restarted };
 }
 
 describe('createStrokeRasterQueue', () => {
@@ -129,5 +131,68 @@ describe('createStrokeRasterQueue', () => {
     expect(crayon.stroked).toHaveLength(1);
     expect(crayon.stroked[0].points).toHaveLength(2);
     expect(crayon.stroked[0].moveCount).toBe(2);
+  });
+
+  // The crayon eraser merges under BOTH granularities — the per-move carve-out
+  // is for wax deposition only, and deleting the !erase guard fails this.
+  it('merges a crayon-eraser pointer under per-move granularity', () => {
+    const batches = [
+      { points: [{ x: 1, y: 1 }], at: 10 },
+      { points: [{ x: 2, y: 2 }], at: 20 },
+    ];
+    const erasing = harness(
+      new Map([[1, pointer({ crayon: true, erase: true, pendingRaster: [...batches] })]]),
+      'per-move'
+    );
+    erasing.queue.flushAll();
+
+    expect(erasing.stroked).toHaveLength(1);
+    expect(erasing.stroked[0].moveCount).toBe(2);
+  });
+
+  // A stall accumulates unbounded moves; a single merged crayon op's bounding
+  // box spans tiles the ink never enters, each paying two pattern passes. The
+  // cap bounds one op's merge; within-pass parity makes the boundary invisible.
+  it('caps how many moves one per-frame crayon op merges', () => {
+    const batches = Array.from({ length: 20 }, (_, i) => ({
+      points: [{ x: i, y: i }],
+      at: 10 + i,
+    }));
+    const crayon = harness(
+      new Map([[1, pointer({ crayon: true, pendingRaster: batches })]]),
+      'per-frame'
+    );
+    crayon.queue.flushAll();
+
+    expect(crayon.stroked.length).toBeGreaterThan(1);
+    expect(Math.max(...crayon.stroked.map((op) => op.moveCount))).toBeLessThanOrEqual(8);
+    expect(crayon.stroked.reduce((sum, op) => sum + op.moveCount, 0)).toBe(20);
+    expect(crayon.stroked.flatMap((op) => op.points)).toHaveLength(20);
+  });
+
+  // The resume branch flushes the merged buffer BEFORE the restart decision so
+  // ps position is fresh when restartStrokeIfResumed judges the gap — the
+  // ordering per-frame crayon is the first configuration to reach with a
+  // crayon pass open.
+  it('flushes merged crayon before handling a resumed pointer, in both modes', () => {
+    const resumedAt = (elapsed: number) => elapsed >= 800;
+    for (const granularity of ['per-move', 'per-frame'] as const) {
+      const batches = [
+        { points: [{ x: 1, y: 1 }], at: 10 },
+        { points: [{ x: 2, y: 2 }], at: 20 },
+        { points: [{ x: 900, y: 900 }], at: 900 },
+      ];
+      const { queue, stroked } = harness(
+        new Map([[1, pointer({ crayon: true, pendingRaster: [...batches] })]]),
+        granularity,
+        resumedAt
+      );
+      queue.flushAll();
+
+      const flat = stroked.flatMap((op) => op.points.map((p) => p.x));
+      expect(flat).toEqual([1, 2, 900]);
+      const resumedOp = stroked[stroked.length - 1];
+      expect(resumedOp.points).toEqual([{ x: 900, y: 900 }]);
+    }
   });
 });

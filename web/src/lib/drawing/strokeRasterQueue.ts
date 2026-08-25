@@ -11,6 +11,14 @@
 import type { Point } from './strokeMath';
 import { PERF_MARKS } from './perf';
 
+// A main-thread stall accumulates every queued move into one flush, and a
+// single merged crayon op's bounding box strictly contains the union of its
+// pieces' boxes — selecting tiles the ink never enters, each paying two
+// pattern passes and a possible backing allocation. Cap how many moves one
+// crayon op may merge; within-pass parity (pass-scoped pattern seed,
+// idempotent binary-alpha wax) makes the extra op boundary invisible.
+const CRAYON_MERGED_MOVES_CAP = 8;
+
 export type RasterBatch = { points: Point[]; at: number };
 
 // The subset of the engine's pointer state this needs. Kept structural rather
@@ -31,6 +39,14 @@ export type RasterPointer = {
 // time), while the WKWebView pays more per op so per-frame merging wins there
 // (1.74% -> 1.46% on the same iPad, same day — issue 1236; splitting further
 // to per-sample ops cost 3.07%). Every other brush merges everywhere.
+//
+// A dependency rather than a compile-time literal (contrast PERF_MARKS below,
+// which must fold away so the release seam scan stays meaningful): both
+// granularities must stay testable under vitest, whose define pins
+// __IS_CAPACITOR__ true and would dead-code-eliminate whichever branch the
+// web build ships. The engine's value IS the compile-time literal; only this
+// module's branch is runtime, on a cold path (one comparison per flushed
+// batch).
 type CrayonOpGranularity = 'per-move' | 'per-frame';
 
 export type StrokeRasterQueueDeps<P extends RasterPointer> = {
@@ -77,6 +93,11 @@ export function createStrokeRasterQueue<P extends RasterPointer>(deps: StrokeRas
       } else {
         merged.push(...batch.points);
         mergedMoves += 1;
+        if (ps.crayon && !ps.erase && mergedMoves >= CRAYON_MERGED_MOVES_CAP) {
+          deps.strokeSegments(ps, merged, mergedMoves);
+          merged = [];
+          mergedMoves = 0;
+        }
       }
       ps.lastTime = batch.at;
     }
