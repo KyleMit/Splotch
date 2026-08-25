@@ -52,6 +52,32 @@ export function destinationBlocked(destination, { force }) {
   return false;
 }
 
+// The two checks whose failure invalidates a capture's NUMBERS, not merely its
+// per-runtime calibration: an untrusted touch is synthetic input, and cadence
+// is "the one that invalidates a number outright" (rescore-captures.mjs's row
+// rule). The other checks — coalescing, pressure, contactGeometry — are
+// per-runtime table entries whose expectations have churned (issue 1303) and
+// which several runtimes can NEVER pass as things stand; keying selection on
+// `fidelity.passed` would therefore refuse every native-target promotion
+// permanently. Keyed on the checks themselves rather than the artifact's
+// `uncalibrated` list because the banked corpus predates that field.
+const NUMBER_INVALIDATING_CHECKS = ['trustedTouch', 'cadence'];
+
+// Scoreability tiers, best first. Preference is by scoreability, never by
+// score — within a tier the FIRST seen wins, because picking the best NUMBER
+// would preserve a corpus that flatters the metric it exists to let someone
+// re-examine. A verdict failing only calibration checks outranks no verdict
+// at all (ADR-0138: a capture that cannot prove its fidelity will be
+// believed), and both outrank a number-invalidating failure.
+function scoreabilityTier(fidelity) {
+  if (!fidelity) return 2;
+  if (fidelity.passed === true) return 0;
+  const invalidated = NUMBER_INVALIDATING_CHECKS.some(
+    (check) => fidelity.checks?.[check] === false
+  );
+  return invalidated ? 3 : 1;
+}
+
 export function selectEvidence(candidates) {
   const groups = new Map();
   for (const candidate of candidates) {
@@ -64,42 +90,45 @@ export function selectEvidence(candidates) {
     group.push(candidate);
     groups.set(key, group);
   }
-  // Preference is by SCOREABILITY, never by score: a fidelity-failing capture
-  // cannot be scored at all (issue 1305 — one sat in a corpus as a brush's
-  // representative, looking exactly like its three passing neighbours), and an
-  // unreported verdict outranks a failed one because it proves nothing either
-  // way. Within a tier the FIRST seen still wins, because picking the best
-  // NUMBER would preserve a corpus that flatters the metric it exists to let
-  // someone re-examine.
   return [...groups.values()].map((group) => {
-    const representative =
-      group.find((candidate) => candidate.fidelity === true) ??
-      group.find((candidate) => candidate.fidelity !== false) ??
-      group[0];
+    const tiers = group.map((candidate) => scoreabilityTier(candidate.fidelity));
+    const bestTier = Math.min(...tiers);
+    const representative = group[tiers.indexOf(bestTier)];
     return {
       ...representative,
+      fidelityTier: bestTier,
       candidateCount: group.length,
-      passingCandidateCount: group.filter((candidate) => candidate.fidelity === true).length,
+      passingCandidateCount: tiers.filter((tier) => tier === 0).length,
+      failedCandidateCount: tiers.filter((tier) => tier === 3).length,
     };
   });
 }
 
-// A brush whose every candidate failed fidelity has no valid representative,
-// which is a fact to surface rather than paper over: the kept capture would be
-// a wrong number waiting to be quoted. Returns the refusal message, or null
-// when promotion may proceed. Pure so the policy is testable without the exit.
-export function failedRepresentativeProblem(selected, { allowFailed }) {
-  const failed = selected.filter((entry) => !entry.handCapture && entry.fidelity === false);
-  if (!failed.length || allowFailed) return null;
-  const cells = failed
+// A cell whose best candidate is unreported-or-worse while a number-invalidating
+// failure sits in its pool has no scoreable representative, which is a fact to
+// surface rather than paper over: the kept capture would be a wrong (or
+// unprovable) number waiting to be quoted, and issue 1305's incident was
+// exactly one of these arriving looking like its healthy neighbours. Keying the
+// refusal on the group rather than the representative alone is deliberate — a
+// failed candidate hiding behind an unreported one must not silence the guard.
+// Hand captures are exempt: a failed verdict there is itself the calibration
+// evidence. Returns the refusal message, or null when promotion may proceed.
+// Pure so the policy is testable without the exit.
+export function failedRepresentativeProblem(selected, { allowFailed } = {}) {
+  const stranded = selected.filter(
+    (entry) => !entry.handCapture && entry.fidelityTier >= 2 && entry.failedCandidateCount > 0
+  );
+  if (!stranded.length || allowFailed) return null;
+  const cells = stranded
     .map(
-      (entry) => `${entry.target}/${entry.brush} (all ${entry.candidateCount} candidates failed)`
+      (entry) =>
+        `${entry.target}/${entry.brush} (${entry.failedCandidateCount} of ` +
+        `${entry.candidateCount} candidates failed a number-invalidating check; none passed)`
     )
     .join(', ');
   return (
-    `every candidate failed input fidelity for: ${cells}. A failed capture kept as a ` +
-    'representative is a wrong number waiting to be quoted. Pass --allow-failed to keep ' +
-    'one deliberately, or --filter to narrow the promotion to cells that can be scored.'
+    `no scoreable representative for: ${cells}. Pass --allow-failed to keep one ` +
+    'deliberately, or --filter to narrow the promotion to cells that can be scored.'
   );
 }
 
@@ -122,7 +151,10 @@ export async function keepCaptureEvidence({
   target = argFlag('target'),
   filter = argFlag('filter'),
   force = argFlag('force') !== undefined || process.argv.includes('--force'),
-  allowFailed = process.argv.includes('--allow-failed'),
+  allowFailed = argFlag('allow-failed') !== undefined || process.argv.includes('--allow-failed'),
+  // Overridable so the end-to-end test promotes into a tmpdir instead of the
+  // tracked corpus; production callers pass nothing.
+  evidenceRoot = EVIDENCE_ROOT,
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
@@ -155,7 +187,7 @@ export async function keepCaptureEvidence({
       handCapture: parsed.handCapture === true,
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
-      fidelity: parsed.fidelity?.passed ?? null,
+      fidelity: parsed.fidelity ?? null,
       // A hand capture's index row carries what the finger measured, so the
       // corpus is readable without opening a minified frame table — the shape
       // the 2026-08-23-hand corpus established.
@@ -175,7 +207,7 @@ export async function keepCaptureEvidence({
   const selected = selectEvidence(candidates);
   const noValidRepresentative = failedRepresentativeProblem(selected, { allowFailed });
   if (noValidRepresentative) fail(noValidRepresentative);
-  const destination = join(ROOT, EVIDENCE_ROOT, campaign);
+  const destination = join(ROOT, evidenceRoot, campaign);
 
   // Reusing a campaign name does NOT replace the corpus — it overwrites only the
   // files this run happens to select. A second promotion with fewer targets left
@@ -187,7 +219,7 @@ export async function keepCaptureEvidence({
   // known to be non-empty — so a failed promotion cannot leave nothing behind.
   if (destinationBlocked(destination, { force })) {
     fail(
-      `${EVIDENCE_ROOT}/${campaign} already exists. Promoting into it would leave ` +
+      `${evidenceRoot}/${campaign} already exists. Promoting into it would leave ` +
         'captures this run did not select beside an index that no longer names them, ' +
         'and perf:rescore scores every JSON it finds. Pass --force to replace the ' +
         'corpus, or use a new --campaign name.'
@@ -226,17 +258,8 @@ export async function keepCaptureEvidence({
           target: entry.target,
           brush: entry.brush,
           mode: entry.mode,
-          fidelityPassed: entry.fidelity,
+          fidelityPassed: entry.fidelity?.passed ?? null,
           source: entry.relativePath,
-          // How rich the pool behind this representative was: "kept from 8
-          // candidates, 7 passing" reads very differently from "kept from 1"
-          // (issue 1305), and the index is where a later reader looks first.
-          ...(entry.handCapture
-            ? {}
-            : {
-                candidateCount: entry.candidateCount,
-                passingCandidateCount: entry.passingCandidateCount,
-              }),
           ...(entry.handCapture
             ? {
                 handCapture: true,
@@ -246,7 +269,16 @@ export async function keepCaptureEvidence({
                 pageDelivery: entry.pageDelivery,
                 drawSeconds: entry.drawSeconds,
               }
-            : {}),
+            : {
+                // How rich the pool behind this representative was: "8
+                // candidates, 7 passing, 1 failed" reads very differently
+                // from "1 candidate" (issue 1305), and the failed count keeps
+                // the tri-state a bare passing count collapses — 0 passing of
+                // 12 unreported is not 0 passing of 12 failed.
+                candidateCount: entry.candidateCount,
+                passingCandidateCount: entry.passingCandidateCount,
+                failedCandidateCount: entry.failedCandidateCount,
+              }),
         })),
       },
       null,
@@ -255,12 +287,19 @@ export async function keepCaptureEvidence({
   );
 
   console.log(
-    `Kept ${selected.length} of ${candidates.length} captures in ${EVIDENCE_ROOT}/${campaign}`
+    `Kept ${selected.length} of ${candidates.length} captures in ${evidenceRoot}/${campaign}`
   );
   for (const entry of selected) {
+    // The pool counts are meaningful only where the pool exists — a hand
+    // capture is always kept alone, and printing 1/1 beside every one would
+    // say nothing (the index omits the counts there for the same reason).
+    const pool = entry.handCapture
+      ? ''
+      : `(${entry.passingCandidateCount}/${entry.candidateCount} passing, ` +
+        `${entry.failedCandidateCount} failed)  `;
     console.log(
-      `  ${entry.target}/${entry.brush}  ${entry.mode}  fidelity=${entry.fidelity ?? 'unreported'}  ` +
-        `(${entry.passingCandidateCount}/${entry.candidateCount} candidates passing)  ` +
+      `  ${entry.target}/${entry.brush}  ${entry.mode}  ` +
+        `fidelity=${entry.fidelity?.passed ?? 'unreported'}  ${pool}` +
         `<- ${basename(entry.relativePath)}`
     );
   }

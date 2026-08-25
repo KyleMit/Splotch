@@ -9,13 +9,14 @@ import {
 import { relative } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   destinationBlocked,
   evidenceFileName,
   failedRepresentativeProblem,
+  keepCaptureEvidence,
   modeOf,
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
@@ -335,12 +336,23 @@ describe('keep-capture-evidence', () => {
   // brush's representative beside three passing captures, and nothing refused
   // it. Preference is by scoreability, never by score: within a tier the first
   // seen still wins, so the corpus cannot flatter the metric.
+  const passing = { passed: true, checks: { trustedTouch: true, cadence: true } };
+  const numberInvalid = { passed: false, checks: { trustedTouch: true, cadence: false } };
+  // The shape the review's blocker proved must NOT count as failed: a verdict
+  // whose only failures are per-runtime calibration checks — every native
+  // runtime lives here permanently, and so does the whole pre-table banked
+  // corpus (which predates the `uncalibrated` field entirely).
+  const calibrationOnly = {
+    passed: false,
+    checks: { trustedTouch: true, cadence: true, coalescing: false, pressure: false },
+  };
+
   it('prefers a passing capture over an earlier failing or unreported one', () => {
     const kept = selectEvidence([
-      { target: 'a', brush: 'pen', file: 'failed', fidelity: false },
+      { target: 'a', brush: 'pen', file: 'failed', fidelity: numberInvalid },
       { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
-      { target: 'a', brush: 'pen', file: 'passing-1', fidelity: true },
-      { target: 'a', brush: 'pen', file: 'passing-2', fidelity: true },
+      { target: 'a', brush: 'pen', file: 'passing-1', fidelity: passing },
+      { target: 'a', brush: 'pen', file: 'passing-2', fidelity: passing },
     ]);
 
     expect(kept).toHaveLength(1);
@@ -348,39 +360,123 @@ describe('keep-capture-evidence', () => {
       file: 'passing-1',
       candidateCount: 4,
       passingCandidateCount: 2,
+      failedCandidateCount: 1,
     });
   });
 
-  it('falls back to an unreported verdict before a failed one', () => {
+  // The review's blocking case: `passed: false` with the failures confined to
+  // per-runtime calibration checks describes every native-runtime capture and
+  // every pre-table banked one — those numbers stand, and they outrank both an
+  // unreported verdict and a number-invalidating failure.
+  it('ranks a calibration-only failure above unreported, and both above invalid numbers', () => {
     const kept = selectEvidence([
-      { target: 'a', brush: 'pen', file: 'failed', fidelity: false },
+      { target: 'a', brush: 'pen', file: 'invalid', fidelity: numberInvalid },
       { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
+      { target: 'a', brush: 'pen', file: 'uncalibrated', fidelity: calibrationOnly },
     ]);
 
-    expect(kept[0]).toMatchObject({ file: 'unreported', passingCandidateCount: 0 });
+    expect(kept[0]).toMatchObject({ file: 'uncalibrated', failedCandidateCount: 1 });
+    expect(
+      selectEvidence([
+        { target: 'a', brush: 'pen', file: 'invalid', fidelity: numberInvalid },
+        { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
+      ])[0]
+    ).toMatchObject({ file: 'unreported' });
   });
 
-  // A brush with no valid representative is a fact to surface, not paper over.
-  it('refuses a promotion whose representative failed, unless allowed deliberately', () => {
+  // A cell with no scoreable representative is a fact to surface, not paper
+  // over — and an unreported candidate must not silence the guard a failed
+  // sibling should trigger (the dodge the review proved).
+  it('refuses a cell whose pool holds invalid numbers and nothing scoreable', () => {
     const allFailed = selectEvidence([
-      { target: 'a', brush: 'eraser', file: 'f1', fidelity: false },
-      { target: 'a', brush: 'eraser', file: 'f2', fidelity: false },
-      { target: 'a', brush: 'pen', file: 'ok', fidelity: true },
+      { target: 'a', brush: 'eraser', file: 'f1', fidelity: numberInvalid },
+      { target: 'a', brush: 'eraser', file: 'f2', fidelity: numberInvalid },
+      { target: 'a', brush: 'pen', file: 'ok', fidelity: passing },
     ]);
-
     const problem = failedRepresentativeProblem(allFailed, { allowFailed: false });
-    expect(problem).toContain('a/eraser (all 2 candidates failed)');
+    expect(problem).toContain(
+      'a/eraser (2 of 2 candidates failed a number-invalidating check; none passed)'
+    );
     expect(problem).toContain('--allow-failed');
     expect(failedRepresentativeProblem(allFailed, { allowFailed: true })).toBeNull();
 
-    const healthy = selectEvidence([{ target: 'a', brush: 'pen', file: 'ok', fidelity: true }]);
-    expect(failedRepresentativeProblem(healthy, { allowFailed: false })).toBeNull();
+    const dodged = selectEvidence([
+      { target: 'a', brush: 'eraser', file: 'f1', fidelity: numberInvalid },
+      { target: 'a', brush: 'eraser', file: 'unreported', fidelity: null },
+    ]);
+    expect(failedRepresentativeProblem(dodged, {})).toContain('a/eraser');
+
+    // A calibration-only verdict IS scoreable, so it neither refuses nor is
+    // outranked by silence — the native targets promote.
+    const nativeShaped = selectEvidence([
+      { target: 'a', brush: 'pen', file: 'uncalibrated', fidelity: calibrationOnly },
+      { target: 'a', brush: 'pen', file: 'invalid', fidelity: numberInvalid },
+    ]);
+    expect(failedRepresentativeProblem(nativeShaped, {})).toBeNull();
+
+    const healthy = selectEvidence([{ target: 'a', brush: 'pen', file: 'ok', fidelity: passing }]);
+    expect(failedRepresentativeProblem(healthy)).toBeNull();
     // A hand capture records what a finger measured; a failed verdict there is
     // itself the calibration evidence, so it is exempt from the refusal.
     const hand = selectEvidence([
-      { handCapture: true, relativePath: 'h.json', fidelity: false, brush: 'pen' },
+      { handCapture: true, relativePath: 'h.json', fidelity: numberInvalid, brush: 'pen' },
     ]);
     expect(failedRepresentativeProblem(hand, { allowFailed: false })).toBeNull();
+  });
+
+  // The CLI wiring end to end — the review proved deleting the refusal call,
+  // flipping the flag default, or dropping the index counts all left the unit
+  // suite green. Promotes a real two-capture corpus into a tmpdir evidence
+  // root and reads the written index back.
+  it('promotes a corpus end to end, recording the pool behind each representative', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-keep-corpus-'));
+    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-keep-evidence-'));
+    mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
+    const cell = (name, fidelity) =>
+      writeFileSync(
+        join(corpusDir, 'ipad-device-web', 'portrait-light', name),
+        JSON.stringify({
+          brush: 'crayon',
+          orientation: 'PORTRAIT',
+          theme: 'light',
+          fidelity,
+          report,
+        })
+      );
+    cell('crayon-real-screen.json', {
+      passed: false,
+      checks: { trustedTouch: true, cadence: false },
+    });
+    cell('crayon-retry-real-screen.json', {
+      passed: true,
+      checks: { trustedTouch: true, cadence: true },
+    });
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    try {
+      const { selected } = await keepCaptureEvidence({
+        corpus: relative(ROOT, corpusDir),
+        campaign: 'e2e-test',
+        evidenceRoot: relative(ROOT, evidenceDir),
+      });
+      expect(selected).toHaveLength(1);
+      const index = JSON.parse(readFileSync(join(evidenceDir, 'e2e-test', 'index.json'), 'utf8'));
+      expect(index.kept).toHaveLength(1);
+      expect(index.kept[0]).toMatchObject({
+        target: 'ipad-device-web',
+        brush: 'crayon',
+        fidelityPassed: true,
+        source: 'ipad-device-web/portrait-light/crayon-retry-real-screen.json',
+        candidateCount: 2,
+        passingCandidateCount: 1,
+        failedCandidateCount: 1,
+      });
+      expect(existsSync(join(evidenceDir, 'e2e-test', 'ipad-device-web-crayon.json'))).toBe(true);
+    } finally {
+      quiet.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+      rmSync(evidenceDir, { recursive: true, force: true });
+    }
   });
 
   // Two hand captures of different runtimes both resolved to the unknown target

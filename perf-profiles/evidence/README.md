@@ -16,7 +16,10 @@ npm run perf:rescore -- --corpus=perf-profiles/evidence/2026-08-android
 ```
 
 Promotion is deliberate and belongs to the end of a campaign — see the closing steps in
-[`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
+[`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md). The keeper prefers a scoreable
+representative per target × brush and refuses a cell whose every candidate failed a
+number-invalidating check (`--allow-failed` overrides deliberately); each index row records the pool
+behind its representative (`candidateCount` / `passingCandidateCount` / `failedCandidateCount`).
 
 ## What is here and what is not
 
