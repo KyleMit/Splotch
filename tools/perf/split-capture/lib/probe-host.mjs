@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { ROOT } from '../../../lib/proc.mjs';
 import { pageBootstrapSource } from './page-bootstrap.mjs';
 import { keepIncomingReport, reportRejectionReason } from './report-store.mjs';
-import { STAND_DOWN_PATH } from './chrome-tabs.mjs';
+import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './chrome-tabs.mjs';
 
 const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 // A dropped chunk fetch does not fail visibly: the module import throws, the
@@ -54,6 +54,11 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     report: null,
     progress: null,
     pulse: null,
+    // The last stale-page stand-down that adopted THIS plan's nonce (reset with
+    // the plan). For a manual capture there is exactly one page, so a stale
+    // stand-down means the human's URL lacked the run identity — the runner
+    // fails fast on it instead of waiting out the full ready budget.
+    stalePage: null,
     // How many times ANY page asked for the plan since the last reset. First
     // contact, not identity: a launched app that never loads the page makes no
     // request at all, and that silence is what the runner needs to detect fast
@@ -78,7 +83,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     // becomes a self-reloading page on the device being measured.
     if (pathname === STAND_DOWN_PATH) {
       res.writeHead(200, { 'content-type': 'text/html' });
-      return res.end('<!doctype html><title>stood down</title>');
+      return res.end(STAND_DOWN_PAGE_HTML);
     }
     if (pathname === '/__probe/state') {
       return json(res, {
@@ -86,6 +91,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         hasReport: !!state.report,
         pulse: state.pulse,
         planRequests: state.planRequests,
+        stalePage: state.stalePage,
       });
     }
     if (pathname === '/__probe/bootstrap.js') return script(res, pageBootstrapSource());
@@ -100,6 +106,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         state.progress = null;
         state.pulse = null;
         state.planRequests = 0;
+        state.stalePage = null;
         delete state.plan.reset;
       }
       return json(res, state.plan);
@@ -125,6 +132,9 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         }
       } else if (pathname === '/__probe/log') {
         log(`page log: ${JSON.stringify(payload)}`);
+        if (payload.kind === 'stale-page' && payload.nonce === state.plan.nonce) {
+          state.stalePage = payload;
+        }
       } else if (pathname === '/__probe/pulse') {
         // Nonce-gated like readiness, and max-not-last like the report store:
         // on the native paths identity is adopted rather than proven, so a

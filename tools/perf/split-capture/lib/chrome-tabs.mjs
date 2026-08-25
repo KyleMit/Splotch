@@ -34,6 +34,20 @@
 // into a self-reloading page on the device being measured.
 export const STAND_DOWN_PATH = '/__probe/stand-down';
 
+// What a stood-down page SHOWS. It used to be a bare <title>, so a human whose
+// manual page stood down (a mistyped or query-stripped URL) stared at a blank
+// screen while the runner waited out its full ready budget — three minutes of
+// unexplained blankness for a typo (issue 1300 review). Served by both the
+// probe host and the floor-control host.
+export const STAND_DOWN_PAGE_HTML =
+  '<!doctype html><title>stood down</title>' +
+  '<body style="font: 16px/1.5 system-ui; max-width: 40em; margin: 3em auto">' +
+  '<h1>This page stood down</h1>' +
+  '<p>It was opened for an earlier capture run, or without this run’s identity.</p>' +
+  '<p>If a capture tool printed an address for you to open, reopen that EXACT ' +
+  'address — the <code>?probe=</code> query is the run’s identity and is ' +
+  'load-bearing. Otherwise just close this tab; it is a leftover.</p></body>';
+
 export function toolingLitter(targets, hostname, keepNonce) {
   return targets.filter((target) => {
     if (target.type !== 'page') return false;

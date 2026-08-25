@@ -136,6 +136,20 @@ export async function openWithAdb({ serial, pageUrl, orientation, nativeApp, exe
   }
 }
 
+// A manual page that stood down means the human's URL lacked this run's
+// identity — with exactly one page in play, waiting out the full ready budget
+// buys nothing but three minutes of blank screen (issue 1300 review). Exported
+// for the message test; the adb path deliberately does NOT fail on this signal,
+// because leftover tabs standing down while the real page loads is that
+// transport's normal weather.
+export function stalePageFailure(pageUrl) {
+  return (
+    'a page reached the probe host without this run’s identity and stood down — it was opened ' +
+    'without the exact printed URL. Reopen this address, query string included:\n' +
+    `\n      ${pageUrl}\n`
+  );
+}
+
 // Issue 1295: the manual path predates the page-identity guard and printed a
 // bare host URL, so a hand capture could never prove which run its page
 // belonged to. The printed URL now carries the run nonce, giving the manual
@@ -338,7 +352,11 @@ export async function captureHandInput({
     await sleep(PAGE_SETTLE_MS);
   } else announceManualOpen({ pageUrl, orientation, theme });
 
-  const ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
+  const ready = await pollFor(async () => {
+    const state = await probeState(host);
+    if (opener === 'manual' && state.stalePage) fail(stalePageFailure(pageUrl));
+    return state.ready;
+  }, PROBE_READY_TIMEOUT_MS);
   if (!ready) fail('the page never reported the probe ready');
   if (ready.committed && ready.committed !== brush) {
     fail(`the engine is on ${ready.committed}, not ${brush}`);

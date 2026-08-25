@@ -24,7 +24,7 @@
 // The DOM shape (#drawingCanvas, .paper-view) is what the probe requires.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
+import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
 import { join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
 import { keepIncomingReport, reportRejectionReason } from './lib/report-store.mjs';
@@ -203,7 +203,7 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
     // catch-all would otherwise answer it with a LIVE page that adopts the
     // current plan.
     if (pathname === STAND_DOWN_PATH) {
-      return send(res, 'text/html', '<!doctype html><title>stood down</title>');
+      return send(res, 'text/html', STAND_DOWN_PAGE_HTML);
     }
     if (pathname === '/__probe/state') {
       return json(res, { ready: state.progress, hasReport: !!state.report });

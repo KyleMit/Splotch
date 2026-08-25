@@ -38,6 +38,7 @@ import {
   handCaptureArtifact,
   manualOpenLines,
   openWithAdb,
+  stalePageFailure,
 } from '../split-capture/capture-hand-input.mjs';
 import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
 
@@ -606,6 +607,50 @@ describe('the probe host refusing a stale run over HTTP', () => {
       body: JSON.stringify({ nonce: 'next-run', reset: true }),
     });
     expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(0);
+  });
+
+  // A stood-down page used to render a bare <title> while the manual runner
+  // waited out its full ready budget — a typo cost three minutes of blank
+  // screen. The stand-down body now says what to do, the host exposes the
+  // stale-page signal for the current run only, and the manual failure names
+  // the exact address to reopen.
+  it('serves an instructive stand-down page and exposes the current run’s stale-page signal', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: 'cell', nonce: 'this-run', reset: true }),
+    });
+
+    const standDown = await fetch(`${base}/__probe/stand-down`).then((r) => r.text());
+    expect(standDown).toContain('stood down');
+    expect(standDown).toContain('EXACT');
+
+    const postLog = (body) =>
+      fetch(`${base}/__probe/log`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    await postLog({ kind: 'stale-page', openedFor: 'earlier', nonce: 'another-run' });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).stalePage).toBeNull();
+    await postLog({ kind: 'stale-page', openedFor: 'earlier', nonce: 'this-run' });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).stalePage).toMatchObject({
+      openedFor: 'earlier',
+    });
+
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nonce: 'next-run', reset: true }),
+    });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).stalePage).toBeNull();
+
+    expect(stalePageFailure('http://192.168.0.9:4175/?probe=hand-run-77')).toContain(
+      'http://192.168.0.9:4175/?probe=hand-run-77'
+    );
   });
 
   // Issue 1295: the manual path predates the page-identity guard and printed a
