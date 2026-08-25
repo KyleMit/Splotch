@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   grantLogLine,
   handCaptureArgs,
+  handItemInstructions,
   operatorSessionPlan,
   runHandItem,
 } from '../run-operator-session.mjs';
@@ -144,6 +145,18 @@ describe('runHandItem', () => {
     const result = await runHandItem({ ...item, device: null }, d);
     expect(result.status).toBe('fail');
     expect(d.spawnChild).not.toHaveBeenCalled();
+  });
+});
+
+describe('handItemInstructions', () => {
+  // Only Android's opener applies the requested orientation; an iOS landscape
+  // item depends on the operator physically rotating the device, and silently
+  // accepting the plan without saying so burns the readiness timeout instead.
+  it('tells the operator to rotate for a non-portrait iOS item, and only then', () => {
+    const landscape = handItemInstructions({ platform: 'ios', orientation: 'LANDSCAPE' });
+    expect(landscape.join(' ')).toMatch(/ROTATE THE IPAD to landscape/);
+    expect(handItemInstructions({ platform: 'ios', orientation: 'PORTRAIT' })).toEqual([]);
+    expect(handItemInstructions({ platform: 'android', orientation: 'LANDSCAPE' })).toEqual([]);
   });
 });
 

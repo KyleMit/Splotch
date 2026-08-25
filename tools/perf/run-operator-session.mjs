@@ -274,12 +274,27 @@ function announceHandStep(platform) {
   console.log('  down, draw with ONE FINGER until it says done.');
 }
 
+// The iPad opener launches the app but drives no rotation — only Android's
+// opener applies the requested orientation — so a landscape iOS item depends
+// on the OPERATOR holding the device that way, and the capture tool refuses at
+// readiness when the page disagrees. Say so before the launch, not in the
+// refusal.
+export function handItemInstructions(item) {
+  if (item.platform !== 'ios' || item.orientation === 'PORTRAIT') return [];
+  return [
+    `  ROTATE THE IPAD to ${item.orientation.toLowerCase()} now and keep it there —`,
+    '  the harness cannot turn it for you, and the capture refuses a page whose',
+    '  orientation disagrees with the plan.',
+  ];
+}
+
 export async function runHandItem(item, { host, seconds, outputDir, ask, spawnChild = spawnSync }) {
   if (!item.device) {
     return { status: 'fail', detail: `the ${item.platform} device disappeared mid-session` };
   }
   const { label, output, args } = handCaptureArgs({ ...item, seconds, host, outputDir });
   console.log(`\n-- ${label} (${seconds}s of drawing) --`);
+  for (const line of handItemInstructions(item)) console.log(line);
   await ask('  Press Enter when ready to draw… ');
   const child = spawnChild(process.execPath, args, { cwd: ROOT, stdio: 'inherit' });
   return child.status === 0
