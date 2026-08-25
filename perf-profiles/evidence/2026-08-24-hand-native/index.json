@@ -8,7 +8,24 @@
       "brush": "crayon",
       "mode": "PORTRAIT-light",
       "fidelityPassed": false,
-      "source": "hand-android-native-crayon-portrait-light.json"
+      "source": "hand-android-native-crayon-portrait-light.json",
+      "handCapture": true,
+      "runtime": "android-capacitor-webview",
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 135.26,
+        "moveGapP95Ms": 8.7,
+        "movesPerFrame": 1.13,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 3.2,
+        "contactHeightP50": 3.48
+      },
+      "device": "R5CRC3AVCXM",
+      "pageDelivery": null,
+      "drawSeconds": 25
     },
     {
       "file": "hand-android-native-pen-portrait-light.json",
@@ -16,23 +33,24 @@
       "brush": "pen",
       "mode": "PORTRAIT-light",
       "fidelityPassed": false,
-      "source": "hand-android-native-pen-portrait-light.json"
-    },
-    {
-      "file": "hand-ios-native-crayon-portrait-light.json",
-      "target": "ios-capacitor-webview",
-      "brush": "crayon",
-      "mode": "PORTRAIT-light",
-      "fidelityPassed": false,
-      "source": "hand-ios-native-crayon-portrait-light.json"
-    },
-    {
-      "file": "hand-ios-native-pen-portrait-light.json",
-      "target": "ios-capacitor-webview",
-      "brush": "pen",
-      "mode": "PORTRAIT-light",
-      "fidelityPassed": false,
-      "source": "hand-ios-native-pen-portrait-light.json"
+      "source": "hand-android-native-pen-portrait-light.json",
+      "handCapture": true,
+      "runtime": "android-capacitor-webview",
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 116.47,
+        "moveGapP95Ms": 8.6,
+        "movesPerFrame": 0.97,
+        "coalescedPerMove": 0,
+        "pressureP50": 1,
+        "pressureP95": 1,
+        "contactWidthP50": 3.06,
+        "contactHeightP50": 3.2
+      },
+      "device": "R5CRC3AVCXM",
+      "pageDelivery": null,
+      "drawSeconds": 25
     }
   ]
 }
