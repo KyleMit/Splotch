@@ -100,6 +100,14 @@ export function nativeCanvasBounds({
   includeBrowserChrome = true,
 }) {
   const scale = webViewBounds.width / webGeometry.viewport.width;
+  // The native app's viewport-height deficit against the window must NOT be
+  // added here the way Safari's browser chrome is: measured on-device (issue
+  // 1237), the WKWebView deficit sits at the TOP after an in-session rotation
+  // to portrait (32px, taps land that far above their web target) but at the
+  // BOTTOM in landscape (20px, where uncorrected taps land true) — so a blanket
+  // top-side correction re-aims working landscape taps wrong. Until the
+  // per-orientation inset is measurable, native taps stay uncorrected and rely
+  // on iOS touch-target snapping plus scribbleTap honoring it.
   const browserChromeHeight = includeBrowserChrome
     ? Math.max(0, nativeWindow.height - webGeometry.viewport.height * scale)
     : 0;
