@@ -49,15 +49,16 @@ describe('tracked evidence corpora state their own cell attribution', () => {
         if (nonce === null) continue;
         const label = artifact.label ?? '';
         const attributable = label !== '' && nonce.startsWith(label);
+        // One unconditional assertion per audited file: the marking must match
+        // the evidence, and a contaminated entry must name the nonce it saw
+        // (an attributable one records no nonce claim to check).
         expect(
           { file: kept.file, nonce, label, marked: kept.cellAttributable ?? true },
           `${kept.file}: index marking must match the nonce evidence`
-        ).toMatchObject({ marked: attributable });
-        if (!attributable) {
-          expect(kept.reportNonce, `${kept.file}: a contaminated entry names its nonce`).toBe(
-            nonce
-          );
-        }
+        ).toMatchObject({
+          marked: attributable,
+          ...(attributable ? {} : { nonce: kept.reportNonce }),
+        });
       }
     }
   );
