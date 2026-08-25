@@ -25,7 +25,6 @@
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { dev } from '$app/environment';
-import type { Orientation } from '$lib/platform';
 import { pageCompositionKey } from '$lib/state/books';
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import type { BrushType } from '$lib/state/tool.svelte';
@@ -50,6 +49,7 @@ import {
   IDENTITY_PAPER_VIEW,
   paperPresentationFor,
   viewForPresentation,
+  type EngineViewState,
   type PaperPresentation,
   viewToPaper,
   type PaperView,
@@ -303,32 +303,7 @@ function currentScreenAngle(): number {
   return typeof angle === 'number' ? angle : 0;
 }
 
-// The paper view published to components (CSS px), so the coloring-page overlay
-// can be positioned with the same transform the canvas paints through, and the
-// picker can keep offering the locked paper's tall/wide art variant.
-export interface EngineViewState {
-  active: boolean;
-  scale: number;
-  rotate: PaperView['rotate'];
-  tx: number;
-  ty: number;
-  paperCssWidth: number;
-  paperCssHeight: number;
-  paperOrientation: Orientation;
-}
-
-// The pre-adoption SSR-shell value of EngineViewState, before getViewState() has
-// any paper/render-scale state to derive from.
-export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({
-  active: false,
-  scale: 1,
-  rotate: 0,
-  tx: 0,
-  ty: 0,
-  paperCssWidth: 0,
-  paperCssHeight: 0,
-  paperOrientation: 'portrait',
-});
+export { INITIAL_ENGINE_VIEW_STATE, type EngineViewState } from './paperView';
 
 export function getViewState(): EngineViewState {
   return {
@@ -417,9 +392,8 @@ function resizeCanvas(
   rect: DOMRect = canvas.getBoundingClientRect(),
   { repaintRecoveredPixels = false, repaintDeferredToRestore = false }: ResizeCanvasOptions = {}
 ) {
-  if (!measure.accept(rect, (measured) => resizeCanvas(measured, { repaintRecoveredPixels }))) {
-    return;
-  }
+  const retry = (measured: DOMRect) => resizeCanvas(measured, { repaintRecoveredPixels });
+  if (!measure.accept(rect, retry)) return;
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = paperPresentationFor({
     canvasEmpty,

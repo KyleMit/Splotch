@@ -10,6 +10,7 @@
 // engine.ts owns all state; everything here is a pure function so the mapping
 // math is unit-testable.
 
+import type { Orientation } from '$lib/platform';
 import type { Point } from './strokeMath';
 
 export type ViewRotation = 0 | 90 | 180 | 270;
@@ -215,3 +216,32 @@ export function viewToPaper(view: PaperView, x: number, y: number): Point {
       return { x: -v, y: u };
   }
 }
+
+// The paper view published to components (CSS px), so the coloring-page overlay
+// can be positioned with the same transform the canvas paints through, and the
+// picker can keep offering the locked paper's tall/wide art variant. Lives here
+// with the presentation math rather than in engine.ts, whose state it is
+// derived from; the engine re-exports both so components keep one import.
+export interface EngineViewState {
+  active: boolean;
+  scale: number;
+  rotate: PaperView['rotate'];
+  tx: number;
+  ty: number;
+  paperCssWidth: number;
+  paperCssHeight: number;
+  paperOrientation: Orientation;
+}
+
+// The pre-adoption SSR-shell value of EngineViewState, before getViewState() has
+// any paper/render-scale state to derive from.
+export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({
+  active: false,
+  scale: 1,
+  rotate: 0,
+  tx: 0,
+  ty: 0,
+  paperCssWidth: 0,
+  paperCssHeight: 0,
+  paperOrientation: 'portrait',
+});
