@@ -1,4 +1,78 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
+import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
+
+// The resize inside undo's paper pre-restore used to trigger a full history
+// repaint whose replay runs through the clear being popped, immediately
+// overwritten by the snapshot restore (issue 1198). Measured through this exact
+// scenario: 48 clearRect / 32 drawImage before the skip, 6 / 6 after, with
+// byte-identical pixels — so a canvas-op count within one tile-count bounds the
+// skip while any reintroduced replay blows straight past it.
+test('undo of a clear after a blank rotation paints once, not once per history replay', async ({
+  page,
+}) => {
+  const counts = await page.evaluate(async () => {
+    await window.__engine.resizeTo(400, 300);
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 340, y: 200 },
+    ]);
+    window.__engine.clearCanvas();
+    window.__engine.setScreenAngleOverride(90);
+    await window.__engine.resizeTo(300, 400);
+    const prototype = CanvasRenderingContext2D.prototype;
+    const originalClearRect = prototype.clearRect;
+    const originalDrawImage = prototype.drawImage;
+    let clears = 0;
+    let draws = 0;
+    prototype.clearRect = function (...args: Parameters<typeof originalClearRect>) {
+      clears++;
+      return originalClearRect.apply(this, args);
+    };
+    prototype.drawImage = function (
+      this: CanvasRenderingContext2D,
+      ...args: Parameters<typeof originalDrawImage>
+    ) {
+      draws++;
+      return originalDrawImage.apply(this, args as never);
+    } as typeof originalDrawImage;
+    try {
+      await window.__engine.undo();
+    } finally {
+      prototype.clearRect = originalClearRect;
+      prototype.drawImage = originalDrawImage;
+    }
+    return { clears, draws, pixels: window.__engine.nonTransparentCount() };
+  });
+
+  expect(counts.pixels).toBeGreaterThan(0);
+  expect(counts.clears).toBeLessThanOrEqual(LIVE_TILE_COUNT);
+  expect(counts.draws).toBeLessThanOrEqual(LIVE_TILE_COUNT);
+});
+
+// The repaint skip is only valid for the synchronous call inside undo(). When
+// the canvas box is unmeasured at undo time, the deferred rebuild fires after
+// the undo's restore has already painted — and its backing wipe needs the
+// repaint. Threading the skip flag into that retry left a permanently blank
+// canvas that still reported canvasEmpty false (PR 1317's review).
+test('undo with an unmeasured canvas box repaints when the box returns', async ({ page }) => {
+  await page.evaluate(async () => {
+    await window.__engine.resizeTo(400, 300);
+    window.__engine.strokeSync([
+      { x: 60, y: 60 },
+      { x: 340, y: 200 },
+    ]);
+    window.__engine.clearCanvas();
+    window.__engine.setScreenAngleOverride(90);
+    await window.__engine.resizeTo(300, 400);
+    window.__engine.layoutTo(0, 0);
+    await window.__engine.undo();
+  });
+
+  await page.evaluate(() => window.__engine.layoutTo(300, 400));
+
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+  expect((await state(page)).canvasEmpty).toBe(false);
+});
 
 test('undo preserves a stroke that is still in progress', async ({ page }) => {
   const box = await page.locator('#drawingCanvas').boundingBox();

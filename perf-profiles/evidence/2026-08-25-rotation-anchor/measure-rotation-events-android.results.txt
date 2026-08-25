@@ -1,0 +1,17 @@
+# Captured stdout of measure-rotation-events-android.mjs, physical SM-G990U1
+# R5CRC3AVCXM via CDP, 2026-08-25. The floor arm stopped receiving events
+# after round 0 (CDP bringToFront does not reliably switch Chrome-for-Android
+# tabs between rounds); the app arm carries the ordering evidence the ADR
+# quotes.
+round 0 floor to LANDSCAPE: orient->resize 1.6ms, screenOrient->resize -0.6ms, ff(resize) 9.1ms, ff(orient) 10.7ms
+round 0 app to PORTRAIT: orient->resize 23.5ms, screenOrient->resize -61.6ms, ff(resize) 54ms, ff(orient) 77.5ms
+round 1 floor to PORTRAIT: [no orientationchange]
+round 1 app to LANDSCAPE: orient->resize 16.7ms, screenOrient->resize 0.5ms, ff(resize) 1.6ms, ff(orient) 18.3ms
+round 2 floor to LANDSCAPE: [no orientationchange]
+round 2 app to PORTRAIT: orient->resize 15.6ms, screenOrient->resize 0.4ms, ff(resize) 6.1ms, ff(orient) 5.1ms
+round 3 floor to PORTRAIT: [no orientationchange]
+round 3 app to LANDSCAPE: orient->resize 42.8ms, screenOrient->resize 0.5ms, ff(resize) 0.1ms, ff(orient) 42.9ms
+round 4 floor to LANDSCAPE: [no orientationchange]
+round 4 app to PORTRAIT: orient->resize 19.4ms, screenOrient->resize 0.3ms, ff(resize) 27.1ms, ff(orient) 46.5ms
+round 5 floor to PORTRAIT: [no orientationchange]
+round 5 app to LANDSCAPE: orient->resize 17.9ms, screenOrient->resize 0.4ms, ff(resize) 0.7ms, ff(orient) 18.6ms

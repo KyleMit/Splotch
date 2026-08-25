@@ -107,7 +107,11 @@ driven here and 135.5–178.0 by hand.
 Each failure names the thing to fix rather than the symptom — the page never reporting ready, the
 engine committing a different brush than requested, the page rendering at a different orientation
 than the one requested, or a capture that recorded no pointer events at all (which means the gesture
-landed somewhere other than the canvas, usually a brush menu left open over the paper).
+landed somewhere other than the canvas, usually a brush menu left open over the paper). A dispatch
+whose page pulsed **zero** input events fails immediately naming the wrong-tab cause — Chrome's
+session restore fronted a stale tab while the run's page loaded behind it (issue 1294) — instead of
+spending the report timeout; the launcher also re-activates the run's page over the devtools HTTP
+endpoint after launch and before dispatch, which fails benignly when the page cannot be identified.
 
 ## Domain ownership
 
@@ -117,6 +121,14 @@ landed somewhere other than the canvas, usually a brush menu left open over the 
   `../../ios/capture-xcuitest-screen.mjs` rather than duplicating them.
 * `lib/probe-host.mjs` — the proxying HTTP host and its report endpoints.
 * `lib/report-store.mjs` — which of two uploaded reports to keep.
+* `lib/chrome-tabs.mjs` — clearing this tooling's own leftover tabs and activating the run's page
+  over the devtools HTTP endpoint. Ownership is a tool signature (a `?probe=`/`?verify=` run param
+  or the `/__probe/stand-down` path) on the session host, across every port the tooling serves — the
+  tab that steals the foreground on relaunch is whichever Chrome used last, including another tool's
+  stale page on a different port. Nothing without a signature is ever closed: not operator tabs, not
+  other apps' Custom Tabs on the same socket, not a bare about:blank, and not the host's plain
+  preview pages. Activation alone was tried first and lost the session-restore race while reporting
+  success.
 
 `nativeCanvasBounds`, `trustedGestureActions` and `inputFidelity` are imported from
 `../ios/capture-xcuitest-screen.mjs`. They are not iOS-specific despite living there; moving them to

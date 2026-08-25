@@ -1,0 +1,56 @@
+{
+  "campaign": "2026-08-25-hand-wkwebview",
+  "capturedFrom": "perf-profiles/split-capture/hand-native/2026-08-25T07-01-57.631Z",
+  "kept": [
+    {
+      "file": "hand-ios-native-crayon-portrait-light.json",
+      "target": "ios-capacitor-webview",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "hand-ios-native-crayon-portrait-light.json",
+      "handCapture": true,
+      "runtime": "ios-capacitor-webview",
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 113.91,
+        "moveGapP95Ms": 9,
+        "movesPerFrame": 1.89,
+        "coalescedPerMove": 0,
+        "pressureP50": 0,
+        "pressureP95": 0,
+        "contactWidthP50": 83.42,
+        "contactHeightP50": 83.42
+      },
+      "device": "00008103-0006202E3CF1001E",
+      "pageDelivery": "remote-probe-host",
+      "drawSeconds": 25
+    },
+    {
+      "file": "hand-ios-native-pen-portrait-light.json",
+      "target": "ios-capacitor-webview",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "hand-ios-native-pen-portrait-light.json",
+      "handCapture": true,
+      "runtime": "ios-capacitor-webview",
+      "reading": {
+        "kinds": "touch",
+        "trustedShare": 1,
+        "movesPerSecond": 104.43,
+        "moveGapP95Ms": 17,
+        "movesPerFrame": 1.73,
+        "coalescedPerMove": 0,
+        "pressureP50": 0,
+        "pressureP95": 0,
+        "contactWidthP50": 83.42,
+        "contactHeightP50": 83.42
+      },
+      "device": "00008103-0006202E3CF1001E",
+      "pageDelivery": "remote-probe-host",
+      "drawSeconds": 25
+    }
+  ]
+}

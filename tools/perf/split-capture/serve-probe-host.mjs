@@ -9,12 +9,12 @@ import { join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
 import { createProbeHost } from './lib/probe-host.mjs';
 
-const DEFAULT_PORT = 4175;
+export const DEFAULT_PROBE_PORT = 4175;
 const DEFAULT_UPSTREAM = 'http://127.0.0.1:4173';
 const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
 
 export function serveProbeHost({
-  port = Number(argFlag('port', DEFAULT_PORT)),
+  port = Number(argFlag('port', DEFAULT_PROBE_PORT)),
   upstream = argFlag('upstream', DEFAULT_UPSTREAM),
   reportDir = argFlag('report-dir', DEFAULT_REPORT_DIR),
 } = {}) {

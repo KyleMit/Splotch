@@ -52,14 +52,23 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     plan: { brush: 'pen', contactMs: DEFAULT_CONTACT_MS, finish: false, label: 'run' },
     report: null,
     progress: null,
+    pulse: null,
   };
 
   const server = createServer(async (req, res) => {
     const { pathname } = new URL(req.url, 'http://localhost');
 
     if (pathname === '/__probe/plan') return json(res, state.plan);
+    // Where a stale page parks itself. Standing down to about:blank left a husk
+    // nothing could prove ownership of — and closing unproven pages is exactly
+    // the operator-tab hazard the litter clearer must not have. A husk on this
+    // origin is this transport's by construction.
+    if (pathname === '/__probe/stand-down') {
+      res.writeHead(200, { 'content-type': 'text/html' });
+      return res.end('<!doctype html><title>stood down</title>');
+    }
     if (pathname === '/__probe/state') {
-      return json(res, { ready: state.progress, hasReport: !!state.report });
+      return json(res, { ready: state.progress, hasReport: !!state.report, pulse: state.pulse });
     }
     if (pathname === '/__probe/bootstrap.js') return script(res, pageBootstrapSource());
     if (pathname === '/__probe/probe.js') {
@@ -71,6 +80,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
       if (state.plan.reset) {
         state.report = null;
         state.progress = null;
+        state.pulse = null;
         delete state.plan.reset;
       }
       return json(res, state.plan);
@@ -96,6 +106,18 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         }
       } else if (pathname === '/__probe/log') {
         log(`page log: ${JSON.stringify(payload)}`);
+      } else if (pathname === '/__probe/pulse') {
+        // Nonce-gated like readiness, and max-not-last like the report store:
+        // on the native paths identity is adopted rather than proven, so a
+        // leftover backgrounded page on this origin can pulse 0 under the
+        // current nonce — and a last-writer pulse would let it overwrite the
+        // real page's count and abort a good capture.
+        if (
+          payload.nonce === state.plan.nonce &&
+          (!state.pulse || payload.events >= state.pulse.events)
+        ) {
+          state.pulse = payload;
+        }
       } else if (pathname === '/__probe/ready') {
         // A suspended tab from an earlier run answers the same plan; only the
         // page that started under this nonce may report readiness.

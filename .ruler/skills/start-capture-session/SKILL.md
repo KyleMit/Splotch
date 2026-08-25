@@ -156,6 +156,16 @@ For a full cross-target snapshot rather than a single capture, continue with the
 * **Do not tear the rig down when a capture ends.** A campaign is many captures, and clearing
   stay-awake between them is what put the phone to sleep mid-campaign once already.
 
+## When a human is at the devices
+
+`npm run perf:operator` is the guided session for the inputs only a person can give: re-arming the
+iPad automation grant (the passcode prompt exists only during a WDA launch, and every attempt lands
+in the tracked grant log under `perf-profiles/evidence/operator/`) and real-finger calibration
+captures inside the installed Capacitor WebViews. It takes devices and ports from the preflight's
+own resolution, launches the iPad app deterministically through `devicectl` — a hand capture once
+recorded Safari under a WKWebView label because Safari happened to be foregrounded — and refuses an
+artifact whose user agent contradicts the labelled runtime.
+
 ## Ending the session
 
 Leave the rig up unless you are told otherwise — the next session takes over and re-asserts what it

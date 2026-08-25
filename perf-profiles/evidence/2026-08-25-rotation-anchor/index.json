@@ -1,0 +1,38 @@
+{
+  "campaign": "2026-08-25-rotation-anchor",
+  "why": "The evidence behind ADR-0142: rotation actions anchored at whichever of orientationchange/resize arrived first, which is a per-runtime race. These artifacts plus the two measurement scripts establish the ordering per runtime, the size of the browser-transition window the old anchor charged to the page, and the before/after of re-anchoring at resize.",
+  "kept": [
+    {
+      "file": "ipad-safari-rotation-preanchor.json",
+      "note": "Safari sweep, old anchor: rotation firstFrame p95 40/46/34/32 vs 33.5 gate; firstFrameMs equals the resize activity offset in 24/24 samples."
+    },
+    {
+      "file": "ipad-safari-rotation-resize-anchor.json",
+      "note": "Same sweep after the resize anchor: firstFrame 0-2ms structurally; post-action gates carry the rotation signal on Safari."
+    },
+    {
+      "file": "ipad-native-rotation-preanchor.json",
+      "note": "WKWebView sweep, old anchor: resize precedes orientationchange by ~523ms in 24/24 samples, so native was already effectively resize-anchored by winning the race."
+    },
+    {
+      "file": "measure-rotation-events-ios.mjs",
+      "note": "Interleaved floor-vs-app experiment (Appium Safari): orientationchange->resize 11ms floor / 23-24ms app, first rAF 0-1ms after resize on both."
+    },
+    {
+      "file": "measure-rotation-events-android.mjs",
+      "note": "CDP experiment on the physical phone: Chrome delivers orientationchange 16-43ms before resize; screen.orientation change ~0.4ms before resize; first rAF after resize 0.1-54ms, so the gate keeps dynamic range on Android."
+    },
+    {
+      "file": "measure-rotation-events-ios.results.txt",
+      "note": "Captured stdout of the iOS experiment: all three runs, including the sequential runs whose shared drift motivated the interleaved design. The ranges ADR-0142 quotes are auditable here without rerunning hardware."
+    },
+    {
+      "file": "measure-rotation-events-android.results.txt",
+      "note": "Captured stdout of the Android experiment: per-round orderings behind the 16-43ms orientationchange lead, the ~0.4ms screen.orientation gap, and the 0.1-54ms post-resize first frames."
+    }
+  ],
+  "devices": {
+    "ipad": "00008103-0006202E3CF1001E",
+    "android": "R5CRC3AVCXM"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "campaign": "2026-08-25-wkwebview-delivery",
+  "capturedFrom": "perf-profiles/2026-08-25T02-19-04-039Z-ipad-xcuitest-appium-remote-wkwebview-pen-portrait-light",
+  "why": "The delivery-control arm for issue 1303: the same physical-iPad WKWebView that reports coalescedPerMove 1.05-1.08 through Appium when its page is bundled reports 0 through the same Appium transport when the page is delivered remotely from the probe host. Transport held fixed, delivery varied.",
+  "counterpart": "perf-profiles/evidence/2026-08-23-ipad-main/ipad-device-native-pen.json (bundled delivery, coalescedPerMove 1.08)",
+  "devices": {
+    "ipad": "00008103-0006202E3CF1001E"
+  },
+  "kept": [
+    {
+      "file": "appium-remote-wkwebview-pen.json",
+      "target": "ipad-device-native",
+      "runtime": "ios-capacitor-webview",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "pageDelivery": "remote-probe-host",
+      "transport": "appium-xcuitest",
+      "fidelityPassed": false,
+      "note": "coalescedPerMove 0 at 115.96 moves/s, 1.93 moves/frame, 6958/6958 trusted; report-only run"
+    }
+  ]
+}

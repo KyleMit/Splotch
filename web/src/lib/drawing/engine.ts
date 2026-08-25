@@ -25,7 +25,6 @@
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { dev } from '$app/environment';
-import type { Orientation } from '$lib/platform';
 import { pageCompositionKey } from '$lib/state/books';
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import type { BrushType } from '$lib/state/tool.svelte';
@@ -50,6 +49,7 @@ import {
   IDENTITY_PAPER_VIEW,
   paperPresentationFor,
   viewForPresentation,
+  type EngineViewState,
   type PaperPresentation,
   viewToPaper,
   type PaperView,
@@ -228,7 +228,11 @@ function readoptPaperAfterTiledCanvasHides() {
   });
 }
 
-function setCanvasEmptyState(empty: boolean, recordedPaper?: RecordedPaperState) {
+function setCanvasEmptyState(
+  empty: boolean,
+  recordedPaper?: RecordedPaperState,
+  repaintDeferredToRestore = false
+) {
   // An in-flight stroke already owns the live paper and marks it non-empty; undo must not replace
   // its coordinate space with metadata from the removed command.
   if (canvasEmpty === empty) return;
@@ -249,7 +253,7 @@ function setCanvasEmptyState(empty: boolean, recordedPaper?: RecordedPaperState)
       cssH: restoringPaper.cssH,
     };
     paperAngle = restoringPaper.angle;
-    resizeCanvas();
+    resizeCanvas(undefined, { repaintDeferredToRestore });
   }
   callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
@@ -299,32 +303,7 @@ function currentScreenAngle(): number {
   return typeof angle === 'number' ? angle : 0;
 }
 
-// The paper view published to components (CSS px), so the coloring-page overlay
-// can be positioned with the same transform the canvas paints through, and the
-// picker can keep offering the locked paper's tall/wide art variant.
-export interface EngineViewState {
-  active: boolean;
-  scale: number;
-  rotate: PaperView['rotate'];
-  tx: number;
-  ty: number;
-  paperCssWidth: number;
-  paperCssHeight: number;
-  paperOrientation: Orientation;
-}
-
-// The pre-adoption SSR-shell value of EngineViewState, before getViewState() has
-// any paper/render-scale state to derive from.
-export const INITIAL_ENGINE_VIEW_STATE: EngineViewState = Object.freeze({
-  active: false,
-  scale: 1,
-  rotate: 0,
-  tx: 0,
-  ty: 0,
-  paperCssWidth: 0,
-  paperCssHeight: 0,
-  paperOrientation: 'portrait',
-});
+export { INITIAL_ENGINE_VIEW_STATE, type EngineViewState } from './paperView';
 
 export function getViewState(): EngineViewState {
   return {
@@ -395,11 +374,26 @@ function applyPaperView(presentation: PaperPresentation) {
 // An unmeasured rect is refused rather than adopted — see canvasMeasure.ts for
 // why rebuilding from one is unrecoverable — and the rebuild re-arms for the
 // first layout that gives the canvas a box.
+interface ResizeCanvasOptions {
+  repaintRecoveredPixels?: boolean;
+  // Undo's pre-restore telling the resize that an immediate snapshot restore
+  // (or its repaint fallback) owns the next paint: the full history repaint
+  // here would render through the command about to be popped — blank tiles for
+  // an undone clear — and be overwritten within the same frame (issue 1198).
+  // Only valid for the SYNCHRONOUS call from undo(): the deferred-rect retry
+  // below deliberately drops it, because by the time that retry fires the
+  // undo's restore has long since painted and this resize's backing wipe
+  // needs the repaint — threading the flag there left a permanent blank
+  // canvas with canvasEmpty false.
+  repaintDeferredToRestore?: boolean;
+}
+
 function resizeCanvas(
   rect: DOMRect = canvas.getBoundingClientRect(),
-  repaintRecoveredPixels = false
+  { repaintRecoveredPixels = false, repaintDeferredToRestore = false }: ResizeCanvasOptions = {}
 ) {
-  if (!measure.accept(rect, (measured) => resizeCanvas(measured, repaintRecoveredPixels))) return;
+  const retry = (measured: DOMRect) => resizeCanvas(measured, { repaintRecoveredPixels });
+  if (!measure.accept(rect, retry)) return;
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = paperPresentationFor({
     canvasEmpty,
@@ -418,11 +412,21 @@ function resizeCanvas(
   viewport = { width: w, height: h };
   if (canvas.width !== TILED_INPUT_BITMAP_SIDE_PX) canvas.width = TILED_INPUT_BITMAP_SIDE_PX;
   if (canvas.height !== TILED_INPUT_BITMAP_SIDE_PX) canvas.height = TILED_INPUT_BITMAP_SIDE_PX;
+  if (PERF_MARKS) performance.mark('engine.resize.tiles:start');
   const tiledRendererResized = resizeTiledRenderer(paper.pxW, paper.pxH, renderScale, canvasEmpty);
+  if (PERF_MARKS) performance.measure('engine.resize.tiles', 'engine.resize.tiles:start');
   applyPaperView(presentation);
 
   resizeMagicSheet(magicActive);
-  if ((tiledRendererResized || repaintRecoveredPixels) && !canvasEmpty) repaintTiledRenderer();
+  if (
+    (tiledRendererResized || repaintRecoveredPixels) &&
+    !canvasEmpty &&
+    !repaintDeferredToRestore
+  ) {
+    if (PERF_MARKS) performance.mark('engine.resize.repaint:start');
+    repaintTiledRenderer();
+    if (PERF_MARKS) performance.measure('engine.resize.repaint', 'engine.resize.repaint:start');
+  }
 
   refreshCanvasRect(rect);
   notifyViewChange();
@@ -467,7 +471,7 @@ function resyncOnReentry() {
     viewport.width !== w || viewport.height !== h || resizedAngle !== currentScreenAngle();
   if (stale) {
     const contextsRecovered = recoverTiledRendererIfNeeded(false);
-    resizeCanvas(rect, contextsRecovered);
+    resizeCanvas(rect, { repaintRecoveredPixels: contextsRecovered });
   } else {
     recoverTiledRendererIfNeeded();
     refreshCanvasRect(rect);
@@ -1089,7 +1093,7 @@ export function undo(): Promise<void> {
     activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()
       ? peekTiledUndoPaper()
       : undefined;
-  if (recordedPaper) setCanvasEmptyState(false, recordedPaper);
+  if (recordedPaper) setCanvasEmptyState(false, recordedPaper, true);
   const state = undoTiledCommand(renderScale);
   setCanvasEmptyState(state.empty, state.recordedPaper);
   setCanUndo(state.canUndo);

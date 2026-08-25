@@ -258,6 +258,24 @@ The canvas-centre guard is what caught it, and it is the reason this cost cells 
 producing plausible numbers — a menu over the paper otherwise yields a capture with frames and zero
 pointer events. Do not weaken that assertion to get a run to complete.
 
+## A restored tab can hold the foreground while the run's page answers every poll
+
+`am start VIEW <url>` across the force-stop a launch performs races Chrome's session restore, and
+with a tab pile present the restore can front a **restored** tab while the run's URL loads in the
+background. The buried page computes its geometry, posts ready under the correct nonce, and answers
+every poll — readiness proves the page loaded, never that it is on screen — while every injected
+touch lands on whatever tab is actually frontmost. `document.visibilityState` cannot detect this: it
+reported `visible` for a page that a screenshot showed buried under the Google tab.
+
+The split transport now clears its own leftover tabs — tool-signature pages on the session host,
+across every port the tooling serves, because the thief can be a different tool's stale page than
+the one being launched — activates the run's page over the devtools HTTP endpoint after launch and
+again before dispatch, and the page pulses its live input-event count until the first event arrives
+— a dispatch that completes with a zero pulse fails naming this cause instead of surfacing as a
+report timeout. The tell in an unguarded capture is `ev 0, down 0` in the probe's progress with a
+ready page and a working network (issue 1294; the same landscape cell banked first try once the
+foreground was owned).
+
 ## The device going to sleep
 
 Android sleeps mid-campaign and locks. `npm run perf:preflight -- --wake-android` wakes it and sets

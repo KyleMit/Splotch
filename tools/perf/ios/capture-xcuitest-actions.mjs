@@ -755,8 +755,13 @@ async function measureClear(client, sessionId, execute, label = 'clear drawing')
 
 async function measureRotation(client, sessionId, execute, from, to, label) {
   await ensureActionProbe(execute);
+  // Anchored at `resize` only: which of orientationchange/resize arrives first
+  // is a per-runtime race, and the loser of that race is the browser's own
+  // rotation transition — a window the page cannot paint into. ADR-0142 holds
+  // the measurements and the per-runtime meaning of the first-frame gate under
+  // this anchor. The orientation events still land in the sample's activities.
   await execute(
-    `return window.__actionProbe.beginExternal(${JSON.stringify(label)}, ['orientationchange', 'resize']);`
+    `return window.__actionProbe.beginExternal(${JSON.stringify(label)}, ['resize']);`
   );
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   await client.request('POST', `/session/${sessionId}/orientation`, { orientation: to });

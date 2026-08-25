@@ -10,11 +10,14 @@
 // Two rules, both from that ADR. Captures are kept WHOLE: every trimming that
 // saves meaningful space also drops a gate or corrupts the fidelity verdict, and
 // a preserved capture that cannot prove its own fidelity is worse than none
-// because it will be believed. And the subset is one capture per target x brush
-// rather than per matrix cell, because a metric's effect varies with the display
-// and the workload, not with orientation and theme.
+// because it will be believed. And a CAMPAIGN subset is one capture per target x
+// brush rather than per matrix cell, because a metric's effect varies with the
+// display and the workload, not with orientation and theme. Hand captures are
+// the exception: every one is kept, because a hand corpus exists to show spread
+// and each capture cost a person's time (see selectEvidence).
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
@@ -55,10 +58,27 @@ export function destinationBlocked(destination, { force }) {
 export function selectEvidence(candidates) {
   const kept = new Map();
   for (const candidate of candidates) {
-    const key = `${candidate.target}:${candidate.brush}`;
+    // A hand capture is one a person paid for, and a hand corpus exists to show
+    // spread (see 2026-08-23-hand): every one is kept, not one per target x brush.
+    const key = candidate.handCapture
+      ? candidate.relativePath
+      : `${candidate.target}:${candidate.brush}`;
     if (!kept.has(key)) kept.set(key, candidate);
   }
   return [...kept.values()];
+}
+
+// A campaign capture is filed by the cell it measured; a hand capture has no
+// cell, and two of them can share a runtime, brush, and even label across
+// sessions — so the name carries the basename for a human and a digest of the
+// whole corpus-relative path for uniqueness. A separator-join flattening was
+// not injective: run--a/hand.json and run/a--hand.json both flattened to the
+// same name, and the second write silently replaced the first — the exact
+// loss this function exists to prevent.
+export function evidenceFileName(entry) {
+  if (!entry.handCapture) return `${entry.target}-${entry.brush}.json`;
+  const digest = createHash('sha256').update(entry.relativePath).digest('hex').slice(0, 8);
+  return `${basename(entry.relativePath, '.json')}--${digest}.json`;
 }
 
 export async function keepCaptureEvidence({
@@ -90,10 +110,28 @@ export async function keepCaptureEvidence({
       file,
       relativePath,
       // `null` means "no gate applies" to the rescorer; the index wants a label.
-      target: targetOf(parsed, relativePath, target) ?? 'unknown',
+      // A hand capture has no campaign target — its runtime is the label that
+      // says what it calibrates, matching the 2026-08-23-hand corpus naming.
+      target:
+        targetOf(parsed, relativePath, target) ??
+        (parsed.handCapture === true ? parsed.runtime : null) ??
+        'unknown',
+      handCapture: parsed.handCapture === true,
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
       fidelity: parsed.fidelity?.passed ?? null,
+      // A hand capture's index row carries what the finger measured, so the
+      // corpus is readable without opening a minified frame table — the shape
+      // the 2026-08-23-hand corpus established.
+      ...(parsed.handCapture === true
+        ? {
+            runtime: parsed.runtime ?? null,
+            reading: parsed.reading ?? null,
+            device: parsed.device ?? null,
+            pageDelivery: parsed.pageDelivery ?? null,
+            drawSeconds: parsed.drawSeconds ?? null,
+          }
+        : {}),
     });
   }
   if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
@@ -124,7 +162,7 @@ export async function keepCaptureEvidence({
   // dropped — only the whitespace.
   for (const entry of selected) {
     writeFileSync(
-      join(destination, `${entry.target}-${entry.brush}.json`),
+      join(destination, evidenceFileName(entry)),
       JSON.stringify(JSON.parse(readFileSync(entry.file, 'utf8')))
     );
   }
@@ -137,12 +175,22 @@ export async function keepCaptureEvidence({
         campaign,
         capturedFrom: corpus,
         kept: selected.map((entry) => ({
-          file: `${entry.target}-${entry.brush}.json`,
+          file: evidenceFileName(entry),
           target: entry.target,
           brush: entry.brush,
           mode: entry.mode,
           fidelityPassed: entry.fidelity,
           source: entry.relativePath,
+          ...(entry.handCapture
+            ? {
+                handCapture: true,
+                runtime: entry.runtime,
+                reading: entry.reading,
+                device: entry.device,
+                pageDelivery: entry.pageDelivery,
+                drawSeconds: entry.drawSeconds,
+              }
+            : {}),
         })),
       },
       null,

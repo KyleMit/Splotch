@@ -24,11 +24,12 @@ import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
+import { APP_BUNDLE_ID } from './capture-device-frames.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
-const OPENERS = ['adb', 'manual'];
+const OPENERS = ['adb', 'devicectl', 'manual'];
 const DEFAULT_DRAW_SECONDS = 25;
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
@@ -79,6 +80,34 @@ async function pollFor(callback, timeoutMs) {
   return null;
 }
 
+// The runtime is the one mode dimension the page can answer for itself, and the
+// one this tool used to copy from the request: a hand capture labelled
+// `ios-capacitor-webview` was recorded in Safari because Safari happened to be
+// foregrounded, and nothing noticed (PR 1314's review). Safari stamps a
+// `Version/… Safari/…` token a WKWebView never emits; the Android System
+// WebView stamps `; wv` / `Version/4.0` where Chrome has neither. Returns the
+// refusal message, or null when the UA is consistent with the labelled runtime.
+export function runtimeUaProblem(runtime, ua) {
+  const agent = String(ua ?? '');
+  if (!agent) return `the report carries no user agent, so the ${runtime} label is unverifiable`;
+  const safariToken = / Version\/[\d.]+.* Safari\//.test(agent);
+  const androidWebviewToken = agent.includes('; wv') || agent.includes('Version/4.0');
+  const problems = {
+    'ios-safari': safariToken ? null : 'no Safari Version token — this is not Safari',
+    'ios-capacitor-webview': safariToken
+      ? 'the Safari Version token is present — this page ran in Safari, not the WKWebView'
+      : null,
+    'android-chrome': androidWebviewToken
+      ? 'the Android WebView token is present — this page ran in a WebView, not Chrome'
+      : null,
+    'android-capacitor-webview': androidWebviewToken
+      ? null
+      : 'no Android WebView token — this page ran in a browser, not the WebView',
+  };
+  const problem = problems[runtime] ?? null;
+  return problem ? `the page's user agent contradicts ${runtime}: ${problem} (ua: ${agent})` : null;
+}
+
 // `--native-app` decides the RUNTIME the artifact is judged as, so opening Chrome
 // here while recording `android-capacitor-webview` produces a calibration read off
 // the wrong browser — correctly shaped, plausibly labelled, and wrong. The opener
@@ -105,6 +134,23 @@ function announceManualOpen({ host, orientation, theme }) {
   console.log(`\n      ${host}/\n`);
   console.log(`  Hold it in ${orientation}, with the ${theme} theme selected.`);
   console.log('  The page selects its own brush and reports back when it is ready.\n');
+}
+
+// A deterministic launch of the installed app, so the capture cannot depend on
+// whichever app the operator (or a previous automation step) left foregrounded.
+// `--terminate-existing` forces a fresh page load, which is also what makes the
+// page re-read the plan this run just posted.
+export function openWithDevicectl({ udid, exec = capture }) {
+  exec('xcrun', [
+    'devicectl',
+    'device',
+    'process',
+    'launch',
+    '--terminate-existing',
+    '--device',
+    udid,
+    APP_BUNDLE_ID,
+  ]);
 }
 
 async function countDown(seconds) {
@@ -170,6 +216,9 @@ export function handCaptureArtifact({
     // The page's own answer, not the request — see capture-device-frames.
     observedTheme: ready?.resolvedTheme ?? null,
     pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
+    // The dominant variable for coalescing (issue 1303): a native WebView here
+    // loads the probe host remotely, never its bundled assets.
+    pageDelivery: nativeApp ? 'remote-probe-host' : 'browser',
     device: device ?? null,
     drawSeconds: seconds,
     transport: 'human-finger',
@@ -189,6 +238,7 @@ export async function captureHandInput({
   seconds = Number(argFlag('seconds', DEFAULT_DRAW_SECONDS)),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
+  udid = argFlag('device-udid'),
   // `argFlag` matches `--name=value` only, so a bare flag has to be read from argv.
   nativeApp = process.argv.includes('--native-app'),
   opener = argFlag('open', argFlag('platform', 'android') === 'android' ? 'adb' : 'manual'),
@@ -205,6 +255,10 @@ export async function captureHandInput({
   if (!OPENERS.includes(opener)) fail(`--open must be one of ${OPENERS.join(', ')}`);
   if (!host) fail('--host= is required — the probe host URL the device can reach over the LAN');
   if (opener === 'adb' && !serial) fail('--device-serial= is required for --open=adb');
+  if (opener === 'devicectl' && !udid) fail('--device-udid= is required for --open=devicectl');
+  if (opener === 'devicectl' && !nativeApp) {
+    fail('--open=devicectl launches the installed app, so it requires --native-app');
+  }
 
   await assertServedBuildIsFresh(host, { allowForeignBuild: allowForeignBuild !== undefined });
 
@@ -229,7 +283,10 @@ export async function captureHandInput({
 
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
   if (opener === 'adb') await openWithAdb({ serial, pageUrl, orientation, nativeApp });
-  else announceManualOpen({ host, orientation, theme });
+  else if (opener === 'devicectl') {
+    openWithDevicectl({ udid });
+    await sleep(PAGE_SETTLE_MS);
+  } else announceManualOpen({ host, orientation, theme });
 
   const ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
   if (!ready) fail('the page never reported the probe ready');
@@ -267,6 +324,11 @@ export async function captureHandInput({
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the finger never reached the canvas');
   }
+  // The runtime is observed, never trusted: a hand capture labelled for the
+  // WKWebView was once recorded in Safari because Safari was foregrounded, and
+  // every downstream reader would have believed it (PR 1314's review).
+  const uaProblem = runtimeUaProblem(runtime, payload.report?.meta?.ua);
+  if (uaProblem) fail(uaProblem);
 
   const summaries = summarizeRun(payload.report);
   const input = summaries.phases?.[0]?.input ?? {};
@@ -296,7 +358,7 @@ export async function captureHandInput({
     orientation,
     theme,
     ready,
-    device: serial,
+    device: serial ?? udid ?? null,
     seconds,
     reading,
     fidelity,

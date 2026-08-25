@@ -9,6 +9,12 @@
 > regression tiers and gates remain in force. Their commands are now `perf:ios:xcuitest:screen`,
 > `perf:ios:xcuitest:actions`, `perf:web:actions`, and `perf:web:frames`.
 
+> **Amended by [ADR-0142](0142-rotation-actions-anchor-at-resize.md):** rotation actions now anchor
+> at `resize` alone. The transition analysis below that reads "the app still responds 23–29 ms
+> later" described the old `orientationchange` anchor's view; under ADR-0142 that window is
+> attributed to the browser's rotation transition, and the rotation first-frame gate's per-runtime
+> meaning is stated there.
+
 ## Context
 
 The physical-iPad campaign fixed six user-visible stalls: drawing, undo, screenshot save, theme

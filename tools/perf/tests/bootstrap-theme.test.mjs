@@ -95,7 +95,11 @@ function runBootstrap(plan) {
   const append = document.head.append.bind(document.head);
   document.head.append = (element) => {
     if (element.tagName === 'SCRIPT') {
-      window.__probe = { finish: () => ({ meta: { counts: {} } }), stop: () => {} };
+      window.__probe = {
+        counts: () => ({ frames: 0, events: 0, measures: 0 }),
+        finish: () => ({ meta: { counts: {} } }),
+        stop: () => {},
+      };
       queueMicrotask(() => element.onload?.());
       return;
     }
@@ -120,7 +124,7 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'light' });
 
-      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'n' });
+      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'compact-dark' });
 
       expect((await readyPosted).resolvedTheme).toBe('dark');
       expect(document.documentElement.dataset.theme).toBe('dark');
@@ -133,7 +137,11 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: false, startingTheme: 'dark' });
 
-      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'light', nonce: 'n' });
+      const { readyPosted } = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'sectioned-light',
+      });
 
       expect((await readyPosted).resolvedTheme).toBe('light');
       expect(document.documentElement.dataset.theme).toBe('light');
@@ -146,7 +154,11 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'dark' });
 
-      const { readyPosted, posted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'n' });
+      const { readyPosted, posted } = runBootstrap({
+        brush: 'pen',
+        theme: 'dark',
+        nonce: 'geometry-run',
+      });
 
       expect((await readyPosted).resolvedTheme).toBe('dark');
       expect(posted.some((call) => call.path === '/__probe/log')).toBe(false);
@@ -161,7 +173,7 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'light' });
 
-      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'n' });
+      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'default-theme-run' });
 
       expect((await readyPosted).resolvedTheme).toBe('light');
     },
@@ -222,6 +234,60 @@ describe('a page opened for a different run', () => {
       expect(posted.some((call) => call.path === '/__probe/report')).toBe(false);
       const stood = posted.find((call) => call.body?.kind === 'stale-page');
       expect(stood?.body).toMatchObject({ openedFor: 'an-earlier-cell', nonce: 'this-cell' });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+describe('the pulse and the error report', () => {
+  // The wait loop pulses the live event count so the runner can tell "the
+  // injected touches are landing on another tab" (issue 1294) from "the report
+  // is still coming". The plan flips finish on the second poll so the loop runs
+  // exactly one pulsing pass.
+  it(
+    'pulses the live event count under the run nonce while waiting for finish',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', theme: 'light', nonce: 'pulse-run', finish: false };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+
+      const pulse = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/pulse');
+        if (!found) throw new Error('no pulse yet');
+        return found;
+      });
+      plan.finish = true;
+      expect(pulse.body).toEqual({ nonce: 'pulse-run', events: 0 });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // The catch posts the error report; nonce used to be try-scoped, so every
+  // page-side error threw ReferenceError there and the host heard nothing —
+  // a ready page going quiet with nothing saying why.
+  it(
+    'a failure after readiness still posts an error report under the run nonce',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', theme: 'light', nonce: 'error-run', finish: false };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+      const workingFetch = global.fetch;
+      global.fetch = async (path, init) => {
+        if (path === '/__probe/plan') throw new Error('plan poll exploded');
+        return workingFetch(path, init);
+      };
+
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+      expect(report.body.nonce).toBe('error-run');
+      expect(report.body.error).toContain('plan poll exploded');
     },
     BOOTSTRAP_TIMEOUT_MS
   );

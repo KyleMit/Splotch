@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   androidGestureInstructions,
   androidNativeLaunchSteps,
@@ -17,6 +17,13 @@ import {
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
+import {
+  activateChromePage,
+  clearToolingLitter,
+  runChromePage,
+  toolingLitter,
+} from '../split-capture/lib/chrome-tabs.mjs';
+import { androidDriver, zeroInputProblem } from '../split-capture/capture-device-frames.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
@@ -584,5 +591,249 @@ describe('a page that only adopted the plan', () => {
     expect(source.indexOf('openedFor !== nonce')).toBeLessThan(
       source.indexOf("post('/__probe/ready'")
     );
+  });
+});
+
+describe('fronting the run page', () => {
+  const targets = [
+    { id: 'a', type: 'page', url: 'http://host:4175/?probe=run-8' },
+    { id: 'b', type: 'page', url: 'http://host:4175/?probe=run-84' },
+    { id: 'c', type: 'page', url: 'https://www.google.com/m?client=x' },
+    { id: 'd', type: 'service_worker', url: 'http://host:4175/sw.js' },
+    { id: 'e', type: 'page', url: 'not a url' },
+  ];
+
+  it('matches the probe param exactly, so a nonce that prefixes another cannot collide', () => {
+    expect(runChromePage(targets, 'run-8')?.id).toBe('a');
+    expect(runChromePage(targets, 'run-84')?.id).toBe('b');
+    expect(runChromePage(targets, 'run-9')).toBeNull();
+  });
+
+  it('activates the run page over the devtools http endpoint and touches nothing else', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return { ok: true, json: async () => targets };
+    };
+
+    const result = await activateChromePage({
+      cdpBase: 'http://127.0.0.1:9224',
+      nonce: 'run-84',
+      fetchImpl,
+    });
+
+    expect(result.activated).toBe(true);
+    expect(calls).toEqual([
+      'http://127.0.0.1:9224/json/list',
+      'http://127.0.0.1:9224/json/activate/b',
+    ]);
+  });
+
+  it('leaves an unidentifiable page alone instead of failing or closing anything', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return { ok: true, json: async () => targets };
+    };
+
+    const result = await activateChromePage({
+      cdpBase: 'http://127.0.0.1:9224',
+      nonce: 'absent',
+      fetchImpl,
+    });
+
+    expect(result).toEqual({ activated: false, pages: 4 });
+    expect(calls).toEqual(['http://127.0.0.1:9224/json/list']);
+  });
+});
+
+describe('clearing the tooling litter', () => {
+  const targets = [
+    { id: 'run', type: 'page', url: 'http://host:4175/?probe=run-7' },
+    { id: 'stale-probe', type: 'page', url: 'http://host:4175/?probe=run-6' },
+    { id: 'stale-verify', type: 'page', url: 'http://host:4177/?verify=old-check' },
+    { id: 'husk', type: 'page', url: 'http://host:4175/__probe/stand-down' },
+    { id: 'blank', type: 'page', url: 'about:blank' },
+    { id: 'operator', type: 'page', url: 'https://www.google.com/m?client=x' },
+    { id: 'preview', type: 'page', url: 'http://host:4173/' },
+    { id: 'other-host', type: 'page', url: 'http://elsewhere:4175/?probe=run-6' },
+    { id: 'worker', type: 'service_worker', url: 'http://host:4175/sw.js' },
+  ];
+
+  // Ownership is a tool signature on the session host, across every port the
+  // tooling serves — the tab that steals the foreground on relaunch is
+  // whichever Chrome used last, and a stale probe tab stole the verifier's
+  // foreground from a different port exactly this way. A bare about:blank and
+  // the host's plain preview pages stay: neither carries a signature that
+  // proves it is ours rather than the operator's.
+  it('claims tool-signature pages across ports, never operator or unmarked pages', () => {
+    const litter = toolingLitter(targets, 'host', 'run-7');
+
+    expect(litter.map((target) => target.id)).toEqual(['stale-probe', 'stale-verify', 'husk']);
+  });
+
+  it('closes each leftover over the devtools http endpoint', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return { ok: true, json: async () => targets };
+    };
+
+    const result = await clearToolingLitter({
+      cdpBase: 'http://127.0.0.1:9224',
+      hostname: 'host',
+      nonce: 'run-7',
+      fetchImpl,
+    });
+
+    expect(result).toEqual({ closed: 3 });
+    expect(calls).toEqual([
+      'http://127.0.0.1:9224/json/list',
+      'http://127.0.0.1:9224/json/close/stale-probe',
+      'http://127.0.0.1:9224/json/close/stale-verify',
+      'http://127.0.0.1:9224/json/close/husk',
+    ]);
+  });
+});
+
+describe('the wiring that fronts the page and judges the input', () => {
+  const driverDeps = () => {
+    const execCalls = [];
+    const activateCalls = [];
+    const litterCalls = [];
+    return {
+      execCalls,
+      activateCalls,
+      litterCalls,
+      exec: (serial, args) => execCalls.push(args.join(' ')),
+      activate: async (options) => {
+        activateCalls.push(options);
+        return { activated: true, pages: 1 };
+      },
+      litterClearer: async (options) => {
+        litterCalls.push(options);
+        return { closed: 0 };
+      },
+    };
+  };
+
+  it('fronts the run page after launch and again before dispatch on the browser path', async () => {
+    const deps = driverDeps();
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      orientation: 'PORTRAIT',
+      nativeApp: false,
+      cdpPort: 9224,
+      ...deps,
+    });
+
+    vi.useFakeTimers();
+    try {
+      const opened = driver.openPage();
+      await vi.runAllTimersAsync();
+      await opened;
+      const dispatched = driver.dispatch(
+        { bounds: { x: 0, y: 0, width: 10, height: 10 }, densityScale: 1, offset: { x: 0, y: 0 } },
+        1
+      );
+      await vi.runAllTimersAsync();
+      await dispatched;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(deps.activateCalls.map((call) => call.nonce)).toEqual(['run-7', 'run-7']);
+    expect(deps.litterCalls.map((call) => call.hostname)).toEqual(['host', 'host']);
+    const forwards = deps.execCalls.filter((call) => call.startsWith('forward'));
+    expect(forwards).toEqual([
+      'forward tcp:9224 localabstract:chrome_devtools_remote',
+      'forward tcp:9224 localabstract:chrome_devtools_remote',
+      'forward --remove tcp:9224',
+    ]);
+  });
+
+  it('never touches devtools on the native path', async () => {
+    const deps = driverDeps();
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      orientation: 'PORTRAIT',
+      nativeApp: true,
+      cdpPort: 9224,
+      ...deps,
+    });
+
+    vi.useFakeTimers();
+    try {
+      const opened = driver.openPage();
+      await vi.runAllTimersAsync();
+      await opened;
+      const dispatched = driver.dispatch(
+        { bounds: { x: 0, y: 0, width: 10, height: 10 }, densityScale: 1, offset: { x: 0, y: 0 } },
+        1
+      );
+      await vi.runAllTimersAsync();
+      await dispatched;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(deps.activateCalls).toEqual([]);
+    expect(deps.litterCalls).toEqual([]);
+    expect(deps.execCalls.some((call) => call.startsWith('forward'))).toBe(false);
+  });
+
+  it('fails a zero-event dispatch and lets everything else decide downstream', () => {
+    expect(zeroInputProblem({ nonce: 'n', events: 0 })).toMatch(/another tab or app/);
+    expect(zeroInputProblem({ nonce: 'n', events: 517 })).toBeNull();
+    expect(zeroInputProblem(null)).toBeNull();
+    expect(zeroInputProblem(undefined)).toBeNull();
+  });
+});
+
+describe('the pulse the probe host relays', () => {
+  const hostFetch = async (server, path, init) => {
+    const { port } = server.address();
+    const response = await fetch(`http://127.0.0.1:${port}${path}`, init);
+    return response.json();
+  };
+
+  it('exposes the run page pulse in state and refuses a stale nonce', async () => {
+    const { server } = createProbeHost({ upstream: 'http://127.0.0.1:1', log: () => {} });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+      await hostFetch(server, '/__probe/control', {
+        method: 'PUT',
+        body: JSON.stringify({ nonce: 'run-7', reset: true }),
+      });
+      await hostFetch(server, '/__probe/pulse', {
+        method: 'POST',
+        body: JSON.stringify({ nonce: 'stale-6', events: 999 }),
+      });
+      await hostFetch(server, '/__probe/pulse', {
+        method: 'POST',
+        body: JSON.stringify({ nonce: 'run-7', events: 42 }),
+      });
+      // Max-not-last, like the report store: on the native paths identity is
+      // adopted rather than proven, so a backgrounded leftover pulsing 0 under
+      // the current nonce must not overwrite the real page's count.
+      await hostFetch(server, '/__probe/pulse', {
+        method: 'POST',
+        body: JSON.stringify({ nonce: 'run-7', events: 0 }),
+      });
+
+      const state = await hostFetch(server, '/__probe/state');
+      expect(state.pulse).toEqual({ nonce: 'run-7', events: 42 });
+
+      await hostFetch(server, '/__probe/control', {
+        method: 'PUT',
+        body: JSON.stringify({ nonce: 'run-8', reset: true }),
+      });
+      const fresh = await hostFetch(server, '/__probe/state');
+      expect(fresh.pulse).toBeNull();
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });
