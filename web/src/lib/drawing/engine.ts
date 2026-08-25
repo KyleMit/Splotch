@@ -228,7 +228,11 @@ function readoptPaperAfterTiledCanvasHides() {
   });
 }
 
-function setCanvasEmptyState(empty: boolean, recordedPaper?: RecordedPaperState) {
+function setCanvasEmptyState(
+  empty: boolean,
+  recordedPaper?: RecordedPaperState,
+  repaintDeferredToRestore = false
+) {
   // An in-flight stroke already owns the live paper and marks it non-empty; undo must not replace
   // its coordinate space with metadata from the removed command.
   if (canvasEmpty === empty) return;
@@ -249,7 +253,7 @@ function setCanvasEmptyState(empty: boolean, recordedPaper?: RecordedPaperState)
       cssH: restoringPaper.cssH,
     };
     paperAngle = restoringPaper.angle;
-    resizeCanvas();
+    resizeCanvas(undefined, false, repaintDeferredToRestore);
   }
   callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
@@ -395,11 +399,24 @@ function applyPaperView(presentation: PaperPresentation) {
 // An unmeasured rect is refused rather than adopted — see canvasMeasure.ts for
 // why rebuilding from one is unrecoverable — and the rebuild re-arms for the
 // first layout that gives the canvas a box.
+// `repaintDeferredToRestore` is undo's pre-restore telling the resize that an
+// immediate snapshot restore (or its repaint fallback) owns the next paint: the
+// full history repaint here would render through the command about to be popped
+// — blank tiles for an undone clear — and be overwritten within the same frame.
+// That wasted replay was the dominant term of the ~100 ms blank-rotation undo
+// frame on tablet-size canvases (issue 1198).
 function resizeCanvas(
   rect: DOMRect = canvas.getBoundingClientRect(),
-  repaintRecoveredPixels = false
+  repaintRecoveredPixels = false,
+  repaintDeferredToRestore = false
 ) {
-  if (!measure.accept(rect, (measured) => resizeCanvas(measured, repaintRecoveredPixels))) return;
+  if (
+    !measure.accept(rect, (measured) =>
+      resizeCanvas(measured, repaintRecoveredPixels, repaintDeferredToRestore)
+    )
+  ) {
+    return;
+  }
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = paperPresentationFor({
     canvasEmpty,
@@ -418,11 +435,21 @@ function resizeCanvas(
   viewport = { width: w, height: h };
   if (canvas.width !== TILED_INPUT_BITMAP_SIDE_PX) canvas.width = TILED_INPUT_BITMAP_SIDE_PX;
   if (canvas.height !== TILED_INPUT_BITMAP_SIDE_PX) canvas.height = TILED_INPUT_BITMAP_SIDE_PX;
+  if (PERF_MARKS) performance.mark('engine.resize.tiles:start');
   const tiledRendererResized = resizeTiledRenderer(paper.pxW, paper.pxH, renderScale, canvasEmpty);
+  if (PERF_MARKS) performance.measure('engine.resize.tiles', 'engine.resize.tiles:start');
   applyPaperView(presentation);
 
   resizeMagicSheet(magicActive);
-  if ((tiledRendererResized || repaintRecoveredPixels) && !canvasEmpty) repaintTiledRenderer();
+  if (
+    (tiledRendererResized || repaintRecoveredPixels) &&
+    !canvasEmpty &&
+    !repaintDeferredToRestore
+  ) {
+    if (PERF_MARKS) performance.mark('engine.resize.repaint:start');
+    repaintTiledRenderer();
+    if (PERF_MARKS) performance.measure('engine.resize.repaint', 'engine.resize.repaint:start');
+  }
 
   refreshCanvasRect(rect);
   notifyViewChange();
@@ -1089,7 +1116,7 @@ export function undo(): Promise<void> {
     activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()
       ? peekTiledUndoPaper()
       : undefined;
-  if (recordedPaper) setCanvasEmptyState(false, recordedPaper);
+  if (recordedPaper) setCanvasEmptyState(false, recordedPaper, true);
   const state = undoTiledCommand(renderScale);
   setCanvasEmptyState(state.empty, state.recordedPaper);
   setCanUndo(state.canUndo);
