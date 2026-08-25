@@ -353,6 +353,36 @@ describe('the pulse and the error report', () => {
     BOOTSTRAP_TIMEOUT_MS
   );
 
+  // Issue 1300: a ready page that never uploads was indistinguishable between
+  // never-saw-finish, finish() threw, upload failed, and suspended. The two
+  // heartbeats split the space, so they must actually fire, in order, under the
+  // run nonce, before the report.
+  it(
+    'logs finish-observed and uploading around the report upload',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', theme: 'light', nonce: 'heartbeat-run', finish: false };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+      plan.finish = true;
+
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+      const heartbeats = posted.filter((entry) => entry.path === '/__probe/log');
+      expect(heartbeats.map((entry) => entry.body.kind)).toEqual(['finish-observed', 'uploading']);
+      expect(heartbeats.map((entry) => entry.body.nonce)).toEqual([
+        'heartbeat-run',
+        'heartbeat-run',
+      ]);
+      expect(posted.indexOf(heartbeats[1])).toBeLessThan(posted.indexOf(report));
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
   // The catch posts the error report; nonce used to be try-scoped, so every
   // page-side error threw ReferenceError there and the host heard nothing —
   // a ready page going quiet with nothing saying why.

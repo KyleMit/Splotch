@@ -36,6 +36,7 @@ import {
   calibrationReading,
   firstContactFailure,
   handCaptureArtifact,
+  manualOpenLines,
   openWithAdb,
 } from '../split-capture/capture-hand-input.mjs';
 import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
@@ -601,6 +602,21 @@ describe('the probe host refusing a stale run over HTTP', () => {
       body: JSON.stringify({ nonce: 'next-run', reset: true }),
     });
     expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(0);
+  });
+
+  // Issue 1295: the manual path predates the page-identity guard and printed a
+  // bare host URL, so hand captures could never prove their run. The printed
+  // address must carry the nonce, and must say the query is load-bearing.
+  it('prints the nonce-carrying URL for a manual open', () => {
+    const text = manualOpenLines({
+      pageUrl: 'http://192.168.0.9:4175/?probe=hand-run-77',
+      orientation: 'PORTRAIT',
+      theme: 'light',
+    }).join('\n');
+
+    expect(text).toContain('http://192.168.0.9:4175/?probe=hand-run-77');
+    expect(text).toContain('EXACT');
+    expect(text).toContain('PORTRAIT');
   });
 
   it('names both operator-fixable causes when a launch never phones home', () => {

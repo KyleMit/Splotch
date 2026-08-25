@@ -136,11 +136,27 @@ export async function openWithAdb({ serial, pageUrl, orientation, nativeApp, exe
   }
 }
 
-function announceManualOpen({ host, orientation, theme }) {
-  console.log('\n  Open this on the device, in the runtime being calibrated:');
-  console.log(`\n      ${host}/\n`);
-  console.log(`  Hold it in ${orientation}, with the ${theme} theme selected.`);
-  console.log('  The page selects its own brush and reports back when it is ready.\n');
+// Issue 1295: the manual path predates the page-identity guard and printed a
+// bare host URL, so a hand capture could never prove which run its page
+// belonged to. The printed URL now carries the run nonce, giving the manual
+// flow the same guarantee as the driven one — the capture refuses a page that
+// was not opened at it. Exported as lines so the guarantee is testable.
+export function manualOpenLines({ pageUrl, orientation, theme }) {
+  return [
+    '',
+    '  Open this EXACT address on the device, in the runtime being calibrated',
+    '  (the query is this run’s identity — the capture refuses a page without it):',
+    '',
+    `      ${pageUrl}`,
+    '',
+    `  Hold it in ${orientation}, with the ${theme} theme selected.`,
+    '  The page selects its own brush and reports back when it is ready.',
+    '',
+  ];
+}
+
+function announceManualOpen(details) {
+  for (const line of manualOpenLines(details)) console.log(line);
 }
 
 // A deterministic launch of the installed app, so the capture cannot depend on
@@ -289,11 +305,12 @@ export async function captureHandInput({
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
-  // Only a page we opened at a URL we chose can prove which run it belongs to.
-  // A person opening the host by hand cannot carry a nonce, and a native WebView
-  // loads a build-time URL — so those ask for no proof and the artifact records
-  // that none was had.
-  const requirePageIdentity = opener === 'adb' && !nativeApp;
+  // Only a page opened at a URL carrying the nonce can prove which run it
+  // belongs to. A native WebView loads a build-time URL, so it cannot — the
+  // artifact records that no proof was had. Browser pages can, whoever opens
+  // them: adb navigates to the nonce URL, and the manual path prints one for
+  // the human to open (issue 1295), so both are held to the proof.
+  const requirePageIdentity = !nativeApp;
   await control(host, {
     brush,
     theme,
@@ -319,7 +336,7 @@ export async function captureHandInput({
     if (!contacted) fail(firstContactFailure(host));
     console.log('  The app reached the probe host; waiting for the page to report ready …');
     await sleep(PAGE_SETTLE_MS);
-  } else announceManualOpen({ host, orientation, theme });
+  } else announceManualOpen({ pageUrl, orientation, theme });
 
   const ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
   if (!ready) fail('the page never reported the probe ready');
@@ -356,6 +373,17 @@ export async function captureHandInput({
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the finger never reached the canvas');
+  }
+  // Defence in depth, mirrored from the driven runner: the report names the URL
+  // that produced it, and that URL carries the nonce this run announced.
+  const capturedAt = new URL(payload.report?.meta?.url ?? 'http://invalid/').searchParams.get(
+    'probe'
+  );
+  if (requirePageIdentity && capturedAt !== nonce) {
+    fail(
+      `the report came from a page opened for ${capturedAt ?? 'an unknown run'}, not ${nonce} — ` +
+        'open the exact printed URL, query string included'
+    );
   }
   // The runtime is observed, never trusted: a hand capture labelled for the
   // WKWebView was once recorded in Safari because Safari was foregrounded, and

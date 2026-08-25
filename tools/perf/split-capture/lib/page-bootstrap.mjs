@@ -293,6 +293,14 @@ export function pageBootstrapSource() {
       await wait(${PLAN_POLL_MS});
     }
 
+    // The heartbeat issue 1300 asked for. A ready page that never uploads was
+    // indistinguishable between four states: it never saw finish, finish()
+    // threw, the upload failed, or the page was suspended first. These two log
+    // lines split the space — a host log ending at finish-observed died inside
+    // finish()/serialization, one ending at uploading died in the POST or was
+    // suspended mid-flight, and neither line at all means the page never saw
+    // the plan flip.
+    await log({ kind: 'finish-observed', nonce });
     const report = window.__probe.finish();
     const counts = report.meta.counts;
     const read = (accessor, expected) => {
@@ -308,6 +316,7 @@ export function pageBootstrapSource() {
     report.events = read('events', counts.events);
     report.measures = read('measures', counts.measures);
     window.__probe.stop();
+    await log({ kind: 'uploading', nonce, events: report.events.length });
     await post('/__probe/report', {
       // The run this report belongs to. Readiness was nonce-checked from the
       // start and the report was not, so a page from an earlier run could upload
