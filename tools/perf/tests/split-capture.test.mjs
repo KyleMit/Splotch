@@ -296,6 +296,46 @@ describe('closeFloorControlHost', () => {
   });
 });
 
+// Issue 1307: the nonce gate was wired into the capture probe host and not this
+// one, so a restored floor page could bank an earlier run's cadence under the
+// current preflight — the exact acceptance hole demonstrated with an isolated
+// HTTP fault injection on 2026-08-25. Same standard as the probe host's test.
+describe('the floor host refusing another run’s report', () => {
+  const started = [];
+
+  afterEach(async () => {
+    for (const server of started.splice(0)) await closeFloorControlHost(server);
+  });
+
+  async function floorHostAt() {
+    const { server, state } = createFloorControlHost({ log: () => {} });
+    started.push(server);
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    return { base: `http://127.0.0.1:${server.address().port}`, state };
+  }
+
+  const postReport = (base, body) =>
+    fetch(`${base}/__probe/report`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('accepts the current run and rejects a stale one, whatever its size', async () => {
+    const { base, state } = await floorHostAt();
+    state.plan = { ...state.plan, label: 'new-run', nonce: 'new-run' };
+
+    await postReport(base, { nonce: 'new-run', report: { events: [1, 2, 3] } });
+    expect(state.report?.report.events).toHaveLength(3);
+
+    await postReport(base, { nonce: 'old-run', report: { events: Array.from({ length: 99 }) } });
+    expect(state.report?.report.events).toHaveLength(3);
+
+    await postReport(base, { report: { events: Array.from({ length: 99 }) } });
+    expect(state.report?.report.events).toHaveLength(3);
+  });
+});
+
 describe('the reading a hand capture is kept for', () => {
   // Every field here is read back out of perf-profiles/evidence/*/index.json, so
   // the test is against the names as much as the values.

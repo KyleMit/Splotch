@@ -98,13 +98,24 @@ canvas.addEventListener('pointerup', end);
 canvas.addEventListener('pointercancel', end);
 `;
 
-const BOOTSTRAP = `
+// Exported for the executed floor-bootstrap test only — a source-substring
+// assertion would stay green with the identity branch disabled.
+export const FLOOR_BOOTSTRAP_SOURCE = `
 (async () => {
   const post = (path, body) =>
     fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const plan = await fetch('/__probe/plan').then((response) => response.json());
   const nonce = plan.nonce;
+  // The same opened-page identity the capture bootstrap proves (issue 1307):
+  // the preflight launches this page at a URL carrying the run's nonce, so a
+  // restored or delayed floor page from an earlier run can prove it is not this
+  // run's page and stand down instead of adopting the current plan. Only when
+  // the plan carries a nonce — a hand-opened standalone host asks for no proof.
+  if (nonce && new URLSearchParams(location.search).get('verify') !== nonce) {
+    location.replace('${STAND_DOWN_PATH}');
+    return;
+  }
   window.__probePhases = 'blank';
   window.__probeContactMs = plan.contactMs;
   window.__probeHud = false;
@@ -148,7 +159,7 @@ const BOOTSTRAP = `
   report.events = read('events', counts.events);
   report.measures = read('measures', counts.measures);
   window.__probe.stop();
-  await post('/__probe/report', { report });
+  await post('/__probe/report', { nonce, report });
 })();
 `;
 
@@ -198,7 +209,9 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
       return json(res, { ready: state.progress, hasReport: !!state.report });
     }
     if (pathname === '/__probe/control.js') return send(res, 'text/javascript', CONTROL);
-    if (pathname === '/__probe/bootstrap.js') return send(res, 'text/javascript', BOOTSTRAP);
+    if (pathname === '/__probe/bootstrap.js') {
+      return send(res, 'text/javascript', FLOOR_BOOTSTRAP_SOURCE);
+    }
     if (pathname === '/__probe/probe.js') {
       return send(res, 'text/javascript', readFileSync(PROBE_SOURCE, 'utf8'));
     }
@@ -215,7 +228,11 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
     if (req.method === 'POST' && pathname.startsWith('/__probe/')) {
       const payload = await readBody(req);
       if (pathname === '/__probe/report') {
-        const rejection = reportRejectionReason(state.report, payload);
+        // The plan nonce arms the stale-run gate in reportRejectionReason;
+        // omitting it here left that gate disabled on the floor path, so a
+        // restored floor page could bank an earlier run's cadence under the
+        // current preflight (issue 1307).
+        const rejection = reportRejectionReason(state.report, payload, state.plan.nonce);
         if (rejection) {
           log(`ignored ${rejection} for ${state.plan.label}`);
           return json(res, {});
