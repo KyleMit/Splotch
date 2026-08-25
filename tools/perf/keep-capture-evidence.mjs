@@ -42,9 +42,6 @@ function viewportOrientation(parsed) {
   return width > height ? 'LANDSCAPE' : 'PORTRAIT';
 }
 
-// One per target x brush. Ties are broken by keeping the FIRST seen rather than
-// the best: picking the best sample would preserve a corpus that flatters the
-// metric it exists to let someone re-examine.
 // Returns true when promotion must stop. With --force the existing corpus is
 // removed WHOLE rather than merged into, so a run selecting fewer targets cannot
 // leave the previous run's captures behind an index that no longer names them.
@@ -56,16 +53,54 @@ export function destinationBlocked(destination, { force }) {
 }
 
 export function selectEvidence(candidates) {
-  const kept = new Map();
+  const groups = new Map();
   for (const candidate of candidates) {
     // A hand capture is one a person paid for, and a hand corpus exists to show
     // spread (see 2026-08-23-hand): every one is kept, not one per target x brush.
     const key = candidate.handCapture
       ? candidate.relativePath
       : `${candidate.target}:${candidate.brush}`;
-    if (!kept.has(key)) kept.set(key, candidate);
+    const group = groups.get(key) ?? [];
+    group.push(candidate);
+    groups.set(key, group);
   }
-  return [...kept.values()];
+  // Preference is by SCOREABILITY, never by score: a fidelity-failing capture
+  // cannot be scored at all (issue 1305 — one sat in a corpus as a brush's
+  // representative, looking exactly like its three passing neighbours), and an
+  // unreported verdict outranks a failed one because it proves nothing either
+  // way. Within a tier the FIRST seen still wins, because picking the best
+  // NUMBER would preserve a corpus that flatters the metric it exists to let
+  // someone re-examine.
+  return [...groups.values()].map((group) => {
+    const representative =
+      group.find((candidate) => candidate.fidelity === true) ??
+      group.find((candidate) => candidate.fidelity !== false) ??
+      group[0];
+    return {
+      ...representative,
+      candidateCount: group.length,
+      passingCandidateCount: group.filter((candidate) => candidate.fidelity === true).length,
+    };
+  });
+}
+
+// A brush whose every candidate failed fidelity has no valid representative,
+// which is a fact to surface rather than paper over: the kept capture would be
+// a wrong number waiting to be quoted. Returns the refusal message, or null
+// when promotion may proceed. Pure so the policy is testable without the exit.
+export function failedRepresentativeProblem(selected, { allowFailed }) {
+  const failed = selected.filter((entry) => !entry.handCapture && entry.fidelity === false);
+  if (!failed.length || allowFailed) return null;
+  const cells = failed
+    .map(
+      (entry) => `${entry.target}/${entry.brush} (all ${entry.candidateCount} candidates failed)`
+    )
+    .join(', ');
+  return (
+    `every candidate failed input fidelity for: ${cells}. A failed capture kept as a ` +
+    'representative is a wrong number waiting to be quoted. Pass --allow-failed to keep ' +
+    'one deliberately, or --filter to narrow the promotion to cells that can be scored.'
+  );
 }
 
 // A campaign capture is filed by the cell it measured; a hand capture has no
@@ -87,6 +122,7 @@ export async function keepCaptureEvidence({
   target = argFlag('target'),
   filter = argFlag('filter'),
   force = argFlag('force') !== undefined || process.argv.includes('--force'),
+  allowFailed = process.argv.includes('--allow-failed'),
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
@@ -137,6 +173,8 @@ export async function keepCaptureEvidence({
   if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
 
   const selected = selectEvidence(candidates);
+  const noValidRepresentative = failedRepresentativeProblem(selected, { allowFailed });
+  if (noValidRepresentative) fail(noValidRepresentative);
   const destination = join(ROOT, EVIDENCE_ROOT, campaign);
 
   // Reusing a campaign name does NOT replace the corpus — it overwrites only the
@@ -190,6 +228,15 @@ export async function keepCaptureEvidence({
           mode: entry.mode,
           fidelityPassed: entry.fidelity,
           source: entry.relativePath,
+          // How rich the pool behind this representative was: "kept from 8
+          // candidates, 7 passing" reads very differently from "kept from 1"
+          // (issue 1305), and the index is where a later reader looks first.
+          ...(entry.handCapture
+            ? {}
+            : {
+                candidateCount: entry.candidateCount,
+                passingCandidateCount: entry.passingCandidateCount,
+              }),
           ...(entry.handCapture
             ? {
                 handCapture: true,
@@ -212,7 +259,9 @@ export async function keepCaptureEvidence({
   );
   for (const entry of selected) {
     console.log(
-      `  ${entry.target}/${entry.brush}  ${entry.mode}  fidelity=${entry.fidelity ?? 'unreported'}  <- ${basename(entry.relativePath)}`
+      `  ${entry.target}/${entry.brush}  ${entry.mode}  fidelity=${entry.fidelity ?? 'unreported'}  ` +
+        `(${entry.passingCandidateCount}/${entry.candidateCount} candidates passing)  ` +
+        `<- ${basename(entry.relativePath)}`
     );
   }
   return { selected, candidates };

@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import {
   destinationBlocked,
   evidenceFileName,
+  failedRepresentativeProblem,
   modeOf,
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
@@ -259,6 +260,59 @@ describe('keep-capture-evidence', () => {
     ]);
 
     expect(kept.map((entry) => entry.file)).toEqual(['1', '3', '4']);
+  });
+
+  // Issue 1305: building the #1291 corpus, the keeper selected a
+  // fidelity=false eraser — a cell that had failed all three attempts — as the
+  // brush's representative beside three passing captures, and nothing refused
+  // it. Preference is by scoreability, never by score: within a tier the first
+  // seen still wins, so the corpus cannot flatter the metric.
+  it('prefers a passing capture over an earlier failing or unreported one', () => {
+    const kept = selectEvidence([
+      { target: 'a', brush: 'pen', file: 'failed', fidelity: false },
+      { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
+      { target: 'a', brush: 'pen', file: 'passing-1', fidelity: true },
+      { target: 'a', brush: 'pen', file: 'passing-2', fidelity: true },
+    ]);
+
+    expect(kept).toHaveLength(1);
+    expect(kept[0]).toMatchObject({
+      file: 'passing-1',
+      candidateCount: 4,
+      passingCandidateCount: 2,
+    });
+  });
+
+  it('falls back to an unreported verdict before a failed one', () => {
+    const kept = selectEvidence([
+      { target: 'a', brush: 'pen', file: 'failed', fidelity: false },
+      { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
+    ]);
+
+    expect(kept[0]).toMatchObject({ file: 'unreported', passingCandidateCount: 0 });
+  });
+
+  // A brush with no valid representative is a fact to surface, not paper over.
+  it('refuses a promotion whose representative failed, unless allowed deliberately', () => {
+    const allFailed = selectEvidence([
+      { target: 'a', brush: 'eraser', file: 'f1', fidelity: false },
+      { target: 'a', brush: 'eraser', file: 'f2', fidelity: false },
+      { target: 'a', brush: 'pen', file: 'ok', fidelity: true },
+    ]);
+
+    const problem = failedRepresentativeProblem(allFailed, { allowFailed: false });
+    expect(problem).toContain('a/eraser (all 2 candidates failed)');
+    expect(problem).toContain('--allow-failed');
+    expect(failedRepresentativeProblem(allFailed, { allowFailed: true })).toBeNull();
+
+    const healthy = selectEvidence([{ target: 'a', brush: 'pen', file: 'ok', fidelity: true }]);
+    expect(failedRepresentativeProblem(healthy, { allowFailed: false })).toBeNull();
+    // A hand capture records what a finger measured; a failed verdict there is
+    // itself the calibration evidence, so it is exempt from the refusal.
+    const hand = selectEvidence([
+      { handCapture: true, relativePath: 'h.json', fidelity: false, brush: 'pen' },
+    ]);
+    expect(failedRepresentativeProblem(hand, { allowFailed: false })).toBeNull();
   });
 
   // Two hand captures of different runtimes both resolved to the unknown target
