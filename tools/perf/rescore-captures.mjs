@@ -118,6 +118,35 @@ export function evidenceIndexTargets(root) {
   return targets;
 }
 
+// The captures a corpus index marks `cellAttributable: false` (issue 1315): the
+// frame tables are genuine driven data, but the report's ?probe= nonce names a
+// different cell than the file's label, so no number can be attributed to the
+// brush/mode/theme it is filed under. Issue 1298's point: the marking existed
+// where tools could read it and this tool did not read it — it walked the
+// directory and scored contaminated evidence exactly like clean evidence.
+// Keyed like evidenceIndexTargets, by path relative to the corpus root, and
+// carrying the recorded nonce so the refusal can say what the capture
+// actually saw.
+export function evidenceIndexUnattributable(root) {
+  const unattributable = new Map();
+  for (const file of findCaptureFiles(root)) {
+    if (basename(file) !== 'index.json') continue;
+    let index;
+    try {
+      index = JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+      continue;
+    }
+    for (const entry of index.kept ?? []) {
+      if (!entry?.file || entry.cellAttributable !== false) continue;
+      unattributable.set(relative(root, join(dirname(file), entry.file)), {
+        reportNonce: entry.reportNonce ?? null,
+      });
+    }
+  }
+  return unattributable;
+}
+
 export function rescoreCapture(parsed, { name, targetId }) {
   const report = rawReportOf(parsed);
   if (!report) return null;
@@ -185,6 +214,7 @@ export async function rescoreCaptures({
   filter = argFlag('filter'),
   targetId = argFlag('target'),
   jsonOut = argFlag('json'),
+  includeUnattributable = process.argv.includes('--include-unattributable'),
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   const root = join(ROOT, corpus);
@@ -192,10 +222,22 @@ export async function rescoreCaptures({
   if (!files.length) fail(`no capture JSON under ${corpus}${filter ? ` matching ${filter}` : ''}`);
 
   const indexTargets = evidenceIndexTargets(root);
+  const unattributable = evidenceIndexUnattributable(root);
   const scored = [];
   const skipped = [];
+  const refused = [];
   for (const file of files) {
     const name = relative(root, file).replace(/\.json$/, '');
+    // Refused by default, not silently skipped: a contaminated capture
+    // re-scores cleanly and answers wrongly, and the whole reason the index
+    // carries the marking is so this tool cannot quote one by accident.
+    // --include-unattributable re-admits them deliberately, for questions
+    // about the instrument rather than the cell.
+    const marking = unattributable.get(relative(root, file));
+    if (marking && !includeUnattributable) {
+      refused.push({ name, reportNonce: marking.reportNonce });
+      continue;
+    }
     let parsed;
     try {
       parsed = JSON.parse(readFileSync(file, 'utf8'));
@@ -226,8 +268,22 @@ export async function rescoreCaptures({
   const unknownTarget = scored.filter((entry) => entry.gateShare === null);
   console.log(
     `\n${scored.length} rescored · ${unscoreable.length} failed input fidelity · ` +
-      `${unknownTarget.length} with no target identity · ${skipped.length} skipped`
+      `${unknownTarget.length} with no target identity · ${skipped.length} skipped · ` +
+      `${refused.length} refused as cell-unattributable`
   );
+  if (refused.length) {
+    for (const entry of refused) {
+      console.log(
+        `  refused ${entry.name} — its index marks cellAttributable: false` +
+          (entry.reportNonce ? ` (report nonce: ${entry.reportNonce})` : '')
+      );
+    }
+    console.log(
+      '  These frame tables belong to a different cell than their label (issue 1315). ' +
+        'Pass --include-unattributable to re-score them deliberately, for questions ' +
+        'about the instrument rather than the cell.'
+    );
+  }
   if (unknownTarget.length) {
     console.log(
       '  UNSCORED rows carry no target, so no gate applies — pass --target= for a ' +
@@ -258,7 +314,7 @@ export async function rescoreCaptures({
     );
     console.log(`Wrote ${jsonOut}`);
   }
-  return { scored, skipped };
+  return { scored, skipped, refused };
 }
 
 if (isMain(import.meta.url)) {

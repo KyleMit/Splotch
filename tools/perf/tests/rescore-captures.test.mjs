@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { brushOf, rawReportOf, rescoreCapture } from '../rescore-captures.mjs';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  brushOf,
+  evidenceIndexUnattributable,
+  rawReportOf,
+  rescoreCapture,
+  rescoreCaptures,
+} from '../rescore-captures.mjs';
+import { relative } from 'node:path';
+import { ROOT } from '../../lib/proc.mjs';
 import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -137,6 +145,75 @@ describe('evidenceIndexTargets', () => {
 
   it('reports nothing for a corpus with no index', () => {
     expect(evidenceIndexTargets(mkdtempSync(join(tmpdir(), 'splotch-noindex-'))).size).toBe(0);
+  });
+});
+
+// Issue 1298 closing issue 1315's loop: the corpus index marks contaminated
+// captures where tools can read the marking, and this is the tool that reads
+// it. A capture whose frame tables belong to another cell re-scores cleanly
+// and answers wrongly, so the rescorer refuses it by default and re-admits it
+// only on an explicit flag.
+describe('the rescorer honours cellAttributable', () => {
+  const corpusWith = (index) => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-unattributable-'));
+    writeFileSync(join(dir, 'index.json'), JSON.stringify(index));
+    return dir;
+  };
+
+  it('reads exactly the entries an index marks unattributable, with their nonces', () => {
+    const dir = corpusWith({
+      kept: [
+        { file: 'clean.json', target: 'ipad-device-web' },
+        {
+          file: 'contaminated.json',
+          target: 'ipad-device-web',
+          cellAttributable: false,
+          reportNonce: 'other-cell-1-2',
+        },
+        { file: 'explicitly-clean.json', cellAttributable: true },
+      ],
+    });
+
+    const marked = evidenceIndexUnattributable(dir);
+
+    expect([...marked.keys()]).toEqual(['contaminated.json']);
+    expect(marked.get('contaminated.json')).toEqual({ reportNonce: 'other-cell-1-2' });
+    expect(evidenceIndexUnattributable(mkdtempSync(join(tmpdir(), 'splotch-clean-'))).size).toBe(0);
+  });
+
+  it('refuses a marked capture by default and re-admits it only on the flag', async () => {
+    const dir = corpusWith({
+      kept: [
+        { file: 'clean.json', target: 'ipad-device-web' },
+        {
+          file: 'contaminated.json',
+          target: 'ipad-device-web',
+          cellAttributable: false,
+          reportNonce: 'other-cell-1-2',
+        },
+      ],
+    });
+    writeFileSync(join(dir, 'clean.json'), JSON.stringify({ brush: 'crayon', report }));
+    writeFileSync(join(dir, 'contaminated.json'), JSON.stringify({ brush: 'crayon', report }));
+    const corpus = relative(ROOT, dir);
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const quietTable = vi.spyOn(console, 'table').mockImplementation(() => {});
+
+    try {
+      const refusedRun = await rescoreCaptures({ corpus });
+      expect(refusedRun.refused).toEqual([{ name: 'contaminated', reportNonce: 'other-cell-1-2' }]);
+      expect(refusedRun.scored.map((entry) => entry.name)).toEqual(['clean']);
+
+      const includedRun = await rescoreCaptures({ corpus, includeUnattributable: true });
+      expect(includedRun.refused).toEqual([]);
+      expect(includedRun.scored.map((entry) => entry.name).sort()).toEqual([
+        'clean',
+        'contaminated',
+      ]);
+    } finally {
+      quiet.mockRestore();
+      quietTable.mockRestore();
+    }
   });
 });
 
