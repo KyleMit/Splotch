@@ -231,6 +231,31 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     'accelerometer_rotation',
   ]);
   const originalRotation = adb(deviceId, ['shell', 'settings', 'get', 'system', 'user_rotation']);
+  // Pin the panel to its base 60Hz for the whole sweep. Chrome boosts an
+  // adaptive-sync panel to 120Hz around touch, and during the boost's decay
+  // the compositor presents every third vsync — a flat 25.0ms (3 x 8.33) frame
+  // cadence behind instantaneous first frames that the gates charged as
+  // dropped frames across the entire toggle/theme family (issue 1251). Pinned
+  // to 60Hz the same actions score 16.7-16.8 flat: the work was never the
+  // cost, the boost-window presentation stepping was. Drawing captures are NOT
+  // pinned — their cadence check and 120hz refresh regime need the boost.
+  const REFRESH_RATE_SETTINGS = ['peak_refresh_rate', 'min_refresh_rate'];
+  const originalRefreshRates = REFRESH_RATE_SETTINGS.map((name) =>
+    adb(deviceId, ['shell', 'settings', 'get', 'system', name])
+  );
+  const restoreRefreshRate = () => {
+    REFRESH_RATE_SETTINGS.forEach((name, index) => {
+      const original = originalRefreshRates[index];
+      const args =
+        original === 'null'
+          ? ['shell', 'settings', 'delete', 'system', name]
+          : ['shell', 'settings', 'put', 'system', name, original];
+      adb(deviceId, args, { allowFailure: true });
+    });
+  };
+  for (const name of REFRESH_RATE_SETTINGS) {
+    adb(deviceId, ['shell', 'settings', 'put', 'system', name, '60.0']);
+  }
   let server;
   let browser;
   let cdp;
@@ -350,6 +375,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       appUrl: base,
       transport: 'android-chrome-cdp',
       uiActivation: 'trusted-cdp-touch',
+      refreshRatePinnedHz: 60,
       actions: [...actions],
       repeats,
       orientation: originalOrientation,
@@ -385,6 +411,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       ['shell', 'settings', 'put', 'system', 'accelerometer_rotation', originalAutoRotation],
       { allowFailure: true }
     );
+    restoreRefreshRate();
     server?.stop();
   }
 }
