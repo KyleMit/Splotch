@@ -21,6 +21,14 @@
     {
       "file": "measure-rotation-events-android.mjs",
       "note": "CDP experiment on the physical phone: Chrome delivers orientationchange 16-43ms before resize; screen.orientation change ~0.4ms before resize; first rAF after resize 0.1-54ms, so the gate keeps dynamic range on Android."
+    },
+    {
+      "file": "measure-rotation-events-ios.results.txt",
+      "note": "Captured stdout of the iOS experiment: all three runs, including the sequential runs whose shared drift motivated the interleaved design. The ranges ADR-0142 quotes are auditable here without rerunning hardware."
+    },
+    {
+      "file": "measure-rotation-events-android.results.txt",
+      "note": "Captured stdout of the Android experiment: per-round orderings behind the 16-43ms orientationchange lead, the ~0.4ms screen.orientation gap, and the 0.1-54ms post-resize first frames."
     }
   ],
   "devices": {

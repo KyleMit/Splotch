@@ -1,0 +1,40 @@
+# Captured stdout of measure-rotation-events-ios.mjs, physical iPad
+# 00008103-0006202E3CF1001E via Appium Safari, 2026-08-25 (same session as
+# the sweeps in this corpus). Two runs are preserved: the first sequential
+# design (arms drifted together — the reason the interleaved design exists)
+# and the interleaved rerun the ADR quotes.
+
+## Run 1 — sequential arms (superseded design; drift visible across runs)
+=== floor (http://192.168.40.53:4176/) ===
+to LANDSCAPE: orient->resize nullms, ff(orient) nullms, ff(resize) nullms  [no orientationchange]
+to PORTRAIT: orient->resize 12ms, ff(orient) 12ms, ff(resize) 0ms
+to LANDSCAPE: orient->resize 11ms, ff(orient) 11ms, ff(resize) 0ms
+to PORTRAIT: orient->resize 14ms, ff(orient) 14ms, ff(resize) 0ms
+to LANDSCAPE: orient->resize 13ms, ff(orient) 13ms, ff(resize) 0ms
+=== app (http://192.168.40.53:4173/) ===
+to LANDSCAPE: orient->resize nullms, ff(orient) nullms, ff(resize) nullms  [no orientationchange]
+to PORTRAIT: orient->resize 26ms, ff(orient) 26ms, ff(resize) 0ms
+to LANDSCAPE: orient->resize 26ms, ff(orient) 26ms, ff(resize) 0ms
+to PORTRAIT: orient->resize 29ms, ff(orient) 29ms, ff(resize) 0ms
+to LANDSCAPE: orient->resize 28ms, ff(orient) 28ms, ff(resize) 0ms
+
+## Run 2 — sequential, after the engine-listener mutation test (both arms
+## drifted upward together, refuting the handler hypothesis; mutation reverted)
+=== floor === 17-20ms across 4 measured rotations
+=== app === 35-39ms across 4 measured rotations
+
+## Run 3 — interleaved arms (the design the ADR quotes)
+round 0 floor: orient->resize 20ms, ff(orient) 20ms, ff(resize) 0ms
+round 0 app: orient->resize 24ms, ff(orient) 24ms, ff(resize) 0ms
+round 1 floor: orient->resize 11ms, ff(orient) 11ms, ff(resize) 0ms
+round 1 app: orient->resize 24ms, ff(orient) 23ms, ff(resize) 1ms
+round 2 floor: orient->resize 11ms, ff(orient) 11ms, ff(resize) 0ms
+round 2 app: orient->resize 24ms, ff(orient) 24ms, ff(resize) 0ms
+round 3 floor: orient->resize 11ms, ff(orient) 11ms, ff(resize) 0ms
+round 3 app: orient->resize 23ms, ff(orient) 23ms, ff(resize) 1ms
+round 4 floor: orient->resize 11ms, ff(orient) 11ms, ff(resize) 1ms
+round 4 app: orient->resize 23ms, ff(orient) 23ms, ff(resize) 0ms
+round 5 floor: orient->resize 11ms, ff(orient) 11ms, ff(resize) 0ms
+round 5 app: orient->resize 24ms, ff(orient) 24ms, ff(resize) 0ms
+floor: ff(orient) sorted = 11, 11, 11, 11, 11, 20
+app: ff(orient) sorted = 23, 23, 23, 24, 24, 24
