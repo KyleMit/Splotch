@@ -24,12 +24,45 @@ function reportNonce(artifact) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+// A nonce is `${label}-${pid}-${counter}` (capture-device-frames.mjs), so the
+// label must be followed by a `-<digits>` segment — a bare prefix match would
+// attribute a `…-pen-undo` nonce to a `…-pen` label. No label in today's
+// corpus is a prefix of another, so the delimiter is armed against future
+// naming rather than a live defect (round-2 review of the issue-1315 work).
+function nonceAttributableToLabel(nonce, label) {
+  if (!label) return false;
+  if (!nonce.startsWith(`${label}-`)) return false;
+  return /^\d+/.test(nonce.slice(label.length + 1));
+}
+
 function corpora() {
   return readdirSync(EVIDENCE_ROOT, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => join(EVIDENCE_ROOT, entry.name))
     .filter((directory) => existsSync(join(directory, 'index.json')));
 }
+
+describe('nonce attribution is delimiter-aware', () => {
+  const pen = 'android-device-web-portrait-light-pen';
+
+  it('attributes a nonce only to the label the mint delimited', () => {
+    expect(nonceAttributableToLabel(`${pen}-12345-678`, pen)).toBe(true);
+    expect(nonceAttributableToLabel(`${pen}-undo-12345-678`, `${pen}-undo`)).toBe(true);
+  });
+
+  // The trap the delimiter exists for: `…-pen` is a prefix of `…-pen-undo`,
+  // so a bare startsWith would call a pen-undo capture's nonce attributable
+  // to a pen label — exactly the cross-cell confusion the marking detects.
+  it('does not attribute a longer label’s nonce to its prefix label', () => {
+    expect(nonceAttributableToLabel(`${pen}-undo-12345-678`, pen)).toBe(false);
+  });
+
+  it('rejects an empty label, a bare label, and a non-numeric next segment', () => {
+    expect(nonceAttributableToLabel(`${pen}-12345-678`, '')).toBe(false);
+    expect(nonceAttributableToLabel(pen, pen)).toBe(false);
+    expect(nonceAttributableToLabel(`${pen}-eraser-12345-678`, pen)).toBe(false);
+  });
+});
 
 describe('tracked evidence corpora state their own cell attribution', () => {
   it.each(corpora().map((directory) => [directory.slice(EVIDENCE_ROOT.length + 1), directory]))(
@@ -48,7 +81,7 @@ describe('tracked evidence corpora state their own cell attribution', () => {
         // captures carry none, and their attribution rests on other guards.
         if (nonce === null) continue;
         const label = artifact.label ?? '';
-        const attributable = label !== '' && nonce.startsWith(label);
+        const attributable = nonceAttributableToLabel(nonce, label);
         // One unconditional assertion per audited file: the marking must match
         // the evidence, and a contaminated entry must name the nonce it saw
         // (an attributable one records no nonce claim to check).
