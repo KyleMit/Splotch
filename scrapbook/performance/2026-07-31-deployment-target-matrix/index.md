@@ -112,7 +112,7 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   reproduce their previously published numbers, so this is long-standing rather than new -- but
   mac-safari reading clean is partly a statement about how hard it was driven, and the three desktop
   rows are not strictly comparable to each other.
-* 44 cells carry results preserved from data.json rather than re-read raw captures: Raw captures
+* 40 cells carry results preserved from data.json rather than re-read raw captures: Raw captures
   land in gitignored perf-profiles scratch on the capture host, so no campaign's raw input survives
   in a clean checkout: the 2026-08-20 scratch is gone from the workstation, and the 2026-08-21
   scratch was never tracked. Those cells are carried forward from the published normalized results
@@ -121,35 +121,32 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   physical and desktop target preserved: their captures at 6e211ddc4f27 predate product changes that
   campaign merged (the undo repaint fix in web/src/lib/drawing/engine.ts among them), and the
   campaign plan recaptures the full matrix at one commit when it closes rather than mid-stream.
-  Preserved cells: iPad physical · web · portrait-light (drawing, undo, actions); iPad physical ·
-  web · portrait-dark (drawing, undo, actions); iPad physical · web · landscape-light (drawing,
-  undo, actions); iPad physical · web · landscape-dark (drawing, undo, actions); iPad physical ·
-  native · portrait-light (drawing, undo, actions); iPad physical · native · portrait-dark (drawing,
-  undo, actions); iPad physical · native · landscape-light (drawing, undo); iPad physical · native ·
-  landscape-dark (drawing, undo); iPad simulator · web · portrait-light (drawing, undo, actions);
-  iPad simulator · web · portrait-dark (drawing, undo, actions); iPad simulator · web ·
-  landscape-light (drawing, undo, actions); iPad simulator · web · landscape-dark (drawing, undo,
-  actions); iPad simulator · native · portrait-light (drawing, undo, actions); iPad simulator ·
-  native · portrait-dark (drawing, undo, actions); iPad simulator · native · landscape-light
-  (drawing, undo); iPad simulator · native · landscape-dark (drawing, undo); Android physical · web
-  · portrait-light (undo); Android physical · web · portrait-dark (undo); Android physical · web ·
-  landscape-light (undo); Android physical · web · landscape-dark (undo); Android physical · native
-  · portrait-light (drawing, undo, actions); Android physical · native · portrait-dark (drawing,
-  undo, actions); Android physical · native · landscape-light (drawing, undo, actions); Android
-  physical · native · landscape-dark (drawing, undo, actions); Android emulator · web ·
-  portrait-light (drawing, undo, actions); Android emulator · web · portrait-dark (drawing, undo,
-  actions); Android emulator · web · landscape-light (drawing, undo, actions); Android emulator ·
-  web · landscape-dark (drawing, undo, actions); Android emulator · native · portrait-light
-  (drawing, undo, actions); Android emulator · native · portrait-dark (drawing, undo, actions);
-  Android emulator · native · landscape-light (drawing, undo, actions); Android emulator · native ·
-  landscape-dark (drawing, undo, actions); Mac · Chrome · portrait-light (drawing, undo, actions);
-  Mac · Chrome · portrait-dark (drawing, undo, actions); Mac · Chrome · landscape-light (drawing,
-  undo, actions); Mac · Chrome · landscape-dark (drawing, undo, actions); Mac · Safari ·
-  portrait-light (drawing, undo, actions); Mac · Safari · portrait-dark (drawing, undo, actions);
-  Mac · Safari · landscape-light (drawing, undo, actions); Mac · Safari · landscape-dark (drawing,
-  undo, actions); Mac · Firefox · portrait-light (drawing, undo, actions); Mac · Firefox ·
-  portrait-dark (drawing, undo, actions); Mac · Firefox · landscape-light (drawing, undo, actions);
-  Mac · Firefox · landscape-dark (drawing, undo, actions).
+  Preserved cells: iPad physical · native · portrait-light (drawing, undo, actions); iPad physical ·
+  native · portrait-dark (drawing, undo, actions); iPad physical · native · landscape-light
+  (drawing, undo); iPad physical · native · landscape-dark (drawing, undo); iPad simulator · web ·
+  portrait-light (drawing, undo, actions); iPad simulator · web · portrait-dark (drawing, undo,
+  actions); iPad simulator · web · landscape-light (drawing, undo, actions); iPad simulator · web ·
+  landscape-dark (drawing, undo, actions); iPad simulator · native · portrait-light (drawing, undo,
+  actions); iPad simulator · native · portrait-dark (drawing, undo, actions); iPad simulator ·
+  native · landscape-light (drawing, undo); iPad simulator · native · landscape-dark (drawing,
+  undo); Android physical · web · portrait-light (undo); Android physical · web · portrait-dark
+  (undo); Android physical · web · landscape-light (undo); Android physical · web · landscape-dark
+  (undo); Android physical · native · portrait-light (drawing, undo, actions); Android physical ·
+  native · portrait-dark (drawing, undo, actions); Android physical · native · landscape-light
+  (drawing, undo, actions); Android physical · native · landscape-dark (drawing, undo, actions);
+  Android emulator · web · portrait-light (drawing, undo, actions); Android emulator · web ·
+  portrait-dark (drawing, undo, actions); Android emulator · web · landscape-light (drawing, undo,
+  actions); Android emulator · web · landscape-dark (drawing, undo, actions); Android emulator ·
+  native · portrait-light (drawing, undo, actions); Android emulator · native · portrait-dark
+  (drawing, undo, actions); Android emulator · native · landscape-light (drawing, undo, actions);
+  Android emulator · native · landscape-dark (drawing, undo, actions); Mac · Chrome · portrait-light
+  (drawing, undo, actions); Mac · Chrome · portrait-dark (drawing, undo, actions); Mac · Chrome ·
+  landscape-light (drawing, undo, actions); Mac · Chrome · landscape-dark (drawing, undo, actions);
+  Mac · Safari · portrait-light (drawing, undo, actions); Mac · Safari · portrait-dark (drawing,
+  undo, actions); Mac · Safari · landscape-light (drawing, undo, actions); Mac · Safari ·
+  landscape-dark (drawing, undo, actions); Mac · Firefox · portrait-light (drawing, undo, actions);
+  Mac · Firefox · portrait-dark (drawing, undo, actions); Mac · Firefox · landscape-light (drawing,
+  undo, actions); Mac · Firefox · landscape-dark (drawing, undo, actions).
 
 ## Candidate actions
 
@@ -174,10 +171,10 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 
 | Target                                           | Drawing                                  | Undo                                     | Action source commits                    |
 | ------------------------------------------------ | ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
-| 1. iPad physical · web · Portrait · Dark         | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
-| 1. iPad physical · web · Landscape · Light       | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
-| 1. iPad physical · web · Landscape · Dark        | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
+| 1. iPad physical · web · Portrait · Light        | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
+| 1. iPad physical · web · Portrait · Dark         | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
+| 1. iPad physical · web · Landscape · Light       | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
+| 1. iPad physical · web · Landscape · Dark        | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
 | 2. iPad physical · native · Portrait · Light     | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
 | 2. iPad physical · native · Portrait · Dark      | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
 | 2. iPad physical · native · Landscape · Light    | ce88c8e587ac45847c419e05ef7a79d282bc747a | ce88c8e587ac45847c419e05ef7a79d282bc747a | —                                        |
@@ -227,10 +224,10 @@ rows.
 
 | Target                                           | Pen                                                                       | Crayon                                                                    | Magic                                                                     | Eraser                                                                    |
 | ------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | *unscoreable (preserved: no current verdict)*: 16 / 22 / 35 · L0.7%       | *unscoreable (preserved: no current verdict)*: 16 / 23 / 48 · L1.3%       | *unscoreable (preserved: no current verdict)*: 16 / 20 / 34 · L0.6%       | *unscoreable (preserved: no current verdict)*: 16 / 20 / 35 · L0.4%       |
-| 1. iPad physical · web · Portrait · Dark         | *unscoreable (preserved: no current verdict)*: 16 / 22 / 35 · L0.8%       | *unscoreable (preserved: no current verdict)*: 16 / 22 / 45 · L1.1%       | *unscoreable (preserved: no current verdict)*: 15 / 19 / 34 · L0.6%       | *unscoreable (preserved: no current verdict)*: 16 / 21 / 42 · L0.6%       |
-| 1. iPad physical · web · Landscape · Light       | *unscoreable (preserved: no current verdict)*: 15 / 22 / 36 · L0.9%       | *unscoreable (preserved: no current verdict)*: 15 / 23 / 46 · L1.1%       | *unscoreable (preserved: no current verdict)*: 15 / 20 / 41 · L0.6%       | *unscoreable (preserved: no current verdict)*: 16 / 20 / 34 · L0.4%       |
-| 1. iPad physical · web · Landscape · Dark        | *unscoreable (preserved: no current verdict)*: 15 / 21 / 42 · L0.8%       | *unscoreable (preserved: no current verdict)*: 16 / 22 / 47 · L1.1%       | *unscoreable (preserved: no current verdict)*: 16 / 20 / 33 · L0.5%       | *unscoreable (preserved: no current verdict)*: 16 / 20 / 33 · L0.5%       |
+| 1. iPad physical · web · Portrait · Light        | 16 / 20 / 35 · L0.7%                                                      | 16 / 22 / 43 · L1.3%                                                      | 16 / 18 / 34 · L0.6%                                                      | 16 / 20 / 35 · L0.6%                                                      |
+| 1. iPad physical · web · Portrait · Dark         | 15 / 20 / 35 · L0.6%                                                      | 15 / 22 / 44 · L1.1%                                                      | 16 / 20 / 33 · L0.6%                                                      | 16 / 21 / 48 · L0.6%                                                      |
+| 1. iPad physical · web · Landscape · Light       | 16 / 20 / 37 · L0.7%                                                      | **FAIL 16 / 24 / 68 · L1.4%**                                             | 16 / 20 / 33 · L0.4%                                                      | 15 / 20 / 38 · L0.6%                                                      |
+| 1. iPad physical · web · Landscape · Dark        | 15 / 21 / 36 · L0.7%                                                      | 16 / 22 / 44 · L1.3%                                                      | 16 / 18 / 33 · L0.6%                                                      | 16 / 20 / 33 · L0.5%                                                      |
 | 2. iPad physical · native · Portrait · Light     | *unscoreable (preserved: no current verdict)*: 15 / 16 / 33 · L0.0%       | *unscoreable (preserved: no current verdict)*: 16 / 27 / 87 · L2.1%       | *unscoreable (preserved: no current verdict)*: 15 / 16 / 37 · L0.0%       | *unscoreable (preserved: no current verdict)*: 15 / 17 / 21 · L0%         |
 | 2. iPad physical · native · Portrait · Dark      | *unscoreable (preserved: no current verdict)*: 15 / 16 / 33 · L0.0%       | *unscoreable (preserved: no current verdict)*: 16 / 27 / 62 · L2.0%       | *unscoreable (preserved: no current verdict)*: 15 / 17 / 43 · L0.1%       | *unscoreable (preserved: no current verdict)*: 16 / 17 / 30 · L0.0%       |
 | 2. iPad physical · native · Landscape · Light    | *unscoreable (preserved: no current verdict)*: 15 / 16 / 24 · L0.0%       | *unscoreable (preserved: no current verdict)*: 16 / 24 / 62 · L2%         | *unscoreable (preserved: no current verdict)*: 15 / 16 / 28 · L0.0%       | *unscoreable (preserved: no current verdict)*: 16 / 17 / 21 · L0.2%       |
@@ -278,10 +275,10 @@ Undo timing is `engine P95 / next-frame P95 / next-frame max` in milliseconds.
 
 | Target                                           | Timing            | Result | Product commit                           |
 | ------------------------------------------------ | ----------------- | ------ | ---------------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | 1 / 13 / 13       | Pass   | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
-| 1. iPad physical · web · Portrait · Dark         | 1 / 11 / 11       | Pass   | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
-| 1. iPad physical · web · Landscape · Light       | 1 / 11 / 11       | Pass   | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
-| 1. iPad physical · web · Landscape · Dark        | 1 / 12 / 12       | Pass   | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
+| 1. iPad physical · web · Portrait · Light        | 1 / 11 / 11       | Pass   | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
+| 1. iPad physical · web · Portrait · Dark         | 1 / 10 / 10       | Pass   | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
+| 1. iPad physical · web · Landscape · Light       | 1 / 11 / 11       | Pass   | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
+| 1. iPad physical · web · Landscape · Dark        | 1 / 11 / 11       | Pass   | 3cb6a205a287c9ccebef762bdde85abccdeb24f6 |
 | 2. iPad physical · native · Portrait · Light     | 1 / 13 / 13       | Pass   | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
 | 2. iPad physical · native · Portrait · Dark      | 1 / 13 / 13       | Pass   | 6e211ddc4f27aed28f4864c7486d4410be44d2b9 |
 | 2. iPad physical · native · Landscape · Light    | 1 / 12 / 12       | Pass   | ce88c8e587ac45847c419e05ef7a79d282bc747a |
@@ -333,10 +330,10 @@ provenance are available in the interactive matrix and normalized JSON.
 
 | Target                                           | Passing | At final commit | Worst first P95 | Worst post P95 / max | Failed actions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------------------------------------ | ------- | --------------- | --------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | 41 / 47 | 0 / 47          | 48              | 105 / 108            | select coloring page; clear coloring page; empty after clear: PORTRAIT to LANDSCAPE rotation; undo clear after blank rotation; empty after clear: LANDSCAPE to PORTRAIT rotation; with ink: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 1. iPad physical · web · Portrait · Dark         | 41 / 47 | 0 / 47          | 42              | 104 / 105            | select coloring page; clear coloring page; save screenshot; empty after clear: PORTRAIT to LANDSCAPE rotation; undo clear after blank rotation; empty after clear: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| 1. iPad physical · web · Landscape · Light       | 43 / 48 | 0 / 48          | 43              | 100 / 100            | select coloring page; clear coloring page; empty after clear: LANDSCAPE to PORTRAIT rotation; undo clear after blank rotation; empty after clear: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| 1. iPad physical · web · Landscape · Dark        | 42 / 48 | 0 / 48          | 47              | 99 / 107             | select coloring page; clear coloring page; empty after clear: LANDSCAPE to PORTRAIT rotation; undo clear after blank rotation; empty after clear: PORTRAIT to LANDSCAPE rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 1. iPad physical · web · Portrait · Light        | 44 / 47 | 0 / 47          | 28              | 24 / 82              | select coloring page; clear coloring page; with ink: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 1. iPad physical · web · Portrait · Dark         | 42 / 47 | 0 / 47          | 29              | 25 / 83              | select custom color; select coloring page; clear coloring page; save screenshot; with ink: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 1. iPad physical · web · Landscape · Light       | 46 / 48 | 0 / 48          | 28              | 25 / 73              | select coloring page; clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 1. iPad physical · web · Landscape · Dark        | 45 / 48 | 0 / 48          | 26              | 25 / 76              | select coloring page; clear coloring page; empty after clear: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 2. iPad physical · native · Portrait · Light     | 44 / 48 | 0 / 48          | 17              | 153 / 159            | clear coloring page; undo clear after blank rotation; with ink: PORTRAIT to LANDSCAPE rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2. iPad physical · native · Portrait · Dark      | 44 / 48 | 0 / 48          | 149             | 100 / 150            | clear coloring page; undo clear after blank rotation; with ink: PORTRAIT to LANDSCAPE rotation; with ink: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2. iPad physical · native · Landscape · Light    | —       | —               | —               | —                    | Not measured                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
