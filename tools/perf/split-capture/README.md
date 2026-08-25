@@ -110,8 +110,9 @@ than the one requested, or a capture that recorded no pointer events at all (whi
 landed somewhere other than the canvas, usually a brush menu left open over the paper). A dispatch
 whose page pulsed **zero** input events fails immediately naming the wrong-tab cause — Chrome's
 session restore fronted a stale tab while the run's page loaded behind it (issue 1294) — instead of
-spending the report timeout; the launcher also re-activates the run's page over the devtools HTTP
-endpoint after launch and before dispatch, which fails benignly when the page cannot be identified.
+spending the report timeout; the launcher also clears the tooling's own leftover tabs and
+re-activates the run's page over the devtools HTTP endpoint, after launch and before dispatch,
+skipping benignly when the devtools socket or the page cannot be reached.
 
 ## Domain ownership
 
@@ -119,7 +120,8 @@ endpoint after launch and before dispatch, which fails benignly when the page ca
   settings. Pure; this is where the interesting mistakes live.
 * `lib/page-bootstrap.mjs` — the script injected into the page. Takes its brush selectors from
   `../../ios/capture-xcuitest-screen.mjs` rather than duplicating them.
-* `lib/probe-host.mjs` — the proxying HTTP host and its report endpoints.
+* `lib/probe-host.mjs` — the proxying HTTP host, its report endpoints, and the inert
+  `/__probe/stand-down` husk page stale bootstraps park themselves on.
 * `lib/report-store.mjs` — which of two uploaded reports to keep.
 * `lib/chrome-tabs.mjs` — clearing this tooling's own leftover tabs and activating the run's page
   over the devtools HTTP endpoint. Ownership is a tool signature (a `?probe=`/`?verify=` run param

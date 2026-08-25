@@ -28,7 +28,7 @@
     },
     {
       "file": "measure-rotation-events-android.results.txt",
-      "note": "Captured stdout of the Android experiment: per-round orderings behind the 16-43ms orientationchange lead, the ~0.4ms screen.orientation gap, and the 0.1-54ms post-resize first frames."
+      "note": "Captured stdout of the Android experiment: per-round orderings behind the 16-43ms orientationchange lead, the screen.orientation gap (~0.3-0.5ms in five of six rounds; round 0 is a -61.6ms outlier on the other side), and the 0.1-54ms post-resize first frames."
     }
   ],
   "devices": {

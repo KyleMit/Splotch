@@ -282,9 +282,10 @@ function announceHandStep(platform) {
 export function handItemInstructions(item) {
   if (item.platform !== 'ios' || item.orientation === 'PORTRAIT') return [];
   return [
-    `  ROTATE THE IPAD to ${item.orientation.toLowerCase()} now and keep it there —`,
-    '  the harness cannot turn it for you, and the capture refuses a page whose',
-    '  orientation disagrees with the plan.',
+    `  ROTATE THE IPAD to ${item.orientation.toLowerCase()} now and keep it there`,
+    '  (check Control Center that rotation lock is off) — this overrides the',
+    '  general leave-it-alone instruction; the harness cannot turn the device,',
+    '  and the capture refuses a page whose orientation disagrees with the plan.',
   ];
 }
 

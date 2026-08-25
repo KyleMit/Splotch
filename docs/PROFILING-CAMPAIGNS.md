@@ -218,12 +218,15 @@ more. It never rotated the device, so **a rotation fault passed every preflight 
 every landscape cell**. The 2026-08-23 recapture opened on a green rig and lost all eight
 `android-device-web` landscape drawing cells before the first artifact was missed.
 
-That flag now also drives a real rotation — the same stop, rotate, launch order a capture drives —
-and reads the orientation the **page** reports rather than the one the device was asked for. It
-restores the rotation settings it found. The passing path is verified on the SM-G990U1. The failing
-path was observed once, by injecting the reversed order, and **does not reproduce on demand** — see
-the rotation entry above; the check is verified against a synthetic mismatch in
-`tools/perf/tests/android-rotation.test.mjs` rather than against a device fault anyone can summon.
+That flag now also clears the tooling's own leftover tabs and fronts its verify page before the
+touch, the same guard the capture runner uses — a stale tool tab holding the restored foreground
+once made the input check report zero pointer input on a healthy rig — and drives a real rotation —
+the same stop, rotate, launch order a capture drives — and reads the orientation the **page**
+reports rather than the one the device was asked for. It restores the rotation settings it found.
+The passing path is verified on the SM-G990U1. The failing path was observed once, by injecting the
+reversed order, and **does not reproduce on demand** — see the rotation entry above; the check is
+verified against a synthetic mismatch in `tools/perf/tests/android-rotation.test.mjs` rather than
+against a device fault anyone can summon.
 
 The general rule outlives this particular hole: **a preflight proves the operations it performs.**
 The iPad still has no rotation check, and every trap below is one that some cheap check passed
