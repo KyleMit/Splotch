@@ -1587,6 +1587,27 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         `${nativeApp ? 'The native app' : requestedAppUrl} never showed a sized #drawingCanvas`
       );
     }
+    // A native install whose server.url points at the split-capture probe host
+    // loads a page whose injected bootstrap drives Settings on its own — which
+    // deadlocks this runner's Settings automation. --url= navigates the WebView
+    // to a clean page (the plain preview) before any setup touches the UI.
+    if (nativeApp && requestedAppUrl) {
+      await execute(`location.replace(${JSON.stringify(requestedAppUrl)}); return true;`).catch(
+        () => null
+      );
+      await switchToWebContext(client, sessionId);
+      const cleanReady = await pollUntil(
+        () =>
+          execute(
+            "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+          ).catch(() => false),
+        READY_TIMEOUT_MS,
+        POLL_MS
+      );
+      if (!cleanReady) {
+        throw new Error(`${requestedAppUrl} never showed a sized #drawingCanvas in the WebView`);
+      }
+    }
     await clearDeviceWebCache(executeAsync);
     const needsNativeRotationUnlock =
       nativeApp &&
@@ -1623,7 +1644,8 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       await sleep(ROTATION_NATIVE_SETTLE_MS);
     }
     originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
-    const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
+    const appUrl =
+      nativeApp && !requestedAppUrl ? await execute('return location.href;') : requestedAppUrl;
 
     let settingsShell = null;
     const samples = [];
