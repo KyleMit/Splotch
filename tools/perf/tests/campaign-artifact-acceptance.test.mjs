@@ -10,7 +10,7 @@ import {
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
 } from '../lib/campaign-ledger.mjs';
-import { inspectArtifact } from '../run-campaign.mjs';
+import { cellInspection, inspectArtifact } from '../run-campaign.mjs';
 
 // This is the function that decides whether a cell is banked or spent again, and
 // every campaign's evidence passes through it. It had no test.
@@ -214,5 +214,56 @@ describe('a capture with no beat to report', () => {
     expect(
       inspectArtifact(artifactAt(noBeat), 'web', { expectedRefreshRegime: '120hz' })
     ).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
+  });
+});
+
+// The gate above only protects callers that pass the right options, and
+// campaign-status rebuilt them by hand — dropping the reportsRefreshRegime gate
+// and reporting all four of a finished campaign's action sweeps, which carry no
+// frame intervals by design, as off-refresh-regime (2026-08-25). cellInspection
+// is the single translation from a plan cell's flags to inspection options; both
+// the runner and status must go through it.
+describe('cellInspection', () => {
+  const target = { runtime: 'web', refreshRegime: '120hz' };
+  const actionSweep = {
+    transport: 'android-chrome-cdp',
+    summaries: [{ action: 'idle frame control' }],
+  };
+
+  it('exempts a cell that reports no refresh regime from the regime check', () => {
+    const cell = {
+      artifact: artifactAt(actionSweep),
+      reportsFidelity: false,
+      reportsRefreshRegime: false,
+    };
+
+    expect(cellInspection(cell, target)).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('holds a cell that does report one to the target regime', () => {
+    const cell = {
+      artifact: artifactAt({ ...scoreable, summaries: { intervalMs: 17 } }),
+      reportsFidelity: true,
+      reportsRefreshRegime: true,
+    };
+
+    expect(cellInspection(cell, target)).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
+  });
+
+  it('requires the fidelity verdict exactly when the cell reports fidelity', () => {
+    const unverdicted = artifactAt({ transport: 'browser', summaries: { intervalMs: 8.3 } });
+
+    expect(
+      cellInspection(
+        { artifact: unverdicted, reportsFidelity: true, reportsRefreshRegime: true },
+        target
+      )
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+    expect(
+      cellInspection(
+        { artifact: unverdicted, reportsFidelity: false, reportsRefreshRegime: true },
+        target
+      ).ok
+    ).toBe(true);
   });
 });
