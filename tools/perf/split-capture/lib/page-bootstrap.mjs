@@ -231,14 +231,21 @@ export function pageBootstrapSource() {
     let eraserFill = null;
     if (plan.brush === 'eraser') {
       ${eraserFillFunctionSource()}
-      await until(() => !(eraserFill = fillEraserInk()).pending, ${ERASER_FILL_BACKING_TIMEOUT_MS});
-      if (eraserFill.pending) {
-        throw new Error('live tile backings never realized for the eraser fill: ' + eraserFill.pending.join(', '));
-      }
-      if (eraserFill.transparentTiles.length) {
-        throw new Error('the eraser fill left tiles transparent: ' + eraserFill.transparentTiles.join(', '));
-      }
+      const fillVerified = async () => {
+        await until(() => !(eraserFill = fillEraserInk()).pending, ${ERASER_FILL_BACKING_TIMEOUT_MS});
+        if (eraserFill.pending) {
+          throw new Error('live tile backings never realized for the eraser fill: ' + eraserFill.pending.join(', '));
+        }
+        if (eraserFill.transparentTiles.length) {
+          throw new Error('the eraser fill left tiles transparent: ' + eraserFill.transparentTiles.join(', '));
+        }
+      };
+      await fillVerified();
       await wait(${ERASER_FILL_SETTLE_MS});
+      // A deferred clear or resize inside the settle window wipes paint that a
+      // point-in-time verification already blessed; refilling and re-proving at
+      // the last moment closes that window.
+      await fillVerified();
     }
 
     window.__probePhases = 'blank';

@@ -95,21 +95,27 @@ const SHORT_STROKE_ORIGINS = [
 // Per-repeat offsets exist for the eraser (issue 1292): a fixed plan re-traces
 // identical geometry every pass, so passes 2..N drag the eraser across pixels
 // pass 1 already made transparent and measure erasing nothing. Offsetting each
-// repeat walks every stroke through fresh ink instead. The strides are chosen
-// to spread repeats across each stroke's band without resonating with the
-// repeat count (no small-integer ratio to 1), and every offset wraps INSIDE the
-// band the fixed plan already spans, so an offset stroke stays inside any
-// canvas the fixed plan fit. Every other brush keeps the fixed plan — drawing
-// over your own stroke is still drawing, and changing their geometry would
-// silently change what those cells measure.
-const LONG_SEED_REPEAT_STRIDE = 0.37;
-const SHORT_ORIGIN_REPEAT_STRIDE_X = 0.23;
-const SHORT_ORIGIN_REPEAT_STRIDE_Y = 0.17;
-// The fixed origins span x 0.18-0.76 and y 0.2-0.67; the wrap bands keep offset
-// origins in the same envelope (the short-stroke end adds 45/70 px, which the
-// fixed plan's own maxima already prove fits).
-const SHORT_ORIGIN_BAND_X = [0.18, 0.78];
-const SHORT_ORIGIN_BAND_Y = [0.2, 0.68];
+// repeat walks every stroke through fresh ink instead. Every other brush keeps
+// the fixed plan — drawing over your own stroke is still drawing, and changing
+// their geometry would silently change what those cells measure.
+//
+// The long-seed stride must not resonate with the 0.5 SPACING BETWEEN THE TWO
+// SEEDS, not merely with 1: the review of the first cut proved 0.37 lands
+// repeats 4-9 within Δseed 0.02 of the other family — a ~80%-erased band. With
+// two seeds and ten repeats the best attainable minimum separation is 1/20,
+// and 0.35 attains it exactly: the twenty per-repeat seeds are all distinct
+// multiples of 0.05. Long seeds wrap the full [0,1) seed space deliberately —
+// the y mapping (0.35 + seed*0.15 ± 0.18) keeps ANY seed inside the canvas.
+const LONG_SEED_REPEAT_STRIDE = 0.35;
+// Short origins wrap inside exactly the envelope the fixed origins span, so an
+// offset stroke's endpoint (+45/+70 px) fits wherever the fixed plan's own
+// maxima fit. The strides are exact 3/10 and 7/10 of each band's span, so ten
+// repeats land on ten distinct multiples of span/10 — minimum separation
+// span/10 of the band, by construction, in both axes.
+const SHORT_ORIGIN_BAND_X = [0.18, 0.76];
+const SHORT_ORIGIN_BAND_Y = [0.2, 0.67];
+const SHORT_ORIGIN_REPEAT_STRIDE_X = ((SHORT_ORIGIN_BAND_X[1] - SHORT_ORIGIN_BAND_X[0]) * 3) / 10;
+const SHORT_ORIGIN_REPEAT_STRIDE_Y = ((SHORT_ORIGIN_BAND_Y[1] - SHORT_ORIGIN_BAND_Y[0]) * 7) / 10;
 
 function wrapWithin(value, [min, max]) {
   const span = max - min;
@@ -199,15 +205,24 @@ export function trustedGestureActions(
     if (repeat > 0 && repeatPauseMs > 0) {
       actions.push({ type: 'pause', duration: repeatPauseMs });
     }
+    // Shift zero takes the literal fixed values, not a wrap of them — the fixed
+    // plan must stay byte-identical for every brush (wrapWithin at shift 0 can
+    // move an origin by one ulp, which a new-vs-new equality test cannot see).
     const shift = varyPerRepeat ? repeat : 0;
     for (const seed of LONG_STROKE_SEEDS) {
-      addLongStroke(actions, bounds, (seed + shift * LONG_SEED_REPEAT_STRIDE) % 1);
+      addLongStroke(actions, bounds, shift === 0 ? seed : (seed + shift * LONG_SEED_REPEAT_STRIDE) % 1);
     }
     for (const [xFraction, yFraction] of SHORT_STROKE_ORIGINS) {
-      addShortStroke(actions, bounds, [
-        wrapWithin(xFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_X, SHORT_ORIGIN_BAND_X),
-        wrapWithin(yFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_Y, SHORT_ORIGIN_BAND_Y),
-      ]);
+      addShortStroke(
+        actions,
+        bounds,
+        shift === 0
+          ? [xFraction, yFraction]
+          : [
+              wrapWithin(xFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_X, SHORT_ORIGIN_BAND_X),
+              wrapWithin(yFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_Y, SHORT_ORIGIN_BAND_Y),
+            ]
+      );
     }
   }
   return actions;
@@ -749,26 +764,35 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     // The fill is verified rather than trusted (issue 1302): waits out deferred
     // tile-backing realization, proves the painted pixels are opaque, and fails
     // the capture instead of banking a normal-looking artifact that erased
-    // blank paper. Shared with the split-capture bootstrap.
+    // blank paper. Shared with the split-capture bootstrap, and re-run after
+    // the settle — a deferred clear or resize inside that window wipes paint a
+    // point-in-time verification already blessed.
     let eraserFill = null;
     if (brush === 'eraser') {
-      eraserFill = await pollUntil(
-        async () => {
-          const result = await execute(`${eraserFillFunctionSource()}\nreturn fillEraserInk();`);
-          return result?.pending ? null : result;
-        },
-        ERASER_FILL_BACKING_TIMEOUT_MS,
-        WEBVIEW_READY_POLL_MS
-      );
-      if (!eraserFill) {
-        throw new Error('live tile backings never realized for the eraser fill');
-      }
-      if (eraserFill.transparentTiles.length) {
-        throw new Error(
-          `the eraser fill left tiles transparent: ${eraserFill.transparentTiles.join(', ')}`
+      const fillVerified = async () => {
+        const fill = await pollUntil(
+          async () => {
+            const result = await execute(
+              `${eraserFillFunctionSource()}\nreturn fillEraserInk();`
+            ).catch((error) => {
+              throw new Error(`the eraser fill failed in the page: ${error?.message ?? error}`);
+            });
+            return result?.pending ? null : result;
+          },
+          ERASER_FILL_BACKING_TIMEOUT_MS,
+          WEBVIEW_READY_POLL_MS
         );
-      }
+        if (!fill) throw new Error('live tile backings never realized for the eraser fill');
+        if (fill.transparentTiles.length) {
+          throw new Error(
+            `the eraser fill left tiles transparent: ${fill.transparentTiles.join(', ')}`
+          );
+        }
+        return fill;
+      };
+      eraserFill = await fillVerified();
       await sleep(AFTER_GESTURE_SETTLE_MS);
+      eraserFill = await fillVerified();
     }
 
     await execute(
@@ -917,6 +941,15 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       appUrl,
       transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
       theme,
+      // Same top-level home the split artifact uses for both fields, so the
+      // shared reader needs no second location (the review caught gesturePlan
+      // reproducing the gestureRepeats top-level/automation split).
+      // Which geometry the repeats replayed (issue 1292): the eraser offsets
+      // every repeat so later passes cross un-erased ink; other brushes keep
+      // the fixed plan. Old artifacts lack the field and are fixed-geometry.
+      gesturePlan: brush === 'eraser' ? 'per-repeat-offsets' : 'fixed-geometry',
+      // The verified-fill evidence (issue 1302); null for every other brush.
+      eraserFill,
       mode: `xcuitest:${label}`,
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
@@ -928,12 +961,6 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         canvasBounds,
         liveSurfaceTopology,
         gestureRepeats,
-        // Which geometry the repeats replayed (issue 1292): the eraser offsets
-        // every repeat so later passes cross un-erased ink; other brushes keep
-        // the fixed plan. Old artifacts lack the field and are fixed-geometry.
-        gesturePlan: brush === 'eraser' ? 'per-repeat-offsets' : 'fixed-geometry',
-        // The verified-fill evidence (issue 1302); null for every other brush.
-        eraserFill,
         repeatPauseMs,
         undoCount,
         undoPauseMs,

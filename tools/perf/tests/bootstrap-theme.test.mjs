@@ -253,8 +253,33 @@ describe('the bootstrap verifying the eraser fill', () => {
       window.__committedBrushMode = () => 'eraser';
     });
     document.body.append(eraserButton);
+    // The fill verifies through a 1x1 willReadFrequently scratch it creates
+    // itself, so createElement hands out a scratch whose samples resolve from
+    // the drawn source tile at the sampled coordinates.
+    const createElement = document.createElement.bind(document);
+    document.createElement = (tag) => {
+      const element = createElement(tag);
+      if (tag === 'canvas') {
+        let sampled = null;
+        element.getContext = (kind, options) =>
+          options?.willReadFrequently === true
+            ? {
+                clearRect() {
+                  sampled = null;
+                },
+                drawImage(source, x, y) {
+                  sampled = source.alphaAt ? source.alphaAt(x, y) : 0;
+                },
+                getImageData() {
+                  return { data: [124, 77, 255, sampled ?? 0] };
+                },
+              }
+            : null;
+      }
+      return element;
+    };
     return tiles.map((tile) => {
-      const canvas = document.createElement('canvas');
+      const canvas = createElement('canvas');
       canvas.setAttribute('data-live-tile', '');
       canvas.dataset.tileBacking = tile.backing;
       canvas.width = tile.width;
@@ -262,17 +287,23 @@ describe('the bootstrap verifying the eraser fill', () => {
       const context = {
         fillStyle: null,
         fillRects: [],
+        globalAlpha: 0.5,
+        globalCompositeOperation: 'destination-out',
         save() {},
         restore() {},
         setTransform() {},
         fillRect(...args) {
           this.fillRects.push(args);
         },
-        getImageData() {
-          return { data: [124, 77, 255, tile.alpha ?? 255] };
-        },
       };
       canvas.getContext = () => context;
+      canvas.alphaAt = (x, y) => {
+        if (tile.alpha === 0) return 0;
+        const covered = context.fillRects.some(
+          ([rx, ry, rw, rh]) => x >= rx && y >= ry && x < rx + rw && y < ry + rh
+        );
+        return covered ? 255 : 0;
+      };
       document.body.append(canvas);
       return { canvas, context };
     });
@@ -298,7 +329,12 @@ describe('the bootstrap verifying the eraser fill', () => {
         backings: ['100x80', '90x70'],
         transparentTiles: [],
       });
-      expect(tiles[0].context.fillRects).toEqual([[0, 0, 100, 80]]);
+      // Filled twice: once up front and once after the settle, so a wipe
+      // inside that window is repaired and re-proved before readiness.
+      expect(tiles[0].context.fillRects).toEqual([
+        [0, 0, 100, 80],
+        [0, 0, 100, 80],
+      ]);
       expect(tiles[1].context.fillStyle).toBe('#7c4dff');
     },
     BOOTSTRAP_TIMEOUT_MS

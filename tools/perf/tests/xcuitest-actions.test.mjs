@@ -32,6 +32,7 @@ import {
   visibleInactiveSwatchColorExpression,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../web/capture-desktop-actions.mjs';
+import { eraserFillFunctionSource } from '../lib/eraser-fill.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
 const LIVE_SURFACE = readFileSync(
@@ -683,6 +684,22 @@ describe('action probe selector contract', () => {
       expect(ACTION_PROBE).toContain(marker.replace('id="', '').replace('"', ''));
     });
   }
+
+  // The eraser fill is a third out-of-tree consumer of the live-surface
+  // markers, and it additionally reads the backing-intent attribute the
+  // renderer publishes — cross-file agreement by test, not prose.
+  it('keeps the eraser fill bound to the product’s live-surface markers', () => {
+    const fill = eraserFillFunctionSource();
+
+    expect(LIVE_SURFACE).toContain('data-live-tile');
+    expect(fill).toContain("querySelectorAll('canvas[data-live-tile]')");
+    const renderer = readFileSync(
+      join(ROOT, 'web', 'src', 'lib', 'drawing', 'tiledRenderer.ts'),
+      'utf8'
+    );
+    expect(renderer).toContain('dataset.tileBacking');
+    expect(fill).toContain('dataset.tileBacking');
+  });
 });
 
 describe('action-owned frame attribution', () => {
