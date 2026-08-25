@@ -399,11 +399,24 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   // non-iOS target — stays on the base gates.
   // Rotation first-frame applicability keys on the capture RUNTIME, never the
   // transport — `transport: "browser"` is the Appium web transport generally,
-  // and Android Chrome over Appium must stay gated (ADR-0142). The target's
-  // declared runtime is authoritative for campaign cells; the artifact's own
-  // recorded runtime answers for a capture folded outside a declared target.
-  // An artifact with neither stays fully gated.
-  const runtime = CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? profile.captureRuntime ?? null;
+  // and Android Chrome over Appium must stay gated (ADR-0142). When both the
+  // target's declared runtime and the artifact's recorded one exist they must
+  // AGREE: a disagreement means a capture from another engine reached this
+  // target's fold (campaign acceptance only tells web from native), and
+  // silently preferring either side scores it under rules chosen for the other
+  // — review round 2 reproduced an android-chrome artifact passing an
+  // ios-safari target's rotation gate as N/A exactly that way. Fallback
+  // ordering applies only when one side is absent; an artifact with neither
+  // stays fully gated.
+  const declaredRuntime = CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? null;
+  const recordedRuntime = profile.captureRuntime ?? null;
+  if (declaredRuntime && recordedRuntime && declaredRuntime !== recordedRuntime) {
+    throw new Error(
+      `${spec.source} records captureRuntime ${recordedRuntime}, but target ${targetId} ` +
+        `declares ${declaredRuntime} — an artifact from another engine cannot fold into this target`
+    );
+  }
+  const runtime = declaredRuntime ?? recordedRuntime;
   const summaries = profile.samples
     ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
         rotationFirstFrameNa(runtime, label)

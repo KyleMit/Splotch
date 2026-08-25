@@ -330,6 +330,39 @@ describe('deployment matrix report', () => {
     expect(markdown).toContain('N/A');
   });
 
+  // Review round 2: a cross-engine artifact (campaign acceptance only tells web
+  // from native) must not fold under a target declaring another runtime —
+  // silently preferring the target scored an android-chrome capture's rotation
+  // rows as ios-safari N/A. Both present and different is a refusal, not an
+  // ordering.
+  it('refuses an artifact whose recorded runtime disagrees with the target’s declared one', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'cross-engine-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      transport: 'browser',
+      captureRuntime: 'android-chrome',
+      samples: [
+        actionSample('with ink: PORTRAIT to LANDSCAPE rotation', true),
+        ...Array.from({ length: 3 }, () =>
+          actionSample('with ink: PORTRAIT to LANDSCAPE rotation', false)
+        ),
+      ],
+    });
+    const source_manifest = manifest([
+      capturedManifestMode(modeSpecs[0], {
+        actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+      }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source_manifest.targets[0].id = 'ipad-device-web';
+
+    expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
+      'records captureRuntime android-chrome, but target ipad-device-web declares ios-safari'
+    );
+  });
+
   it('identifies cumulative provenance in the Markdown summary', () => {
     const matrix = normalizedMatrix([]);
     matrix.targets = [];
