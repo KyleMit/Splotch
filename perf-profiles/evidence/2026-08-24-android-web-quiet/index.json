@@ -8,7 +8,9 @@
       "brush": "crayon",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/crayon-real-screen.json"
+      "source": "android-device-web/landscape-dark/crayon-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-dark-pen-undo-99862-79"
     },
     {
       "file": "android-device-web-eraser.json",
@@ -16,7 +18,9 @@
       "brush": "eraser",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/eraser-real-screen.json"
+      "source": "android-device-web/landscape-dark/eraser-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-portrait-dark-magic-72017-82"
     },
     {
       "file": "android-device-web-magic.json",
@@ -24,7 +28,9 @@
       "brush": "magic",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/magic-real-screen.json"
+      "source": "android-device-web/landscape-dark/magic-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-dark-pen-undo-99862-79"
     },
     {
       "file": "android-device-web-pen.json",
@@ -32,7 +38,15 @@
       "brush": "pen",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/pen-real-screen.json"
+      "source": "android-device-web/landscape-dark/pen-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-portrait-light-eraser-57754-82"
     }
-  ]
+  ],
+  "crossRunContamination": {
+    "auditedOn": "2026-08-25",
+    "issue": 1315,
+    "finding": "Every listed capture's report carries a ?probe= nonce naming a different cell than its label. This corpus was captured before the page-identity guard landed (commit cfb1b6c9, 2026-08-24 14:34) \u2014 the pre-#1291 mechanism, a restored Chrome tab answering for the current run. Found extending the issue-1315 audit on 2026-08-25.",
+    "usableAs": "Runtime-level calibration only: frame tables and input statistics are genuine driven Android Chrome data from this device, but no file's frame tables can be attributed to its labelled cell (brush, mode, or theme). Do not re-score these as cells; the post-guard captures (2026-08-24-android-web-verified and later) supersede them."
+  }
 }

@@ -8,8 +8,16 @@
       "brush": "crayon",
       "mode": "LANDSCAPE-light",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-light/crayon-real-screen.json"
+      "source": "android-device-web/landscape-light/crayon-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-portrait-dark-eraser-13221-76"
     }
   ],
-  "supersededForHostLoad": "SUPERSEDED for host quiet. These captures are real, fidelity-passing and theme-verified, but they were taken while test suites ran on the capture host -- forbidden by docs/PROFILING-CAMPAIGNS.md, and violated by the session that produced them. The only cell they put over the gate, landscape-light/magic at 2.71%, reads 0.90% when the same target is recaptured on an idle host, and six repeats put light and dark on top of each other. Kept as the evidence for that retraction. See 2026-08-24-android-web-quiet."
+  "supersededForHostLoad": "SUPERSEDED for host quiet. These captures are real, fidelity-passing and theme-verified, but they were taken while test suites ran on the capture host -- forbidden by docs/PROFILING-CAMPAIGNS.md, and violated by the session that produced them. The only cell they put over the gate, landscape-light/magic at 2.71%, reads 0.90% when the same target is recaptured on an idle host, and six repeats put light and dark on top of each other. Kept as the evidence for that retraction. See 2026-08-24-android-web-quiet.",
+  "crossRunContamination": {
+    "auditedOn": "2026-08-25",
+    "issue": 1315,
+    "finding": "Every listed capture's report carries a ?probe= nonce naming a different cell than its label. This corpus was captured before the page-identity guard landed (commit cfb1b6c9, 2026-08-24 14:34) \u2014 the pre-#1291 mechanism, a restored Chrome tab answering for the current run. Found extending the issue-1315 audit on 2026-08-25.",
+    "usableAs": "Runtime-level calibration only: frame tables and input statistics are genuine driven Android Chrome data from this device, but no file's frame tables can be attributed to its labelled cell (brush, mode, or theme). Do not re-score these as cells; the post-guard captures (2026-08-24-android-web-verified and later) supersede them."
+  }
 }

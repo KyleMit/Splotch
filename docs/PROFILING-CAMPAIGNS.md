@@ -583,6 +583,16 @@ EOF
 A capture with no `probe` parameter is not a failure — the Appium and desktop transports do not use
 one, and a native or hand capture cannot (it records `pageIdentity: "unprovable"`).
 
+This audit ran over every tracked corpus on 2026-08-25 (issue 1315): **25 files across eight
+2026-08-23/24 corpora are contaminated** — everything captured before the page-identity guard
+(commit cfb1b6c9), including the corpora the 2026-08-24 landscape investigations were argued from —
+and everything after it is clean. A contaminated file is marked in its corpus `index.json`
+(`cellAttributable: false`, plus the mismatched `reportNonce` and a corpus-level
+`crossRunContamination` block), which is where tools should look before re-scoring; marked corpora
+remain usable as runtime-level calibration (real driven input from that device), never as cells.
+`tools/perf/tests/corpus-attribution.test.mjs` re-runs the nonce audit in CI and fails if a marking
+disagrees with the evidence — including a future corpus promoted with contamination unmarked.
+
 ### Stopping a campaign does not lose the cells it banked
 
 A campaign resumes: re-run the same command and a cell whose artifact already parses is skipped.

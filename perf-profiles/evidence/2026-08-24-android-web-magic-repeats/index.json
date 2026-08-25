@@ -10,7 +10,9 @@
       "mode": "LANDSCAPE-dark",
       "observedTheme": "dark",
       "fidelityPassed": true,
-      "lostFrameTimeShare": 0.0023
+      "lostFrameTimeShare": 0.0023,
+      "cellAttributable": false,
+      "reportNonce": "magic-light-1-23468-80"
     },
     {
       "file": "magic-dark-2.json",
@@ -19,7 +21,9 @@
       "mode": "LANDSCAPE-dark",
       "observedTheme": "dark",
       "fidelityPassed": true,
-      "lostFrameTimeShare": 0.0068
+      "lostFrameTimeShare": 0.0068,
+      "cellAttributable": false,
+      "reportNonce": "magic-light-2-29165-71"
     },
     {
       "file": "magic-dark-3.json",
@@ -28,7 +32,9 @@
       "mode": "LANDSCAPE-dark",
       "observedTheme": "dark",
       "fidelityPassed": true,
-      "lostFrameTimeShare": 0.0087
+      "lostFrameTimeShare": 0.0087,
+      "cellAttributable": false,
+      "reportNonce": "magic-light-3-39667-80"
     },
     {
       "file": "magic-light-1.json",
@@ -37,7 +43,9 @@
       "mode": "LANDSCAPE-light",
       "observedTheme": "light",
       "fidelityPassed": true,
-      "lostFrameTimeShare": 0.009
+      "lostFrameTimeShare": 0.009,
+      "cellAttributable": false,
+      "reportNonce": "magic-dark-1-26477-65"
     },
     {
       "file": "magic-light-2.json",
@@ -46,7 +54,9 @@
       "mode": "LANDSCAPE-light",
       "observedTheme": "light",
       "fidelityPassed": true,
-      "lostFrameTimeShare": 0.0066
+      "lostFrameTimeShare": 0.0066,
+      "cellAttributable": false,
+      "reportNonce": "magic-dark-1-26477-65"
     },
     {
       "file": "magic-light-3.json",
@@ -57,5 +67,11 @@
       "fidelityPassed": true,
       "lostFrameTimeShare": 0.0023
     }
-  ]
+  ],
+  "crossRunContamination": {
+    "auditedOn": "2026-08-25",
+    "issue": 1315,
+    "finding": "Every listed capture's report carries a ?probe= nonce naming a different cell than its label. This corpus was captured before the page-identity guard landed (commit cfb1b6c9, 2026-08-24 14:34) \u2014 the pre-#1291 mechanism, a restored Chrome tab answering for the current run. Found extending the issue-1315 audit on 2026-08-25.",
+    "usableAs": "Runtime-level calibration only: frame tables and input statistics are genuine driven Android Chrome data from this device, but no file's frame tables can be attributed to its labelled cell (brush, mode, or theme). Do not re-score these as cells; the post-guard captures (2026-08-24-android-web-verified and later) supersede them."
+  }
 }

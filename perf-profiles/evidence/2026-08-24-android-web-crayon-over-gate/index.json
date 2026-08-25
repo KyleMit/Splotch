@@ -8,9 +8,17 @@
       "brush": "crayon",
       "mode": "LANDSCAPE-light",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-light/crayon-real-screen.json"
+      "source": "android-device-web/landscape-light/crayon-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-portrait-light-crayon-66680-74"
     }
   ],
   "why": "Kept outside the one-per-target-and-brush rule on purpose. ADR-0138 samples by target and brush because a metric changes with the display and the workload rather than with orientation and theme, and that is right for re-scoring. It is wrong for a product finding: this is the only android-device-web cell over the 1% gate (1.82% against 0.69% for the same brush in landscape-dark), and the raw capture behind a claim about the product is worth more than the sampling rule saves. The rule kept landscape-dark for crayon; this keeps the cell the claim is about.",
-  "supersededForTheme": "SUPERSEDED for theme. These captures are real and their fidelity, cadence and frame numbers stand, but their theme labels are CLI echoes: the runner recorded --theme as provenance without ever setting or observing it, so every one of them measured whatever theme the previous run had persisted. The 1.82%-versus-0.69% crayon comparison read off them does not survive a controlled recapture, which measures 0.46 light against 0.45 dark. Kept because everything except the theme attribution is still evidence. See perf-profiles/evidence/2026-08-24-android-web-themed for the controlled run."
+  "supersededForTheme": "SUPERSEDED for theme. These captures are real and their fidelity, cadence and frame numbers stand, but their theme labels are CLI echoes: the runner recorded --theme as provenance without ever setting or observing it, so every one of them measured whatever theme the previous run had persisted. The 1.82%-versus-0.69% crayon comparison read off them does not survive a controlled recapture, which measures 0.46 light against 0.45 dark. Kept because everything except the theme attribution is still evidence. See perf-profiles/evidence/2026-08-24-android-web-themed for the controlled run.",
+  "crossRunContamination": {
+    "auditedOn": "2026-08-25",
+    "issue": 1315,
+    "finding": "Every listed capture's report carries a ?probe= nonce naming a different cell than its label. This corpus was captured before the page-identity guard landed (commit cfb1b6c9, 2026-08-24 14:34) \u2014 the pre-#1291 mechanism, a restored Chrome tab answering for the current run. Found extending the issue-1315 audit on 2026-08-25.",
+    "usableAs": "Runtime-level calibration only: frame tables and input statistics are genuine driven Android Chrome data from this device, but no file's frame tables can be attributed to its labelled cell (brush, mode, or theme). Do not re-score these as cells; the post-guard captures (2026-08-24-android-web-verified and later) supersede them."
+  }
 }

@@ -8,7 +8,9 @@
       "brush": "crayon",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/crayon-real-screen.json"
+      "source": "android-device-web/landscape-dark/crayon-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-portrait-dark-crayon-88770-81"
     },
     {
       "file": "android-device-web-eraser.json",
@@ -16,7 +18,9 @@
       "brush": "eraser",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/eraser-real-screen.json"
+      "source": "android-device-web/landscape-dark/eraser-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-dark-pen-undo-27299-78"
     },
     {
       "file": "android-device-web-magic.json",
@@ -24,7 +28,9 @@
       "brush": "magic",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/magic-real-screen.json"
+      "source": "android-device-web/landscape-dark/magic-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-dark-pen-undo-27299-78"
     },
     {
       "file": "android-device-web-pen.json",
@@ -32,8 +38,16 @@
       "brush": "pen",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": true,
-      "source": "android-device-web/landscape-dark/pen-real-screen.json"
+      "source": "android-device-web/landscape-dark/pen-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-portrait-dark-pen-undo-84541-80"
     }
   ],
-  "supersededForTheme": "SUPERSEDED for theme. These captures are real and their fidelity, cadence and frame numbers stand, but their theme labels are CLI echoes: the runner recorded --theme as provenance without ever setting or observing it, so every one of them measured whatever theme the previous run had persisted. The 1.82%-versus-0.69% crayon comparison read off them does not survive a controlled recapture, which measures 0.46 light against 0.45 dark. Kept because everything except the theme attribution is still evidence. See perf-profiles/evidence/2026-08-24-android-web-themed for the controlled run."
+  "supersededForTheme": "SUPERSEDED for theme. These captures are real and their fidelity, cadence and frame numbers stand, but their theme labels are CLI echoes: the runner recorded --theme as provenance without ever setting or observing it, so every one of them measured whatever theme the previous run had persisted. The 1.82%-versus-0.69% crayon comparison read off them does not survive a controlled recapture, which measures 0.46 light against 0.45 dark. Kept because everything except the theme attribution is still evidence. See perf-profiles/evidence/2026-08-24-android-web-themed for the controlled run.",
+  "crossRunContamination": {
+    "auditedOn": "2026-08-25",
+    "issue": 1315,
+    "finding": "Every listed capture's report carries a ?probe= nonce naming a different cell than its label. This corpus was captured before the page-identity guard landed (commit cfb1b6c9, 2026-08-24 14:34) \u2014 the pre-#1291 mechanism, a restored Chrome tab answering for the current run. Found extending the issue-1315 audit on 2026-08-25.",
+    "usableAs": "Runtime-level calibration only: frame tables and input statistics are genuine driven Android Chrome data from this device, but no file's frame tables can be attributed to its labelled cell (brush, mode, or theme). Do not re-score these as cells; the post-guard captures (2026-08-24-android-web-verified and later) supersede them."
+  }
 }

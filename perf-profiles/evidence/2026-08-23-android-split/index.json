@@ -1,6 +1,12 @@
 {
   "campaign": "2026-08-23-android-split",
   "capturedFrom": "perf-profiles/campaign-0823",
+  "crossRunContamination": {
+    "auditedOn": "2026-08-25",
+    "issue": 1315,
+    "finding": "Every capture's report carries a ?probe= nonce naming a different cell than its label, and eraser and pen carry the SAME nonce — one page's report banked under two brushes. This is the pre-#1291 mechanism (a restored Chrome tab answering for the current run); the page-identity guard did not exist when these were captured.",
+    "usableAs": "Runtime-level calibration only: the frame tables and input statistics are genuine adb-driven Android Chrome data from this device and night, which is what the input-fidelity and refresh-regime calibration tests read them for. Do NOT attribute any file's frame tables to its labelled brush or mode, and do not re-score these as android-device-web cells — the clean 2026-08-24 portrait recapture (#1291) superseded those numbers."
+  },
   "kept": [
     {
       "file": "android-device-web-crayon.json",
@@ -8,7 +14,9 @@
       "brush": "crayon",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": false,
-      "source": "android-device-web/landscape-dark/crayon-real-screen.json"
+      "source": "android-device-web/landscape-dark/crayon-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-dark-eraser-39716-68"
     },
     {
       "file": "android-device-web-eraser.json",
@@ -16,7 +24,9 @@
       "brush": "eraser",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": false,
-      "source": "android-device-web/landscape-dark/eraser-real-screen.json"
+      "source": "android-device-web/landscape-dark/eraser-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-light-crayon-47615-72"
     },
     {
       "file": "android-device-web-magic.json",
@@ -24,7 +34,9 @@
       "brush": "magic",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": false,
-      "source": "android-device-web/landscape-dark/magic-real-screen.json"
+      "source": "android-device-web/landscape-dark/magic-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-dark-pen-undo-56787-70"
     },
     {
       "file": "android-device-web-pen.json",
@@ -32,7 +44,9 @@
       "brush": "pen",
       "mode": "LANDSCAPE-dark",
       "fidelityPassed": false,
-      "source": "android-device-web/landscape-dark/pen-real-screen.json"
+      "source": "android-device-web/landscape-dark/pen-real-screen.json",
+      "cellAttributable": false,
+      "reportNonce": "android-device-web-landscape-light-crayon-47615-72"
     }
   ]
 }
