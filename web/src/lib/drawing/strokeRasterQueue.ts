@@ -31,7 +31,7 @@ export type RasterPointer = {
 // time), while the WKWebView pays more per op so per-frame merging wins there
 // (1.74% -> 1.46% on the same iPad, same day — issue 1236; splitting further
 // to per-sample ops cost 3.07%). Every other brush merges everywhere.
-export type CrayonOpGranularity = 'per-move' | 'per-frame';
+type CrayonOpGranularity = 'per-move' | 'per-frame';
 
 export type StrokeRasterQueueDeps<P extends RasterPointer> = {
   activePointers: Map<number, P>;
