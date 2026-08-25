@@ -37,6 +37,13 @@ export const UNCALIBRATED_RUNTIME = 'uncalibrated-runtime';
 // folded beside cells driven at the contract count. A retry recaptures at the
 // plan's count, so it spends an attempt like any other recapturable rejection.
 export const WRONG_GESTURE_REPEATS = 'wrong-gesture-repeats';
+// The companion contract for HOW those repeats were fed ink (issue 1292): a
+// banked eraser capture recording a plan other than the campaign's — an
+// unrefilled one, whose passes 2..N erased mostly-transparent pixels — measured
+// an optimistically different quantity, not a comparable cell. A retry
+// recaptures under the current plan, so it spends an attempt like
+// WRONG_GESTURE_REPEATS does.
+export const WRONG_GESTURE_PLAN = 'wrong-gesture-plan';
 
 export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
   return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
@@ -63,7 +70,8 @@ export function attemptsFor(rows, cellId) {
         row.status?.startsWith(UNSCOREABLE) ||
         row.status?.startsWith(UNCALIBRATED_RUNTIME) ||
         row.status?.startsWith(OFF_REFRESH_REGIME) ||
-        row.status?.startsWith(WRONG_GESTURE_REPEATS))
+        row.status?.startsWith(WRONG_GESTURE_REPEATS) ||
+        row.status?.startsWith(WRONG_GESTURE_PLAN))
   ).length;
 }
 

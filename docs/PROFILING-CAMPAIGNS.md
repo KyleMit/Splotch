@@ -124,9 +124,13 @@ with geometry identical to every other brush — moving the strokes instead was 
 because even the optimal placement schedule saturates a landscape phone canvas by pass 5. The setup
 fill is verified rather than trusted (issue 1302), each refill re-verifies, and the artifact records
 all of it (`eraserFill`, `eraserRefills`, and `gesturePlan`: `fixed-geometry-refilled` for the
-eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). Do not compare an
-eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
-once the campaign-end recapture lands.
+eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). The boundary is
+enforced the same way the repeat count is: campaign acceptance refuses a banked cell whose recorded
+plan disagrees with the contract (`wrong-gesture-plan`, checked after the repeat count for the same
+most-fundamental-rejection-first reason), the matrix refuses to fold two runs recording different
+plans into one cell, and an artifact predating the field is accepted since it cannot prove either
+way. Treat the matrix's pre-refill eraser column as superseded once the campaign-end recapture
+lands.
 
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and

@@ -15,7 +15,11 @@ import {
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
-import { CAMPAIGN_TARGETS, recordedGestureRepeats } from './lib/campaign-plan.mjs';
+import {
+  CAMPAIGN_TARGETS,
+  recordedGesturePlan,
+  recordedGestureRepeats,
+} from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -264,6 +268,12 @@ function normalizeDrawingRun(
     // field. Read through the same helper acceptance uses, so the two readers
     // cannot drift.
     gestureRepeats: recordedGestureRepeats(profile),
+    // How those repeats were fed ink (issue 1292): an unrefilled eraser capture
+    // erased mostly-transparent pixels on passes 2..N and is optimistic by an
+    // unknown amount, so plans mark a comparability boundary the same way the
+    // repeat count does. Null for artifacts predating the field. Same shared
+    // reader as acceptance, so the two cannot drift.
+    gesturePlan: recordedGesturePlan(profile),
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
@@ -367,6 +377,24 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
           `${targetId} ${mode.id} ${brush} folds captures with different gesture-repeat counts ` +
             `(${repeatCounts.join(', ')}) — their first-touch-to-repeat mixes are not comparable. ` +
             `Sources: ${sources}`
+        );
+      }
+      // The same refusal for HOW the repeats were fed ink: two recorded plans in
+      // one cell folds an unrefilled eraser number into a refilled one, and the
+      // unrefilled one is optimistic by an unknown amount (issue 1292). A null
+      // (an artifact predating the field) proves nothing either way, exactly as
+      // with the repeat count above.
+      const plans = [
+        ...new Set(runs.map((run) => run.gesturePlan).filter((plan) => plan !== null)),
+      ];
+      if (plans.length > 1) {
+        const planSources = runs
+          .map((run) => `${run.source} (${run.gesturePlan ?? 'unrecorded'})`)
+          .join(', ');
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds captures under different gesture plans ` +
+            `(${plans.join(', ')}) — how each pass was fed ink is part of what the cell measured. ` +
+            `Sources: ${planSources}`
         );
       }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];

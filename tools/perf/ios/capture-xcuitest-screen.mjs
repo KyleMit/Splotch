@@ -6,7 +6,7 @@ import {
   eraserFillFunctionSource,
   eraserRefillFunctionSource,
 } from '../lib/eraser-fill.mjs';
-import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import { NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { captureRuntime, inputFidelity } from '../lib/input-fidelity.mjs';
@@ -924,10 +924,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       // Same top-level home the split artifact uses for these fields, so the
       // shared reader needs no second location (the review caught gesturePlan
       // reproducing the gestureRepeats top-level/automation split).
-      // How the repeats were fed ink (issue 1292): identical geometry every
-      // pass, tiles refilled between passes for the eraser. Old artifacts lack
-      // the field and are unrefilled fixed-geometry.
-      gesturePlan: brush === 'eraser' ? 'fixed-geometry-refilled' : 'fixed-geometry',
+      gesturePlan: gesturePlanFor(brush),
       // The verified-fill evidence (issue 1302); null for every other brush.
       eraserFill,
       // Per-pass refill evidence (issue 1292), read back from the page.

@@ -28,6 +28,7 @@ import {
   artifactPassedFidelity,
   campaignTarget,
   cellServerSource,
+  recordedGesturePlan,
   recordedGestureRepeats,
   resolvedProbeHostProblem,
   planCampaign,
@@ -43,6 +44,7 @@ import {
   OFF_REFRESH_REGIME,
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
+  WRONG_GESTURE_PLAN,
   WRONG_GESTURE_REPEATS,
   formatLedgerRow,
   nextAction,
@@ -81,13 +83,19 @@ export function cellInspection(cell, { runtime, refreshRegime }) {
     verdictRequired: cell.reportsFidelity,
     expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
     expectedGestureRepeats: cell.gestureRepeats ?? null,
+    expectedGesturePlan: cell.gesturePlan ?? null,
   });
 }
 
 export function inspectArtifact(
   path,
   runtime,
-  { verdictRequired = false, expectedRefreshRegime = null, expectedGestureRepeats = null } = {}
+  {
+    verdictRequired = false,
+    expectedRefreshRegime = null,
+    expectedGestureRepeats = null,
+    expectedGesturePlan = null,
+  } = {}
 ) {
   const full = absolute(path);
   if (!existsSync(full)) return { ok: false, status: FAILED };
@@ -119,8 +127,10 @@ export function inspectArtifact(
   // invalid artifact — the same rejection an unparseable file gets — not a
   // historical absence, and not a crash mid-queue.
   let recordedRepeats;
+  let recordedPlan;
   try {
     recordedRepeats = recordedGestureRepeats(artifact);
+    recordedPlan = recordedGesturePlan(artifact);
   } catch {
     return { ok: false, status: FAILED };
   }
@@ -130,6 +140,17 @@ export function inspectArtifact(
     recordedRepeats !== expectedGestureRepeats
   ) {
     return { ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats };
+  }
+  // After the repeat count: a cell at the wrong count is the wrong quantity no
+  // matter how its passes were fed ink, so the count is the rejection that
+  // names the recapture's first problem. Same absent-field tolerance as the
+  // count — an artifact predating the plan field proves nothing either way.
+  if (
+    expectedGesturePlan !== null &&
+    recordedPlan !== null &&
+    recordedPlan !== expectedGesturePlan
+  ) {
+    return { ok: false, status: WRONG_GESTURE_PLAN, recordedPlan };
   }
   return { ok: true, status: COMPLETE, regime };
 }
@@ -387,6 +408,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         console.log(
           `RETRY ${cell.id} — captured at ${inspected.recordedRepeats} gesture repeats, ` +
             `not the campaign contract of ${cell.gestureRepeats}`
+        );
+      } else if (inspected.status === WRONG_GESTURE_PLAN) {
+        console.log(
+          `RETRY ${cell.id} — captured under the ${inspected.recordedPlan} gesture plan, ` +
+            `not the campaign contract of ${cell.gesturePlan}`
         );
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);

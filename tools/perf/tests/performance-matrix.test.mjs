@@ -894,6 +894,53 @@ describe('the gesture-repeat contract in a folded cell', () => {
   });
 });
 
+// Issue 1292's companion boundary: HOW the repeats were fed ink. An unrefilled
+// eraser run is optimistic by an unknown amount, so folding it beside a
+// refilled one launders the optimism into the cell. A run predating the field
+// (null) proves nothing and folds as before.
+describe('the gesture-plan contract in a folded cell', () => {
+  function writeDrawingCapture(directory, name, gesturePlan) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gesturePlan,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  it('publishes each run’s recorded plan and refuses to fold two different ones', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const refilled = writeDrawingCapture(directory, 'pen-refilled.json', 'fixed-geometry-refilled');
+    const legacy = writeDrawingCapture(directory, 'pen-legacy.json', undefined);
+    const modesWith = (pen) => [
+      capturedManifestMode(modeSpecs[0], { drawing: { pen } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    const matrix = normalizeMatrix(manifest(modesWith([refilled, legacy])), directory);
+    const runs = matrix.targets[0].modes[0].drawing.pen.runs;
+    expect(runs.map((run) => run.gesturePlan)).toEqual(['fixed-geometry-refilled', null]);
+
+    const unrefilled = writeDrawingCapture(directory, 'pen-unrefilled.json', 'fixed-geometry');
+    expect(() => normalizeMatrix(manifest(modesWith([refilled, unrefilled])), directory)).toThrow(
+      'folds captures under different gesture plans (fixed-geometry-refilled, fixed-geometry)'
+    );
+  });
+});
+
 // Issue 1290's surviving claim: the matrix publishes one capture per cell and a
 // single capture decides a pass/fail gate. Its spread figures were retracted
 // twice, so the matrix states the structural fact — prose, runCount, tooltip

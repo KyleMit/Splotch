@@ -2,13 +2,18 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { NATIVE_TRANSPORT, recordedGestureRepeats } from '../lib/campaign-plan.mjs';
+import {
+  NATIVE_TRANSPORT,
+  recordedGesturePlan,
+  recordedGestureRepeats,
+} from '../lib/campaign-plan.mjs';
 import {
   COMPLETE,
   FAILED,
   OFF_REFRESH_REGIME,
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
+  WRONG_GESTURE_PLAN,
   WRONG_GESTURE_REPEATS,
 } from '../lib/campaign-ledger.mjs';
 import { cellInspection, inspectArtifact } from '../run-campaign.mjs';
@@ -271,6 +276,103 @@ describe('the gesture-repeat contract', () => {
     expect(inspectArtifact(malformed, 'web')).toMatchObject({ ok: false, status: FAILED });
     expect(() => recordedGestureRepeats({ gestureRepeats: 'bogus' })).toThrow('not a number');
     expect(recordedGestureRepeats({})).toBeNull();
+  });
+});
+
+// Issue 1292's companion contract: HOW the repeats were fed ink. An unrefilled
+// eraser capture erased mostly-transparent pixels on passes 2..N, so a banked
+// cell recording a plan other than the campaign's measured an optimistically
+// different quantity and must be recaptured, not folded. Absent-field artifacts
+// are accepted, exactly as with the repeat count.
+describe('the gesture-plan contract', () => {
+  it('refuses a banked capture recording a different plan, and says both plans', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gesturePlan: 'fixed-geometry' }), 'web', {
+        verdictRequired: true,
+        expectedGesturePlan: 'fixed-geometry-refilled',
+      })
+    ).toMatchObject({
+      ok: false,
+      status: WRONG_GESTURE_PLAN,
+      recordedPlan: 'fixed-geometry',
+    });
+  });
+
+  it('accepts the contract plan', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gesturePlan: 'fixed-geometry-refilled' }), 'web', {
+        expectedGesturePlan: 'fixed-geometry-refilled',
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('does not reject an artifact predating the field, nor a cell with no contract', () => {
+    expect(
+      inspectArtifact(artifactAt(scoreable), 'web', {
+        expectedGesturePlan: 'fixed-geometry-refilled',
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gesturePlan: 'fixed-geometry' }), 'web')
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('reaches the check through cellInspection from the plan cell', () => {
+    const cell = {
+      artifact: artifactAt({ ...scoreable, gesturePlan: 'fixed-geometry' }),
+      reportsFidelity: false,
+      reportsRefreshRegime: false,
+      gesturePlan: 'fixed-geometry-refilled',
+    };
+
+    expect(cellInspection(cell, { runtime: 'web', refreshRegime: '60hz' })).toMatchObject({
+      ok: false,
+      status: WRONG_GESTURE_PLAN,
+    });
+  });
+
+  // Same ordering rule as the repeat count, one link further down: fidelity,
+  // an uncalibrated runtime, and the regime name more fundamental problems —
+  // and a cell at the wrong repeat count is the wrong quantity no matter how
+  // its passes were fed ink, so the count outranks the plan too.
+  it('reports fidelity, the regime, and the repeat count ahead of the plan', () => {
+    const wrongPlan = { gesturePlan: 'fixed-geometry' };
+    const options = {
+      verdictRequired: true,
+      expectedGestureRepeats: 10,
+      expectedGesturePlan: 'fixed-geometry-refilled',
+    };
+
+    expect(
+      inspectArtifact(
+        artifactAt({ ...scoreable, ...wrongPlan, fidelity: { passed: false } }),
+        'web',
+        options
+      )
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+    expect(
+      inspectArtifact(
+        artifactAt({ ...scoreable, ...wrongPlan, summaries: { intervalMs: 8 } }),
+        'web',
+        { ...options, expectedRefreshRegime: '60hz' }
+      )
+    ).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, ...wrongPlan, gestureRepeats: 3 }), 'web', options)
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS });
+  });
+
+  // Same rule as a malformed count: a present-but-malformed plan must not
+  // collapse into the null that means "historical absence".
+  it('rejects a malformed recorded plan instead of reading it as absent', () => {
+    const malformed = artifactAt({ ...scoreable, gesturePlan: 7 });
+
+    expect(
+      inspectArtifact(malformed, 'web', { expectedGesturePlan: 'fixed-geometry-refilled' })
+    ).toMatchObject({ ok: false, status: FAILED });
+    expect(inspectArtifact(malformed, 'web')).toMatchObject({ ok: false, status: FAILED });
+    expect(() => recordedGesturePlan({ gesturePlan: 7 })).toThrow('not a string');
+    expect(recordedGesturePlan({})).toBeNull();
   });
 });
 
