@@ -445,9 +445,23 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
     );
   }
   const runtime = declaredRuntime ?? recordedRuntime;
+  // The desktop runtime spans three engines and rotation first-frame
+  // applicability differs per engine (ADR-0142 amendment), so the engine gets
+  // the same agreement rule as the runtime: both sides present must match, or
+  // a capture from one engine scores under rules declared for another.
+  // Non-desktop targets declare no engine and their artifacts record none.
+  const declaredEngine = CAMPAIGN_TARGETS[targetId]?.desktopEngine ?? null;
+  const recordedEngine = profile.engine ?? null;
+  if (declaredEngine && recordedEngine && declaredEngine !== recordedEngine) {
+    throw new Error(
+      `${spec.source} records engine ${recordedEngine}, but target ${targetId} declares ` +
+        `${declaredEngine} — an artifact from another engine cannot fold into this target`
+    );
+  }
+  const desktopEngine = declaredEngine ?? recordedEngine;
   const summaries = profile.samples
     ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
-        rotationFirstFrameNa(runtime, label)
+        rotationFirstFrameNa(runtime, label, desktopEngine)
       )
     : profile.summaries;
   const results = summaries

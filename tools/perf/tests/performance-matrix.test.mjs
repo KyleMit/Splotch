@@ -164,7 +164,7 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport, captureRuntime }
+  { orientation, theme, summaries, samples, transport, captureRuntime, engine }
 ) {
   const path = join(directory, name);
   writeFileSync(
@@ -177,6 +177,7 @@ function writeActionCapture(
       samples,
       transport,
       captureRuntime,
+      engine,
     })
   );
   return name;
@@ -360,6 +361,78 @@ describe('deployment matrix report', () => {
 
     expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
       'records captureRuntime android-chrome, but target ipad-device-web declares ios-safari'
+    );
+  });
+
+  // ADR-0142's second amendment: the desktop runtime spans three engines, and
+  // only WebKit shares Safari's inert construction (measured in
+  // perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/). A
+  // mac-safari rotation row is N/A; a mac-chrome one keeps its gate.
+  it('declares desktop WebKit rotation first frames not-applicable and keeps Chromium gated', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+    const rotationSamples = Array.from({ length: 4 }, (_, index) => ({
+      ...actionSample(rotationLabel, index === 0),
+      firstFrameMs: 100,
+    }));
+    const capture = (name, engine) =>
+      writeActionCapture(manifestDirectory, name, {
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        captureRuntime: 'desktop-playwright',
+        engine,
+        samples: rotationSamples,
+      });
+    const foldedFor = (targetId, source) => {
+      const source_manifest = manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source_manifest.targets[0].id = targetId;
+      return normalizeMatrix(source_manifest, manifestDirectory).targets[0].modes[0].actions
+        .results[0];
+    };
+
+    const webkitResult = foldedFor('mac-safari', capture('webkit-actions.json', 'webkit'));
+    expect(webkitResult.firstFrame.na).toBe(true);
+    expect(webkitResult.passed).toBe(true);
+
+    const chromiumResult = foldedFor('mac-chrome', capture('chromium-actions.json', 'chromium'));
+    expect(chromiumResult.firstFrame.na).toBeUndefined();
+    expect(chromiumResult.passed).toBe(false);
+  });
+
+  // The engine gets the runtime's agreement rule: a capture recorded under one
+  // engine must not fold into a target declaring another, because the rotation
+  // rules it is scored under are the engine's.
+  it('refuses an artifact whose recorded engine disagrees with the target’s declared one', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'cross-desktop-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      captureRuntime: 'desktop-playwright',
+      engine: 'chromium',
+      samples: [
+        actionSample('with ink: PORTRAIT to LANDSCAPE rotation', true),
+        ...Array.from({ length: 3 }, () =>
+          actionSample('with ink: PORTRAIT to LANDSCAPE rotation', false)
+        ),
+      ],
+    });
+    const source_manifest = manifest([
+      capturedManifestMode(modeSpecs[0], {
+        actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+      }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source_manifest.targets[0].id = 'mac-safari';
+
+    expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
+      'records engine chromium, but target mac-safari declares webkit'
     );
   });
 

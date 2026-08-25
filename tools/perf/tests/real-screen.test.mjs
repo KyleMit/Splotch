@@ -43,6 +43,7 @@ import {
   actionFailures,
   actionRows,
   rotationActionLabel,
+  ROTATION_INERT_DESKTOP_ENGINES,
   rotationFirstFrameNa,
   summarizeActionGroup,
   summarizeActions,
@@ -403,6 +404,32 @@ describe('discrete action response', () => {
       expect(rotationFirstFrameNa('android-chrome', rotationLabel)).toBe(false);
       expect(rotationFirstFrameNa('browser', rotationLabel)).toBe(false);
       expect(rotationFirstFrameNa(undefined, rotationLabel)).toBe(false);
+    });
+
+    // ADR-0142's second amendment: one desktop runtime spans three engines, and
+    // the engine decides where resize sits relative to the rendering turn. The
+    // set is pinned to the measured corpus
+    // (perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/):
+    // WebKit read exactly 0.0 in 31/32 scored samples — the Safari
+    // construction — while Chromium (0.04-8.0 ms) and Firefox (bimodal, up to
+    // 9.5 ms) carry real dynamic range and keep the gate.
+    it('declares desktop rotation rows per engine, only where measured inert', () => {
+      // The set itself is part of the declaration: an engine joining it needs
+      // its own measured corpus, so a drive-by addition must fail loudly here.
+      expect([...ROTATION_INERT_DESKTOP_ENGINES]).toEqual(['webkit']);
+      expect(rotationFirstFrameNa('desktop-playwright', rotationLabel, 'webkit')).toBe(true);
+      expect(rotationFirstFrameNa('desktop-playwright', rotationLabel, 'chromium')).toBe(false);
+      expect(rotationFirstFrameNa('desktop-playwright', rotationLabel, 'firefox')).toBe(false);
+      // An artifact recording no engine (and a target declaring none) proves
+      // nothing about the dispatch construction, so it keeps the gate.
+      expect(rotationFirstFrameNa('desktop-playwright', rotationLabel)).toBe(false);
+      // The engine widens applicability only under the desktop runtime — it
+      // cannot declare another runtime's rows inert, and the click actions
+      // taken after a rotation stay gated on desktop too.
+      expect(rotationFirstFrameNa('android-chrome', rotationLabel, 'webkit')).toBe(false);
+      expect(
+        rotationFirstFrameNa('desktop-playwright', 'undo clear after blank rotation', 'webkit')
+      ).toBe(false);
     });
 
     it('skips the first-frame gate and records na for a Safari rotation row', () => {

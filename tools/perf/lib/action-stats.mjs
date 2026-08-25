@@ -55,9 +55,25 @@ const ROTATION_ACTION_LABEL = new RegExp(
 // record it too — and Android Chrome is exactly the runtime ADR-0142 says must
 // keep the gate (0.1-54 ms of real post-resize dynamic range). The native
 // WKWebView keeps it too: its first `resize` precedes committed layout, a real
-// if pre-layout reading. Only `ios-safari` is structurally inert.
-export function rotationFirstFrameNa(captureRuntime, label) {
-  return captureRuntime === 'ios-safari' && ROTATION_ACTION_LABEL.test(label);
+// if pre-layout reading.
+//
+// The desktop runner drives one runtime (`desktop-playwright`) across three
+// engines, and the engine decides where the `resize` dispatch sits relative to
+// the rendering turn — so desktop applicability needs the ENGINE beside the
+// runtime. Declared per engine from the local measurements in
+// perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/ (ADR-0142's
+// amendment): WebKit shares Safari's engine construction and read 0.0 in 31 of
+// 32 scored rotation samples, while Chromium (3.3-8.0 ms) carries real
+// post-resize dynamic range and stays gated. An engine absent from the set —
+// and every non-desktop caller, which passes no engine — keeps the gate.
+export const ROTATION_INERT_DESKTOP_ENGINES = new Set(['webkit']);
+
+export function rotationFirstFrameNa(captureRuntime, label, desktopEngine = null) {
+  if (!ROTATION_ACTION_LABEL.test(label)) return false;
+  if (captureRuntime === 'ios-safari') return true;
+  return (
+    captureRuntime === 'desktop-playwright' && ROTATION_INERT_DESKTOP_ENGINES.has(desktopEngine)
+  );
 }
 
 const maximum = (values) => (values.length ? Math.max(...values) : undefined);

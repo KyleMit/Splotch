@@ -6,6 +6,7 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  rotationFirstFrameNa,
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
@@ -23,6 +24,11 @@ import {
 } from '../lib/campaign-state.mjs';
 
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
+// The runtime this transport is judged as (tools/perf/lib/input-fidelity.mjs
+// vocabulary, and the mac-* targets' declared `captureRuntime`). One runtime
+// spans all three engines; rotation first-frame applicability additionally
+// keys on the engine (ROTATION_INERT_DESKTOP_ENGINES).
+const DESKTOP_CAPTURE_RUNTIME = 'desktop-playwright';
 const DEFAULT_VIEWPORT = { width: 1512, height: 982 };
 const DEFAULT_DEVICE_SCALE_FACTOR = 2;
 const READY_TIMEOUT_MS = 60_000;
@@ -166,7 +172,9 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       );
     }
 
-    const summaries = summarizeActions(samples, expectedLabels);
+    const summaries = summarizeActions(samples, expectedLabels, {}, (label) =>
+      rotationFirstFrameNa(DESKTOP_CAPTURE_RUNTIME, label, engineName)
+    );
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??
@@ -179,6 +187,11 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       },
       appUrl: base,
       engine: engineName,
+      // Recorded so the matrix's runtime-agreement check has an artifact side
+      // to compare against the target's declared runtime — a desktop capture
+      // folded into a device target (or vice versa) must collide, not score
+      // under the other's rotation rules.
+      captureRuntime: DESKTOP_CAPTURE_RUNTIME,
       viewport: { ...viewport, deviceScaleFactor },
       headless,
       theme: baselineTheme,

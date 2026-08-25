@@ -88,9 +88,29 @@ the gate. Android retains dynamic range, and the native WKWebView reading — th
 stated so nobody infers more than was measured: the evidence behind it is physical-iPad only, and
 `ipad-simulator-web` joins by engine identity (`captureRuntime: 'ios-safari'`) while its published
 action cells stay preserved until the campaign-end recapture; the published matrix itself is
-unchanged until that recapture regenerates it; and `mac-safari`'s desktop rotation rows publish the
-same inert-zero shape under a runner that records no runtime — they stay gated, a smaller instance
-of this class deliberately left for the desktop runner to declare on its own evidence.
+unchanged until that recapture regenerates it; and `mac-safari`'s desktop rotation rows published
+the same inert-zero shape under a runner that recorded no runtime — a smaller instance of this
+class, deliberately left at the time for the desktop runner to declare on its own evidence.
+
+*Second amendment (2026-08, the desktop declaration).* The desktop runner declared. Local
+measurement on the Mac (corpus `perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/`:
+the campaign's rotation cells at the campaign landscape viewport, 8 scored samples per rotation
+label per engine, 32 per engine) split the three engines:
+
+* **WebKit read exactly 0.0 ms in 31 of 32 samples** (the one non-zero: 6.0 ms, sub-frame). Same
+  engine, same construction as iPad Safari — `resize` dispatched inside the rendering turn whose rAF
+  timestamp the probe records — so the gate cannot discriminate and app work cannot move the
+  reading. Declared inert: `ROTATION_INERT_DESKTOP_ENGINES` in `tools/perf/lib/action-stats.mjs`.
+* **Chromium read exactly zero in 0 of 32 samples**, spreading 0.04–8.0 ms; **Firefox is bimodal**
+  (11 of 32 sub-1 ms, the rest 7.3–9.5 ms). Both carry real post-`resize` dynamic range and keep the
+  gate, on the numbers rather than by analogy to Android.
+
+The desktop runner spans three engines under one runtime, so applicability keys on the runtime **and
+the engine**: the runner now records `captureRuntime: 'desktop-playwright'`, applies the declaration
+to its own summaries, and the matrix holds a recorded `engine` to the target's declared
+`desktopEngine` with the same both-present-must-agree rule the runtime uses. `mac-safari`'s
+published 16/16 rotation zeros render N/A at the campaign-end regeneration, exactly as the iPad
+Safari cells do; nothing regenerates early.
 
 − Previously published rotation first-frame numbers are incomparable with post-change numbers, and
 `check:matrix-staleness` cannot see the boundary — its measured surface is deliberately product
