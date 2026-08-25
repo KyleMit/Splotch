@@ -76,7 +76,21 @@ against the app.
 
 − **The rotation first-frame gate no longer measures anything on Safari** (see above). The
 post-action frame gates are the operative rotation gates there; a future regression confined to the
-pre-`resize` window surfaces only in artifact activities, not as a red cell.
+pre-`resize` window surfaces only in artifact activities, not as a red cell. *Amendment (2026-08,
+issue 1324):* the structurally-inert cell is now declared rather than left as an always-green 0 —
+`rotationFirstFrameNa` in `tools/perf/lib/action-stats.mjs` marks Safari rotation first frames
+not-applicable (the ADR-0139 shape: a check that cannot discriminate must not silently pass), the
+gate is skipped for those rows, and the matrix renders N/A. Applicability keys on the **capture
+runtime** (`ios-safari`), never the artifact's `transport` — `transport: "browser"` is the Appium
+web transport generally, recorded by Android Chrome over Appium too, and Android Chrome must keep
+the gate. Android retains dynamic range, and the native WKWebView reading — the pre-layout `resize`
+— is a real measurement of a different quantity, stated above. Three boundaries of the declaration,
+stated so nobody infers more than was measured: the evidence behind it is physical-iPad only, and
+`ipad-simulator-web` joins by engine identity (`captureRuntime: 'ios-safari'`) while its published
+action cells stay preserved until the campaign-end recapture; the published matrix itself is
+unchanged until that recapture regenerates it; and `mac-safari`'s desktop rotation rows publish the
+same inert-zero shape under a runner that records no runtime — they stay gated, a smaller instance
+of this class deliberately left for the desktop runner to declare on its own evidence.
 
 − Previously published rotation first-frame numbers are incomparable with post-change numbers, and
 `check:matrix-staleness` cannot see the boundary — its measured surface is deliberately product

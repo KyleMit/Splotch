@@ -7,8 +7,11 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  rotationActionLabel,
+  rotationFirstFrameNa,
   summarizeActions,
 } from '../lib/action-stats.mjs';
+import { captureRuntime } from '../lib/input-fidelity.mjs';
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import {
@@ -162,6 +165,18 @@ function isPhysicalAppleUdid(value) {
 // mini is 744 px wide, below any tablet breakpoint that would exclude a phone. The
 // campaign is the layer that knows which device it queued, so it says so, and a
 // Simulator's `deviceName` still answers for a hand-run capture.
+// Read from the negotiated session rather than from flags: this command drives
+// Android through a capabilities file as well as the iPad, so the platform is
+// a property of the session that was actually opened.
+export function sessionPlatformName({ requestedCapabilities, session }) {
+  const sessionCapabilities = resolvedSessionCapabilities(session);
+  return String(
+    capabilityValue(sessionCapabilities, 'platformName') ??
+      capabilityValue(requestedCapabilities, 'platformName') ??
+      ''
+  ).toLowerCase();
+}
+
 export function actionGateAllowances({
   nativeApp,
   deviceId,
@@ -170,11 +185,7 @@ export function actionGateAllowances({
   session,
 }) {
   const sessionCapabilities = resolvedSessionCapabilities(session);
-  const platformName = String(
-    capabilityValue(sessionCapabilities, 'platformName') ??
-      capabilityValue(requestedCapabilities, 'platformName') ??
-      ''
-  ).toLowerCase();
+  const platformName = sessionPlatformName({ requestedCapabilities, session });
   const deviceName = String(
     capabilityValue(sessionCapabilities, 'deviceName') ??
       capabilityValue(requestedCapabilities, 'deviceName') ??
@@ -807,7 +818,7 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   const readyAt = await waitForReady(
     execute,
     to === 'PORTRAIT' ? 'innerHeight > innerWidth' : 'innerWidth > innerHeight',
-    `${from} to ${to} rotation`,
+    rotationActionLabel(from, to),
     READY_TIMEOUT_MS
   );
   await sleep(ANIMATED_ACTION_SETTLE_MS);
@@ -1421,7 +1432,7 @@ export async function runActionSweep({
         execute,
         blankCurrent,
         blankOther,
-        `empty after clear: ${blankCurrent} to ${blankOther} rotation`
+        `empty after clear: ${rotationActionLabel(blankCurrent, blankOther)}`
       )
     );
     await record(
@@ -1457,7 +1468,7 @@ export async function runActionSweep({
         execute,
         blankOther,
         originalOrientation,
-        `empty after clear: ${blankOther} to ${originalOrientation} rotation`
+        `empty after clear: ${rotationActionLabel(blankOther, originalOrientation)}`
       )
     );
     await ensureStableTrustedStroke(client, sessionId, execute);
@@ -1470,7 +1481,7 @@ export async function runActionSweep({
         execute,
         current,
         other,
-        `with ink: ${current} to ${other} rotation`
+        `with ink: ${rotationActionLabel(current, other)}`
       )
     );
     await record(
@@ -1480,7 +1491,7 @@ export async function runActionSweep({
         execute,
         other,
         originalOrientation,
-        `with ink: ${other} to ${originalOrientation} rotation`
+        `with ink: ${rotationActionLabel(other, originalOrientation)}`
       )
     );
   }
@@ -1721,7 +1732,18 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       requestedCapabilities: capabilities,
       session,
     });
-    const summaries = summarizeActions(samples, expectedLabels, gateAllowances);
+    const transport = nativeApp ? NATIVE_TRANSPORT : 'browser';
+    // `transport` names how the session was driven; the runtime names which
+    // engine ran the page, and only the runtime decides rotation first-frame
+    // applicability — `browser` covers Android Chrome over Appium too, which
+    // must stay gated (ADR-0142).
+    const runtime = captureRuntime(
+      sessionPlatformName({ requestedCapabilities: capabilities, session }),
+      nativeApp
+    );
+    const summaries = summarizeActions(samples, expectedLabels, gateAllowances, (label) =>
+      rotationFirstFrameNa(runtime, label)
+    );
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??
@@ -1737,7 +1759,11 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         id: capturedDeviceId(flag('device-id'), session),
       },
       appUrl,
-      transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
+      transport,
+      // The engine that ran the page, derived from the negotiated session —
+      // provenance for re-scorers, since `transport` alone cannot say (the
+      // matrix prefers its target's declared runtime and falls back to this).
+      captureRuntime: runtime,
       uiActivation: uiActivationLabel(samples),
       appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
       actions: [...actions],

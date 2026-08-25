@@ -26,8 +26,13 @@ import {
   tryCapture,
 } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
-import { nativeCanvasBounds, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
+import {
+  STROKES_PER_GESTURE_REPEAT,
+  nativeCanvasBounds,
+  trustedGestureActions,
+} from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -314,6 +319,8 @@ export function drivenCaptureArtifact({
   brush,
   orientation,
   theme,
+  gestureRepeats,
+  gesturePlan,
   ready,
   nativeApp,
   requirePageIdentity = true,
@@ -328,6 +335,25 @@ export function drivenCaptureArtifact({
     brush,
     orientation,
     theme,
+    // The repeat count decides the cell's first-touch-to-repeat mix, so cells
+    // captured at different counts are not comparable; campaign acceptance
+    // refuses a banked cell recording a count other than its contract (issue
+    // 1297).
+    gestureRepeats,
+    // How the repeats were fed ink (issue 1292): 'fixed-geometry-refilled' for
+    // the eraser — identical geometry every pass, tiles refilled between passes
+    // — and 'fixed-geometry' otherwise. Artifacts predating the field were all
+    // unrefilled fixed-geometry, so their eraser passes 2..N erased nothing and
+    // those numbers are optimistic and not comparable to refilled ones. (A
+    // 'per-repeat-offsets' value existed briefly inside the unmerged stack and
+    // never captured a cell.)
+    gesturePlan: gesturePlan ?? null,
+    // The verified eraser-fill evidence (issue 1302); null for other brushes
+    // and for captures predating verification.
+    eraserFill: ready?.eraserFill ?? null,
+    // Per-pass refill evidence (issue 1292): one entry per between-pass refill,
+    // each carrying its own verification result.
+    eraserRefills: payload?.eraserRefills ?? null,
     // What the PAGE reported, read back at readiness. `theme` alone is a request,
     // and `report.meta.theme` cannot answer either: the product stores the
     // loosest preference that renders an appearance, so choosing the theme the OS
@@ -357,7 +383,7 @@ export async function captureDeviceFrames({
   brush = argFlag('brush', 'pen'),
   orientation = argFlag('orientation', 'PORTRAIT'),
   theme = argFlag('theme', 'light'),
-  repeats = Number(argFlag('gesture-repeats', 10)),
+  repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
   cdpPort = parsePositivePort(argFlag('cdp-port', PORT_ROLES.androidCdp.port), 'cdp-port'),
@@ -373,6 +399,9 @@ export async function captureDeviceFrames({
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
+  if (!Number.isSafeInteger(repeats) || repeats < 1) {
+    fail('--gesture-repeats must be a positive integer');
+  }
   if (!ORIENTATIONS.includes(orientation)) {
     fail(`--orientation must be one of ${ORIENTATIONS.join(', ')}`);
   }
@@ -398,6 +427,15 @@ export async function captureDeviceFrames({
     nonce,
     requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
+    // The page refills the tiles between gesture passes so every pass erases
+    // real ink (issue 1292) — the plan carries how the host groups strokes.
+    eraserRefill:
+      brush === 'eraser'
+        ? {
+            everyStrokes: STROKES_PER_GESTURE_REPEAT,
+            totalStrokes: repeats * STROKES_PER_GESTURE_REPEAT,
+          }
+        : null,
     finish: false,
     reset: true,
   });
@@ -511,6 +549,8 @@ export async function captureDeviceFrames({
     brush,
     orientation,
     theme,
+    gestureRepeats: repeats,
+    gesturePlan: brush === 'eraser' ? 'fixed-geometry-refilled' : 'fixed-geometry',
     ready,
     nativeApp,
     requirePageIdentity,

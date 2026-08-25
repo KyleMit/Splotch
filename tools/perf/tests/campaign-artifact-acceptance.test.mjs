@@ -2,13 +2,14 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import { NATIVE_TRANSPORT, recordedGestureRepeats } from '../lib/campaign-plan.mjs';
 import {
   COMPLETE,
   FAILED,
   OFF_REFRESH_REGIME,
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
+  WRONG_GESTURE_REPEATS,
 } from '../lib/campaign-ledger.mjs';
 import { cellInspection, inspectArtifact } from '../run-campaign.mjs';
 
@@ -137,6 +138,139 @@ describe('inspectArtifact', () => {
         status: COMPLETE,
       });
     });
+  });
+});
+
+// Issue 1297: the repeat count decides how much of a cell is first-touch work
+// versus amortised repeat work, so a banked capture recording a count other than
+// the plan's contract measured a different quantity and must be recaptured, not
+// folded. An artifact predating the field proves nothing either way and is
+// accepted — refusing it would strand every historical capture.
+describe('the gesture-repeat contract', () => {
+  it('refuses a banked capture recording a different count, and says both counts', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: 3 }), 'web', {
+        verdictRequired: true,
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats: 3 });
+  });
+
+  it('accepts the contract count wherever the runner filed it', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: 10 }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, automation: { gestureRepeats: 10 } }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, automation: { gestureRepeats: 3 } }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS });
+  });
+
+  it('does not reject an artifact predating the field, nor a cell with no contract', () => {
+    expect(
+      inspectArtifact(artifactAt(scoreable), 'web', { expectedGestureRepeats: 10 })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: 3 }), 'web')).toMatchObject({
+      ok: true,
+      status: COMPLETE,
+    });
+  });
+
+  it('reaches the check through cellInspection from the plan cell', () => {
+    const cell = {
+      artifact: artifactAt({ ...scoreable, gestureRepeats: 3 }),
+      reportsFidelity: false,
+      reportsRefreshRegime: false,
+      gestureRepeats: 10,
+    };
+
+    expect(cellInspection(cell, { runtime: 'web', refreshRegime: '60hz' })).toMatchObject({
+      ok: false,
+      status: WRONG_GESTURE_REPEATS,
+    });
+  });
+
+  // The ordering matters more than the status does, same as the regime check: a
+  // capture whose gesture never reached the canvas has a meaningless repeat
+  // count as well as a meaningless number, and naming the count would send the
+  // next session recapturing a cell whose real problem is elsewhere — worst of
+  // all for UNCALIBRATED_RUNTIME, the one status that must never be retried.
+  it('reports fidelity, an uncalibrated runtime, and the regime ahead of the repeat count', () => {
+    const wrongCount = { gestureRepeats: 3 };
+    const options = { verdictRequired: true, expectedGestureRepeats: 10 };
+
+    expect(
+      inspectArtifact(
+        artifactAt({ ...scoreable, ...wrongCount, fidelity: { passed: false } }),
+        'web',
+        options
+      )
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+    expect(
+      inspectArtifact(
+        artifactAt({
+          ...scoreable,
+          ...wrongCount,
+          fidelity: {
+            passed: false,
+            checks: { trustedTouch: true, cadence: true, coalescing: null },
+            uncalibrated: ['coalescing'],
+          },
+        }),
+        'web',
+        options
+      )
+    ).toMatchObject({ ok: false, status: UNCALIBRATED_RUNTIME });
+    expect(
+      inspectArtifact(
+        artifactAt({ ...scoreable, ...wrongCount, summaries: { intervalMs: 8 } }),
+        'web',
+        {
+          ...options,
+          expectedRefreshRegime: '60hz',
+        }
+      )
+    ).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
+  });
+
+  // A string-typed count in a foreign artifact compares by value: hard-rejecting
+  // '10' against 10 while the matrix silently dropped it was two readers
+  // disagreeing about one field.
+  it('compares a string-typed recorded count by value', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: '10' }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: '3' }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats: 3 });
+  });
+
+  // Review round 2: a present-but-malformed count must not collapse into the
+  // null that means "historical absence" — that read a corrupt artifact as a
+  // trustworthy old one. It is rejected like any invalid artifact, with or
+  // without a contract to compare against.
+  it('rejects a malformed recorded count instead of reading it as absent', () => {
+    const malformed = artifactAt({ ...scoreable, gestureRepeats: 'bogus' });
+
+    expect(inspectArtifact(malformed, 'web', { expectedGestureRepeats: 10 })).toMatchObject({
+      ok: false,
+      status: FAILED,
+    });
+    expect(inspectArtifact(malformed, 'web')).toMatchObject({ ok: false, status: FAILED });
+    expect(() => recordedGestureRepeats({ gestureRepeats: 'bogus' })).toThrow('not a number');
+    expect(recordedGestureRepeats({})).toBeNull();
   });
 });
 

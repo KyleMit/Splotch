@@ -115,6 +115,33 @@ names the setting. Check with `adb shell dumpsys display | grep -o 'renderFrameR
 phone that should boost to 120 reporting 60 is the tell — and clear it with
 `adb shell settings delete system peak_refresh_rate` and the same for `min_refresh_rate`.
 
+**Eraser cells before the between-pass refill are optimistic by an unknown amount.** The gesture
+plan replays identical geometry every pass, so eraser passes 2..N dragged the eraser across pixels
+pass 1 had already made transparent — roughly nine tenths of a ten-repeat eraser cell measured
+erasing nothing (issue 1292). The fix is refills, not geometry: the page refills the tiles in the
+pointer-up gap after each pass (outside the in-contact charge), so every pass erases full real ink
+with geometry identical to every other brush — moving the strokes instead was measured and retired,
+because even the optimal placement schedule saturates a landscape phone canvas by pass 5. The setup
+fill is verified rather than trusted (issue 1302), each refill re-verifies, and the artifact records
+all of it (`eraserFill`, `eraserRefills`, and `gesturePlan`: `fixed-geometry-refilled` for the
+eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). Do not compare an
+eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
+once the campaign-end recapture lands.
+
+**A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
+First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and
+amortise across the remaining passes, so the repeat count decides how much of a cell is first-touch
+work versus repeat work and cells at different counts are not comparable (issue 1297; it muddied the
+issue-1236 crayon A/B before the count was part of the contract). The campaign drives every
+**repeat-driven** drawing cell at `GESTURE_REPEATS` (10) — the device and emulator/simulator
+targets; the three Mac targets are outside the contract by construction, since the desktop transport
+drives through the probe's own synthetic driver and has no gesture-repeat concept. Capture artifacts
+record the count they were driven at, and artifact acceptance refuses a banked cell recording a
+different one as `wrong-gesture-repeats` — recapturing rather than folding, and checked after
+fidelity and refresh regime so the more fundamental rejection is the one reported. An artifact
+predating the field is accepted, since it cannot prove either way; the matrix likewise refuses to
+fold two runs recording different counts into one cell.
+
 ## `ios_webkit_debug_proxy` is obsolete on iOS 17 and newer
 
 If it lists the *device* but reports zero *pages*, the device is fine and the tool is not. Apple
@@ -563,6 +590,16 @@ EOF
 A capture with no `probe` parameter is not a failure — the Appium and desktop transports do not use
 one, and a native or hand capture cannot (it records `pageIdentity: "unprovable"`).
 
+This audit ran over every tracked corpus on 2026-08-25 (issue 1315): **25 files across eight
+2026-08-23/24 corpora are contaminated** — everything captured before the page-identity guard
+(commit cfb1b6c9), including the corpora the 2026-08-24 landscape investigations were argued from —
+and everything after it is clean. A contaminated file is marked in its corpus `index.json`
+(`cellAttributable: false`, plus the mismatched `reportNonce` and a corpus-level
+`crossRunContamination` block), which is where tools should look before re-scoring; marked corpora
+remain usable as runtime-level calibration (real driven input from that device), never as cells.
+`tools/perf/tests/corpus-attribution.test.mjs` re-runs the nonce audit in CI and fails if a marking
+disagrees with the evidence — including a future corpus promoted with contamination unmarked.
+
 ### Stopping a campaign does not lose the cells it banked
 
 A campaign resumes: re-run the same command and a cell whose artifact already parses is skipped.
@@ -570,9 +607,21 @@ Deleting the output directory to "start clean" throws away work that was fine.
 
 The exception is the one that matters. **Discard when the capture path changed under you; resume
 when only time passed.** A cell captured by a tool that has since been fixed is a cell measured by a
-different instrument, and the ledger cannot tell — it records that an artifact parses, not what
-produced it (issue 1293). Until that is recorded, the distinction lives in the operator's head, so
-make it deliberately rather than reaching for `rm -rf` out of caution.
+different instrument. The campaign now records that distinction instead of leaving it in the
+operator's head (issue 1293): an `instrument.json` beside the ledger fingerprints the modules that
+decide what a capture measures (the bootstrap, probe host, both capture drivers, the probe, the
+eraser fill), and a resume across a change is refused with the changed files named. Start clean to
+recapture under the current instrument, or pass `--accept-instrument-change` to keep the banked
+cells deliberately, on record. Scorers and fidelity tables are outside the fingerprint on purpose —
+they re-derive at fold time, so changing them re-scores banked cells rather than invalidating them.
+
+The campaign also names every cell's server source (issue 1301) — the dry run prints it per cell,
+and a real run WARNS about `guarded-default` cells: an Appium or CDP child given no `--url` reuses
+its default preview port only behind the build-freshness guard and otherwise serves its own fresh
+preview, so a foreign build on that port costs retries, never wrong numbers. Pass `--url=` to pin
+the server and skip those retries. Only a command the classifier does not know is refused outright,
+because nothing is proven about its fallback; desktop cells self-serve and native cells load their
+build-time `server.url`.
 
 ## Serialize the captures, but keep both devices alive
 

@@ -34,8 +34,11 @@ import {
 } from '../split-capture/lib/input-verdict.mjs';
 import {
   calibrationReading,
+  firstContactFailure,
   handCaptureArtifact,
+  manualOpenLines,
   openWithAdb,
+  stalePageFailure,
 } from '../split-capture/capture-hand-input.mjs';
 import { drivenCaptureArtifact } from '../split-capture/capture-device-frames.mjs';
 
@@ -295,6 +298,46 @@ describe('closeFloorControlHost', () => {
   });
 });
 
+// Issue 1307: the nonce gate was wired into the capture probe host and not this
+// one, so a restored floor page could bank an earlier run's cadence under the
+// current preflight — the exact acceptance hole demonstrated with an isolated
+// HTTP fault injection on 2026-08-25. Same standard as the probe host's test.
+describe('the floor host refusing another run’s report', () => {
+  const started = [];
+
+  afterEach(async () => {
+    for (const server of started.splice(0)) await closeFloorControlHost(server);
+  });
+
+  async function floorHostAt() {
+    const { server, state } = createFloorControlHost({ log: () => {} });
+    started.push(server);
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    return { base: `http://127.0.0.1:${server.address().port}`, state };
+  }
+
+  const postReport = (base, body) =>
+    fetch(`${base}/__probe/report`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('accepts the current run and rejects a stale one, whatever its size', async () => {
+    const { base, state } = await floorHostAt();
+    state.plan = { ...state.plan, label: 'new-run', nonce: 'new-run' };
+
+    await postReport(base, { nonce: 'new-run', report: { events: [1, 2, 3] } });
+    expect(state.report?.report.events).toHaveLength(3);
+
+    await postReport(base, { nonce: 'old-run', report: { events: Array.from({ length: 99 }) } });
+    expect(state.report?.report.events).toHaveLength(3);
+
+    await postReport(base, { report: { events: Array.from({ length: 99 }) } });
+    expect(state.report?.report.events).toHaveLength(3);
+  });
+});
+
 describe('the reading a hand capture is kept for', () => {
   // Every field here is read back out of perf-profiles/evidence/*/index.json, so
   // the test is against the names as much as the values.
@@ -432,6 +475,36 @@ describe('what a saved artifact can prove about its own theme', () => {
     expect(drivenCaptureArtifact({ ...common, ready: {} }).observedTheme).toBeNull();
     expect(handCaptureArtifact({ ...common, ready: undefined }).observedTheme).toBeNull();
   });
+
+  // Issue 1297: the repeat count is measurement provenance — campaign acceptance
+  // compares it against the plan's contract, so the artifact has to carry it.
+  it('records the gesture-repeat count the run was driven at', () => {
+    expect(drivenCaptureArtifact({ ...common, ready, gestureRepeats: 10 }).gestureRepeats).toBe(10);
+  });
+
+  // Issue 1292: eraser passes get real ink from between-pass refills, which
+  // makes old and new eraser numbers incomparable — so the artifact says which
+  // plan drove it, and carries the verified-fill and per-refill evidence.
+  it('records the gesture plan and both kinds of eraser evidence', () => {
+    const eraserFill = { tiles: 16, backings: ['100x80'], transparentTiles: [] };
+    const eraserRefills = [{ afterStroke: 10, pending: false, transparentTiles: [] }];
+    const artifact = drivenCaptureArtifact({
+      ...common,
+      brush: 'eraser',
+      gesturePlan: 'fixed-geometry-refilled',
+      ready: { ...ready, eraserFill },
+      payload: { eraserRefills },
+    });
+
+    expect(artifact.gesturePlan).toBe('fixed-geometry-refilled');
+    expect(artifact.eraserFill).toEqual(eraserFill);
+    expect(artifact.eraserRefills).toEqual(eraserRefills);
+    expect(drivenCaptureArtifact({ ...common, ready })).toMatchObject({
+      gesturePlan: null,
+      eraserFill: null,
+      eraserRefills: null,
+    });
+  });
 });
 
 // The cross-run race, which produced eleven artifacts whose mode came from one
@@ -515,6 +588,94 @@ describe('the probe host refusing a stale run over HTTP', () => {
       body: JSON.stringify(body),
     });
 
+  // Issue 1316: a locked iPad and an installed clean bundled build both look
+  // like a successful devicectl launch followed by silence. The counter is the
+  // signal the runner separates them with, so it has to count and to reset.
+  it('counts plan requests and zeroes the count on a plan reset', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(0);
+    await fetch(`${base}/__probe/plan`);
+    await fetch(`${base}/__probe/plan`);
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(2);
+
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nonce: 'next-run', reset: true }),
+    });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(0);
+  });
+
+  // A stood-down page used to render a bare <title> while the manual runner
+  // waited out its full ready budget — a typo cost three minutes of blank
+  // screen. The stand-down body now says what to do, the host exposes the
+  // stale-page signal for the current run only, and the manual failure names
+  // the exact address to reopen.
+  it('serves an instructive stand-down page and exposes the current run’s stale-page signal', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: 'cell', nonce: 'this-run', reset: true }),
+    });
+
+    const standDown = await fetch(`${base}/__probe/stand-down`).then((r) => r.text());
+    expect(standDown).toContain('stood down');
+    expect(standDown).toContain('EXACT');
+
+    const postLog = (body) =>
+      fetch(`${base}/__probe/log`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    await postLog({ kind: 'stale-page', openedFor: 'earlier', nonce: 'another-run' });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).stalePage).toBeNull();
+    await postLog({ kind: 'stale-page', openedFor: 'earlier', nonce: 'this-run' });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).stalePage).toMatchObject({
+      openedFor: 'earlier',
+    });
+
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ nonce: 'next-run', reset: true }),
+    });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).stalePage).toBeNull();
+
+    expect(stalePageFailure('http://192.168.0.9:4175/?probe=hand-run-77')).toContain(
+      'http://192.168.0.9:4175/?probe=hand-run-77'
+    );
+  });
+
+  // Issue 1295: the manual path predates the page-identity guard and printed a
+  // bare host URL, so hand captures could never prove their run. The printed
+  // address must carry the nonce, and must say the query is load-bearing.
+  it('prints the nonce-carrying URL for a manual open', () => {
+    const text = manualOpenLines({
+      pageUrl: 'http://192.168.0.9:4175/?probe=hand-run-77',
+      orientation: 'PORTRAIT',
+      theme: 'light',
+    }).join('\n');
+
+    expect(text).toContain('http://192.168.0.9:4175/?probe=hand-run-77');
+    expect(text).toContain('EXACT');
+    expect(text).toContain('PORTRAIT');
+  });
+
+  it('names both operator-fixable causes when a launch never phones home', () => {
+    const message = firstContactFailure('http://192.168.40.53:4175');
+
+    expect(message).toContain('http://192.168.40.53:4175');
+    expect(message).toContain('locked');
+    expect(message).toContain('perf:build:cap');
+  });
+
   it('keeps a report from the current run and refuses one from another', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
     directories.push(directory);
@@ -533,6 +694,31 @@ describe('the probe host refusing a stale run over HTTP', () => {
 
     expect(state.report?.report.events).toHaveLength(3);
     expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).nonce).toBe('new-run');
+  });
+
+  // Issue 1306's last bullet: the ERROR report — the one that exists to stop a
+  // number being trusted — is held to the same nonce gate as a data report. A
+  // stale run's error must not stand in for this run's diagnosis, and this
+  // run's error must not lose to any earlier report's thickness.
+  it('accepts the current run’s error report and refuses a stale run’s', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base, state } = await hostAt(directory);
+    await fetch(`${base}/__probe/control`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: 'cell', nonce: 'new-run', reset: true }),
+    });
+
+    await postReport(base, { nonce: 'old-run', error: 'a stale run exploding' });
+    expect(state.report).toBeNull();
+
+    await postReport(base, { nonce: 'new-run', report: { events: Array.from({ length: 50 }) } });
+    await postReport(base, { nonce: 'new-run', error: 'no sized #drawingCanvas' });
+    expect(state.report?.error).toBe('no sized #drawingCanvas');
+    expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).error).toBe(
+      'no sized #drawingCanvas'
+    );
   });
 });
 

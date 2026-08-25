@@ -26,6 +26,40 @@ export const MIN_GATED_SAMPLES = 3;
 // Four ordinary callbacks confirm that presentation recovered without reaching late static gaps.
 export const ACTION_SETTLE_TAIL_FRAMES = 4;
 
+// The orientation-change label vocabulary, owned here so the sweep that builds
+// the labels and the matcher that recognizes them cannot drift apart — a
+// renamed label would otherwise silently fail the N/A open, restoring the
+// structurally-zero pass it exists to remove.
+export function rotationActionLabel(from, to) {
+  return `${from} to ${to} rotation`;
+}
+
+// Orientation-change measurements only. The click actions taken after a
+// rotation ("undo clear after blank rotation") share the bare " rotation"
+// suffix and must stay gated, so the orientation vocabulary is part of the
+// match; the vocabulary is closed by the two orientations the sweep drives.
+const ROTATION_ACTION_LABEL = new RegExp(
+  ` (?:${rotationActionLabel('PORTRAIT', 'LANDSCAPE')}|${rotationActionLabel('LANDSCAPE', 'PORTRAIT')})$`
+);
+
+// On iPad Safari the rotation first-frame gate is structurally inert under
+// ADR-0142's `resize` anchor: Safari dispatches `resize` inside the same
+// rendering turn whose rAF timestamp the probe records, so firstFrameMs reads
+// 0-2 ms by construction and the gate cannot discriminate. The honest verdict
+// is not-applicable, mirroring ADR-0139's refusal of checks that silently pass
+// — the post-action frame gates carry the rotation signal there.
+//
+// Applicability keys on the CAPTURE RUNTIME (ADR-0139's per-runtime key), not
+// the artifact's `transport`: `transport: "browser"` is the Appium web
+// transport generally — Android Chrome over Appium and the iPad Simulator
+// record it too — and Android Chrome is exactly the runtime ADR-0142 says must
+// keep the gate (0.1-54 ms of real post-resize dynamic range). The native
+// WKWebView keeps it too: its first `resize` precedes committed layout, a real
+// if pre-layout reading. Only `ios-safari` is structurally inert.
+export function rotationFirstFrameNa(captureRuntime, label) {
+  return captureRuntime === 'ios-safari' && ROTATION_ACTION_LABEL.test(label);
+}
+
 const maximum = (values) => (values.length ? Math.max(...values) : undefined);
 
 function distribution(values) {
@@ -100,14 +134,18 @@ export function scoredActionFrameGaps(action) {
   return scored;
 }
 
-export function summarizeActionGroup(actions, label, allowances = {}) {
+export function summarizeActionGroup(actions, label, allowances = {}, firstFrameNaFor = null) {
   const hasWarmupMetadata = actions.some((action) => typeof action.warmup === 'boolean');
   const scoredActions = hasWarmupMetadata ? actions.filter((action) => !action.warmup) : actions;
   const frameGaps = scoredActions.flatMap(scoredActionFrameGaps);
   const rawFrameGaps = scoredActions.flatMap(
     (action) => action.postActionFrameGapsMs ?? action.frameGapsMs ?? []
   );
-  const firstFrame = distribution(finiteValues(scoredActions, 'firstFrameMs'));
+  const firstFrameNa = firstFrameNaFor?.(label) === true;
+  const firstFrame = {
+    ...distribution(finiteValues(scoredActions, 'firstFrameMs')),
+    ...(firstFrameNa ? { na: true } : {}),
+  };
   const ready = distribution(finiteValues(scoredActions, 'readyMs'));
   const frames = {
     ...distribution(frameGaps),
@@ -122,7 +160,7 @@ export function summarizeActionGroup(actions, label, allowances = {}) {
   const passed =
     scoredActions.length >= minimumSamples &&
     activation.passed &&
-    firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS &&
+    (firstFrameNa || firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS) &&
     frames.p95 <= (allowances[label] ?? ACTION_FRAME_P95_GATE_MS) &&
     frames.max <= ACTION_FRAME_MAX_GATE_MS;
   return {
@@ -140,7 +178,12 @@ export function summarizeActionGroup(actions, label, allowances = {}) {
   };
 }
 
-export function summarizeActions(actions, expectedLabels = [], allowances = {}) {
+export function summarizeActions(
+  actions,
+  expectedLabels = [],
+  allowances = {},
+  firstFrameNaFor = null
+) {
   const groups = new Map();
   for (const action of actions) {
     const entries = groups.get(action.label) ?? [];
@@ -152,7 +195,7 @@ export function summarizeActions(actions, expectedLabels = [], allowances = {}) 
   }
   return [...groups.entries()].map(([label, entries]) => ({
     label,
-    ...summarizeActionGroup(entries, label, allowances),
+    ...summarizeActionGroup(entries, label, allowances, firstFrameNaFor),
   }));
 }
 
@@ -161,7 +204,7 @@ export function actionRows(summaries) {
     action: summary.label,
     runs: `${summary.count}/${summary.totalCount}`,
     activation: `${summary.activation.valid}/${summary.totalCount}`,
-    'first p95': summary.firstFrame.p95,
+    'first p95': summary.firstFrame.na === true ? 'n/a' : summary.firstFrame.p95,
     'ready seen p50': summary.ready.p50,
     'ready seen p95': summary.ready.p95,
     'post p95': summary.frames.p95,

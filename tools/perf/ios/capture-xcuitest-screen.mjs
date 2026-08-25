@@ -1,6 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  ERASER_FILL_BACKING_TIMEOUT_MS,
+  eraserFillFunctionSource,
+  eraserRefillFunctionSource,
+} from '../lib/eraser-fill.mjs';
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -88,6 +93,18 @@ const SHORT_STROKE_ORIGINS = [
   [0.59, 0.38],
   [0.76, 0.5],
 ];
+// The eraser keeps this fixed geometry too, on purpose. The first cut of issue
+// 1292 offset each repeat so later passes would cross fresh ink; review round
+// 2's measurement retired the whole approach: even the optimal placement
+// schedule (searched numerically over rank-1 lattices and continuous Kronecker
+// generators against the exact parallel-lane metric) attains a 7 px minimum
+// lane distance against a 16 px eraser on a 700x300 landscape canvas, and the
+// canvas SATURATES by pass 5 — fresh-path fractions 100/55/10/20/7/0/0/0/0/0%.
+// Ten identical-work passes cannot stay fresh in that geometry no matter where
+// the strokes go. Fresh ink comes from refilling the tiles between passes
+// instead (eraser-fill.mjs), which also restores identical geometry across
+// brushes.
+export const STROKES_PER_GESTURE_REPEAT = LONG_STROKE_SEEDS.length + SHORT_STROKE_ORIGINS.length;
 
 function sanitizeLabel(value) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
@@ -706,19 +723,56 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       );
       if (!brushCommitted) throw new Error(`Drawing engine did not commit ${brush} mode`);
     }
+    // The fill is verified rather than trusted (issue 1302): waits out deferred
+    // tile-backing realization, proves the painted pixels are opaque, and fails
+    // the capture instead of banking a normal-looking artifact that erased
+    // blank paper. Shared with the split-capture bootstrap, and re-run after
+    // the settle — a deferred clear or resize inside that window wipes paint a
+    // point-in-time verification already blessed.
+    let eraserFill = null;
     if (brush === 'eraser') {
-      await execute(`
-        for (const canvas of document.querySelectorAll('canvas[data-live-tile]')) {
-          const context = canvas.getContext('2d');
-          context.save();
-          context.setTransform(1, 0, 0, 1, 0, 0);
-          context.fillStyle = '#7c4dff';
-          context.fillRect(0, 0, canvas.width, canvas.height);
-          context.restore();
+      const fillVerified = async () => {
+        const fill = await pollUntil(
+          async () => {
+            const result = await execute(
+              `${eraserFillFunctionSource()}\nreturn fillEraserInk();`
+            ).catch((error) => {
+              throw new Error(`the eraser fill failed in the page: ${error?.message ?? error}`);
+            });
+            return result?.pending ? null : result;
+          },
+          ERASER_FILL_BACKING_TIMEOUT_MS,
+          WEBVIEW_READY_POLL_MS
+        );
+        if (!fill) throw new Error('live tile backings never realized for the eraser fill');
+        if (fill.transparentTiles.length) {
+          throw new Error(
+            `the eraser fill left tiles transparent: ${fill.transparentTiles.join(', ')}`
+          );
         }
-        return true;
-      `);
+        return fill;
+      };
+      eraserFill = await fillVerified();
       await sleep(AFTER_GESTURE_SETTLE_MS);
+      // Verify WITHOUT painting first (fillEraserInk(true)): a wipe inside the
+      // settle window is instability evidence to record, not silently repaint.
+      const afterSettle = await execute(
+        `${eraserFillFunctionSource()}\nreturn fillEraserInk(true);`
+      );
+      if (afterSettle?.pending || afterSettle?.transparentTiles?.length) {
+        eraserFill = {
+          ...(await fillVerified()),
+          repairedAfterSettle: true,
+          settleWipe: afterSettle,
+        };
+      }
+      // The page refills between gesture passes so every pass erases real ink
+      // (issue 1292); the refill log is read back after the sweep.
+      await execute(
+        `${eraserFillFunctionSource()}\n${eraserRefillFunctionSource()}\n` +
+          `armEraserRefill(${STROKES_PER_GESTURE_REPEAT}, ` +
+          `${gestureRepeats * STROKES_PER_GESTURE_REPEAT}, fillEraserInk); return true;`
+      );
     }
 
     await execute(
@@ -776,6 +830,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     });
     await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
     await sleep(AFTER_GESTURE_SETTLE_MS);
+    const eraserRefills =
+      brush === 'eraser' ? await execute('return window.__eraserRefills ?? null;') : null;
     if (historySettleMs > 0) await sleep(historySettleMs);
     let rotation = null;
     if (has('rotate-before-undo')) {
@@ -865,6 +921,17 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       appUrl,
       transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
       theme,
+      // Same top-level home the split artifact uses for these fields, so the
+      // shared reader needs no second location (the review caught gesturePlan
+      // reproducing the gestureRepeats top-level/automation split).
+      // How the repeats were fed ink (issue 1292): identical geometry every
+      // pass, tiles refilled between passes for the eraser. Old artifacts lack
+      // the field and are unrefilled fixed-geometry.
+      gesturePlan: brush === 'eraser' ? 'fixed-geometry-refilled' : 'fixed-geometry',
+      // The verified-fill evidence (issue 1302); null for every other brush.
+      eraserFill,
+      // Per-pass refill evidence (issue 1292), read back from the page.
+      eraserRefills,
       mode: `xcuitest:${label}`,
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),

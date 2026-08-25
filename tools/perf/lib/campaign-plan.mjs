@@ -20,7 +20,13 @@ export const ALL_ITEMS = [...DRAWING_ITEMS, 'actions'];
 
 // One warmup plus three scored samples — the action scorer rejects any other split.
 export const ACTION_REPEATS = 4;
-const GESTURE_REPEATS = 10;
+// Part of the published measurement contract, not a convenience default (issue
+// 1297): the repeat count decides how much of a cell is first-touch work versus
+// amortised repeat work, so cells captured with different counts are not
+// comparable. Every drawing cell in a campaign is driven at this count, the
+// capture records it, and artifact acceptance refuses a banked cell recording a
+// different one.
+export const GESTURE_REPEATS = 10;
 export const UNDO_COUNT = 10;
 export const MAX_ATTEMPTS = 3;
 
@@ -222,6 +228,34 @@ const REFRESH_REGIME_REPORTING_COMMANDS = new Set([
 
 export function commandReportsRefreshRegime(command) {
   return REFRESH_REGIME_REPORTING_COMMANDS.has(command);
+}
+
+// Where a planned cell's child will get its server from. Issue 1301: a campaign
+// input a child needs, that the parent has, and does not pass (the third of
+// the #1283 family) — four action cells burned twelve attempts against another
+// checkout's build on the default preview port. Every source is safe against
+// WRONG data — 'guarded-default' children call ensurePreviewServer, which
+// reuses an already-serving default port only after the build-freshness guard
+// and otherwise spawns their own fresh preview — so a guarded default costs
+// retries when another worktree holds the port, never wrong numbers. The
+// campaign therefore WARNS about guarded defaults (recommending --url) rather
+// than refusing them; only a command this function does not know is refused,
+// because nothing is proven about its fallback.
+export function cellServerSource(cell) {
+  if (cell.command === DESKTOP_SCREEN_COMMAND || cell.command === DESKTOP_ACTIONS_COMMAND) {
+    return 'self-served';
+  }
+  if (cell.args.some((arg) => arg.startsWith('--url='))) return 'explicit-url';
+  if (cell.args.some((arg) => arg.startsWith('--host='))) return 'probe-host';
+  if (cell.args.includes('--native-app')) return 'native-server-url';
+  if (
+    cell.command === SCREEN_COMMAND ||
+    cell.command === ACTIONS_APPIUM_COMMAND ||
+    cell.command === ACTIONS_CDP_COMMAND
+  ) {
+    return 'guarded-default';
+  }
+  return null;
 }
 
 // Classified rather than matched against a list of spellings. A set of exact
@@ -495,6 +529,40 @@ function drawingArgs(item, mode) {
   return args;
 }
 
+function gestureRepeatsFromArgs(args) {
+  const flag = args.find((arg) => arg.startsWith('--gesture-repeats='));
+  if (!flag) return null;
+  return Number(flag.slice('--gesture-repeats='.length));
+}
+
+// The repeat count a drawing capture recorded, wherever its runner filed it:
+// the split transport writes it at the top level, the Appium screen runner
+// inside `automation`. Shared by acceptance and the matrix so the two readers
+// cannot drift (they briefly did, as private copies). Coerced to a number so a
+// string-typed count in a foreign artifact compares by value rather than being
+// hard-rejected by one reader and silently dropped by the other.
+//
+// Null means exactly one thing: the field is ABSENT — the artifact predates it
+// or the runner has no gesture plan — which consumers deliberately accept,
+// since refusing every historical artifact would force a full recapture. A
+// field that is present but not a number is a malformed artifact, and it
+// THROWS rather than collapsing into the same null (review round 2 proved a
+// `gestureRepeats: "bogus"` artifact sailed through acceptance and the matrix
+// filter as if it were historical). Acceptance maps the throw to a rejection;
+// the matrix lets it surface as a loud fold error naming the source.
+export function recordedGestureRepeats(artifact) {
+  const recorded = artifact?.gestureRepeats ?? artifact?.automation?.gestureRepeats ?? null;
+  if (recorded === null) return null;
+  const count = Number(recorded);
+  if (!Number.isFinite(count)) {
+    throw new Error(
+      `the artifact records gestureRepeats ${JSON.stringify(recorded)}, which is not a number — ` +
+        'a malformed count is an invalid artifact, not a historical one'
+    );
+  }
+  return count;
+}
+
 export function planCampaign(targetId, { modes, items, outputRoot, host = {}, label } = {}) {
   const target = campaignTarget(targetId);
   if (!outputRoot) throw new Error('planCampaign requires an outputRoot');
@@ -566,6 +634,9 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         command,
         reportsFidelity: commandReportsFidelity(command),
         reportsRefreshRegime: commandReportsRefreshRegime(command),
+        // Read back from the args the child is actually given, so the contract
+        // the inspection enforces can never drift from the command it drove.
+        gestureRepeats: gestureRepeatsFromArgs(args),
         args,
       });
     }

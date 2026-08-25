@@ -80,7 +80,11 @@ this campaign retracted three thresholds argued from exactly that kind of likeli
 
 * The four tracked `2026-08-23-android-split` captures now **pass** fidelity, where they previously
   could not be scored at all. That is the intended effect and the reason the measurement was worth a
-  person's time.
+  person's time. *Attribution caveat (2026-08, issue 1315):* those four captures were later found
+  cross-run contaminated — each report's nonce names a different cell than its label — so they are
+  runtime-level calibration evidence only, never per-cell measurements; their corpus `index.json`
+  marks each file `cellAttributable: false` and `corpus-attribution.test.mjs` keeps the marking
+  honest. The fidelity conclusion here is runtime-level and stands.
 * A capture driven faster than 170 moves/s is no longer refused. Nothing has ever been observed
   failing by excess; every transport this campaign found wrong was under-driving. If a
   faster-than-real replay is ever built, this is the decision to revisit, and it should be revisited

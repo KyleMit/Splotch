@@ -27,10 +27,13 @@ import {
   artifactMatchesRuntime,
   artifactPassedFidelity,
   campaignTarget,
+  cellServerSource,
+  recordedGestureRepeats,
   resolvedProbeHostProblem,
   planCampaign,
   splitTransportIdentityProblem,
 } from './lib/campaign-plan.mjs';
+import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument-fingerprint.mjs';
 import {
   ALREADY_VALID,
   COMPLETE,
@@ -40,6 +43,7 @@ import {
   OFF_REFRESH_REGIME,
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
+  WRONG_GESTURE_REPEATS,
   formatLedgerRow,
   nextAction,
   parseLedger,
@@ -76,13 +80,14 @@ export function cellInspection(cell, { runtime, refreshRegime }) {
   return inspectArtifact(cell.artifact, runtime, {
     verdictRequired: cell.reportsFidelity,
     expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
+    expectedGestureRepeats: cell.gestureRepeats ?? null,
   });
 }
 
 export function inspectArtifact(
   path,
   runtime,
-  { verdictRequired = false, expectedRefreshRegime = null } = {}
+  { verdictRequired = false, expectedRefreshRegime = null, expectedGestureRepeats = null } = {}
 ) {
   const full = absolute(path);
   if (!existsSync(full)) return { ok: false, status: FAILED };
@@ -104,6 +109,28 @@ export function inspectArtifact(
   // number, and naming the regime would send the next session after the wrong thing.
   const regime = refreshRegimeVerdict(artifact?.summaries?.intervalMs, expectedRefreshRegime);
   if (!regime.matched) return { ok: false, status: OFF_REFRESH_REGIME, regime };
+  // Checked LAST, after fidelity and regime, for the reason those two are
+  // ordered: the more fundamental rejection must be the one reported. A capture
+  // whose gesture never reached the canvas has a meaningless repeat count as
+  // well as a meaningless number, and naming the count would send the next
+  // session recapturing a cell whose real problem is elsewhere — worst of all
+  // for UNCALIBRATED_RUNTIME, the one status that must never be retried.
+  // A present-but-malformed count throws in the shared reader; here that is an
+  // invalid artifact — the same rejection an unparseable file gets — not a
+  // historical absence, and not a crash mid-queue.
+  let recordedRepeats;
+  try {
+    recordedRepeats = recordedGestureRepeats(artifact);
+  } catch {
+    return { ok: false, status: FAILED };
+  }
+  if (
+    expectedGestureRepeats !== null &&
+    recordedRepeats !== null &&
+    recordedRepeats !== expectedGestureRepeats
+  ) {
+    return { ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats };
+  }
   return { ok: true, status: COMPLETE, regime };
 }
 
@@ -189,6 +216,32 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     },
   });
 
+  // Issue 1301, resized by review: a 'guarded-default' child reuses its default
+  // preview port only behind the build-freshness guard and otherwise spawns its
+  // own fresh preview, so the exposure is burned retries when another worktree
+  // holds the port (twelve, on 2026-08-24) — never wrong numbers. That earns a
+  // WARNING naming the cells and the flag, not a refusal; refusing also broke
+  // dry runs, which are planning output and must always print the plan. Only a
+  // cell whose server source is unknown is refused — nothing is proven about
+  // its fallback.
+  const unknownServerCells = plan.filter((cell) => cellServerSource(cell) === null);
+  if (unknownServerCells.length) {
+    fail(
+      `these cells' commands have no known server source, so nothing is proven about their ` +
+        `fallback:\n${unknownServerCells.map((cell) => `  ${cell.id} (${cell.command})`).join('\n')}\n` +
+        `Teach cellServerSource the command, or pass --url= explicitly.`
+    );
+  }
+  const guardedDefaultCells = plan.filter((cell) => cellServerSource(cell) === 'guarded-default');
+  if (guardedDefaultCells.length) {
+    console.log(
+      `WARN  ${guardedDefaultCells.length} cell(s) will reuse-or-serve their child's default ` +
+        `preview port (${[...new Set(guardedDefaultCells.map((cell) => cell.command))].join(', ')}). ` +
+        'A foreign build on that port is refused per attempt rather than measured — pass ' +
+        '--url=<preview URL> to pin the server and skip those retries.'
+    );
+  }
+
   // Asserted rather than started: the probe host outlives any one target's queue,
   // and the repo's rule is to reuse a running listener rather than take over its
   // lifecycle. A dry run is planning only and reaches no device.
@@ -213,7 +266,12 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   if (has('dry-run')) {
     console.log(`${targetId}: ${plan.length} cells`);
     for (const cell of plan) {
-      console.log(`  ${cell.id.padEnd(26)} ${cell.command}  -> ${cell.artifact}`);
+      // The server source is printed because the ABSENCE of a flag is invisible
+      // in an argument listing — the dry run is where an operator looks for
+      // what a campaign will do, and a guarded default deserves to be seen.
+      console.log(
+        `  ${cell.id.padEnd(26)} ${cell.command}  [server: ${cellServerSource(cell)}]  -> ${cell.artifact}`
+      );
     }
     return { plan, ran: [] };
   }
@@ -221,6 +279,26 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const ledgerPath = absolute(flag('ledger', `${outputRoot}/${targetId}/ledger.tsv`));
   mkdirSync(dirname(ledgerPath), { recursive: true });
   if (!existsSync(ledgerPath)) writeFileSync(ledgerPath, `${LEDGER_HEADER.join('\t')}\n`);
+
+  // Which instrument banked this campaign's cells (issue 1293). Recorded on the
+  // first run; a resume whose instrument moved is refused with the changed
+  // files named, unless the operator accepts the mixture on record. The new
+  // fingerprint is written on acceptance so the decision is made once, not on
+  // every subsequent resume.
+  const fingerprintPath = join(dirname(ledgerPath), 'instrument.json');
+  const currentInstrument = instrumentFingerprint([...new Set(plan.map((cell) => cell.command))]);
+  const recordedInstrument = existsSync(fingerprintPath)
+    ? JSON.parse(readFileSync(fingerprintPath, 'utf8'))
+    : null;
+  const instrumentProblem = instrumentChangeProblem(recordedInstrument, currentInstrument);
+  if (instrumentProblem && !has('accept-instrument-change')) fail(instrumentProblem);
+  if (instrumentProblem) {
+    console.log(
+      'WARN  resuming across an instrument change — cells banked before this run were ' +
+        'captured by a different instrument (accepted with --accept-instrument-change)'
+    );
+  }
+  writeFileSync(fingerprintPath, `${JSON.stringify(currentInstrument, null, 2)}\n`);
   // The attempts a cell has already spent live in the ledger, not in this process.
   // Reading them is what makes --max-attempts a budget for the campaign rather than
   // for one invocation, so an interrupted run resumes instead of restarting at 1.
@@ -304,6 +382,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         console.log(
           `RETRY ${cell.id} — measured at ${describeRefreshRegime(inspected.regime)}, ` +
             'which this target is not scored against'
+        );
+      } else if (inspected.status === WRONG_GESTURE_REPEATS) {
+        console.log(
+          `RETRY ${cell.id} — captured at ${inspected.recordedRepeats} gesture repeats, ` +
+            `not the campaign contract of ${cell.gestureRepeats}`
         );
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);

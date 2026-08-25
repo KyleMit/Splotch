@@ -9,12 +9,13 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  rotationFirstFrameNa,
   summarizeActions,
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
-import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
+import { CAMPAIGN_TARGETS, recordedGestureRepeats } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -168,9 +169,14 @@ function roundShare(value) {
 
 function normalizedDistribution(distribution) {
   if (!distribution) return null;
-  return Object.fromEntries(
+  const normalized = Object.fromEntries(
     ['p50', 'p95', 'p99', 'max'].map((metric) => [metric, round(distribution[metric])])
   );
+  // A distribution declared not-applicable (a Safari rotation first frame,
+  // ADR-0142) keeps that declaration through data.json so renderers show N/A
+  // rather than a structurally-zero pass.
+  if (distribution.na === true) normalized.na = true;
+  return normalized;
 }
 
 function captureOrientation(profile) {
@@ -252,6 +258,12 @@ function normalizeDrawingRun(
   return {
     source,
     productCommit,
+    // The repeat count the gesture plan replayed (issue 1297): first-contact
+    // costs amortise across repeats, so runs at different counts measured
+    // different mixes and are not comparable. Null for artifacts predating the
+    // field. Read through the same helper acceptance uses, so the two readers
+    // cannot drift.
+    gestureRepeats: recordedGestureRepeats(profile),
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
@@ -339,6 +351,24 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
           captureRuntime: CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? DEFAULT_CAPTURE_RUNTIME,
         })
       );
+      // Two recorded counts in one cell means two instruments folded into one
+      // number, which is issue 1297's defect; refusing is the fail-fast. A null
+      // (an artifact predating the field) proves nothing either way and is
+      // deliberately not treated as a conflict — rejecting it would strand every
+      // historical capture.
+      const repeatCounts = [
+        ...new Set(runs.map((run) => run.gestureRepeats).filter(Number.isFinite)),
+      ];
+      if (repeatCounts.length > 1) {
+        const sources = runs
+          .map((run) => `${run.source} (${run.gestureRepeats ?? 'unrecorded'})`)
+          .join(', ');
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds captures with different gesture-repeat counts ` +
+            `(${repeatCounts.join(', ')}) — their first-touch-to-repeat mixes are not comparable. ` +
+            `Sources: ${sources}`
+        );
+      }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
   );
@@ -360,15 +390,37 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
   };
 }
 
-function normalizeActionCapture(spec, sourceDirectory, mode) {
+function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   const profile = readJson(sourcePath(spec.source, sourceDirectory));
   validateCaptureMode(profile, mode, spec.source);
   const labels = spec.labels ? new Set(spec.labels) : null;
   // A capture is re-scored under its own recorded gate exceptions (ADR-0090
   // amendment); one without the field — every capture predating it, and every
   // non-iOS target — stays on the base gates.
+  // Rotation first-frame applicability keys on the capture RUNTIME, never the
+  // transport — `transport: "browser"` is the Appium web transport generally,
+  // and Android Chrome over Appium must stay gated (ADR-0142). When both the
+  // target's declared runtime and the artifact's recorded one exist they must
+  // AGREE: a disagreement means a capture from another engine reached this
+  // target's fold (campaign acceptance only tells web from native), and
+  // silently preferring either side scores it under rules chosen for the other
+  // — review round 2 reproduced an android-chrome artifact passing an
+  // ios-safari target's rotation gate as N/A exactly that way. Fallback
+  // ordering applies only when one side is absent; an artifact with neither
+  // stays fully gated.
+  const declaredRuntime = CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? null;
+  const recordedRuntime = profile.captureRuntime ?? null;
+  if (declaredRuntime && recordedRuntime && declaredRuntime !== recordedRuntime) {
+    throw new Error(
+      `${spec.source} records captureRuntime ${recordedRuntime}, but target ${targetId} ` +
+        `declares ${declaredRuntime} — an artifact from another engine cannot fold into this target`
+    );
+  }
+  const runtime = declaredRuntime ?? recordedRuntime;
   const summaries = profile.samples
-    ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {})
+    ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
+        rotationFirstFrameNa(runtime, label)
+      )
     : profile.summaries;
   const results = summaries
     .filter((summary) => summary.count > 0 && (!labels || labels.has(summary.label)))
@@ -431,9 +483,11 @@ export function withActionControlScoreability(actions) {
   };
 }
 
-function normalizeActions(sources, finalProductCommit, sourceDirectory, mode) {
+function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, targetId) {
   if (!sources?.length) return null;
-  const captures = sources.map((source) => normalizeActionCapture(source, sourceDirectory, mode));
+  const captures = sources.map((source) =>
+    normalizeActionCapture(source, sourceDirectory, mode, targetId)
+  );
   const results = mergeActionResults(captures);
   const comparableResults = results.filter((result) => !ACTION_CONTROL_LABELS.has(result.label));
   return {
@@ -446,7 +500,15 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode) {
     actionCount: results.length,
     passedActionCount: results.filter((result) => result.passed).length,
     worst: {
-      firstFrameP95: round(maximum(comparableResults.map((result) => result.firstFrame?.p95))),
+      // A not-applicable first frame is a declared non-measurement, so it must
+      // not feed the aggregate even though its near-zero value never wins it.
+      firstFrameP95: round(
+        maximum(
+          comparableResults
+            .filter((result) => result.firstFrame?.na !== true)
+            .map((result) => result.firstFrame?.p95)
+        )
+      ),
       postActionFrameP95: round(
         maximum(comparableResults.map((result) => result.postActionFrames?.p95))
       ),
@@ -515,7 +577,8 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
           normalizedMode.actionSources,
           finalProductCommit,
           sourceDirectory,
-          normalizedMode
+          normalizedMode,
+          target.id
         )
       )
     ),
@@ -742,7 +805,7 @@ function drawingPlot(matrix, metric, gate, title) {
         const why = unscoreable
           ? ` · unscoreable: ${unscoreableReasons(result).join(', ')}${published}`
           : '';
-        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${why}`;
+        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${captureBasis(result)}${why}`;
         const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
         return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${unscoreable ? ' unscoreable' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
       }).join('');
@@ -762,13 +825,17 @@ function drawingPlot(matrix, metric, gate, title) {
 function actionRatio(result, gates) {
   return maximum(
     [
-      [result.firstFrame.p95, gates.firstFrameP95Ms],
+      [result.firstFrame.na === true ? null : result.firstFrame.p95, gates.firstFrameP95Ms],
       [result.postActionFrames.p95, gates.postActionFrameP95Ms],
       [result.postActionFrames.max, gates.postActionFrameMaxMs],
     ]
       .filter(([value]) => Number.isFinite(value))
       .map(([value, gate]) => value / gate)
   );
+}
+
+function firstFrameP95Text(result) {
+  return result.firstFrame.na === true ? 'N/A' : `${fmt(result.firstFrame.p95)} ms`;
 }
 
 function heatClass(ratio) {
@@ -830,7 +897,7 @@ function actionHeatmap(matrix) {
               ? 'PASS'
               : 'FAIL'
             : `unscoreable: this mode\u2019s idle frame control is ${target.actions?.controlEvidence ?? 'absent'}`;
-          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${firstFrameP95Text(result)} · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
           const cellClass = attributable ? heatClass(ratio) : 'unscoreable';
           return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
         })
@@ -959,6 +1026,21 @@ function markdownStatus(passed) {
   return passed ? 'Pass' : '**FAIL**';
 }
 
+// Issue 1290: a matrix cell is however many captures its manifest lists — one,
+// today, for every cell — and a gate verdict from a single capture is one draw
+// from that cell's run-to-run spread. The issue's own spread figures were
+// retracted twice (host load, then cross-run contamination), so no figure is
+// published here; what survives is the structural statement, carried by the
+// Drawing prose, `runCount` in data.json, and the per-cell capture basis in the
+// plot tooltips. Verdict computation is untouched. A preserved cell's runCount
+// is inherited from an earlier published report rather than read from evidence
+// this run, so no basis is asserted for it.
+function captureBasis(aggregate) {
+  if (aggregate.unscoreableReason) return '';
+  if (!Number.isFinite(aggregate.runCount) || aggregate.runCount < 1) return '';
+  return ` · ${aggregate.runCount} capture${aggregate.runCount === 1 ? '' : 's'}`;
+}
+
 function drawingAggregateAvailable(aggregate) {
   return (
     aggregate.runCount > 0 ||
@@ -1042,11 +1124,16 @@ function renderMarkdown(matrix) {
     }
     const comparable = comparableActionResults(target.actions);
     const failures = comparable.filter((result) => !result.passed).map((result) => result.label);
+    // When every comparable first frame is declared N/A the aggregate is a
+    // declared non-measurement, not an absent one — render it apart from the
+    // "—" that means "not measured".
+    const allFirstFramesNa =
+      comparable.length > 0 && comparable.every((result) => result.firstFrame?.na === true);
     return [
       label,
       `${comparable.filter((result) => result.passed).length} / ${comparable.length}`,
       `${target.actions.finalProductCommitActionCount} / ${comparable.length}`,
-      fmt(target.actions.worst.firstFrameP95),
+      allFirstFramesNa ? 'N/A' : fmt(target.actions.worst.firstFrameP95),
       `${fmt(target.actions.worst.postActionFrameP95)} / ${fmt(target.actions.worst.postActionFrameMax)}`,
       failures.length ? failures.join('; ') : 'None',
     ];
@@ -1093,7 +1180,9 @@ max ≤ ${matrix.gates.drawing.paintMaxMs} ms, and cumulative lost frame time �
 passes at engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, and next-frame max ≤
 ${matrix.gates.undo.nextFrameMaxMs} ms. A discrete action passes at first-frame P95 ≤
 ${matrix.gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${matrix.gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤
-${matrix.gates.actions.postActionFrameMaxMs} ms.
+${matrix.gates.actions.postActionFrameMaxMs} ms. Rotation first frames on iPad Safari are not applicable rather than gated:
+under ADR-0142's \`resize\` anchor the value reads 0–2 ms by construction there, so those cells
+render N/A and rotation is scored by the post-action frame gates alone.
 
 ${renderLostFrameExceptionsMarkdown(matrix.gates.drawing.lostFrameTimeShareExceptions ?? {})}
 ## Capture limitations
@@ -1110,6 +1199,16 @@ ${markdownTable(['Target', 'Drawing', 'Undo', 'Action source commits'], provenan
 Each cell is blank-paper paint \`P95 / P99 / max\` in milliseconds, followed by the cumulative
 lost-frame share of in-contact time. Every target retains separate portrait/landscape and
 light/dark rows.
+
+A cell aggregates however many captures its manifest lists — in this snapshot, one per cell
+(\`runCount\` in \`data.json\` records the basis, and each plot tooltip states it). A gate verdict
+from a single capture is one draw from that cell's run-to-run spread, so read a marginal PASS or
+FAIL as provisional rather than established: ADR-0136 treats a number from the lost-frame gate as
+provisional until it has been compared against the previous run of the same cell, and ADR-0137
+sizes its exceptions from worst single captures for the same reason. The campaign's one attempt to
+measure a cell's spread directly (issue 1290) was retracted twice — first as host load, then as
+cross-run contamination — so the spread itself remains unmeasured; a clean repeat study belongs to
+the campaign-end recapture, on a quiet host.
 
 ${markdownTable(['Target', 'Pen', 'Crayon', 'Magic', 'Eraser'], drawingRows)}
 
@@ -1255,7 +1354,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
+  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode; each freshly-normalized dot's tooltip states how many captures back it, because a gate verdict from a single capture is one draw from that cell's run-to-run spread and is provisional rather than established (ADR-0136; issue 1290's own spread figures were retracted, leaving the question standing). Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({

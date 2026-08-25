@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTION_REPEATS,
   ALL_ITEMS,
+  GESTURE_REPEATS,
+  cellServerSource,
   CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   UNDO_COUNT,
@@ -108,6 +110,51 @@ describe('campaign plan', () => {
     expect(cell.args).toContain('--native-app');
     expect(cell.args).toContain('--native-webview-class=android.webkit.WebView');
     expect(cell.args.some((arg) => arg.startsWith('--url='))).toBe(false);
+  });
+
+  // Issue 1297: the repeat count is part of the measurement contract, so the plan
+  // records it per cell — read back from the args the child is given, never from
+  // the constant directly, so the enforced contract cannot drift from the command.
+  it('stamps the gesture-repeat contract on exactly the cells driven with the flag', () => {
+    const cells = plan('ipad-device-web', { modes: ['portrait-light'] });
+    const drawing = cells.find((cell) => cell.item === 'crayon');
+    const actions = cells.find((cell) => cell.item === 'actions');
+
+    expect(drawing.gestureRepeats).toBe(GESTURE_REPEATS);
+    expect(actions.gestureRepeats).toBeNull();
+    // Coverage asserted positively, not as a restatement of the derivation:
+    // every drawing cell on a repeat-driving transport (everything but the
+    // desktop targets, whose synthetic driver has no repeat concept) carries
+    // the contract. A transport quietly dropping the flag fails here.
+    for (const [targetId, target] of Object.entries(CAMPAIGN_TARGETS)) {
+      for (const cell of plan(targetId)) {
+        const expected =
+          cell.item === 'actions' || target.transport === 'desktop' ? null : GESTURE_REPEATS;
+        expect(cell.gestureRepeats, `${targetId} ${cell.id}`).toBe(expected);
+      }
+    }
+  });
+
+  // Issue 1301, resized by review: a bare Appium/CDP cell self-serves behind
+  // the build-freshness guard, so it is a warned 'guarded-default', not a
+  // refused unknown. Only a command the classifier does not know maps to null.
+  it('names every cell’s server source, with bare Appium cells as guarded defaults', () => {
+    const withUrl = { ...HOST, url: 'http://127.0.0.1:4173/', deviceId: 'emulator-5554' };
+    const bare = plan('android-emulator-web', { modes: ['portrait-light'] });
+    const served = plan('android-emulator-web', { modes: ['portrait-light'], host: withUrl });
+    const split = plan('android-device-web', {
+      modes: ['portrait-light'],
+      host: { ...withUrl, probeHost: 'http://192.168.0.9:4175' },
+    });
+    const native = plan('ipad-simulator-native', { modes: ['portrait-light'] });
+    const desktop = plan('mac-chrome', { modes: ['portrait-light'] });
+
+    expect(bare.every((cell) => cellServerSource(cell) === 'guarded-default')).toBe(true);
+    expect(served.every((cell) => cellServerSource(cell) === 'explicit-url')).toBe(true);
+    expect(cellServerSource(split.find((cell) => cell.item === 'crayon'))).toBe('probe-host');
+    expect(native.every((cell) => cellServerSource(cell) === 'native-server-url')).toBe(true);
+    expect(desktop.every((cell) => cellServerSource(cell) === 'self-served')).toBe(true);
+    expect(cellServerSource({ command: 'perf:not-a-command', args: [] })).toBeNull();
   });
 
   it('rejects an unknown target, mode, or item by name', () => {

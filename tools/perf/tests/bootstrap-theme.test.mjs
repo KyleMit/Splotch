@@ -239,6 +239,151 @@ describe('a page opened for a different run', () => {
   );
 });
 
+// Issue 1302: the eraser fill used to be fired and forgotten, so a fill that
+// silently did nothing left a capture that measured erasing blank paper and
+// looked completely normal. Executed here: the fill must be verified, its
+// evidence must travel with readiness, and a fill that did not take must fail
+// the capture through the error report rather than banking a plausible number.
+describe('the bootstrap verifying the eraser fill', () => {
+  function paintEraserShell(tiles) {
+    paintShell({ compact: true, startingTheme: 'light' });
+    const eraserButton = document.createElement('button');
+    eraserButton.id = 'eraserButton';
+    eraserButton.addEventListener('click', () => {
+      window.__committedBrushMode = () => 'eraser';
+    });
+    document.body.append(eraserButton);
+    // The fill verifies through a 1x1 willReadFrequently scratch it creates
+    // itself, so createElement hands out a scratch whose samples resolve from
+    // the drawn source tile at the sampled coordinates.
+    const createElement = document.createElement.bind(document);
+    document.createElement = (tag) => {
+      const element = createElement(tag);
+      if (tag === 'canvas') {
+        let sampled = null;
+        element.getContext = (kind, options) =>
+          options?.willReadFrequently === true
+            ? {
+                clearRect() {
+                  sampled = null;
+                },
+                drawImage(source, x, y) {
+                  sampled = source.alphaAt ? source.alphaAt(x, y) : 0;
+                },
+                getImageData() {
+                  return { data: [124, 77, 255, sampled ?? 0] };
+                },
+              }
+            : null;
+      }
+      return element;
+    };
+    return tiles.map((tile) => {
+      const canvas = createElement('canvas');
+      canvas.setAttribute('data-live-tile', '');
+      canvas.dataset.tileBacking = tile.backing;
+      canvas.width = tile.width;
+      canvas.height = tile.height;
+      const context = {
+        fillStyle: null,
+        fillRects: [],
+        globalAlpha: 0.5,
+        globalCompositeOperation: 'destination-out',
+        save() {},
+        restore() {},
+        setTransform() {},
+        fillRect(...args) {
+          this.fillRects.push(args);
+        },
+      };
+      canvas.getContext = () => context;
+      canvas.alphaAt = (x, y) => {
+        if (tile.alpha === 0) return 0;
+        const covered = context.fillRects.some(
+          ([rx, ry, rw, rh]) => x >= rx && y >= ry && x < rx + rw && y < ry + rh
+        );
+        return covered ? 255 : 0;
+      };
+      document.body.append(canvas);
+      return { canvas, context };
+    });
+  }
+
+  it(
+    'fills, refills between passes, and reports both kinds of evidence',
+    async () => {
+      const tiles = paintEraserShell([
+        { backing: '100x80', width: 100, height: 80 },
+        { backing: '90x70', width: 90, height: 70 },
+      ]);
+
+      const plan = {
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-fill-run',
+        finish: false,
+        // Two strokes per pass, four strokes total: one refill boundary at
+        // stroke 2, and the final stroke must not refill.
+        eraserRefill: { everyStrokes: 2, totalStrokes: 4 },
+      };
+      const { readyPosted, posted } = runBootstrap(plan);
+      const ready = await readyPosted;
+
+      expect(ready.eraserFill).toEqual({
+        tiles: 2,
+        backings: ['100x80', '90x70'],
+        transparentTiles: [],
+      });
+      // One paint before readiness: the post-settle check verifies WITHOUT
+      // painting, and a stable fill records no repair.
+      expect(ready.eraserFill.repairedAfterSettle).toBeUndefined();
+      expect(tiles[0].context.fillRects).toEqual([[0, 0, 100, 80]]);
+      expect(tiles[1].context.fillStyle).toBe('#7c4dff');
+
+      const stack = document.querySelector('.canvas-stack');
+      for (let strokeIndex = 0; strokeIndex < 4; strokeIndex++) {
+        stack.dispatchEvent(new Event('pointerup', { bubbles: true }));
+      }
+      plan.finish = true;
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+
+      expect(report.body.eraserRefills).toEqual([
+        { afterStroke: 2, pending: false, transparentTiles: [] },
+      ]);
+      // The refill is the second paint; the final stroke deliberately adds none.
+      expect(tiles[0].context.fillRects).toHaveLength(2);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'fails the capture through the error report when the fill does not take',
+    async () => {
+      paintEraserShell([{ backing: '100x80', width: 100, height: 80, alpha: 0 }]);
+
+      const { posted } = runBootstrap({
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-bad-fill',
+      });
+
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+      expect(report.body.nonce).toBe('eraser-bad-fill');
+      expect(report.body.error).toContain('transparent');
+      expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
 describe('the pulse and the error report', () => {
   // The wait loop pulses the live event count so the runner can tell "the
   // injected touches are landing on another tab" (issue 1294) from "the report
@@ -260,6 +405,36 @@ describe('the pulse and the error report', () => {
       });
       plan.finish = true;
       expect(pulse.body).toEqual({ nonce: 'pulse-run', events: 0 });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  // Issue 1300: a ready page that never uploads was indistinguishable between
+  // never-saw-finish, finish() threw, upload failed, and suspended. The two
+  // heartbeats split the space, so they must actually fire, in order, under the
+  // run nonce, before the report.
+  it(
+    'logs finish-observed and uploading around the report upload',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const plan = { brush: 'pen', theme: 'light', nonce: 'heartbeat-run', finish: false };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+      plan.finish = true;
+
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+      const heartbeats = posted.filter((entry) => entry.path === '/__probe/log');
+      expect(heartbeats.map((entry) => entry.body.kind)).toEqual(['finish-observed', 'uploading']);
+      expect(heartbeats.map((entry) => entry.body.nonce)).toEqual([
+        'heartbeat-run',
+        'heartbeat-run',
+      ]);
+      expect(posted.indexOf(heartbeats[1])).toBeLessThan(posted.indexOf(report));
     },
     BOOTSTRAP_TIMEOUT_MS
   );

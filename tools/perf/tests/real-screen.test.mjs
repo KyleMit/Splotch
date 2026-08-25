@@ -30,6 +30,7 @@ import {
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
+  STROKES_PER_GESTURE_REPEAT,
   summarizeLiveSurfaceTopology,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
@@ -41,6 +42,8 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  rotationActionLabel,
+  rotationFirstFrameNa,
   summarizeActionGroup,
   summarizeActions,
 } from '../lib/action-stats.mjs';
@@ -370,6 +373,83 @@ describe('discrete action response', () => {
       passed: true,
     });
     expect(summarizeActionGroup([warmup, ...scored.slice(1)]).passed).toBe(false);
+  });
+
+  // ADR-0142: on iPad Safari `resize` lands in the rendering turn whose rAF the
+  // probe records, so a rotation first frame reads 0-2 ms by construction. The
+  // gate is declared not-applicable there instead of passing on a structural 0.
+  // Applicability keys on the capture RUNTIME: `transport: "browser"` is the
+  // Appium web transport generally — Android Chrome over Appium records it too,
+  // and that runtime must keep the gate (real 0.1-54 ms dynamic range).
+  describe('rotation first-frame applicability', () => {
+    const rotationLabel = `with ink: ${rotationActionLabel('PORTRAIT', 'LANDSCAPE')}`;
+
+    it('marks only orientation-change labels, only on the ios-safari runtime', () => {
+      expect(rotationFirstFrameNa('ios-safari', rotationLabel)).toBe(true);
+      expect(
+        rotationFirstFrameNa(
+          'ios-safari',
+          `empty after clear: ${rotationActionLabel('LANDSCAPE', 'PORTRAIT')}`
+        )
+      ).toBe(true);
+      expect(rotationFirstFrameNa('ios-safari', 'undo clear after blank rotation')).toBe(false);
+      expect(
+        rotationFirstFrameNa('ios-safari', 'clear restored drawing after blank rotation')
+      ).toBe(false);
+      expect(rotationFirstFrameNa('ios-capacitor-webview', rotationLabel)).toBe(false);
+      // The trap: an Appium-driven Android Chrome artifact records the same
+      // `transport: "browser"` the iPad Safari sweep does. The runtime key is
+      // what keeps its gate live.
+      expect(rotationFirstFrameNa('android-chrome', rotationLabel)).toBe(false);
+      expect(rotationFirstFrameNa('browser', rotationLabel)).toBe(false);
+      expect(rotationFirstFrameNa(undefined, rotationLabel)).toBe(false);
+    });
+
+    it('skips the first-frame gate and records na for a Safari rotation row', () => {
+      const naFor = (label) => rotationFirstFrameNa('ios-safari', label);
+      const summaries = summarizeActions(
+        [{ ...clean(rotationLabel), firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 100 }],
+        [],
+        {},
+        naFor
+      );
+
+      expect(summaries[0].firstFrame.na).toBe(true);
+      expect(summaries[0].passed).toBe(true);
+      expect(actionRows(summaries)[0]['first p95']).toBe('n/a');
+    });
+
+    it('keeps the gate live for the same rotation on a gated runtime', () => {
+      const naFor = (label) => rotationFirstFrameNa('android-chrome', label);
+      const summaries = summarizeActions(
+        [{ ...clean(rotationLabel), firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 1 }],
+        [],
+        {},
+        naFor
+      );
+
+      expect(summaries[0].firstFrame.na).toBeUndefined();
+      expect(summaries[0].passed).toBe(false);
+    });
+
+    it('still fails a Safari rotation row on the post-action frame gates', () => {
+      const naFor = (label) => rotationFirstFrameNa('ios-safari', label);
+      const summaries = summarizeActions(
+        [
+          {
+            ...clean(rotationLabel),
+            firstFrameMs: 1,
+            frameGapsMs: [9, 9, ACTION_FRAME_MAX_GATE_MS + 1],
+          },
+        ],
+        [],
+        {},
+        naFor
+      );
+
+      expect(summaries[0].firstFrame.na).toBe(true);
+      expect(summaries[0].passed).toBe(false);
+    });
   });
 
   it('fails an expected action label that produced no samples', () => {
@@ -1088,6 +1168,20 @@ describe('trusted XCUITest input', () => {
     expect(
       repeated.filter((action) => action.type === 'pause' && action.duration === 2_000)
     ).toHaveLength(2);
+  });
+
+  // Issue 1292's fix rides this structure: the plan tells the page how many
+  // strokes make one pass (STROKES_PER_GESTURE_REPEAT) so it can refill the
+  // tiles between passes. The count is derived from the same arrays the plan
+  // walks, and this pins the emitted actions to it.
+  it('emits exactly the exported strokes-per-repeat, every repeat', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const repeats = 3;
+    const actions = trustedGestureActions(bounds, repeats, 0);
+
+    expect(actions.filter((action) => action.type === 'pointerDown')).toHaveLength(
+      repeats * STROKES_PER_GESTURE_REPEAT
+    );
   });
 
   it('only permits Apple-account provisioning when explicitly requested', () => {

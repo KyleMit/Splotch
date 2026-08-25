@@ -161,9 +161,24 @@ function normalizedMatrix(modes) {
   };
 }
 
-function writeActionCapture(directory, name, { orientation, theme, summaries, samples }) {
+function writeActionCapture(
+  directory,
+  name,
+  { orientation, theme, summaries, samples, transport, captureRuntime }
+) {
   const path = join(directory, name);
-  writeFileSync(path, JSON.stringify({ orientation, theme, repeats: 4, summaries, samples }));
+  writeFileSync(
+    path,
+    JSON.stringify({
+      orientation,
+      theme,
+      repeats: 4,
+      summaries,
+      samples,
+      transport,
+      captureRuntime,
+    })
+  );
   return name;
 }
 
@@ -260,6 +275,92 @@ describe('deployment matrix report', () => {
     expect(actions.actionCount).toBe(1);
     expect(actions.passedActionCount).toBe(1);
     expect(actions.results.some((result) => result.label === warmupOnlyLabel)).toBe(false);
+  });
+
+  // ADR-0142 amendment (issue 1324): an iPad Safari rotation first frame is
+  // 0-2 ms by construction, so it is declared N/A instead of publishing a green
+  // 0. Applicability keys on the capture RUNTIME — `transport: "browser"` is
+  // the Appium web transport generally, and an Android Chrome artifact records
+  // it too, so an artifact carrying that transport but no ios-safari runtime
+  // (and no target declaring one) must keep its gate.
+  it('declares Safari rotation first frames not-applicable and keeps other runtimes gated', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+    const rotationSamples = Array.from({ length: 4 }, (_, index) => ({
+      ...actionSample(rotationLabel, index === 0),
+      firstFrameMs: 100,
+    }));
+    const safariSource = writeActionCapture(manifestDirectory, 'safari-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      transport: 'browser',
+      captureRuntime: 'ios-safari',
+      samples: rotationSamples,
+    });
+    const appiumAndroidSource = writeActionCapture(manifestDirectory, 'android-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'dark',
+      transport: 'browser',
+      samples: rotationSamples,
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source: safariSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        capturedManifestMode(modeSpecs[1], {
+          actionSources: [{ source: appiumAndroidSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(2).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const safariResult = matrix.targets[0].modes[0].actions.results[0];
+    const androidResult = matrix.targets[0].modes[1].actions.results[0];
+
+    expect(safariResult).toMatchObject({ label: rotationLabel, passed: true });
+    expect(safariResult.firstFrame.na).toBe(true);
+    expect(matrix.targets[0].modes[0].actions.worst.firstFrameP95).toBeNull();
+    expect(androidResult.firstFrame.na).toBeUndefined();
+    expect(androidResult.passed).toBe(false);
+    const html = renderReport(matrix);
+    expect(html).toContain('first P95 N/A');
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain('N/A');
+  });
+
+  // Review round 2: a cross-engine artifact (campaign acceptance only tells web
+  // from native) must not fold under a target declaring another runtime —
+  // silently preferring the target scored an android-chrome capture's rotation
+  // rows as ios-safari N/A. Both present and different is a refusal, not an
+  // ordering.
+  it('refuses an artifact whose recorded runtime disagrees with the target’s declared one', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'cross-engine-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      transport: 'browser',
+      captureRuntime: 'android-chrome',
+      samples: [
+        actionSample('with ink: PORTRAIT to LANDSCAPE rotation', true),
+        ...Array.from({ length: 3 }, () =>
+          actionSample('with ink: PORTRAIT to LANDSCAPE rotation', false)
+        ),
+      ],
+    });
+    const source_manifest = manifest([
+      capturedManifestMode(modeSpecs[0], {
+        actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+      }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source_manifest.targets[0].id = 'ipad-device-web';
+
+    expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
+      'records captureRuntime android-chrome, but target ipad-device-web declares ios-safari'
+    );
   });
 
   it('identifies cumulative provenance in the Markdown summary', () => {
@@ -743,6 +844,105 @@ describe('deployment matrix report', () => {
         'Performance matrix preservedEvidence.reason must say why raw inputs are gone'
       );
     });
+  });
+});
+
+// Issue 1297: the gesture-repeat count decides a cell's first-touch-to-repeat
+// mix, so runs at different recorded counts measured different quantities. The
+// matrix publishes each run's count and refuses to fold two different ones; a
+// run predating the field (null) proves nothing and folds as before.
+describe('the gesture-repeat contract in a folded cell', () => {
+  function writeDrawingCapture(directory, name, gestureRepeats) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gestureRepeats,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  it('publishes each run’s recorded count and refuses to fold two different ones', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const ten = writeDrawingCapture(directory, 'pen-ten.json', 10);
+    const legacy = writeDrawingCapture(directory, 'pen-legacy.json', undefined);
+    const modesWith = (pen) => [
+      capturedManifestMode(modeSpecs[0], { drawing: { pen } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    const matrix = normalizeMatrix(manifest(modesWith([ten, legacy])), directory);
+    const runs = matrix.targets[0].modes[0].drawing.pen.runs;
+    expect(runs.map((run) => run.gestureRepeats)).toEqual([10, null]);
+
+    const three = writeDrawingCapture(directory, 'pen-three.json', 3);
+    expect(() => normalizeMatrix(manifest(modesWith([ten, three])), directory)).toThrow(
+      'folds captures with different gesture-repeat counts (10, 3)'
+    );
+  });
+});
+
+// Issue 1290's surviving claim: the matrix publishes one capture per cell and a
+// single capture decides a pass/fail gate. Its spread figures were retracted
+// twice, so the matrix states the structural fact — prose, runCount, tooltip
+// basis — and publishes no figure. The verdict itself must not change.
+describe('single-capture verdict provenance', () => {
+  const failingAggregate = (runCount) => ({
+    runCount,
+    paint: { p95: 30, p99: 40, max: 60 },
+    lostFrameTimeShare: 0.027,
+    blankPassed: false,
+  });
+
+  it('states the single-capture basis in prose without resurrecting retracted figures', () => {
+    const brushes = drawing();
+    brushes.magic.aggregate = failingAggregate(1);
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { drawing: brushes }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const markdown = renderMarkdown(matrix);
+
+    expect(markdown).toContain('provisional until it has been compared against the previous run');
+    expect(markdown).toContain('retracted twice');
+    expect(markdown).not.toContain('2.71');
+    expect(markdown).toContain('**FAIL 30 / 40 / 60 · L2.7%**');
+  });
+
+  it('states each fresh cell’s capture basis in the plot tooltips, and none for preserved cells', () => {
+    const brushes = drawing();
+    brushes.magic.aggregate = failingAggregate(1);
+    brushes.crayon.aggregate = failingAggregate(4);
+    brushes.eraser.aggregate = {
+      ...failingAggregate(1),
+      scoreable: false,
+      unscoreableReason: 'preserved: no current verdict',
+    };
+    brushes.pen.aggregate.runCount = 0;
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { drawing: brushes }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const html = renderReport(matrix);
+
+    expect(html).toContain('· 1 capture');
+    expect(html).toContain('· 4 captures');
+    // A preserved cell's runCount is an inherited claim, and a zero-run cell
+    // has no basis to state — neither asserts one.
+    expect(html).not.toContain('· 0 captures');
+    expect(html.match(/capture · unscoreable: preserved/g)).toBeNull();
   });
 });
 

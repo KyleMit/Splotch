@@ -23,6 +23,11 @@ import {
   settingsSectionRow,
   themeOption,
 } from '../../lib/campaign-state.mjs';
+import {
+  ERASER_FILL_BACKING_TIMEOUT_MS,
+  eraserFillFunctionSource,
+  eraserRefillFunctionSource,
+} from '../../lib/eraser-fill.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
 // enough not to spin, short enough that a finished gesture is not left banking
@@ -35,6 +40,9 @@ const THEME_TIMEOUT_MS = 20_000;
 // Long enough that a landed click opens the dialog before another is sent.
 const SETTINGS_OPEN_RETRY_MS = 400;
 const BRUSH_ATTEMPTS = 4;
+// One settle after the fill, so the paint is committed before contact banking
+// starts — the same 400 ms the unverified fill always waited.
+const ERASER_FILL_SETTLE_MS = 400;
 // The probe's own row accessors page through its ring buffers; this is the slice
 // size, not a cap on the capture.
 const REPORT_SLICE_ROWS = 5_000;
@@ -219,16 +227,37 @@ export function pageBootstrapSource() {
     }
 
     // The eraser needs something to erase, or it measures clearing blank paper.
+    // The fill is verified rather than trusted (issue 1302), and the evidence
+    // travels with readiness so the artifact can prove the eraser had ink.
+    let eraserFill = null;
     if (plan.brush === 'eraser') {
-      for (const canvas of document.querySelectorAll('canvas[data-live-tile]')) {
-        const context = canvas.getContext('2d');
-        context.save();
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.fillStyle = '#7c4dff';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.restore();
+      ${eraserFillFunctionSource()}
+      const fillVerified = async () => {
+        await until(() => !(eraserFill = fillEraserInk()).pending, ${ERASER_FILL_BACKING_TIMEOUT_MS});
+        if (eraserFill.pending) {
+          throw new Error('live tile backings never realized for the eraser fill: ' + eraserFill.pending.join(', '));
+        }
+        if (eraserFill.transparentTiles.length) {
+          throw new Error('the eraser fill left tiles transparent: ' + eraserFill.transparentTiles.join(', '));
+        }
+      };
+      await fillVerified();
+      await wait(${ERASER_FILL_SETTLE_MS});
+      // Verify WITHOUT painting first: a deferred clear or resize inside the
+      // settle window wiping a blessed fill is instability evidence that may
+      // recur during the measured gesture. A clean check costs nothing; a wipe
+      // is repaired, re-proved, and RECORDED rather than silently repainted.
+      const afterSettle = fillEraserInk(true);
+      if (afterSettle.pending || afterSettle.transparentTiles.length) {
+        await fillVerified();
+        eraserFill = { ...eraserFill, repairedAfterSettle: true, settleWipe: afterSettle };
       }
-      await wait(400);
+      // The plan says how the host groups strokes into passes; the page refills
+      // between passes so every pass erases real ink (issue 1292).
+      if (plan.eraserRefill) {
+        ${eraserRefillFunctionSource()}
+        armEraserRefill(plan.eraserRefill.everyStrokes, plan.eraserRefill.totalStrokes, fillEraserInk);
+      }
     }
 
     window.__probePhases = 'blank';
@@ -255,6 +284,8 @@ export function pageBootstrapSource() {
       // Reported so the runner can refuse a mismatch BEFORE a person or a device
       // spends the capture, rather than labelling the artifact from the request.
       resolvedTheme: resolvedTheme(),
+      // The verified-fill evidence (issue 1302); null for every other brush.
+      eraserFill,
       geometry: {
         canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
         viewport: { width: innerWidth, height: innerHeight },
@@ -281,6 +312,14 @@ export function pageBootstrapSource() {
       await wait(${PLAN_POLL_MS});
     }
 
+    // The heartbeat issue 1300 asked for. A ready page that never uploads was
+    // indistinguishable between four states: it never saw finish, finish()
+    // threw, the upload failed, or the page was suspended first. These two log
+    // lines split the space — a host log ending at finish-observed died inside
+    // finish()/serialization, one ending at uploading died in the POST or was
+    // suspended mid-flight, and neither line at all means the page never saw
+    // the plan flip.
+    await log({ kind: 'finish-observed', nonce });
     const report = window.__probe.finish();
     const counts = report.meta.counts;
     const read = (accessor, expected) => {
@@ -296,6 +335,7 @@ export function pageBootstrapSource() {
     report.events = read('events', counts.events);
     report.measures = read('measures', counts.measures);
     window.__probe.stop();
+    await log({ kind: 'uploading', nonce, events: report.events.length });
     await post('/__probe/report', {
       // The run this report belongs to. Readiness was nonce-checked from the
       // start and the report was not, so a page from an earlier run could upload
@@ -304,6 +344,8 @@ export function pageBootstrapSource() {
       nonce,
       report,
       topology: window.__drawingDebug?.getLiveSurfaceTopology?.() ?? null,
+      // Per-pass refill evidence (issue 1292); null for every non-eraser run.
+      eraserRefills: window.__eraserRefills ?? null,
     });
   } catch (error) {
     await log({ kind: 'bootstrap', message: String(error?.message ?? error) });

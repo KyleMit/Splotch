@@ -35,6 +35,13 @@ const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PAGE_SETTLE_MS = 6_000;
 const PROBE_READY_TIMEOUT_MS = 180_000;
+// A launched app that will contact the probe host does so within a few seconds
+// of the launch; one that never will — a locked iPad (devicectl reports the
+// launch as successful anyway) or an installed clean bundled build that renders
+// the app perfectly and never loads the probe host — is silent forever. Fifteen
+// seconds separates the two without eating the operator's capture window the
+// way the full three-minute ready poll did twice on 2026-08-25 (issue 1316).
+const FIRST_CONTACT_TIMEOUT_MS = 15_000;
 const REPORT_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 1_000;
 // The probe ends a phase on its own once the banked contact time runs out; a
@@ -129,11 +136,41 @@ export async function openWithAdb({ serial, pageUrl, orientation, nativeApp, exe
   }
 }
 
-function announceManualOpen({ host, orientation, theme }) {
-  console.log('\n  Open this on the device, in the runtime being calibrated:');
-  console.log(`\n      ${host}/\n`);
-  console.log(`  Hold it in ${orientation}, with the ${theme} theme selected.`);
-  console.log('  The page selects its own brush and reports back when it is ready.\n');
+// A manual page that stood down means the human's URL lacked this run's
+// identity — with exactly one page in play, waiting out the full ready budget
+// buys nothing but three minutes of blank screen (issue 1300 review). Exported
+// for the message test; the adb path deliberately does NOT fail on this signal,
+// because leftover tabs standing down while the real page loads is that
+// transport's normal weather.
+export function stalePageFailure(pageUrl) {
+  return (
+    'a page reached the probe host without this run’s identity and stood down — it was opened ' +
+    'without the exact printed URL. Reopen this address, query string included:\n' +
+    `\n      ${pageUrl}\n`
+  );
+}
+
+// Issue 1295: the manual path predates the page-identity guard and printed a
+// bare host URL, so a hand capture could never prove which run its page
+// belonged to. The printed URL now carries the run nonce, giving the manual
+// flow the same guarantee as the driven one — the capture refuses a page that
+// was not opened at it. Exported as lines so the guarantee is testable.
+export function manualOpenLines({ pageUrl, orientation, theme }) {
+  return [
+    '',
+    '  Open this EXACT address on the device, in the runtime being calibrated',
+    '  (the query is this run’s identity — the capture refuses a page without it):',
+    '',
+    `      ${pageUrl}`,
+    '',
+    `  Hold it in ${orientation}, with the ${theme} theme selected.`,
+    '  The page selects its own brush and reports back when it is ready.',
+    '',
+  ];
+}
+
+function announceManualOpen(details) {
+  for (const line of manualOpenLines(details)) console.log(line);
 }
 
 // A deterministic launch of the installed app, so the capture cannot depend on
@@ -151,6 +188,23 @@ export function openWithDevicectl({ udid, exec = capture }) {
     udid,
     APP_BUNDLE_ID,
   ]);
+}
+
+// What silence after a devicectl launch means, in the operator's terms. First
+// contact is any request for the plan, not proof of identity — a page that asks
+// for the plan may still fail readiness — but a launch that produces NO request
+// is one of exactly two operator-fixable states, and both look identical on the
+// device.
+export function firstContactFailure(host) {
+  return (
+    `the launched app never phoned home — no request for the probe plan reached ${host} ` +
+    `within ${FIRST_CONTACT_TIMEOUT_MS / 1000}s. Two usual causes:\n` +
+    '  - the iPad is locked: devicectl reports a successful launch even behind a locked\n' +
+    '    screen, and the WebView then never loads. Unlock the iPad and re-run this step.\n' +
+    `  - the installed build cannot do a probe capture: a clean bundled build renders the\n` +
+    `    drawing app perfectly and never contacts ${host}. Install the server.url profiling\n` +
+    '    build (npm run perf:build:cap, then npm run ios:run:device) and re-run.'
+  );
 }
 
 async function countDown(seconds) {
@@ -265,11 +319,12 @@ export async function captureHandInput({
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
-  // Only a page we opened at a URL we chose can prove which run it belongs to.
-  // A person opening the host by hand cannot carry a nonce, and a native WebView
-  // loads a build-time URL — so those ask for no proof and the artifact records
-  // that none was had.
-  const requirePageIdentity = opener === 'adb' && !nativeApp;
+  // Only a page opened at a URL carrying the nonce can prove which run it
+  // belongs to. A native WebView loads a build-time URL, so it cannot — the
+  // artifact records that no proof was had. Browser pages can, whoever opens
+  // them: adb navigates to the nonce URL, and the manual path prints one for
+  // the human to open (issue 1295), so both are held to the proof.
+  const requirePageIdentity = !nativeApp;
   await control(host, {
     brush,
     theme,
@@ -285,10 +340,23 @@ export async function captureHandInput({
   if (opener === 'adb') await openWithAdb({ serial, pageUrl, orientation, nativeApp });
   else if (opener === 'devicectl') {
     openWithDevicectl({ udid });
+    console.log(`  Launched the installed app; waiting for it to load ${host} …`);
+    // The reset in the control call above zeroed the counter, so any request
+    // now is this launch (or a leftover — either way, a reachable page).
+    const contacted = await pollFor(
+      async () => ((await probeState(host)).planRequests > 0 ? true : null),
+      FIRST_CONTACT_TIMEOUT_MS
+    );
+    if (!contacted) fail(firstContactFailure(host));
+    console.log('  The app reached the probe host; waiting for the page to report ready …');
     await sleep(PAGE_SETTLE_MS);
-  } else announceManualOpen({ host, orientation, theme });
+  } else announceManualOpen({ pageUrl, orientation, theme });
 
-  const ready = await pollFor(async () => (await probeState(host)).ready, PROBE_READY_TIMEOUT_MS);
+  const ready = await pollFor(async () => {
+    const state = await probeState(host);
+    if (opener === 'manual' && state.stalePage) fail(stalePageFailure(pageUrl));
+    return state.ready;
+  }, PROBE_READY_TIMEOUT_MS);
   if (!ready) fail('the page never reported the probe ready');
   if (ready.committed && ready.committed !== brush) {
     fail(`the engine is on ${ready.committed}, not ${brush}`);
@@ -323,6 +391,17 @@ export async function captureHandInput({
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the finger never reached the canvas');
+  }
+  // Defence in depth, mirrored from the driven runner: the report names the URL
+  // that produced it, and that URL carries the nonce this run announced.
+  const capturedAt = new URL(payload.report?.meta?.url ?? 'http://invalid/').searchParams.get(
+    'probe'
+  );
+  if (requirePageIdentity && capturedAt !== nonce) {
+    fail(
+      `the report came from a page opened for ${capturedAt ?? 'an unknown run'}, not ${nonce} — ` +
+        'open the exact printed URL, query string included'
+    );
   }
   // The runtime is observed, never trusted: a hand capture labelled for the
   // WKWebView was once recorded in Safari because Safari was foregrounded, and
