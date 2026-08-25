@@ -1,7 +1,7 @@
 # ADR-0143: Pin adaptive-sync Android panels to 60Hz for action sweeps
 
-**Status:** Active (amends [ADR-0092](0092-direct-cdp-android-browser-action-profiling.md)) **Date:**
-2026-08
+**Status:** Active (amends [ADR-0092](0092-direct-cdp-android-browser-action-profiling.md))
+**Date:** 2026-08
 
 ## Context
 
