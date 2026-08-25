@@ -21,6 +21,26 @@ export const IOS_ACTION_FRAME_P95_ALLOWANCES_MS = {
 // Two exact 60 Hz vsync intervals are 33.33 ms; the next interval is the visible 50 ms freeze.
 export const ACTION_FRAME_MAX_GATE_MS = 33.5;
 export const ACTION_FIRST_FRAME_GATE_MS = 33.5;
+
+// Orientation-change measurements only: `${from} to ${to} rotation`. The click
+// actions taken after a rotation ("undo clear after blank rotation") share the
+// bare " rotation" suffix and must stay gated, so the orientation vocabulary is
+// part of the match.
+const ROTATION_ACTION_LABEL = / to (?:PORTRAIT|LANDSCAPE) rotation$/;
+
+// On iPad Safari (the one action artifact recording `transport: "browser"`) the
+// rotation first-frame gate is structurally inert under ADR-0142's `resize`
+// anchor: Safari dispatches `resize` inside the same rendering turn whose rAF
+// timestamp the probe records, so firstFrameMs reads 0-2 ms by construction and
+// the gate cannot discriminate. The honest verdict is not-applicable, mirroring
+// ADR-0139's refusal of checks that silently pass — the post-action frame gates
+// carry the rotation signal there. Every other transport keeps dynamic range
+// (Android Chrome measured 0.1-54 ms post-resize; the native WKWebView's first
+// `resize` precedes committed layout, a real if pre-layout reading) and stays
+// gated.
+export function rotationFirstFrameNa(transport, label) {
+  return transport === 'browser' && ROTATION_ACTION_LABEL.test(label);
+}
 export const WARMUP_REPEATS = 1;
 export const MIN_GATED_SAMPLES = 3;
 // Four ordinary callbacks confirm that presentation recovered without reaching late static gaps.
@@ -100,14 +120,18 @@ export function scoredActionFrameGaps(action) {
   return scored;
 }
 
-export function summarizeActionGroup(actions, label, allowances = {}) {
+export function summarizeActionGroup(actions, label, allowances = {}, firstFrameNaFor = null) {
   const hasWarmupMetadata = actions.some((action) => typeof action.warmup === 'boolean');
   const scoredActions = hasWarmupMetadata ? actions.filter((action) => !action.warmup) : actions;
   const frameGaps = scoredActions.flatMap(scoredActionFrameGaps);
   const rawFrameGaps = scoredActions.flatMap(
     (action) => action.postActionFrameGapsMs ?? action.frameGapsMs ?? []
   );
-  const firstFrame = distribution(finiteValues(scoredActions, 'firstFrameMs'));
+  const firstFrameNa = firstFrameNaFor?.(label) === true;
+  const firstFrame = {
+    ...distribution(finiteValues(scoredActions, 'firstFrameMs')),
+    ...(firstFrameNa ? { na: true } : {}),
+  };
   const ready = distribution(finiteValues(scoredActions, 'readyMs'));
   const frames = {
     ...distribution(frameGaps),
@@ -122,7 +146,7 @@ export function summarizeActionGroup(actions, label, allowances = {}) {
   const passed =
     scoredActions.length >= minimumSamples &&
     activation.passed &&
-    firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS &&
+    (firstFrameNa || firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS) &&
     frames.p95 <= (allowances[label] ?? ACTION_FRAME_P95_GATE_MS) &&
     frames.max <= ACTION_FRAME_MAX_GATE_MS;
   return {
@@ -140,7 +164,12 @@ export function summarizeActionGroup(actions, label, allowances = {}) {
   };
 }
 
-export function summarizeActions(actions, expectedLabels = [], allowances = {}) {
+export function summarizeActions(
+  actions,
+  expectedLabels = [],
+  allowances = {},
+  firstFrameNaFor = null
+) {
   const groups = new Map();
   for (const action of actions) {
     const entries = groups.get(action.label) ?? [];
@@ -152,7 +181,7 @@ export function summarizeActions(actions, expectedLabels = [], allowances = {}) 
   }
   return [...groups.entries()].map(([label, entries]) => ({
     label,
-    ...summarizeActionGroup(entries, label, allowances),
+    ...summarizeActionGroup(entries, label, allowances, firstFrameNaFor),
   }));
 }
 
@@ -161,7 +190,7 @@ export function actionRows(summaries) {
     action: summary.label,
     runs: `${summary.count}/${summary.totalCount}`,
     activation: `${summary.activation.valid}/${summary.totalCount}`,
-    'first p95': summary.firstFrame.p95,
+    'first p95': summary.firstFrame.na ? 'n/a' : summary.firstFrame.p95,
     'ready seen p50': summary.ready.p50,
     'ready seen p95': summary.ready.p95,
     'post p95': summary.frames.p95,

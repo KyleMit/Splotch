@@ -9,6 +9,7 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  rotationFirstFrameNa,
   summarizeActions,
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
@@ -168,9 +169,14 @@ function roundShare(value) {
 
 function normalizedDistribution(distribution) {
   if (!distribution) return null;
-  return Object.fromEntries(
+  const normalized = Object.fromEntries(
     ['p50', 'p95', 'p99', 'max'].map((metric) => [metric, round(distribution[metric])])
   );
+  // A distribution declared not-applicable (a Safari rotation first frame,
+  // ADR-0142) keeps that declaration through data.json so renderers show N/A
+  // rather than a structurally-zero pass.
+  if (distribution.na === true) normalized.na = true;
+  return normalized;
 }
 
 function captureOrientation(profile) {
@@ -368,7 +374,9 @@ function normalizeActionCapture(spec, sourceDirectory, mode) {
   // amendment); one without the field — every capture predating it, and every
   // non-iOS target — stays on the base gates.
   const summaries = profile.samples
-    ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {})
+    ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
+        rotationFirstFrameNa(profile.transport, label)
+      )
     : profile.summaries;
   const results = summaries
     .filter((summary) => summary.count > 0 && (!labels || labels.has(summary.label)))
@@ -446,7 +454,15 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode) {
     actionCount: results.length,
     passedActionCount: results.filter((result) => result.passed).length,
     worst: {
-      firstFrameP95: round(maximum(comparableResults.map((result) => result.firstFrame?.p95))),
+      // A not-applicable first frame is a declared non-measurement, so it must
+      // not feed the aggregate even though its near-zero value never wins it.
+      firstFrameP95: round(
+        maximum(
+          comparableResults
+            .filter((result) => result.firstFrame?.na !== true)
+            .map((result) => result.firstFrame?.p95)
+        )
+      ),
       postActionFrameP95: round(
         maximum(comparableResults.map((result) => result.postActionFrames?.p95))
       ),
@@ -762,13 +778,17 @@ function drawingPlot(matrix, metric, gate, title) {
 function actionRatio(result, gates) {
   return maximum(
     [
-      [result.firstFrame.p95, gates.firstFrameP95Ms],
+      [result.firstFrame.na === true ? null : result.firstFrame.p95, gates.firstFrameP95Ms],
       [result.postActionFrames.p95, gates.postActionFrameP95Ms],
       [result.postActionFrames.max, gates.postActionFrameMaxMs],
     ]
       .filter(([value]) => Number.isFinite(value))
       .map(([value, gate]) => value / gate)
   );
+}
+
+function firstFrameP95Text(result) {
+  return result.firstFrame.na === true ? 'N/A' : `${fmt(result.firstFrame.p95)} ms`;
 }
 
 function heatClass(ratio) {
@@ -830,7 +850,7 @@ function actionHeatmap(matrix) {
               ? 'PASS'
               : 'FAIL'
             : `unscoreable: this mode\u2019s idle frame control is ${target.actions?.controlEvidence ?? 'absent'}`;
-          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${firstFrameP95Text(result)} · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
           const cellClass = attributable ? heatClass(ratio) : 'unscoreable';
           return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
         })
@@ -1093,7 +1113,9 @@ max ≤ ${matrix.gates.drawing.paintMaxMs} ms, and cumulative lost frame time �
 passes at engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, and next-frame max ≤
 ${matrix.gates.undo.nextFrameMaxMs} ms. A discrete action passes at first-frame P95 ≤
 ${matrix.gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${matrix.gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤
-${matrix.gates.actions.postActionFrameMaxMs} ms.
+${matrix.gates.actions.postActionFrameMaxMs} ms. Rotation first frames on iPad Safari are not applicable rather than gated:
+under ADR-0142's \`resize\` anchor the value reads 0–2 ms by construction there, so those cells
+render N/A and rotation is scored by the post-action frame gates alone.
 
 ${renderLostFrameExceptionsMarkdown(matrix.gates.drawing.lostFrameTimeShareExceptions ?? {})}
 ## Capture limitations

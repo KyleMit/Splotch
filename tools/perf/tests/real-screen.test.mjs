@@ -41,6 +41,7 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  rotationFirstFrameNa,
   summarizeActionGroup,
   summarizeActions,
 } from '../lib/action-stats.mjs';
@@ -370,6 +371,73 @@ describe('discrete action response', () => {
       passed: true,
     });
     expect(summarizeActionGroup([warmup, ...scored.slice(1)]).passed).toBe(false);
+  });
+
+  // ADR-0142: on iPad Safari `resize` lands in the rendering turn whose rAF the
+  // probe records, so a rotation first frame reads 0-2 ms by construction. The
+  // gate is declared not-applicable there instead of passing on a structural 0.
+  describe('rotation first-frame applicability', () => {
+    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+
+    it('marks only orientation-change labels, only on the Safari transport', () => {
+      expect(rotationFirstFrameNa('browser', rotationLabel)).toBe(true);
+      expect(
+        rotationFirstFrameNa('browser', 'empty after clear: LANDSCAPE to PORTRAIT rotation')
+      ).toBe(true);
+      expect(rotationFirstFrameNa('browser', 'undo clear after blank rotation')).toBe(false);
+      expect(rotationFirstFrameNa('browser', 'clear restored drawing after blank rotation')).toBe(
+        false
+      );
+      expect(rotationFirstFrameNa('native-capacitor-webview', rotationLabel)).toBe(false);
+      expect(rotationFirstFrameNa('android-chrome-cdp', rotationLabel)).toBe(false);
+      expect(rotationFirstFrameNa(undefined, rotationLabel)).toBe(false);
+    });
+
+    it('skips the first-frame gate and records na for a Safari rotation row', () => {
+      const naFor = (label) => rotationFirstFrameNa('browser', label);
+      const summaries = summarizeActions(
+        [{ ...clean(rotationLabel), firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 100 }],
+        [],
+        {},
+        naFor
+      );
+
+      expect(summaries[0].firstFrame.na).toBe(true);
+      expect(summaries[0].passed).toBe(true);
+      expect(actionRows(summaries)[0]['first p95']).toBe('n/a');
+    });
+
+    it('keeps the gate live for the same rotation on a gated transport', () => {
+      const naFor = (label) => rotationFirstFrameNa('android-chrome-cdp', label);
+      const summaries = summarizeActions(
+        [{ ...clean(rotationLabel), firstFrameMs: ACTION_FIRST_FRAME_GATE_MS + 1 }],
+        [],
+        {},
+        naFor
+      );
+
+      expect(summaries[0].firstFrame.na).toBeUndefined();
+      expect(summaries[0].passed).toBe(false);
+    });
+
+    it('still fails a Safari rotation row on the post-action frame gates', () => {
+      const naFor = (label) => rotationFirstFrameNa('browser', label);
+      const summaries = summarizeActions(
+        [
+          {
+            ...clean(rotationLabel),
+            firstFrameMs: 1,
+            frameGapsMs: [9, 9, ACTION_FRAME_MAX_GATE_MS + 1],
+          },
+        ],
+        [],
+        {},
+        naFor
+      );
+
+      expect(summaries[0].firstFrame.na).toBe(true);
+      expect(summaries[0].passed).toBe(false);
+    });
   });
 
   it('fails an expected action label that produced no samples', () => {

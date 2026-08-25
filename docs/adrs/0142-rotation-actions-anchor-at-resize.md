@@ -76,7 +76,13 @@ against the app.
 
 − **The rotation first-frame gate no longer measures anything on Safari** (see above). The
 post-action frame gates are the operative rotation gates there; a future regression confined to the
-pre-`resize` window surfaces only in artifact activities, not as a red cell.
+pre-`resize` window surfaces only in artifact activities, not as a red cell. *Amendment (2026-08,
+issue 1324):* the structurally-inert cell is now declared rather than left as an always-green 0 —
+`rotationFirstFrameNa` in `tools/perf/lib/action-stats.mjs` marks Safari rotation first frames
+not-applicable (the ADR-0139 shape: a check that cannot discriminate must not silently pass), the
+gate is skipped for those rows, and the matrix renders N/A. Android Chrome and the native WKWebView
+keep the gate: Android retains dynamic range, and the native reading — the pre-layout `resize` — is
+a real measurement of a different quantity, stated above.
 
 − Previously published rotation first-frame numbers are incomparable with post-change numbers, and
 `check:matrix-staleness` cannot see the boundary — its measured surface is deliberately product

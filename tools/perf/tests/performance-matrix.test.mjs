@@ -161,9 +161,16 @@ function normalizedMatrix(modes) {
   };
 }
 
-function writeActionCapture(directory, name, { orientation, theme, summaries, samples }) {
+function writeActionCapture(
+  directory,
+  name,
+  { orientation, theme, summaries, samples, transport }
+) {
   const path = join(directory, name);
-  writeFileSync(path, JSON.stringify({ orientation, theme, repeats: 4, summaries, samples }));
+  writeFileSync(
+    path,
+    JSON.stringify({ orientation, theme, repeats: 4, summaries, samples, transport })
+  );
   return name;
 }
 
@@ -260,6 +267,53 @@ describe('deployment matrix report', () => {
     expect(actions.actionCount).toBe(1);
     expect(actions.passedActionCount).toBe(1);
     expect(actions.results.some((result) => result.label === warmupOnlyLabel)).toBe(false);
+  });
+
+  // ADR-0142 amendment (issue 1324): a Safari rotation first frame is 0-2 ms by
+  // construction, so it is declared N/A instead of publishing a green 0. The
+  // same label on any other transport — or in a pre-change artifact recording no
+  // transport — keeps its gate.
+  it('declares Safari rotation first frames not-applicable and keeps other transports gated', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+    const rotationSamples = Array.from({ length: 4 }, (_, index) => ({
+      ...actionSample(rotationLabel, index === 0),
+      firstFrameMs: 100,
+    }));
+    const safariSource = writeActionCapture(manifestDirectory, 'safari-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      transport: 'browser',
+      samples: rotationSamples,
+    });
+    const untransportedSource = writeActionCapture(manifestDirectory, 'legacy-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'dark',
+      samples: rotationSamples,
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source: safariSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        capturedManifestMode(modeSpecs[1], {
+          actionSources: [{ source: untransportedSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(2).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const safariResult = matrix.targets[0].modes[0].actions.results[0];
+    const legacyResult = matrix.targets[0].modes[1].actions.results[0];
+
+    expect(safariResult).toMatchObject({ label: rotationLabel, passed: true });
+    expect(safariResult.firstFrame.na).toBe(true);
+    expect(matrix.targets[0].modes[0].actions.worst.firstFrameP95).toBeNull();
+    expect(legacyResult.firstFrame.na).toBeUndefined();
+    expect(legacyResult.passed).toBe(false);
+    const html = renderReport(matrix);
+    expect(html).toContain('first P95 N/A');
   });
 
   it('identifies cumulative provenance in the Markdown summary', () => {

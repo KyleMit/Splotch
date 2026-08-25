@@ -7,6 +7,7 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  rotationFirstFrameNa,
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
@@ -1721,7 +1722,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       requestedCapabilities: capabilities,
       session,
     });
-    const summaries = summarizeActions(samples, expectedLabels, gateAllowances);
+    const transport = nativeApp ? NATIVE_TRANSPORT : 'browser';
+    const summaries = summarizeActions(samples, expectedLabels, gateAllowances, (label) =>
+      rotationFirstFrameNa(transport, label)
+    );
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??
@@ -1737,7 +1741,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         id: capturedDeviceId(flag('device-id'), session),
       },
       appUrl,
-      transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
+      transport,
       uiActivation: uiActivationLabel(samples),
       appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
       actions: [...actions],
