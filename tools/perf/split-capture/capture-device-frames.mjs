@@ -51,7 +51,7 @@ const POLL_INTERVAL_MS = 1_000;
 const GESTURE_TAIL_MS = 1_200;
 const WDA_SESSION_ATTEMPTS = 3;
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
-const APP_BUNDLE_ID = 'art.splotch.app';
+export const APP_BUNDLE_ID = 'art.splotch.app';
 const WDA_SESSION_SETTLE_MS = 2_500;
 const CONTACT_BANK_MS = 600_000;
 
