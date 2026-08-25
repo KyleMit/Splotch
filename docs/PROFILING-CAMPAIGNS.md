@@ -267,7 +267,9 @@ every poll — readiness proves the page loaded, never that it is on screen — 
 touch lands on whatever tab is actually frontmost. `document.visibilityState` cannot detect this: it
 reported `visible` for a page that a screenshot showed buried under the Google tab.
 
-The split transport now activates the run's page over the devtools HTTP endpoint after launch and
+The split transport now clears its own leftover tabs — tool-signature pages on the session host,
+across every port the tooling serves, because the thief can be a different tool's stale page than
+the one being launched — activates the run's page over the devtools HTTP endpoint after launch and
 again before dispatch, and the page pulses its live input-event count until the first event arrives
 — a dispatch that completes with a zero pulse fails naming this cause instead of surfacing as a
 report timeout. The tell in an unguarded capture is `ev 0, down 0` in the probe's progress with a

@@ -104,7 +104,7 @@ export function pageBootstrapSource() {
       // evicted before it could upload. Navigating away leaves a blank tab that
       // will never run this again, which is the only part of that pile this
       // page can do anything about.
-      location.replace('about:blank');
+      location.replace('/__probe/stand-down');
       return;
     }
     const sized = await until(() => {

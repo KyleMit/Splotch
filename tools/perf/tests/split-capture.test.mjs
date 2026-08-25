@@ -19,9 +19,9 @@ import {
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
 import {
   activateChromePage,
-  clearTransportLitter,
+  clearToolingLitter,
   runChromePage,
-  transportLitter,
+  toolingLitter,
 } from '../split-capture/lib/chrome-tabs.mjs';
 import { androidDriver, zeroInputProblem } from '../split-capture/capture-device-frames.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
@@ -647,20 +647,29 @@ describe('fronting the run page', () => {
   });
 });
 
-describe('clearing the transport litter', () => {
+describe('clearing the tooling litter', () => {
   const targets = [
     { id: 'run', type: 'page', url: 'http://host:4175/?probe=run-7' },
-    { id: 'stale', type: 'page', url: 'http://host:4175/?probe=run-6' },
-    { id: 'husk', type: 'page', url: 'about:blank' },
+    { id: 'stale-probe', type: 'page', url: 'http://host:4175/?probe=run-6' },
+    { id: 'stale-verify', type: 'page', url: 'http://host:4177/?verify=old-check' },
+    { id: 'husk', type: 'page', url: 'http://host:4175/__probe/stand-down' },
+    { id: 'blank', type: 'page', url: 'about:blank' },
     { id: 'operator', type: 'page', url: 'https://www.google.com/m?client=x' },
-    { id: 'other-origin', type: 'page', url: 'http://host:4173/' },
+    { id: 'preview', type: 'page', url: 'http://host:4173/' },
+    { id: 'other-host', type: 'page', url: 'http://elsewhere:4175/?probe=run-6' },
     { id: 'worker', type: 'service_worker', url: 'http://host:4175/sw.js' },
   ];
 
-  it("claims only this transport's own leftovers, never operator or foreign pages", () => {
-    const litter = transportLitter(targets, 'http://host:4175', 'run-7');
+  // Ownership is a tool signature on the session host, across every port the
+  // tooling serves — the tab that steals the foreground on relaunch is
+  // whichever Chrome used last, and a stale probe tab stole the verifier's
+  // foreground from a different port exactly this way. A bare about:blank and
+  // the host's plain preview pages stay: neither carries a signature that
+  // proves it is ours rather than the operator's.
+  it('claims tool-signature pages across ports, never operator or unmarked pages', () => {
+    const litter = toolingLitter(targets, 'host', 'run-7');
 
-    expect(litter.map((target) => target.id)).toEqual(['stale', 'husk']);
+    expect(litter.map((target) => target.id)).toEqual(['stale-probe', 'stale-verify', 'husk']);
   });
 
   it('closes each leftover over the devtools http endpoint', async () => {
@@ -670,17 +679,18 @@ describe('clearing the transport litter', () => {
       return { ok: true, json: async () => targets };
     };
 
-    const result = await clearTransportLitter({
+    const result = await clearToolingLitter({
       cdpBase: 'http://127.0.0.1:9224',
-      probeOrigin: 'http://host:4175',
+      hostname: 'host',
       nonce: 'run-7',
       fetchImpl,
     });
 
-    expect(result).toEqual({ closed: 2 });
+    expect(result).toEqual({ closed: 3 });
     expect(calls).toEqual([
       'http://127.0.0.1:9224/json/list',
-      'http://127.0.0.1:9224/json/close/stale',
+      'http://127.0.0.1:9224/json/close/stale-probe',
+      'http://127.0.0.1:9224/json/close/stale-verify',
       'http://127.0.0.1:9224/json/close/husk',
     ]);
   });
@@ -734,10 +744,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     }
 
     expect(deps.activateCalls.map((call) => call.nonce)).toEqual(['run-7', 'run-7']);
-    expect(deps.litterCalls.map((call) => call.probeOrigin)).toEqual([
-      'http://host:4175',
-      'http://host:4175',
-    ]);
+    expect(deps.litterCalls.map((call) => call.hostname)).toEqual(['host', 'host']);
     const forwards = deps.execCalls.filter((call) => call.startsWith('forward'));
     expect(forwards).toEqual([
       'forward tcp:9224 localabstract:chrome_devtools_remote',

@@ -16,42 +16,61 @@
 // attached while anything is measured.
 
 // The pages this transport itself created and abandoned: earlier runs' probe
-// pages (same origin, different nonce) and the about:blank husks their
-// standdowns leave behind. Session restore re-fronts from exactly this pile —
-// activation alone lost that race twice on the SM-G990U1, reporting 200 while
-// a stood-down about:blank held the screen for a full 68s dispatch — and the
-// pile is also what lazy-restores into fresh bootstraps next launch. Only the
-// transport's own litter qualifies: operator tabs and other apps' Custom Tabs
-// on the same socket are never touched, whatever they cost us.
-export function transportLitter(targets, probeOrigin, keepNonce) {
+// pages and the /__probe/stand-down husks stale pages park themselves on —
+// all on the probe host's origin, which is what makes ownership PROVABLE.
+// Session restore re-fronts from exactly this pile — activation alone lost
+// that race twice on the SM-G990U1, reporting 200 while a stood-down husk
+// held the screen for a full 68s dispatch — and the pile is also what
+// lazy-restores into fresh bootstraps next launch. Nothing off this origin is
+// ever touched: not operator tabs, not other apps' Custom Tabs on the same
+// socket, and not a bare about:blank, which nothing can prove ownership of.
+// The pages this session's capture tooling opened, recognizable by their
+// run-identity params (?probe= / ?verify=) or the stand-down path — across
+// EVERY port the tooling serves on the host, because the tab that steals the
+// foreground on relaunch is whichever tab Chrome used last, which can be a
+// different tool's page than the one being launched (a stale probe tab stole
+// the verifier's foreground exactly this way). Session restore re-fronts from
+// this pile — activation alone lost that race repeatedly while reporting 200
+// — and the pile is also what lazy-restores into fresh bootstraps next
+// launch. Nothing without a tool signature on the session host is ever
+// touched: not operator tabs, not other apps' Custom Tabs on the same socket,
+// not a bare about:blank (unprovable), and not even this host's plain preview
+// pages, which an operator may have opened deliberately.
+export function toolingLitter(targets, hostname, keepNonce) {
   return targets.filter((target) => {
     if (target.type !== 'page') return false;
-    const url = String(target.url ?? '');
-    if (url === 'about:blank') return true;
     try {
-      const parsed = new URL(url);
-      return parsed.origin === probeOrigin && parsed.searchParams.get('probe') !== keepNonce;
+      const url = new URL(String(target.url ?? ''));
+      if (url.hostname !== hostname) return false;
+      const marked =
+        url.searchParams.has('probe') ||
+        url.searchParams.has('verify') ||
+        url.pathname === '/__probe/stand-down';
+      if (!marked) return false;
+      return (
+        url.searchParams.get('probe') !== keepNonce && url.searchParams.get('verify') !== keepNonce
+      );
     } catch {
       return false;
     }
   });
 }
 
-export async function clearTransportLitter({ cdpBase, probeOrigin, nonce, fetchImpl = fetch }) {
+export async function clearToolingLitter({ cdpBase, hostname, nonce, fetchImpl = fetch }) {
   const targets = await fetchImpl(`${cdpBase}/json/list`).then((response) => response.json());
-  const litter = transportLitter(targets, probeOrigin, nonce);
+  const litter = toolingLitter(targets, hostname, nonce);
   for (const target of litter) {
     await fetchImpl(`${cdpBase}/json/close/${target.id}`).catch(() => null);
   }
   return { closed: litter.length };
 }
 
-export function runChromePage(targets, nonce) {
+export function runChromePage(targets, nonce, param = 'probe') {
   return (
     targets.find((target) => {
       if (target.type !== 'page') return false;
       try {
-        return new URL(target.url).searchParams.get('probe') === nonce;
+        return new URL(target.url).searchParams.get(param) === nonce;
       } catch {
         return false;
       }
@@ -59,9 +78,9 @@ export function runChromePage(targets, nonce) {
   );
 }
 
-export async function activateChromePage({ cdpBase, nonce, fetchImpl = fetch }) {
+export async function activateChromePage({ cdpBase, nonce, param = 'probe', fetchImpl = fetch }) {
   const targets = await fetchImpl(`${cdpBase}/json/list`).then((response) => response.json());
-  const page = runChromePage(targets, nonce);
+  const page = runChromePage(targets, nonce, param);
   if (!page) {
     return { activated: false, pages: targets.filter((target) => target.type === 'page').length };
   }

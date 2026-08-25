@@ -59,6 +59,14 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     const { pathname } = new URL(req.url, 'http://localhost');
 
     if (pathname === '/__probe/plan') return json(res, state.plan);
+    // Where a stale page parks itself. Standing down to about:blank left a husk
+    // nothing could prove ownership of — and closing unproven pages is exactly
+    // the operator-tab hazard the litter clearer must not have. A husk on this
+    // origin is this transport's by construction.
+    if (pathname === '/__probe/stand-down') {
+      res.writeHead(200, { 'content-type': 'text/html' });
+      return res.end('<!doctype html><title>stood down</title>');
+    }
     if (pathname === '/__probe/state') {
       return json(res, { ready: state.progress, hasReport: !!state.report, pulse: state.pulse });
     }

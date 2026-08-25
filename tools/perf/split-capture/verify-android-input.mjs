@@ -20,6 +20,8 @@ import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidGestureInstructions, swipeArgs } from './lib/android-input.mjs';
 import { classifyInputCadence, describeContactSamples } from './lib/input-verdict.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
+import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
+import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 
 const DEFAULT_PORT = 4177;
 const PAGE_SETTLE_MS = 6_000;
@@ -86,6 +88,28 @@ export async function verifyAndroidInput({
       'com.android.chrome',
     ]);
     await sleep(PAGE_SETTLE_MS);
+    // The same restored-tab race the capture runner guards against: session
+    // restore across the force-stop can front a stale tab while this page
+    // loads behind it, and the verifier then reports zero pointer input on a
+    // healthy rig — observed on the preflight itself (PR 1320 review). Clear
+    // this transport's own leftovers on the floor origin and front the run
+    // page; best-effort, since the zero-input verdict below names the failure.
+    try {
+      const cdpPort = PORT_ROLES.androidCdp.port;
+      adb(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
+      const cdpBase = `http://127.0.0.1:${cdpPort}`;
+      const cleared = await clearToolingLitter({ cdpBase, hostname: address, nonce });
+      const fronted = await activateChromePage({ cdpBase, nonce, param: 'verify' });
+      adb(serial, ['forward', '--remove', `tcp:${cdpPort}`]);
+      if (!fronted.activated) {
+        console.log(
+          `  (could not identify the verify page among ${fronted.pages} tab(s); ` +
+            `cleared ${cleared.closed} leftover(s))`
+        );
+      }
+    } catch (error) {
+      console.log(`  (tab activation unavailable: ${error?.message ?? error})`);
+    }
 
     const ready = await pollFor(
       async () => (await fetch(`${host}/__probe/state`).then((r) => r.json())).ready,

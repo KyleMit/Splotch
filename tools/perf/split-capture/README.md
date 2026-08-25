@@ -121,10 +121,14 @@ endpoint after launch and before dispatch, which fails benignly when the page ca
   `../../ios/capture-xcuitest-screen.mjs` rather than duplicating them.
 * `lib/probe-host.mjs` — the proxying HTTP host and its report endpoints.
 * `lib/report-store.mjs` — which of two uploaded reports to keep.
-* `lib/chrome-tabs.mjs` — identifying and activating the run's page among Chrome's restored tabs
-  over the devtools HTTP endpoint. Activation, never closure: a close-the-rest sweep would take the
-  operator's own tabs (and other apps' Custom Tabs on the same socket), and its failure direction is
-  wrong — an unidentified page must be left alone, not everything else removed around it.
+* `lib/chrome-tabs.mjs` — clearing this tooling's own leftover tabs and activating the run's page
+  over the devtools HTTP endpoint. Ownership is a tool signature (a `?probe=`/`?verify=` run param
+  or the `/__probe/stand-down` path) on the session host, across every port the tooling serves — the
+  tab that steals the foreground on relaunch is whichever Chrome used last, including another tool's
+  stale page on a different port. Nothing without a signature is ever closed: not operator tabs, not
+  other apps' Custom Tabs on the same socket, not a bare about:blank, and not the host's plain
+  preview pages. Activation alone was tried first and lost the session-restore race while reporting
+  success.
 
 `nativeCanvasBounds`, `trustedGestureActions` and `inputFidelity` are imported from
 `../ios/capture-xcuitest-screen.mjs`. They are not iOS-specific despite living there; moving them to

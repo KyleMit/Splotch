@@ -30,7 +30,7 @@ import {
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
 import { androidGestureInstructions, androidOpenSteps, swipeArgs } from './lib/android-input.mjs';
-import { activateChromePage, clearTransportLitter } from './lib/chrome-tabs.mjs';
+import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 
 const PLATFORMS = ['android', 'ios'];
@@ -120,10 +120,10 @@ export function androidDriver({
   cdpPort,
   exec = adb,
   activate = activateChromePage,
-  litterClearer = clearTransportLitter,
+  litterClearer = clearToolingLitter,
 }) {
   const nonce = new URL(pageUrl).searchParams.get('probe');
-  const probeOrigin = new URL(pageUrl).origin;
+  const toolingHostname = new URL(pageUrl).hostname;
   // Session restore across the launch's force-stop can front a restored tab
   // while the run's page loads behind it (issue 1294). Closing the transport's
   // OWN litter removes the pile the restore re-fronts from — activation alone
@@ -135,7 +135,7 @@ export function androidDriver({
     try {
       exec(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
       const cdpBase = `http://127.0.0.1:${cdpPort}`;
-      const cleared = await litterClearer({ cdpBase, probeOrigin, nonce });
+      const cleared = await litterClearer({ cdpBase, hostname: toolingHostname, nonce });
       if (cleared.closed > 0) {
         console.log(`closed ${cleared.closed} of this transport's leftover tab(s) ${moment}`);
       }
