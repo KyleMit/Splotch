@@ -52,6 +52,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     plan: { brush: 'pen', contactMs: DEFAULT_CONTACT_MS, finish: false, label: 'run' },
     report: null,
     progress: null,
+    pulse: null,
   };
 
   const server = createServer(async (req, res) => {
@@ -59,7 +60,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
 
     if (pathname === '/__probe/plan') return json(res, state.plan);
     if (pathname === '/__probe/state') {
-      return json(res, { ready: state.progress, hasReport: !!state.report });
+      return json(res, { ready: state.progress, hasReport: !!state.report, pulse: state.pulse });
     }
     if (pathname === '/__probe/bootstrap.js') return script(res, pageBootstrapSource());
     if (pathname === '/__probe/probe.js') {
@@ -71,6 +72,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
       if (state.plan.reset) {
         state.report = null;
         state.progress = null;
+        state.pulse = null;
         delete state.plan.reset;
       }
       return json(res, state.plan);
@@ -96,6 +98,10 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         }
       } else if (pathname === '/__probe/log') {
         log(`page log: ${JSON.stringify(payload)}`);
+      } else if (pathname === '/__probe/pulse') {
+        // Nonce-gated like readiness: a suspended earlier tab pulsing its own
+        // count must not overwrite the current run's.
+        if (payload.nonce === state.plan.nonce) state.pulse = payload;
       } else if (pathname === '/__probe/ready') {
         // A suspended tab from an earlier run answers the same plan; only the
         // page that started under this nonce may report readiness.

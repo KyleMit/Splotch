@@ -64,12 +64,17 @@ export function pageBootstrapSource() {
     }
     return false;
   };
+  // Declared OUTSIDE the try, because the catch posts the error report under
+  // this nonce — and a try-scoped const is invisible there, which made every
+  // page-side error throw ReferenceError instead of reaching the host. That
+  // latent crash is one way a ready page could go quiet with nothing saying why.
+  let nonce;
   try {
     const plan = await fetch('/__probe/plan').then((response) => response.json());
     // Safari keeps earlier tabs alive, and their bootstraps poll the same plan.
     // Each run stamps a nonce so only the page that started under it reports;
     // otherwise a suspended tab's near-empty tables overwrite the real capture.
-    const nonce = plan.nonce;
+    nonce = plan.nonce;
     // The page must be the one this run OPENED, not merely a page that read this
     // run's plan. Chrome restores tabs across the force-stop a launch does, and a
     // restored tab re-runs this bootstrap, reads the CURRENT plan, adopts its
@@ -259,6 +264,11 @@ export function pageBootstrapSource() {
       const current = await fetch('/__probe/plan').then((response) => response.json());
       if (current.nonce !== nonce) return;
       if (current.finish) break;
+      // The live event count, so the runner can tell "the page is ready but the
+      // injected touches are landing on another tab" (issue 1294) from "the
+      // report is still on its way" — a distinction the upload alone arrives
+      // too late to make.
+      await post('/__probe/pulse', { nonce, events: window.__probe.counts().events });
       await wait(${PLAN_POLL_MS});
     }
 

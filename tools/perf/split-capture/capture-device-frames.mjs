@@ -30,6 +30,8 @@ import {
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
 import { androidGestureInstructions, androidOpenSteps, swipeArgs } from './lib/android-input.mjs';
+import { pruneChromeTabs } from './lib/chrome-tabs.mjs';
+import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -85,7 +87,7 @@ async function wda(wdaUrl, method, path, body) {
 // the probe host. What that changes is asset DELIVERY, not the engine: the touch
 // path, the compositor and the frame loop are the WebView's either way. The
 // artifact says so rather than leaving a reader to assume a bundled build.
-function androidDriver({ serial, pageUrl, orientation, nativeApp }) {
+function androidDriver({ serial, pageUrl, orientation, nativeApp, cdpPort }) {
   return {
     async openPage() {
       const settles = {
@@ -96,6 +98,26 @@ function androidDriver({ serial, pageUrl, orientation, nativeApp }) {
       for (const step of androidOpenSteps({ nativeApp, orientation, pageUrl })) {
         adb(serial, step.args);
         if (step.settle) await sleep(settles[step.settle]);
+      }
+      if (!nativeApp) {
+        // Best-effort by design: an unreachable devtools socket must not fail a
+        // launch, because the pulse check below the dispatch is the enforcement
+        // — this prune only removes the pile the failure needs.
+        try {
+          adb(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
+          const pruned = await pruneChromeTabs({
+            cdpBase: `http://127.0.0.1:${cdpPort}`,
+            keepMatch: new URL(pageUrl).search,
+          });
+          if (pruned.closed > 0) {
+            console.log(`closed ${pruned.closed} stale Chrome tab(s), kept ${pruned.kept}`);
+          }
+        } catch (error) {
+          console.log(
+            `stale-tab prune unavailable (${error?.message ?? error}) — ` +
+              'a restored tab may hold the foreground; the zero-input check will catch it'
+          );
+        }
       }
     },
     boundsFrom(geometry) {
@@ -259,6 +281,7 @@ export async function captureDeviceFrames({
   repeats = Number(argFlag('gesture-repeats', 10)),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
+  cdpPort = Number(argFlag('cdp-port', PORT_ROLES.androidCdp.port)),
   wdaUrl = argFlag('wda-url', 'http://127.0.0.1:8100'),
   label = argFlag('label'),
   output = argFlag('output'),
@@ -303,7 +326,7 @@ export async function captureDeviceFrames({
   const pageUrl = `${host}/?probe=${encodeURIComponent(nonce)}`;
   const driver =
     platform === 'android'
-      ? androidDriver({ serial, pageUrl, orientation, nativeApp })
+      ? androidDriver({ serial, pageUrl, orientation, nativeApp, cdpPort })
       : iosDriver({ wdaUrl, pageUrl, nativeApp });
 
   await driver.openPage();
@@ -343,13 +366,28 @@ export async function captureDeviceFrames({
 
   await driver.dispatch(geometry, repeats);
   await sleep(GESTURE_TAIL_MS);
+  // The pulse is the page's own running event count. Zero after a full dispatch
+  // means every injected touch landed on another tab or app — the wrong-tab
+  // failure that used to surface only as a report timeout (issue 1294) — and no
+  // amount of waiting for the report changes it.
+  const pulsed = await probeState(host);
+  if (pulsed.pulse && pulsed.pulse.events === 0) {
+    fail(
+      'the page received zero input events across the whole dispatch — the injected touches ' +
+        'landed on another tab or app, not the run page (issue 1294)'
+    );
+  }
   await control(host, { finish: true });
 
   const uploaded = await pollFor(
     async () => ((await probeState(host)).hasReport ? true : null),
     REPORT_TIMEOUT_MS
   );
-  if (!uploaded) fail('no report was uploaded');
+  if (!uploaded) {
+    const finalState = await probeState(host).catch(() => null);
+    const seen = finalState?.pulse ? ` (page last pulsed ${finalState.pulse.events} events)` : '';
+    fail(`no report was uploaded${seen}`);
+  }
 
   const payload = JSON.parse(readFileSync(join(reportDir, `${runLabel}.json`), 'utf8'));
   if (payload.error) fail(payload.error);

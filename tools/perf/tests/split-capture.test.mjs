@@ -17,6 +17,7 @@ import {
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
+import { pruneChromeTabs, staleChromePages } from '../split-capture/lib/chrome-tabs.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
@@ -584,5 +585,80 @@ describe('a page that only adopted the plan', () => {
     expect(source.indexOf('openedFor !== nonce')).toBeLessThan(
       source.indexOf("post('/__probe/ready'")
     );
+  });
+});
+
+describe('pruning the Chrome tab pile', () => {
+  const targets = [
+    { id: 'a', type: 'page', url: 'http://host:4175/?probe=run-7' },
+    { id: 'b', type: 'page', url: 'https://www.google.com/m?client=x' },
+    { id: 'c', type: 'page', url: 'http://host:4177/?verify=rotate-old' },
+    { id: 'd', type: 'service_worker', url: 'http://host:4175/sw.js' },
+  ];
+
+  it('keeps only the page opened for this run, never non-page targets', () => {
+    const stale = staleChromePages(targets, '?probe=run-7');
+
+    expect(stale.map((target) => target.id)).toEqual(['b', 'c']);
+  });
+
+  it('closes each stale page over the devtools http endpoint', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return { json: async () => targets };
+    };
+
+    const result = await pruneChromeTabs({
+      cdpBase: 'http://127.0.0.1:9224',
+      keepMatch: '?probe=run-7',
+      fetchImpl,
+    });
+
+    expect(result).toEqual({ closed: 2, kept: 1 });
+    expect(calls).toEqual([
+      'http://127.0.0.1:9224/json/list',
+      'http://127.0.0.1:9224/json/close/b',
+      'http://127.0.0.1:9224/json/close/c',
+    ]);
+  });
+});
+
+describe('the pulse the probe host relays', () => {
+  const hostFetch = async (server, path, init) => {
+    const { port } = server.address();
+    const response = await fetch(`http://127.0.0.1:${port}${path}`, init);
+    return response.json();
+  };
+
+  it('exposes the run page pulse in state and refuses a stale nonce', async () => {
+    const { server } = createProbeHost({ upstream: 'http://127.0.0.1:1', log: () => {} });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+      await hostFetch(server, '/__probe/control', {
+        method: 'PUT',
+        body: JSON.stringify({ nonce: 'run-7', reset: true }),
+      });
+      await hostFetch(server, '/__probe/pulse', {
+        method: 'POST',
+        body: JSON.stringify({ nonce: 'stale-6', events: 999 }),
+      });
+      await hostFetch(server, '/__probe/pulse', {
+        method: 'POST',
+        body: JSON.stringify({ nonce: 'run-7', events: 42 }),
+      });
+
+      const state = await hostFetch(server, '/__probe/state');
+      expect(state.pulse).toEqual({ nonce: 'run-7', events: 42 });
+
+      await hostFetch(server, '/__probe/control', {
+        method: 'PUT',
+        body: JSON.stringify({ nonce: 'run-8', reset: true }),
+      });
+      const fresh = await hostFetch(server, '/__probe/state');
+      expect(fresh.pulse).toBeNull();
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 });
