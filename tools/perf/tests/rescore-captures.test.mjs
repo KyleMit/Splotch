@@ -4,7 +4,12 @@ import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { destinationBlocked, modeOf, selectEvidence } from '../keep-capture-evidence.mjs';
+import {
+  destinationBlocked,
+  evidenceFileName,
+  modeOf,
+  selectEvidence,
+} from '../keep-capture-evidence.mjs';
 import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
 import { buildDirHoldsNativeExport } from '../lib/build-variant.mjs';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
@@ -177,6 +182,38 @@ describe('keep-capture-evidence', () => {
     ]);
 
     expect(kept.map((entry) => entry.file)).toEqual(['1', '3', '4']);
+  });
+
+  // Two hand captures of different runtimes both resolved to the unknown target
+  // and collided on `unknown:pen`, so promoting a hand corpus silently dropped
+  // one platform's calibration — the capture a person had already paid for.
+  it('keeps every hand capture instead of deduping to one per target and brush', () => {
+    const kept = selectEvidence([
+      {
+        target: 'android-capacitor-webview',
+        brush: 'pen',
+        handCapture: true,
+        relativePath: 'a.json',
+      },
+      { target: 'ios-capacitor-webview', brush: 'pen', handCapture: true, relativePath: 'b.json' },
+      { target: 'ios-capacitor-webview', brush: 'pen', handCapture: true, relativePath: 'c.json' },
+    ]);
+
+    expect(kept.map((entry) => entry.relativePath)).toEqual(['a.json', 'b.json', 'c.json']);
+  });
+
+  it('files a hand capture under its own label, never the colliding target-brush name', () => {
+    expect(
+      evidenceFileName({
+        handCapture: true,
+        relativePath: 'hand-ios-native-pen-portrait-light.json',
+        target: 'ios-capacitor-webview',
+        brush: 'pen',
+      })
+    ).toBe('hand-ios-native-pen-portrait-light.json');
+    expect(evidenceFileName({ target: 'ipad-device-web', brush: 'pen' })).toBe(
+      'ipad-device-web-pen.json'
+    );
   });
 });
 

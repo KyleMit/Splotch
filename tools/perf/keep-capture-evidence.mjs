@@ -55,10 +55,21 @@ export function destinationBlocked(destination, { force }) {
 export function selectEvidence(candidates) {
   const kept = new Map();
   for (const candidate of candidates) {
-    const key = `${candidate.target}:${candidate.brush}`;
+    // A hand capture is one a person paid for, and a hand corpus exists to show
+    // spread (see 2026-08-23-hand): every one is kept, not one per target x brush.
+    const key = candidate.handCapture
+      ? candidate.relativePath
+      : `${candidate.target}:${candidate.brush}`;
     if (!kept.has(key)) kept.set(key, candidate);
   }
   return [...kept.values()];
+}
+
+// A campaign capture is filed by the cell it measured; a hand capture has no
+// cell, and two of them can share a runtime and brush — its own label is the
+// only name that cannot collide.
+export function evidenceFileName(entry) {
+  return entry.handCapture ? basename(entry.relativePath) : `${entry.target}-${entry.brush}.json`;
 }
 
 export async function keepCaptureEvidence({
@@ -90,7 +101,13 @@ export async function keepCaptureEvidence({
       file,
       relativePath,
       // `null` means "no gate applies" to the rescorer; the index wants a label.
-      target: targetOf(parsed, relativePath, target) ?? 'unknown',
+      // A hand capture has no campaign target — its runtime is the label that
+      // says what it calibrates, matching the 2026-08-23-hand corpus naming.
+      target:
+        targetOf(parsed, relativePath, target) ??
+        (parsed.handCapture === true ? parsed.runtime : null) ??
+        'unknown',
+      handCapture: parsed.handCapture === true,
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
       fidelity: parsed.fidelity?.passed ?? null,
@@ -124,7 +141,7 @@ export async function keepCaptureEvidence({
   // dropped — only the whitespace.
   for (const entry of selected) {
     writeFileSync(
-      join(destination, `${entry.target}-${entry.brush}.json`),
+      join(destination, evidenceFileName(entry)),
       JSON.stringify(JSON.parse(readFileSync(entry.file, 'utf8')))
     );
   }
@@ -137,7 +154,7 @@ export async function keepCaptureEvidence({
         campaign,
         capturedFrom: corpus,
         kept: selected.map((entry) => ({
-          file: `${entry.target}-${entry.brush}.json`,
+          file: evidenceFileName(entry),
           target: entry.target,
           brush: entry.brush,
           mode: entry.mode,
