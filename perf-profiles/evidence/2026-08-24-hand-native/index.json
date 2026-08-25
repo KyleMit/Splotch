@@ -1,0 +1,38 @@
+{
+  "campaign": "2026-08-24-hand-native",
+  "capturedFrom": "perf-profiles/split-capture/hand-native",
+  "kept": [
+    {
+      "file": "hand-android-native-crayon-portrait-light.json",
+      "target": "android-capacitor-webview",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "hand-android-native-crayon-portrait-light.json"
+    },
+    {
+      "file": "hand-android-native-pen-portrait-light.json",
+      "target": "android-capacitor-webview",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "hand-android-native-pen-portrait-light.json"
+    },
+    {
+      "file": "hand-ios-native-crayon-portrait-light.json",
+      "target": "ios-capacitor-webview",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "hand-ios-native-crayon-portrait-light.json"
+    },
+    {
+      "file": "hand-ios-native-pen-portrait-light.json",
+      "target": "ios-capacitor-webview",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "hand-ios-native-pen-portrait-light.json"
+    }
+  ]
+}

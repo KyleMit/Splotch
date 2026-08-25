@@ -1,0 +1,10 @@
+{
+  "campaign": "2026-08-25-wkwebview-delivery",
+  "capturedFrom": "perf-profiles/2026-08-25T02-19-04-039Z-ipad-xcuitest-appium-remote-wkwebview-pen-portrait-light",
+  "kept": [
+    {
+      "file": "appium-remote-wkwebview-pen.json",
+      "brush": "pen"
+    }
+  ]
+}
