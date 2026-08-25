@@ -112,7 +112,9 @@ describe('WebKit performance CI', () => {
 
     expect(fastJob).toContain('issues: write');
     expect(fastJob).toContain('name: File the failure');
-    expect(fastJob).toContain('if: failure()');
+    // The filing step is push-arm only: its issue says main broke, and a
+    // manual dispatch failing on an investigation branch must not file it.
+    expect(fastJob).toContain("if: failure() && github.event_name == 'push'");
     expect(fastJob).toContain('gh issue create');
     // One open issue collects every red commit; a broken main must not file one
     // issue per merge.

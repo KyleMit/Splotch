@@ -326,8 +326,12 @@ jobs:
       # "$(...)" makes bash scan the substitution for its closing paren, and an
       # apostrophe in the prose below reads as an unterminated quote during that
       # scan. tools/tests/workflow-hygiene.test.mjs executes this step.
+      # Push-arm only: the issue this files says main broke, and a manual
+      # dispatch of the gate against an investigation branch failing must not
+      # open or append a false production-breakage report. A dispatch failure
+      # is delivered by the red run itself, to the person who fired it.
       - name: File the failure
-        if: failure()
+        if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
