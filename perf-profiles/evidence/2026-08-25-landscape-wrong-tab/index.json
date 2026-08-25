@@ -1,0 +1,18 @@
+{
+  "campaign": "2026-08-25-landscape-wrong-tab",
+  "why": "The evidence behind the issue 1294 fix: android-device-web landscape drawing cells failed ready-then-silent because Chrome session restore fronted a stale tab while the run page loaded in the background. The pre-fix reproduction the same night ended in ev 0/down 0 with a ready page and a working network (no artifact is written on that path, which was the defect); this artifact is the same cell banked first try after the run page is activated at launch and the pulse guards the dispatch.",
+  "kept": [
+    {
+      "file": "android-landscape-pen-after-fix.json",
+      "target": "android-device-web",
+      "runtime": "android-chrome",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "note": "Landscape pen banked with the final design (litter cleared: 2 of this transport's leftover tabs, run page activated, pulse guarding the dispatch): trusted 1 at 114.6 moves/s on a 120Hz-held panel, fidelity PASS. An intermediate activation-only design lost the restore race twice while reporting success — the litter clear is load-bearing."
+    }
+  ],
+  "devices": {
+    "android": "R5CRC3AVCXM"
+  }
+}

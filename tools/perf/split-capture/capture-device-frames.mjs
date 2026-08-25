@@ -30,7 +30,7 @@ import {
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
 import { androidGestureInstructions, androidOpenSteps, swipeArgs } from './lib/android-input.mjs';
-import { pruneChromeTabs } from './lib/chrome-tabs.mjs';
+import { activateChromePage, clearTransportLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 
 const PLATFORMS = ['android', 'ios'];
@@ -87,7 +87,72 @@ async function wda(wdaUrl, method, path, body) {
 // the probe host. What that changes is asset DELIVERY, not the engine: the touch
 // path, the compositor and the frame loop are the WebView's either way. The
 // artifact says so rather than leaving a reader to assume a bundled build.
-function androidDriver({ serial, pageUrl, orientation, nativeApp, cdpPort }) {
+function parsePositivePort(value, name) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) fail(`--${name} must be a positive integer`);
+  return parsed;
+}
+
+// The pulse is the page's own running event count, posted until the first
+// event arrives. Zero after a full dispatch means every injected touch landed
+// on another tab or app — the wrong-tab failure that used to surface only as a
+// report timeout (issue 1294) — and no amount of waiting changes it. A partial
+// wrong-tab run (some events, most lost) is the fidelity gate's job, not this
+// check's. A null pulse is a page that never pulsed (floor control, a
+// pre-pulse bootstrap) and decides nothing.
+export function zeroInputProblem(pulse) {
+  if (!pulse || pulse.events !== 0) return null;
+  return (
+    'the page received zero input events across the whole dispatch — the injected touches ' +
+    'landed on another tab or app, not the run page (issue 1294)'
+  );
+}
+
+// `exec` and `activate` are injected so the wiring is testable at THIS call
+// site — the openWithAdb precedent in capture-hand-input.mjs records how a
+// tested chooser with an untested call site shipped the exact bug the test
+// existed for.
+export function androidDriver({
+  serial,
+  pageUrl,
+  orientation,
+  nativeApp,
+  cdpPort,
+  exec = adb,
+  activate = activateChromePage,
+  litterClearer = clearTransportLitter,
+}) {
+  const nonce = new URL(pageUrl).searchParams.get('probe');
+  const probeOrigin = new URL(pageUrl).origin;
+  // Session restore across the launch's force-stop can front a restored tab
+  // while the run's page loads behind it (issue 1294). Closing the transport's
+  // OWN litter removes the pile the restore re-fronts from — activation alone
+  // lost that race twice while reporting success — and activating the run's
+  // page then fails benignly: an unidentifiable page is left alone and the
+  // zero-input check after dispatch is the enforcement.
+  const frontRunPage = async (moment) => {
+    if (nativeApp) return;
+    try {
+      exec(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
+      const cdpBase = `http://127.0.0.1:${cdpPort}`;
+      const cleared = await litterClearer({ cdpBase, probeOrigin, nonce });
+      if (cleared.closed > 0) {
+        console.log(`closed ${cleared.closed} of this transport's leftover tab(s) ${moment}`);
+      }
+      const result = await activate({ cdpBase, nonce });
+      if (!result.activated) {
+        console.log(
+          `could not identify the run page among ${result.pages} Chrome tab(s) ${moment} — ` +
+            'a restored tab may hold the foreground; the zero-input check will catch it'
+        );
+      }
+    } catch (error) {
+      console.log(
+        `run-page activation unavailable ${moment} (${error?.message ?? error}) — ` +
+          'a restored tab may hold the foreground; the zero-input check will catch it'
+      );
+    }
+  };
   return {
     async openPage() {
       const settles = {
@@ -96,29 +161,10 @@ function androidDriver({ serial, pageUrl, orientation, nativeApp, cdpPort }) {
         page: PAGE_SETTLE_MS,
       };
       for (const step of androidOpenSteps({ nativeApp, orientation, pageUrl })) {
-        adb(serial, step.args);
+        exec(serial, step.args);
         if (step.settle) await sleep(settles[step.settle]);
       }
-      if (!nativeApp) {
-        // Best-effort by design: an unreachable devtools socket must not fail a
-        // launch, because the pulse check below the dispatch is the enforcement
-        // — this prune only removes the pile the failure needs.
-        try {
-          adb(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
-          const pruned = await pruneChromeTabs({
-            cdpBase: `http://127.0.0.1:${cdpPort}`,
-            keepMatch: new URL(pageUrl).search,
-          });
-          if (pruned.closed > 0) {
-            console.log(`closed ${pruned.closed} stale Chrome tab(s), kept ${pruned.kept}`);
-          }
-        } catch (error) {
-          console.log(
-            `stale-tab prune unavailable (${error?.message ?? error}) — ` +
-              'a restored tab may hold the foreground; the zero-input check will catch it'
-          );
-        }
-      }
+      await frontRunPage('after launch');
     },
     boundsFrom(geometry) {
       return {
@@ -128,13 +174,23 @@ function androidDriver({ serial, pageUrl, orientation, nativeApp, cdpPort }) {
       };
     },
     async dispatch({ bounds, densityScale, offset }, repeats) {
+      await frontRunPage('before dispatch');
+      if (!nativeApp) {
+        // Nothing may stay attached while input is measured; a forward that was
+        // never established (activation unavailable) has nothing to remove.
+        try {
+          exec(serial, ['forward', '--remove', `tcp:${cdpPort}`]);
+        } catch {
+          /* no forward to remove */
+        }
+      }
       const instructions = androidGestureInstructions(trustedGestureActions(bounds, repeats, 0), {
         densityScale,
         offset,
       });
       for (const instruction of instructions) {
         if (instruction.kind === 'pause') await sleep(instruction.durationMs);
-        else adb(serial, swipeArgs(instruction));
+        else exec(serial, swipeArgs(instruction));
       }
     },
   };
@@ -281,7 +337,7 @@ export async function captureDeviceFrames({
   repeats = Number(argFlag('gesture-repeats', 10)),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
-  cdpPort = Number(argFlag('cdp-port', PORT_ROLES.androidCdp.port)),
+  cdpPort = parsePositivePort(argFlag('cdp-port', PORT_ROLES.androidCdp.port), 'cdp-port'),
   wdaUrl = argFlag('wda-url', 'http://127.0.0.1:8100'),
   label = argFlag('label'),
   output = argFlag('output'),
@@ -366,17 +422,9 @@ export async function captureDeviceFrames({
 
   await driver.dispatch(geometry, repeats);
   await sleep(GESTURE_TAIL_MS);
-  // The pulse is the page's own running event count. Zero after a full dispatch
-  // means every injected touch landed on another tab or app — the wrong-tab
-  // failure that used to surface only as a report timeout (issue 1294) — and no
-  // amount of waiting for the report changes it.
-  const pulsed = await probeState(host);
-  if (pulsed.pulse && pulsed.pulse.events === 0) {
-    fail(
-      'the page received zero input events across the whole dispatch — the injected touches ' +
-        'landed on another tab or app, not the run page (issue 1294)'
-    );
-  }
+  const pulsed = await probeState(host).catch(() => null);
+  const inputProblem = zeroInputProblem(pulsed?.pulse);
+  if (inputProblem) fail(inputProblem);
   await control(host, { finish: true });
 
   const uploaded = await pollFor(

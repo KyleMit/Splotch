@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   androidGestureInstructions,
   androidNativeLaunchSteps,
@@ -17,7 +17,13 @@ import {
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
-import { pruneChromeTabs, staleChromePages } from '../split-capture/lib/chrome-tabs.mjs';
+import {
+  activateChromePage,
+  clearTransportLitter,
+  runChromePage,
+  transportLitter,
+} from '../split-capture/lib/chrome-tabs.mjs';
+import { androidDriver, zeroInputProblem } from '../split-capture/capture-device-frames.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
@@ -588,39 +594,194 @@ describe('a page that only adopted the plan', () => {
   });
 });
 
-describe('pruning the Chrome tab pile', () => {
+describe('fronting the run page', () => {
   const targets = [
-    { id: 'a', type: 'page', url: 'http://host:4175/?probe=run-7' },
-    { id: 'b', type: 'page', url: 'https://www.google.com/m?client=x' },
-    { id: 'c', type: 'page', url: 'http://host:4177/?verify=rotate-old' },
+    { id: 'a', type: 'page', url: 'http://host:4175/?probe=run-8' },
+    { id: 'b', type: 'page', url: 'http://host:4175/?probe=run-84' },
+    { id: 'c', type: 'page', url: 'https://www.google.com/m?client=x' },
     { id: 'd', type: 'service_worker', url: 'http://host:4175/sw.js' },
+    { id: 'e', type: 'page', url: 'not a url' },
   ];
 
-  it('keeps only the page opened for this run, never non-page targets', () => {
-    const stale = staleChromePages(targets, '?probe=run-7');
-
-    expect(stale.map((target) => target.id)).toEqual(['b', 'c']);
+  it('matches the probe param exactly, so a nonce that prefixes another cannot collide', () => {
+    expect(runChromePage(targets, 'run-8')?.id).toBe('a');
+    expect(runChromePage(targets, 'run-84')?.id).toBe('b');
+    expect(runChromePage(targets, 'run-9')).toBeNull();
   });
 
-  it('closes each stale page over the devtools http endpoint', async () => {
+  it('activates the run page over the devtools http endpoint and touches nothing else', async () => {
     const calls = [];
     const fetchImpl = async (url) => {
       calls.push(url);
-      return { json: async () => targets };
+      return { ok: true, json: async () => targets };
     };
 
-    const result = await pruneChromeTabs({
+    const result = await activateChromePage({
       cdpBase: 'http://127.0.0.1:9224',
-      keepMatch: '?probe=run-7',
+      nonce: 'run-84',
       fetchImpl,
     });
 
-    expect(result).toEqual({ closed: 2, kept: 1 });
+    expect(result.activated).toBe(true);
     expect(calls).toEqual([
       'http://127.0.0.1:9224/json/list',
-      'http://127.0.0.1:9224/json/close/b',
-      'http://127.0.0.1:9224/json/close/c',
+      'http://127.0.0.1:9224/json/activate/b',
     ]);
+  });
+
+  it('leaves an unidentifiable page alone instead of failing or closing anything', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return { ok: true, json: async () => targets };
+    };
+
+    const result = await activateChromePage({
+      cdpBase: 'http://127.0.0.1:9224',
+      nonce: 'absent',
+      fetchImpl,
+    });
+
+    expect(result).toEqual({ activated: false, pages: 4 });
+    expect(calls).toEqual(['http://127.0.0.1:9224/json/list']);
+  });
+});
+
+describe('clearing the transport litter', () => {
+  const targets = [
+    { id: 'run', type: 'page', url: 'http://host:4175/?probe=run-7' },
+    { id: 'stale', type: 'page', url: 'http://host:4175/?probe=run-6' },
+    { id: 'husk', type: 'page', url: 'about:blank' },
+    { id: 'operator', type: 'page', url: 'https://www.google.com/m?client=x' },
+    { id: 'other-origin', type: 'page', url: 'http://host:4173/' },
+    { id: 'worker', type: 'service_worker', url: 'http://host:4175/sw.js' },
+  ];
+
+  it("claims only this transport's own leftovers, never operator or foreign pages", () => {
+    const litter = transportLitter(targets, 'http://host:4175', 'run-7');
+
+    expect(litter.map((target) => target.id)).toEqual(['stale', 'husk']);
+  });
+
+  it('closes each leftover over the devtools http endpoint', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return { ok: true, json: async () => targets };
+    };
+
+    const result = await clearTransportLitter({
+      cdpBase: 'http://127.0.0.1:9224',
+      probeOrigin: 'http://host:4175',
+      nonce: 'run-7',
+      fetchImpl,
+    });
+
+    expect(result).toEqual({ closed: 2 });
+    expect(calls).toEqual([
+      'http://127.0.0.1:9224/json/list',
+      'http://127.0.0.1:9224/json/close/stale',
+      'http://127.0.0.1:9224/json/close/husk',
+    ]);
+  });
+});
+
+describe('the wiring that fronts the page and judges the input', () => {
+  const driverDeps = () => {
+    const execCalls = [];
+    const activateCalls = [];
+    const litterCalls = [];
+    return {
+      execCalls,
+      activateCalls,
+      litterCalls,
+      exec: (serial, args) => execCalls.push(args.join(' ')),
+      activate: async (options) => {
+        activateCalls.push(options);
+        return { activated: true, pages: 1 };
+      },
+      litterClearer: async (options) => {
+        litterCalls.push(options);
+        return { closed: 0 };
+      },
+    };
+  };
+
+  it('fronts the run page after launch and again before dispatch on the browser path', async () => {
+    const deps = driverDeps();
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      orientation: 'PORTRAIT',
+      nativeApp: false,
+      cdpPort: 9224,
+      ...deps,
+    });
+
+    vi.useFakeTimers();
+    try {
+      const opened = driver.openPage();
+      await vi.runAllTimersAsync();
+      await opened;
+      const dispatched = driver.dispatch(
+        { bounds: { x: 0, y: 0, width: 10, height: 10 }, densityScale: 1, offset: { x: 0, y: 0 } },
+        1
+      );
+      await vi.runAllTimersAsync();
+      await dispatched;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(deps.activateCalls.map((call) => call.nonce)).toEqual(['run-7', 'run-7']);
+    expect(deps.litterCalls.map((call) => call.probeOrigin)).toEqual([
+      'http://host:4175',
+      'http://host:4175',
+    ]);
+    const forwards = deps.execCalls.filter((call) => call.startsWith('forward'));
+    expect(forwards).toEqual([
+      'forward tcp:9224 localabstract:chrome_devtools_remote',
+      'forward tcp:9224 localabstract:chrome_devtools_remote',
+      'forward --remove tcp:9224',
+    ]);
+  });
+
+  it('never touches devtools on the native path', async () => {
+    const deps = driverDeps();
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      orientation: 'PORTRAIT',
+      nativeApp: true,
+      cdpPort: 9224,
+      ...deps,
+    });
+
+    vi.useFakeTimers();
+    try {
+      const opened = driver.openPage();
+      await vi.runAllTimersAsync();
+      await opened;
+      const dispatched = driver.dispatch(
+        { bounds: { x: 0, y: 0, width: 10, height: 10 }, densityScale: 1, offset: { x: 0, y: 0 } },
+        1
+      );
+      await vi.runAllTimersAsync();
+      await dispatched;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(deps.activateCalls).toEqual([]);
+    expect(deps.litterCalls).toEqual([]);
+    expect(deps.execCalls.some((call) => call.startsWith('forward'))).toBe(false);
+  });
+
+  it('fails a zero-event dispatch and lets everything else decide downstream', () => {
+    expect(zeroInputProblem({ nonce: 'n', events: 0 })).toMatch(/another tab or app/);
+    expect(zeroInputProblem({ nonce: 'n', events: 517 })).toBeNull();
+    expect(zeroInputProblem(null)).toBeNull();
+    expect(zeroInputProblem(undefined)).toBeNull();
   });
 });
 
@@ -646,6 +807,13 @@ describe('the pulse the probe host relays', () => {
       await hostFetch(server, '/__probe/pulse', {
         method: 'POST',
         body: JSON.stringify({ nonce: 'run-7', events: 42 }),
+      });
+      // Max-not-last, like the report store: on the native paths identity is
+      // adopted rather than proven, so a backgrounded leftover pulsing 0 under
+      // the current nonce must not overwrite the real page's count.
+      await hostFetch(server, '/__probe/pulse', {
+        method: 'POST',
+        body: JSON.stringify({ nonce: 'run-7', events: 0 }),
       });
 
       const state = await hostFetch(server, '/__probe/state');

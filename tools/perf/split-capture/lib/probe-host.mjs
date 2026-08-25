@@ -99,9 +99,17 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
       } else if (pathname === '/__probe/log') {
         log(`page log: ${JSON.stringify(payload)}`);
       } else if (pathname === '/__probe/pulse') {
-        // Nonce-gated like readiness: a suspended earlier tab pulsing its own
-        // count must not overwrite the current run's.
-        if (payload.nonce === state.plan.nonce) state.pulse = payload;
+        // Nonce-gated like readiness, and max-not-last like the report store:
+        // on the native paths identity is adopted rather than proven, so a
+        // leftover backgrounded page on this origin can pulse 0 under the
+        // current nonce — and a last-writer pulse would let it overwrite the
+        // real page's count and abort a good capture.
+        if (
+          payload.nonce === state.plan.nonce &&
+          (!state.pulse || payload.events >= state.pulse.events)
+        ) {
+          state.pulse = payload;
+        }
       } else if (pathname === '/__probe/ready') {
         // A suspended tab from an earlier run answers the same plan; only the
         // page that started under this nonce may report readiness.

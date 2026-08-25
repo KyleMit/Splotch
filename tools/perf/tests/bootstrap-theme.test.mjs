@@ -124,7 +124,7 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'light' });
 
-      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'n' });
+      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'compact-dark' });
 
       expect((await readyPosted).resolvedTheme).toBe('dark');
       expect(document.documentElement.dataset.theme).toBe('dark');
@@ -137,7 +137,11 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: false, startingTheme: 'dark' });
 
-      const { readyPosted } = runBootstrap({ brush: 'pen', theme: 'light', nonce: 'n' });
+      const { readyPosted } = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'sectioned-light',
+      });
 
       expect((await readyPosted).resolvedTheme).toBe('light');
       expect(document.documentElement.dataset.theme).toBe('light');
@@ -150,7 +154,11 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'dark' });
 
-      const { readyPosted, posted } = runBootstrap({ brush: 'pen', theme: 'dark', nonce: 'n' });
+      const { readyPosted, posted } = runBootstrap({
+        brush: 'pen',
+        theme: 'dark',
+        nonce: 'geometry-run',
+      });
 
       expect((await readyPosted).resolvedTheme).toBe('dark');
       expect(posted.some((call) => call.path === '/__probe/log')).toBe(false);
@@ -165,7 +173,7 @@ describe('the bootstrap actually setting the theme', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'light' });
 
-      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'n' });
+      const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'default-theme-run' });
 
       expect((await readyPosted).resolvedTheme).toBe('light');
     },
@@ -241,7 +249,7 @@ describe('the pulse and the error report', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'light' });
 
-      const plan = { brush: 'pen', theme: 'light', nonce: 'n', finish: false };
+      const plan = { brush: 'pen', theme: 'light', nonce: 'pulse-run', finish: false };
       const { readyPosted, posted } = runBootstrap(plan);
       await readyPosted;
 
@@ -251,7 +259,7 @@ describe('the pulse and the error report', () => {
         return found;
       });
       plan.finish = true;
-      expect(pulse.body).toEqual({ nonce: 'n', events: 0 });
+      expect(pulse.body).toEqual({ nonce: 'pulse-run', events: 0 });
     },
     BOOTSTRAP_TIMEOUT_MS
   );
@@ -264,11 +272,13 @@ describe('the pulse and the error report', () => {
     async () => {
       paintShell({ compact: true, startingTheme: 'light' });
 
-      const plan = { brush: 'pen', theme: 'light', nonce: 'n', finish: false };
+      const plan = { brush: 'pen', theme: 'light', nonce: 'error-run', finish: false };
       const { readyPosted, posted } = runBootstrap(plan);
       await readyPosted;
-      window.__probe.counts = () => {
-        throw new Error('probe exploded');
+      const workingFetch = global.fetch;
+      global.fetch = async (path, init) => {
+        if (path === '/__probe/plan') throw new Error('plan poll exploded');
+        return workingFetch(path, init);
       };
 
       const report = await vi.waitFor(() => {
@@ -276,8 +286,8 @@ describe('the pulse and the error report', () => {
         if (!found) throw new Error('no report yet');
         return found;
       });
-      expect(report.body.nonce).toBe('n');
-      expect(report.body.error).toContain('probe exploded');
+      expect(report.body.nonce).toBe('error-run');
+      expect(report.body.error).toContain('plan poll exploded');
     },
     BOOTSTRAP_TIMEOUT_MS
   );

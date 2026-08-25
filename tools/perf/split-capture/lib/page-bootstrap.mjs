@@ -65,9 +65,13 @@ export function pageBootstrapSource() {
     return false;
   };
   // Declared OUTSIDE the try, because the catch posts the error report under
-  // this nonce — and a try-scoped const is invisible there, which made every
-  // page-side error throw ReferenceError instead of reaching the host. That
-  // latent crash is one way a ready page could go quiet with nothing saying why.
+  // this nonce — and a try-scoped const is invisible there, so the report post
+  // itself threw ReferenceError. The host's console still saw the error (the
+  // log() above the post, then the unhandledrejection listener), but the
+  // RUNNER-visible error report never arrived: an immediate named failure
+  // became a full report timeout. An error thrown before the plan fetch still
+  // posts with an undefined nonce, which the host rightly refuses — identity
+  // it cannot prove is identity it does not claim.
   let nonce;
   try {
     const plan = await fetch('/__probe/plan').then((response) => response.json());
@@ -260,15 +264,19 @@ export function pageBootstrapSource() {
       },
     });
 
+    let pulsed = 0;
     while (true) {
       const current = await fetch('/__probe/plan').then((response) => response.json());
       if (current.nonce !== nonce) return;
       if (current.finish) break;
       // The live event count, so the runner can tell "the page is ready but the
       // injected touches are landing on another tab" (issue 1294) from "the
-      // report is still on its way" — a distinction the upload alone arrives
-      // too late to make.
-      await post('/__probe/pulse', { nonce, events: window.__probe.counts().events });
+      // report is still on its way". The pulse's only question is whether input
+      // arrives AT ALL, so it goes quiet after its first nonzero answer — the
+      // measured window carries at most one pulse post beyond first contact.
+      const events = window.__probe.counts().events;
+      if (pulsed === 0 || events === 0) await post('/__probe/pulse', { nonce, events });
+      pulsed = events;
       await wait(${PLAN_POLL_MS});
     }
 
