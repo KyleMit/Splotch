@@ -82,7 +82,14 @@ describe('WebKit performance CI', () => {
     const fastJob = job('webkit-commit-gate-fast');
 
     expect(workflow).toContain('pull_request:');
-    expect(fastJob).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/main'");
+    // Post-merge coverage is the invariant; the workflow_dispatch arm is
+    // additive so the gate can be exercised on demand without a merge.
+    expect(fastJob).toContain(
+      "(github.event_name == 'push' && github.ref == 'refs/heads/main') ||"
+    );
+    expect(fastJob).toContain(
+      '(github.event_name == \'workflow_dispatch\' && contains(fromJSON(\'["fast", "both"]\'), inputs.gate))'
+    );
     expect(fastJob).toContain('runs-on: macos-latest');
     expect(fastJob).toContain('run: npm run perf:web:undo:webkit:fast');
     expect(fastJob).not.toContain('continue-on-error');
@@ -251,7 +258,10 @@ describe('WebKit performance CI', () => {
     const fullJob = job('webkit-commit-gate-full');
 
     expect(workflow).toContain("tags: ['v*']");
-    expect(fullJob).toContain("startsWith(github.ref, 'refs/tags/v')");
+    expect(fullJob).toContain("(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||");
+    expect(fullJob).toContain(
+      "(github.event_name == 'workflow_dispatch' && contains(fromJSON('[\"full\", \"both\"]'), inputs.gate))"
+    );
     expect(fullJob).toContain('runs-on: macos-latest');
     expect(fullJob).toContain(
       'run: npm run perf:web:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json'
