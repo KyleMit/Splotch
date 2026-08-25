@@ -28,7 +28,10 @@ test('undo of a clear after a blank rotation paints once, not once per history r
       clears++;
       return originalClearRect.apply(this, args);
     };
-    prototype.drawImage = function (this: CanvasRenderingContext2D, ...args: Parameters<typeof originalDrawImage>) {
+    prototype.drawImage = function (
+      this: CanvasRenderingContext2D,
+      ...args: Parameters<typeof originalDrawImage>
+    ) {
       draws++;
       return originalDrawImage.apply(this, args as never);
     } as typeof originalDrawImage;
