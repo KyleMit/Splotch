@@ -17,6 +17,7 @@
 // and each capture cost a person's time (see selectEvidence).
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
@@ -69,12 +70,15 @@ export function selectEvidence(candidates) {
 
 // A campaign capture is filed by the cell it measured; a hand capture has no
 // cell, and two of them can share a runtime, brush, and even label across
-// sessions — so its whole corpus-relative path is flattened into the name,
-// which is the only key selectEvidence guarantees unique.
+// sessions — so the name carries the basename for a human and a digest of the
+// whole corpus-relative path for uniqueness. A separator-join flattening was
+// not injective: run--a/hand.json and run/a--hand.json both flattened to the
+// same name, and the second write silently replaced the first — the exact
+// loss this function exists to prevent.
 export function evidenceFileName(entry) {
-  return entry.handCapture
-    ? entry.relativePath.split('/').join('--')
-    : `${entry.target}-${entry.brush}.json`;
+  if (!entry.handCapture) return `${entry.target}-${entry.brush}.json`;
+  const digest = createHash('sha256').update(entry.relativePath).digest('hex').slice(0, 8);
+  return `${basename(entry.relativePath, '.json')}--${digest}.json`;
 }
 
 export async function keepCaptureEvidence({

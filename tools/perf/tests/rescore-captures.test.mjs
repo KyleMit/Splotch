@@ -202,17 +202,14 @@ describe('keep-capture-evidence', () => {
     expect(kept.map((entry) => entry.relativePath)).toEqual(['a.json', 'b.json', 'c.json']);
   });
 
-  it('files a hand capture under its flattened corpus path, so two sessions cannot collide', () => {
-    const runA = evidenceFileName({
-      handCapture: true,
-      relativePath: 'runA/hand-ios-native-pen-portrait-light.json',
-    });
-    const runB = evidenceFileName({
-      handCapture: true,
-      relativePath: 'runB/hand-ios-native-pen-portrait-light.json',
-    });
-    expect(runA).toBe('runA--hand-ios-native-pen-portrait-light.json');
-    expect(runA).not.toBe(runB);
+  it('files hand captures injectively, including delimiter-bearing path segments', () => {
+    const name = (relativePath) => evidenceFileName({ handCapture: true, relativePath });
+
+    expect(name('runA/hand-pen.json')).not.toBe(name('runB/hand-pen.json'));
+    // The review's reproduced collision: a separator-join flattening mapped
+    // both of these to one name and silently dropped a paid-for capture.
+    expect(name('run--a/hand.json')).not.toBe(name('run/a--hand.json'));
+    expect(name('runA/hand-pen.json')).toMatch(/^hand-pen--[0-9a-f]{8}\.json$/);
     expect(evidenceFileName({ target: 'ipad-device-web', brush: 'pen' })).toBe(
       'ipad-device-web-pen.json'
     );
