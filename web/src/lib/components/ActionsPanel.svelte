@@ -248,8 +248,9 @@
   }
 
   // Mobile Safari can blur the trigger between a trusted pointerup and its
-  // trailing click. scribbleTap ignores that click for activation, but the
-  // pointer's final focus state still belongs on the trigger.
+  // trailing click. scribbleTap consumes that click for activation (the press
+  // already activated), but the pointer's final focus state still belongs on
+  // the trigger.
   function restoreFlyoutTriggerFocus(event: MouseEvent & { currentTarget: HTMLButtonElement }) {
     if (event.detail === 0) return;
     event.currentTarget.focus();
@@ -394,7 +395,8 @@
 <!-- scribbleGuard cancels a stylus tap's touch stream so it can't arm iPadOS
      Scribble against the next stroke (ADR-0038); that also suppresses the tap's
      synthesized click, so every button here activates via use:scribbleTap
-     (pointerup for pointers, click only for keyboard/AT) instead of onclick. -->
+     (pointerup for pointers; click for keyboard/AT and for a tap the browser
+     resolved here that no press consumed — issue 1237) instead of onclick. -->
 <div
   class="actions-panel"
   data-drawer-motion={drawerMotion ? '' : undefined}

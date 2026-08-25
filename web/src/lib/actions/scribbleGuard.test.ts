@@ -256,16 +256,57 @@ describe('scribbleTap', () => {
   });
 
   // iPadOS snaps a near-miss touch onto the control: the browser targets the
-  // whole pointer stream at it while a raw elementFromPoint still reports the
-  // neighbor. A press that never travelled must trust the browser's targeting
-  // — on-device this was a tap 1px above the undo button playing its press
-  // animation and doing nothing (issue 1237).
-  it('activates a stationary press even when the raw hit-test misses the control', () => {
+  // whole pointer stream at it while a raw elementFromPoint at the release
+  // point still reports the neighbor. The release is re-asked at the nearest
+  // point inside the control's rect — on-device the un-forgiven miss was a tap
+  // 1px above the undo button playing its press animation and doing nothing
+  // (issue 1237). The mocks reproduce that geometry: the button spans y 948 to
+  // 1010, the tap lands at 947.
+  function nearMissGeometry(el: HTMLElement) {
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      x: 8,
+      y: 948,
+      left: 8,
+      top: 948,
+      right: 70,
+      bottom: 1010,
+      width: 62,
+      height: 62,
+      toJSON: () => ({}),
+    } as DOMRect);
+    vi.mocked(document.elementFromPoint).mockImplementation((_x, y) =>
+      y >= 948 ? el : document.body
+    );
+  }
+
+  it('activates a sub-tolerance near-miss the browser targeted at the control', () => {
     const { el, activate } = tapElement();
-    vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
+    nearMissGeometry(el);
     el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 39, clientY: 947 }));
     window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 39, clientY: 947 }));
     expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  // The forgiveness must ask the browser's hit-test at the snapped point, not
+  // merely trust the press: a control that collapsed, hid, or was covered
+  // mid-press — which the browser would never target — still cancels, even
+  // though the finger never moved. (Adversarial review of the first fix: a
+  // held press on the undo button survived the drawer collapsing it away and
+  // deleted a stroke on release.)
+  it('does not activate a stationary press on a control that vanished mid-press', () => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 39, clientY: 947 }));
+    vi.mocked(document.elementFromPoint).mockReturnValue(document.body);
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 39, clientY: 947 }));
+    expect(activate).not.toHaveBeenCalled();
+  });
+
+  it('does not activate a beyond-tolerance miss even inside the snapped rect axis', () => {
+    const { el, activate } = tapElement();
+    nearMissGeometry(el);
+    el.dispatchEvent(pointerEvent('pointerdown', 1, { clientX: 39, clientY: 930 }));
+    window.dispatchEvent(pointerEvent('pointerup', 1, { clientX: 39, clientY: 930 }));
+    expect(activate).not.toHaveBeenCalled();
   });
 
   it('does not activate when the pointer travels and releases outside the control', () => {
@@ -322,6 +363,76 @@ describe('scribbleTap', () => {
     vi.spyOn(performance, 'now').mockReturnValue(base + 1e6);
     el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
     expect(activate).toHaveBeenCalledTimes(2);
+  });
+
+  // The window is armed AFTER the handler runs: an activation that itself
+  // takes longer than the window (post-rotation relayout, a cold dialog mount)
+  // must not burn the allowance meant for the browser's click-synthesis delay
+  // and let its own trailing click re-fire. (Adversarial review of the first
+  // fix — a slow toggleDrawer expanded on pointerup, collapsed on the click.)
+  it('consumes the trailing click of a slow activation', () => {
+    const el = document.createElement('button');
+    document.body.appendChild(el);
+    const base = performance.now();
+    let clock = base;
+    const now = vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    const activate = vi.fn(() => {
+      clock += 5000;
+    });
+    const action = scribbleTap(el, activate);
+    tapActions.add(action);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(el);
+
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointerup', 1));
+    clock += 5;
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+    now.mockRestore();
+  });
+
+  // A counter, not a flag: two rapid taps whose synthesized clicks both arrive
+  // late must both be consumed — a single slot let the second click re-fire.
+  it('consumes one trailing click per completed press', () => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointerup', 1));
+    el.dispatchEvent(pointerEvent('pointerdown', 2));
+    window.dispatchEvent(pointerEvent('pointerup', 2));
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).toHaveBeenCalledTimes(2);
+  });
+
+  // A pointercancel produces no synthesized click, so it must not arm
+  // consumption — arming there swallowed the next genuine browser-resolved
+  // near-miss click for the whole window, recreating the dead tap this exists
+  // to fix.
+  it('does not let a cancelled press swallow a later browser-resolved click', () => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointercancel', 1));
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('activates once for two concurrent pointers on one control', () => {
+    const { el, activate } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    el.dispatchEvent(pointerEvent('pointerdown', 2));
+    window.dispatchEvent(pointerEvent('pointerup', 2));
+    window.dispatchEvent(pointerEvent('pointerup', 1));
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays inert for a click after destroy mid-press', () => {
+    const { el, activate, action } = tapElement();
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    action.destroy();
+    tapActions.delete(action);
+    el.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+    expect(activate).not.toHaveBeenCalled();
   });
 
   it('stops hit-testing moves once the press is known to be dragged', () => {

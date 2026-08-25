@@ -136,9 +136,11 @@ export function scribbleGuard(node: HTMLElement) {
 // to pointerup. The press must have started on the same control with the same
 // pointer (a drag that merely ends on the control sees no matching pointerdown
 // and never fires it). click stays wired for keyboard/assistive-tech activation
-// — those clicks have detail 0, no pointer press — while a real pointer's
-// trailing click (detail ≥ 1) is ignored, so the control never double-fires
-// where the guard is inert (finger, mouse, stylus outside iPadOS).
+// (detail 0, no pointer press) — and, since issue 1237, as the fallback for a
+// pointer tap the browser resolved to this control while iPadOS touch-target
+// expansion aimed the pointer stream a hair outside it: a detail>=1 click that
+// no just-completed press accounts for activates, while each pointerup-completed
+// press consumes exactly one trailing click so nothing double-fires.
 export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
   let current = handler;
   let press:
@@ -161,17 +163,27 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
     if (typeof current !== 'function') current.onPressCancel?.();
   };
 
-  // A trailing synthesized click is consumed by the press that produced it —
-  // whether that press activated or was deliberately cancelled (a drag-off) —
-  // so it can never double-fire or resurrect a rejected drag. One press
-  // consumes at most one click, inside a bounded window.
-  let pressConsumesClickUntil = 0;
+  // Each pointerup-completed press consumes exactly one trailing synthesized
+  // click — whether it activated or was deliberately cancelled (a drag-off) —
+  // so a click can neither double-fire an activation nor resurrect a rejected
+  // drag. A counter rather than a flag, so two rapid taps whose clicks both
+  // arrive late are both consumed instead of the second click re-firing. Only
+  // pointerup arms it: a pointercancel (or a stolen press) produces no click,
+  // and arming there would swallow the next genuine near-miss click for the
+  // whole window. Armed AFTER the handler runs, so a slow activation cannot
+  // burn the window meant for the browser's click-synthesis delay.
+  let consumableClicks = 0;
+  let consumeClicksUntil = 0;
+
+  function armClickConsumption() {
+    consumableClicks += 1;
+    consumeClicksUntil = performance.now() + PRESS_CLICK_CONSUME_WINDOW_MS;
+  }
 
   function finishPress(shouldActivate: boolean) {
     if (!press) return;
     stream?.release(press.pointerId);
     press = undefined;
-    pressConsumesClickUntil = performance.now() + PRESS_CLICK_CONSUME_WINDOW_MS;
     if (shouldActivate) activate();
     else cancelPreparation();
   }
@@ -232,22 +244,26 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
   // iPadOS expands touch targets: a finger landing a hair outside the control
   // still gets its whole pointer stream targeted at the control by WebKit's own
   // hit-test (observed on-device: down and up delivered 1px above the undo
-  // button, with the synthesized click landing inside it). A geometric re-test
-  // with the raw coordinates vetoes that snap — and the detail>=1 click guard
-  // below has already removed the browser's fallback — so the control plays its
-  // press feedback and then swallows the tap. A press that never travelled
-  // activates on the browser's targeting alone; the re-test still gates
-  // releases that actually moved.
-  function pressStayedPut(e: PointerEvent): boolean {
-    return (
-      press !== undefined &&
-      Math.hypot(e.clientX - press.startX, e.clientY - press.startY) <= TAP_MOVEMENT_TOLERANCE_PX
-    );
+  // button, with the synthesized click landing inside it — issue 1237). A raw
+  // elementFromPoint at the release point vetoes that snap, so the release is
+  // re-asked at the point the browser would have snapped to: the nearest point
+  // inside the control's CURRENT rect, when that is within tap tolerance. The
+  // hit-test still runs there, so a control that collapsed, hid, or was covered
+  // mid-press — which the browser would never target — still cancels; only the
+  // sub-tolerance geometric near-miss is forgiven.
+  function snappedReleaseHitsControl(e: PointerEvent): boolean {
+    const rect = node.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return false;
+    const x = Math.min(Math.max(e.clientX, rect.left + 0.5), rect.right - 0.5);
+    const y = Math.min(Math.max(e.clientY, rect.top + 0.5), rect.bottom - 0.5);
+    if (Math.hypot(x - e.clientX, y - e.clientY) > TAP_MOVEMENT_TOLERANCE_PX) return false;
+    return node.contains(node.ownerDocument.elementFromPoint(x, y));
   }
 
   function up(e: PointerEvent) {
     if (!press || e.pointerId !== press.pointerId) return;
-    finishPress(!press.dragged && (pressStayedPut(e) || eventHitsControl(e)));
+    finishPress(!press.dragged && (eventHitsControl(e) || snappedReleaseHitsControl(e)));
+    armClickConsumption();
   }
 
   function cancel(e: PointerEvent) {
@@ -282,8 +298,9 @@ export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
       activate();
       return;
     }
-    if (performance.now() < pressConsumesClickUntil) {
-      pressConsumesClickUntil = 0;
+    if (performance.now() >= consumeClicksUntil) consumableClicks = 0;
+    if (consumableClicks > 0) {
+      consumableClicks -= 1;
       return;
     }
     activate();
