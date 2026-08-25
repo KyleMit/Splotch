@@ -24,15 +24,20 @@ function reportNonce(artifact) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-// A nonce is `${label}-${pid}-${counter}` (capture-device-frames.mjs), so the
-// label must be followed by a `-<digits>` segment — a bare prefix match would
-// attribute a `…-pen-undo` nonce to a `…-pen` label. No label in today's
-// corpus is a prefix of another, so the delimiter is armed against future
-// naming rather than a live defect (round-2 review of the issue-1315 work).
+// A probe nonce is `${label}-${pid}-${counter}` — the mint in
+// capture-device-frames.mjs and capture-hand-input.mjs, the only two that can
+// reach a corpus (the verify-* tools set label equal to the whole nonce, but
+// they report over ?verify= and write no artifact). So attribution demands the
+// label followed by EXACTLY `-<digits>-<digits>`: a bare prefix match would
+// attribute a `…-pen-undo` nonce to a `…-pen` label, and an unanchored tail
+// would attribute a `magic-light-3` repeat's nonce to a hypothetical
+// `magic-light` label — the numeric-suffix naming the tracked repeat sets
+// already use. No verdict on today's corpus differs between the loose and
+// strict forms; the anchor is armed against naming, not repairing a defect.
 function nonceAttributableToLabel(nonce, label) {
   if (!label) return false;
   if (!nonce.startsWith(`${label}-`)) return false;
-  return /^\d+/.test(nonce.slice(label.length + 1));
+  return /^\d+-\d+$/.test(nonce.slice(label.length + 1));
 }
 
 function corpora() {
@@ -50,11 +55,16 @@ describe('nonce attribution is delimiter-aware', () => {
     expect(nonceAttributableToLabel(`${pen}-undo-12345-678`, `${pen}-undo`)).toBe(true);
   });
 
-  // The trap the delimiter exists for: `…-pen` is a prefix of `…-pen-undo`,
-  // so a bare startsWith would call a pen-undo capture's nonce attributable
-  // to a pen label — exactly the cross-cell confusion the marking detects.
+  // The traps the anchors exist for: `…-pen` is a prefix of `…-pen-undo`, so
+  // a bare startsWith would call a pen-undo capture's nonce attributable to a
+  // pen label — and an unanchored tail would call a numeric-suffixed sibling's
+  // nonce (`magic-light-3-34307-81`, the repeat-set naming the tracked
+  // evidence already uses) attributable to the shorter `magic-light`.
   it('does not attribute a longer label’s nonce to its prefix label', () => {
     expect(nonceAttributableToLabel(`${pen}-undo-12345-678`, pen)).toBe(false);
+    expect(nonceAttributableToLabel('magic-light-3-34307-81', 'magic-light')).toBe(false);
+    expect(nonceAttributableToLabel('magic-light-3-34307-81', 'magic-light-3')).toBe(true);
+    expect(nonceAttributableToLabel(`${pen}-2-12345-678`, pen)).toBe(false);
   });
 
   it('rejects an empty label, a bare label, and a non-numeric next segment', () => {
