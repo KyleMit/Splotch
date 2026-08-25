@@ -88,8 +88,13 @@ export function eraserRefillFunctionSource() {
   }`;
 }
 
+// `fillEraserInk(true)` verifies WITHOUT painting: the post-settle check runs
+// in that mode first, so a fill wiped during the settle window is seen and
+// recorded (`repairedAfterSettle`) instead of silently repainted — a wipe
+// after backing realization is evidence of instability that may recur during
+// the measured gesture, and an always-paint check could never report it.
 export function eraserFillFunctionSource() {
-  return `function fillEraserInk() {
+  return `function fillEraserInk(verifyOnly) {
     const tiles = [...document.querySelectorAll('canvas[data-live-tile]')];
     if (!tiles.length) throw new Error('no live tiles to fill for the eraser');
     const lagging = [];
@@ -116,14 +121,16 @@ export function eraserFillFunctionSource() {
     const backings = [];
     const transparentTiles = [];
     tiles.forEach((canvas, index) => {
-      const context = canvas.getContext('2d');
-      context.save();
-      context.setTransform(1, 0, 0, 1, 0, 0);
-      context.globalAlpha = 1;
-      context.globalCompositeOperation = 'source-over';
-      context.fillStyle = '${ERASER_FILL_COLOR}';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.restore();
+      if (!verifyOnly) {
+        const context = canvas.getContext('2d');
+        context.save();
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.globalAlpha = 1;
+        context.globalCompositeOperation = 'source-over';
+        context.fillStyle = '${ERASER_FILL_COLOR}';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.restore();
+      }
       backings.push(canvas.width + 'x' + canvas.height);
       const samplePoints = [
         [0, 0],

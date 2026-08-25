@@ -754,7 +754,18 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       };
       eraserFill = await fillVerified();
       await sleep(AFTER_GESTURE_SETTLE_MS);
-      eraserFill = await fillVerified();
+      // Verify WITHOUT painting first (fillEraserInk(true)): a wipe inside the
+      // settle window is instability evidence to record, not silently repaint.
+      const afterSettle = await execute(
+        `${eraserFillFunctionSource()}\nreturn fillEraserInk(true);`
+      );
+      if (afterSettle?.pending || afterSettle?.transparentTiles?.length) {
+        eraserFill = {
+          ...(await fillVerified()),
+          repairedAfterSettle: true,
+          settleWipe: afterSettle,
+        };
+      }
       // The page refills between gesture passes so every pass erases real ink
       // (issue 1292); the refill log is read back after the sweep.
       await execute(

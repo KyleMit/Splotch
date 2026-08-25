@@ -243,10 +243,15 @@ export function pageBootstrapSource() {
       };
       await fillVerified();
       await wait(${ERASER_FILL_SETTLE_MS});
-      // A deferred clear or resize inside the settle window wipes paint that a
-      // point-in-time verification already blessed; refilling and re-proving at
-      // the last moment closes that window.
-      await fillVerified();
+      // Verify WITHOUT painting first: a deferred clear or resize inside the
+      // settle window wiping a blessed fill is instability evidence that may
+      // recur during the measured gesture. A clean check costs nothing; a wipe
+      // is repaired, re-proved, and RECORDED rather than silently repainted.
+      const afterSettle = fillEraserInk(true);
+      if (afterSettle.pending || afterSettle.transparentTiles.length) {
+        await fillVerified();
+        eraserFill = { ...eraserFill, repairedAfterSettle: true, settleWipe: afterSettle };
+      }
       // The plan says how the host groups strokes into passes; the page refills
       // between passes so every pass erases real ink (issue 1292).
       if (plan.eraserRefill) {

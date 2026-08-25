@@ -144,6 +144,25 @@ describe('the verified eraser fill', () => {
 
     expect(result.transparentTiles).toEqual([1]);
   });
+
+  // verifyOnly is what lets the post-settle check SEE a wipe instead of
+  // repainting over it: it must sample without painting a single pixel.
+  it('verifies without painting in verify-only mode', () => {
+    const unpainted = fakeTile();
+    const script = new Function(
+      'document',
+      `${eraserFillFunctionSource()}\nreturn [fillEraserInk(true), fillEraserInk(), fillEraserInk(true)];`
+    );
+    const [before, filled, after] = script({
+      querySelectorAll: () => [unpainted],
+      createElement: () => fakeScratch(),
+    });
+
+    expect(before.transparentTiles).toEqual([0]);
+    expect(filled.transparentTiles).toEqual([]);
+    expect(after.transparentTiles).toEqual([]);
+    expect(unpainted.context.fillRects).toHaveLength(1);
+  });
 });
 
 // Issue 1292: placement schedules cannot keep ten passes fresh (the measured

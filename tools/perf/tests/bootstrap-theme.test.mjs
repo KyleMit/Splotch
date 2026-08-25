@@ -334,12 +334,10 @@ describe('the bootstrap verifying the eraser fill', () => {
         backings: ['100x80', '90x70'],
         transparentTiles: [],
       });
-      // Filled twice before readiness: once up front and once after the
-      // settle, so a wipe inside that window is repaired and re-proved.
-      expect(tiles[0].context.fillRects).toEqual([
-        [0, 0, 100, 80],
-        [0, 0, 100, 80],
-      ]);
+      // One paint before readiness: the post-settle check verifies WITHOUT
+      // painting, and a stable fill records no repair.
+      expect(ready.eraserFill.repairedAfterSettle).toBeUndefined();
+      expect(tiles[0].context.fillRects).toEqual([[0, 0, 100, 80]]);
       expect(tiles[1].context.fillStyle).toBe('#7c4dff');
 
       const stack = document.querySelector('.canvas-stack');
@@ -356,8 +354,8 @@ describe('the bootstrap verifying the eraser fill', () => {
       expect(report.body.eraserRefills).toEqual([
         { afterStroke: 2, pending: false, transparentTiles: [] },
       ]);
-      // The refill is the third fill; the final stroke deliberately adds none.
-      expect(tiles[0].context.fillRects).toHaveLength(3);
+      // The refill is the second paint; the final stroke deliberately adds none.
+      expect(tiles[0].context.fillRects).toHaveLength(2);
     },
     BOOTSTRAP_TIMEOUT_MS
   );
