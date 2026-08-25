@@ -1,0 +1,34 @@
+# Claude Code on the web — the **android** environment (reference; see .claude/cloud/ANDROID-EMULATOR.md).
+# This is a SECOND environment, alongside the default one in environment.example.
+#
+# Keep it separate rather than adding the profile to the default box: the emulator toolchain costs
+# ~5 GB of snapshot and several minutes of setup, and the emulator itself is slow enough that a
+# session which merely wants to run the test suite should never be given one. Both environments run
+# the same committed setup script — SPLOTCH_CLOUD_PROFILE is what makes them differ.
+#
+# Everything in environment.example still applies; only the deltas are listed here.
+
+[allowed-domains]
+# In addition to the default environment's list:
+dl.google.com                                    # SDK cmdline-tools, platform-tools, emulator, system images
+
+[env]
+# In addition to the default environment's vars:
+#
+# Comma-separated opt-in list read by .claude/cloud/setup.sh and
+# .claude/hooks/cloud-android-emulator.sh. Absent or empty on every other environment.
+SPLOTCH_CLOUD_PROFILE=android
+# Non-secret overrides, all optional — the defaults below are what the scripts assume.
+# No PATH entry is needed for adb: provisioning symlinks it into /usr/local/bin, which is already
+# on the default PATH. Nothing the setup script exports survives into a session, so a PATH var set
+# here would not help anyway.
+ANDROID_SDK_ROOT=/opt/android-sdk
+SPLOTCH_AVD_NAME=splotch_cloud
+SPLOTCH_EMULATOR_PORT=5554
+# The emulator's cold boot runs ~20 minutes and an APK install on it runs ~20s, so the default
+# environment's already-raised Bash timeout matters more here, not less. Keep it at least this high.
+BASH_DEFAULT_TIMEOUT_MS=600000
+
+[setup-script]
+# Identical to the default environment — the profile var above is the only difference.
+bash .claude/cloud/setup.sh
