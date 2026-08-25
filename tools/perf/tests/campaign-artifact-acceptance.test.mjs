@@ -335,7 +335,7 @@ describe('the gesture-plan contract', () => {
   // an uncalibrated runtime, and the regime name more fundamental problems —
   // and a cell at the wrong repeat count is the wrong quantity no matter how
   // its passes were fed ink, so the count outranks the plan too.
-  it('reports fidelity, the regime, and the repeat count ahead of the plan', () => {
+  it('reports fidelity, an uncalibrated runtime, the regime, and the repeat count ahead of the plan', () => {
     const wrongPlan = { gesturePlan: 'fixed-geometry' };
     const options = {
       verdictRequired: true,
@@ -352,6 +352,21 @@ describe('the gesture-plan contract', () => {
     ).toMatchObject({ ok: false, status: UNSCOREABLE });
     expect(
       inspectArtifact(
+        artifactAt({
+          ...scoreable,
+          ...wrongPlan,
+          fidelity: {
+            passed: false,
+            checks: { trustedTouch: true, cadence: true, coalescing: null },
+            uncalibrated: ['coalescing'],
+          },
+        }),
+        'web',
+        options
+      )
+    ).toMatchObject({ ok: false, status: UNCALIBRATED_RUNTIME });
+    expect(
+      inspectArtifact(
         artifactAt({ ...scoreable, ...wrongPlan, summaries: { intervalMs: 8 } }),
         'web',
         { ...options, expectedRefreshRegime: '60hz' }
@@ -359,6 +374,15 @@ describe('the gesture-plan contract', () => {
     ).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
     expect(
       inspectArtifact(artifactAt({ ...scoreable, ...wrongPlan, gestureRepeats: 3 }), 'web', options)
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS });
+    // The mirror image: a MALFORMED plan must not preempt the repeat-count
+    // rejection either — the plan is read only after the count check passes.
+    expect(
+      inspectArtifact(
+        artifactAt({ ...scoreable, gesturePlan: 7, gestureRepeats: 3 }),
+        'web',
+        options
+      )
     ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS });
   });
 

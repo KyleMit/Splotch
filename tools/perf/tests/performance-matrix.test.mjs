@@ -996,21 +996,55 @@ describe('the gesture-plan contract in a folded cell', () => {
   it('publishes each run’s recorded plan and refuses to fold two different ones', () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
     temporaryDirectories.push(directory);
-    const refilled = writeDrawingCapture(directory, 'pen-refilled.json', 'fixed-geometry-refilled');
-    const legacy = writeDrawingCapture(directory, 'pen-legacy.json', undefined);
-    const modesWith = (pen) => [
-      capturedManifestMode(modeSpecs[0], { drawing: { pen } }),
+    const refilled = writeDrawingCapture(
+      directory,
+      'eraser-refilled.json',
+      'fixed-geometry-refilled'
+    );
+    const legacy = writeDrawingCapture(directory, 'eraser-legacy.json', undefined);
+    const modesWith = (eraser) => [
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
       ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
     ];
 
     const matrix = normalizeMatrix(manifest(modesWith([refilled, legacy])), directory);
-    const runs = matrix.targets[0].modes[0].drawing.pen.runs;
+    const runs = matrix.targets[0].modes[0].drawing.eraser.runs;
     expect(runs.map((run) => run.gesturePlan)).toEqual(['fixed-geometry-refilled', null]);
 
-    const unrefilled = writeDrawingCapture(directory, 'pen-unrefilled.json', 'fixed-geometry');
+    const unrefilled = writeDrawingCapture(directory, 'eraser-unrefilled.json', 'fixed-geometry');
     expect(() => normalizeMatrix(manifest(modesWith([refilled, unrefilled])), directory)).toThrow(
       'folds captures under different gesture plans (fixed-geometry-refilled, fixed-geometry)'
     );
+  });
+
+  // A single run is the published norm, so the run-vs-run refusal above never
+  // fires for it — a lone eraser run recording a retired or unrefilled plan
+  // must collide with the CONTRACT on a repeat-driven target. An unknown
+  // target has no contract, and a null-plan artifact stays accepted.
+  it('refuses a lone recorded plan that disagrees with a repeat-driven target’s contract', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const unrefilled = writeDrawingCapture(directory, 'eraser-unrefilled.json', 'fixed-geometry');
+    const legacy = writeDrawingCapture(directory, 'eraser-legacy.json', undefined);
+    const manifestFor = (eraser, targetId) => {
+      const built = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      if (targetId) built.targets[0].id = targetId;
+      return built;
+    };
+
+    expect(() =>
+      normalizeMatrix(manifestFor([unrefilled], 'android-device-web'), directory)
+    ).toThrow(
+      'folds a capture recording gesture plan fixed-geometry, not the campaign contract of ' +
+        'fixed-geometry-refilled'
+    );
+    expect(() =>
+      normalizeMatrix(manifestFor([legacy], 'android-device-web'), directory)
+    ).not.toThrow();
+    expect(() => normalizeMatrix(manifestFor([unrefilled], null), directory)).not.toThrow();
   });
 });
 

@@ -125,12 +125,15 @@ because even the optimal placement schedule saturates a landscape phone canvas b
 fill is verified rather than trusted (issue 1302), each refill re-verifies, and the artifact records
 all of it (`eraserFill`, `eraserRefills`, and `gesturePlan`: `fixed-geometry-refilled` for the
 eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). The boundary is
-enforced the same way the repeat count is: campaign acceptance refuses a banked cell whose recorded
+enforced for any plan an artifact RECORDS: campaign acceptance refuses a banked cell whose recorded
 plan disagrees with the contract (`wrong-gesture-plan`, checked after the repeat count for the same
-most-fundamental-rejection-first reason), the matrix refuses to fold two runs recording different
-plans into one cell, and an artifact predating the field is accepted since it cannot prove either
-way. Treat the matrix's pre-refill eraser column as superseded once the campaign-end recapture
-lands.
+most-fundamental-rejection-first reason), and the matrix refuses both a recorded plan that disagrees
+with a repeat-driven target's contract and two runs recording different plans in one cell. An
+artifact predating the field is a known quantity — unrefilled — and is accepted anyway, by the
+standing decision that banked pre-fix evidence stays foldable until the campaign-end recapture
+supersedes it. The enforcement therefore does not cover the absent-plan case: do not compare an
+eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
+once the recapture lands.
 
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and

@@ -17,6 +17,7 @@ import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
 import {
   CAMPAIGN_TARGETS,
+  gesturePlanFor,
   recordedGesturePlan,
   recordedGestureRepeats,
 } from './lib/campaign-plan.mjs';
@@ -382,10 +383,12 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
       // The same refusal for HOW the repeats were fed ink: two recorded plans in
       // one cell folds an unrefilled eraser number into a refilled one, and the
       // unrefilled one is optimistic by an unknown amount (issue 1292). A null
-      // (an artifact predating the field) proves nothing either way, exactly as
-      // with the repeat count above.
+      // (an artifact predating the field, accepted by standing decision — see
+      // `recordedGesturePlan`) never conflicts. `typeof`, matching the repeat
+      // count's Number.isFinite above: a run object not built by
+      // normalizeDrawingRun must not enter the set as `undefined`.
       const plans = [
-        ...new Set(runs.map((run) => run.gesturePlan).filter((plan) => plan !== null)),
+        ...new Set(runs.map((run) => run.gesturePlan).filter((plan) => typeof plan === 'string')),
       ];
       if (plans.length > 1) {
         const planSources = runs
@@ -396,6 +399,25 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
             `(${plans.join(', ')}) — how each pass was fed ink is part of what the cell measured. ` +
             `Sources: ${planSources}`
         );
+      }
+      // A single run is the published norm (one capture decides a cell), so the
+      // run-vs-run refusal above never fires for it — a lone run recording a
+      // retired or foreign plan must still collide with the CONTRACT. Scoped to
+      // repeat-driven targets: the desktop transport drives no gesture plan,
+      // and an unknown target has no contract to compare against.
+      const target = CAMPAIGN_TARGETS[targetId];
+      if (target && target.transport !== 'desktop') {
+        const contract = gesturePlanFor(brush);
+        const foreign = runs.find(
+          (run) => typeof run.gesturePlan === 'string' && run.gesturePlan !== contract
+        );
+        if (foreign) {
+          throw new Error(
+            `${targetId} ${mode.id} ${brush} folds a capture recording gesture plan ` +
+              `${foreign.gesturePlan}, not the campaign contract of ${contract}. ` +
+              `Source: ${foreign.source}`
+          );
+        }
       }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })

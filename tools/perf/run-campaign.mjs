@@ -127,10 +127,8 @@ export function inspectArtifact(
   // invalid artifact — the same rejection an unparseable file gets — not a
   // historical absence, and not a crash mid-queue.
   let recordedRepeats;
-  let recordedPlan;
   try {
     recordedRepeats = recordedGestureRepeats(artifact);
-    recordedPlan = recordedGesturePlan(artifact);
   } catch {
     return { ok: false, status: FAILED };
   }
@@ -141,10 +139,18 @@ export function inspectArtifact(
   ) {
     return { ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats };
   }
-  // After the repeat count: a cell at the wrong count is the wrong quantity no
-  // matter how its passes were fed ink, so the count is the rejection that
-  // names the recapture's first problem. Same absent-field tolerance as the
-  // count — an artifact predating the plan field proves nothing either way.
+  // After the repeat count, malformed reads included: a cell at the wrong
+  // count is the wrong quantity no matter how its passes were fed ink, so the
+  // count is the rejection that names the recapture's first problem — and
+  // reading the plan any earlier let a malformed plan preempt that message.
+  // The absent-plan tolerance is the standing decision `recordedGesturePlan`
+  // documents, not a symmetry with the count.
+  let recordedPlan;
+  try {
+    recordedPlan = recordedGesturePlan(artifact);
+  } catch {
+    return { ok: false, status: FAILED };
+  }
   if (
     expectedGesturePlan !== null &&
     recordedPlan !== null &&

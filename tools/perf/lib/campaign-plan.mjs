@@ -555,12 +555,16 @@ export function gesturePlanFor(brush) {
 // The gesture plan a drawing capture recorded, top level on both artifacts (the
 // gestureRepeats top-level/automation split was a defect this field avoided
 // from the start). Shared by acceptance and the matrix like
-// `recordedGestureRepeats`, and with the same null contract: null means the
-// field is ABSENT — the artifact predates it or the runner has no gesture plan
-// — which consumers deliberately accept. A field that is present but not a
-// string is a malformed artifact and THROWS rather than collapsing into that
-// null; acceptance maps the throw to a rejection, the matrix lets it surface as
-// a loud fold error naming the source.
+// `recordedGestureRepeats`. Null means the field is ABSENT, and unlike the
+// repeat count that absence is determinate — every pre-field artifact is
+// unrefilled fixed-geometry — yet consumers deliberately accept it: the
+// standing decision (PR 1335's disposition, the issue-1225 record) keeps
+// banked pre-fix evidence foldable until the campaign-end recapture supersedes
+// it, and docs/PROFILING-CAMPAIGNS.md carries the do-not-compare caution for
+// exactly that uncovered case. A field that is present but not a string is a
+// malformed artifact and THROWS rather than collapsing into that null;
+// acceptance maps the throw to a rejection, the matrix lets it surface as a
+// loud fold error.
 export function recordedGesturePlan(artifact) {
   const recorded = artifact?.gesturePlan ?? null;
   if (recorded === null) return null;
