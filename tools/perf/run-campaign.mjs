@@ -68,6 +68,17 @@ function absolute(path) {
 // rather than retried until it turns green. A failed fidelity verdict is not a red
 // gate — it is a capture that cannot be scored at all — and it is reported
 // separately so the ledger says which of the two happened.
+// The one place a plan cell's flags become inspectArtifact options. Status must
+// accept exactly what the runner accepts; when status rebuilt these options itself
+// it dropped the reportsRefreshRegime gate and reported four complete action
+// sweeps — which carry no frame intervals by design — as off-refresh-regime.
+export function cellInspection(cell, { runtime, refreshRegime }) {
+  return inspectArtifact(cell.artifact, runtime, {
+    verdictRequired: cell.reportsFidelity,
+    expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
+  });
+}
+
 export function inspectArtifact(
   path,
   runtime,
@@ -226,10 +237,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
-      artifactValid: inspectArtifact(cell.artifact, runtime, {
-        verdictRequired: cell.reportsFidelity,
-        expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
-      }).ok,
+      artifactValid: cellInspection(cell, { runtime, refreshRegime }).ok,
       maxAttempts,
       runtimeStillUncalibrated: runtimeHasUncalibratedChecks(targetCaptureRuntime),
     });
@@ -276,10 +284,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         ['run', cell.command, '--ignore-scripts', '--', ...cell.args],
         { cwd: ROOT, stdio: 'inherit' }
       );
-      const inspected = inspectArtifact(cell.artifact, runtime, {
-        verdictRequired: cell.reportsFidelity,
-        expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
-      });
+      const inspected = cellInspection(cell, { runtime, refreshRegime });
       landed = inspected.ok;
       appendLedger(ledgerPath, {
         cell: cell.id,

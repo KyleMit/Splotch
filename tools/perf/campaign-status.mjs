@@ -16,7 +16,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
-import { inspectArtifact } from './run-campaign.mjs';
+import { cellInspection } from './run-campaign.mjs';
 import { attemptsFor, completedCells, parseLedger } from './lib/campaign-ledger.mjs';
 
 const absolute = (path) => (isAbsolute(path) ? path : join(ROOT, path));
@@ -58,17 +58,14 @@ export async function campaignStatus({
   const ledger = absolute(ledgerPath ?? `${outputRoot}/${targetId}/ledger.tsv`);
   const ledgerRows = existsSync(ledger) ? parseLedger(readFileSync(ledger, 'utf8')) : [];
 
-  // The runner's own inspection, not a reimplementation of half of it: it also
-  // requires the fidelity verdict, and a status that skipped that reported
-  // structurally rejected measurements as complete.
+  // The runner's own inspection via the shared cellInspection builder, not a
+  // reimplementation: rebuilding the options here has misreported twice — once
+  // skipping the fidelity verdict (structurally rejected measurements counted
+  // complete), once demanding a refresh regime of action sweeps that report none.
   const { total, done, outstanding } = campaignProgress(plan, {
     runtime,
     ledgerRows,
-    inspect: (cell) =>
-      inspectArtifact(cell.artifact, runtime, {
-        verdictRequired: cell.reportsFidelity,
-        expectedRefreshRegime: refreshRegime,
-      }),
+    inspect: (cell) => cellInspection(cell, { runtime, refreshRegime }),
   });
 
   console.log(`${targetId}: ${done.length}/${total} cells complete`);

@@ -1,0 +1,38 @@
+{
+  "campaign": "2026-08-25-campaign-1322-android",
+  "capturedFrom": "perf-profiles/campaign-1322-android",
+  "kept": [
+    {
+      "file": "android-device-web-crayon.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/crayon-real-screen.json"
+    },
+    {
+      "file": "android-device-web-eraser.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/eraser-real-screen.json"
+    },
+    {
+      "file": "android-device-web-magic.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/magic-real-screen.json"
+    },
+    {
+      "file": "android-device-web-pen.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/pen-real-screen.json"
+    }
+  ]
+}

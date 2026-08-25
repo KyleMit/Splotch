@@ -211,6 +211,22 @@ every one of those numbers came from the instrument rather than from the phenome
 now a floor only (ADR-0141), and the floor has both sides measured — 46.8–61 moves/s for every
 rejected transport, 117.5 for the slowest hand.
 
+### A degraded adb server halves swipe cadence with nothing else wrong
+
+`adb shell input swipe` cadence is delivered through the host's adb server, and after a long session
+that server can degrade to roughly half throughput while every other health signal stays green. The
+2026-08-25 campaign hit a cell at **58.13 moves/s** against the 100-plus floor with the host idle,
+the phone cool (32°C, thermal status 0), and every touch trusted — the checks that normally explain
+a cadence failure all passed, which is exactly what makes this cause easy to misattribute to the
+device or the run.
+
+The fix is host-side and takes seconds: `adb kill-server && adb start-server`, then reconnect and
+recapture. The same campaign's cell delivered 116.06 moves/s immediately after the restart. Suspect
+the adb server whenever cadence lands near **half** the transport's calibrated range on a quiet host
+— and restart it before burning a retry attempt on a cause the retry cannot fix. Note the restart
+drops every `adb forward` the session holds, so re-establish those (the capture tools bind their own
+per run) and expect the first command after restart to pay device re-enumeration.
+
 ## The preflight proves what it exercises, and nothing else
 
 `--verify-android-input` used to drive the floor control and report a cadence in band, and nothing
