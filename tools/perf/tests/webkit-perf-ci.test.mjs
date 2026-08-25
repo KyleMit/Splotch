@@ -258,9 +258,11 @@ describe('WebKit performance CI', () => {
     const fullJob = job('webkit-commit-gate-full');
 
     expect(workflow).toContain("tags: ['v*']");
-    expect(fullJob).toContain("(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||");
     expect(fullJob).toContain(
-      "(github.event_name == 'workflow_dispatch' && contains(fromJSON('[\"full\", \"both\"]'), inputs.gate))"
+      "(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||"
+    );
+    expect(fullJob).toContain(
+      '(github.event_name == \'workflow_dispatch\' && contains(fromJSON(\'["full", "both"]\'), inputs.gate))'
     );
     expect(fullJob).toContain('runs-on: macos-latest');
     expect(fullJob).toContain(
