@@ -600,9 +600,18 @@ Deleting the output directory to "start clean" throws away work that was fine.
 
 The exception is the one that matters. **Discard when the capture path changed under you; resume
 when only time passed.** A cell captured by a tool that has since been fixed is a cell measured by a
-different instrument, and the ledger cannot tell — it records that an artifact parses, not what
-produced it (issue 1293). Until that is recorded, the distinction lives in the operator's head, so
-make it deliberately rather than reaching for `rm -rf` out of caution.
+different instrument. The campaign now records that distinction instead of leaving it in the
+operator's head (issue 1293): an `instrument.json` beside the ledger fingerprints the modules that
+decide what a capture measures (the bootstrap, probe host, both capture drivers, the probe, the
+eraser fill), and a resume across a change is refused with the changed files named. Start clean to
+recapture under the current instrument, or pass `--accept-instrument-change` to keep the banked
+cells deliberately, on record. Scorers and fidelity tables are outside the fingerprint on purpose —
+they re-derive at fold time, so changing them re-scores banked cells rather than invalidating them.
+
+The campaign also refuses a plan containing a cell that would fall back to its child's default
+server (issue 1301) — pass `--url=` so every cell measures the same build the campaign chose; only
+the desktop transport (which builds and serves its own preview) and native cells (which load their
+build-time `server.url`) are exempt.
 
 ## Serialize the captures, but keep both devices alive
 

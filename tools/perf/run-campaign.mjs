@@ -27,10 +27,12 @@ import {
   artifactMatchesRuntime,
   artifactPassedFidelity,
   campaignTarget,
+  cellServerSource,
   resolvedProbeHostProblem,
   planCampaign,
   splitTransportIdentityProblem,
 } from './lib/campaign-plan.mjs';
+import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument-fingerprint.mjs';
 import {
   ALREADY_VALID,
   COMPLETE,
@@ -209,6 +211,22 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     },
   });
 
+  // Issue 1301: a cell given no server falls back to its own default port,
+  // which the campaign never chose and another worktree may hold — the
+  // build-freshness guard makes that loud, but only after burning the cell's
+  // attempts (twelve, on 2026-08-24). The fail-fast names the cells and the
+  // flag, the same shape as the --device-id guard from #1283. Checked on the
+  // dry run too, because the dry run is exactly where an operator looks for
+  // what a campaign will do, and the ABSENCE of a flag was invisible there.
+  const serverlessCells = plan.filter((cell) => cellServerSource(cell) === null);
+  if (serverlessCells.length) {
+    fail(
+      `these cells would fall back to their child's default server, which this campaign is not ` +
+        `itself using:\n${serverlessCells.map((cell) => `  ${cell.id} (${cell.command})`).join('\n')}\n` +
+        `Pass --url=<the preview URL this campaign should measure> so every cell measures the same build.`
+    );
+  }
+
   // Asserted rather than started: the probe host outlives any one target's queue,
   // and the repo's rule is to reuse a running listener rather than take over its
   // lifecycle. A dry run is planning only and reaches no device.
@@ -241,6 +259,26 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const ledgerPath = absolute(flag('ledger', `${outputRoot}/${targetId}/ledger.tsv`));
   mkdirSync(dirname(ledgerPath), { recursive: true });
   if (!existsSync(ledgerPath)) writeFileSync(ledgerPath, `${LEDGER_HEADER.join('\t')}\n`);
+
+  // Which instrument banked this campaign's cells (issue 1293). Recorded on the
+  // first run; a resume whose instrument moved is refused with the changed
+  // files named, unless the operator accepts the mixture on record. The new
+  // fingerprint is written on acceptance so the decision is made once, not on
+  // every subsequent resume.
+  const fingerprintPath = join(dirname(ledgerPath), 'instrument.json');
+  const currentInstrument = instrumentFingerprint();
+  const recordedInstrument = existsSync(fingerprintPath)
+    ? JSON.parse(readFileSync(fingerprintPath, 'utf8'))
+    : null;
+  const instrumentProblem = instrumentChangeProblem(recordedInstrument, currentInstrument);
+  if (instrumentProblem && !has('accept-instrument-change')) fail(instrumentProblem);
+  if (instrumentProblem) {
+    console.log(
+      'WARN  resuming across an instrument change — cells banked before this run were ' +
+        'captured by a different instrument (accepted with --accept-instrument-change)'
+    );
+  }
+  writeFileSync(fingerprintPath, `${JSON.stringify(currentInstrument, null, 2)}\n`);
   // The attempts a cell has already spent live in the ledger, not in this process.
   // Reading them is what makes --max-attempts a budget for the campaign rather than
   // for one invocation, so an interrupted run resumes instead of restarting at 1.

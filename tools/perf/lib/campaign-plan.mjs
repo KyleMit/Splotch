@@ -230,6 +230,24 @@ export function commandReportsRefreshRegime(command) {
   return REFRESH_REGIME_REPORTING_COMMANDS.has(command);
 }
 
+// Where a planned cell's child will get its server from — or null when the
+// child would fall back to its own default port, which is a server the
+// campaign never chose and another worktree may hold. Issue 1301: the third
+// instance of one family (a campaign input a child needs, that the parent has,
+// and does not pass — after #1283's --device-serial and the probe host), found
+// when four action cells burned twelve attempts against another checkout's
+// build on the default preview port. The desktop transport is exempt by
+// construction: it builds and serves its own preview.
+export function cellServerSource(cell) {
+  if (cell.command === DESKTOP_SCREEN_COMMAND || cell.command === DESKTOP_ACTIONS_COMMAND) {
+    return 'self-served';
+  }
+  if (cell.args.some((arg) => arg.startsWith('--url='))) return 'explicit-url';
+  if (cell.args.some((arg) => arg.startsWith('--host='))) return 'probe-host';
+  if (cell.args.includes('--native-app')) return 'native-server-url';
+  return null;
+}
+
 // Classified rather than matched against a list of spellings. A set of exact
 // strings misses every other way to write the same address: `[::ffff:127.0.0.1]`
 // walked past the first version of this guard and the campaign ran on against a

@@ -3,6 +3,7 @@ import {
   ACTION_REPEATS,
   ALL_ITEMS,
   GESTURE_REPEATS,
+  cellServerSource,
   CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   UNDO_COUNT,
@@ -126,6 +127,27 @@ describe('campaign plan', () => {
         cell.args.some((arg) => arg.startsWith('--gesture-repeats=')) ? GESTURE_REPEATS : null
       );
     }
+  });
+
+  // Issue 1301: a cell with no server source falls back to its child's default
+  // port — a server the campaign never chose. The runner refuses such a plan;
+  // this pins which cells count as covered, per transport.
+  it('names every cell’s server source, and the fallback cells as null', () => {
+    const withUrl = { ...HOST, url: 'http://127.0.0.1:4173/', deviceId: 'emulator-5554' };
+    const bare = plan('android-emulator-web', { modes: ['portrait-light'] });
+    const served = plan('android-emulator-web', { modes: ['portrait-light'], host: withUrl });
+    const split = plan('android-device-web', {
+      modes: ['portrait-light'],
+      host: { ...withUrl, probeHost: 'http://192.168.0.9:4175' },
+    });
+    const native = plan('ipad-simulator-native', { modes: ['portrait-light'] });
+    const desktop = plan('mac-chrome', { modes: ['portrait-light'] });
+
+    expect(bare.map(cellServerSource)).toEqual(Array(bare.length).fill(null));
+    expect(served.every((cell) => cellServerSource(cell) === 'explicit-url')).toBe(true);
+    expect(cellServerSource(split.find((cell) => cell.item === 'crayon'))).toBe('probe-host');
+    expect(native.every((cell) => cellServerSource(cell) === 'native-server-url')).toBe(true);
+    expect(desktop.every((cell) => cellServerSource(cell) === 'self-served')).toBe(true);
   });
 
   it('rejects an unknown target, mode, or item by name', () => {
