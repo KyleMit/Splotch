@@ -62,10 +62,16 @@ const ROTATION_ACTION_LABEL = new RegExp(
 // the rendering turn — so desktop applicability needs the ENGINE beside the
 // runtime. Declared per engine from the local measurements in
 // perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/ (ADR-0142's
-// amendment): WebKit shares Safari's engine construction and read 0.0 in 31 of
-// 32 scored rotation samples, while Chromium (3.3-8.0 ms) carries real
-// post-resize dynamic range and stays gated. An engine absent from the set —
-// and every non-desktop caller, which passes no engine — keeps the gate.
+// second amendment). The discriminator is the sub-1 ms share of scored
+// rotation first frames — WebKit 31/32, Firefox 11/32, Chromium 2/32 — since
+// Playwright WebKit reports whole-millisecond timestamps and an exactly-zero
+// comparison across engines would compare clocks: WebKit shares Safari's
+// engine construction and cannot plausibly reach the 33.5 ms gate, while
+// Chromium (two sub-1 ms samples, the rest 3.3-8.0 ms) and Firefox (bimodal to
+// 9.5 ms) carry real dynamic range and stay gated. An engine absent from the
+// set — and every non-desktop caller, which passes no engine — keeps the gate.
+// Exported only for the declaration-pin test, which fails a drive-by addition
+// that carries no measured corpus.
 export const ROTATION_INERT_DESKTOP_ENGINES = new Set(['webkit']);
 
 export function rotationFirstFrameNa(captureRuntime, label, desktopEngine = null) {

@@ -31,7 +31,11 @@ import {
   validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
 } from '../ios/capture-xcuitest-actions.mjs';
-import { hasMinimumActionRepeats, resolveViewport } from '../web/capture-desktop-actions.mjs';
+import {
+  desktopActionsArtifact,
+  hasMinimumActionRepeats,
+  resolveViewport,
+} from '../web/capture-desktop-actions.mjs';
 import { eraserFillFunctionSource } from '../lib/eraser-fill.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
@@ -550,6 +554,31 @@ describe('desktop action options', () => {
   it('requires a warmup plus every gated repeat', () => {
     expect(hasMinimumActionRepeats(3)).toBe(false);
     expect(hasMinimumActionRepeats(4)).toBe(true);
+  });
+
+  // The two identity fields a later reader TRUSTS: the matrix's
+  // runtime-agreement check compares `captureRuntime`, and the per-engine
+  // rotation declaration keys on the RECORDED `engine`. A runner that stopped
+  // writing either would silently re-open ADR-0142's misfile hole.
+  it('records the capture runtime and engine the fold checks key on', () => {
+    const artifact = desktopActionsArtifact({
+      engineName: 'webkit',
+      base: 'http://127.0.0.1:4173/',
+      viewport: { width: 1366, height: 915 },
+      deviceScaleFactor: 2,
+      headless: true,
+      theme: 'light',
+      settingsShell: null,
+      actions: ['rotation'],
+      repeats: 9,
+      samples: [],
+      summaries: [],
+      passed: true,
+    });
+
+    expect(artifact.captureRuntime).toBe('desktop-playwright');
+    expect(artifact.engine).toBe('webkit');
+    expect(artifact.viewport).toEqual({ width: 1366, height: 915, deviceScaleFactor: 2 });
   });
 });
 

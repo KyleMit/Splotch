@@ -403,6 +403,19 @@ describe('deployment matrix report', () => {
     const chromiumResult = foldedFor('mac-chrome', capture('chromium-actions.json', 'chromium'));
     expect(chromiumResult.firstFrame.na).toBeUndefined();
     expect(chromiumResult.passed).toBe(false);
+
+    // The misfile hole the review found: an artifact recording NEITHER
+    // runtime nor engine (the Android CDP action runner's shape) folded under
+    // mac-safari must keep its gate — the declaration alone cannot remove it.
+    // Its 100 ms first frames then surface the misfile as a red cell.
+    const anonymous = writeActionCapture(manifestDirectory, 'anonymous-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: rotationSamples,
+    });
+    const anonymousResult = foldedFor('mac-safari', anonymous);
+    expect(anonymousResult.firstFrame.na).toBeUndefined();
+    expect(anonymousResult.passed).toBe(false);
   });
 
   // The engine gets the runtime's agreement rule: a capture recorded under one

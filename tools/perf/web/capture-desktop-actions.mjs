@@ -73,6 +73,48 @@ function browserLaunchOptions(engineName, headless) {
     : { headless };
 }
 
+// The artifact envelope, as a pure value (the drivenCaptureArtifact pattern):
+// the fields a later reader TRUSTS — `captureRuntime` feeding the matrix's
+// runtime-agreement check and `engine` feeding the per-engine rotation
+// declaration — can be asserted without launching a browser.
+export function desktopActionsArtifact({
+  engineName,
+  base,
+  viewport,
+  deviceScaleFactor,
+  headless,
+  theme,
+  settingsShell,
+  actions,
+  repeats,
+  samples,
+  summaries,
+  passed,
+}) {
+  return {
+    device: {
+      name: `Mac desktop (${engineName})`,
+      os: process.platform,
+    },
+    appUrl: base,
+    engine: engineName,
+    // Recorded so the matrix's runtime-agreement check has an artifact side
+    // to compare against the target's declared runtime — a desktop capture
+    // folded into a device target (or vice versa) must collide, not score
+    // under the other's rotation rules.
+    captureRuntime: DESKTOP_CAPTURE_RUNTIME,
+    viewport: { ...viewport, deviceScaleFactor },
+    headless,
+    theme,
+    settingsShell,
+    actions,
+    repeats,
+    samples,
+    summaries,
+    passed,
+  };
+}
+
 export async function runDesktopActions(argv = process.argv.slice(2)) {
   const { flag, has, port, build } = parsePerfArgs(
     {
@@ -180,19 +222,11 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       flag('output') ??
       join(profilePath('desktop-actions', engineName, flag('label', 'full-suite')), 'actions.json');
     mkdirSync(dirname(output), { recursive: true });
-    const artifact = {
-      device: {
-        name: `Mac desktop (${engineName})`,
-        os: process.platform,
-      },
-      appUrl: base,
-      engine: engineName,
-      // Recorded so the matrix's runtime-agreement check has an artifact side
-      // to compare against the target's declared runtime — a desktop capture
-      // folded into a device target (or vice versa) must collide, not score
-      // under the other's rotation rules.
-      captureRuntime: DESKTOP_CAPTURE_RUNTIME,
-      viewport: { ...viewport, deviceScaleFactor },
+    const artifact = desktopActionsArtifact({
+      engineName,
+      base,
+      viewport,
+      deviceScaleFactor,
       headless,
       theme: baselineTheme,
       settingsShell,
@@ -201,7 +235,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       samples,
       summaries,
       passed: failures.length === 0,
-    };
+    });
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
     console.log('\nDesktop discrete action response');
     console.table(actionRows(summaries));

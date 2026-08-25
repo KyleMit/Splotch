@@ -94,23 +94,34 @@ class, deliberately left at the time for the desktop runner to declare on its ow
 
 *Second amendment (2026-08, the desktop declaration).* The desktop runner declared. Local
 measurement on the Mac (corpus `perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/`:
-the campaign's rotation cells at the campaign landscape viewport, 8 scored samples per rotation
-label per engine, 32 per engine) split the three engines:
+the campaign's rotation cells, 8 scored samples per rotation label per engine, 32 per engine — one
+condition: landscape 1366×915, light theme, headless, so the declaration extends to the other three
+modes by engine identity, the same inference the first amendment makes for the simulator) split the
+three engines. The runner is headless Playwright WebKit/Chromium/Firefox, not shipped Safari — the
+declaration is about the engine's dispatch construction, which they share. And because Playwright
+WebKit reports whole-millisecond timestamps while the other two report microseconds, the
+cross-engine discriminator is the **sub-1 ms share** of scored rotation first frames, not "exactly
+zero" (which would compare clocks):
 
-* **WebKit read exactly 0.0 ms in 31 of 32 samples** (the one non-zero: 6.0 ms, sub-frame). Same
-  engine, same construction as iPad Safari — `resize` dispatched inside the rendering turn whose rAF
-  timestamp the probe records — so the gate cannot discriminate and app work cannot move the
-  reading. Declared inert: `ROTATION_INERT_DESKTOP_ENGINES` in `tools/perf/lib/action-stats.mjs`.
-* **Chromium read exactly zero in 0 of 32 samples**, spreading 0.04–8.0 ms; **Firefox is bimodal**
-  (11 of 32 sub-1 ms, the rest 7.3–9.5 ms). Both carry real post-`resize` dynamic range and keep the
-  gate, on the numbers rather than by analogy to Android.
+* **WebKit: 31 of 32 sub-1 ms** (all reading 0.0 on its whole-ms clock; the one non-zero sample is
+  6.0 ms — real, and still nowhere near the gate). Same engine construction as iPad Safari: `resize`
+  dispatched inside the rendering turn whose rAF timestamp the probe records, so the reading is
+  dominated by dispatch scheduling and cannot plausibly reach the 33.5 ms gate — an uninformative
+  gate, per ADR-0139 declared rather than left silently passing. Declared inert:
+  `ROTATION_INERT_DESKTOP_ENGINES` in `tools/perf/lib/action-stats.mjs`.
+* **Chromium: 2 of 32 sub-1 ms** (one an effective float zero, one 0.2 ms; the other 30 spread
+  3.3–8.0 ms) and **Firefox: 11 of 32 sub-1 ms** (bimodal; the rest 7.3–9.5 ms). Both carry real
+  post-`resize` dynamic range and keep the gate, on the numbers rather than by analogy to Android.
 
 The desktop runner spans three engines under one runtime, so applicability keys on the runtime **and
-the engine**: the runner now records `captureRuntime: 'desktop-playwright'`, applies the declaration
-to its own summaries, and the matrix holds a recorded `engine` to the target's declared
-`desktopEngine` with the same both-present-must-agree rule the runtime uses. `mac-safari`'s
-published 16/16 rotation zeros render N/A at the campaign-end regeneration, exactly as the iPad
-Safari cells do; nothing regenerates early.
+the engine**: the runner now records `captureRuntime: 'desktop-playwright'` and applies the
+declaration to its own summaries, and the matrix holds a recorded `engine` to the target's declared
+`desktopEngine` with the same both-present-must-agree rule the runtime uses — while the N/A decision
+itself takes only the **recorded** engine, so an artifact recording neither runtime nor engine
+misfiled under a desktop target keeps its gate and surfaces as a red cell rather than an N/A.
+`mac-safari`'s published 16/16 rotation zeros render N/A only when the campaign-end **recapture**
+replaces their preserved sections — regeneration alone republishes preserved results verbatim,
+exactly as the iPad Safari cells do; nothing regenerates early.
 
 − Previously published rotation first-frame numbers are incomparable with post-change numbers, and
 `check:matrix-staleness` cannot see the boundary — its measured surface is deliberately product

@@ -480,10 +480,17 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
         `${declaredEngine} — an artifact from another engine cannot fold into this target`
     );
   }
-  const desktopEngine = declaredEngine ?? recordedEngine;
+  // The N/A decision takes the RECORDED engine only, never the target's
+  // declaration alone: the desktop runner has recorded `engine` since its
+  // first artifact, so every genuine desktop capture qualifies — while an
+  // artifact recording neither runtime nor engine (the Android CDP action
+  // runner's shape) misfiled under a desktop target would otherwise have its
+  // rotation gate silently removed by the declaration. Such an artifact stays
+  // gated, and its 100 ms first frames turn the misfile into a red cell
+  // instead of an N/A.
   const summaries = profile.samples
     ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
-        rotationFirstFrameNa(runtime, label, desktopEngine)
+        rotationFirstFrameNa(runtime, label, recordedEngine)
       )
     : profile.summaries;
   const results = summaries
