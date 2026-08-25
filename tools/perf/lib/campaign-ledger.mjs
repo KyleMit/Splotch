@@ -31,6 +31,12 @@ export const OFF_REFRESH_REGIME = 'off-refresh-regime';
 // hardware only one session can hold at a time. Closing it means measuring the
 // runtime, not recapturing the cell.
 export const UNCALIBRATED_RUNTIME = 'uncalibrated-runtime';
+// A banked capture recording a gesture-repeat count other than the one this
+// campaign's contract drives (issue 1297). The capture may be perfectly healthy;
+// its cell simply measured a different first-touch-to-repeat mix and cannot be
+// folded beside cells driven at the contract count. A retry recaptures at the
+// plan's count, so it spends an attempt like any other recapturable rejection.
+export const WRONG_GESTURE_REPEATS = 'wrong-gesture-repeats';
 
 export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
   return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
@@ -56,7 +62,8 @@ export function attemptsFor(rows, cellId) {
       (row.status?.startsWith(FAILED) ||
         row.status?.startsWith(UNSCOREABLE) ||
         row.status?.startsWith(UNCALIBRATED_RUNTIME) ||
-        row.status?.startsWith(OFF_REFRESH_REGIME))
+        row.status?.startsWith(OFF_REFRESH_REGIME) ||
+        row.status?.startsWith(WRONG_GESTURE_REPEATS))
   ).length;
 }
 

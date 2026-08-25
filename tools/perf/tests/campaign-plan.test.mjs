@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTION_REPEATS,
   ALL_ITEMS,
+  GESTURE_REPEATS,
   CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   UNDO_COUNT,
@@ -108,6 +109,23 @@ describe('campaign plan', () => {
     expect(cell.args).toContain('--native-app');
     expect(cell.args).toContain('--native-webview-class=android.webkit.WebView');
     expect(cell.args.some((arg) => arg.startsWith('--url='))).toBe(false);
+  });
+
+  // Issue 1297: the repeat count is part of the measurement contract, so the plan
+  // records it per cell — read back from the args the child is given, never from
+  // the constant directly, so the enforced contract cannot drift from the command.
+  it('stamps the gesture-repeat contract on exactly the cells driven with the flag', () => {
+    const cells = plan('ipad-device-web', { modes: ['portrait-light'] });
+    const drawing = cells.find((cell) => cell.item === 'crayon');
+    const actions = cells.find((cell) => cell.item === 'actions');
+
+    expect(drawing.gestureRepeats).toBe(GESTURE_REPEATS);
+    expect(actions.gestureRepeats).toBeNull();
+    for (const cell of Object.keys(CAMPAIGN_TARGETS).flatMap((targetId) => plan(targetId))) {
+      expect(cell.gestureRepeats).toBe(
+        cell.args.some((arg) => arg.startsWith('--gesture-repeats=')) ? GESTURE_REPEATS : null
+      );
+    }
   });
 
   it('rejects an unknown target, mode, or item by name', () => {

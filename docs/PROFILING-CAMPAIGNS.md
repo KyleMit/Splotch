@@ -115,6 +115,16 @@ names the setting. Check with `adb shell dumpsys display | grep -o 'renderFrameR
 phone that should boost to 120 reporting 60 is the tell — and clear it with
 `adb shell settings delete system peak_refresh_rate` and the same for `min_refresh_rate`.
 
+**A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
+First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and
+amortise across the remaining passes, so the repeat count decides how much of a cell is first-touch
+work versus repeat work and cells at different counts are not comparable (issue 1297; it muddied the
+issue-1236 crayon A/B before the count was part of the contract). The campaign drives every drawing
+cell at `GESTURE_REPEATS` (10), capture artifacts record the count they were driven at, and artifact
+acceptance refuses a banked cell recording a different one as `wrong-gesture-repeats` — recapturing
+rather than folding. An artifact predating the field is accepted, since it cannot prove either way;
+the matrix likewise refuses to fold two runs recording different counts into one cell.
+
 ## `ios_webkit_debug_proxy` is obsolete on iOS 17 and newer
 
 If it lists the *device* but reports zero *pages*, the device is fine and the tool is not. Apple

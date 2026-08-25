@@ -20,7 +20,13 @@ export const ALL_ITEMS = [...DRAWING_ITEMS, 'actions'];
 
 // One warmup plus three scored samples — the action scorer rejects any other split.
 export const ACTION_REPEATS = 4;
-const GESTURE_REPEATS = 10;
+// Part of the published measurement contract, not a convenience default (issue
+// 1297): the repeat count decides how much of a cell is first-touch work versus
+// amortised repeat work, so cells captured with different counts are not
+// comparable. Every drawing cell in a campaign is driven at this count, the
+// capture records it, and artifact acceptance refuses a banked cell recording a
+// different one.
+export const GESTURE_REPEATS = 10;
 export const UNDO_COUNT = 10;
 export const MAX_ATTEMPTS = 3;
 
@@ -495,6 +501,12 @@ function drawingArgs(item, mode) {
   return args;
 }
 
+function gestureRepeatsFromArgs(args) {
+  const flag = args.find((arg) => arg.startsWith('--gesture-repeats='));
+  if (!flag) return null;
+  return Number(flag.slice('--gesture-repeats='.length));
+}
+
 export function planCampaign(targetId, { modes, items, outputRoot, host = {}, label } = {}) {
   const target = campaignTarget(targetId);
   if (!outputRoot) throw new Error('planCampaign requires an outputRoot');
@@ -566,6 +578,9 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         command,
         reportsFidelity: commandReportsFidelity(command),
         reportsRefreshRegime: commandReportsRefreshRegime(command),
+        // Read back from the args the child is actually given, so the contract
+        // the inspection enforces can never drift from the command it drove.
+        gestureRepeats: gestureRepeatsFromArgs(args),
         args,
       });
     }

@@ -314,6 +314,7 @@ export function drivenCaptureArtifact({
   brush,
   orientation,
   theme,
+  gestureRepeats,
   ready,
   nativeApp,
   requirePageIdentity = true,
@@ -328,6 +329,11 @@ export function drivenCaptureArtifact({
     brush,
     orientation,
     theme,
+    // The repeat count decides the cell's first-touch-to-repeat mix, so cells
+    // captured at different counts are not comparable; campaign acceptance
+    // refuses a banked cell recording a count other than its contract (issue
+    // 1297).
+    gestureRepeats,
     // What the PAGE reported, read back at readiness. `theme` alone is a request,
     // and `report.meta.theme` cannot answer either: the product stores the
     // loosest preference that renders an appearance, so choosing the theme the OS
@@ -373,6 +379,9 @@ export async function captureDeviceFrames({
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
+  if (!Number.isSafeInteger(repeats) || repeats < 1) {
+    fail('--gesture-repeats must be a positive integer');
+  }
   if (!ORIENTATIONS.includes(orientation)) {
     fail(`--orientation must be one of ${ORIENTATIONS.join(', ')}`);
   }
@@ -511,6 +520,7 @@ export async function captureDeviceFrames({
     brush,
     orientation,
     theme,
+    gestureRepeats: repeats,
     ready,
     nativeApp,
     requirePageIdentity,

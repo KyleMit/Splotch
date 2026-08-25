@@ -800,6 +800,53 @@ describe('deployment matrix report', () => {
   });
 });
 
+// Issue 1297: the gesture-repeat count decides a cell's first-touch-to-repeat
+// mix, so runs at different recorded counts measured different quantities. The
+// matrix publishes each run's count and refuses to fold two different ones; a
+// run predating the field (null) proves nothing and folds as before.
+describe('the gesture-repeat contract in a folded cell', () => {
+  function writeDrawingCapture(directory, name, gestureRepeats) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gestureRepeats,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  it('publishes each run’s recorded count and refuses to fold two different ones', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const ten = writeDrawingCapture(directory, 'pen-ten.json', 10);
+    const legacy = writeDrawingCapture(directory, 'pen-legacy.json', undefined);
+    const modesWith = (pen) => [
+      capturedManifestMode(modeSpecs[0], { drawing: { pen } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    const matrix = normalizeMatrix(manifest(modesWith([ten, legacy])), directory);
+    const runs = matrix.targets[0].modes[0].drawing.pen.runs;
+    expect(runs.map((run) => run.gestureRepeats)).toEqual([10, null]);
+
+    const three = writeDrawingCapture(directory, 'pen-three.json', 3);
+    expect(() => normalizeMatrix(manifest(modesWith([ten, three])), directory)).toThrow(
+      'folds captures with different gesture-repeat counts (10, 3)'
+    );
+  });
+});
+
 // Issue 1290: a gate verdict resting on one capture is a single draw from an
 // unmeasured run-to-run spread (measured once at 0.45-2.71% against a 1% gate),
 // so the matrix marks it rather than presenting it as established. The verdict

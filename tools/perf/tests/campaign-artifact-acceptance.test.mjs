@@ -9,6 +9,7 @@ import {
   OFF_REFRESH_REGIME,
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
+  WRONG_GESTURE_REPEATS,
 } from '../lib/campaign-ledger.mjs';
 import { cellInspection, inspectArtifact } from '../run-campaign.mjs';
 
@@ -136,6 +137,64 @@ describe('inspectArtifact', () => {
         ok: true,
         status: COMPLETE,
       });
+    });
+  });
+});
+
+// Issue 1297: the repeat count decides how much of a cell is first-touch work
+// versus amortised repeat work, so a banked capture recording a count other than
+// the plan's contract measured a different quantity and must be recaptured, not
+// folded. An artifact predating the field proves nothing either way and is
+// accepted — refusing it would strand every historical capture.
+describe('the gesture-repeat contract', () => {
+  it('refuses a banked capture recording a different count, and says both counts', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: 3 }), 'web', {
+        verdictRequired: true,
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats: 3 });
+  });
+
+  it('accepts the contract count wherever the runner filed it', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: 10 }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, automation: { gestureRepeats: 10 } }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, automation: { gestureRepeats: 3 } }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS });
+  });
+
+  it('does not reject an artifact predating the field, nor a cell with no contract', () => {
+    expect(
+      inspectArtifact(artifactAt(scoreable), 'web', { expectedGestureRepeats: 10 })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: 3 }), 'web')).toMatchObject({
+      ok: true,
+      status: COMPLETE,
+    });
+  });
+
+  it('reaches the check through cellInspection from the plan cell', () => {
+    const cell = {
+      artifact: artifactAt({ ...scoreable, gestureRepeats: 3 }),
+      reportsFidelity: false,
+      reportsRefreshRegime: false,
+      gestureRepeats: 10,
+    };
+
+    expect(cellInspection(cell, { runtime: 'web', refreshRegime: '60hz' })).toMatchObject({
+      ok: false,
+      status: WRONG_GESTURE_REPEATS,
     });
   });
 });

@@ -432,6 +432,12 @@ describe('what a saved artifact can prove about its own theme', () => {
     expect(drivenCaptureArtifact({ ...common, ready: {} }).observedTheme).toBeNull();
     expect(handCaptureArtifact({ ...common, ready: undefined }).observedTheme).toBeNull();
   });
+
+  // Issue 1297: the repeat count is measurement provenance — campaign acceptance
+  // compares it against the plan's contract, so the artifact has to carry it.
+  it('records the gesture-repeat count the run was driven at', () => {
+    expect(drivenCaptureArtifact({ ...common, ready, gestureRepeats: 10 }).gestureRepeats).toBe(10);
+  });
 });
 
 // The cross-run race, which produced eleven artifacts whose mode came from one

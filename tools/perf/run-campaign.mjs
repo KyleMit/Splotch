@@ -40,6 +40,7 @@ import {
   OFF_REFRESH_REGIME,
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
+  WRONG_GESTURE_REPEATS,
   formatLedgerRow,
   nextAction,
   parseLedger,
@@ -76,13 +77,24 @@ export function cellInspection(cell, { runtime, refreshRegime }) {
   return inspectArtifact(cell.artifact, runtime, {
     verdictRequired: cell.reportsFidelity,
     expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
+    expectedGestureRepeats: cell.gestureRepeats ?? null,
   });
+}
+
+// The repeat count a drawing capture recorded, wherever its runner filed it: the
+// split transport writes it at the top level, the Appium screen runner inside
+// `automation`. Null means the artifact predates the field (or the runner has no
+// gesture plan), which acceptance deliberately does not reject — refusing every
+// historical artifact would force a full recapture to prove what was already
+// driven at the contract count.
+function recordedGestureRepeats(artifact) {
+  return artifact?.gestureRepeats ?? artifact?.automation?.gestureRepeats ?? null;
 }
 
 export function inspectArtifact(
   path,
   runtime,
-  { verdictRequired = false, expectedRefreshRegime = null } = {}
+  { verdictRequired = false, expectedRefreshRegime = null, expectedGestureRepeats = null } = {}
 ) {
   const full = absolute(path);
   if (!existsSync(full)) return { ok: false, status: FAILED };
@@ -93,6 +105,14 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
+  const recordedRepeats = recordedGestureRepeats(artifact);
+  if (
+    expectedGestureRepeats !== null &&
+    recordedRepeats !== null &&
+    recordedRepeats !== expectedGestureRepeats
+  ) {
+    return { ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats };
+  }
   if (!artifactPassedFidelity(artifact, { verdictRequired })) {
     return {
       ok: false,
@@ -304,6 +324,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         console.log(
           `RETRY ${cell.id} — measured at ${describeRefreshRegime(inspected.regime)}, ` +
             'which this target is not scored against'
+        );
+      } else if (inspected.status === WRONG_GESTURE_REPEATS) {
+        console.log(
+          `RETRY ${cell.id} — captured at ${inspected.recordedRepeats} gesture repeats, ` +
+            `not the campaign contract of ${cell.gestureRepeats}`
         );
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);

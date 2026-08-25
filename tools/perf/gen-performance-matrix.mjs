@@ -258,6 +258,11 @@ function normalizeDrawingRun(
   return {
     source,
     productCommit,
+    // The repeat count the gesture plan replayed (issue 1297): first-contact
+    // costs amortise across repeats, so runs at different counts measured
+    // different mixes and are not comparable. Null for artifacts predating the
+    // field.
+    gestureRepeats: profile.gestureRepeats ?? profile.automation?.gestureRepeats ?? null,
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
@@ -345,6 +350,19 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
           captureRuntime: CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? DEFAULT_CAPTURE_RUNTIME,
         })
       );
+      // Two recorded counts in one cell means two instruments folded into one
+      // number, which is issue 1297's defect; refusing is the fail-fast. A null
+      // (an artifact predating the field) proves nothing either way and is
+      // deliberately not treated as a conflict — rejecting it would strand every
+      // historical capture.
+      const repeatCounts = [
+        ...new Set(runs.map((run) => run.gestureRepeats).filter(Number.isFinite)),
+      ];
+      if (repeatCounts.length > 1) {
+        throw new Error(
+          `${mode.id} ${brush} folds captures with different gesture-repeat counts (${repeatCounts.join(', ')}) — their first-touch-to-repeat mixes are not comparable`
+        );
+      }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
   );

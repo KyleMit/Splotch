@@ -120,6 +120,9 @@ export async function verifyAndroidInput({
   repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
+  if (!Number.isSafeInteger(repeats) || repeats < 1) {
+    fail('--gesture-repeats must be a positive integer');
+  }
   if (!address) fail('no non-loopback IPv4 address found — pass --host-address=');
 
   const { server, state } = createFloorControlHost({ log: () => {} });
