@@ -10,6 +10,18 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  # Fires the WebKit commit gates on demand — they otherwise run only
+  # post-merge (fast) and on release tags (full), so exercising the gate
+  # itself (a threshold change, a #1250-class investigation) previously
+  # required a merge or a tag. A dispatch also runs the standard suite, since
+  # every other job's condition already admits non-push events.
+  workflow_dispatch:
+    inputs:
+      gate:
+        description: Which WebKit commit gate(s) to run
+        type: choice
+        options: [fast, full, both]
+        default: both
 
 permissions:
   actions: read
@@ -268,7 +280,9 @@ jobs:
   # the failure path files an issue rather than relying on someone noticing.
   webkit-commit-gate-fast:
     name: WebKit commit gate (fast)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && contains(fromJSON('["fast", "both"]'), inputs.gate))
     runs-on: macos-latest
     timeout-minutes: 15
     # Serialized across commits, deliberately against the per-SHA workflow group
@@ -342,7 +356,9 @@ jobs:
 
   webkit-commit-gate-full:
     name: WebKit commit gate (full)
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && contains(fromJSON('["full", "both"]'), inputs.gate))
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
