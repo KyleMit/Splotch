@@ -12,8 +12,8 @@
 // pointermove, served from this host — so the answer is about the input path
 // alone. A slow app cannot make this fail and a fast one cannot make it pass,
 // and it needs no product build.
-import { networkInterfaces } from 'node:os';
-import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import { argFlag, capture, fail, isMain, runMain, sleep, tryCapture } from '../../lib/proc.mjs';
+import { lanAddresses } from '../../lib/net.mjs';
 import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
@@ -39,14 +39,12 @@ const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 
 // The device loads this over the LAN, so loopback is useless. Picked rather than
 // required, because a wrong guess here fails as "the page never loaded" and
-// costs far more to diagnose than it saves.
+// costs far more to diagnose than it saves. Delegates to the shared enumerator
+// rather than re-deriving: a local copy that skipped its link-local filter
+// agreed with it only by OS enumeration order, and the USB-tethered iPad's
+// 169.254 interface sits on exactly this rig.
 export function lanAddress() {
-  for (const addresses of Object.values(networkInterfaces())) {
-    for (const address of addresses ?? []) {
-      if (address.family === 'IPv4' && !address.internal) return address.address;
-    }
-  }
-  return null;
+  return lanAddresses()[0] ?? null;
 }
 
 async function pollFor(callback, timeoutMs) {
@@ -59,9 +57,65 @@ async function pollFor(callback, timeoutMs) {
   return null;
 }
 
+// The same restored-tab race the capture runner guards against: session
+// restore across the force-stop can front a stale tab while the verify page
+// loads behind it, and the verifier then reports zero pointer input on a
+// healthy rig. Genuinely best-effort, which capture() cannot be — its failure
+// path is process.exit, which no catch intercepts, and a bound forward port
+// once killed a whole preflight through exactly that combination. Every step
+// here reports and continues; the zero-input verdict downstream names the
+// failure. --no-rebind refuses to steal a forward another session owns, and
+// the removal runs in finally so nothing stays attached while input is
+// measured.
+export async function guardVerifyForeground({
+  serial,
+  cdpPort,
+  hostname,
+  nonce,
+  forward = tryCapture,
+  litterClearer = clearToolingLitter,
+  activate = activateChromePage,
+}) {
+  const bound = forward('adb', [
+    '-s',
+    serial,
+    'forward',
+    '--no-rebind',
+    `tcp:${cdpPort}`,
+    'localabstract:chrome_devtools_remote',
+  ]);
+  if (!bound.ok) {
+    console.log(
+      `  (tab guard skipped: forward tcp:${cdpPort} unavailable — ${bound.stderr.trim()})`
+    );
+    return { guarded: false };
+  }
+  try {
+    const cdpBase = `http://127.0.0.1:${cdpPort}`;
+    const cleared = await litterClearer({ cdpBase, hostname, nonce });
+    const fronted = await activate({ cdpBase, nonce, param: 'verify' });
+    if (!fronted.activated) {
+      console.log(
+        `  (could not identify the verify page among ${fronted.pages} tab(s); ` +
+          `cleared ${cleared.closed} leftover(s))`
+      );
+    }
+    return { guarded: true, cleared: cleared.closed, activated: fronted.activated };
+  } catch (error) {
+    console.log(`  (tab guard unavailable: ${error?.message ?? error})`);
+    return { guarded: false };
+  } finally {
+    forward('adb', ['-s', serial, 'forward', '--remove', `tcp:${cdpPort}`]);
+  }
+}
+
 export async function verifyAndroidInput({
   serial = argFlag('device-serial'),
   port = Number(argFlag('port', DEFAULT_PORT)),
+  // The caller that knows better passes the RESOLVED port — prepare-capture
+  // shifts this role off a held 9224, and a hardcoded default here would bind
+  // the port the preflight just said it was avoiding.
+  cdpPort = Number(argFlag('cdp-port', PORT_ROLES.androidCdp.port)),
   address = argFlag('host-address', lanAddress()),
   repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
 } = {}) {
@@ -88,33 +142,17 @@ export async function verifyAndroidInput({
       'com.android.chrome',
     ]);
     await sleep(PAGE_SETTLE_MS);
-    // The same restored-tab race the capture runner guards against: session
-    // restore across the force-stop can front a stale tab while this page
-    // loads behind it, and the verifier then reports zero pointer input on a
-    // healthy rig — observed on the preflight itself (PR 1320 review). Clear
-    // this transport's own leftovers on the floor origin and front the run
-    // page; best-effort, since the zero-input verdict below names the failure.
-    try {
-      const cdpPort = PORT_ROLES.androidCdp.port;
-      adb(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
-      const cdpBase = `http://127.0.0.1:${cdpPort}`;
-      const cleared = await clearToolingLitter({ cdpBase, hostname: address, nonce });
-      const fronted = await activateChromePage({ cdpBase, nonce, param: 'verify' });
-      adb(serial, ['forward', '--remove', `tcp:${cdpPort}`]);
-      if (!fronted.activated) {
-        console.log(
-          `  (could not identify the verify page among ${fronted.pages} tab(s); ` +
-            `cleared ${cleared.closed} leftover(s))`
-        );
-      }
-    } catch (error) {
-      console.log(`  (tab activation unavailable: ${error?.message ?? error})`);
-    }
+    await guardVerifyForeground({ serial, cdpPort, hostname: address, nonce });
 
     const ready = await pollFor(
       async () => (await fetch(`${host}/__probe/state`).then((r) => r.json())).ready,
       READY_TIMEOUT_MS
     );
+    // Chrome lazy-restores tabs across the whole readiness window, so the
+    // capture path fronts its page again right before dispatching — a
+    // preflight proves the operations it performs, so this one performs the
+    // same two.
+    if (ready) await guardVerifyForeground({ serial, cdpPort, hostname: address, nonce });
     if (!ready) {
       fail(
         `the floor control never reported ready on http://${address}:${port} — ` +

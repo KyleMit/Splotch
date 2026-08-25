@@ -15,7 +15,16 @@
 // through it cannot be scored. This path clears the band.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  argFlag,
+  capture,
+  fail,
+  isMain,
+  ROOT,
+  runMain,
+  sleep,
+  tryCapture,
+} from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { nativeCanvasBounds, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
@@ -119,6 +128,7 @@ export function androidDriver({
   nativeApp,
   cdpPort,
   exec = adb,
+  forward = tryCapture,
   activate = activateChromePage,
   litterClearer = clearToolingLitter,
 }) {
@@ -129,11 +139,28 @@ export function androidDriver({
   // OWN litter removes the pile the restore re-fronts from — activation alone
   // lost that race twice while reporting success — and activating the run's
   // page then fails benignly: an unidentifiable page is left alone and the
-  // zero-input check after dispatch is the enforcement.
+  // zero-input check after dispatch is the enforcement. The forward runs
+  // through the reporting runner, never capture(): a guard whose failure path
+  // is process.exit is not best-effort, and --no-rebind refuses to steal a
+  // forward another session owns.
   const frontRunPage = async (moment) => {
     if (nativeApp) return;
+    const bound = forward('adb', [
+      '-s',
+      serial,
+      'forward',
+      '--no-rebind',
+      `tcp:${cdpPort}`,
+      'localabstract:chrome_devtools_remote',
+    ]);
+    if (!bound.ok) {
+      console.log(
+        `tab guard skipped ${moment}: forward tcp:${cdpPort} unavailable (${bound.stderr.trim()}) — ` +
+          'a restored tab may hold the foreground; the zero-input check will catch it'
+      );
+      return;
+    }
     try {
-      exec(serial, ['forward', `tcp:${cdpPort}`, 'localabstract:chrome_devtools_remote']);
       const cdpBase = `http://127.0.0.1:${cdpPort}`;
       const cleared = await litterClearer({ cdpBase, hostname: toolingHostname, nonce });
       if (cleared.closed > 0) {
@@ -178,11 +205,7 @@ export function androidDriver({
       if (!nativeApp) {
         // Nothing may stay attached while input is measured; a forward that was
         // never established (activation unavailable) has nothing to remove.
-        try {
-          exec(serial, ['forward', '--remove', `tcp:${cdpPort}`]);
-        } catch {
-          /* no forward to remove */
-        }
+        forward('adb', ['-s', serial, 'forward', '--remove', `tcp:${cdpPort}`]);
       }
       const instructions = androidGestureInstructions(trustedGestureActions(bounds, repeats, 0), {
         densityScale,

@@ -24,6 +24,8 @@ import {
   toolingLitter,
 } from '../split-capture/lib/chrome-tabs.mjs';
 import { androidDriver, zeroInputProblem } from '../split-capture/capture-device-frames.mjs';
+import { guardVerifyForeground } from '../split-capture/verify-android-input.mjs';
+import { STAND_DOWN_PATH } from '../split-capture/lib/chrome-tabs.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
@@ -701,11 +703,17 @@ describe('the wiring that fronts the page and judges the input', () => {
     const execCalls = [];
     const activateCalls = [];
     const litterCalls = [];
+    const forwardCalls = [];
     return {
       execCalls,
       activateCalls,
       litterCalls,
+      forwardCalls,
       exec: (serial, args) => execCalls.push(args.join(' ')),
+      forward: (cmd, args) => {
+        forwardCalls.push(`${cmd} ${args.join(' ')}`);
+        return { ok: true, stdout: '', stderr: '' };
+      },
       activate: async (options) => {
         activateCalls.push(options);
         return { activated: true, pages: 1 };
@@ -745,11 +753,14 @@ describe('the wiring that fronts the page and judges the input', () => {
 
     expect(deps.activateCalls.map((call) => call.nonce)).toEqual(['run-7', 'run-7']);
     expect(deps.litterCalls.map((call) => call.hostname)).toEqual(['host', 'host']);
-    const forwards = deps.execCalls.filter((call) => call.startsWith('forward'));
-    expect(forwards).toEqual([
-      'forward tcp:9224 localabstract:chrome_devtools_remote',
-      'forward tcp:9224 localabstract:chrome_devtools_remote',
-      'forward --remove tcp:9224',
+    // --no-rebind refuses to steal a forward another session owns, and the
+    // forward never routes through capture(), whose failure path is
+    // process.exit — the combination that once killed a preflight.
+    expect(deps.execCalls.some((call) => call.startsWith('forward'))).toBe(false);
+    expect(deps.forwardCalls).toEqual([
+      'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
+      'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
+      'adb -s s forward --remove tcp:9224',
     ]);
   });
 
@@ -781,7 +792,7 @@ describe('the wiring that fronts the page and judges the input', () => {
 
     expect(deps.activateCalls).toEqual([]);
     expect(deps.litterCalls).toEqual([]);
-    expect(deps.execCalls.some((call) => call.startsWith('forward'))).toBe(false);
+    expect(deps.forwardCalls).toEqual([]);
   });
 
   it('fails a zero-event dispatch and lets everything else decide downstream', () => {
@@ -835,5 +846,108 @@ describe('the pulse the probe host relays', () => {
     } finally {
       await new Promise((resolve) => server.close(resolve));
     }
+  });
+});
+
+describe('the stand-down husk contract', () => {
+  // Three consumers of one path: the bootstrap that navigates there, the hosts
+  // that must serve it inertly, and the litter matcher. A host missing the
+  // route proxies the path to the app, gets a 404 page back WITH the bootstrap
+  // injected, and the "inert" husk becomes a self-reloading page on the device
+  // being measured — so each side is pinned against the shared constant.
+  it('the bootstrap stands stale pages down onto the shared path', () => {
+    expect(pageBootstrapSource()).toContain(`location.replace('${STAND_DOWN_PATH}')`);
+    expect(pageBootstrapSource()).not.toContain("location.replace('about:blank')");
+  });
+
+  it('the probe host serves the husk inertly instead of proxying it', async () => {
+    const { server } = createProbeHost({ upstream: 'http://127.0.0.1:1', log: () => {} });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+      const { port } = server.address();
+      const response = await fetch(`http://127.0.0.1:${port}${STAND_DOWN_PATH}`);
+      const body = await response.text();
+      // The unreachable upstream proves this did not proxy; a bootstrap tag
+      // in the body would prove the husk can resurrect itself.
+      expect(response.status).toBe(200);
+      expect(body).not.toContain('/__probe/bootstrap.js');
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  it('the floor-control host serves the husk inertly instead of its live page', async () => {
+    const { server } = createFloorControlHost({ log: () => {} });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+      const { port } = server.address();
+      const body = await fetch(`http://127.0.0.1:${port}${STAND_DOWN_PATH}`).then((r) => r.text());
+      expect(body).not.toContain('/__probe/ready');
+    } finally {
+      await closeFloorControlHost(server);
+    }
+  });
+});
+
+describe('the verify-foreground guard', () => {
+  const deps = (overrides = {}) => {
+    const forwardCalls = [];
+    const litterCalls = [];
+    const activateCalls = [];
+    return {
+      forwardCalls,
+      litterCalls,
+      activateCalls,
+      serial: 's',
+      cdpPort: 9234,
+      hostname: 'host',
+      nonce: 'verify-1',
+      forward: (cmd, args) => {
+        forwardCalls.push(`${cmd} ${args.join(' ')}`);
+        return { ok: true, stdout: '', stderr: '' };
+      },
+      litterClearer: async (options) => {
+        litterCalls.push(options);
+        return { closed: 2 };
+      },
+      activate: async (options) => {
+        activateCalls.push(options);
+        return { activated: true, pages: 1 };
+      },
+      ...overrides,
+    };
+  };
+
+  it('binds with no-rebind on the RESOLVED port and always removes the forward', async () => {
+    const d = deps();
+    const result = await guardVerifyForeground(d);
+
+    expect(result.guarded).toBe(true);
+    expect(d.forwardCalls).toEqual([
+      'adb -s s forward --no-rebind tcp:9234 localabstract:chrome_devtools_remote',
+      'adb -s s forward --remove tcp:9234',
+    ]);
+    expect(d.litterCalls[0]).toMatchObject({ hostname: 'host', nonce: 'verify-1' });
+    expect(d.activateCalls[0]).toMatchObject({ nonce: 'verify-1', param: 'verify' });
+  });
+
+  it('skips without touching a forward it could not bind, and never throws', async () => {
+    const d = deps({ forward: () => ({ ok: false, stdout: '', stderr: 'cannot bind listener' }) });
+    const result = await guardVerifyForeground(d);
+
+    expect(result.guarded).toBe(false);
+    expect(d.litterCalls).toEqual([]);
+  });
+
+  it('removes the forward even when the clear rejects', async () => {
+    const d = deps({
+      litterClearer: async () => {
+        throw new Error('socket not up');
+      },
+    });
+    const result = await guardVerifyForeground(d);
+
+    expect(result.guarded).toBe(false);
+    expect(d.forwardCalls.at(-1)).toBe('adb -s s forward --remove tcp:9234');
   });
 });
