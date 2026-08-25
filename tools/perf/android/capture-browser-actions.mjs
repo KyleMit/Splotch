@@ -42,6 +42,29 @@ function positiveInteger(value, name) {
   return parsed;
 }
 
+// One decision, two consumers: the settings writes and the artifact's
+// requestedHz both derive from this (ADR-0143).
+const PINNED_REFRESH_RATE_HZ = 60;
+const REFRESH_RATE_SETTINGS = ['peak_refresh_rate', 'min_refresh_rate'];
+
+// Restore args for one refresh-rate setting. Anything that is not a finite
+// number — 'null' from an unset key, and an empty read that would otherwise
+// become `settings put <name>` with a missing operand, which the device
+// rejects while allowFailure swallows it — restores by deleting the key.
+export function refreshRateRestoreArgs(name, original) {
+  return Number.isFinite(Number.parseFloat(original))
+    ? ['shell', 'settings', 'put', 'system', name, original]
+    : ['shell', 'settings', 'delete', 'system', name];
+}
+
+// The pin is proven by the display, not the settings write: these are @hide
+// keys a device may accept and ignore, and dumpsys names the rate the panel
+// is actually rendering at.
+export function renderFrameRateFrom(dumpsysOutput) {
+  const match = /renderFrameRate\s+([0-9.]+)/.exec(dumpsysOutput ?? '');
+  return match ? Math.round(Number.parseFloat(match[1])) : null;
+}
+
 function adb(deviceId, args, { allowFailure = false } = {}) {
   const result = spawnSync(ADB, [...(deviceId ? ['-s', deviceId] : []), ...args], {
     encoding: 'utf8',
@@ -231,31 +254,23 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     'accelerometer_rotation',
   ]);
   const originalRotation = adb(deviceId, ['shell', 'settings', 'get', 'system', 'user_rotation']);
-  // Pin the panel to its base 60Hz for the whole sweep. Chrome boosts an
-  // adaptive-sync panel to 120Hz around touch, and during the boost's decay
-  // the compositor presents every third vsync — a flat 25.0ms (3 x 8.33) frame
-  // cadence behind instantaneous first frames that the gates charged as
-  // dropped frames across the entire toggle/theme family (issue 1251). Pinned
-  // to 60Hz the same actions score 16.7-16.8 flat: the work was never the
-  // cost, the boost-window presentation stepping was. Drawing captures are NOT
-  // pinned — their cadence check and 120hz refresh regime need the boost.
-  const REFRESH_RATE_SETTINGS = ['peak_refresh_rate', 'min_refresh_rate'];
+  // Reads stay outside the try (the rotation-settings pattern above): a failed
+  // read throws before anything was mutated. The WRITES sit inside the try —
+  // pinning outside it opened a crash window where one setting was written and
+  // the finally never armed, capping the panel with nothing to say so, and a
+  // leaked pin fails every later drawing cell on this phone as
+  // off-refresh-regime.
   const originalRefreshRates = REFRESH_RATE_SETTINGS.map((name) =>
     adb(deviceId, ['shell', 'settings', 'get', 'system', name])
   );
   const restoreRefreshRate = () => {
     REFRESH_RATE_SETTINGS.forEach((name, index) => {
-      const original = originalRefreshRates[index];
-      const args =
-        original === 'null'
-          ? ['shell', 'settings', 'delete', 'system', name]
-          : ['shell', 'settings', 'put', 'system', name, original];
-      adb(deviceId, args, { allowFailure: true });
+      adb(deviceId, refreshRateRestoreArgs(name, originalRefreshRates[index]), {
+        allowFailure: true,
+      });
     });
   };
-  for (const name of REFRESH_RATE_SETTINGS) {
-    adb(deviceId, ['shell', 'settings', 'put', 'system', name, '60.0']);
-  }
+  let observedRefreshRateHz = null;
   let server;
   let browser;
   let cdp;
@@ -267,6 +282,24 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     join(profilePath('android-web-actions', flag('label', 'full-suite')), 'actions.json');
 
   try {
+    // Pin the panel for the whole sweep. Chrome boosts an adaptive-sync panel
+    // to 120Hz around touch, and after the tap the presentation steps down
+    // through a flat 25.0ms cadence behind instantaneous first frames — a
+    // cadence the gates charged as dropped frames across the entire
+    // toggle/theme family (issue 1251, ADR-0143). Pinned, the same actions
+    // score 16.7-16.8 flat. The pin is verified by reading the display's
+    // renderFrameRate back rather than trusting the write: these are @hide
+    // settings a device may accept and ignore, and an artifact must record
+    // what the panel actually did.
+    for (const name of REFRESH_RATE_SETTINGS) {
+      adb(deviceId, ['shell', 'settings', 'put', 'system', name, String(PINNED_REFRESH_RATE_HZ)]);
+    }
+    observedRefreshRateHz = renderFrameRateFrom(adb(deviceId, ['shell', 'dumpsys', 'display']));
+    if (observedRefreshRateHz !== PINNED_REFRESH_RATE_HZ) {
+      console.warn(
+        `refresh-rate pin not confirmed: requested ${PINNED_REFRESH_RATE_HZ}, display reports ${observedRefreshRateHz ?? 'unknown'} — the artifact records what was observed`
+      );
+    }
     server = await ensurePreviewServer(base, port, !has('no-serve'));
     adb(deviceId, [
       'shell',
@@ -375,7 +408,10 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       appUrl: base,
       transport: 'android-chrome-cdp',
       uiActivation: 'trusted-cdp-touch',
-      refreshRatePinnedHz: 60,
+      refreshRatePin: {
+        requestedHz: PINNED_REFRESH_RATE_HZ,
+        observedHz: observedRefreshRateHz,
+      },
       actions: [...actions],
       repeats,
       orientation: originalOrientation,
@@ -400,7 +436,9 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     return artifact;
   } finally {
     if (traceActive && cdp) await stopTrace(cdp).catch(() => null);
-    await browser?.close();
+    // Guarded like stopTrace: a rejected close — likeliest exactly when the
+    // device dropped mid-sweep — must not abort the adb restores below it.
+    await browser?.close().catch(() => null);
     if (target) await closeTarget(endpoint, target.id);
     adb(deviceId, ['forward', '--remove', `tcp:${cdpPort}`], { allowFailure: true });
     adb(deviceId, ['shell', 'settings', 'put', 'system', 'user_rotation', originalRotation], {

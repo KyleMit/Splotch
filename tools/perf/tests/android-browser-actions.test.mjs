@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   connectedAndroidDevices,
   isOwnedProfilerUrl,
+  refreshRateRestoreArgs,
+  renderFrameRateFrom,
 } from '../android/capture-browser-actions.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
 
@@ -92,5 +94,41 @@ describe('Playwright WebDriver trusted touch', () => {
     await expect(driver.scrollElementWithWheel('#dialog', 400)).rejects.toThrow(
       'Trusted wheel scrolling is not enabled'
     );
+  });
+});
+
+// The action sweep pins the panel to 60Hz (ADR-0143) and must restore exactly
+// what it found — including the states that are not a number. 'null' is the
+// unset key on the phone the pin was calibrated on; an empty read would
+// otherwise restore via `settings put <name>` with a missing operand, which
+// the device rejects while allowFailure swallows it, leaving the panel pinned
+// silently forever.
+describe('refresh-rate pin plumbing', () => {
+  it('restores a numeric original by writing it back', () => {
+    expect(refreshRateRestoreArgs('peak_refresh_rate', '120.0')).toEqual([
+      'shell',
+      'settings',
+      'put',
+      'system',
+      'peak_refresh_rate',
+      '120.0',
+    ]);
+  });
+
+  it.each([['null'], [''], ['undefined']])('restores %j by deleting the key', (original) => {
+    expect(refreshRateRestoreArgs('min_refresh_rate', original)).toEqual([
+      'shell',
+      'settings',
+      'delete',
+      'system',
+      'min_refresh_rate',
+    ]);
+  });
+
+  it('reads the rendered rate the display reports, not the settings write', () => {
+    const dumpsys = 'DisplayDeviceInfo{..., modeId 2, renderFrameRate 60.000004, hasArrSupport...}';
+    expect(renderFrameRateFrom(dumpsys)).toBe(60);
+    expect(renderFrameRateFrom('no such field')).toBe(null);
+    expect(renderFrameRateFrom(undefined)).toBe(null);
   });
 });
