@@ -135,10 +135,10 @@ describe('campaign plan', () => {
     }
   });
 
-  // Issue 1301: a cell with no server source falls back to its child's default
-  // port — a server the campaign never chose. The runner refuses such a plan;
-  // this pins which cells count as covered, per transport.
-  it('names every cell’s server source, and the fallback cells as null', () => {
+  // Issue 1301, resized by review: a bare Appium/CDP cell self-serves behind
+  // the build-freshness guard, so it is a warned 'guarded-default', not a
+  // refused unknown. Only a command the classifier does not know maps to null.
+  it('names every cell’s server source, with bare Appium cells as guarded defaults', () => {
     const withUrl = { ...HOST, url: 'http://127.0.0.1:4173/', deviceId: 'emulator-5554' };
     const bare = plan('android-emulator-web', { modes: ['portrait-light'] });
     const served = plan('android-emulator-web', { modes: ['portrait-light'], host: withUrl });
@@ -149,11 +149,12 @@ describe('campaign plan', () => {
     const native = plan('ipad-simulator-native', { modes: ['portrait-light'] });
     const desktop = plan('mac-chrome', { modes: ['portrait-light'] });
 
-    expect(bare.map(cellServerSource)).toEqual(Array(bare.length).fill(null));
+    expect(bare.every((cell) => cellServerSource(cell) === 'guarded-default')).toBe(true);
     expect(served.every((cell) => cellServerSource(cell) === 'explicit-url')).toBe(true);
     expect(cellServerSource(split.find((cell) => cell.item === 'crayon'))).toBe('probe-host');
     expect(native.every((cell) => cellServerSource(cell) === 'native-server-url')).toBe(true);
     expect(desktop.every((cell) => cellServerSource(cell) === 'self-served')).toBe(true);
+    expect(cellServerSource({ command: 'perf:not-a-command', args: [] })).toBeNull();
   });
 
   it('rejects an unknown target, mode, or item by name', () => {

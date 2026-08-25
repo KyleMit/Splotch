@@ -612,10 +612,13 @@ recapture under the current instrument, or pass `--accept-instrument-change` to 
 cells deliberately, on record. Scorers and fidelity tables are outside the fingerprint on purpose —
 they re-derive at fold time, so changing them re-scores banked cells rather than invalidating them.
 
-The campaign also refuses a plan containing a cell that would fall back to its child's default
-server (issue 1301) — pass `--url=` so every cell measures the same build the campaign chose; only
-the desktop transport (which builds and serves its own preview) and native cells (which load their
-build-time `server.url`) are exempt.
+The campaign also names every cell's server source (issue 1301) — the dry run prints it per cell,
+and a real run WARNS about `guarded-default` cells: an Appium or CDP child given no `--url` reuses
+its default preview port only behind the build-freshness guard and otherwise serves its own fresh
+preview, so a foreign build on that port costs retries, never wrong numbers. Pass `--url=` to pin
+the server and skip those retries. Only a command the classifier does not know is refused outright,
+because nothing is proven about its fallback; desktop cells self-serve and native cells load their
+build-time `server.url`.
 
 ## Serialize the captures, but keep both devices alive
 

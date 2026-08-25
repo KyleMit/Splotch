@@ -62,9 +62,6 @@ function run(targetId, root, extra = []) {
     '--items=pen-undo',
     `--output-root=${root}/out`,
     `--ledger=${root}/ledger.tsv`,
-    // The issue-1301 guard refuses a cell that would fall back to its child's
-    // default server; these tests are about resume policy, so they satisfy it.
-    '--url=http://127.0.0.1:4173/',
     ...extra,
   ]);
 }

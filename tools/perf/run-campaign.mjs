@@ -208,19 +208,29 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     },
   });
 
-  // Issue 1301: a cell given no server falls back to its own default port,
-  // which the campaign never chose and another worktree may hold — the
-  // build-freshness guard makes that loud, but only after burning the cell's
-  // attempts (twelve, on 2026-08-24). The fail-fast names the cells and the
-  // flag, the same shape as the --device-id guard from #1283. Checked on the
-  // dry run too, because the dry run is exactly where an operator looks for
-  // what a campaign will do, and the ABSENCE of a flag was invisible there.
-  const serverlessCells = plan.filter((cell) => cellServerSource(cell) === null);
-  if (serverlessCells.length) {
+  // Issue 1301, resized by review: a 'guarded-default' child reuses its default
+  // preview port only behind the build-freshness guard and otherwise spawns its
+  // own fresh preview, so the exposure is burned retries when another worktree
+  // holds the port (twelve, on 2026-08-24) — never wrong numbers. That earns a
+  // WARNING naming the cells and the flag, not a refusal; refusing also broke
+  // dry runs, which are planning output and must always print the plan. Only a
+  // cell whose server source is unknown is refused — nothing is proven about
+  // its fallback.
+  const unknownServerCells = plan.filter((cell) => cellServerSource(cell) === null);
+  if (unknownServerCells.length) {
     fail(
-      `these cells would fall back to their child's default server, which this campaign is not ` +
-        `itself using:\n${serverlessCells.map((cell) => `  ${cell.id} (${cell.command})`).join('\n')}\n` +
-        `Pass --url=<the preview URL this campaign should measure> so every cell measures the same build.`
+      `these cells' commands have no known server source, so nothing is proven about their ` +
+        `fallback:\n${unknownServerCells.map((cell) => `  ${cell.id} (${cell.command})`).join('\n')}\n` +
+        `Teach cellServerSource the command, or pass --url= explicitly.`
+    );
+  }
+  const guardedDefaultCells = plan.filter((cell) => cellServerSource(cell) === 'guarded-default');
+  if (guardedDefaultCells.length) {
+    console.log(
+      `WARN  ${guardedDefaultCells.length} cell(s) will reuse-or-serve their child's default ` +
+        `preview port (${[...new Set(guardedDefaultCells.map((cell) => cell.command))].join(', ')}). ` +
+        'A foreign build on that port is refused per attempt rather than measured — pass ' +
+        '--url=<preview URL> to pin the server and skip those retries.'
     );
   }
 
@@ -248,7 +258,12 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   if (has('dry-run')) {
     console.log(`${targetId}: ${plan.length} cells`);
     for (const cell of plan) {
-      console.log(`  ${cell.id.padEnd(26)} ${cell.command}  -> ${cell.artifact}`);
+      // The server source is printed because the ABSENCE of a flag is invisible
+      // in an argument listing — the dry run is where an operator looks for
+      // what a campaign will do, and a guarded default deserves to be seen.
+      console.log(
+        `  ${cell.id.padEnd(26)} ${cell.command}  [server: ${cellServerSource(cell)}]  -> ${cell.artifact}`
+      );
     }
     return { plan, ran: [] };
   }

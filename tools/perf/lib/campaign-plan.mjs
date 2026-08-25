@@ -230,14 +230,17 @@ export function commandReportsRefreshRegime(command) {
   return REFRESH_REGIME_REPORTING_COMMANDS.has(command);
 }
 
-// Where a planned cell's child will get its server from — or null when the
-// child would fall back to its own default port, which is a server the
-// campaign never chose and another worktree may hold. Issue 1301: the third
-// instance of one family (a campaign input a child needs, that the parent has,
-// and does not pass — after #1283's --device-serial and the probe host), found
-// when four action cells burned twelve attempts against another checkout's
-// build on the default preview port. The desktop transport is exempt by
-// construction: it builds and serves its own preview.
+// Where a planned cell's child will get its server from. Issue 1301: a campaign
+// input a child needs, that the parent has, and does not pass (the third of
+// the #1283 family) — four action cells burned twelve attempts against another
+// checkout's build on the default preview port. Every source is safe against
+// WRONG data — 'guarded-default' children call ensurePreviewServer, which
+// reuses an already-serving default port only after the build-freshness guard
+// and otherwise spawns their own fresh preview — so a guarded default costs
+// retries when another worktree holds the port, never wrong numbers. The
+// campaign therefore WARNS about guarded defaults (recommending --url) rather
+// than refusing them; only a command this function does not know is refused,
+// because nothing is proven about its fallback.
 export function cellServerSource(cell) {
   if (cell.command === DESKTOP_SCREEN_COMMAND || cell.command === DESKTOP_ACTIONS_COMMAND) {
     return 'self-served';
@@ -245,6 +248,13 @@ export function cellServerSource(cell) {
   if (cell.args.some((arg) => arg.startsWith('--url='))) return 'explicit-url';
   if (cell.args.some((arg) => arg.startsWith('--host='))) return 'probe-host';
   if (cell.args.includes('--native-app')) return 'native-server-url';
+  if (
+    cell.command === SCREEN_COMMAND ||
+    cell.command === ACTIONS_APPIUM_COMMAND ||
+    cell.command === ACTIONS_CDP_COMMAND
+  ) {
+    return 'guarded-default';
+  }
   return null;
 }
 
