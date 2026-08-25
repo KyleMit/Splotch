@@ -88,6 +88,16 @@
       window.addEventListener(type, windowActivity, true);
       action.listeners.push({ target: window, type, listener: windowActivity });
     }
+    // The engine keys its paper view off the Screen Orientation API, whose
+    // `change` event is a different target from window `orientationchange` —
+    // without this the one rotation signal the app actually consumes would be
+    // invisible in the diagnostics ADR-0142 points at.
+    const screenOrientation = window.screen?.orientation;
+    if (screenOrientation?.addEventListener) {
+      const listener = () => recordActivity(action, 'screen-orientation-change');
+      screenOrientation.addEventListener('change', listener, true);
+      action.listeners.push({ target: screenOrientation, type: 'change', listener });
+    }
   }
 
   function stopActivityTracking(action) {

@@ -755,15 +755,11 @@ async function measureClear(client, sessionId, execute, label = 'clear drawing')
 
 async function measureRotation(client, sessionId, execute, from, to, label) {
   await ensureActionProbe(execute);
-  // Anchored at `resize`, not `orientationchange`: Safari dispatches
-  // orientationchange before performing its own rotation transition and
-  // re-layout, so a clock started there charges the page for a window in
-  // which its new geometry does not exist — floor-measured at 11ms for the
-  // cheapest possible page, 23-24ms for this app, first paint 0-1ms after
-  // resize on both. Native WebViews fire no orientationchange at all, so this
-  // anchor is also what makes web and native rotation cells comparable. The
-  // orientationchange timestamp still lands in the sample's activities for
-  // diagnostics. See the rotation-anchor ADR.
+  // Anchored at `resize` only: which of orientationchange/resize arrives first
+  // is a per-runtime race, and the loser of that race is the browser's own
+  // rotation transition — a window the page cannot paint into. ADR-0142 holds
+  // the measurements and the per-runtime meaning of the first-frame gate under
+  // this anchor. The orientation events still land in the sample's activities.
   await execute(
     `return window.__actionProbe.beginExternal(${JSON.stringify(label)}, ['resize']);`
   );

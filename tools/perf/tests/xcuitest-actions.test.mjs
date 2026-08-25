@@ -567,6 +567,28 @@ describe('trusted action setup', () => {
     expect(setup).toContain('Settings does not expose the persisted rotation lock control');
   });
 
+  // ADR-0142: rotation's clock starts at resize alone — which of the two
+  // orientation events arrives first is a per-runtime race, and anchoring on
+  // the race charged Safari and Android pages for the browser's own rotation
+  // transition. The probe must keep recording both events as activities, plus
+  // the Screen Orientation change the engine actually consumes, or the ADR's
+  // "still visible in artifacts" promise silently breaks.
+  it('anchors rotation measurement at resize alone, with orientation events kept as diagnostics', () => {
+    const rotationStart = IPAD_ACTIONS.indexOf('async function measureRotation(');
+    const rotationEnd = IPAD_ACTIONS.indexOf('export async function runActionSweep', rotationStart);
+    const rotation = IPAD_ACTIONS.slice(rotationStart, rotationEnd);
+    const arming = rotation.slice(
+      rotation.indexOf('beginExternal'),
+      rotation.indexOf(');', rotation.indexOf('beginExternal'))
+    );
+
+    expect(rotationStart).toBeGreaterThan(-1);
+    expect(arming).toContain("['resize']");
+    expect(arming).not.toContain('orientationchange');
+    expect(ACTION_PROBE).toContain("WINDOW_ACTIVITY_EVENTS = ['resize', 'orientationchange']");
+    expect(ACTION_PROBE).toContain("recordActivity(action, 'screen-orientation-change')");
+  });
+
   it('restores the original orientation before restoring the native rotation lock', () => {
     const cleanupStart = IPAD_ACTIONS.indexOf('function cleanup()');
     const cleanupEnd = IPAD_ACTIONS.indexOf('const onSignal', cleanupStart);
