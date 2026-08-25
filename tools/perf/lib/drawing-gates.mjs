@@ -13,12 +13,22 @@ export const LOST_FRAME_TIME_SHARE_EXCEPTIONS = {
   'ipad-device-web:crayon': {
     share: 0.015,
     reason:
-      'Crayon deposits wax through pattern-filled strokes that cannot be merged across pointermoves, ' +
+      'Crayon deposits wax through pattern-filled strokes that Safari prices per path-length, so the web build cannot merge them across pointermoves (the native WKWebView prices per op and merges per frame instead — ADR-0137 as amended), ' +
       'so it pays a per-move cost every other brush coalesces away, and mirror-by-blit already took ' +
       'it from 2.11%. Across all four orientation/theme modes its median is 1.11-1.17%, but a single ' +
       'capture of landscape-light measured 1.40% and re-measured to 1.17% over three samples. A ' +
       'matrix cell IS a single capture, so this is set above the observed single-sample excursion ' +
       'rather than above the median.',
+  },
+  'ipad-device-native:crayon': {
+    share: 0.015,
+    reason:
+      'Per-frame crayon op merging (ADR-0137 as amended, issue 1236) brought the native WKWebView ' +
+      'from a 2.14% published cell to Safari parity: three same-session samples on 2026-08-25 ' +
+      "measured 0.96/1.11/1.44%, median 1.11% — inside the web cell's own 1.11-1.17% median band " +
+      'with the same shape of single-sample excursion. The same residual per-move wax cost now ' +
+      'binds both runtimes, so the same 1.5% single-capture budget applies, set by the same ' +
+      'above-the-excursion rule.',
   },
 };
 

@@ -591,12 +591,14 @@ function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) 
 // changes. Seeds are stored per op, so every replay reproduces the splits.
 function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) {
   let batch: Point[] = [];
+  let didSplit = false;
   for (const p of points) {
     if (ps.passTracker!.advance(p) === 'split') {
       // A split flushes and resets the counter itself, so the moves in the
       // batch it closes cannot carry toward the next checkpoint.
       strokeSmoothSegments(ps, batch, 0);
       batch = [];
+      didSplit = true;
       recordCrayonFlush();
       ps.seed = crayonSeedCounter++;
       ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
@@ -604,7 +606,16 @@ function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) 
     }
     batch.push(p);
   }
-  strokeSmoothSegments(ps, batch, moveCount);
+  // Under per-frame granularity `points` spans several moves, and handing the
+  // trailing batch the WHOLE frame's moveCount re-credits the moves the split
+  // just zeroed — firing the wax checkpoint early after every split, which is
+  // the one way op merging can move a visible texture boundary. Attribute the
+  // trailing batch its share of the frame's moves instead; with one move per
+  // call (per-move granularity) this reduces to the old behavior exactly.
+  const creditedMoves = didSplit
+    ? Math.round((moveCount * batch.length) / points.length)
+    : moveCount;
+  strokeSmoothSegments(ps, batch, creditedMoves);
 }
 
 function strokeSegments(ps: PointerState, points: Point[], moveCount = 1) {
@@ -948,6 +959,10 @@ function strokeSpeed(ps: PointerState, last: Point, now: number): number {
 
 const rasterQueue = createStrokeRasterQueue<PointerState>({
   activePointers,
+  // Compile-time per-runtime choice (see CrayonOpGranularity): the WKWebView
+  // pays more per op, Safari pays more per path-length, and the measured
+  // optimum flips between them — issue 1236.
+  crayonOpGranularity: __IS_CAPACITOR__ ? 'per-frame' : 'per-move',
   paperMinEdge: () => Math.min(paper.pxW, paper.pxH),
   pointerWasResumed,
   restartStrokeIfResumed,
