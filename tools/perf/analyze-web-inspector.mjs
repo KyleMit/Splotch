@@ -152,6 +152,8 @@ for (const name of [
   'engine.undo',
   'engine.commit',
   'engine.resize',
+  'engine.resize.tiles',
+  'engine.resize.repaint',
   'engine.draw',
   'engine.scanEmpty',
   // Retained so archived recordings from the snapshot/blob renderer remain

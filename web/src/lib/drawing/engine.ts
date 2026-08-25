@@ -253,7 +253,7 @@ function setCanvasEmptyState(
       cssH: restoringPaper.cssH,
     };
     paperAngle = restoringPaper.angle;
-    resizeCanvas(undefined, false, repaintDeferredToRestore);
+    resizeCanvas(undefined, { repaintDeferredToRestore });
   }
   callbacks.onCanvasEmptyChange?.(empty);
   // A blank canvas frees the locked paper to match the live viewport again
@@ -399,22 +399,25 @@ function applyPaperView(presentation: PaperPresentation) {
 // An unmeasured rect is refused rather than adopted — see canvasMeasure.ts for
 // why rebuilding from one is unrecoverable — and the rebuild re-arms for the
 // first layout that gives the canvas a box.
-// `repaintDeferredToRestore` is undo's pre-restore telling the resize that an
-// immediate snapshot restore (or its repaint fallback) owns the next paint: the
-// full history repaint here would render through the command about to be popped
-// — blank tiles for an undone clear — and be overwritten within the same frame.
-// That wasted replay was the dominant term of the ~100 ms blank-rotation undo
-// frame on tablet-size canvases (issue 1198).
+interface ResizeCanvasOptions {
+  repaintRecoveredPixels?: boolean;
+  // Undo's pre-restore telling the resize that an immediate snapshot restore
+  // (or its repaint fallback) owns the next paint: the full history repaint
+  // here would render through the command about to be popped — blank tiles for
+  // an undone clear — and be overwritten within the same frame (issue 1198).
+  // Only valid for the SYNCHRONOUS call from undo(): the deferred-rect retry
+  // below deliberately drops it, because by the time that retry fires the
+  // undo's restore has long since painted and this resize's backing wipe
+  // needs the repaint — threading the flag there left a permanent blank
+  // canvas with canvasEmpty false.
+  repaintDeferredToRestore?: boolean;
+}
+
 function resizeCanvas(
   rect: DOMRect = canvas.getBoundingClientRect(),
-  repaintRecoveredPixels = false,
-  repaintDeferredToRestore = false
+  { repaintRecoveredPixels = false, repaintDeferredToRestore = false }: ResizeCanvasOptions = {}
 ) {
-  if (
-    !measure.accept(rect, (measured) =>
-      resizeCanvas(measured, repaintRecoveredPixels, repaintDeferredToRestore)
-    )
-  ) {
+  if (!measure.accept(rect, (measured) => resizeCanvas(measured, { repaintRecoveredPixels }))) {
     return;
   }
   if (PERF_MARKS) performance.mark('engine.resize:start');
@@ -494,7 +497,7 @@ function resyncOnReentry() {
     viewport.width !== w || viewport.height !== h || resizedAngle !== currentScreenAngle();
   if (stale) {
     const contextsRecovered = recoverTiledRendererIfNeeded(false);
-    resizeCanvas(rect, contextsRecovered);
+    resizeCanvas(rect, { repaintRecoveredPixels: contextsRecovered });
   } else {
     recoverTiledRendererIfNeeded();
     refreshCanvasRect(rect);
