@@ -24,7 +24,12 @@ lower branch, a force-push that drops a commit, a merge of `main` into a middle 
 Corollary that is easy to miss: this rule collides head-on with `address-pr-review`, whose setup
 step says to check out the reviewed PR's branch and commit fixes there. Left unstated, an agent
 running both skills does the natural thing and desynchronizes the stack. The skill names the
-collision explicitly instead of trusting the reader to notice.
+collision explicitly instead of trusting the reader to notice. Later resolved at the source as well:
+`address-pr-review` grew a stacked-campaign mode that detects chained bases itself, sweeps feedback
+from the whole campaign, and lands every fix in one feedback PR at the tip, reused across rounds —
+with a carve-out for `implement-issue-stack`'s per-issue rounds, which address the tip PR before
+anything stacks above it. Both skills state the rule; the collision survives here as the reason the
+mode exists.
 
 ## Where the merged packets disagreed, and how it was resolved
 

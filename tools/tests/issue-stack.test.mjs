@@ -95,7 +95,7 @@ describe('Codex policy installation', () => {
 });
 
 describe('skill contracts', () => {
-  it('reviews every PR before final CI and preserves interactive review defaults', () => {
+  it('reviews every PR before final CI and preserves the review-mode contracts', () => {
     const stackSkill = readFileSync(
       join(repositoryRoot, '.agents/skills/implement-issue-stack/SKILL.md'),
       'utf8'
@@ -141,7 +141,8 @@ describe('skill contracts', () => {
     expect(stackSkill).toContain('Begin the next pending issue immediately');
     expect(stackSkill).toContain('--end-session');
     expect(leaveReview).toContain('mode=post-comments');
-    expect(leaveReview).toMatch(/If no mode is\s+specified/);
+    expect(leaveReview).toMatch(/Posting is the default/);
+    expect(leaveReview).toMatch(/means exactly this\s+default/);
     expect(leaveReview).toContain('`git diff <base-oid>...<head-oid>`');
     expect(leaveReview).not.toContain('git diff origin/main...HEAD');
     expect(addressReview).toContain('mode=autonomous');

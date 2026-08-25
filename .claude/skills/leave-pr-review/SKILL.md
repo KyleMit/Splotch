@@ -1,6 +1,6 @@
 ---
 name: leave-pr-review
-description: Splotch conventions that augment (not replace) the built-in review flow when reviewing a pull request — check out the PR branch locally for offline diffs and to run the code and empirically verify critiques, anchor every finding to a diff file + line as you analyze, present the full findings in the chat reply, then on a typed go-ahead post each one as an inline review comment (or, on request, file the findings as GitHub issues or implement them on a follow-up PR). Use in addition to the built-in review whenever asked to review a PR or leave review feedback on one.
+description: Splotch conventions that augment (not replace) the built-in review flow when reviewing a pull request — check out the PR branch locally for offline diffs and to run the code and empirically verify critiques, anchor every finding to a diff file + line as you analyze, then post the surviving findings onto the PR as a single inline-comment review; invoking the skill is itself the authorization to post publicly, and mode overrides instead keep the findings in chat, file them as GitHub issues (each blocking finding its own issue, the rest bundled into one PR-feedback issue), or implement them on a follow-up PR. Use in addition to the built-in review whenever asked to review a PR or leave review feedback on one.
 ---
 
 # Review a PR
@@ -11,14 +11,27 @@ input side of [`address-pr-review`](../address-pr-review/SKILL.md): the comments
 exactly what that skill later triages on the receiving branch, so every comment must stand on its
 own as an actionable, anchored critique.
 
-The default flow has a hard gate in the middle: **analyze and present first, post only after the
-user approves.** Nothing lands on GitHub until the user says so.
+A reviewing session may also arrive here through a handoff prompt written by
+`create-pr-feedback-handoff` — it enumerates every PR a session produced (a stacked campaign has
+several) and appends extra focus areas on top of the full sweep this skill performs.
 
-An orchestrator may invoke this skill with `mode=post-comments` after the user has already
-authorized review comments on a specific PR. That mode changes only the gate: perform the same full
-analysis, then submit a `COMMENT` review without asking again. It never authorizes approval,
-request-changes, commits, pushes, merges, closing the PR, or any action on another PR. If no mode is
-specified, use the gated default behavior above.
+**Posting is the default — invoking this skill bare is the explicit authorization to post.** A
+request to review a PR with this skill authorizes leaving the resulting comments publicly on GitHub:
+perform the full analysis below, then submit the surviving findings as a single `COMMENT` review on
+the named PR without pausing for a further go-ahead. (`mode=post-comments`, the older orchestrator
+spelling, means exactly this default.) The authorization covers `COMMENT` reviews on that PR only —
+never approval, request-changes, commits, pushes, merges, closing the PR, or any action on another
+PR.
+
+Mode overrides redirect where the findings land instead of the PR:
+
+* **`mode=chat`** — analyze identically, present the findings in the chat reply, post nothing (see
+  "`mode=chat`" below). Use it whenever the user's phrasing withholds posting — "review but don't
+  post", "what would you flag?", "show me first".
+* **`mode=issues`** — file the findings as GitHub backlog issues: each `blocking` finding gets its
+  own issue, everything else bundles into one general PR-feedback issue (see "`mode=issues`" below).
+* A request to implement the findings skips commenting and fixes them on a follow-up PR (see
+  "Implementing the fixes instead" below).
 
 ## Setup — always check out the PR branch locally
 
@@ -80,27 +93,11 @@ Every finding carries, from the moment it's drafted:
 * **Concrete fix** — what to do instead. When it's a small in-place replacement, include a
   ```suggestion`` block so the author can one-click apply it.
 
-## Present findings — then stop by default
+## Posting — the default: one pending review, no further gate
 
-Show the user the full findings before anything is posted: a numbered list with severity,
-`file:line`, and the draft comment text for each, plus the overall verdict and anything destined for
-the summary body. Deliver this **as the plain chat reply — never via `AskUserQuestion`** (the
-findings are the deliverable, not a multiple-choice prompt), close by offering the next steps, and
-end the turn:
-
-* a typed affirmative — "proceed", "do it", "post them", … — posts the findings onto the PR (below);
-* "file them as issues" turns the findings into GitHub backlog issues instead (below);
-* "no, implement them" skips commenting entirely and fixes the findings on a follow-up PR (below).
-
-The user may first cull, reword, or reprioritize findings — acting only on what survives is the
-point of the gate. If the user never says go, the review stays in chat.
-
-In `mode=post-comments`, do not stop or request confirmation here. Continue directly to Posting with
-every finding that survived the adversarial self-check. An empty review is allowed only after the
-review made a serious empirical attempt to find defects; submit its verification summary in the
-review body.
-
-## Posting — one pending review, on the go-ahead
+Post every finding that survived the adversarial self-check, without stopping to ask — invoking the
+skill was the authorization. An empty review is allowed only after the review made a serious
+empirical attempt to find defects; submit its verification summary in the review body.
 
 Post as a **single review**, not N standalone comments (one notification, one atomic unit the author
 can respond to):
@@ -123,20 +120,49 @@ When the GitHub MCP is intentionally unavailable (for example, a trusted standal
 the equivalent `gh api` pending-review endpoints. Preserve the same single-review, inline-anchor,
 head-OID recheck, and `COMMENT`-only rules.
 
-Afterwards, report what was posted (comment count, severities, review event) so the author knows
-what to expect — and know that working through those comments is the job of `address-pr-review` on
-the other side.
+Afterwards, present the review in the chat reply — each finding with its severity and `file:line`,
+the review event, and the overall verdict — so the user sees what landed without opening GitHub.
+Working through those comments is the job of `address-pr-review` on the other side.
 
-## Filing as GitHub issues instead
+## `mode=chat` — present in chat, post nothing
 
-If the user asks for backlog issues rather than PR comments, create one issue per surviving finding
-in the repo's issue format (`docs/ISSUE-WORKFLOW.md` — title, body, and `type:*`/`area:*`/
-`priority:*` labels), linking the anchored code via a permalink to the PR's head SHA and referencing
-the PR it came from. Report the created issue numbers when done.
+When posting authorization is withheld — the user asked to see the review first, said not to post,
+or passed `mode=chat` — deliver the full findings as the plain chat reply **and stop**: a numbered
+list with severity, `file:line`, and the draft comment text for each, plus the overall verdict and
+anything destined for the summary body. Never deliver findings via `AskUserQuestion` — they are the
+deliverable, not a multiple-choice prompt. Close by offering the next steps, and end the turn:
+
+* a typed affirmative — "proceed", "do it", "post them", … — posts the findings onto the PR (above);
+* "file them as issues" turns the findings into GitHub backlog issues instead (below);
+* "no, implement them" skips commenting entirely and fixes the findings on a follow-up PR (below).
+
+The user may first cull, reword, or reprioritize findings — acting only on what survives is the
+point of this mode. If the user never says go, the review stays in chat.
+
+## `mode=issues` — filing as GitHub issues instead
+
+If the user asks for backlog issues rather than PR comments, split the surviving findings by
+severity:
+
+* **Each `blocking` finding gets its own issue** — that tier is independently actionable work, so
+  each one gets its own title and body in the repo's issue format (`docs/ISSUE-WORKFLOW.md` — one
+  `type:*`, applicable `area:*`, and normally `priority:high`).
+* **Everything else bundles into one general PR-feedback issue** — a single issue titled for the PR,
+  holding the remaining suggestions, nits, and questions as a checklist grouped by severity, so the
+  backlog isn't scattered with nit-sized issues.
+
+In every issue, link each finding's anchored code via a permalink to the PR's head SHA and reference
+the source PR — that reference is deliberate, so its `#`-number stays unescaped. Report the created
+issue numbers when done.
 
 ## Implementing the fixes instead
 
 If the user says to implement the findings rather than post them:
+
+Inside an active stacked campaign, this path changes shape: basing a fix-up PR on the reviewed PR's
+head would add a commit below the top of the stack once it merges — branch off the current tip and
+follow `address-pr-review`'s stacked-campaign flow (one feedback PR at the tip) instead. Outside a
+stack:
 
 1. Branch off the PR's checked-out head: `git checkout -b <head-branch>-review-fixes`.
 2. Implement each finding — smallest correct change matching the surrounding style, one commit per
