@@ -270,7 +270,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       });
     });
   };
-  let observedRefreshRateHz = null;
+  let observedRefreshRateHz;
   let server;
   let browser;
   let cdp;
