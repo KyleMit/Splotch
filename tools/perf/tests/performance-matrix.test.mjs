@@ -861,11 +861,11 @@ describe('the gesture-repeat contract in a folded cell', () => {
   });
 });
 
-// Issue 1290: a gate verdict resting on one capture is a single draw from an
-// unmeasured run-to-run spread (measured once at 0.45-2.71% against a 1% gate),
-// so the matrix marks it rather than presenting it as established. The verdict
-// itself must not change.
-describe('single-capture verdict marking', () => {
+// Issue 1290's surviving claim: the matrix publishes one capture per cell and a
+// single capture decides a pass/fail gate. Its spread figures were retracted
+// twice, so the matrix states the structural fact — prose, runCount, tooltip
+// basis — and publishes no figure. The verdict itself must not change.
+describe('single-capture verdict provenance', () => {
   const failingAggregate = (runCount) => ({
     runCount,
     paint: { p95: 30, p99: 40, max: 60 },
@@ -873,26 +873,31 @@ describe('single-capture verdict marking', () => {
     blankPassed: false,
   });
 
-  it('marks a markdown FAIL that rests on one capture and leaves multi-capture ones bare', () => {
+  it('states the single-capture basis in prose without resurrecting retracted figures', () => {
     const brushes = drawing();
     brushes.magic.aggregate = failingAggregate(1);
-    brushes.crayon.aggregate = failingAggregate(4);
-    brushes.pen.aggregate.runCount = 1;
     const matrix = normalizedMatrix([
       normalizedMode(modeSpecs[0], { drawing: brushes }),
       ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
     ]);
     const markdown = renderMarkdown(matrix);
 
-    expect(markdown).toContain('**FAIL 30 / 40 / 60 · L2.7%** _(1 capture — spread unmeasured)_');
-    expect(markdown.match(/spread unmeasured/g)).toHaveLength(1);
-    expect(markdown).toContain('ADR-0136 calls any single number from this gate provisional');
+    expect(markdown).toContain('provisional until it has been compared against the previous run');
+    expect(markdown).toContain('retracted twice');
+    expect(markdown).not.toContain('2.71');
+    expect(markdown).toContain('**FAIL 30 / 40 / 60 · L2.7%**');
   });
 
-  it('states each drawing cell’s capture basis in the plot tooltips', () => {
+  it('states each fresh cell’s capture basis in the plot tooltips, and none for preserved cells', () => {
     const brushes = drawing();
     brushes.magic.aggregate = failingAggregate(1);
     brushes.crayon.aggregate = failingAggregate(4);
+    brushes.eraser.aggregate = {
+      ...failingAggregate(1),
+      scoreable: false,
+      unscoreableReason: 'preserved: no current verdict',
+    };
+    brushes.pen.aggregate.runCount = 0;
     const matrix = normalizedMatrix([
       normalizedMode(modeSpecs[0], { drawing: brushes }),
       ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
@@ -901,6 +906,10 @@ describe('single-capture verdict marking', () => {
 
     expect(html).toContain('· 1 capture');
     expect(html).toContain('· 4 captures');
+    // A preserved cell's runCount is an inherited claim, and a zero-run cell
+    // has no basis to state — neither asserts one.
+    expect(html).not.toContain('· 0 captures');
+    expect(html.match(/capture · unscoreable: preserved/g)).toBeNull();
   });
 });
 
