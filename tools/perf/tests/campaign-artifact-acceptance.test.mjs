@@ -197,6 +197,65 @@ describe('the gesture-repeat contract', () => {
       status: WRONG_GESTURE_REPEATS,
     });
   });
+
+  // The ordering matters more than the status does, same as the regime check: a
+  // capture whose gesture never reached the canvas has a meaningless repeat
+  // count as well as a meaningless number, and naming the count would send the
+  // next session recapturing a cell whose real problem is elsewhere — worst of
+  // all for UNCALIBRATED_RUNTIME, the one status that must never be retried.
+  it('reports fidelity, an uncalibrated runtime, and the regime ahead of the repeat count', () => {
+    const wrongCount = { gestureRepeats: 3 };
+    const options = { verdictRequired: true, expectedGestureRepeats: 10 };
+
+    expect(
+      inspectArtifact(
+        artifactAt({ ...scoreable, ...wrongCount, fidelity: { passed: false } }),
+        'web',
+        options
+      )
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+    expect(
+      inspectArtifact(
+        artifactAt({
+          ...scoreable,
+          ...wrongCount,
+          fidelity: {
+            passed: false,
+            checks: { trustedTouch: true, cadence: true, coalescing: null },
+            uncalibrated: ['coalescing'],
+          },
+        }),
+        'web',
+        options
+      )
+    ).toMatchObject({ ok: false, status: UNCALIBRATED_RUNTIME });
+    expect(
+      inspectArtifact(
+        artifactAt({ ...scoreable, ...wrongCount, summaries: { intervalMs: 8 } }),
+        'web',
+        {
+          ...options,
+          expectedRefreshRegime: '60hz',
+        }
+      )
+    ).toMatchObject({ ok: false, status: OFF_REFRESH_REGIME });
+  });
+
+  // A string-typed count in a foreign artifact compares by value: hard-rejecting
+  // '10' against 10 while the matrix silently dropped it was two readers
+  // disagreeing about one field.
+  it('compares a string-typed recorded count by value', () => {
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: '10' }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+    expect(
+      inspectArtifact(artifactAt({ ...scoreable, gestureRepeats: '3' }), 'web', {
+        expectedGestureRepeats: 10,
+      })
+    ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats: 3 });
+  });
 });
 
 // A 20-cell physical target spent 60 attempts reaching the same structural answer

@@ -122,10 +122,20 @@ describe('campaign plan', () => {
 
     expect(drawing.gestureRepeats).toBe(GESTURE_REPEATS);
     expect(actions.gestureRepeats).toBeNull();
-    for (const cell of Object.keys(CAMPAIGN_TARGETS).flatMap((targetId) => plan(targetId))) {
-      expect(cell.gestureRepeats).toBe(
-        cell.args.some((arg) => arg.startsWith('--gesture-repeats=')) ? GESTURE_REPEATS : null
-      );
+    // Coverage asserted positively, not as a restatement of the derivation:
+    // every drawing cell on a repeat-driving transport (everything but the
+    // desktop targets, whose synthetic driver has no repeat concept) carries
+    // the contract. A transport quietly dropping the flag fails here.
+    for (const [targetId, target] of Object.entries(CAMPAIGN_TARGETS)) {
+      for (const cell of plan(targetId)) {
+        if (cell.item === 'actions') {
+          expect(cell.gestureRepeats, `${targetId} ${cell.id}`).toBeNull();
+        } else if (target.transport === 'desktop') {
+          expect(cell.gestureRepeats, `${targetId} ${cell.id}`).toBeNull();
+        } else {
+          expect(cell.gestureRepeats, `${targetId} ${cell.id}`).toBe(GESTURE_REPEATS);
+        }
+      }
     }
   });
 

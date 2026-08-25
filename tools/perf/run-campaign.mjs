@@ -28,6 +28,7 @@ import {
   artifactPassedFidelity,
   campaignTarget,
   cellServerSource,
+  recordedGestureRepeats,
   resolvedProbeHostProblem,
   planCampaign,
   splitTransportIdentityProblem,
@@ -83,16 +84,6 @@ export function cellInspection(cell, { runtime, refreshRegime }) {
   });
 }
 
-// The repeat count a drawing capture recorded, wherever its runner filed it: the
-// split transport writes it at the top level, the Appium screen runner inside
-// `automation`. Null means the artifact predates the field (or the runner has no
-// gesture plan), which acceptance deliberately does not reject — refusing every
-// historical artifact would force a full recapture to prove what was already
-// driven at the contract count.
-function recordedGestureRepeats(artifact) {
-  return artifact?.gestureRepeats ?? artifact?.automation?.gestureRepeats ?? null;
-}
-
 export function inspectArtifact(
   path,
   runtime,
@@ -107,14 +98,6 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
-  const recordedRepeats = recordedGestureRepeats(artifact);
-  if (
-    expectedGestureRepeats !== null &&
-    recordedRepeats !== null &&
-    recordedRepeats !== expectedGestureRepeats
-  ) {
-    return { ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats };
-  }
   if (!artifactPassedFidelity(artifact, { verdictRequired })) {
     return {
       ok: false,
@@ -126,6 +109,20 @@ export function inspectArtifact(
   // number, and naming the regime would send the next session after the wrong thing.
   const regime = refreshRegimeVerdict(artifact?.summaries?.intervalMs, expectedRefreshRegime);
   if (!regime.matched) return { ok: false, status: OFF_REFRESH_REGIME, regime };
+  // Checked LAST, after fidelity and regime, for the reason those two are
+  // ordered: the more fundamental rejection must be the one reported. A capture
+  // whose gesture never reached the canvas has a meaningless repeat count as
+  // well as a meaningless number, and naming the count would send the next
+  // session recapturing a cell whose real problem is elsewhere — worst of all
+  // for UNCALIBRATED_RUNTIME, the one status that must never be retried.
+  const recordedRepeats = recordedGestureRepeats(artifact);
+  if (
+    expectedGestureRepeats !== null &&
+    recordedRepeats !== null &&
+    recordedRepeats !== expectedGestureRepeats
+  ) {
+    return { ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats };
+  }
   return { ok: true, status: COMPLETE, regime };
 }
 

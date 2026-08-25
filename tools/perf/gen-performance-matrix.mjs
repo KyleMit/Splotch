@@ -15,7 +15,7 @@ import {
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
-import { CAMPAIGN_TARGETS } from './lib/campaign-plan.mjs';
+import { CAMPAIGN_TARGETS, recordedGestureRepeats } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -261,8 +261,9 @@ function normalizeDrawingRun(
     // The repeat count the gesture plan replayed (issue 1297): first-contact
     // costs amortise across repeats, so runs at different counts measured
     // different mixes and are not comparable. Null for artifacts predating the
-    // field.
-    gestureRepeats: profile.gestureRepeats ?? profile.automation?.gestureRepeats ?? null,
+    // field. Read through the same helper acceptance uses, so the two readers
+    // cannot drift.
+    gestureRepeats: recordedGestureRepeats(profile),
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
@@ -359,8 +360,13 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
         ...new Set(runs.map((run) => run.gestureRepeats).filter(Number.isFinite)),
       ];
       if (repeatCounts.length > 1) {
+        const sources = runs
+          .map((run) => `${run.source} (${run.gestureRepeats ?? 'unrecorded'})`)
+          .join(', ');
         throw new Error(
-          `${mode.id} ${brush} folds captures with different gesture-repeat counts (${repeatCounts.join(', ')}) — their first-touch-to-repeat mixes are not comparable`
+          `${targetId} ${mode.id} ${brush} folds captures with different gesture-repeat counts ` +
+            `(${repeatCounts.join(', ')}) — their first-touch-to-repeat mixes are not comparable. ` +
+            `Sources: ${sources}`
         );
       }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];

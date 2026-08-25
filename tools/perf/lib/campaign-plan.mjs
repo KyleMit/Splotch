@@ -525,6 +525,23 @@ function gestureRepeatsFromArgs(args) {
   return Number(flag.slice('--gesture-repeats='.length));
 }
 
+// The repeat count a drawing capture recorded, wherever its runner filed it:
+// the split transport writes it at the top level, the Appium screen runner
+// inside `automation`. Shared by acceptance and the matrix so the two readers
+// cannot drift (they briefly did, as private copies). Coerced to a number so a
+// string-typed count in a foreign artifact compares by value rather than being
+// hard-rejected by one reader and silently dropped by the other. Null means
+// the artifact predates the field (or the runner has no gesture plan), which
+// consumers deliberately do not reject — refusing every historical artifact
+// would force a full recapture to prove what was already driven at the
+// contract count.
+export function recordedGestureRepeats(artifact) {
+  const recorded = artifact?.gestureRepeats ?? artifact?.automation?.gestureRepeats ?? null;
+  if (recorded === null) return null;
+  const count = Number(recorded);
+  return Number.isFinite(count) ? count : null;
+}
+
 export function planCampaign(targetId, { modes, items, outputRoot, host = {}, label } = {}) {
   const target = campaignTarget(targetId);
   if (!outputRoot) throw new Error('planCampaign requires an outputRoot');

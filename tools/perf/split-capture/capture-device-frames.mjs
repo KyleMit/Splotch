@@ -28,6 +28,7 @@ import {
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { nativeCanvasBounds, trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -376,7 +377,7 @@ export async function captureDeviceFrames({
   brush = argFlag('brush', 'pen'),
   orientation = argFlag('orientation', 'PORTRAIT'),
   theme = argFlag('theme', 'light'),
-  repeats = Number(argFlag('gesture-repeats', 10)),
+  repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
   cdpPort = parsePositivePort(argFlag('cdp-port', PORT_ROLES.androidCdp.port), 'cdp-port'),

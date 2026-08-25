@@ -32,7 +32,7 @@ const POLL_INTERVAL_MS = 1_000;
 const GESTURE_TAIL_MS = 1_200;
 // Long enough for a cadence estimate to settle, short enough that a preflight
 // stays a preflight.
-const GESTURE_REPEATS = 4;
+const PREFLIGHT_GESTURE_REPEATS = 4;
 const CONTACT_BANK_MS = 600_000;
 
 const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
@@ -117,7 +117,7 @@ export async function verifyAndroidInput({
   // the port the preflight just said it was avoiding.
   cdpPort = Number(argFlag('cdp-port', PORT_ROLES.androidCdp.port)),
   address = argFlag('host-address', lanAddress()),
-  repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
+  repeats = Number(argFlag('gesture-repeats', PREFLIGHT_GESTURE_REPEATS)),
 } = {}) {
   if (!serial) fail('--device-serial= is required');
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
