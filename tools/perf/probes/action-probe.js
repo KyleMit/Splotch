@@ -131,12 +131,18 @@
       listeners: [],
     };
     const listener = (event) => {
-      recordArmedEvent(action, event);
-      if (action.actionAt !== null) return;
-      action.actionAt = performance.now();
-      action.eventType = event.type;
-      action.trusted = event.isTrusted;
-      performance.mark(`${action.traceName}:start`);
+      // The timestamp is captured before the diagnostic recording so the
+      // recording's forced hit-test cannot shift the action's measured origin
+      // — its cost lands inside the measured window, visible rather than
+      // silently subtracted from every latency this action reports.
+      const at = performance.now();
+      if (action.actionAt === null) {
+        action.actionAt = at;
+        action.eventType = event.type;
+        action.trusted = event.isTrusted;
+        performance.mark(`${action.traceName}:start`);
+      }
+      recordArmedEvent(action, event, at);
     };
     for (const type of eventTypes) {
       target.addEventListener(type, listener, { capture: true });
@@ -147,18 +153,26 @@
     return true;
   }
 
-  // Each armed event with its coordinates and a concurrent hit-test. The
-  // per-event hit answers what the first-event fields cannot: a press whose
-  // down and up both target the control can still die in a handler that
-  // re-hit-tests, and only the coordinates at each end say why.
-  function recordArmedEvent(action, event) {
+  // Diagnosing a dead tap needs every armed event, not only the first that
+  // stamps the action; a press whose down and up both target the control can
+  // still die in a handler that re-hit-tests, and only per-event coordinates
+  // say why. Capped so a pathological event storm cannot grow the artifact.
+  const ARMED_EVENT_RECORD_CAP = 8;
+  // Hit-tested only for the discrete tap events: elementFromPoint forces a
+  // style/layout flush, which must not run per-event inside a measured scroll
+  // (the wheel transport arms 'wheel' and every one would pay it).
+  const HIT_TESTED_ARMED_EVENTS = new Set(['pointerdown', 'pointerup', 'click']);
+
+  function recordArmedEvent(action, event, at) {
     if (!action.armedEvents) action.armedEvents = [];
-    if (action.armedEvents.length >= 8) return;
+    if (action.armedEvents.length >= ARMED_EVENT_RECORD_CAP) return;
     const hit =
-      Number.isFinite(event.clientX) && document.elementFromPoint(event.clientX, event.clientY);
+      HIT_TESTED_ARMED_EVENTS.has(event.type) &&
+      Number.isFinite(event.clientX) &&
+      document.elementFromPoint(event.clientX, event.clientY);
     action.armedEvents.push({
       type: event.type,
-      atFromArmMs: performance.now() - action.armedAt,
+      atFromArmMs: at - action.armedAt,
       x: event.clientX,
       y: event.clientY,
       trusted: event.isTrusted,

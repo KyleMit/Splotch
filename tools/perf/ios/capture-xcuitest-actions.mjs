@@ -536,12 +536,13 @@ async function closeDialogs(execute) {
 }
 
 async function nativeBoundsForSelector(client, sessionId, execute, selector) {
-  // A rotation performed while the page is up can leave the WKWebView's scroll
-  // view offset (observed on-device: 32px after landscape-to-portrait), which
-  // shifts every delivered touch by that amount relative to client coordinates
-  // — taps computed from getBoundingClientRect then land above their target.
-  // Reset to the app's intended origin before measuring, and report what was
-  // found so a capture log records the displacement rather than absorbing it.
+  // Defensive scroll reset with reporting. The 32px post-rotation touch offset
+  // (issue 1237) is NOT visible here — scrollX/scrollY and visualViewport all
+  // read zero while taps land 32px high, so this reset cannot be its fix (see
+  // docs/scratchpad/2026-08-25-native-rotation-undo-tap.md). It exists so that
+  // if web-visible displacement ever DOES appear, the capture log names it and
+  // the tap math measures from the app's intended origin instead of silently
+  // absorbing it.
   const webGeometry = await execute(`
     const displaced = {
       x: scrollX, y: scrollY,
@@ -559,8 +560,9 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
   if (!webGeometry) throw new Error(`No native-gesture target matches ${selector}`);
   const { displaced } = webGeometry;
   if (displaced && (displaced.x || displaced.y || displaced.vvLeft || displaced.vvTop)) {
+    const reset = displaced.x || displaced.y ? 'scroll reset applied' : 'visual-viewport only, no reset';
     console.warn(
-      `web content displaced before ${selector} tap: ${JSON.stringify(displaced)} — scroll reset applied`
+      `web content displaced before ${selector} tap: ${JSON.stringify(displaced)} — ${reset}`
     );
   }
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
