@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { ROOT } from '../../../lib/proc.mjs';
 import { pageBootstrapSource } from './page-bootstrap.mjs';
 import { keepIncomingReport, reportRejectionReason } from './report-store.mjs';
+import { STAND_DOWN_PATH } from './chrome-tabs.mjs';
 
 const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 // A dropped chunk fetch does not fail visibly: the module import throws, the
@@ -62,8 +63,11 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     // Where a stale page parks itself. Standing down to about:blank left a husk
     // nothing could prove ownership of — and closing unproven pages is exactly
     // the operator-tab hazard the litter clearer must not have. A husk on this
-    // origin is this transport's by construction.
-    if (pathname === '/__probe/stand-down') {
+    // origin is this transport's by construction. Served inertly HERE, before
+    // the HTML proxy below: a host missing this route proxies the path to the
+    // app, gets a 404 page back WITH the bootstrap injected, and the husk
+    // becomes a self-reloading page on the device being measured.
+    if (pathname === STAND_DOWN_PATH) {
       res.writeHead(200, { 'content-type': 'text/html' });
       return res.end('<!doctype html><title>stood down</title>');
     }

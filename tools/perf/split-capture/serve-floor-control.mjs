@@ -24,6 +24,7 @@
 // The DOM shape (#drawingCanvas, .paper-view) is what the probe requires.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
 import { join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
 import { keepIncomingReport, reportRejectionReason } from './lib/report-store.mjs';
@@ -186,6 +187,13 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
   const server = createServer(async (req, res) => {
     const { pathname } = new URL(req.url, 'http://localhost');
     if (pathname === '/__probe/plan') return json(res, state.plan);
+    // Same inert husk page the probe host serves: the litter matcher treats
+    // this path as a constant meaning "dead page", and the floor host's
+    // catch-all would otherwise answer it with a LIVE page that adopts the
+    // current plan.
+    if (pathname === STAND_DOWN_PATH) {
+      return send(res, 'text/html', '<!doctype html><title>stood down</title>');
+    }
     if (pathname === '/__probe/state') {
       return json(res, { ready: state.progress, hasReport: !!state.report });
     }
