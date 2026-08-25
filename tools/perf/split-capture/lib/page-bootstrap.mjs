@@ -23,6 +23,10 @@ import {
   settingsSectionRow,
   themeOption,
 } from '../../lib/campaign-state.mjs';
+import {
+  ERASER_FILL_BACKING_TIMEOUT_MS,
+  eraserFillFunctionSource,
+} from '../../lib/eraser-fill.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
 // enough not to spin, short enough that a finished gesture is not left banking
@@ -35,6 +39,9 @@ const THEME_TIMEOUT_MS = 20_000;
 // Long enough that a landed click opens the dialog before another is sent.
 const SETTINGS_OPEN_RETRY_MS = 400;
 const BRUSH_ATTEMPTS = 4;
+// One settle after the fill, so the paint is committed before contact banking
+// starts — the same 400 ms the unverified fill always waited.
+const ERASER_FILL_SETTLE_MS = 400;
 // The probe's own row accessors page through its ring buffers; this is the slice
 // size, not a cap on the capture.
 const REPORT_SLICE_ROWS = 5_000;
@@ -219,16 +226,19 @@ export function pageBootstrapSource() {
     }
 
     // The eraser needs something to erase, or it measures clearing blank paper.
+    // The fill is verified rather than trusted (issue 1302), and the evidence
+    // travels with readiness so the artifact can prove the eraser had ink.
+    let eraserFill = null;
     if (plan.brush === 'eraser') {
-      for (const canvas of document.querySelectorAll('canvas[data-live-tile]')) {
-        const context = canvas.getContext('2d');
-        context.save();
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.fillStyle = '#7c4dff';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.restore();
+      ${eraserFillFunctionSource()}
+      await until(() => !(eraserFill = fillEraserInk()).pending, ${ERASER_FILL_BACKING_TIMEOUT_MS});
+      if (eraserFill.pending) {
+        throw new Error('live tile backings never realized for the eraser fill: ' + eraserFill.pending.join(', '));
       }
-      await wait(400);
+      if (eraserFill.transparentTiles.length) {
+        throw new Error('the eraser fill left tiles transparent: ' + eraserFill.transparentTiles.join(', '));
+      }
+      await wait(${ERASER_FILL_SETTLE_MS});
     }
 
     window.__probePhases = 'blank';
@@ -255,6 +265,8 @@ export function pageBootstrapSource() {
       // Reported so the runner can refuse a mismatch BEFORE a person or a device
       // spends the capture, rather than labelling the artifact from the request.
       resolvedTheme: resolvedTheme(),
+      // The verified-fill evidence (issue 1302); null for every other brush.
+      eraserFill,
       geometry: {
         canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
         viewport: { width: innerWidth, height: innerHeight },

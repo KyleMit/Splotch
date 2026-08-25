@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import {
+  ERASER_FILL_BACKING_TIMEOUT_MS,
+  eraserFillFunctionSource,
+} from '../lib/eraser-fill.mjs';
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -88,6 +92,29 @@ const SHORT_STROKE_ORIGINS = [
   [0.59, 0.38],
   [0.76, 0.5],
 ];
+// Per-repeat offsets exist for the eraser (issue 1292): a fixed plan re-traces
+// identical geometry every pass, so passes 2..N drag the eraser across pixels
+// pass 1 already made transparent and measure erasing nothing. Offsetting each
+// repeat walks every stroke through fresh ink instead. The strides are chosen
+// to spread repeats across each stroke's band without resonating with the
+// repeat count (no small-integer ratio to 1), and every offset wraps INSIDE the
+// band the fixed plan already spans, so an offset stroke stays inside any
+// canvas the fixed plan fit. Every other brush keeps the fixed plan — drawing
+// over your own stroke is still drawing, and changing their geometry would
+// silently change what those cells measure.
+const LONG_SEED_REPEAT_STRIDE = 0.37;
+const SHORT_ORIGIN_REPEAT_STRIDE_X = 0.23;
+const SHORT_ORIGIN_REPEAT_STRIDE_Y = 0.17;
+// The fixed origins span x 0.18-0.76 and y 0.2-0.67; the wrap bands keep offset
+// origins in the same envelope (the short-stroke end adds 45/70 px, which the
+// fixed plan's own maxima already prove fits).
+const SHORT_ORIGIN_BAND_X = [0.18, 0.78];
+const SHORT_ORIGIN_BAND_Y = [0.2, 0.68];
+
+function wrapWithin(value, [min, max]) {
+  const span = max - min;
+  return min + ((((value - min) % span) + span) % span);
+}
 
 function sanitizeLabel(value) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
@@ -161,14 +188,27 @@ function addShortStroke(actions, bounds, [xFraction, yFraction]) {
   actions.push({ type: 'pause', duration: SHORT_STROKE_PAUSE_MS });
 }
 
-export function trustedGestureActions(bounds, repeats = 1, repeatPauseMs = 0) {
+export function trustedGestureActions(
+  bounds,
+  repeats = 1,
+  repeatPauseMs = 0,
+  { varyPerRepeat = false } = {}
+) {
   const actions = [];
   for (let repeat = 0; repeat < repeats; repeat++) {
     if (repeat > 0 && repeatPauseMs > 0) {
       actions.push({ type: 'pause', duration: repeatPauseMs });
     }
-    for (const seed of LONG_STROKE_SEEDS) addLongStroke(actions, bounds, seed);
-    for (const origin of SHORT_STROKE_ORIGINS) addShortStroke(actions, bounds, origin);
+    const shift = varyPerRepeat ? repeat : 0;
+    for (const seed of LONG_STROKE_SEEDS) {
+      addLongStroke(actions, bounds, (seed + shift * LONG_SEED_REPEAT_STRIDE) % 1);
+    }
+    for (const [xFraction, yFraction] of SHORT_STROKE_ORIGINS) {
+      addShortStroke(actions, bounds, [
+        wrapWithin(xFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_X, SHORT_ORIGIN_BAND_X),
+        wrapWithin(yFraction + shift * SHORT_ORIGIN_REPEAT_STRIDE_Y, SHORT_ORIGIN_BAND_Y),
+      ]);
+    }
   }
   return actions;
 }
@@ -706,18 +746,28 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       );
       if (!brushCommitted) throw new Error(`Drawing engine did not commit ${brush} mode`);
     }
+    // The fill is verified rather than trusted (issue 1302): waits out deferred
+    // tile-backing realization, proves the painted pixels are opaque, and fails
+    // the capture instead of banking a normal-looking artifact that erased
+    // blank paper. Shared with the split-capture bootstrap.
+    let eraserFill = null;
     if (brush === 'eraser') {
-      await execute(`
-        for (const canvas of document.querySelectorAll('canvas[data-live-tile]')) {
-          const context = canvas.getContext('2d');
-          context.save();
-          context.setTransform(1, 0, 0, 1, 0, 0);
-          context.fillStyle = '#7c4dff';
-          context.fillRect(0, 0, canvas.width, canvas.height);
-          context.restore();
-        }
-        return true;
-      `);
+      eraserFill = await pollUntil(
+        async () => {
+          const result = await execute(`${eraserFillFunctionSource()}\nreturn fillEraserInk();`);
+          return result?.pending ? null : result;
+        },
+        ERASER_FILL_BACKING_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!eraserFill) {
+        throw new Error('live tile backings never realized for the eraser fill');
+      }
+      if (eraserFill.transparentTiles.length) {
+        throw new Error(
+          `the eraser fill left tiles transparent: ${eraserFill.transparentTiles.join(', ')}`
+        );
+      }
       await sleep(AFTER_GESTURE_SETTLE_MS);
     }
 
@@ -770,7 +820,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           type: 'pointer',
           id: 'finger',
           parameters: { pointerType: 'touch' },
-          actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs),
+          actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs, {
+            varyPerRepeat: brush === 'eraser',
+          }),
         },
       ],
     });
@@ -876,6 +928,12 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         canvasBounds,
         liveSurfaceTopology,
         gestureRepeats,
+        // Which geometry the repeats replayed (issue 1292): the eraser offsets
+        // every repeat so later passes cross un-erased ink; other brushes keep
+        // the fixed plan. Old artifacts lack the field and are fixed-geometry.
+        gesturePlan: brush === 'eraser' ? 'per-repeat-offsets' : 'fixed-geometry',
+        // The verified-fill evidence (issue 1302); null for every other brush.
+        eraserFill,
         repeatPauseMs,
         undoCount,
         undoPauseMs,

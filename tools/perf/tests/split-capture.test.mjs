@@ -438,6 +438,26 @@ describe('what a saved artifact can prove about its own theme', () => {
   it('records the gesture-repeat count the run was driven at', () => {
     expect(drivenCaptureArtifact({ ...common, ready, gestureRepeats: 10 }).gestureRepeats).toBe(10);
   });
+
+  // Issue 1292: eraser repeats are offset so later passes cross un-erased ink,
+  // which makes old and new eraser numbers incomparable — so the artifact says
+  // which plan drove it, and carries the verified-fill evidence (issue 1302).
+  it('records the gesture plan and the eraser-fill evidence the page reported', () => {
+    const eraserFill = { tiles: 16, backings: ['100x80'], transparentTiles: [] };
+    const artifact = drivenCaptureArtifact({
+      ...common,
+      brush: 'eraser',
+      gesturePlan: 'per-repeat-offsets',
+      ready: { ...ready, eraserFill },
+    });
+
+    expect(artifact.gesturePlan).toBe('per-repeat-offsets');
+    expect(artifact.eraserFill).toEqual(eraserFill);
+    expect(drivenCaptureArtifact({ ...common, ready })).toMatchObject({
+      gesturePlan: null,
+      eraserFill: null,
+    });
+  });
 });
 
 // The cross-run race, which produced eleven artifacts whose mode came from one

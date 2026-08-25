@@ -239,6 +239,95 @@ describe('a page opened for a different run', () => {
   );
 });
 
+// Issue 1302: the eraser fill used to be fired and forgotten, so a fill that
+// silently did nothing left a capture that measured erasing blank paper and
+// looked completely normal. Executed here: the fill must be verified, its
+// evidence must travel with readiness, and a fill that did not take must fail
+// the capture through the error report rather than banking a plausible number.
+describe('the bootstrap verifying the eraser fill', () => {
+  function paintEraserShell(tiles) {
+    paintShell({ compact: true, startingTheme: 'light' });
+    const eraserButton = document.createElement('button');
+    eraserButton.id = 'eraserButton';
+    eraserButton.addEventListener('click', () => {
+      window.__committedBrushMode = () => 'eraser';
+    });
+    document.body.append(eraserButton);
+    return tiles.map((tile) => {
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('data-live-tile', '');
+      canvas.dataset.tileBacking = tile.backing;
+      canvas.width = tile.width;
+      canvas.height = tile.height;
+      const context = {
+        fillStyle: null,
+        fillRects: [],
+        save() {},
+        restore() {},
+        setTransform() {},
+        fillRect(...args) {
+          this.fillRects.push(args);
+        },
+        getImageData() {
+          return { data: [124, 77, 255, tile.alpha ?? 255] };
+        },
+      };
+      canvas.getContext = () => context;
+      document.body.append(canvas);
+      return { canvas, context };
+    });
+  }
+
+  it(
+    'fills the live tiles and reports the verified evidence with readiness',
+    async () => {
+      const tiles = paintEraserShell([
+        { backing: '100x80', width: 100, height: 80 },
+        { backing: '90x70', width: 90, height: 70 },
+      ]);
+
+      const { readyPosted } = runBootstrap({
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-fill-run',
+      });
+      const ready = await readyPosted;
+
+      expect(ready.eraserFill).toEqual({
+        tiles: 2,
+        backings: ['100x80', '90x70'],
+        transparentTiles: [],
+      });
+      expect(tiles[0].context.fillRects).toEqual([[0, 0, 100, 80]]);
+      expect(tiles[1].context.fillStyle).toBe('#7c4dff');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'fails the capture through the error report when the fill does not take',
+    async () => {
+      paintEraserShell([{ backing: '100x80', width: 100, height: 80, alpha: 0 }]);
+
+      const { posted } = runBootstrap({
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-bad-fill',
+      });
+
+      const report = await vi.waitFor(() => {
+        const found = posted.find((entry) => entry.path === '/__probe/report');
+        if (!found) throw new Error('no report yet');
+        return found;
+      });
+      expect(report.body.nonce).toBe('eraser-bad-fill');
+      expect(report.body.error).toContain('transparent');
+      expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
 describe('the pulse and the error report', () => {
   // The wait loop pulses the live event count so the runner can tell "the
   // injected touches are landing on another tab" (issue 1294) from "the report

@@ -1158,6 +1158,34 @@ describe('trusted XCUITest input', () => {
     ).toHaveLength(2);
   });
 
+  // Issue 1292: a fixed plan re-traces identical geometry, so eraser passes 2..N
+  // erase pixels pass 1 already made transparent. Per-repeat offsets give each
+  // pass fresh ink; they must move every stroke while staying inside the canvas.
+  it('offsets each repeat when asked, without leaving the canvas', () => {
+    const bounds = nativeCanvasBounds({ webGeometry, webViewBounds, nativeWindow });
+    const repeats = 10;
+    const varied = trustedGestureActions(bounds, repeats, 0, { varyPerRepeat: true });
+    const fixed = trustedGestureActions(bounds, repeats, 0);
+    const perRepeat = varied.length / repeats;
+
+    const firstRepeat = varied.slice(0, perRepeat);
+    for (let repeat = 1; repeat < repeats; repeat++) {
+      const pass = varied.slice(repeat * perRepeat, (repeat + 1) * perRepeat);
+      expect(pass).not.toEqual(firstRepeat);
+    }
+    expect(varied.slice(0, perRepeat)).toEqual(fixed.slice(0, perRepeat));
+    const moves = varied.filter((action) => action.type === 'pointerMove');
+    expect(
+      moves.every(
+        (action) =>
+          action.x >= bounds.x &&
+          action.x <= bounds.x + bounds.width &&
+          action.y >= bounds.y &&
+          action.y <= bounds.y + bounds.height
+      )
+    ).toBe(true);
+  });
+
   it('only permits Apple-account provisioning when explicitly requested', () => {
     const base = {
       deviceId: 'device',
