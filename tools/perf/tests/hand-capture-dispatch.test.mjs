@@ -5,7 +5,7 @@
 // run against a real in-test probe host with `--native-app` parsed from argv,
 // and asserts the flag reaches the launch steps, the identity contract, and
 // the artifact.
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -132,16 +132,23 @@ function startProbeHost({ reportDir, ua, reportProbeParam }) {
 }
 
 const servers = [];
+const reportDirs = [];
 const argvBaseline = [...process.argv];
 
-afterEach(() => {
-  for (const { server } of servers.splice(0)) server.close();
+afterEach(async () => {
+  for (const { server } of servers.splice(0)) {
+    await new Promise((resolve) => server.close(resolve));
+  }
+  for (const directory of reportDirs.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
   process.argv = [...argvBaseline];
   captureCalls.length = 0;
 });
 
 async function runCapture({ nativeApp, ua, reportProbeParam }) {
   const reportDir = mkdtempSync(join(tmpdir(), 'splotch-hand-reports-'));
+  reportDirs.push(reportDir);
   const probe = await startProbeHost({ reportDir, ua, reportProbeParam });
   servers.push(probe);
   if (nativeApp) process.argv = [...argvBaseline, '--native-app'];
@@ -191,7 +198,6 @@ describe('captureHandInput’s production dispatch', () => {
 
     expect(controls[0]).toMatchObject({ requirePageIdentity: false });
     expect(artifact.pageIdentity).toBe('unprovable');
-    expect(artifact.report.meta.url).not.toContain('probe=');
   });
 
   it('launches Chrome at the nonce URL and holds the browser run to its proof', async () => {

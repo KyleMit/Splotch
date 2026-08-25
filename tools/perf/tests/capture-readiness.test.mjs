@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
-import { diagnoseLaunchFailure, terminateDiagnostic } from '../prepare-capture.mjs';
+import { diagnoseLaunchFailure } from '../prepare-capture.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   androidWakeActions,
@@ -300,17 +300,15 @@ describe('classifying a WebDriverAgent launch failure from the server log', () =
 // while the path that has to DELIVER it returned nothing on a real blocked
 // device. Driven here with a controllable child, because the only other way to
 // reach this code is an iPad refusing automation.
-describe('the launch diagnostic end to end', () => {
-  const fakeAppium = (mode) => (port) =>
-    spawn(
-      process.execPath,
-      [join(ROOT, 'tools/perf/tests/fixtures/fake-appium.mjs'), String(port)],
-      {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, MODE: mode },
-      }
-    );
+// Module scope: the end-to-end describe and the teardown-timing describe both
+// drive the diagnostic through this controllable child.
+const fakeAppium = (mode) => (port) =>
+  spawn(process.execPath, [join(ROOT, 'tools/perf/tests/fixtures/fake-appium.mjs'), String(port)], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env, MODE: mode },
+  });
 
+describe('the launch diagnostic end to end', () => {
   it('delivers the automation-mode cause the server logged', async () => {
     const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('denial') });
 
@@ -330,11 +328,14 @@ describe('the launch diagnostic end to end', () => {
     expect(probe.diagnostic).toContain('logged no cause');
   }, 60_000);
 
-  it('reports a server that died instead of hanging on it', async () => {
+  it('reports a server that died instead of hanging on it, naming how it exited', async () => {
     const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('crash') });
 
     expect(probe.cause).toBeNull();
-    expect(probe.diagnostic).toContain('exited early');
+    // "with code N" / "with signal SIG…": a signal kill reports code null, and
+    // printing that null is what once made a signal-exited server read as a
+    // still-running one (issue 1309).
+    expect(probe.diagnostic).toMatch(/exited early with (code -?\d+|signal SIG\w+)/);
   }, 60_000);
 
   // spawn reports a missing binary asynchronously, so this used to escape the
@@ -363,27 +364,41 @@ describe('the launch diagnostic end to end', () => {
 // The mirror-image defect (issue 1309): a child that HONOURS SIGTERM exits
 // with `code === null, signal === 'SIGTERM'`, and tracking only the code left
 // it indistinguishable from a child still running — teardown escalated to
-// SIGKILL against a corpse and then waited out the full escalation timeout
-// with no exit event left to arrive. 5.53 s for a child that was already gone.
+// SIGKILL against a corpse and then waited out the full escalation timeout,
+// 5.53 s for a child that was already gone. Bounded through the PRODUCTION
+// seam on purpose: the first version of this test built its own {code,signal}
+// tracker and handed it in, which supplied the exact object the fix exists to
+// supply — the whole fix could be reverted and the test stayed green, the
+// isolation mistake issue 1309's finding 1 indicts. diagnoseLaunchFailure's
+// own exit listener and finally are the code under test here.
 describe('tearing down a diagnostic server that goes quietly', () => {
-  it('returns promptly after a signal exit instead of waiting out the escalation', async () => {
-    const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let exited = null;
-    child.on('exit', (code, signal) => (exited = { code, signal }));
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
+  it('returns promptly after the server exits by signal, without a second escalation wait', async () => {
     const startedAt = Date.now();
-    const gone = await terminateDiagnostic(child, () => exited);
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('silent') });
     const elapsedMs = Date.now() - startedAt;
 
-    expect(gone).toBe(true);
-    expect(exited).toMatchObject({ code: null, signal: 'SIGTERM' });
-    // Well under one 5 s escalation wait: the broken shape spent the full
-    // SIGKILL settle on a child that had already left.
-    expect(elapsedMs).toBeLessThan(3_000);
-  }, 15_000);
+    expect(probe.diagnostic).toContain('logged no cause');
+    // Fixed shape ≈ fixture startup + the 5 s log settle + a ~10 ms SIGTERM
+    // exit; the broken shape adds a full 5 s SIGKILL settle on a child that
+    // had already left (measured ≥ 11.5 s).
+    expect(elapsedMs).toBeLessThan(9_500);
+  }, 60_000);
+
+  // The same clause spares the ENOENT child: spawn's error path never emits
+  // `exit`, so only the child object's own exitCode/signalCode can say it is
+  // gone — without them, teardown spent two settles on a process that never
+  // started.
+  it('returns promptly when the diagnostic binary never existed', async () => {
+    const startedAt = Date.now();
+    const probe = await diagnoseLaunchFailure(
+      {},
+      { spawnDiagnostic: () => spawn('definitely-not-a-real-binary-xyz', []) }
+    );
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(probe.diagnostic).toContain('could not start');
+    expect(elapsedMs).toBeLessThan(5_000);
+  }, 60_000);
 });
 
 // Bounding how long teardown WAITS is not ensuring the child left. A server that

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -218,17 +219,28 @@ describe('campaign sources', () => {
   });
 });
 
-// Issue 1309: the tracked manifest drifted from the folder's own
+// Issue 1309: a tracked manifest drifted from the folder's own
 // `JSON.stringify(..., null, 2)` form (46 \uXXXX escapes, 230 extra bytes), so
 // the next generated update carried avoidable churn. A later fold restored the
-// canonical form; this pins it so hand edits cannot reintroduce the drift.
-describe('the tracked matrix manifest', () => {
-  it('matches the folder’s canonical serialization byte for byte', () => {
-    const manifestPath = join(
-      ROOT,
+// canonical form; this pins it so hand edits cannot reintroduce the drift —
+// swept from git rather than a hardcoded path, so the next dated matrix
+// folder is covered the day it lands.
+describe('the tracked matrix manifests', () => {
+  const manifests = execFileSync('git', ['ls-files', 'scrapbook/performance/*/sources.json'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\n')
+    .filter(Boolean);
+
+  it('found at least the deployment-target manifest', () => {
+    expect(manifests).toContain(
       'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json'
     );
-    const raw = readFileSync(manifestPath, 'utf8');
+  });
+
+  it.each(manifests)('%s matches the folder’s canonical serialization byte for byte', (path) => {
+    const raw = readFileSync(join(ROOT, path), 'utf8');
 
     expect(raw).toBe(`${JSON.stringify(JSON.parse(raw), null, 2)}\n`);
   });
