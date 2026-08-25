@@ -10,9 +10,11 @@
 // Two rules, both from that ADR. Captures are kept WHOLE: every trimming that
 // saves meaningful space also drops a gate or corrupts the fidelity verdict, and
 // a preserved capture that cannot prove its own fidelity is worse than none
-// because it will be believed. And the subset is one capture per target x brush
-// rather than per matrix cell, because a metric's effect varies with the display
-// and the workload, not with orientation and theme.
+// because it will be believed. And a CAMPAIGN subset is one capture per target x
+// brush rather than per matrix cell, because a metric's effect varies with the
+// display and the workload, not with orientation and theme. Hand captures are
+// the exception: every one is kept, because a hand corpus exists to show spread
+// and each capture cost a person's time (see selectEvidence).
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
@@ -66,10 +68,13 @@ export function selectEvidence(candidates) {
 }
 
 // A campaign capture is filed by the cell it measured; a hand capture has no
-// cell, and two of them can share a runtime and brush — its own label is the
-// only name that cannot collide.
+// cell, and two of them can share a runtime, brush, and even label across
+// sessions — so its whole corpus-relative path is flattened into the name,
+// which is the only key selectEvidence guarantees unique.
 export function evidenceFileName(entry) {
-  return entry.handCapture ? basename(entry.relativePath) : `${entry.target}-${entry.brush}.json`;
+  return entry.handCapture
+    ? entry.relativePath.split('/').join('--')
+    : `${entry.target}-${entry.brush}.json`;
 }
 
 export async function keepCaptureEvidence({
@@ -111,6 +116,18 @@ export async function keepCaptureEvidence({
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
       fidelity: parsed.fidelity?.passed ?? null,
+      // A hand capture's index row carries what the finger measured, so the
+      // corpus is readable without opening a minified frame table — the shape
+      // the 2026-08-23-hand corpus established.
+      ...(parsed.handCapture === true
+        ? {
+            runtime: parsed.runtime ?? null,
+            reading: parsed.reading ?? null,
+            device: parsed.device ?? null,
+            pageDelivery: parsed.pageDelivery ?? null,
+            drawSeconds: parsed.drawSeconds ?? null,
+          }
+        : {}),
     });
   }
   if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
@@ -160,6 +177,16 @@ export async function keepCaptureEvidence({
           mode: entry.mode,
           fidelityPassed: entry.fidelity,
           source: entry.relativePath,
+          ...(entry.handCapture
+            ? {
+                handCapture: true,
+                runtime: entry.runtime,
+                reading: entry.reading,
+                device: entry.device,
+                pageDelivery: entry.pageDelivery,
+                drawSeconds: entry.drawSeconds,
+              }
+            : {}),
         })),
       },
       null,

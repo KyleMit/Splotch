@@ -202,15 +202,17 @@ describe('keep-capture-evidence', () => {
     expect(kept.map((entry) => entry.relativePath)).toEqual(['a.json', 'b.json', 'c.json']);
   });
 
-  it('files a hand capture under its own label, never the colliding target-brush name', () => {
-    expect(
-      evidenceFileName({
-        handCapture: true,
-        relativePath: 'hand-ios-native-pen-portrait-light.json',
-        target: 'ios-capacitor-webview',
-        brush: 'pen',
-      })
-    ).toBe('hand-ios-native-pen-portrait-light.json');
+  it('files a hand capture under its flattened corpus path, so two sessions cannot collide', () => {
+    const runA = evidenceFileName({
+      handCapture: true,
+      relativePath: 'runA/hand-ios-native-pen-portrait-light.json',
+    });
+    const runB = evidenceFileName({
+      handCapture: true,
+      relativePath: 'runB/hand-ios-native-pen-portrait-light.json',
+    });
+    expect(runA).toBe('runA--hand-ios-native-pen-portrait-light.json');
+    expect(runA).not.toBe(runB);
     expect(evidenceFileName({ target: 'ipad-device-web', brush: 'pen' })).toBe(
       'ipad-device-web-pen.json'
     );
