@@ -12,6 +12,7 @@
 // (ADR-0073) allows `script-src 'self'` and does not allow `unsafe-eval`, so
 // nothing about the policy has to be relaxed to measure the page.
 import { BRUSH_BUTTON_BY_MODE } from '../../ios/capture-xcuitest-screen.mjs';
+import { STAND_DOWN_PATH } from './chrome-tabs.mjs';
 import {
   COMPACT_SHELL_MARKER,
   QUICK_NIGHT_TOGGLE,
@@ -104,7 +105,7 @@ export function pageBootstrapSource() {
       // evicted before it could upload. Navigating away leaves a blank tab that
       // will never run this again, which is the only part of that pile this
       // page can do anything about.
-      location.replace('/__probe/stand-down');
+      location.replace('${STAND_DOWN_PATH}');
       return;
     }
     const sized = await until(() => {

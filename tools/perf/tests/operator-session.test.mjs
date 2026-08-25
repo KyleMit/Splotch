@@ -185,3 +185,35 @@ describe('openWithDevicectl', () => {
     expect(args.at(-1)).toBe('art.splotch.app');
   });
 });
+
+describe('the rotate instruction reaches the operator', () => {
+  // The pure builder was tested while its call site was not, and deleting the
+  // print left every test green — the exact chooser-vs-call-site gap this
+  // file tree keeps re-learning.
+  it('prints the instruction lines before asking for Enter', async () => {
+    const printed = [];
+    const spy = vi.spyOn(console, 'log').mockImplementation((line) => printed.push(String(line)));
+    try {
+      await runHandItem(
+        {
+          step: 'ios-hand',
+          platform: 'ios',
+          device: 'udid',
+          brush: 'pen',
+          orientation: 'LANDSCAPE',
+          theme: 'light',
+        },
+        {
+          host: 'http://h:1',
+          seconds: 1,
+          outputDir: 'out',
+          ask: async () => {},
+          spawnChild: () => ({ status: 0 }),
+        }
+      );
+    } finally {
+      spy.mockRestore();
+    }
+    expect(printed.join(' ')).toMatch(/ROTATE THE IPAD to landscape/);
+  });
+});

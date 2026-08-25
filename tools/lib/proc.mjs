@@ -132,6 +132,20 @@ export function capture(cmd, args = [], { cwd = ROOT } = {}) {
   return result.stdout ?? '';
 }
 
+// capture() for a step that is allowed to fail: reports instead of exiting.
+// A best-effort guard wrapped in try/catch around capture() is not best-effort
+// at all — fail() is process.exit(1), which no catch intercepts, and that
+// combination killed a whole preflight on a bound port while its comment
+// promised the opposite.
+export function tryCapture(cmd, args = [], { cwd = ROOT } = {}) {
+  const result = spawnSync(cmd, args, { cwd, encoding: 'utf8' });
+  return {
+    ok: result.status === 0,
+    stdout: result.stdout ?? '',
+    stderr: result.error ? result.error.message : (result.stderr ?? ''),
+  };
+}
+
 export const hasCommand = (cmd) =>
   spawnSync('sh', ['-c', 'command -v "$1"', 'sh', cmd], { stdio: 'ignore' }).status === 0;
 

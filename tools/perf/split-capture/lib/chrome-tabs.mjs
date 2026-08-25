@@ -6,36 +6,34 @@
 // this with the Google tab foregrounded and the run's page answering every
 // poll from behind it).
 //
-// The remedy ACTIVATES the run's page rather than closing anything: the
-// devtools HTTP endpoint fronts a named target, which solves the foreground
-// problem directly, is idempotent (safe to re-issue right before dispatch),
-// and fails in the benign direction — a page that cannot be identified is
-// left alone, where a close-the-rest sweep would take the operator's own tabs
-// (and other apps' Custom Tabs on the same socket) with it, or in the worst
-// case the run page itself. Launch-time tab surgery only; nothing stays
-// attached while anything is measured.
+// The remedy is clear-then-activate: close the tooling's OWN leftovers (the
+// pile session restore re-fronts from — activation alone lost that race
+// repeatedly while reporting 200), then front the run's page over the
+// devtools HTTP endpoint, idempotently, re-issued right before dispatch.
+// Launch-time tab surgery only; nothing stays attached while anything is
+// measured.
 
-// The pages this transport itself created and abandoned: earlier runs' probe
-// pages and the /__probe/stand-down husks stale pages park themselves on —
-// all on the probe host's origin, which is what makes ownership PROVABLE.
-// Session restore re-fronts from exactly this pile — activation alone lost
-// that race twice on the SM-G990U1, reporting 200 while a stood-down husk
-// held the screen for a full 68s dispatch — and the pile is also what
-// lazy-restores into fresh bootstraps next launch. Nothing off this origin is
-// ever touched: not operator tabs, not other apps' Custom Tabs on the same
-// socket, and not a bare about:blank, which nothing can prove ownership of.
-// The pages this session's capture tooling opened, recognizable by their
-// run-identity params (?probe= / ?verify=) or the stand-down path — across
-// EVERY port the tooling serves on the host, because the tab that steals the
-// foreground on relaunch is whichever tab Chrome used last, which can be a
-// different tool's page than the one being launched (a stale probe tab stole
-// the verifier's foreground exactly this way). Session restore re-fronts from
-// this pile — activation alone lost that race repeatedly while reporting 200
-// — and the pile is also what lazy-restores into fresh bootstraps next
-// launch. Nothing without a tool signature on the session host is ever
-// touched: not operator tabs, not other apps' Custom Tabs on the same socket,
-// not a bare about:blank (unprovable), and not even this host's plain preview
-// pages, which an operator may have opened deliberately.
+// One ownership rule decides what may be closed. The tooling's pages are
+// recognizable by their run-identity params (?probe= / ?verify=) or the
+// STAND_DOWN_PATH husks stale pages park themselves on, matched across EVERY
+// port the tooling serves on the session host — because the tab that steals
+// the foreground on relaunch is whichever tab Chrome used last, which can be
+// a different tool's page than the one being launched (a stale probe tab
+// stole the verifier's foreground from another port exactly this way).
+// Nothing without a tool signature on the session host is ever touched: not
+// operator tabs, not other apps' Custom Tabs on the same socket, not a bare
+// about:blank (unprovable — which is also why legacy pre-stand-down husks
+// linger until swept by hand), and not even this host's plain preview pages,
+// which an operator may have opened deliberately. The trade consciously
+// accepted: an unrelated server on this host whose pages carry ?probe=/
+// ?verify= would be claimed — no such server exists in this repo's tooling.
+// Where a stale page parks itself. One constant, three consumers — the
+// bootstrap that navigates there, the hosts that must serve it inertly, and
+// this matcher — with a drift-guard test on each side, because a husk served
+// by a host missing the route gets the injected bootstrap back and turns
+// into a self-reloading page on the device being measured.
+export const STAND_DOWN_PATH = '/__probe/stand-down';
+
 export function toolingLitter(targets, hostname, keepNonce) {
   return targets.filter((target) => {
     if (target.type !== 'page') return false;
@@ -45,7 +43,7 @@ export function toolingLitter(targets, hostname, keepNonce) {
       const marked =
         url.searchParams.has('probe') ||
         url.searchParams.has('verify') ||
-        url.pathname === '/__probe/stand-down';
+        url.pathname === STAND_DOWN_PATH;
       if (!marked) return false;
       return (
         url.searchParams.get('probe') !== keepNonce && url.searchParams.get('verify') !== keepNonce

@@ -633,6 +633,9 @@ if (isMain(import.meta.url)) {
       const input = await verifyAndroidInput({
         serial: report.androidSerial,
         port: report.ports.floorControl,
+        // The RESOLVED port, which can differ from the role's default when the
+        // preflight shifted it off a holder two lines of output earlier.
+        cdpPort: report.ports.androidCdp,
       });
       console.log(`${input.ok ? '✓' : '✗'} ${'android input'.padEnd(22)} ${input.detail}`);
       if (input.contact) console.log(`  ${''.padEnd(22)} observed: ${input.contact}`);

@@ -1,6 +1,6 @@
 # Captured stdout of measure-rotation-events-ios.mjs, physical iPad
 # 00008103-0006202E3CF1001E via Appium Safari, 2026-08-25 (same session as
-# the sweeps in this corpus). Two runs are preserved: the first sequential
+# the sweeps in this corpus). Three runs are preserved: the first sequential
 # design (arms drifted together — the reason the interleaved design exists)
 # and the interleaved rerun the ADR quotes.
 
@@ -19,7 +19,9 @@ to PORTRAIT: orient->resize 29ms, ff(orient) 29ms, ff(resize) 0ms
 to LANDSCAPE: orient->resize 28ms, ff(orient) 28ms, ff(resize) 0ms
 
 ## Run 2 — sequential, after the engine-listener mutation test (both arms
-## drifted upward together, refuting the handler hypothesis; mutation reverted)
+## drifted upward together, refuting the handler hypothesis; mutation
+## reverted). Summarized from the session log, not verbatim stdout — the only
+## run of the three without a full capture.
 === floor === 17-20ms across 4 measured rotations
 === app === 35-39ms across 4 measured rotations
 

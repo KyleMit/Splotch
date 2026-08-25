@@ -160,9 +160,18 @@ export async function keepCaptureEvidence({
   // Minified, not copied: a capture is ~2.4 MB pretty-printed and ~620 KB dense,
   // and the tracked corpus is sized in ADR-0138 on the dense form. Nothing is
   // dropped — only the whitespace.
+  // The digest makes collisions astronomically unlikely, not impossible — and
+  // a collision here is the silent paid-for-capture overwrite this naming
+  // exists to prevent, so it fails loudly instead.
+  const emitted = new Set();
   for (const entry of selected) {
+    const name = evidenceFileName(entry);
+    if (emitted.has(name)) {
+      fail(`evidence file name collision: ${name} (from ${entry.relativePath})`);
+    }
+    emitted.add(name);
     writeFileSync(
-      join(destination, evidenceFileName(entry)),
+      join(destination, name),
       JSON.stringify(JSON.parse(readFileSync(entry.file, 'utf8')))
     );
   }
