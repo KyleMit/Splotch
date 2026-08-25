@@ -540,16 +540,27 @@ function gestureRepeatsFromArgs(args) {
 // inside `automation`. Shared by acceptance and the matrix so the two readers
 // cannot drift (they briefly did, as private copies). Coerced to a number so a
 // string-typed count in a foreign artifact compares by value rather than being
-// hard-rejected by one reader and silently dropped by the other. Null means
-// the artifact predates the field (or the runner has no gesture plan), which
-// consumers deliberately do not reject — refusing every historical artifact
-// would force a full recapture to prove what was already driven at the
-// contract count.
+// hard-rejected by one reader and silently dropped by the other.
+//
+// Null means exactly one thing: the field is ABSENT — the artifact predates it
+// or the runner has no gesture plan — which consumers deliberately accept,
+// since refusing every historical artifact would force a full recapture. A
+// field that is present but not a number is a malformed artifact, and it
+// THROWS rather than collapsing into the same null (review round 2 proved a
+// `gestureRepeats: "bogus"` artifact sailed through acceptance and the matrix
+// filter as if it were historical). Acceptance maps the throw to a rejection;
+// the matrix lets it surface as a loud fold error naming the source.
 export function recordedGestureRepeats(artifact) {
   const recorded = artifact?.gestureRepeats ?? artifact?.automation?.gestureRepeats ?? null;
   if (recorded === null) return null;
   const count = Number(recorded);
-  return Number.isFinite(count) ? count : null;
+  if (!Number.isFinite(count)) {
+    throw new Error(
+      `the artifact records gestureRepeats ${JSON.stringify(recorded)}, which is not a number — ` +
+        'a malformed count is an invalid artifact, not a historical one'
+    );
+  }
+  return count;
 }
 
 export function planCampaign(targetId, { modes, items, outputRoot, host = {}, label } = {}) {

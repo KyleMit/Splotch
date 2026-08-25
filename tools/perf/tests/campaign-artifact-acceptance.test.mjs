@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import { NATIVE_TRANSPORT, recordedGestureRepeats } from '../lib/campaign-plan.mjs';
 import {
   COMPLETE,
   FAILED,
@@ -255,6 +255,22 @@ describe('the gesture-repeat contract', () => {
         expectedGestureRepeats: 10,
       })
     ).toMatchObject({ ok: false, status: WRONG_GESTURE_REPEATS, recordedRepeats: 3 });
+  });
+
+  // Review round 2: a present-but-malformed count must not collapse into the
+  // null that means "historical absence" — that read a corrupt artifact as a
+  // trustworthy old one. It is rejected like any invalid artifact, with or
+  // without a contract to compare against.
+  it('rejects a malformed recorded count instead of reading it as absent', () => {
+    const malformed = artifactAt({ ...scoreable, gestureRepeats: 'bogus' });
+
+    expect(inspectArtifact(malformed, 'web', { expectedGestureRepeats: 10 })).toMatchObject({
+      ok: false,
+      status: FAILED,
+    });
+    expect(inspectArtifact(malformed, 'web')).toMatchObject({ ok: false, status: FAILED });
+    expect(() => recordedGestureRepeats({ gestureRepeats: 'bogus' })).toThrow('not a number');
+    expect(recordedGestureRepeats({})).toBeNull();
   });
 });
 

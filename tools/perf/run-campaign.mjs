@@ -115,7 +115,15 @@ export function inspectArtifact(
   // well as a meaningless number, and naming the count would send the next
   // session recapturing a cell whose real problem is elsewhere — worst of all
   // for UNCALIBRATED_RUNTIME, the one status that must never be retried.
-  const recordedRepeats = recordedGestureRepeats(artifact);
+  // A present-but-malformed count throws in the shared reader; here that is an
+  // invalid artifact — the same rejection an unparseable file gets — not a
+  // historical absence, and not a crash mid-queue.
+  let recordedRepeats;
+  try {
+    recordedRepeats = recordedGestureRepeats(artifact);
+  } catch {
+    return { ok: false, status: FAILED };
+  }
   if (
     expectedGestureRepeats !== null &&
     recordedRepeats !== null &&
