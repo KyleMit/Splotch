@@ -106,6 +106,15 @@ keep whichever report saw more input.
 frames but zero pointer events. Before measuring, check that `document.elementFromPoint` at the
 canvas centre actually hits the canvas.
 
+**An interrupted action sweep can leave the Android panel pinned at 60Hz.** The android action sweep
+pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and restores them in its
+`finally` — but Ctrl-C, a `fail()` on an unserved URL or stale build, and kill -9 all exit without
+running it. A leaked pin then fails **every subsequent drawing cell on that phone** as
+`off-refresh-regime`, burning retries on a cause no retry can fix, and nothing in those failures
+names the setting. Check with `adb shell dumpsys display | grep -o 'renderFrameRate [0-9.]*'` — a
+phone that should boost to 120 reporting 60 is the tell — and clear it with
+`adb shell settings delete system peak_refresh_rate` and the same for `min_refresh_rate`.
+
 ## `ios_webkit_debug_proxy` is obsolete on iOS 17 and newer
 
 If it lists the *device* but reports zero *pages*, the device is fine and the tool is not. Apple
