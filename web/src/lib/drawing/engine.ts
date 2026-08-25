@@ -948,6 +948,10 @@ function strokeSpeed(ps: PointerState, last: Point, now: number): number {
 
 const rasterQueue = createStrokeRasterQueue<PointerState>({
   activePointers,
+  // Compile-time per-runtime choice (see CrayonOpGranularity): the WKWebView
+  // pays more per op, Safari pays more per path-length, and the measured
+  // optimum flips between them — issue 1236.
+  crayonOpGranularity: __IS_CAPACITOR__ ? 'per-frame' : 'per-move',
   paperMinEdge: () => Math.min(paper.pxW, paper.pxH),
   pointerWasResumed,
   restartStrokeIfResumed,

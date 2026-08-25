@@ -25,10 +25,14 @@ const pointer = (overrides: Partial<TestPointer> = {}): TestPointer => ({
   ...overrides,
 });
 
-function harness(pointers: Map<number, TestPointer>) {
+function harness(
+  pointers: Map<number, TestPointer>,
+  crayonOpGranularity: 'per-move' | 'per-frame' = 'per-move'
+) {
   const stroked: { points: { x: number; y: number }[]; moveCount: number }[] = [];
   const queue = createStrokeRasterQueue<TestPointer>({
     activePointers: pointers,
+    crayonOpGranularity,
     paperMinEdge: () => 1000,
     pointerWasResumed: () => false,
     restartStrokeIfResumed: () => {},
@@ -105,5 +109,25 @@ describe('createStrokeRasterQueue', () => {
 
     expect(crayon.stroked).toHaveLength(2);
     expect(crayon.stroked.every((op) => op.moveCount === 1)).toBe(true);
+  });
+
+  // The native build flips crayon to per-frame merging: the WKWebView pays
+  // more per op than per path-length, measured 1.74% -> 1.46% lost frame time
+  // on the physical iPad (issue 1236) where Safari measures the same merge as
+  // a regression. The engine picks the granularity from __IS_CAPACITOR__.
+  it('merges crayon per frame when the granularity says so', () => {
+    const batches = [
+      { points: [{ x: 1, y: 1 }], at: 10 },
+      { points: [{ x: 2, y: 2 }], at: 20 },
+    ];
+    const crayon = harness(
+      new Map([[1, pointer({ crayon: true, pendingRaster: [...batches] })]]),
+      'per-frame'
+    );
+    crayon.queue.flushAll();
+
+    expect(crayon.stroked).toHaveLength(1);
+    expect(crayon.stroked[0].points).toHaveLength(2);
+    expect(crayon.stroked[0].moveCount).toBe(2);
   });
 });
