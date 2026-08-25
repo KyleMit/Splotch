@@ -263,7 +263,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // fingerprint is written on acceptance so the decision is made once, not on
   // every subsequent resume.
   const fingerprintPath = join(dirname(ledgerPath), 'instrument.json');
-  const currentInstrument = instrumentFingerprint();
+  const currentInstrument = instrumentFingerprint([...new Set(plan.map((cell) => cell.command))]);
   const recordedInstrument = existsSync(fingerprintPath)
     ? JSON.parse(readFileSync(fingerprintPath, 'utf8'))
     : null;

@@ -8,35 +8,76 @@
 // (issue 1293; the 2026-08-24 session fixed three capture-path defects in one
 // sitting, and the discard-or-keep decision lived only in the operator's head).
 //
-// This is the coarse fix the issue recommends first: fingerprint the modules
-// that decide what a capture MEASURES, record it beside the ledger, and refuse
-// to resume when it moved — naming the changed files and putting the decision
-// in front of a human instead of making it silently. `--product-commit` is the
-// same idea applied to the product; this is the instrument's half, and the
-// instrument changes far more often mid-campaign than the product does.
+// The fingerprint is built PER COMMAND, from the modules each capture command's
+// measurement and dispatch actually flow through, and a campaign hashes only
+// the commands its own plan runs. One global list had both failure modes the
+// review named: files a command really depends on were absent (its resumed
+// cells could silently mix implementations), and iOS-only files were hashed
+// for Android and Mac targets (routine --accept-instrument-change prompts for
+// edits that could not have touched those cells). Deliberately NOT scorers or
+// fidelity tables: those re-derive at fold time, so changing them re-scores
+// banked cells rather than invalidating them.
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 
-// The modules whose edit means "a capture taken before is a different
-// instrument's capture": the page bootstrap and the host that injects it, the
-// probe that measures, the two capture drivers (split and Appium — the gesture
-// plan lives in the Appium module), and the eraser's ink fill. Deliberately
-// NOT scorers or fidelity tables: those re-derive at fold time, so changing
-// them re-scores banked cells rather than invalidating them.
-export const INSTRUMENT_FILES = [
-  'tools/perf/split-capture/lib/page-bootstrap.mjs',
-  'tools/perf/split-capture/lib/probe-host.mjs',
-  'tools/perf/split-capture/capture-device-frames.mjs',
-  'tools/perf/ios/capture-xcuitest-screen.mjs',
-  'tools/perf/probes/real-screen-probe.js',
-  'tools/perf/lib/eraser-fill.mjs',
-];
+const SHARED_SCREEN_PROBE = 'tools/perf/probes/real-screen-probe.js';
+const SHARED_ACTION_PROBE = 'tools/perf/probes/action-probe.js';
+// The Appium screen module also owns the gesture plan (trustedGestureActions)
+// and native canvas geometry, which is why it appears in the split command's
+// list too — the split drivers import both.
+const APPIUM_SCREEN_CAPTURE = 'tools/perf/ios/capture-xcuitest-screen.mjs';
+// The action sweep (runActionSweep) lives in the Appium actions module and is
+// imported by the CDP and desktop action runners alike.
+const APPIUM_ACTIONS_CAPTURE = 'tools/perf/ios/capture-xcuitest-actions.mjs';
+const ERASER_FILL = 'tools/perf/lib/eraser-fill.mjs';
 
-export function instrumentFingerprint(files = INSTRUMENT_FILES, readFile = defaultRead) {
+export const INSTRUMENT_FILES_BY_COMMAND = {
+  'perf:device:frames': [
+    'tools/perf/split-capture/capture-device-frames.mjs',
+    'tools/perf/split-capture/lib/page-bootstrap.mjs',
+    'tools/perf/split-capture/lib/probe-host.mjs',
+    'tools/perf/split-capture/lib/report-store.mjs',
+    'tools/perf/split-capture/lib/android-input.mjs',
+    'tools/perf/split-capture/lib/chrome-tabs.mjs',
+    APPIUM_SCREEN_CAPTURE,
+    SHARED_SCREEN_PROBE,
+    ERASER_FILL,
+  ],
+  'perf:ios:xcuitest:screen': [APPIUM_SCREEN_CAPTURE, SHARED_SCREEN_PROBE, ERASER_FILL],
+  'perf:ios:xcuitest:actions': [APPIUM_ACTIONS_CAPTURE, SHARED_ACTION_PROBE],
+  'perf:android:browser:actions': [
+    'tools/perf/android/capture-browser-actions.mjs',
+    APPIUM_ACTIONS_CAPTURE,
+    SHARED_ACTION_PROBE,
+  ],
+  'perf:web:frames': ['tools/perf/web/capture-local-frames.mjs', SHARED_SCREEN_PROBE],
+  'perf:web:actions': [
+    'tools/perf/web/capture-desktop-actions.mjs',
+    APPIUM_ACTIONS_CAPTURE,
+    SHARED_ACTION_PROBE,
+  ],
+};
+
+export function instrumentFilesFor(commands) {
+  const files = new Set();
+  for (const command of commands) {
+    const list = INSTRUMENT_FILES_BY_COMMAND[command];
+    if (!list) {
+      throw new Error(
+        `no instrument file list is declared for ${command} — a command the fingerprint ` +
+          'does not know cannot be resume-guarded (add it to INSTRUMENT_FILES_BY_COMMAND)'
+      );
+    }
+    for (const file of list) files.add(file);
+  }
+  return [...files].sort();
+}
+
+export function instrumentFingerprint(commands, readFile = defaultRead) {
   const perFile = Object.fromEntries(
-    [...files].sort().map((file) => [file, sha256(readFile(file))])
+    instrumentFilesFor(commands).map((file) => [file, sha256(readFile(file))])
   );
   return {
     fingerprint: sha256(JSON.stringify(perFile)),
