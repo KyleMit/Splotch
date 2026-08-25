@@ -758,7 +758,10 @@ function drawingPlot(matrix, metric, gate, title) {
         const why = unscoreable
           ? ` · unscoreable: ${unscoreableReasons(result).join(', ')}${published}`
           : '';
-        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${why}`;
+        const basis = Number.isFinite(result.runCount)
+          ? ` · ${result.runCount} capture${result.runCount === 1 ? '' : 's'}`
+          : '';
+        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${basis}${why}`;
         const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
         return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${unscoreable ? ' unscoreable' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
       }).join('');
@@ -979,6 +982,18 @@ function markdownStatus(passed) {
   return passed ? 'Pass' : '**FAIL**';
 }
 
+// Issue 1290: four same-session captures of one cell (android-device-web
+// landscape-light magic) measured 2.71, 1.15, 0.45 and 1.35% against the 1%
+// lost-frame gate — 3 of 4 over, with the distribution overlapping the same
+// session's dark captures. A verdict resting on one capture is therefore one
+// draw from an unmeasured spread, which ADR-0136 already calls provisional.
+// The verdict computation is untouched; the marker keeps a single-capture FAIL
+// from reading as an established property of the cell. `runCount` in data.json
+// is the machine-readable form of the same statement.
+function singleCaptureVerdictNote(aggregate) {
+  return aggregate.runCount === 1 ? ' _(1 capture — spread unmeasured)_' : '';
+}
+
 function drawingAggregateAvailable(aggregate) {
   return (
     aggregate.runCount > 0 ||
@@ -1034,7 +1049,9 @@ function renderMarkdown(matrix) {
         if (aggregate.scoreable === false) {
           return `_unscoreable (${unscoreableReasons(aggregate).join(', ')})_: ${value}`;
         }
-        return aggregate.blankPassed ? value : `**FAIL ${value}**`;
+        return aggregate.blankPassed
+          ? value
+          : `**FAIL ${value}**${singleCaptureVerdictNote(aggregate)}`;
       }),
     ];
   });
@@ -1132,6 +1149,13 @@ ${markdownTable(['Target', 'Drawing', 'Undo', 'Action source commits'], provenan
 Each cell is blank-paper paint \`P95 / P99 / max\` in milliseconds, followed by the cumulative
 lost-frame share of in-contact time. Every target retains separate portrait/landscape and
 light/dark rows.
+
+A cell aggregates however many captures its manifest lists — most list exactly one, and a gate
+verdict from one capture is a single draw from an unmeasured run-to-run spread. The one cell whose
+spread has been measured (four same-session captures, issue 1290) ranged 0.45–2.71% against a 1%
+lost-frame gate, so a failing cell backed by a single capture is marked as such rather than read as
+established; ADR-0136 calls any single number from this gate provisional until compared against
+another run of the same cell. \`runCount\` in \`data.json\` records the basis per cell.
 
 ${markdownTable(['Target', 'Pen', 'Crayon', 'Magic', 'Eraser'], drawingRows)}
 
@@ -1277,7 +1301,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
+  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode; each tooltip states how many captures back the cell, because a gate verdict from a single capture is one draw from an unmeasured run-to-run spread and is provisional rather than established (ADR-0136, issue 1290). Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({
