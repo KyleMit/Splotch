@@ -60,15 +60,27 @@ export function createStrokeRasterQueue<P extends RasterPointer>(deps: StrokeRas
       deps.restartStrokeIfResumed(ps, batch.points[0], batch.at);
       speed = deps.strokeSpeed(ps, batch.points[batch.points.length - 1], batch.at);
       if (ps.crayon && !ps.erase) {
-        // Crayon alone keeps one op per pointermove. Its wax is deposited per op
-        // through two pattern passes into two surfaces, so a merged op paints a
-        // longer path per stroke() call and lands a larger dirty region on the
-        // preview planes — a cost the checkpoint accounting cannot give back.
-        // Measured on the physical iPad at 2.0 moves per frame, merging cost
-        // crayon 1.57% -> 2.11% of in-contact frame time; counting the checkpoint
-        // in pointermoves recovered it only to 1.85%. Every other brush paints
+        // Crayon alone keeps one op per SAMPLE. Its wax is deposited per op
+        // through two pattern passes into two surfaces, so a longer path per
+        // stroke() call lands a larger dirty region on the preview planes — a
+        // cost the checkpoint accounting cannot give back. Measured on the
+        // physical iPad at 2.0 moves per frame, merging cost crayon
+        // 1.57% -> 2.11% of in-contact frame time; counting the checkpoint in
+        // pointermoves recovered it only to 1.85%. Every other brush paints
         // one shape per op and coalesces cleanly.
-        deps.strokeSegments(ps, batch.points, 1);
+        //
+        // Per sample, not per batch: a batch is one pointermove EVENT, and how
+        // many samples an event carries is the page delivery's choice, not the
+        // digitizer's. Safari hands one sample per event (coalescing 0), while
+        // the bundled WKWebView hands ~2 (coalescing 1.05-1.08, issue 1303) —
+        // so per-batch ops silently reproduced the merged shape natively, and
+        // crayon cost twice as much in the shipped app as in Safari on the
+        // same iPad (issue 1236). Splitting rebuilds Safari's op stream under
+        // every delivery; where events already carry one sample it is the
+        // identity.
+        for (const point of batch.points) {
+          deps.strokeSegments(ps, [point], 1);
+        }
       } else {
         merged.push(...batch.points);
         mergedMoves += 1;

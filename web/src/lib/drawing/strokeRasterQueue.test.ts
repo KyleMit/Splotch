@@ -106,4 +106,49 @@ describe('createStrokeRasterQueue', () => {
     expect(crayon.stroked).toHaveLength(2);
     expect(crayon.stroked.every((op) => op.moveCount === 1)).toBe(true);
   });
+
+  // A batch is one pointermove EVENT, and how many samples it carries is the
+  // page delivery's choice: Safari hands one per event, the bundled WKWebView
+  // hands ~2 coalesced (issue 1303). Per-batch crayon ops silently reproduced
+  // the merged shape natively — the shape measured at ~2x wax cost — which is
+  // how crayon cost twice as much in the shipped iPad app as in Safari on the
+  // same hardware (issue 1236). Splitting per sample rebuilds Safari's op
+  // stream under every delivery.
+  it('splits a coalesced crayon batch into one op per sample', () => {
+    const coalescedBatches = [
+      {
+        points: [
+          { x: 1, y: 1 },
+          { x: 2, y: 2 },
+        ],
+        at: 10,
+      },
+      {
+        points: [
+          { x: 3, y: 3 },
+          { x: 4, y: 4 },
+        ],
+        at: 20,
+      },
+    ];
+    const crayon = harness(
+      new Map([[1, pointer({ crayon: true, pendingRaster: [...coalescedBatches] })]])
+    );
+    crayon.queue.flushAll();
+
+    expect(crayon.stroked).toHaveLength(4);
+    expect(crayon.stroked.map((op) => op.points)).toEqual([
+      [{ x: 1, y: 1 }],
+      [{ x: 2, y: 2 }],
+      [{ x: 3, y: 3 }],
+      [{ x: 4, y: 4 }],
+    ]);
+    expect(crayon.stroked.every((op) => op.moveCount === 1)).toBe(true);
+
+    const others = harness(new Map([[1, pointer({ pendingRaster: [...coalescedBatches] })]]));
+    others.queue.flushAll();
+
+    expect(others.stroked).toHaveLength(1);
+    expect(others.stroked[0].points).toHaveLength(4);
+  });
 });
