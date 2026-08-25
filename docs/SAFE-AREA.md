@@ -44,15 +44,16 @@ fixed-position probe rather than `getComputedStyle` on the custom property — t
 
 ## How to emulate insets
 
-| Approach                                  | Genuine `env()`?                 | Verdict                                                                      |
-| ----------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------- |
-| `env()` fallback argument                 | —                                | **No.** Fires only when unsupported, never on `0`                            |
-| `--safe-area-*` override                  | No — the properties, not `env()` | **Yes** for layout. What `/dev/notch` uses; works in any browser             |
-| Chrome DevTools device mode               | No                               | **No.** Always reports `0`, for every device preset                          |
-| CDP `Emulation.setSafeAreaInsetsOverride` | **Yes**                          | **Yes.** Chromium only. What the matrix spec uses                            |
-| iOS Simulator (Safari + WKWebView)        | **Yes**                          | **Yes** — best free fidelity. macOS, and safaridriver rather than Playwright |
-| Android dev options → simulate a cutout   | OS-level yes                     | Propagation into `env()` is **unverified**; see the open questions           |
-| Real-device clouds                        | **Yes**                          | Yes, and expensive. Release branches, not every PR                           |
+| Approach                                  | Genuine `env()`?                 | Verdict                                                                 |
+| ----------------------------------------- | -------------------------------- | ----------------------------------------------------------------------- |
+| `env()` fallback argument                 | —                                | **No.** Fires only when unsupported, never on `0`                       |
+| `--safe-area-*` override                  | No — the properties, not `env()` | **Yes** for layout. What `/dev/notch` uses; works in any browser        |
+| Chrome DevTools device mode               | No                               | **No.** Always reports `0`, for every device preset                     |
+| CDP `Emulation.setSafeAreaInsetsOverride` | **Yes**                          | **Yes.** Chromium only. What the matrix spec uses                       |
+| iOS Simulator (Safari + WKWebView)        | **Yes**                          | **Yes** — best free fidelity, but screenshots only; see the traps below |
+| Android emulator with a cutout AVD        | **Yes**                          | **Yes**, and scriptable over CDP — measured 42px on a Pixel 7 Pro AVD   |
+| Android dev options → simulate a cutout   | OS-level yes                     | Propagation into `env()` is **unverified**; see the open questions      |
+| Real-device clouds                        | **Yes**                          | Yes, and expensive. Release branches, not every PR                      |
 
 Two traps in the CDP path, both handled by `overrideSafeAreaInsets` in `web/tests/cdp.ts`:
 
@@ -62,6 +63,17 @@ Two traps in the CDP path, both handled by `overrideSafeAreaInsets` in `web/test
 * **Insets must be integers.** The call is rejected outright on a fractional one, but real devices
   report fractions (a Galaxy S23 Ultra's `28.571`), because the value is a dp measurement divided by
   a non-integer display density. The helper rounds and returns what it applied.
+
+And one trap that belongs to the devices rather than to CDP, because it has already produced two
+false findings: **on a simulator or emulator, a device pose that disagrees with the app's locked
+interface orientation offsets the whole web layer by exactly one safe-area inset.** Fixed elements —
+the Notch Band among them — then paint an inset's width inside the screen edge, leaving the strip
+they exist to fill bare. It is indistinguishable by eye from a `viewport-fit: cover` regression and
+it is not one. Splotch locks rotation by default on phones, so simply rotating the simulator puts
+you in that pose. Confirm the device and the interface agree before believing a placement result;
+the per-platform mechanics are in
+[MOBILE/ios.md](MOBILE/ios.md#rotating-and-screenshotting-a-simulator) and
+[MOBILE/android.md](MOBILE/android.md#scripting-against-the-running-native-webview-cdp).
 
 ## What the devices actually report
 
@@ -80,8 +92,21 @@ the open defect below.
 **A bottom inset arrives without a top one.** Every home-indicator iPad reports `0/0/20/0` in a
 Safari tab, in all four orientations — Safari's chrome absorbs the top inset, and iPadOS Safari has
 no bottom toolbar for the home indicator's 20px to hide behind. No iPad has ever had a display
-cutout; **24px is the hard ceiling for a top inset on any iPad**, which is what gives
-`NOTCH_INSET_THRESHOLD_PX = 30` its headroom in both directions (iPad max 24, iPhone min 44).
+cutout, so nothing on an iPad should ever paint a Notch Band.
+
+**The iPad top inset is not 24 on iPadOS 26, and that breaks the threshold.** An iPad mini (A17 Pro)
+and an iPad Pro 13-inch (M5) simulator, both on iPadOS 26.5 running the native build, each measured
+a top inset of exactly **32 css px** — not the 24 recorded in `DEVICE_PROFILES`, which the rest of
+this document treated as a hard ceiling. Since `NOTCH_INSET_THRESHOLD_PX = 30`, `hasNotch(32)` is
+true and the app paints a band on a device with no cutout: precisely the bezel-iPad false positive
+the threshold exists to exclude. The headroom argument the constant was chosen under (iPad max 24,
+iPhone min 44) no longer holds on its iPad side; the run is written up in
+[scratchpad/safe-area-device-verification-2026-08-24.md](scratchpad/safe-area-device-verification-2026-08-24.md).
+
+The profile numbers are deliberately left at 24 until the constant is decided, because
+`safe-area-matrix.spec.ts` derives `expectedBandEdges` from the app's own `bandEdges()` applied to
+those numbers — raising the profile to 32 alone would make CI assert that iPads are *supposed* to
+paint a band. The inset and the threshold have to move in one change.
 
 **Rounded corners do not inset the sides.** An iPad 10th gen has the largest corner radius Apple
 ships (25pt) and still reports `left: 0, right: 0`. Android waterfall/curved-edge insets default to
@@ -194,12 +219,31 @@ appears as a section in the gallery and as a set of scenarios in CI on the next 
 only for a **distinct inset tuple** — a second phone reporting the same four numbers at the same
 viewport exercises nothing the first didn't.
 
+## Settled by measurement
+
+A [simulator and emulator run on 2026-08-24](scratchpad/safe-area-device-verification-2026-08-24.md)
+closed three of these. Recorded here so they are not re-investigated:
+
+* **The rotation-angle sign is correct.** Measured on an Android emulator with distinguishable
+  sides: angle `90` reports the inset on the **left**, angle `270` on the **right**, and the band
+  followed. The counter-clockwise reading this document argued for beat the WebKit bug comment that
+  says the opposite.
+* **The iOS symmetric-landscape branch is correct.** An iPhone 17 Pro reported `62` on both sides in
+  a landscape interface and the app painted both edges.
+* **A native Android WebView really does report a cutout** — `42` on a Pixel 7 Pro AVD with WebView
+  150, confirming the M144+ claim above against a Chrome tab's `0`.
+
 ## Open questions worth an on-device check
 
 1. Whether Android's "Simulate a display with a cutout" developer option propagates into
    `env(safe-area-inset-*)` in Chrome and WebView. Chrome's edge-to-edge guide covers only the
-   gesture nav bar and never mentions cutouts.
+   gesture nav bar and never mentions cutouts. (The 2026-08-24 run used an AVD with a *declared*
+   cutout, not the developer option, so this stands.)
 2. Whether WebKit mirrors the iOS 26 change of the landscape top inset from `0` to `20`. Confirmed
-   for UIKit, unconfirmed for `env()`.
+   for UIKit, unconfirmed for `env()`. Related and now measured: iPadOS 26 raised the iPad **top**
+   inset from 24 to 32 in `env()`, so the iOS 26 inset changes do reach the web layer.
 3. The Safari-tab inset column for a specific iPad model — derived from how the WebView is laid out
    rather than from a per-model browser dump.
+4. Whether any shipping Android device reports **both** side insets non-zero in landscape, the
+   paired cutout-plus-nav-bar case `android-native-punch-3button` models. Enabling 3-button
+   navigation on an emulator did not produce it: `env()` carried only the cutout in both rotations.

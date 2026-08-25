@@ -240,7 +240,7 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     },
     confidence: 'high',
     notes:
-      'A bottom inset with no cutout anywhere, identical in all four orientations. 24 is the hard ceiling for a top inset on any iPad ever shipped — no iPad has a display cutout — which is what leaves the 30px notch threshold its headroom. Note the 25px corner radius still produces left/right insets of ZERO: rounded corners do not inset the sides on iPad.',
+      'A bottom inset with no cutout anywhere, identical in all four orientations. No iPad has a display cutout, so no iPad should paint a Notch Band. The 24 recorded here was long treated as the hard ceiling that left the 30px notch threshold its headroom — but an iPad mini and an iPad Pro 13-inch on iPadOS 26.5 each measured 32, which clears the threshold and paints a band on a cutout-free device. The number stays 24 until NOTCH_INSET_THRESHOLD_PX is decided, because safe-area-matrix.spec.ts derives its expected band edges from these insets and would otherwise assert the defect as correct. See docs/SAFE-AREA.md. Note the 25px corner radius still produces left/right insets of ZERO: rounded corners do not inset the sides on iPad.',
     sources: IPAD_SOURCES,
   },
   {
@@ -382,9 +382,9 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
       'landscape-left': { top: 28, right: 48, bottom: 0, left: 38 },
       'landscape-right': { top: 28, right: 38, bottom: 0, left: 48 },
     },
-    confidence: 'high',
+    confidence: 'low',
     notes:
-      'The scenario that breaks any "deepest side inset is the cutout" rule, and the reason the band cannot simply paint both sides. With 3-button navigation the nav bar leaves the bottom edge in landscape and takes a side — the opposite side from the camera — so left and right are both non-zero and the DEEPER one is the nav bar. Following the deeper inset would paint the drawing colour behind the back/home/recents buttons and leave the camera strip bare; painting both would paint over the buttons too. Here the rotation angle decides, which it can because the two sides are distinguishable.',
+      'The scenario that breaks any "deepest side inset is the cutout" rule, and the reason the band cannot simply paint both sides. With 3-button navigation the nav bar leaves the bottom edge in landscape and takes a side — the opposite side from the camera — so left and right are both non-zero and the DEEPER one is the nav bar. Following the deeper inset would paint the drawing colour behind the back/home/recents buttons and leave the camera strip bare; painting both would paint over the buttons too. Here the rotation angle decides, which it can because the two sides are distinguishable. NOT REPRODUCED: with 3-button nav actually enabled on a Pixel 7 Pro emulator (WebView 150), env() carried only the cutout — 42 on the cutout side, 0 on the other, in both rotations — even though the nav bar had moved to a side. The paired non-zero sides modelled here have never been measured; treat them as a hypothesis the band is designed to survive rather than an observed device. See docs/SAFE-AREA.md.',
     sources: [
       'https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBar.java',
     ],

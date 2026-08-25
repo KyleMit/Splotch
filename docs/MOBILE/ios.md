@@ -111,6 +111,37 @@ npx @capacitor/assets generate --ios
   simulator SDK without store signing; device-SDK-only code and settings remain covered by the local
   signed archive. The separate smoke keeps the established simulator boot signal unchanged.
 
+### Rotating and screenshotting a simulator
+
+Verifying anything orientation-dependent on a simulator runs into four traps, all of which produce
+plausible wrong answers rather than errors. Learned the hard way in
+[scratchpad/safe-area-device-verification-2026-08-24.md](../scratchpad/safe-area-device-verification-2026-08-24.md).
+
+* **`simctl` cannot rotate.** There is no rotation verb, and driving the Simulator's *Device →
+  Rotate* menu through AppleScript times out (`-1712`) and leaves a hung `System Events` process
+  behind. The working path is Maestro's `setOrientation` (`PORTRAIT`, `LANDSCAPE_LEFT`,
+  `LANDSCAPE_RIGHT`, `UPSIDE_DOWN`), which sets `XCUIDevice.shared.orientation` through its XCTest
+  driver.
+* **Rotating the device does not rotate an orientation-locked app**, and the mismatch is actively
+  misleading: Splotch locks rotation by default on phones, and when the device pose disagrees with
+  the locked interface, iOS offsets the whole web layer by exactly one safe-area inset. Fixed
+  elements then paint an inset's width *inside* the screen edge, which is a convincing impersonation
+  of a `viewport-fit: cover` bug. Get the device and the interface into the same orientation before
+  believing any placement measurement.
+* **The two screenshot tools disagree, and both mislead image tooling.** `simctl io screenshot`
+  writes the device-native buffer and ignores the interface rotation entirely. Maestro's
+  `takeScreenshot` writes the rotated image as an **EXIF orientation flag**, so `sips` previews it
+  upright while raw pixel access sees it unrotated — measure with `sharp(file).rotate()` or you will
+  find nothing in an image that plainly has content.
+* **`ios_webkit_debug_proxy` does not enumerate simulators**, only physically attached devices.
+  There is no scripted CDP path into a simulator's WKWebView, so simulator web-layer facts have to
+  be measured off screenshots. (Android's native WebView *does* take a scripted client — see
+  [android.md](android.md#scripting-against-the-running-native-webview-cdp).)
+
+Maestro's text selectors also do not reach into the WebView — `tapOn: Settings` fails on controls
+that are present and labelled. Use `tapOn: {point: "92%,88%"}`, remembering the percentages are
+relative to the device frame, not the rotated interface.
+
 ### Manual iOS 16.4 floor gate
 
 The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver did not start on iOS

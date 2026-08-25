@@ -205,6 +205,34 @@ multi-touch input — the best way to get accurate profiles.
    real finger input), then click **Stop**.
 6. Export the trace: click the **⋮** menu → **Save profile…** → save as `.json`.
 
+### Scripting against the running native WebView (CDP)
+
+`chrome://inspect` is interactive; when you need to *read values out of* the running native app —
+computed styles, `env()` insets, live DOM geometry — the same debug socket takes a scripted CDP
+client. This is how the safe-area insets were measured on-device in
+[scratchpad/safe-area-device-verification-2026-08-24.md](../scratchpad/safe-area-device-verification-2026-08-24.md).
+
+```bash
+SERIAL=emulator-5554                                   # or a phone serial from adb:devices
+PID=$(adb -s "$SERIAL" shell pidof art.splotch.app | tr -d '\r')
+adb -s "$SERIAL" forward tcp:9333 "localabstract:webview_devtools_remote_$PID"
+curl -s http://localhost:9333/json/list                # confirm the page target is there
+```
+
+Then attach with Playwright's `chromium.connectOverCDP('http://localhost:9333')` and evaluate in
+`browser.contexts()[0].pages()[0]`. Run the script from the repo root so `playwright` resolves.
+
+Three things that will waste your time here:
+
+* **The socket name carries the pid** (`webview_devtools_remote_<pid>`), so the forward is invalid
+  the moment the app restarts. Re-read `pidof` and re-forward on every launch, and poll for the
+  socket to appear rather than sleeping a fixed interval — it lags process start by a second or so.
+* **`adb shell monkey -p art.splotch.app 1` can report success and start nothing.** Use
+  `adb -s "$SERIAL" shell am start -n art.splotch.app/.MainActivity`.
+* **Pin `-s <serial>` on every call** when a phone and an emulator are both attached, or adb fails
+  with `more than one device/emulator`. Per the root `CLAUDE.md`, never kill the other listener to
+  clear a port — pick another port or another serial.
+
 ## 4. Release checklist
 
 ### App configuration (mostly done — verify)
