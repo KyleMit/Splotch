@@ -406,7 +406,24 @@ async function measureClick({
     const state = await execute(`
       const target = document.querySelector(${JSON.stringify(selector)});
       const rect = target?.getBoundingClientRect();
+      // finish() harvests the armed action even after a timeout, and its record
+      // answers the question the timeout cannot: eventType 'uncaptured' means the
+      // activation never reached the target, while a captured event with no
+      // canvas mutations means the handler ran and the product did nothing.
+      let probe = null;
+      try { probe = window.__actionProbe?.finish(); } catch (probeError) { probe = { error: String(probeError) }; }
       return {
+        probe: probe && {
+          armedEvents: probe.armedEvents,
+          eventType: probe.eventType,
+          trusted: probe.trusted,
+          activities: probe.activities,
+          canvasMutations: probe.canvasMutations,
+          measures: probe.measures?.map((m) => m.name),
+          error: probe.error
+        },
+        undoDisabled: document.querySelector('#undoButton')?.getAttribute('aria-disabled'),
+        screenshotDisabled: document.querySelector('#screenshotButton')?.disabled,
         target: target ? {
           tag: target.tagName,
           text: target.textContent?.trim(),
@@ -519,15 +536,33 @@ async function closeDialogs(execute) {
 }
 
 async function nativeBoundsForSelector(client, sessionId, execute, selector) {
+  // A rotation performed while the page is up can leave the WKWebView's scroll
+  // view offset (observed on-device: 32px after landscape-to-portrait), which
+  // shifts every delivered touch by that amount relative to client coordinates
+  // — taps computed from getBoundingClientRect then land above their target.
+  // Reset to the app's intended origin before measuring, and report what was
+  // found so a capture log records the displacement rather than absorbing it.
   const webGeometry = await execute(`
+    const displaced = {
+      x: scrollX, y: scrollY,
+      vvLeft: visualViewport?.offsetLeft ?? 0, vvTop: visualViewport?.offsetTop ?? 0
+    };
+    if (displaced.x || displaced.y) scrollTo(0, 0);
     const rect = document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect();
     if (!rect) return null;
     return {
       canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-      viewport: { width: innerWidth, height: innerHeight }
+      viewport: { width: innerWidth, height: innerHeight },
+      displaced
     };
   `);
   if (!webGeometry) throw new Error(`No native-gesture target matches ${selector}`);
+  const { displaced } = webGeometry;
+  if (displaced && (displaced.x || displaced.y || displaced.vvLeft || displaced.vvTop)) {
+    console.warn(
+      `web content displaced before ${selector} tap: ${JSON.stringify(displaced)} — scroll reset applied`
+    );
+  }
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
   const webContext = contexts.find(isWebContext);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
@@ -538,19 +573,17 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
       value: client.nativeWebViewClass ?? DEFAULT_NATIVE_WEBVIEW_CLASS,
     })
     .catch(() => []);
-  const webViewBounds = largestNativeRect(
-    (
-      await Promise.all(
-        webViews.map((webView) => {
-          const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
-          return client
-            .request('GET', `/session/${sessionId}/element/${webViewId}/rect`)
-            .catch(() => null);
-        })
-      )
-    ).filter(Boolean),
-    nativeWindow
-  );
+  const webViewRects = (
+    await Promise.all(
+      webViews.map((webView) => {
+        const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
+        return client
+          .request('GET', `/session/${sessionId}/element/${webViewId}/rect`)
+          .catch(() => null);
+      })
+    )
+  ).filter(Boolean);
+  const webViewBounds = largestNativeRect(webViewRects, nativeWindow);
   const bounds = nativeCanvasBounds({
     webGeometry,
     webViewBounds,

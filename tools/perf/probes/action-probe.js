@@ -131,6 +131,7 @@
       listeners: [],
     };
     const listener = (event) => {
+      recordArmedEvent(action, event);
       if (action.actionAt !== null) return;
       action.actionAt = performance.now();
       action.eventType = event.type;
@@ -144,6 +145,25 @@
     trackActivity(action);
     active = action;
     return true;
+  }
+
+  // Each armed event with its coordinates and a concurrent hit-test. The
+  // per-event hit answers what the first-event fields cannot: a press whose
+  // down and up both target the control can still die in a handler that
+  // re-hit-tests, and only the coordinates at each end say why.
+  function recordArmedEvent(action, event) {
+    if (!action.armedEvents) action.armedEvents = [];
+    if (action.armedEvents.length >= 8) return;
+    const hit =
+      Number.isFinite(event.clientX) && document.elementFromPoint(event.clientX, event.clientY);
+    action.armedEvents.push({
+      type: event.type,
+      atFromArmMs: performance.now() - action.armedAt,
+      x: event.clientX,
+      y: event.clientY,
+      trusted: event.isTrusted,
+      hit: hit ? hit.id || hit.tagName : null,
+    });
   }
 
   function beginExternal(label, eventTypes) {
@@ -211,6 +231,7 @@
     return {
       label: action.label,
       traceName: action.traceName,
+      armedEvents: action.armedEvents ?? [],
       armedAt: action.armedAt,
       actionAt,
       eventType: action.eventType ?? 'uncaptured',
