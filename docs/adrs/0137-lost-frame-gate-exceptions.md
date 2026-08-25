@@ -141,9 +141,11 @@ tried and rejected.
   recapture on 2026-08-22 measured iPad crayon at 1.11% and printed `FAIL` for it. Read a
   capture-time verdict on an excepted cell as the raw number plus a reminder to check this table,
   not as a regression.
-* \+ The exception is narrow. It names one brush on one target; crayon on Android physical, on both
-  emulators, and on all three desktop browsers is still held to 1%, and iPad crayon in the native
-  Capacitor WebView is too.
+* \+ The exception stays narrow. It names one brush on two iPad targets — the native Capacitor
+  WebView cell joined on 2026-08-25 after per-frame op merging (issue 1236) brought it to Safari
+  parity (0.96/1.11/1.44% over three same-session samples, median 1.11%, the same excursion shape
+  that sized the web budget); crayon on Android physical, on both emulators, and on all three
+  desktop browsers is still held to 1%.
 * \+ A crayon regression on the iPad is still caught. The cell has a budget rather than an
   exemption, and 1.5% against a 1.11–1.17% median band leaves roughly one excursion of slack — wide
   enough not to flap, narrow enough that a real regression crosses it.

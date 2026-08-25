@@ -20,6 +20,16 @@ export const LOST_FRAME_TIME_SHARE_EXCEPTIONS = {
       'matrix cell IS a single capture, so this is set above the observed single-sample excursion ' +
       'rather than above the median.',
   },
+  'ipad-device-native:crayon': {
+    share: 0.015,
+    reason:
+      'Per-frame crayon op merging (ADR-0137 as amended, issue 1236) brought the native WKWebView ' +
+      'from a 2.14% published cell to Safari parity: three same-session samples on 2026-08-25 ' +
+      "measured 0.96/1.11/1.44%, median 1.11% — inside the web cell's own 1.11-1.17% median band " +
+      'with the same shape of single-sample excursion. The same residual per-move wax cost now ' +
+      'binds both runtimes, so the same 1.5% single-capture budget applies, set by the same ' +
+      'above-the-excursion rule.',
+  },
 };
 
 export function lostFrameTimeShareGateFor(targetId, brush) {
