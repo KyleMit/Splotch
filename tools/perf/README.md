@@ -30,7 +30,10 @@ complete flag and output descriptions.
   `summaries` a capture was written with, because those were computed by whichever estimator the
   branch had at capture time, and it imports the scoring maths from the shipped modules so the
   answer is what the gate says rather than what a private copy says. Trialling a *new* charge is the
-  same operation: change the shipped charge on a branch and re-run.
+  same operation: change the shipped charge on a branch and re-run. Captures whose corpus index
+  marks `cellAttributable: false` (issue 1315) are refused by default; `--include-unattributable`
+  re-admits them deliberately, visibly marked, for questions about the instrument rather than the
+  cell.
 * `perf:campaign` drives one deployment-target capture campaign to completion and is resumable:
   rerunning the same command skips cells whose artifacts already parse, retries failed ones, and
   records exhausted ones as P1s while the queue continues. `lib/campaign-plan.mjs` owns which cells

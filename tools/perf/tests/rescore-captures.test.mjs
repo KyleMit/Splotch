@@ -182,6 +182,28 @@ describe('the rescorer honours cellAttributable', () => {
     expect(evidenceIndexUnattributable(mkdtempSync(join(tmpdir(), 'splotch-clean-'))).size).toBe(0);
   });
 
+  // The real evidence corpus nests one campaign directory per promotion, each
+  // with its own index — the shape whose naive per-index keying already
+  // mis-targeted every capture once (see evidenceIndexTargets). A flat fixture
+  // cannot fail on the join, so this one nests.
+  it('keys a nested corpus by path relative to the corpus root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-nested-unattributable-'));
+    mkdirSync(join(root, '2026-08-24-campaign'), { recursive: true });
+    writeFileSync(
+      join(root, '2026-08-24-campaign', 'index.json'),
+      JSON.stringify({
+        kept: [
+          { file: 'contaminated.json', cellAttributable: false, reportNonce: 'other-9-9' },
+          { file: 'clean.json' },
+        ],
+      })
+    );
+
+    const marked = evidenceIndexUnattributable(root);
+
+    expect([...marked.keys()]).toEqual(['2026-08-24-campaign/contaminated.json']);
+  });
+
   it('refuses a marked capture by default and re-admits it only on the flag', async () => {
     const dir = corpusWith({
       kept: [
@@ -211,8 +233,54 @@ describe('the rescorer honours cellAttributable', () => {
         'clean',
         'contaminated',
       ]);
+      // Re-admitted is not laundered: the marking rides the scored entry (and
+      // from there the table row and the JSON export), and the run reports the
+      // re-admittance instead of claiming zero refusals.
+      expect(includedRun.readmitted.map((entry) => entry.name)).toEqual(['contaminated']);
+      const readmitted = includedRun.scored.find((entry) => entry.name === 'contaminated');
+      expect(readmitted).toMatchObject({
+        cellAttributable: false,
+        reportNonce: 'other-cell-1-2',
+      });
+      expect(
+        includedRun.scored.find((entry) => entry.name === 'clean').cellAttributable
+      ).toBeUndefined();
     } finally {
       quiet.mockRestore();
+      quietTable.mockRestore();
+    }
+  });
+
+  // An all-refused corpus produced an empty table and exit 0 — the same shape
+  // as a clean success, on the tool whose own comments say a silent omission
+  // is how an answer goes wrong.
+  it('exits non-zero when every capture in the corpus is refused', async () => {
+    const dir = corpusWith({
+      kept: [
+        {
+          file: 'contaminated.json',
+          target: 'ipad-device-web',
+          cellAttributable: false,
+          reportNonce: 'other-cell-1-2',
+        },
+      ],
+    });
+    writeFileSync(join(dir, 'contaminated.json'), JSON.stringify({ brush: 'crayon', report }));
+    const corpus = relative(ROOT, dir);
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const quietError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const quietTable = vi.spyOn(console, 'table').mockImplementation(() => {});
+    const previousExitCode = process.exitCode;
+
+    try {
+      const run = await rescoreCaptures({ corpus });
+      expect(run.scored).toEqual([]);
+      expect(run.refused).toHaveLength(1);
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.exitCode = previousExitCode;
+      quiet.mockRestore();
+      quietError.mockRestore();
       quietTable.mockRestore();
     }
   });
