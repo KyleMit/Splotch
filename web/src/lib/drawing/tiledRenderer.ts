@@ -281,9 +281,11 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
   let surfaceVisits = 0;
   if (op.kind !== 'dot' && op.kind !== 'path') {
     for (const [index, tile] of liveTiles.entries()) {
-      if (op.kind !== 'crayonFlush' || crayonBufferIsDirty(tile.ctx)) {
-        ensureNormalTileBacking(tile);
-      }
+      // EXPERIMENT (exp/crayon-i8-dirty-tile-flush): a flush touches only the
+      // tiles whose pass buffer holds ink — the loop skips clean tiles
+      // entirely instead of visiting all 16 for prepare/show bookkeeping.
+      if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) continue;
+      ensureNormalTileBacking(tile);
       prepareTileForMutation(tile, index);
       if (command && !command.wasEmpty && op.kind !== 'crayonFlush') {
         undoPatches.capture(command, tile, index);
