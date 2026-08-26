@@ -490,7 +490,33 @@ function recordCurrentOp(op: StrokeOp) {
   recordTiledOp(op);
 }
 
+// EXPERIMENT (exp/crayon-i7-defer-lift-flush): the lift-time pass stamp is
+// deferred one animation frame — the preview planes already show the exact
+// stamped pixels, so the bake is invisible; deferring moves the 16-tile
+// stamp out of the lift frame. A new stroke starting first settles it
+// synchronously so op order is preserved.
+let pendingLiftFlushFrame: number | null = null;
+
+function recordCrayonFlushDeferred() {
+  const flush: StrokeOp = { kind: 'crayonFlush' };
+  recordCurrentOp(flush);
+  crayonOpsSinceFlush = 0;
+  if (pendingLiftFlushFrame != null) cancelAnimationFrame(pendingLiftFlushFrame);
+  pendingLiftFlushFrame = requestAnimationFrame(() => {
+    pendingLiftFlushFrame = null;
+    renderTiledOp(flush);
+  });
+}
+
+function settlePendingLiftFlush() {
+  if (pendingLiftFlushFrame == null) return;
+  cancelAnimationFrame(pendingLiftFlushFrame);
+  pendingLiftFlushFrame = null;
+  renderTiledOp({ kind: 'crayonFlush' });
+}
+
 function beginStrokeGroup() {
+  settlePendingLiftFlush();
   if (groupHasDrawn) return;
   beginTiledCommand(canvasEmpty);
   setCanvasEmptyState(false);
@@ -1043,7 +1069,7 @@ function stopDrawing(e: PointerEvent) {
   // buffered wax and recording the flush at the same point in the op order.
   // A discarded edge-swipe candidate rendered nothing, so it has no pass.
   if (pointerState?.passTracker && !pointerState.edgeSwipeGuard) {
-    recordCrayonFlush();
+    recordCrayonFlushDeferred();
   }
 
   activePointers.delete(e.pointerId);
