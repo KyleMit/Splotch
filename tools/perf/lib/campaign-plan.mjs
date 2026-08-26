@@ -102,10 +102,16 @@ export const CAMPAIGN_TARGETS = {
     // refresh-regime.test.mjs pins the corpus.
     refreshRegime: '60hz',
     deviceClass: 'handset',
+    // Drawing through the ADR-0135 split transport, exactly as the physical
+    // phone: the Appium browser path measures 0.82 moves/frame here with
+    // per-run main-thread-stall distortion no stream statistic separates from
+    // real starvation (2026-08-26-appium-60hz-controls), while adb split input
+    // measures 1.09 and banked the regime evidence. Actions stay on direct CDP
+    // (ADR-0092).
     label: 'Android emulator · web',
-    transport: 'appium',
+    transport: SPLIT_TRANSPORT,
+    splitPlatform: 'android',
     runtime: 'web',
-    // ADR-0092: browser frames come from Appium, browser actions from direct CDP.
     actionsTransport: 'cdp',
     webviewClass: 'android.webkit.WebView',
   },

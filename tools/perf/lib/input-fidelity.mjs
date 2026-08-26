@@ -37,20 +37,26 @@ const NOT_APPLICABLE = 'not-applicable';
 // cannot exceed ~60 moves/s while being driven perfectly at 1.0 moves per frame,
 // and the rate the input stream reaches tracks the display beat as much as the
 // input (46.8-268.4 across healthy captures). Density is refresh-rate
-// independent by construction and measured from both sides: every under-driven
-// transport this campaign rejected delivers well under one move per frame (0.44
-// for the founding Appium defect, re-measured as the tracked negative control in
-// 2026-08-25-underdriven-control), and the sparsest healthy capture on disk is
-// 0.96. The floor sits in that gap, shared with `classifyPhase`'s input-loss
-// diagnostic so the gate and the report cannot disagree.
+// independent by construction and measured from BOTH sides on BOTH panel
+// speeds:
 //
-// There is no ceiling, and no rate bound at all for artifacts that carry the
-// field. One ceiling existed at 170 moves/s on the reasoning that a faster
-// stream is "faster than a hand", and the 2026-08-23 hand corpus refutes it on
-// both devices (178.0 and 268.4 from real fingers, ADR-0141). Density excess is
-// reported by `classifyPhase` as redundant per-event work and does not decide
-// the verdict.
-export const FIDELITY_MOVES_PER_FRAME_MIN = 0.6;
+// - 120 Hz bad side: the founding Appium defect at 0.44-0.45
+//   (2026-08-25-underdriven-control).
+// - 60 Hz bad side: the same rejected transport measures 0.82 on every run —
+//   three in the PR 1361 review thread, two banked in
+//   2026-08-26-appium-60hz-controls — and its distortion is a per-run lottery
+//   (one banked run reports a fake 6.84% lost at 0.11 ms/frame engine work,
+//   the other a genuinely clean 0.00%, both at identical stream statistics),
+//   so only the density it cannot exceed fences it.
+// - Good side: 0.96 is the sparsest of 169 tracked healthy phases, across
+//   every device, transport, and hand.
+//
+// 0.9 sits between 0.82 and 0.96. The margins are thinner than the old
+// 120 Hz-only gap and are stated rather than padded: both sides are measured,
+// and a future healthy transport landing below 0.96 re-derives this floor with
+// its evidence attached. Shared with `classifyPhase`'s input-loss diagnostic so
+// the gate and the report cannot disagree.
+export const FIDELITY_MOVES_PER_FRAME_MIN = 0.9;
 
 // The gap cap rejects BURSTINESS — a stream whose average density is fine but
 // which stalls and catches up, which density alone cannot see. 25 ms is 1.5x

@@ -97,12 +97,15 @@ describe('campaign resume', () => {
   it('still skips a cell whose artifact already parses', async () => {
     const root = scratch();
     seedLedger(`${root}/ledger.tsv`, MAX_ATTEMPTS);
-    const artifact = join(root, artifactPath('out', 'android-emulator-web', MODE, 'pen-undo'));
+    // ipad-simulator-web keeps the Appium-browser cell shape this test needs —
+    // the emulator's drawing is split-transport since the 60 Hz controls, and a
+    // split target refuses to plan without a probe host.
+    const artifact = join(root, artifactPath('out', 'ipad-simulator-web', MODE, 'pen-undo'));
     mkdirSync(dirname(artifact), { recursive: true });
     // A real capture from this runner carries a fidelity verdict and a beat; the
     // fixture omitted each until the check that reads it existed (the verdict
-    // while a missing one was tolerated globally, the beat until this target
-    // declared its 60hz regime).
+    // while a missing one was tolerated globally, the beat until regimes were
+    // declared — this target's is still unestablished, which banks).
     writeFileSync(
       artifact,
       JSON.stringify({
@@ -112,9 +115,9 @@ describe('campaign resume', () => {
       })
     );
 
-    const { ran } = await run('android-emulator-web', root);
+    const { ran } = await run('ipad-simulator-web', root);
 
-    expect(campaignTarget('android-emulator-web').runtime).toBe('web');
+    expect(campaignTarget('ipad-simulator-web').runtime).toBe('web');
     expect(ran).toEqual([{ cell: CELL, status: 'already-valid' }]);
   });
 
@@ -123,11 +126,11 @@ describe('campaign resume', () => {
   // banked unscoreable cells as complete.
   it('refuses an artifact with no fidelity verdict from a runner that writes one', async () => {
     const root = scratch();
-    const artifact = join(root, artifactPath('out', 'android-emulator-web', MODE, 'pen-undo'));
+    const artifact = join(root, artifactPath('out', 'ipad-simulator-web', MODE, 'pen-undo'));
     mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(artifact, JSON.stringify({ transport: 'browser' }));
 
-    const { ran } = await run('android-emulator-web', root, ['--max-attempts=1']);
+    const { ran } = await run('ipad-simulator-web', root, ['--max-attempts=1']);
 
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
   });

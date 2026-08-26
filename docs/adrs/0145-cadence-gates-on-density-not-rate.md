@@ -75,15 +75,22 @@ ms cap passed those healthy 19 ms phases by 1 ms of unstated luck; this states t
 * Two honest narrowings. The negative corpus is one transport family: a future bad transport that is
   bursty-but-dense would be caught by the gap cap alone, and one that is uniformly dense but wrong
   in some third way has no check waiting for it — the fidelity table's structure (measured,
-  per-check, named exclusions) is the mechanism for adding one when evidence arrives. And the
-  measured bad side is **panel-relative**: the founding transport's ~47 moves/s at steady ~20 ms
-  gaps computes to 0.45 moves per frame on the 120 Hz phone but ~0.78 on a 60 Hz panel — above this
-  floor. The position this ADR takes is that under-driving is relative to the display (on a 60 Hz
-  panel that stream puts input in most frames, and the scoring distortion sparse input causes is
-  correspondingly small), but that is asserted from the mechanism, not measured. The measurement
-  that would close it is the same transport driven against a 60 Hz target with its lost-frame
-  distortion read against the gate; until it exists, refusals of this transport family on 60 Hz
-  targets rest on the gap cap and trusted-touch alone.
+  per-check, named exclusions) is the mechanism for adding one when evidence arrives. And the 60 Hz
+  side is now **measured, not asserted** — the adversarial review of this ADR's PR ran the
+  experiment this paragraph once named as missing, and falsified the original inference that
+  ~0.78–0.82 moves per frame on a 60 Hz panel is adequately driven. The rejected transport measures
+  **0.82 on every run** (five runs: three in the PR 1361 review thread, two banked whole in
+  `2026-08-26-appium-60hz-controls`), and its distortion is a per-run lottery: at identical stream
+  statistics (0.82 moves/frame, gap p95 22 ms), one banked run reports a fake **6.84%** in-contact
+  lost with the engine at 0.11 ms/frame — the coupled script channel stalling the main thread —
+  while the other is genuinely clean at 0.00%. No input tail statistic separates the distorted run
+  from health (its move-gap max is 120 ms; the healthy corpus holds a real 351 ms pause), and an
+  outcome-side check would refuse exactly the low-engine-work starvation this instrument was built
+  to find. So the floor moved to **0.9** — between the transport's 0.82 ceiling and the healthy
+  corpus's 0.96 floor, both sides measured on both panel speeds — and the emulator's campaign plan
+  moved its drawing to the split transport so no planned capture drives the banned path at all. The
+  stated residual: the 0.82→0.9→0.96 margins are thinner than the 120 Hz gap, and a future healthy
+  transport landing below 0.96 re-derives this floor with its evidence attached.
 * The negative control's artifact directory and mode strings are stamped `ipad-xcuitest` by the
   capture harness although the session drove Android through a capabilities file — a pre-existing
   harness labeling bug, noted in the corpus index so the mislabel cannot read as provenance.

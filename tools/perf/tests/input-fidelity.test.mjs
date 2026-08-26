@@ -479,3 +479,44 @@ describe('the under-driven negative control (ADR-0145)', () => {
     expect(describeFidelityFailures(verdict)).toBe('cadence');
   });
 });
+
+// The 60 Hz half of the calibration, measured after the PR 1361 review ran the
+// experiment ADR-0145 admitted was missing and falsified its narrowing: the
+// rejected Appium browser transport measures 0.82 moves/frame on every run
+// (five total — three in the review thread, two banked), and its distortion is
+// a per-run lottery no stream statistic separates (run A: fake 6.84% lost at
+// 0.11 ms/frame engine work; run B: genuinely 0.00% — identical density and
+// gap stats). Only the density it cannot exceed fences it, which is what moved
+// the floor from 0.6 to 0.9.
+describe('the 60 Hz negative controls (ADR-0145, revised)', () => {
+  const controls = corpusInputs('2026-08-26-appium-60hz-controls');
+
+  it('holds both banked runs at 0.82 and refuses each on cadence', () => {
+    expect(controls).toHaveLength(2);
+    for (const control of controls) {
+      expect(control.input.movesPerFrame).toBe(0.82);
+      const verdict = inputFidelity(control.input, 'android-chrome');
+      expect(verdict.checks.cadence).toBe(false);
+      expect(describeFidelityFailures(verdict)).toBe('cadence');
+    }
+  });
+
+  it('pins the floor between the measured sides', () => {
+    const passes = (movesPerFrame) =>
+      inputFidelity(
+        {
+          kinds: 'touch',
+          trust: { share: 1 },
+          movesPerSecond: 60,
+          movesPerFrame,
+          moveGapP95Ms: 19,
+        },
+        'android-chrome'
+      ).checks.cadence;
+
+    expect(FIDELITY_MOVES_PER_FRAME_MIN).toBe(0.9);
+    expect(passes(0.82)).toBe(false);
+    expect(passes(0.9)).toBe(true);
+    expect(passes(0.96)).toBe(true);
+  });
+});

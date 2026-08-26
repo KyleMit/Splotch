@@ -1,0 +1,38 @@
+{
+ "campaign": "2026-08-26-appium-60hz-controls",
+ "capturedFrom": "perf-profiles/split-capture/appium-60hz-controls",
+ "kept": [
+  {
+   "file": "appium-60hz-control-a.json",
+   "target": "android-emulator-web",
+   "brush": "pen",
+   "mode": "PORTRAIT-light",
+   "fidelityPassed": true,
+   "source": "appium-60hz-control-a.json",
+   "candidateCount": 2,
+   "passingCandidateCount": 2,
+   "failedCandidateCount": 0,
+   "runtime": "android-chrome",
+   "transport": "appium-uiautomator2-browser (the ADR-0135-rejected legacy path, driven deliberately)",
+   "note": "run A - the distorted lottery draw: 0.82 mpf, gap p95 22, PASSES the shipped gate, fake 6.84% in-contact lost at 0.11 ms/frame engine work"
+  },
+  {
+   "file": "appium-60hz-control-b.json",
+   "target": "android-emulator-web",
+   "brush": "pen",
+   "mode": "PORTRAIT-light",
+   "fidelityPassed": true,
+   "source": "appium-60hz-control-b.json",
+   "candidateCount": 2,
+   "passingCandidateCount": 2,
+   "failedCandidateCount": 0,
+   "runtime": "android-chrome",
+   "transport": "appium-uiautomator2-browser (the ADR-0135-rejected legacy path, driven deliberately)",
+   "note": "run B - the clean lottery draw of the SAME transport: 0.82 mpf, gap p95 22, gap max 40, genuinely 0.00% lost - why per-run stream statistics cannot fence this transport"
+  }
+ ],
+ "why": "The 60 Hz half of the density calibration's bad side, measured after the PR 1361 review ran the experiment ADR-0145 admitted was missing and falsified its narrowing. The ADR-0135-rejected Appium UiAutomator2 browser transport, driven against the 60 Hz emulator: BOTH runs measure 0.82 moves/frame with gap p95 22 ms (passing the 0.6-floor gate as shipped), and the distortion is a per-run lottery - run A reports a fake 6.84% in-contact lost with the engine at 0.11 ms/frame (the coupled script channel stalling the main thread), run B a genuinely clean 0.00%. No input tail statistic separates A from healthy captures (A's move-gap max is 120 ms; the healthy corpus holds a real 351 ms pause), which is why the fix raises the density floor to 0.9 - bad side 0.82 across five runs (three in the PR 1361 review thread, these two banked) against the healthy floor of 0.96 - and removes this transport from the emulator's campaign plan entirely.",
+ "devices": {
+  "android-emulator": "Pixel_7_Pro_API_33 (emulator-5554), Android 13"
+ }
+}
