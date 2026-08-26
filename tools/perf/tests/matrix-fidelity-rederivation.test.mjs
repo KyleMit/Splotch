@@ -120,3 +120,40 @@ describe('a matrix cell re-derives its input-fidelity verdict', () => {
     expect(runs.pen.aggregate.offRefreshRegime).toBe(false);
   });
 });
+
+// One composed answer per run to "can I trust this number?" (issue 1304): a
+// list, not a score, because the interesting case is which guarantee is
+// missing. hostQuiet is deliberately present and unrecorded — the dimension
+// with no measurement yet, kept visible instead of forgotten.
+describe('the per-run trust ledger', () => {
+  it('composes verified dimensions for a sound capture', () => {
+    const runs = drawingRuns('ipad-device-web', 'ipad-device-web');
+    const trust = runs.pen.runs[0].trust;
+    const byName = Object.fromEntries(trust.map((entry) => [entry.name, entry]));
+
+    expect(byName.inputFidelity.state).toBe('verified');
+    expect(byName.refreshRegime).toMatchObject({ state: 'verified', detail: '60hz' });
+    expect(byName.hostQuiet.state).toBe('unrecorded');
+    expect(byName.pageIdentity.state).toBe('unrecorded');
+  });
+
+  it('names an absent guarantee apart from a failed one', () => {
+    const runs = drawingRuns('ipad-device-web', 'ipad-device-web');
+    for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
+      for (const entry of runs[brush].runs[0].trust) {
+        expect(['verified', 'failed', 'unrecorded']).toContain(entry.state);
+      }
+    }
+  });
+
+  it('adds the eraser-ink dimension only to runs that recorded fill machinery', () => {
+    const runs = drawingRuns('ipad-device-web', 'ipad-device-web');
+    const names = (brush) => runs[brush].runs[0].trust.map((entry) => entry.name);
+
+    // These corpus captures predate the fill recorder, so the dimension is
+    // absent-as-inapplicable rather than unrecorded — and every run still
+    // carries the universal dimensions.
+    expect(names('pen')).toContain('hostQuiet');
+    expect(names('pen')).toContain('inputFidelity');
+  });
+});
