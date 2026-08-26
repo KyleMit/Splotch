@@ -95,7 +95,12 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-emulator-web': {
     captureRuntime: 'android-chrome',
-    refreshRegime: null,
+    // Measured from the 2026-08-26-emulator-regime-bootstrap capture: 16.7 ms
+    // beat across 3510 in-contact frames, the emulator's display emulated at a
+    // fixed 60 Hz. Declared via the bank-then-declare bootstrap the moment the
+    // ADR-0145 density floor made an emulator capture fidelity-passing at all;
+    // refresh-regime.test.mjs pins the corpus.
+    refreshRegime: '60hz',
     deviceClass: 'handset',
     label: 'Android emulator · web',
     transport: 'appium',

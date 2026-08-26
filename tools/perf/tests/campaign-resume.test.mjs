@@ -99,9 +99,18 @@ describe('campaign resume', () => {
     seedLedger(`${root}/ledger.tsv`, MAX_ATTEMPTS);
     const artifact = join(root, artifactPath('out', 'android-emulator-web', MODE, 'pen-undo'));
     mkdirSync(dirname(artifact), { recursive: true });
-    // A real capture from this runner carries a fidelity verdict; the fixture used
-    // to omit it, which only passed while a missing verdict was tolerated globally.
-    writeFileSync(artifact, JSON.stringify({ transport: 'browser', fidelity: { passed: true } }));
+    // A real capture from this runner carries a fidelity verdict and a beat; the
+    // fixture omitted each until the check that reads it existed (the verdict
+    // while a missing one was tolerated globally, the beat until this target
+    // declared its 60hz regime).
+    writeFileSync(
+      artifact,
+      JSON.stringify({
+        transport: 'browser',
+        fidelity: { passed: true },
+        summaries: { intervalMs: 16.7 },
+      })
+    );
 
     const { ran } = await run('android-emulator-web', root);
 

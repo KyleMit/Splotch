@@ -95,6 +95,7 @@ describe('the regime each target is scored against', () => {
     ['2026-08-23-android-split'],
     ['2026-08-23-desktop-main'],
     ['2026-08-24-hand-native', 'android-device-native'],
+    ['2026-08-26-emulator-regime-bootstrap', 'android-emulator-web'],
   ])('matches every capture in %s', (campaign, campaignTarget) => {
     const beats = corpusBeats(campaign, campaignTarget);
     expect(beats.length).toBeGreaterThan(0);
