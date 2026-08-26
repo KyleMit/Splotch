@@ -104,7 +104,7 @@ export function targetOf(parsed, relativePath, fallback) {
 // the corpus ROOT — the nested-corpus join both consumers below depend on (one
 // campaign directory per promotion, each with its own index; a naive per-index
 // key mis-targeted every capture once already).
-function evidenceIndexEntries(root) {
+export function evidenceIndexEntries(root) {
   const entries = [];
   for (const file of findCaptureFiles(root)) {
     if (basename(file) !== 'index.json') continue;

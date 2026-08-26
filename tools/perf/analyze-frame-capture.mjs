@@ -9,8 +9,8 @@
 // latency is per-move, and a finger-lift into an idle page is no longer reported
 // as a two-second hitch). Re-running this is how a definition change is checked.
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { fail, isMain, runMain } from '../lib/proc.mjs';
 import {
   bucketRows,
@@ -83,9 +83,37 @@ export function printRun(capture, { forensics = true } = {}) {
   return { intervalMs, phases };
 }
 
+// The refusal the corpus marking exists for (issues 1315/1356): a capture a
+// sibling evidence index marks `cellAttributable: false` re-analyzes cleanly
+// and answers for a cell it never measured. This was the one documented reader
+// still consuming evidence with no attribution check after issue 1350 closed
+// the rescorer's. Returns the refusal message, or null; pure for the test.
+export function unattributableCaptureProblem(path, { includeUnattributable = false } = {}) {
+  const indexPath = join(dirname(path), 'index.json');
+  if (!existsSync(indexPath)) return null;
+  let index;
+  try {
+    index = JSON.parse(readFileSync(indexPath, 'utf8'));
+  } catch {
+    return null;
+  }
+  const entry = (index.kept ?? []).find((kept) => kept?.file === basename(path));
+  if (!entry || entry.cellAttributable !== false || includeUnattributable) return null;
+  return (
+    `${basename(path)}: its evidence index marks cellAttributable: false` +
+    (entry.reportNonce ? ` (report nonce: ${entry.reportNonce})` : '') +
+    ' — the frame tables are genuine but answer for a different cell than the label. ' +
+    'Pass --include-unattributable to analyze it deliberately.'
+  );
+}
+
 export async function analyzeCapture(argv = process.argv.slice(2)) {
   const path = argv.find((arg) => !arg.startsWith('--'));
   if (!path) fail('Usage: npm run perf:analyze:frames -- <real-screen.json>');
+  const refusal = unattributableCaptureProblem(path, {
+    includeUnattributable: argv.includes('--include-unattributable'),
+  });
+  if (refusal) fail(refusal);
   let capture;
   try {
     capture = JSON.parse(readFileSync(path, 'utf8'));

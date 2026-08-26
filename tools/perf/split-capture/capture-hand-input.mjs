@@ -19,6 +19,7 @@ import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
+import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -318,7 +319,7 @@ export async function captureHandInput({
 
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
-  const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
+  const nonce = mintProbeNonce(runLabel);
   // Only a page opened at a URL carrying the nonce can prove which run it
   // belongs to. A native WebView loads a build-time URL, so it cannot — the
   // artifact records that no proof was had. Browser pages can, whoever opens

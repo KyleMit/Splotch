@@ -22,6 +22,7 @@ import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
 import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
+import { attributionOf } from './lib/capture-attribution.mjs';
 
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 
@@ -178,6 +179,11 @@ export async function keepCaptureEvidence({
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
       fidelity: parsed.fidelity ?? null,
+      // Computed from the artifact's own report URL at promotion time (issue
+      // 1356) — the index marking the readers refuse on must never be
+      // hand-typed. `cellAttributable: null` means the capture carries no
+      // probe nonce and is outside this audit.
+      attribution: attributionOf(parsed),
       // A hand capture's index row carries what the finger measured, so the
       // corpus is readable without opening a minified frame table — the shape
       // the 2026-08-23-hand corpus established.
@@ -250,6 +256,14 @@ export async function keepCaptureEvidence({
           mode: entry.mode,
           fidelityPassed: entry.fidelity?.passed ?? null,
           source: entry.relativePath,
+          // Stamped only when the nonce audit applies and contradicts the
+          // label: an attributable capture records no claim (the sweep treats
+          // absence as attributable), and a nonce-less transport is outside
+          // the audit rather than clean — conflating those would let a
+          // contaminated promotion pass by simply dropping the field.
+          ...(entry.attribution?.cellAttributable === false
+            ? { cellAttributable: false, reportNonce: entry.attribution.reportNonce }
+            : {}),
           ...(entry.handCapture
             ? {
                 handCapture: true,

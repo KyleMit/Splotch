@@ -15,6 +15,7 @@
 // through it cannot be scored. This path clears the band.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { eraserRefillArming } from '../lib/eraser-fill.mjs';
+import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { dirname, join } from 'node:path';
 import {
   argFlag,
@@ -417,7 +418,7 @@ export async function captureDeviceFrames({
   await assertServedBuildIsFresh(host, { allowForeignBuild });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
-  const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
+  const nonce = mintProbeNonce(runLabel);
   // Only a page opened at a URL we chose can prove which run it belongs to. A
   // native run cannot: the WebView loads the app's own `server.url`.
   const requirePageIdentity = !nativeApp;
