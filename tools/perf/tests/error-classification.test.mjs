@@ -10,13 +10,14 @@ describe('rethrowIfBroken', () => {
   // The PR 1376 review's repro: a null property dereference in a predicate is
   // programmer error wearing TypeError, and must escape like ReferenceError.
   it('rethrows a programmer TypeError', () => {
-    let dereference;
+    let caught;
     try {
-      dereference = null.missing;
+      caught = null.missing;
     } catch (error) {
-      expect(() => rethrowIfBroken(error)).toThrow(TypeError);
+      caught = error;
     }
-    expect(dereference).toBeUndefined();
+    expect(caught).toBeInstanceOf(TypeError);
+    expect(() => rethrowIfBroken(caught)).toThrow(TypeError);
   });
 
   // The network failures the fetch stack spells as TypeError are the not-ready

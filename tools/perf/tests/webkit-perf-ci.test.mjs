@@ -333,15 +333,22 @@ describe('WebKit performance CI', () => {
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.json');
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.md');
       expect(workflowJob).toContain('if-no-files-found: warn');
-      if (jobId === 'webkit-commit-gate-fast-retry') {
-        // The retry's gate step is continue-on-error so the filing and
-        // non-reproduction steps always run from its recorded outcome; the
-        // masking that would otherwise allow is closed by the explicit
-        // re-fail step pinned above.
-        expect(workflowJob).toContain('continue-on-error: true');
-      } else {
-        expect(workflowJob).not.toContain('continue-on-error');
-      }
     }
   );
+
+  it.each(['webkit-commit-gate-fast', 'webkit-commit-gate-full'])(
+    '%s keeps its gate step terminal — no continue-on-error',
+    (jobId) => {
+      expect(job(jobId)).not.toContain('continue-on-error');
+    }
+  );
+
+  // The retry's gate step is continue-on-error so the filing and
+  // non-reproduction steps always run from its recorded outcome; the masking
+  // that would otherwise allow is closed by the explicit re-fail step.
+  it('the retry gate step is continue-on-error, with the re-fail step closing the mask', () => {
+    const retryJob = job('webkit-commit-gate-fast-retry');
+    expect(retryJob).toContain('continue-on-error: true');
+    expect(retryJob).toContain('Fail on a reproduced breach');
+  });
 });
