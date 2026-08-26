@@ -3,7 +3,7 @@
  "capturedFrom": "perf-profiles/split-capture/emulator-bootstrap",
  "kept": [
   {
-   "file": "unknown-pen.json",
+   "file": "android-emulator-web-pen.json",
    "target": "android-emulator-web",
    "brush": "pen",
    "mode": "PORTRAIT-light",
