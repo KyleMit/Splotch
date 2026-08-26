@@ -27,7 +27,7 @@ export function portListenerPids(port) {
 
 // A listener's working directory is what identifies which checkout owns it. Two
 // worktrees of this repo are different owners even though both are "Splotch".
-export function listenerWorkingDirectory(pid) {
+function listenerWorkingDirectory(pid) {
   const out = spawnSync('lsof', ['-a', '-p', String(pid), '-d', 'cwd', '-Fn'], {
     encoding: 'utf8',
   });
