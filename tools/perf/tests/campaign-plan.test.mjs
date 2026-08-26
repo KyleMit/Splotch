@@ -265,8 +265,8 @@ describe('campaign device class', () => {
 describe('campaign artifact acceptance', () => {
   it('accepts a native cell only when the capture attached to the app WebView', () => {
     expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(true);
-    // The split runner's native artifact (issue 1274): same fact, different
-    // transport string — judged by nativeApp, not by transport spelling.
+    // The split runner's native artifact (issue 1274): the nativeApp fact
+    // counts only on the transports that legitimately carry it.
     expect(
       artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'native')
     ).toBe(true);
@@ -276,6 +276,14 @@ describe('campaign artifact acceptance', () => {
     expect(
       artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'web')
     ).toBe(false);
+    // Fail closed on contradiction (PR 1380 review): a browser artifact
+    // wearing a stray nativeApp flag matches NEITHER runtime — accepting it
+    // for a native cell is the wrong-runtime banking this guard exists to
+    // stop, and accepting it for a web cell would trust a field the browser
+    // transport never writes.
+    expect(artifactMatchesRuntime({ transport: 'browser', nativeApp: true }, 'native')).toBe(false);
+    expect(artifactMatchesRuntime({ transport: 'browser', nativeApp: true }, 'web')).toBe(false);
+    expect(artifactMatchesRuntime({ transport: 'browser' }, 'web')).toBe(true);
     expect(artifactMatchesRuntime({ transport: 'browser' }, 'native')).toBe(false);
   });
 

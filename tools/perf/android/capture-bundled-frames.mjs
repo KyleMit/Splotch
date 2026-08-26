@@ -4,8 +4,13 @@
 // network the page is not allowed to reach (a plain-http LAN host is mixed
 // content from the bundled origin, which is what forced remote delivery
 // everywhere else). An idle CDP debugger is not part of the input path, so
-// unlike an Appium/WDA session it is not an input-fidelity variable — which is
-// the property the bundled hand capture needs.
+// unlike an Appium/WDA session it does not put the device into automation
+// mode. That an idle attached debugger does not otherwise perturb timing is
+// an UNVERIFIED ASSUMPTION, not a measured property (the PR 1385 review):
+// DevTools attachment can alter WebView/V8 scheduling even with no input
+// injected. Before hand captures through this channel are leaned on for
+// calibration, run a paired attached-vs-unattached control with a
+// device-local frame clock.
 //
 //   npm run perf:android:bundled:frames -- --device-serial=<serial> --brush=pen
 //   npm run perf:android:bundled:frames -- --device-serial=<serial> --input=hand --seconds=20
@@ -48,14 +53,19 @@ const HAND_COUNTDOWN_SECONDS = 5;
 
 // The identity the channel exists to prove: the attached target's URL comes
 // from the DEBUGGER, not from anything the page reports, and a bundled
-// Capacitor page lives on its build-time origin. Anything else — a probe-host
-// page, a restored Chrome tab — is not a bundled capture and must refuse.
-const BUNDLED_ORIGINS = ['https://localhost', 'capacitor://localhost', 'http://localhost'];
-export function bundledPageProblem(url) {
-  if (BUNDLED_ORIGINS.some((origin) => url === origin || url.startsWith(`${origin}/`))) {
-    return null;
-  }
-  return `attached page is ${url}, not a bundled Capacitor origin (${BUNDLED_ORIGINS.join(', ')})`;
+// Capacitor page lives on the ONE origin the build config fixes — derived
+// from capacitor.config.json's androidScheme rather than restated (the PR
+// 1385 review: a permissive list accepted http://localhost, which is not
+// this app's build-time origin and can name locally served content — exactly
+// the delivery this guard exists to refuse). Anything else — a probe-host
+// page, a dev server, a restored tab — is not a bundled capture.
+const CAPACITOR_CONFIG = JSON.parse(
+  readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8')
+);
+const BUNDLED_ORIGIN = `${CAPACITOR_CONFIG.server?.androidScheme ?? 'https'}://localhost`;
+export function bundledPageProblem(url, origin = BUNDLED_ORIGIN) {
+  if (url === origin || url.startsWith(`${origin}/`)) return null;
+  return `attached page is ${url}, not the bundled Capacitor origin (${origin})`;
 }
 
 function exec(serial, args) {
@@ -82,7 +92,9 @@ function readAppWebviewSocket(serial) {
 
 async function attachToBundledPage(serial, forwardPort) {
   const socket = await pollFor(async () => readAppWebviewSocket(serial), SOCKET_TIMEOUT_MS);
-  if (!socket) fail('the app exposed no WebView DevTools socket — is a debug build installed?');
+  if (!socket) {
+    throw new Error('the app exposed no WebView DevTools socket — is a debug build installed?');
+  }
   exec(serial, ['forward', `tcp:${forwardPort}`, `localabstract:${socket}`]);
   const browser = await chromium.connectOverCDP(`http://127.0.0.1:${forwardPort}`);
   const pages = browser.contexts().flatMap((context) => context.pages());
@@ -90,7 +102,7 @@ async function attachToBundledPage(serial, forwardPort) {
   if (!page) {
     const seen = pages.map((candidate) => candidate.url()).join(', ') || 'none';
     await browser.close();
-    fail(`no bundled Capacitor page over CDP (targets: ${seen})`);
+    throw new Error(`no bundled Capacitor page over CDP (targets: ${seen})`);
   }
   return { browser, page };
 }
@@ -113,22 +125,32 @@ export async function captureBundledFrames({
   const hostLoadStart = sampleHostLoad();
 
   // The rotation state to put back is whatever was there BEFORE this run
-  // wrote its own — read first, restore in the finally.
+  // wrote its own — read first, restore in the OUTER finally: a socket
+  // timeout, a CDP connect failure, or a not-bundled refusal after the
+  // rotation write must still restore it, and each cleanup runs
+  // independently so one failure cannot strand the others (the PR 1385
+  // review — a stale forward or locked rotation contaminates the shared
+  // rig's next capture).
   const previousRotation = Object.fromEntries(
     ['accelerometer_rotation', 'user_rotation'].map((key) => [
       key,
       exec(serial, ['shell', 'settings', 'get', 'system', key]),
     ])
   );
-  for (const step of androidNativeLaunchSteps(orientation)) {
-    exec(serial, step.args);
-    if (step.settle) await sleep(SETTLE_MS[step.settle]);
-  }
-  const { browser, page } = await attachToBundledPage(serial, forwardPort);
+  let browser = null;
+  let forwarded = false;
   try {
+    for (const step of androidNativeLaunchSteps(orientation)) {
+      exec(serial, step.args);
+      if (step.settle) await sleep(SETTLE_MS[step.settle]);
+    }
+    forwarded = true;
+    const attached = await attachToBundledPage(serial, forwardPort);
+    browser = attached.browser;
+    const page = attached.page;
     const pageUrl = page.url();
     const identityProblem = bundledPageProblem(pageUrl);
-    if (identityProblem) fail(identityProblem);
+    if (identityProblem) throw new Error(identityProblem);
 
     await page.waitForFunction(
       () => document.querySelector('#drawingCanvas')?.getBoundingClientRect().width > 0,
@@ -137,7 +159,7 @@ export async function captureBundledFrames({
     );
     const ua = await page.evaluate(() => navigator.userAgent);
     const uaProblem = runtimeUaProblem('android-capacitor-webview', ua);
-    if (uaProblem) fail(uaProblem);
+    if (uaProblem) throw new Error(uaProblem);
 
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     await ensureCampaignTheme(execute, requestedTheme);
@@ -151,7 +173,7 @@ export async function captureBundledFrames({
       { intervalMs: 250 }
     );
     if (brush !== 'eraser' && committed !== brush) {
-      fail(`the page committed ${committed ?? 'nothing'}, not ${brush}`);
+      throw new Error(`the page committed ${committed ?? 'nothing'}, not ${brush}`);
     }
 
     await page.evaluate(
@@ -160,7 +182,7 @@ export async function captureBundledFrames({
     const installed = await page.evaluate(
       `${readFileSync(PROBE_FILE, 'utf8')}\n!!window.__probe`
     );
-    if (!installed) fail('the probe did not install in the bundled page');
+    if (!installed) throw new Error('the probe did not install in the bundled page');
 
     if (input === 'adb') {
       const geometry = await page.evaluate(() => {
@@ -253,8 +275,23 @@ export async function captureBundledFrames({
     console.log(`Wrote ${out}`);
     return artifact;
   } finally {
-    await browser.close().catch((error) => console.warn(`CDP close failed: ${error.message}`));
-    for (const command of androidRotationRestoreCommands(previousRotation)) exec(serial, command);
+    if (browser) {
+      await browser.close().catch((error) => console.warn(`CDP close failed: ${error.message}`));
+    }
+    if (forwarded) {
+      try {
+        exec(serial, ['forward', '--remove', `tcp:${forwardPort}`]);
+      } catch (error) {
+        console.warn(`forward removal failed: ${error.message}`);
+      }
+    }
+    for (const command of androidRotationRestoreCommands(previousRotation)) {
+      try {
+        exec(serial, command);
+      } catch (error) {
+        console.warn(`rotation restore failed: ${error.message}`);
+      }
+    }
   }
 }
 

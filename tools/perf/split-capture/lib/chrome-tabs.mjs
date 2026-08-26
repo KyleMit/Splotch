@@ -74,10 +74,11 @@ export async function clearToolingLitter({ cdpBase, hostname, nonce, fetchImpl =
   let closed = 0;
   for (const target of litter) {
     // Counting attempts as closes reported a clean prune while a stale tab
-    // stayed up to answer for the next run (issue 1296) — only a close that
-    // went through counts.
+    // stayed up to answer for the next run (issue 1296) — and fetch resolves
+    // normally for an HTTP error, so only a 2xx close counts (the PR 1376
+    // review reproduced a 500 counted as closed).
     const done = await fetchImpl(`${cdpBase}/json/close/${target.id}`).then(
-      () => true,
+      (response) => response.ok !== false,
       () => false
     );
     if (done) closed += 1;

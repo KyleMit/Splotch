@@ -112,3 +112,17 @@ grow without anyone choosing.
 
 − `perf-profiles/` now has two kinds of contents, ignored scratch and tracked evidence, which is one
 more thing to know about the directory.
+
+## Amendment (2026-08-26): a bounded study-corpus exception
+
+The one-per-target-×-brush rule assumes the corpus answers "what did this cell measure" — a spread
+or repeat-count **study** answers "how much does this cell move," and for that question the set IS
+the result: deduping a five-repeat spread corpus to one representative deletes the quantity it
+measured. `perf:evidence:keep --keep-all` therefore retains every capture, under two bounds the PR
+1383 review asked for: the flag refuses to run without `--study=<one-line rationale>`, which is
+recorded in the corpus index where the next reader will look, and the exception remains per-corpus
+and reviewable — a promotion PR carrying a keep-all corpus states the set's size and why the set is
+the result, exactly as the first one (`2026-08-26-quiet-host-spread`, 19 captures, 8.1 MB minified)
+does. Hand corpora keep their standing everything-kept rule unchanged; this amendment is the
+automation-study counterpart, not a general retention loosening — a keep-all promotion with no study
+rationale is the defect the required flag exists to refuse.

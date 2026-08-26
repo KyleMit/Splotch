@@ -15,7 +15,7 @@ describe('hostQuiet record and verdict', () => {
       load1End: 2.4,
       cores: 10,
       thresholdPerCore: HOST_QUIET_MAX_LOAD_PER_CORE,
-      quiet: true,
+      quietAtCaptureThreshold: true,
     });
   });
 

@@ -19,8 +19,13 @@ export function sampleHostLoad({ load1 = loadavg()[0], cores = cpus().length } =
   return { load1: Math.round(load1 * 100) / 100, cores };
 }
 
-// The artifact field: both bracket samples, raw. `quiet` is convenience for a
-// human reading the file; every tool verdict re-derives from the samples.
+// The artifact field: both bracket samples, raw. The convenience boolean is
+// named for its scope — `quietAtCaptureThreshold` — because it freezes the
+// verdict AT THE THRESHOLD IN FORCE WHEN CAPTURED: after a recalibration,
+// tools re-derive from the raw samples and this field goes stale by design
+// (the PR 1379 review: an unqualified `quiet` is exactly the field a human
+// reader would trust over re-derivation). The raw samples are the only
+// durable evidence.
 export function hostQuietRecord(startSample, endSample) {
   const record = {
     load1Start: startSample.load1,
@@ -28,7 +33,7 @@ export function hostQuietRecord(startSample, endSample) {
     cores: startSample.cores,
     thresholdPerCore: HOST_QUIET_MAX_LOAD_PER_CORE,
   };
-  return { ...record, quiet: hostQuietTrustState(record) === 'verified' };
+  return { ...record, quietAtCaptureThreshold: hostQuietTrustState(record) === 'verified' };
 }
 
 // 'verified' | 'failed' from a recorded hostQuiet block, or null when the

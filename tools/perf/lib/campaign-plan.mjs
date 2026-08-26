@@ -200,13 +200,25 @@ export const NATIVE_TRANSPORT = 'native-capacitor-webview';
 // eyeballed per cell; a queue of 20 is exactly where eyeballing stops happening.
 // Acceptance stays "a parseable artifact" so a red gate survives, but the artifact
 // has to be one of the thing the cell asked for.
+// The transports whose artifacts legitimately carry `nativeApp: true`: the
+// split runner (issue 1274) and the bundled CDP channel (issue 1323) attach
+// to the installed app while keeping their own transport strings. The Appium
+// native runner marks native-ness in `transport` itself.
+const NATIVE_CAPABLE_TRANSPORTS = new Set(['split-input-measurement', 'cdp-bundled']);
+
 export function artifactMatchesRuntime(artifact, runtime) {
-  // Two transports can produce a native capture: the Appium runner marks it in
-  // `transport`, the split runner (issue 1274) records the same fact as
-  // `nativeApp: true` with its own transport string. Judging by transport
-  // alone rejected every split native artifact as wrong-runtime — a valid,
-  // fidelity-passing capture read as missing-or-invalid-json.
-  const isNative = artifact?.transport === NATIVE_TRANSPORT || artifact?.nativeApp === true;
+  // Contract-specific, fail-closed (the PR 1380 review): a bare
+  // `nativeApp: true` must not override the artifact's actual transport — a
+  // browser artifact wearing a stray native flag was accepted for a native
+  // cell, which is the exact wrong-runtime banking this guard exists to stop.
+  // An artifact whose fields contradict each other matches NEITHER runtime.
+  const transport = artifact?.transport;
+  const nativeFlag = artifact?.nativeApp === true;
+  const isNative =
+    transport === NATIVE_TRANSPORT || (NATIVE_CAPABLE_TRANSPORTS.has(transport) && nativeFlag);
+  const contradictory =
+    nativeFlag && transport !== NATIVE_TRANSPORT && !NATIVE_CAPABLE_TRANSPORTS.has(transport);
+  if (contradictory) return false;
   return runtime === 'native' ? isNative : !isNative;
 }
 

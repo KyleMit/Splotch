@@ -115,22 +115,34 @@ describe('WebKit performance CI', () => {
     const retryJob = job('webkit-commit-gate-fast-retry');
 
     expect(fastJob).not.toContain('name: File the failure');
+    // Keyed on the GATE STEP's outcome, not job failure() — a checkout or
+    // setup failure is not a breach, and a retry started for one could file
+    // "gate failed on main" for a gate that never ran (the PR 1381 review).
+    expect(fastJob).toContain('id: gate');
+    expect(fastJob).toContain('gate-outcome: ${{ steps.verdict.outputs.gate }}');
     expect(retryJob).toContain('issues: write');
     expect(retryJob).toContain('name: File the failure');
+    expect(retryJob).toContain("needs.webkit-commit-gate-fast.outputs.gate-outcome == 'failure'");
+    expect(retryJob).toContain('always()');
     // The retry (and therefore the filing) is push-arm only: its issue says
     // main broke, and a manual dispatch failing on an investigation branch
     // must not file it. The dispatch arm keeps its failure in the red run.
-    expect(retryJob).toContain(
-      "if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'"
-    );
+    expect(retryJob).toContain("github.event_name == 'push' && github.ref == 'refs/heads/main'");
     expect(retryJob).toContain('needs: webkit-commit-gate-fast');
+    // Filing keys on the RETRY's gate step outcome — a setup failure on the
+    // retry VM must not file either.
+    expect(retryJob).toContain(
+      "if: steps.gate.outcome == 'failure' && github.event_name == 'push'"
+    );
     expect(retryJob).toContain('gh issue create');
     // One open issue collects every red commit; a broken main must not file one
     // issue per merge.
     expect(retryJob).toContain('gh issue comment');
-    // An acquitted breach is explained where someone looks, not left as an
-    // unexplained red job on main.
-    expect(retryJob).toContain('Record the acquittal');
+    // A non-reproduced breach is explained where someone looks — named for
+    // what it proves (the first job stays red as deliberate telemetry), and a
+    // reproduced breach still lands a red retry job.
+    expect(retryJob).toContain('Record the non-reproduction');
+    expect(retryJob).toContain('Fail on a reproduced breach');
     // The retry runs the IDENTICAL gate — a different command would measure a
     // different quantity and acquit nothing.
     expect(retryJob).toContain('npm run perf:web:undo:webkit:fast');
@@ -321,7 +333,15 @@ describe('WebKit performance CI', () => {
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.json');
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.md');
       expect(workflowJob).toContain('if-no-files-found: warn');
-      expect(workflowJob).not.toContain('continue-on-error');
+      if (jobId === 'webkit-commit-gate-fast-retry') {
+        // The retry's gate step is continue-on-error so the filing and
+        // non-reproduction steps always run from its recorded outcome; the
+        // masking that would otherwise allow is closed by the explicit
+        // re-fail step pinned above.
+        expect(workflowJob).toContain('continue-on-error: true');
+      } else {
+        expect(workflowJob).not.toContain('continue-on-error');
+      }
     }
   );
 });

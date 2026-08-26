@@ -7,11 +7,25 @@ describe('rethrowIfBroken', () => {
     expect(() => rethrowIfBroken(new ReferenceError('x is not defined'))).toThrow(ReferenceError);
   });
 
-  // undici reports network failure as TypeError('fetch failed'), and a missing
-  // property on a partially-loaded response is a TypeError too — both are the
-  // not-ready states a retry loop exists to ride out.
+  // The PR 1376 review's repro: a null property dereference in a predicate is
+  // programmer error wearing TypeError, and must escape like ReferenceError.
+  it('rethrows a programmer TypeError', () => {
+    let dereference;
+    try {
+      dereference = null.missing;
+    } catch (error) {
+      expect(() => rethrowIfBroken(error)).toThrow(TypeError);
+    }
+    expect(dereference).toBeUndefined();
+  });
+
+  // The network failures the fetch stack spells as TypeError are the not-ready
+  // states a retry loop exists to ride out — recognized by their fixed
+  // messages, not by classifying the whole type.
   it('keeps operational failures swallowed', () => {
     expect(() => rethrowIfBroken(new TypeError('fetch failed'))).not.toThrow();
+    expect(() => rethrowIfBroken(new TypeError('Failed to fetch'))).not.toThrow();
+    expect(() => rethrowIfBroken(new TypeError('Load failed'))).not.toThrow();
     expect(() => rethrowIfBroken(new Error('ECONNREFUSED'))).not.toThrow();
     expect(() => rethrowIfBroken(new SyntaxError('Unexpected token'))).not.toThrow();
   });

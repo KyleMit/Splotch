@@ -147,6 +147,7 @@ export async function keepCaptureEvidence({
   filter = argFlag('filter'),
   force = argFlag('force') !== undefined || process.argv.includes('--force'),
   keepAll = argFlag('keep-all') !== undefined || process.argv.includes('--keep-all'),
+  study = argFlag('study'),
   allowFailed = argFlag('allow-failed') !== undefined || process.argv.includes('--allow-failed'),
   // Overridable so the end-to-end test promotes into a tmpdir instead of the
   // tracked corpus; production callers pass nothing.
@@ -154,6 +155,17 @@ export async function keepCaptureEvidence({
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
+  // --keep-all bypasses ADR-0138's one-per-target-x-brush retention decision,
+  // so it is not a context-free boolean (the PR 1383 review): it requires the
+  // study rationale that justifies keeping the whole set, recorded in the
+  // index where the next reader of the corpus will look for it.
+  if (keepAll && !study) {
+    fail(
+      '--keep-all requires --study=<one-line rationale> — a study corpus keeps ' +
+        'every capture because the SET is the result (ADR-0138 amendment); name ' +
+        'what this set measures.'
+    );
+  }
   const root = join(ROOT, corpus);
 
   const candidates = [];
@@ -254,6 +266,7 @@ export async function keepCaptureEvidence({
       {
         campaign,
         capturedFrom: corpus,
+        ...(keepAll ? { study } : {}),
         kept: selected.map((entry) => ({
           file: evidenceFileName(entry, { keepAll }),
           target: entry.target,

@@ -33,10 +33,13 @@ finger); product fixes (#1386/#1387 are backlog).
     `eraserRefills` timing against phase windows before believing either). #1197's straddle
     adjudicated: `with ink: PORTRAIT to LANDSCAPE rotation` post-p95 17 PASS; one new one-sample
     borderline (`clear restored drawing after blank rotation` max 37).
-* Instrument changes made mid-pass, committed on this branch: `artifactMatchesRuntime` native fix +
-  android-device-native split transport (PR #1380); action-sweep palette-routing/fly-in fix
-  e8418fd91 (all four ADW actions cells banked with it; campaigns were resumed with
-  `--accept-instrument-change`).
+* Instrument changes made mid-pass: `artifactMatchesRuntime` native fix + android-device-native
+  split transport (PR #1380); action-sweep palette-routing/fly-in fix e8418fd91. The PR #1385 review
+  caught that the first actions fold would have mixed two instruments with no recoverable per-cell
+  boundary — so **all four ADW actions cells were deleted and recaptured under the single current
+  instrument** (the review-feedback branch, 2026-08-26 ~15:45 local; the campaign's
+  `instrument.json` records the fingerprint). The four artifacts on disk are uniform; one honest
+  borderline remains (`landscape-light` `undo clear after blank rotation`, single frame 34.2 ms).
 * The two failed-then-fixed ADW actions cells and the screenshot-perturbed portrait-dark actions
   cell were recaptured; ledger rows for the dead attempts were removed per the
   all-failed-no-artifact rule (portrait-dark's artifact was deleted deliberately first — operator
