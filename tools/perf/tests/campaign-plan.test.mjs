@@ -265,6 +265,17 @@ describe('campaign device class', () => {
 describe('campaign artifact acceptance', () => {
   it('accepts a native cell only when the capture attached to the app WebView', () => {
     expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(true);
+    // The split runner's native artifact (issue 1274): same fact, different
+    // transport string — judged by nativeApp, not by transport spelling.
+    expect(
+      artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'native')
+    ).toBe(true);
+    expect(
+      artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: false }, 'web')
+    ).toBe(true);
+    expect(
+      artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'web')
+    ).toBe(false);
     expect(artifactMatchesRuntime({ transport: 'browser' }, 'native')).toBe(false);
   });
 
@@ -395,6 +406,30 @@ describe('split transport', () => {
 
     expect(pen.args.some((arg) => arg.startsWith('--undo-count'))).toBe(false);
     expect(pen.args).not.toContain('--report-only');
+  });
+
+  // Issue 1274: the Appium transport under-drives this device (47.81 moves/s,
+  // issue 1217), so every android-device-native drawing cell it produced was
+  // unscoreable. Drawing rides the split transport into the installed app;
+  // actions stay on Appium, which drives discrete taps fine.
+  it('drives the physical Android NATIVE drawing cells through the split transport', () => {
+    const cells = planCampaign('android-device-native', {
+      outputRoot: 'out',
+      host: SPLIT_HOST,
+      modes: ['landscape-light'],
+      items: ['pen-undo', 'crayon', 'actions'],
+    });
+    const drawing = cells.filter((cell) => cell.item !== 'actions');
+    const actions = cells.find((cell) => cell.item === 'actions');
+
+    for (const cell of drawing) {
+      expect(cell.command).toBe(SPLIT_SCREEN_COMMAND);
+      expect(cell.args).toContain('--platform=android');
+      expect(cell.args).toContain('--native-app');
+      expect(cell.args).toContain('--device-serial=R5CRC3AVCXM');
+    }
+    expect(actions.command).toBe('perf:ios:xcuitest:actions');
+    expect(actions.args).toContain('--native-app');
   });
 
   it('keeps the Appium targets on the Appium path', () => {
