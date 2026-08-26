@@ -201,7 +201,9 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 // every tile surface rescaled in place.
 const MAX_RENDER_SCALE = 2;
 // Bound live crayon memory without making ordinary short strokes pay a checkpoint.
-const CRAYON_CHECKPOINT_OPS = 64;
+// EXPERIMENT (exp/crayon-i10-checkpoint-32): halved — the A1 ablation showed
+// the open pass's composited dirty region is a live cost, so bound it tighter.
+const CRAYON_CHECKPOINT_OPS = 32;
 let renderScale = 1;
 let crayonOpsSinceFlush = 0;
 
