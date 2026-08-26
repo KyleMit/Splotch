@@ -102,16 +102,32 @@ describe('campaign resume', () => {
     // split target refuses to plan without a probe host.
     const artifact = join(root, artifactPath('out', 'ipad-simulator-web', MODE, 'pen-undo'));
     mkdirSync(dirname(artifact), { recursive: true });
-    // A real capture from this runner carries a fidelity verdict and a beat; the
-    // fixture omitted each until the check that reads it existed (the verdict
-    // while a missing one was tolerated globally, the beat until regimes were
-    // declared — this target's is still unestablished, which banks).
+    // A real capture from this runner carries a fidelity verdict, a beat, AND
+    // its phase input — acceptance re-derives the verdict from the input by the
+    // matrix's own rule, so a stored pass with nothing behind it no longer
+    // banks. The fixture grew each field as the check that reads it landed.
     writeFileSync(
       artifact,
       JSON.stringify({
         transport: 'browser',
         fidelity: { passed: true },
-        summaries: { intervalMs: 16.7 },
+        summaries: {
+          intervalMs: 16.7,
+          phases: [
+            {
+              input: {
+                kinds: 'touch',
+                trust: { share: 1 },
+                movesPerSecond: 116,
+                movesPerFrame: 1.9,
+                moveGapP95Ms: 9,
+                pressure: { p50: 0 },
+                contactWidth: { p50: 74 },
+                contactHeight: { p50: 74 },
+              },
+            },
+          ],
+        },
       })
     );
 

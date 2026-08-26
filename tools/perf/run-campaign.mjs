@@ -112,10 +112,18 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
-  // Judged by the RE-DERIVED verdict when the artifact's input stats and the
-  // target's runtime allow it (effectiveFidelity), so a banked capture whose
-  // stored verdict predates a table correction is accepted rather than
-  // recaptured — the matrix already scores it; acceptance must not disagree.
+  // The required-verdict check comes BEFORE re-derivation (the PR 1368 review's
+  // boundary finding): a fidelity-reporting runner always writes the block, so
+  // an artifact without one is stale or foreign — healthy-looking input stats
+  // cannot substitute for it. The status stays the historic UNSCOREABLE two
+  // acceptance tests deliberately pin; attempt accounting is identical, and
+  // renaming a ledger status is not this fix's business.
+  if (verdictRequired && !artifact?.fidelity) return { ok: false, status: UNSCOREABLE };
+  // Judged by the RE-DERIVED verdict, by exactly the matrix's rule
+  // (effectiveFidelity): a banked capture whose stored verdict predates a table
+  // correction is accepted rather than recaptured, and a flattering stored
+  // verdict with no measurements behind it re-derives to a failure — the
+  // matrix already scores both that way; acceptance must not disagree.
   if (!artifactPassedFidelity(artifact, { verdictRequired, captureRuntime })) {
     return {
       ok: false,

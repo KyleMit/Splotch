@@ -209,19 +209,28 @@ export function artifactMatchesRuntime(artifact, runtime) {
 // is mandatory. So tolerance is granted per transport rather than globally, and a
 // runner that always writes a verdict has an absent one treated as no verdict at
 // all rather than as consent.
-// The verdict is RE-DERIVED from the artifact's own input stats when a judging
-// runtime is supplied and the stats exist, exactly as the matrix does — a stored
-// verdict is the capture day's table, and holding a resumed campaign to it made
-// acceptance recapture cells the matrix simultaneously scores from the bank (the
-// PR 1359 review's finding: sixteen banked iPad-native captures store
-// passed:false under the retired coalescing entry while passing today's table).
-// The stored verdict remains the answer when re-derivation has nothing to read.
+// The verdict is RE-DERIVED by exactly the matrix's algorithm (the PR 1368
+// review's blocking finding: the two readers disagreed on both absent-data
+// boundaries, so a resumed campaign could bank an artifact the matrix judges
+// differently). One rule, shared in shape with `rederiveFidelity`:
+//
+// - No stored `fidelity` block → null. The stored block is what marks a
+//   fidelity-reporting capture; whether its absence refuses is
+//   `verdictRequired`'s question, answered by the caller — never re-derive a
+//   verdict for a transport that legitimately reports none (desktop, actions).
+// - Stored block present and a judging runtime supplied → re-derive from the
+//   recorded phase input, `{}` when the input is missing. A fidelity-reporting
+//   artifact with no input re-derives to a FAILED verdict (trusted touch
+//   cannot pass on nothing), exactly as the matrix scores it — a flattering
+//   stored verdict with no measurements behind it is not a pass.
+// - Stored block present, no judging runtime → the stored verdict, as banked.
 export function effectiveFidelity(artifact, captureRuntime = null) {
-  const input = artifact?.summaries?.phases?.[0]?.input;
-  if (captureRuntime && input && typeof input === 'object') {
-    return inputFidelity(input, captureRuntime);
+  if (!artifact?.fidelity) return null;
+  if (captureRuntime) {
+    const input = artifact?.summaries?.phases?.[0]?.input;
+    return inputFidelity(input && typeof input === 'object' ? input : {}, captureRuntime);
   }
-  return artifact?.fidelity ?? null;
+  return artifact.fidelity;
 }
 
 export function artifactPassedFidelity(

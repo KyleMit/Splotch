@@ -635,7 +635,45 @@ describe('acceptance re-derives fidelity when it can', () => {
     ).toMatchObject({ ok: false, status: UNSCOREABLE });
   });
 
-  it('falls back to the stored verdict when there is nothing to re-derive from', () => {
+  // The PR 1368 review's blocking finding: the two readers disagreed on both
+  // absent-data boundaries, so a resumed campaign could bank an artifact the
+  // matrix judges differently. One rule now, shared in shape with the matrix's
+  // rederiveFidelity — pinned here from both sides.
+  it('refuses a fidelity-reporting artifact whose verdict block is missing, input or not', () => {
+    const noVerdict = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      summaries: { intervalMs: 17, phases: [{ input: healthyInput }] },
+    });
+
+    // Healthy input cannot substitute for the verdict the runner always
+    // writes: an artifact without one is stale or foreign. The status is the
+    // historic UNSCOREABLE the sibling missing-verdict tests pin.
+    expect(
+      inspectArtifact(noVerdict, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+
+  it('re-derives a failed verdict from missing phase input, never the stored claim', () => {
+    const flatteringNoInput = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: true },
+      summaries: { intervalMs: 17 },
+    });
+
+    expect(
+      inspectArtifact(flatteringNoInput, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+
+  it('re-derives a stored failing verdict the same way', () => {
     const storedOnly = artifactAt({
       transport: NATIVE_TRANSPORT,
       fidelity: { passed: false, checks: { cadence: false }, uncalibrated: [] },
