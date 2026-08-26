@@ -140,7 +140,10 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   // 0.55 lands blue-over-yellow at (98,162,146) and yellow-over-blue at
   // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
   // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
-  colorMix: 0.55,
+  // ABLATION EXPERIMENT (exp/crayon-ablate-4-no-planes): zero mix routes
+  // crayon through the legacy direct-paint pipeline — no pass buffer, no
+  // glaze stamp, no preview planes.
+  colorMix: 0,
   // ABLATION EXPERIMENT (exp/crayon-ablate-2-single-pass): one density pass.
   passes: [{ widthScale: 1.0, coverage: 0.63 }],
 };
