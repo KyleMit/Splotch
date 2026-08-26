@@ -250,8 +250,7 @@ export function restoreBlankLiveTiles(tiles: readonly LiveTile[]) {
   for (const tile of tiles) {
     const wasVisible = !tile.canvas.hidden;
     tile.canvas.hidden = true;
-    tile.crayonBottom.hidden = true;
-    tile.crayonTop.hidden = true;
+    // EXPERIMENT (exp/crayon-i6-persistent-planes): planes stay visible.
     if (wasVisible) tile.needsClear = true;
   }
 }

@@ -76,8 +76,11 @@ export function setCrayonBufferForTarget(
   buffer: CanvasRenderingContext2D,
   mirror: CanvasRenderingContext2D
 ) {
-  buffer.canvas.hidden = true;
-  mirror.canvas.hidden = true;
+  // EXPERIMENT (exp/crayon-i6-persistent-planes): the planes stay visible
+  // (transparent when empty) for the whole session — no compositor layer
+  // create/destroy at pass boundaries, no per-op hidden writes.
+  buffer.canvas.hidden = false;
+  mirror.canvas.hidden = false;
   bufferByTarget.set(target, { ctx: buffer, mirror, dirty: false, bounds: null });
 }
 
@@ -177,8 +180,7 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   }
   buf.bounds = null;
   buf.dirty = false;
-  buf.ctx.canvas.hidden = true;
-  if (buf.mirror) buf.mirror.canvas.hidden = true;
+  // EXPERIMENT (exp/crayon-i6-persistent-planes): planes stay visible.
 }
 
 function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, blit: () => void) {
@@ -238,8 +240,6 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     return;
   }
   const buf = crayonBufferFor(target);
-  buf.ctx.canvas.hidden = false;
-  if (buf.mirror) buf.mirror.canvas.hidden = false;
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
   buf.mirror?.setTransform(matrix);

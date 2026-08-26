@@ -157,8 +157,7 @@ export function resizeTiledRenderer(
       // drives a real resize through the real composite to catch either drift.
       tile.canvas.dataset.tileBacking = `${tile.width}x${tile.height}`;
       tile.canvas.hidden = true;
-      tile.crayonBottom.hidden = true;
-      tile.crayonTop.hidden = true;
+      // EXPERIMENT (exp/crayon-i6-persistent-planes): planes stay visible.
       if (!deferHiddenBackings || !tile.canvas.hidden) ensureNormalTileBacking(tile);
       for (const tileCanvas of liveTileSurfaces(tile)) {
         tileCanvas.style.left = `${horizontal.start}px`;
@@ -484,8 +483,8 @@ export function clearTiledRenderer(wasEmpty: boolean) {
     const wasVisible = !tile.canvas.hidden;
     if (!wasVisible && !crayonBufferIsDirty(tile.ctx)) continue;
     tile.canvas.hidden = true;
-    tile.crayonBottom.hidden = true;
-    tile.crayonTop.hidden = true;
+    // EXPERIMENT (exp/crayon-i6-persistent-planes): planes stay visible; a
+    // clear drops the buffered wax through resetCrayonStateForClear instead.
     if (wasVisible) {
       tile.needsClear = true;
       captureIndices.push(index);
