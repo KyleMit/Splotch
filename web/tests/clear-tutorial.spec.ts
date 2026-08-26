@@ -82,8 +82,8 @@ test('the cleared button cannot re-arm its ring from the release point', async (
 // The coachmark's keyframe loops must run only while it is VISIBLE. The base
 // state hid it with opacity/visibility, neither of which pauses a CSS
 // animation, so both fixed-position elements animated forever on every drawing
-// session — measured at 72% of all Animation style invalidations in an
-// emulator trace while the tutorial was never on screen.
+// session (the measured cost lives with the mechanism, in the component's
+// style-block comment).
 test('the hidden coachmark runs no animation; the revealed one does', async ({ page }) => {
   await gotoApp(page);
 

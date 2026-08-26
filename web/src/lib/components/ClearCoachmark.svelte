@@ -42,11 +42,13 @@
     coachmarkGhostEl.style.setProperty('--tx', `${-travel * Math.SQRT1_2}px`);
     coachmarkGhostEl.style.setProperty('--ty', `${travel * Math.SQRT1_2}px`);
 
-    // The keyframe loops are applied only under `.visible` (a hidden element's
-    // CSS animation otherwise runs forever, invalidating style and paint every
-    // frame — measured at 72% of all Animation invalidations in an emulator
-    // trace), so becoming visible starts them from frame 0 with no restart
-    // trick needed.
+    // The keyframe loops are applied only under `.visible` (see the style
+    // block: a hidden element's CSS animation otherwise runs forever), so
+    // becoming visible starts them from frame 0 with no restart trick — BUT
+    // only because the getBoundingClientRect() reads above force the browser
+    // to observe the animation-less state after any prior dismiss. A reorder
+    // that flips this state before measuring would revive the mid-cycle
+    // appearance the old restart trick existed to fix.
     tutorialVisible = true;
     tutorialDismissTimer = setTimeout(dismiss, COACHMARK_AUTO_DISMISS_MS);
   }
@@ -119,7 +121,14 @@
      alarm-red of the live threshold, so the hint reads as an invitation. */
   /* The loops live under `.visible`: an animation on the hidden base state
      never stops (opacity/visibility do not pause CSS animations), which taxed
-     every frame of every drawing session for a tutorial nobody was seeing. */
+     every frame of every drawing session for a tutorial nobody was seeing —
+     measured at 72% of all Animation style invalidations in an emulator trace,
+     and zero after this scoping. The base states are opacity 0 so a dismissal
+     landing mid-cycle vanishes in place: stripping the animation restores base
+     styles while the container's 0.4s fade has barely started, and an opaque
+     base would teleport the ghost back onto the real button. While animating,
+     the keyframes' own opacity wins; under reduced motion the .visible-scoped
+     static overrides below win by source order. */
   .coachmark-ring {
     position: fixed;
     box-sizing: border-box;
@@ -130,6 +139,7 @@
       rgba(var(--hint-rgb), 0) 60%,
       rgba(var(--hint-rgb), 0.05) 100%
     );
+    opacity: 0;
   }
 
   .clear-coachmark.visible .coachmark-ring {
@@ -139,6 +149,7 @@
   .coachmark-ghost {
     position: fixed;
     will-change: transform, opacity;
+    opacity: 0;
   }
 
   .clear-coachmark.visible .coachmark-ghost {
