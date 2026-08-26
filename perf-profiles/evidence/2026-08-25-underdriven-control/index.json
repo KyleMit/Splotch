@@ -1,0 +1,26 @@
+{
+ "campaign": "2026-08-25-underdriven-control",
+ "capturedFrom": "perf-profiles/2026-08-26T03-20-36-896Z-ipad-xcuitest-underdriven-appium-control",
+ "kept": [
+  {
+   "file": "appium-browser-underdriven-pen.json",
+   "target": "android-device-web",
+   "brush": "pen",
+   "mode": "PORTRAIT-light",
+   "fidelityPassed": false,
+   "source": "real-screen.json",
+   "candidateCount": 1,
+   "passingCandidateCount": 0,
+   "failedCandidateCount": 1,
+   "runtime": "android-chrome",
+   "transport": "appium-uiautomator2-browser (the ADR-0135-rejected legacy path, driven deliberately)",
+   "pageDelivery": "remote-preview",
+   "note": "46.7 moves/s, 0.45 moves/frame, moveGapP95 21 ms; trustedTouch 79/79; deliberate under-driven negative control"
+  }
+ ],
+ "why": "The negative side of ADR-0145's density-floor calibration, re-measured as a tracked capture instead of a number quoted in prose. This is the campaign's FOUNDING defect reproduced on purpose: the legacy Appium UiAutomator2 browser transport driving Chrome on the physical phone, the same path whose 46.8 moves/s produced android-device-web's fake 10-31% reds. This run measures 46.7 contact moves/s at 0.45 moves per frame (gap p95 21 ms) with paint max 9.6 ms - the app is fine; the sparse input alone reads as 12.86% lost frame time. The density gate refuses it (cadence false), which is the behavior this corpus exists to pin from the bad side; the good side is the 0.96 floor across the healthy corpora.",
+ "counterpart": "perf-profiles/evidence/2026-08-23-android-split/ (same device, split transport, 116 moves/s at 0.97-0.98 moves/frame, passing)",
+ "devices": {
+  "android": "R5CRC3AVCXM"
+ }
+}

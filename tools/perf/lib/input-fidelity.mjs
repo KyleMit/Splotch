@@ -31,18 +31,46 @@ const UNCALIBRATED = 'uncalibrated';
 // (coalescing everywhere else — see the block above RUNTIME_EXPECTATIONS).
 const NOT_APPLICABLE = 'not-applicable';
 
-// The floor is the half of cadence that discriminates, and it is measured from
-// both sides: every transport this campaign rejected delivers 46.8-61 contact
-// moves/s, and the slowest capture a human hand has produced is 117.5 (ADR-0141).
-// 100 sits in that gap.
+// Cadence gates on DENSITY — contact moves per observed frame — not on a rate
+// (ADR-0145). A rate floor encodes an assumption about how fast the display
+// runs: a 60 Hz-locked device (the Android emulator, desktop WebKit) physically
+// cannot exceed ~60 moves/s while being driven perfectly at 1.0 moves per frame,
+// and the rate the input stream reaches tracks the display beat as much as the
+// input (46.8-268.4 across healthy captures). Density is refresh-rate
+// independent by construction and measured from both sides: every under-driven
+// transport this campaign rejected delivers well under one move per frame (0.44
+// for the founding Appium defect, re-measured as the tracked negative control in
+// 2026-08-25-underdriven-control), and the sparsest healthy capture on disk is
+// 0.96. The floor sits in that gap, shared with `classifyPhase`'s input-loss
+// diagnostic so the gate and the report cannot disagree.
 //
-// There is no ceiling. One existed at 170 on the reasoning that a faster stream
-// is "faster than a hand", and the 2026-08-23 hand corpus refutes it on both
-// devices: a real finger reaches 178.0 on the phone and 268.4 on the iPad, while
-// nothing has ever been observed failing by excess. Cadence excess is reported
-// by `classifyInputCadence` and does not decide the verdict.
-export const FIDELITY_MOVES_PER_SECOND_MIN = 100;
-export const FIDELITY_MOVE_GAP_P95_MAX_MS = 20;
+// There is no ceiling, and no rate bound at all for artifacts that carry the
+// field. One ceiling existed at 170 moves/s on the reasoning that a faster
+// stream is "faster than a hand", and the 2026-08-23 hand corpus refutes it on
+// both devices (178.0 and 268.4 from real fingers, ADR-0141). Density excess is
+// reported by `classifyPhase` as redundant per-event work and does not decide
+// the verdict.
+export const FIDELITY_MOVES_PER_FRAME_MIN = 0.6;
+
+// The legacy rate floor, applied ONLY to an artifact whose input block predates
+// `movesPerFrame`. Every tracked corpus carries the field; a pre-field artifact
+// keeps scoring exactly as it did when banked rather than failing on a
+// measurement its capture never took (the same principle as
+// LEGACY_NUMBER_INVALIDATING_CHECKS below). Measured from both sides at the
+// time: rejected transports 46.8-61 moves/s, slowest hand 117.5 (ADR-0141).
+const LEGACY_FIDELITY_MOVES_PER_SECOND_MIN = 100;
+
+// The gap cap rejects BURSTINESS — a stream whose average density is fine but
+// which stalls and catches up, which density alone cannot see. 25 ms is 1.5x
+// the slowest beat any scored display runs (60 Hz, 16.67 ms): a p95 gap beyond
+// that means the stream skipped input frames on any supported panel, without
+// asking which regime the capture ran in (the beat is not in the input block,
+// and the refresh-regime check owns that question). Calibrated from both sides:
+// the healthy corpus tops out at 19 ms (60 Hz-paced desktop WebKit, 36/36
+// phases) and the founding under-driven capture reads 40 ms. The former 20 ms
+// cap passed those healthy 19 ms phases by 1 ms — this names the margin instead
+// of shipping it as luck.
+export const FIDELITY_MOVE_GAP_P95_MAX_MS = 25;
 const FIDELITY_CONTACT_SIZE_MIN_PX = 40;
 const FIDELITY_CONTACT_SIZE_MAX_PX = 100;
 
@@ -68,16 +96,30 @@ export function captureRuntime(platformName, nativeApp) {
 const trustedTouch = (input) => input.kinds === 'touch' && input.trust?.share === 1;
 
 // Both measurements must be FINITE, which the retired ceiling used to enforce as
-// a side effect. Without it `movesPerSecond: Infinity` satisfied the floor and a
-// malformed or zero-window reading could be banked as scoreable — while
-// `classifyInputCadence`, the diagnostic, rejected the same value. The gate that
-// decides scoreability must not be more permissive than the one that only
-// reports.
-const cadence = (input) =>
-  Number.isFinite(input.movesPerSecond) &&
-  Number.isFinite(input.moveGapP95Ms) &&
-  input.movesPerSecond >= FIDELITY_MOVES_PER_SECOND_MIN &&
-  input.moveGapP95Ms <= FIDELITY_MOVE_GAP_P95_MAX_MS;
+// a side effect. Without it a non-finite reading satisfied the floor and a
+// malformed or zero-window reading could be banked as scoreable — while the
+// diagnostic rejected the same value. The gate that decides scoreability must
+// not be more permissive than the one that only reports.
+//
+// `movesPerFrame` decides for every artifact that carries it; the rate branch
+// exists only for artifacts banked before the field was recorded, so they keep
+// scoring as written. `undefined` deliberately takes the legacy branch and
+// `null`/garbage deliberately fails the density branch: absence means an old
+// artifact, while a present non-finite value means a broken measurement.
+const cadence = (input) => {
+  if (!Number.isFinite(input.moveGapP95Ms) || input.moveGapP95Ms > FIDELITY_MOVE_GAP_P95_MAX_MS) {
+    return false;
+  }
+  if (input.movesPerFrame === undefined) {
+    return (
+      Number.isFinite(input.movesPerSecond) &&
+      input.movesPerSecond >= LEGACY_FIDELITY_MOVES_PER_SECOND_MIN
+    );
+  }
+  return (
+    Number.isFinite(input.movesPerFrame) && input.movesPerFrame >= FIDELITY_MOVES_PER_FRAME_MIN
+  );
+};
 
 const noReportedPressure = (input) => input.pressure?.p50 === 0;
 
@@ -87,11 +129,10 @@ const fingerSizedContact = (input) =>
   input.contactHeight?.p50 >= FIDELITY_CONTACT_SIZE_MIN_PX &&
   input.contactHeight?.p50 <= FIDELITY_CONTACT_SIZE_MAX_PX;
 
-// `trustedTouch` is runtime-independent by measurement. `cadence` is so only in
-// its floor: the hand corpus shows the rate a finger produces is set by the
-// device's touch sampling, 135.5-178.0 on the phone against 117.5-268.4 on the
-// iPad, so an upper bound describes hardware rather than fidelity. The floor
-// describes fidelity on both and is what this table relies on.
+// `trustedTouch` is runtime-independent by measurement, and so is `cadence` now
+// that it gates on density: moves per frame needs no per-runtime table because
+// its bad side (0.44-0.45) and good side (0.96-2.33) hold across every device,
+// transport, and hand in the tracked corpora.
 //
 // `coalescing` is NOT_APPLICABLE in every runtime, on two measurements that
 // together retired it as a check (see the ADR on coalescing as a witness):

@@ -9,6 +9,7 @@ import {
   DEFAULT_CAPTURE_RUNTIME,
   captureRuntime,
   describeFidelityFailures,
+  FIDELITY_MOVES_PER_FRAME_MIN,
   inputFidelity,
   numberInvalidatingFailure,
 } from '../lib/input-fidelity.mjs';
@@ -377,5 +378,86 @@ describe('numberInvalidatingFailure', () => {
     expect(
       numberInvalidatingFailure({ passed: false, checks: { trustedTouch: false, cadence: true } })
     ).toBe(true);
+  });
+});
+
+// Cadence gates on density — moves per observed frame — with the rate floor
+// surviving only as the legacy branch for artifacts that predate the field
+// (ADR-0145). Every fixture here uses android-chrome, whose other checks are
+// not-applicable, so `passed` isolates the cadence verdict.
+describe('cadence as a density floor (ADR-0145)', () => {
+  const verdict = (input) =>
+    inputFidelity({ kinds: 'touch', trust: { share: 1 }, ...input }, 'android-chrome');
+
+  // The case the rate floor wrongly rejected: a 60 Hz-locked device driven
+  // perfectly cannot exceed ~60 moves/s. The emulator measures 1.09 moves per
+  // frame at 65 moves/s and desktop WebKit exactly 1.0 at 60 — both denser than
+  // the physical phone capture that passes (0.97).
+  it('passes a 60 Hz-locked stream at full density', () => {
+    expect(
+      verdict({ movesPerSecond: 60.1, movesPerFrame: 1, moveGapP95Ms: 19 }).checks.cadence
+    ).toBe(true);
+  });
+
+  // The founding defect, judged by what actually made it a defect: frames going
+  // by with no input in them — not the rate, which merely correlated with it.
+  it('fails the under-driven transport on density even at a healthy-looking rate', () => {
+    expect(
+      verdict({ movesPerSecond: 46.8, movesPerFrame: 0.44, moveGapP95Ms: 21 }).checks.cadence
+    ).toBe(false);
+    expect(
+      verdict({ movesPerSecond: 120, movesPerFrame: 0.44, moveGapP95Ms: 21 }).checks.cadence
+    ).toBe(false);
+  });
+
+  // Present-but-broken is a failed measurement, not a legacy artifact: only the
+  // field's ABSENCE selects the rate branch.
+  it('fails a present non-finite density rather than falling back to rate', () => {
+    for (const movesPerFrame of [null, NaN, Infinity, 'high']) {
+      expect(
+        verdict({ movesPerSecond: 154, movesPerFrame, moveGapP95Ms: 10 }).checks.cadence,
+        String(movesPerFrame)
+      ).toBe(false);
+    }
+  });
+
+  // An artifact banked before the field existed keeps scoring exactly as it did
+  // — the rate floor, both sides of its boundary.
+  it('scores a pre-field artifact by the legacy rate floor', () => {
+    expect(verdict({ movesPerSecond: 121, moveGapP95Ms: 9 }).checks.cadence).toBe(true);
+    expect(verdict({ movesPerSecond: 46.8, moveGapP95Ms: 21 }).checks.cadence).toBe(false);
+  });
+
+  // The gap cap is burstiness's own check and applies on both branches. 25 ms is
+  // 1.5x the slowest supported beat: the healthy corpus tops out at 19 (36/36
+  // 60 Hz-paced desktop WebKit phases) and the founding under-driven capture
+  // reads 40.
+  it('caps the p95 gap at 25 ms on both branches', () => {
+    expect(
+      verdict({ movesPerSecond: 116, movesPerFrame: 0.97, moveGapP95Ms: 25 }).checks.cadence
+    ).toBe(true);
+    expect(
+      verdict({ movesPerSecond: 116, movesPerFrame: 0.97, moveGapP95Ms: 40 }).checks.cadence
+    ).toBe(false);
+    expect(verdict({ movesPerSecond: 121, moveGapP95Ms: 40 }).checks.cadence).toBe(false);
+  });
+});
+
+// The negative side of the density calibration, as a re-scorable tracked capture
+// rather than a number quoted in prose (the campaign's own provenance rule,
+// applied to its own founding defect): the ADR-0135-rejected Appium browser
+// transport, deliberately re-driven on the physical phone for ADR-0145.
+describe('the under-driven negative control (ADR-0145)', () => {
+  const [control] = corpusInputs('2026-08-25-underdriven-control');
+
+  it('reproduces the founding defect and is refused on cadence', () => {
+    expect(control.input.movesPerFrame).toBeGreaterThan(0.3);
+    expect(control.input.movesPerFrame).toBeLessThan(FIDELITY_MOVES_PER_FRAME_MIN);
+    expect(control.input.movesPerSecond).toBeLessThan(61);
+
+    const verdict = inputFidelity(control.input, 'android-chrome');
+    expect(verdict.checks.trustedTouch).toBe(true);
+    expect(verdict.checks.cadence).toBe(false);
+    expect(describeFidelityFailures(verdict)).toBe('cadence');
   });
 });

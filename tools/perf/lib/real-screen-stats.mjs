@@ -1,3 +1,5 @@
+import { FIDELITY_MOVES_PER_FRAME_MIN } from './input-fidelity.mjs';
+
 // Turns the raw tables `real-screen-probe.js` records into the numbers a human
 // reads. Pure functions, no I/O: the device driver (`perf:ios:webkit:frames`), the
 // re-analyzer (`perf:analyze:frames`) and the Playwright replication feed it the
@@ -30,8 +32,10 @@ const LATE_FRAME_SHARE_FLOOR = 0.1;
 // runs AHEAD of the 60 Hz rAF beat — measured 1.9–4.2 moves per painted frame
 // with an Apple Pencil. Far below 1 means the moves never arrived at all (input
 // loss); far above 1 means the app is doing per-event work more than once per
-// frame it can actually present.
-const MOVES_PER_FRAME_FLOOR = 0.6;
+// frame it can actually present. The floor is the fidelity gate's own
+// (ADR-0145), imported so the diagnostic and the gate cannot disagree about
+// what an under-driven stream is.
+const MOVES_PER_FRAME_FLOOR = FIDELITY_MOVES_PER_FRAME_MIN;
 const MOVES_PER_FRAME_REDUNDANT = 1.5;
 // Input that sat this long before its handler ran is felt as lag even when
 // every frame afterwards is on time.
