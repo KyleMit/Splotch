@@ -1307,10 +1307,13 @@ describe('the eraserInk trust dimension', () => {
 // The PR 1366 review: the test named for this mapping never exercised it — the
 // corpus re-derives to a clean pass, and the fabricated verdict only reached
 // the classifier, so reverting `unrecorded` back to `failed` stayed green.
-// This drives an uncalibrated-only artifact through normalizeMatrix itself:
-// android-emulator-native's judging runtime (android-capacitor-webview) still
-// has uncalibrated pressure/contact expectations, so a capture passing every
-// real check re-derives to passed:false with only uncalibrated non-passes.
+// This drives an uncalibrated-only artifact through normalizeMatrix itself.
+// The judging runtime is desktop-playwright — since the Android WebView's
+// pressure/contact expectations were measured (android-webview-fidelity
+// .test.mjs), desktop is the one runtime that still carries UNCALIBRATED
+// entries, and a stored verdict makes even its artifact fidelity-reporting —
+// so a capture passing every real check re-derives to passed:false with only
+// uncalibrated non-passes.
 describe('trust publishes instrument silence as unrecorded', () => {
   it('maps an uncalibrated-only verdict to unrecorded with its detail', () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
@@ -1347,7 +1350,7 @@ describe('trust publishes instrument silence as unrecorded', () => {
       capturedManifestMode(modeSpecs[0], { drawing: { pen: ['native-pen.json'] } }),
       ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
     ]);
-    built.targets[0].id = 'android-emulator-native';
+    built.targets[0].id = 'mac-safari';
 
     const matrix = normalizeMatrix(built, directory);
     const run = matrix.targets[0].modes[0].drawing.pen.runs[0];
