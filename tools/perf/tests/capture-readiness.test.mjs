@@ -8,12 +8,17 @@ import {
   appiumReuse,
   classifyIosIdentifier,
   classifyLaunchProbe,
+  deviceAccessProblem,
+  explicitProbePortDecision,
   iosIdentifierProblem,
+  probeHostReuse,
   resolvePort,
   summarize,
   pageFollowedRotation,
   classifyAppiumLog,
 } from '../lib/capture-readiness.mjs';
+
+const freeAlternatives = (...ports) => ports.map((port) => ({ port, holder: null }));
 
 describe('iOS device identifiers', () => {
   // The mistake that cost a whole overnight campaign: `xcrun devicectl` prints a
@@ -38,7 +43,7 @@ describe('iOS device identifiers', () => {
 
 describe('port resolution', () => {
   it('takes a free port as-is', () => {
-    expect(resolvePort('appium', { holder: null, free: [] })).toMatchObject({
+    expect(resolvePort('appium', { holder: null })).toMatchObject({
       port: 4723,
       action: 'start',
     });
@@ -49,7 +54,7 @@ describe('port resolution', () => {
     expect(
       resolvePort('appium', {
         holder: { pid: 1, appium: { responds: true, ready: true, version: '3.6.0' } },
-        free: [4733],
+        alternatives: freeAlternatives(4733),
       })
     ).toMatchObject({ port: 4723, action: 'reuse' });
   });
@@ -57,7 +62,10 @@ describe('port resolution', () => {
   it('shifts off a port whose holder never answers the handshake', () => {
     // A process whose command line merely mentions appium is not a server.
     expect(
-      resolvePort('appium', { holder: { pid: 1, appium: { responds: false } }, free: [4733] })
+      resolvePort('appium', {
+        holder: { pid: 1, appium: { responds: false } },
+        alternatives: freeAlternatives(4733),
+      })
     ).toMatchObject({ port: 4733, action: 'start' });
   });
 
@@ -65,7 +73,7 @@ describe('port resolution', () => {
     expect(
       resolvePort('appium', {
         holder: { pid: 1, appium: { responds: true, ready: true, sessionCount: 1 } },
-        free: [4733],
+        alternatives: freeAlternatives(4733),
       })
     ).toMatchObject({ port: 4733, action: 'start' });
   });
@@ -74,7 +82,10 @@ describe('port resolution', () => {
   // servers forwarding the same WDA port, the second proxying into the first's
   // session.
   it('moves WDA to another local port rather than stopping the holder', () => {
-    const decision = resolvePort('wda', { holder: { pid: 39823 }, free: [8110, 8120] });
+    const decision = resolvePort('wda', {
+      holder: { pid: 39823 },
+      alternatives: freeAlternatives(8110, 8120),
+    });
     expect(decision).toMatchObject({ port: 8110, action: 'start' });
     expect(decision.reason).toContain('39823');
   });
@@ -82,26 +93,213 @@ describe('port resolution', () => {
   it('gives the floor control its own port rather than sharing the preview', () => {
     // The phone loads it over the LAN while the preview server is also serving,
     // so they cannot be the same port.
-    expect(resolvePort('floorControl', { holder: null, free: [] }).port).toBe(4177);
-    expect(resolvePort('floorControl', { holder: { pid: 1 }, free: [4187] })).toMatchObject({
+    expect(resolvePort('floorControl', { holder: null }).port).toBe(4177);
+    expect(
+      resolvePort('floorControl', {
+        holder: { pid: 1 },
+        alternatives: freeAlternatives(4187),
+      })
+    ).toMatchObject({
       port: 4187,
       action: 'start',
     });
   });
 
   it('restarts a preview server only when this session owns it', () => {
-    expect(resolvePort('preview', { holder: { pid: 1, ours: true }, free: [] })).toMatchObject({
+    expect(
+      resolvePort('preview', {
+        holder: { pid: 1, cwd: '/repo', ours: true },
+        alternatives: [],
+      })
+    ).toMatchObject({
       action: 'restart',
     });
-    expect(resolvePort('preview', { holder: { pid: 1, ours: false }, free: [] })).toMatchObject({
+  });
+
+  it('shifts a preview off a foreign checkout and names its cwd', () => {
+    const decision = resolvePort('preview', {
+      holder: { pid: 12170, cwd: '/worktrees/other', ours: false },
+      alternatives: freeAlternatives(4203),
+    });
+
+    expect(decision).toMatchObject({ port: 4203, action: 'start' });
+    expect(decision.reason).toContain('pid 12170');
+    expect(decision.reason).toContain('/worktrees/other');
+  });
+
+  it('treats unreadable preview ownership as foreign', () => {
+    const decision = resolvePort('preview', {
+      holder: { pid: 12170, cwd: null, ours: false },
+      alternatives: freeAlternatives(4183),
+    });
+
+    expect(decision).toMatchObject({ port: 4183, action: 'start' });
+    expect(decision.reason).toContain('cwd unreadable');
+  });
+
+  it('does not reuse a stale probe pinned to the foreign preview', () => {
+    const decision = resolvePort('probe', {
+      holder: {
+        pid: 12200,
+        cwd: '/repo',
+        ours: true,
+        probe: {
+          responds: true,
+          protocol: 'splotch-perf-probe-v1',
+          upstream: 'http://127.0.0.1:4173',
+          intendedUpstream: 'http://127.0.0.1:4203',
+          buildProblem: null,
+          plan: { label: 'finished-run', finish: true },
+        },
+      },
+      alternatives: freeAlternatives(4205),
+    });
+
+    expect(decision).toMatchObject({ port: 4205, action: 'start' });
+    expect(decision.reason).toContain('fixed upstream');
+  });
+
+  it('reuses an owned probe only after protocol, upstream, build, and run checks pass', () => {
+    expect(
+      resolvePort('probe', {
+        holder: {
+          pid: 12200,
+          cwd: '/repo',
+          ours: true,
+          probe: {
+            responds: true,
+            protocol: 'splotch-perf-probe-v1',
+            upstream: 'http://127.0.0.1:4173',
+            intendedUpstream: 'http://127.0.0.1:4173',
+            buildProblem: null,
+            plan: { label: 'ready', finish: false },
+            hasReport: false,
+            stalePage: null,
+          },
+        },
+        alternatives: [],
+      })
+    ).toMatchObject({ port: 4175, action: 'reuse' });
+  });
+
+  it('blocks rather than guessing when no alternate is free', () => {
+    expect(resolvePort('wda', { holder: { pid: 1 }, alternatives: [] })).toMatchObject({
       action: 'blocked',
     });
   });
 
-  it('blocks rather than guessing when no alternate is free', () => {
-    expect(resolvePort('wda', { holder: { pid: 1 }, free: [] })).toMatchObject({
-      action: 'blocked',
+  it('restarts an owned alternate preview before consuming another free shift port', () => {
+    expect(
+      resolvePort('preview', {
+        holder: { pid: 1, cwd: '/other', ours: false },
+        alternatives: [
+          { port: 4183, holder: { pid: 2, cwd: '/repo', ours: true } },
+          ...freeAlternatives(4193),
+        ],
+      })
+    ).toMatchObject({ port: 4183, action: 'restart' });
+  });
+
+  it('reuses a compatible owned alternate probe before consuming another free shift port', () => {
+    const compatibleProbe = {
+      responds: true,
+      protocol: 'splotch-perf-probe-v1',
+      upstream: 'http://127.0.0.1:4183',
+      intendedUpstream: 'http://127.0.0.1:4183',
+      buildProblem: null,
+      plan: { label: 'ready', finish: false },
+      hasReport: false,
+      stalePage: null,
+    };
+    expect(
+      resolvePort('probe', {
+        holder: { pid: 1, cwd: '/other', ours: false },
+        alternatives: [
+          { port: 4185, holder: { pid: 2, cwd: '/repo', ours: true, probe: compatibleProbe } },
+          ...freeAlternatives(4195),
+        ],
+      })
+    ).toMatchObject({ port: 4185, action: 'reuse' });
+  });
+});
+
+describe('explicit probe port', () => {
+  const compatibleProbe = {
+    responds: true,
+    protocol: 'splotch-perf-probe-v1',
+    upstream: 'http://127.0.0.1:4183',
+    intendedUpstream: 'http://127.0.0.1:4183',
+    buildProblem: null,
+    plan: { label: 'ready', finish: false },
+    hasReport: false,
+    stalePage: null,
+  };
+
+  it('reuses a compatible owned probe even when preflight resolved another port', () => {
+    expect(
+      explicitProbePortDecision({
+        requestedPort: 4205,
+        resolvedPort: 4215,
+        resolvedAction: 'start',
+        holder: { pid: 2, cwd: '/repo', ours: true, probe: compatibleProbe },
+      })
+    ).toMatchObject({ action: 'reuse' });
+  });
+
+  it('blocks an explicit occupied port when its probe identity is incompatible', () => {
+    const decision = explicitProbePortDecision({
+      requestedPort: 4205,
+      resolvedPort: 4215,
+      resolvedAction: 'start',
+      holder: {
+        pid: 2,
+        cwd: '/repo',
+        ours: true,
+        probe: { ...compatibleProbe, upstream: 'http://127.0.0.1:4173' },
+      },
     });
+    expect(decision.action).toBe('blocked');
+    expect(decision.reason).toContain('fixed upstream');
+  });
+});
+
+describe('sandbox USB access', () => {
+  it('collapses two empty enumerations into an access-boundary diagnosis in a sandbox', () => {
+    const problem = deviceAccessProblem({
+      androidDevices: [],
+      iosDevices: [],
+      sandbox: 'seatbelt',
+    });
+
+    expect(problem).toContain('both USB device enumerations are empty');
+    expect(problem).toContain('outside the sandbox');
+    expect(problem).toContain('I cannot reach USB from my sandbox');
+    expect(problem).not.toContain('no device in');
+  });
+
+  it('leaves ordinary device absence diagnostics alone outside a known sandbox', () => {
+    expect(
+      deviceAccessProblem({ androidDevices: [], iosDevices: [], sandbox: undefined })
+    ).toBeNull();
+    expect(
+      deviceAccessProblem({ androidDevices: ['android'], iosDevices: [], sandbox: 'seatbelt' })
+    ).toBeNull();
+  });
+});
+
+describe('probe reuse', () => {
+  it('rejects a finished plan even when its upstream and build are compatible', () => {
+    const verdict = probeHostReuse({
+      responds: true,
+      protocol: 'splotch-perf-probe-v1',
+      upstream: 'http://127.0.0.1:4173',
+      intendedUpstream: 'http://127.0.0.1:4173',
+      buildProblem: null,
+      plan: { label: 'old-run', finish: true },
+    });
+
+    expect(verdict.reuse).toBe(false);
+    expect(verdict.reason).toContain('finished plan old-run');
   });
 });
 

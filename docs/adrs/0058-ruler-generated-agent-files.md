@@ -41,7 +41,8 @@ Alternatives considered:
 `.ruler/` is the source of truth for generated agent instructions and skills
 (`@intellectronica/ruler`, pinned exactly in `devDependencies` — the drift gate depends on
 byte-stable output, so bumps are deliberate). A deliberately small registry in
-`scripts/direct-provider-skills.mjs` declares provider-native packages that are edited directly:
+`tools/ruler/lib/direct-provider-skills.mjs` declares provider-native packages that are edited
+directly:
 
 * **Sources:** root instructions in `.ruler/*.md` (concatenated in sorted order, `AGENTS.md` first);
   per-directory orientation in nested `<dir>/.ruler/AGENTS.md` (ruler's experimental `nested = true`
@@ -54,7 +55,7 @@ byte-stable output, so bumps are deliberate). A deliberately small registry in
 * **Runner-specific skill forks:** shared skills still live in `.ruler/skills/`. A managed workflow
   that genuinely needs independent implementations can be authored as complete packages in
   `.ruler/skill-forks/<runner>/skills/<name>/` (`claude` → `.claude/skills`, `codex` →
-  `.agents/skills`). `scripts/apply-ruler-skill-forks.mjs` runs after Ruler and replaces the whole
+  `.agents/skills`). `tools/ruler/apply-skill-forks.mjs` runs after Ruler and replaces the whole
   destination package while enforcing paired providers and shared-source isolation. Direct packages
   are intentionally not managed by that layer. `burn-down-audits` has complete, independent
   implementations in `.claude/skills/burn-down-audits/` and `.agents/skills/burn-down-audits/`.
@@ -72,15 +73,16 @@ byte-stable output, so bumps are deliberate). A deliberately small registry in
 * **Skill design notes:** shared notes in `.ruler/skill-notes/` are mirrored to both agents. A
   managed fork keeps independent notes in `.ruler/skill-forks/<runner>/skill-notes/`. Every direct
   package keeps its note in the matching provider's `skill-notes/` tree.
-* **Commands:** `npm run ruler:apply` snapshots every package and note path derived from the direct
-  registry, regenerates shared output, mirrors shared skill notes, applies managed skill forks,
-  restores the direct paths even when generation fails, and then runs `dprint fmt` (Ruler's raw
-  output carries extra blank lines dprint collapses — formatting post-apply keeps the committed
-  files inside the ADR-0057 gate). `npm run ruler:check` (`scripts/ruler-check.mjs`) repeats the
-  whole pipeline and fails on any worktree change or untracked generated file; the Quality CI job
-  runs it. Registered direct packages and notes are excluded from generated-file drift accounting
-  and are reviewed like ordinary tracked source. `ruler:dry-run` previews only Ruler's shared pass
-  because upstream has no concept of the fork layer.
+* **Commands:** `npm run ruler:apply` (`tools/ruler/apply-ruler.mjs`) snapshots every package and
+  note path derived from the direct registry, regenerates shared output, mirrors shared skill notes,
+  applies managed skill forks, restores the direct paths even when generation fails, and then runs
+  `dprint fmt` (Ruler's raw output carries extra blank lines dprint collapses — formatting
+  post-apply keeps the committed files inside the ADR-0057 gate). `npm run ruler:check`
+  (`tools/ruler/check-generated-files.mjs`) repeats the whole pipeline and fails on any worktree
+  change or untracked generated file; the Quality CI job runs it. Registered direct packages and
+  notes are excluded from generated-file drift accounting and are reviewed like ordinary tracked
+  source. `ruler:dry-run` previews only Ruler's shared pass because upstream has no concept of the
+  fork layer.
 * **Not generated** (edited in place): `.claude/rules/` path-scoped rules, `.claude/hooks/`,
   `.claude/settings.json`, `.claude/audit-conventions.md`, `.claude/cloud/`, registered direct
   provider packages and notes, and `docs/`.
@@ -89,7 +91,10 @@ Gotchas encoded here: the blanket `build/` ignore needs negations for all three 
 locations (`.gitignore`); deleting a skill from `.ruler/skills/` makes the next apply delete its
 generated copies, which must be committed too; and the generated-files warning lives in the
 `.ruler/` sources themselves so every agent is told both the normal `.ruler/**` rule and the direct
-provider registry exception.
+provider registry exception. The apply needs write access to both provider trees: a filesystem
+sandbox that makes `.claude/` or `.agents/` read-only can fail after generation has started and
+interrupt restoration of a registered direct-provider package, so sandboxed runners escalate the
+first attempt rather than retrying after a partial pass.
 
 ## Consequences
 

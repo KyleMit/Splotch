@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { freePort, spawnViteServer } from '../lib/vite-server.mjs';
+import { freePort, portListenerOwners, spawnViteServer } from '../lib/vite-server.mjs';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal();
@@ -40,6 +40,16 @@ describe('freePort', () => {
 
     expect(console.warn).not.toHaveBeenCalled();
     expect(process.kill).not.toHaveBeenCalled();
+  });
+});
+
+describe('portListenerOwners', () => {
+  it('treats an unreadable listener cwd as foreign', () => {
+    spawnSync
+      .mockReturnValueOnce({ status: 0, stdout: '4242\n' })
+      .mockReturnValueOnce({ status: 1, stdout: '' });
+
+    expect(portListenerOwners(4173, '/repo')).toEqual([{ pid: 4242, cwd: null, owned: false }]);
   });
 });
 

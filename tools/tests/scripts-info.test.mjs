@@ -51,4 +51,13 @@ describe('package script documentation', () => {
 
     expect(missing, `Maintained sources invoke missing scripts: ${missing.join(', ')}`).toEqual([]);
   });
+
+  it('documents the no-rebuild form for every perf command with a build prehook', () => {
+    const missing = Object.entries(packageJson.scripts)
+      .filter(([name, command]) => name.startsWith('preperf:') && command === 'npm run perf:build')
+      .map(([name]) => name.slice('pre'.length))
+      .filter((name) => !packageJson['scripts-info'][`pre${name}`].includes('--ignore-scripts'));
+
+    expect(missing, `Perf commands missing no-rebuild guidance: ${missing.join(', ')}`).toEqual([]);
+  });
 });

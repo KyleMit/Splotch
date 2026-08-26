@@ -1,9 +1,15 @@
 import { spawn } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { foreignPortListeners, freePort, portListenerPids } from '../lib/vite-server.mjs';
+import {
+  foreignPortListeners,
+  freePort,
+  portListenerOwners,
+  portListenerPids,
+  waitForPortRelease,
+} from '../lib/vite-server.mjs';
 
 // A listener started from somewhere that is deliberately not this checkout.
 const foreignRoot = mkdtempSync(join(tmpdir(), 'splotch-foreign-'));
@@ -19,7 +25,22 @@ const port = await new Promise((resolve) => {
   child.stdout.on('data', (chunk) => resolve(Number(String(chunk).trim())));
 });
 
-afterAll(() => child.kill());
+const ownedChild = spawn(
+  process.execPath,
+  [
+    '-e',
+    'require("http").createServer((q,r)=>r.end("x")).listen(0,"127.0.0.1",function(){console.log(this.address().port)})',
+  ],
+  { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] }
+);
+const ownedPort = await new Promise((resolve) => {
+  ownedChild.stdout.on('data', (chunk) => resolve(Number(String(chunk).trim())));
+});
+
+afterAll(() => {
+  child.kill();
+  ownedChild.kill();
+});
 
 describe('foreignPortListeners', () => {
   // The regression this covers: buildAndPreview called freePort() before the
@@ -33,6 +54,19 @@ describe('foreignPortListeners', () => {
 
   it('does not claim a listener owned by this checkout', () => {
     expect(foreignPortListeners(port, foreignRoot)).not.toContain(child.pid);
+  });
+
+  it('distinguishes identical listener commands by checkout cwd', () => {
+    expect(portListenerOwners(ownedPort, process.cwd())).toContainEqual({
+      pid: ownedChild.pid,
+      cwd: process.cwd(),
+      owned: true,
+    });
+    expect(portListenerOwners(port, process.cwd())).toContainEqual({
+      pid: child.pid,
+      cwd: realpathSync(foreignRoot),
+      owned: false,
+    });
   });
 
   // The point of the guard is that the other session's server stays up.
@@ -49,7 +83,7 @@ describe('freePort', () => {
   // decides whether it may be reached at all.
   it('stops a listener when it is called', async () => {
     freePort(port);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await waitForPortRelease(port);
 
     expect(portListenerPids(port)).not.toContain(child.pid);
   });

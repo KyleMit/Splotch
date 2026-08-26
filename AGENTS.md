@@ -73,6 +73,11 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   output changed — the CI drift gate. `npm run ruler:dry-run` previews Ruler's shared output only;
   it does not preview the post-apply layers.
 
+`ruler:apply` rewrites both `.claude/` and `.agents/`. In a filesystem sandbox that makes either
+provider tree read-only, run it with host/escalated write access from the first attempt. An `EPERM`
+mid-pass can interrupt restoration of a registered direct-provider package; if a retry reports a
+missing direct-provider source, restore that exact tracked path before running Ruler again.
+
 **If asked to update agent instructions, docs, or skills: change `.ruler/**` sources, never the
 generated files.** A generated file carries a `<!-- Source: ... -->` marker pointing back to its
 source. For a registered direct package, edit its selected `.claude/` or `.agents/` package and note

@@ -9,10 +9,12 @@ complete flag and output descriptions.
 * `perf:preflight` (`prepare-capture.mjs`) is the first command of any physical-device campaign. It
   confirms both devices are reachable and awake, reports the iPad's hardware UDID rather than the
   CoreDevice UUID `devicectl` prints, reuses an already-running RemoteXPC tunnel instead of asking
-  for its password again, and resolves every capture port around whatever else holds it — never
-  stopping a listener another session owns. `lib/capture-readiness.mjs` holds the decisions as pure
-  functions so they are testable without a device. The failures it exists to prevent are catalogued
-  in [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
+  for its password again, distinguishes sandbox USB denial from two detached devices, and resolves
+  preview/probe ports around foreign worktrees without stopping their listeners. A probe is reused
+  only after its checkout, upstream, build, and run identity agree with the selected preview.
+  `lib/capture-readiness.mjs` holds the decisions as pure functions so they are testable without a
+  device. The failures it exists to prevent are catalogued in
+  [`docs/PROFILING-CAMPAIGNS.md`](../../docs/PROFILING-CAMPAIGNS.md).
 * `perf:operator` (`run-operator-session.mjs`) is the guided session for the two capture inputs only
   a human at the devices can give: arming the iPad automation grant (the passcode prompt exists only
   during a WebDriverAgent launch — issue 1299; every attempt is appended to the tracked grant log

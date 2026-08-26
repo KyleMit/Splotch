@@ -11,6 +11,9 @@ import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './proc.mjs';
 
+const PORT_RELEASE_TIMEOUT_MS = 5_000;
+const PORT_RELEASE_POLL_INTERVAL_MS = 50;
+
 // Best-effort: kill whatever is listening on `port` so strictPort doesn't fail
 // and we never reuse a stale server from a previous run.
 export function portListenerPids(port) {
@@ -33,6 +36,21 @@ function listenerWorkingDirectory(pid) {
   return line ? line.slice(1) : null;
 }
 
+export function portListenerOwners(port, root) {
+  const resolvedRoot = realPath(root);
+  return portListenerPids(port).map((pid) => {
+    const cwd = listenerWorkingDirectory(pid);
+    const resolvedCwd = cwd ? realPath(cwd) : null;
+    return {
+      pid,
+      cwd: resolvedCwd,
+      owned:
+        resolvedCwd !== null &&
+        (resolvedCwd === resolvedRoot || resolvedCwd.startsWith(`${resolvedRoot}/`)),
+    };
+  });
+}
+
 // Listeners on this port that belong to some OTHER checkout. freePort() SIGTERMs
 // every listener it finds, which is right for this session's own leftovers and
 // wrong for anyone else's — it killed another worktree's preview server before the
@@ -42,16 +60,9 @@ function listenerWorkingDirectory(pid) {
 // A listener whose working directory cannot be read counts as foreign: refusing to
 // start is recoverable, and killing something unidentified is not.
 export function foreignPortListeners(port, root) {
-  // Both sides are resolved because macOS reports the real path (/private/var/...)
-  // where Node hands out the symlink (/var/...), and a mismatch there would call
-  // this session's own listener foreign.
-  const resolved = realPath(root);
-  return portListenerPids(port).filter((pid) => {
-    const cwd = listenerWorkingDirectory(pid);
-    if (!cwd) return true;
-    const owner = realPath(cwd);
-    return owner !== resolved && !owner.startsWith(`${resolved}/`);
-  });
+  return portListenerOwners(port, root)
+    .filter((listener) => !listener.owned)
+    .map((listener) => listener.pid);
 }
 
 function realPath(path) {
@@ -79,6 +90,20 @@ export function freePort(port) {
     } catch {
       // already gone
     }
+  }
+}
+
+export async function waitForPortRelease(port) {
+  const deadline = Date.now() + PORT_RELEASE_TIMEOUT_MS;
+  for (;;) {
+    const pids = portListenerPids(port);
+    if (pids.length === 0) return;
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `port ${port} is still held by pid ${pids.join(', ')} after ${PORT_RELEASE_TIMEOUT_MS}ms`
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, PORT_RELEASE_POLL_INTERVAL_MS));
   }
 }
 

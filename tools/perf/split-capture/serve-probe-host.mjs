@@ -12,10 +12,11 @@
 // which drives the touch input and reads the report back.
 import { join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
+import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import { createProbeHost } from './lib/probe-host.mjs';
 
-export const DEFAULT_PROBE_PORT = 4175;
-const DEFAULT_UPSTREAM = 'http://127.0.0.1:4173';
+export const DEFAULT_PROBE_PORT = PORT_ROLES.probe.port;
+const DEFAULT_UPSTREAM = `http://127.0.0.1:${PORT_ROLES.preview.port}`;
 const DEFAULT_REPORT_DIR = join(ROOT, 'perf-profiles', 'split-capture', 'reports');
 
 export function serveProbeHost({
