@@ -89,6 +89,10 @@
   .live-crayon-tile {
     z-index: 2;
     mix-blend-mode: darken;
+    /* EXPERIMENT (exp/crayon-i14-will-change): pin both crayon planes to
+       persistent compositor layers so pass-boundary hidden toggles cannot
+       create/destroy layers mid-gesture. */
+    will-change: transform;
   }
 
   .live-crayon-tile-top {
