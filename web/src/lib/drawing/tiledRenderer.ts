@@ -272,7 +272,8 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
     tile.needsClear = false;
     return;
   }
-  if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase) return;
+  // EXPERIMENT (exp/crayon-i1-restamp): crayon ops restamp the normal tile
+  // directly, so it must be shown like any ink op.
   if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
   tile.canvas.hidden = false;
 }
@@ -296,7 +297,8 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
     for (const [index, tile] of liveTiles.entries()) {
       if (geometryIntersectsTile(op, tile)) {
         ensureNormalTileBacking(tile);
-        if (op.crayon && !op.erase) ensureCrayonTileBacking(tile);
+        // EXPERIMENT (exp/crayon-i1-restamp): preview planes unused; no
+        // crayon backing to allocate.
         prepareTileForMutation(tile, index);
         if (command && !command.wasEmpty) {
           undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
