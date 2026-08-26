@@ -249,9 +249,10 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  // EXPERIMENT (exp/crayon-i1-restamp): every op already restamped its rect
-  // onto the target, so the target holds the exact pass-close pixels — the
-  // flush only resets the pass state.
+  // EXPERIMENT (exp/crayon-i3-mix-at-close): reconstruct the exact glaze once
+  // at pass close — restore the pass bounds from the under snapshot, then
+  // apply the two-blit subtractive stamp.
+  if (buf.bounds) restampRect(target, buf, buf.bounds);
   clearCrayonBounds(buf);
 }
 
@@ -286,6 +287,18 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   paintCrayon(buf.ctx, op);
   buf.dirty = true;
   const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
-  if (rect) restampRect(target, buf, rect);
+  // EXPERIMENT (exp/crayon-i3-mix-at-close): the live preview is the opaque
+  // wax blitted straight over the under-ink — one source-over blit per op.
+  // The exact glaze is reconstructed once, at pass close (see
+  // flushCrayonBuffer), so overlaps over prior ink shift slightly then.
+  if (rect) {
+    const w = rect.x1 - rect.x0;
+    const h = rect.y1 - rect.y0;
+    target.save();
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.globalCompositeOperation = 'source-over';
+    target.drawImage(buf.ctx.canvas, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
+    target.restore();
+  }
   unionCrayonBounds(buf, rect);
 }
