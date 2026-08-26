@@ -78,3 +78,33 @@ test('the cleared button cannot re-arm its ring from the release point', async (
   await expect(page.locator('#clearAcceptZone')).not.toHaveClass(/\bvisible\b/);
   await page.mouse.up();
 });
+
+// The coachmark's keyframe loops must run only while it is VISIBLE. The base
+// state hid it with opacity/visibility, neither of which pauses a CSS
+// animation, so both fixed-position elements animated forever on every drawing
+// session — measured at 72% of all Animation style invalidations in an
+// emulator trace while the tutorial was never on screen.
+test('the hidden coachmark runs no animation; the revealed one does', async ({ page }) => {
+  await gotoApp(page);
+
+  const animationNames = () =>
+    page.evaluate(() =>
+      ['.coachmark-ring', '.coachmark-ghost'].map(
+        (selector) => getComputedStyle(document.querySelector(selector)!).animationName
+      )
+    );
+
+  expect(await animationNames()).toEqual(['none', 'none']);
+
+  const button = page.locator('#clearButton');
+  const coachmark = page.locator('.clear-coachmark');
+  await expect(async () => {
+    await button.click();
+    await button.click();
+    await button.click();
+    await expect(coachmark).toHaveClass(/\bvisible\b/, { timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+
+  const running = await animationNames();
+  expect(running.every((name) => name !== 'none')).toBe(true);
+});

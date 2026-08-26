@@ -42,14 +42,11 @@
     coachmarkGhostEl.style.setProperty('--tx', `${-travel * Math.SQRT1_2}px`);
     coachmarkGhostEl.style.setProperty('--ty', `${travel * Math.SQRT1_2}px`);
 
-    // The loop runs free while hidden, so restart it from frame 0 — otherwise
-    // it can appear mid-cycle (e.g. already at the finish position).
-    for (const el of [coachmarkGhostEl, coachmarkRingEl]) {
-      el.style.animation = 'none';
-      void el.offsetWidth; // force reflow so the restart takes effect
-      el.style.animation = '';
-    }
-
+    // The keyframe loops are applied only under `.visible` (a hidden element's
+    // CSS animation otherwise runs forever, invalidating style and paint every
+    // frame — measured at 72% of all Animation invalidations in an emulator
+    // trace), so becoming visible starts them from frame 0 with no restart
+    // trick needed.
     tutorialVisible = true;
     tutorialDismissTimer = setTimeout(dismiss, COACHMARK_AUTO_DISMISS_MS);
   }
@@ -120,6 +117,9 @@
 
   /* Soft preview of the accept zone — uses the friendlier coral, not the
      alarm-red of the live threshold, so the hint reads as an invitation. */
+  /* The loops live under `.visible`: an animation on the hidden base state
+     never stops (opacity/visibility do not pause CSS animations), which taxed
+     every frame of every drawing session for a tutorial nobody was seeing. */
   .coachmark-ring {
     position: fixed;
     box-sizing: border-box;
@@ -130,13 +130,19 @@
       rgba(var(--hint-rgb), 0) 60%,
       rgba(var(--hint-rgb), 0.05) 100%
     );
+  }
+
+  .clear-coachmark.visible .coachmark-ring {
     animation: coachmarkRing 2.8s ease-in-out infinite;
   }
 
   .coachmark-ghost {
     position: fixed;
-    animation: coachmarkDrag 2.8s ease-in-out infinite;
     will-change: transform, opacity;
+  }
+
+  .clear-coachmark.visible .coachmark-ghost {
+    animation: coachmarkDrag 2.8s ease-in-out infinite;
   }
 
   .coachmark-button {
@@ -255,12 +261,13 @@
   /* Respect reduced-motion: drop the loop, show a single static "here's the
      gesture" frame instead. */
   @media (prefers-reduced-motion: reduce) {
-    .coachmark-ghost {
+    /* Match the .visible-scoped specificity above, or the loop would win. */
+    .clear-coachmark.visible .coachmark-ghost {
       animation: none;
       transform: translate(var(--tx), var(--ty));
       opacity: 0.95;
     }
-    .coachmark-ring {
+    .clear-coachmark.visible .coachmark-ring {
       animation: none;
       opacity: 1;
       border-color: var(--ready-border);
