@@ -3,6 +3,7 @@
 // Every rule here was earned by a campaign that produced numbers before anyone
 // noticed the setup was wrong. `prepare-capture.mjs` supplies the shell; this
 // module decides, so the decisions are unit-testable without a device.
+import { PROBE_HOST_PROTOCOL } from '../split-capture/lib/probe-host-protocol.mjs';
 
 // The two identifiers an iPad answers to are not interchangeable, and mixing
 // them is the single most expensive mistake this file exists to prevent.
@@ -39,7 +40,16 @@ export function iosIdentifierProblem(value) {
 // Restarting a listener another session owns is never the answer: it is what the
 // repo's concurrent-worktree rule forbids, and the tunnel takes a password.
 export const PORT_ROLES = {
-  preview: { port: 4173, onConflict: 'replace-if-ours' },
+  preview: {
+    port: 4173,
+    onConflict: 'replace-if-ours-or-shift',
+    shiftTo: [4183, 4193, 4203, 4213],
+  },
+  probe: {
+    port: 4175,
+    onConflict: 'reuse-compatible-or-shift',
+    shiftTo: [4185, 4195, 4205, 4215],
+  },
   appium: { port: 4723, onConflict: 'reuse-or-shift', shiftTo: [4733, 4743, 4753] },
   wda: { port: 8100, onConflict: 'shift', shiftTo: [8110, 8120, 8130] },
   androidCdp: { port: 9224, onConflict: 'shift', shiftTo: [9234, 9244] },
@@ -48,6 +58,17 @@ export const PORT_ROLES = {
   // the LAN, so it needs a port of its own rather than sharing the preview's.
   floorControl: { port: 4177, onConflict: 'shift', shiftTo: [4187, 4197] },
 };
+
+export function deviceAccessProblem({ androidDevices, iosDevices, sandbox }) {
+  if (androidDevices.length > 0 || iosDevices.length > 0 || !sandbox) return null;
+  return (
+    `both USB device enumerations are empty inside the ${sandbox} sandbox. ` +
+    'The sandbox cannot reach the host adb server or usbmuxd, so this does not prove either ' +
+    'device is detached. Re-run the full preflight outside the sandbox before diagnosing cables ' +
+    'or authorization. If escalation is unavailable, report: "devices are proven attached; I ' +
+    'cannot reach USB from my sandbox."'
+  );
+}
 
 // Whether an Appium server already on the port can be borrowed.
 //
@@ -82,19 +103,83 @@ export function appiumReuse({ responds, ready, version, sessionCount } = {}) {
   };
 }
 
+export function probeHostReuse({
+  responds,
+  protocol,
+  upstream,
+  intendedUpstream,
+  buildProblem,
+  plan,
+  hasReport,
+  stalePage,
+} = {}) {
+  if (!responds || protocol !== PROBE_HOST_PROTOCOL) {
+    return { reuse: false, reason: 'the listener did not answer the probe-host protocol' };
+  }
+  if (upstream !== intendedUpstream) {
+    return {
+      reuse: false,
+      reason: `its fixed upstream is ${upstream ?? 'unknown'}, not ${intendedUpstream}`,
+    };
+  }
+  if (buildProblem) return { reuse: false, reason: buildProblem };
+  if (!plan) return { reuse: false, reason: 'the listener did not expose its run identity' };
+  if (plan.finish) {
+    return {
+      reuse: false,
+      reason: `it still carries finished plan ${plan.label ?? '(unlabelled)'}`,
+    };
+  }
+  if (plan.nonce && !hasReport) {
+    return { reuse: false, reason: `it still carries active plan ${plan.label ?? '(unlabelled)'}` };
+  }
+  if (stalePage) {
+    return { reuse: false, reason: `it still carries stale plan ${plan.label ?? '(unlabelled)'}` };
+  }
+  return { reuse: true, reason: `compatible idle probe for ${intendedUpstream}` };
+}
+
+function holderDescription(holder) {
+  return `pid ${holder.pid}${holder.cwd ? `, cwd ${holder.cwd}` : ', cwd unreadable'}`;
+}
+
 export function resolvePort(role, { holder, free }) {
   const spec = PORT_ROLES[role];
   if (!spec) throw new Error(`Unknown capture port role ${role}`);
   if (!holder) return { port: spec.port, action: 'start', reason: 'free' };
 
-  if (spec.onConflict === 'replace-if-ours') {
-    return holder.ours
-      ? { port: spec.port, action: 'restart', reason: 'held by this session' }
+  if (spec.onConflict === 'replace-if-ours-or-shift') {
+    if (holder.ours) {
+      return {
+        port: spec.port,
+        action: 'restart',
+        reason: `held by this checkout (${holderDescription(holder)})`,
+      };
+    }
+    const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
+    return next
+      ? {
+          port: next,
+          action: 'start',
+          reason: `${spec.port} is foreign (${holderDescription(holder)})`,
+        }
       : {
           port: spec.port,
           action: 'blocked',
-          reason: `held by another process (pid ${holder.pid})`,
+          reason: `foreign holder and no alternate is free (${holderDescription(holder)})`,
         };
+  }
+  if (spec.onConflict === 'reuse-compatible-or-shift') {
+    const verdict = holder.ours
+      ? probeHostReuse(holder.probe)
+      : { reuse: false, reason: `foreign holder (${holderDescription(holder)})` };
+    if (verdict.reuse) {
+      return { port: spec.port, action: 'reuse', reason: verdict.reason };
+    }
+    const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
+    return next
+      ? { port: next, action: 'start', reason: `${spec.port}: ${verdict.reason}` }
+      : { port: spec.port, action: 'blocked', reason: verdict.reason };
   }
   if (spec.onConflict === 'reuse-or-shift') {
     const verdict = appiumReuse(holder.appium);

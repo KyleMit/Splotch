@@ -6,12 +6,13 @@ import { join } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
+import { PORT_ROLES } from './lib/capture-readiness.mjs';
 
 const SERVE_ENTRY = join(ROOT, 'tools', 'perf', 'serve-profile-build.mjs');
 
 // vite's default preview port. The runbook, the console driver, and the
 // recorder snippet all point the iPad at it.
-const PREVIEW_PORT = 4173;
+const PREVIEW_PORT = PORT_ROLES.preview.port;
 
 // The escape byte is the point: we match vite's SGR color codes to read the
 // address lines underneath them, while forwarding the line still colored.

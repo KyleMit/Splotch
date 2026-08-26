@@ -9,6 +9,7 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { ROOT } from '../../../lib/proc.mjs';
 import { pageBootstrapSource } from './page-bootstrap.mjs';
+import { PROBE_HOST_PROTOCOL } from './probe-host-protocol.mjs';
 import { keepIncomingReport, reportRejectionReason } from './report-store.mjs';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './chrome-tabs.mjs';
 
@@ -87,6 +88,9 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     }
     if (pathname === '/__probe/state') {
       return json(res, {
+        protocol: PROBE_HOST_PROTOCOL,
+        upstream,
+        plan: state.plan,
         ready: state.progress,
         hasReport: !!state.report,
         pulse: state.pulse,

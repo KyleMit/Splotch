@@ -8,7 +8,9 @@ import {
   appiumReuse,
   classifyIosIdentifier,
   classifyLaunchProbe,
+  deviceAccessProblem,
   iosIdentifierProblem,
+  probeHostReuse,
   resolvePort,
   summarize,
   pageFollowedRotation,
@@ -90,18 +92,126 @@ describe('port resolution', () => {
   });
 
   it('restarts a preview server only when this session owns it', () => {
-    expect(resolvePort('preview', { holder: { pid: 1, ours: true }, free: [] })).toMatchObject({
+    expect(
+      resolvePort('preview', {
+        holder: { pid: 1, cwd: '/repo', ours: true },
+        free: [],
+      })
+    ).toMatchObject({
       action: 'restart',
     });
-    expect(resolvePort('preview', { holder: { pid: 1, ours: false }, free: [] })).toMatchObject({
-      action: 'blocked',
+  });
+
+  it('shifts a preview off a foreign checkout and names its cwd', () => {
+    const decision = resolvePort('preview', {
+      holder: { pid: 12170, cwd: '/worktrees/other', ours: false },
+      free: [4203],
     });
+
+    expect(decision).toMatchObject({ port: 4203, action: 'start' });
+    expect(decision.reason).toContain('pid 12170');
+    expect(decision.reason).toContain('/worktrees/other');
+  });
+
+  it('treats unreadable preview ownership as foreign', () => {
+    const decision = resolvePort('preview', {
+      holder: { pid: 12170, cwd: null, ours: false },
+      free: [4183],
+    });
+
+    expect(decision).toMatchObject({ port: 4183, action: 'start' });
+    expect(decision.reason).toContain('cwd unreadable');
+  });
+
+  it('does not reuse a stale probe pinned to the foreign preview', () => {
+    const decision = resolvePort('probe', {
+      holder: {
+        pid: 12200,
+        cwd: '/repo',
+        ours: true,
+        probe: {
+          responds: true,
+          protocol: 'splotch-perf-probe-v1',
+          upstream: 'http://127.0.0.1:4173',
+          intendedUpstream: 'http://127.0.0.1:4203',
+          buildProblem: null,
+          plan: { label: 'finished-run', finish: true },
+        },
+      },
+      free: [4205],
+    });
+
+    expect(decision).toMatchObject({ port: 4205, action: 'start' });
+    expect(decision.reason).toContain('fixed upstream');
+  });
+
+  it('reuses an owned probe only after protocol, upstream, build, and run checks pass', () => {
+    expect(
+      resolvePort('probe', {
+        holder: {
+          pid: 12200,
+          cwd: '/repo',
+          ours: true,
+          probe: {
+            responds: true,
+            protocol: 'splotch-perf-probe-v1',
+            upstream: 'http://127.0.0.1:4173',
+            intendedUpstream: 'http://127.0.0.1:4173',
+            buildProblem: null,
+            plan: { label: 'ready', finish: false },
+            hasReport: false,
+            stalePage: null,
+          },
+        },
+        free: [],
+      })
+    ).toMatchObject({ port: 4175, action: 'reuse' });
   });
 
   it('blocks rather than guessing when no alternate is free', () => {
     expect(resolvePort('wda', { holder: { pid: 1 }, free: [] })).toMatchObject({
       action: 'blocked',
     });
+  });
+});
+
+describe('sandbox USB access', () => {
+  it('collapses two empty enumerations into an access-boundary diagnosis in a sandbox', () => {
+    const problem = deviceAccessProblem({
+      androidDevices: [],
+      iosDevices: [],
+      sandbox: 'seatbelt',
+    });
+
+    expect(problem).toContain('both USB device enumerations are empty');
+    expect(problem).toContain('outside the sandbox');
+    expect(problem).toContain('I cannot reach USB from my sandbox');
+    expect(problem).not.toContain('no device in');
+  });
+
+  it('leaves ordinary device absence diagnostics alone outside a known sandbox', () => {
+    expect(
+      deviceAccessProblem({ androidDevices: [], iosDevices: [], sandbox: undefined })
+    ).toBeNull();
+    expect(
+      deviceAccessProblem({ androidDevices: ['android'], iosDevices: [], sandbox: 'seatbelt' })
+    ).toBeNull();
+  });
+});
+
+describe('probe reuse', () => {
+  it('rejects a finished plan even when its upstream and build are compatible', () => {
+    const verdict = probeHostReuse({
+      responds: true,
+      protocol: 'splotch-perf-probe-v1',
+      upstream: 'http://127.0.0.1:4173',
+      intendedUpstream: 'http://127.0.0.1:4173',
+      buildProblem: null,
+      plan: { label: 'old-run', finish: true },
+    });
+
+    expect(verdict.reuse).toBe(false);
+    expect(verdict.reason).toContain('finished plan old-run');
   });
 });
 

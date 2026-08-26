@@ -24,16 +24,20 @@ import { createServer } from 'node:net';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, argFlag, hasCommand, isMain, runMain } from '../lib/proc.mjs';
+import { portListenerOwners } from '../lib/vite-server.mjs';
 import {
   androidWakeActions,
   classifyAppiumLog,
   classifyLaunchProbe,
+  deviceAccessProblem,
   iosIdentifierProblem,
   pageFollowedRotation,
   PORT_ROLES,
+  probeHostReuse,
   resolvePort,
   summarize,
 } from './lib/capture-readiness.mjs';
+import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
 import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
 import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
 
@@ -53,11 +57,8 @@ const sh = (cmd, args) => {
 };
 
 function portHolder(port) {
-  const { out } = sh('lsof', ['-ti', `tcp:${port}`]);
-  const pid = out.split('\n').filter(Boolean)[0];
-  if (!pid) return null;
-  const { out: args } = sh('ps', ['-p', pid, '-o', 'args=']);
-  return { pid: Number(pid), args };
+  const listeners = portListenerOwners(port, ROOT);
+  return listeners.find((listener) => !listener.owned) ?? listeners[0] ?? null;
 }
 
 function freePorts(candidates) {
@@ -79,7 +80,7 @@ function androidChecks({ fix }) {
       status: 'blocked',
       detail: 'no device in `adb devices`',
     });
-    return { checks, serial: null };
+    return { checks, serial: null, devices };
   }
   const serial = argFlag('android-serial', devices[0]);
   checks.push({ name: 'android device', status: 'ok', detail: serial });
@@ -141,7 +142,7 @@ function androidChecks({ fix }) {
     detail: chrome ? 'installed' : 'com.android.chrome is not installed',
   });
 
-  return { checks, serial };
+  return { checks, serial, devices };
 }
 
 function iosChecks() {
@@ -152,7 +153,7 @@ function iosChecks() {
       status: 'blocked',
       detail: 'idevice_id is missing — brew install libimobiledevice',
     });
-    return { checks, udid: null };
+    return { checks, udid: null, udids: null };
   }
   const udids = sh('idevice_id', ['-l']).out.split('\n').filter(Boolean);
   if (udids.length === 0) {
@@ -161,7 +162,7 @@ function iosChecks() {
       status: 'blocked',
       detail: 'no device from `idevice_id -l`',
     });
-    return { checks, udid: null };
+    return { checks, udid: null, udids };
   }
   const udid = argFlag('ios-udid', udids[0]);
   const problem = iosIdentifierProblem(udid);
@@ -190,7 +191,7 @@ function iosChecks() {
     detail: 'ios/local.xcconfig',
   });
 
-  return { checks, udid };
+  return { checks, udid, udids };
 }
 
 // Short: a live server answers immediately on loopback, and a hung one must not
@@ -218,30 +219,51 @@ async function probeAppium(port) {
   };
 }
 
+async function probeProbeHost(port, intendedUpstream) {
+  const base = `http://127.0.0.1:${port}`;
+  const response = await fetch(`${base}/__probe/state`, {
+    signal: AbortSignal.timeout(APPIUM_PROBE_TIMEOUT_MS),
+  }).catch(() => null);
+  if (!response?.ok) return { responds: false, intendedUpstream };
+  const state = await response.json().catch(() => null);
+  if (!state) return { responds: false, intendedUpstream };
+  const identity = { responds: true, intendedUpstream, buildProblem: null, ...state };
+  if (!probeHostReuse(identity).reuse) return identity;
+  const buildProblem = await servedBuildFingerprintProblem(`${base}/`).catch(
+    (error) => `build identity could not be proved: ${error.message}`
+  );
+  return { ...identity, buildProblem };
+}
+
 async function portChecks() {
   const checks = [];
   const resolved = {};
+  const decisions = {};
   for (const [role, spec] of Object.entries(PORT_ROLES)) {
     const holder = portHolder(spec.port);
+    const intendedProbeUpstream =
+      role === 'probe' ? `http://127.0.0.1:${resolved.preview}` : undefined;
     const decision = resolvePort(role, {
       holder: holder && {
         pid: holder.pid,
-        // "Ours" means this repo started it; a preview server is the only thing
-        // safe to restart, and only when it is ours.
-        ours: holder.args.includes('serve-profile-build') || holder.args.includes('vite preview'),
+        cwd: holder.cwd,
+        ours: holder.owned,
+        probe:
+          role === 'probe' ? await probeProbeHost(spec.port, intendedProbeUpstream) : undefined,
         // Proven by handshake rather than inferred from a command line.
         appium: role === 'appium' ? await probeAppium(spec.port) : undefined,
       },
       free: freePorts(spec.shiftTo ?? []),
     });
     resolved[role] = decision.port;
+    decisions[role] = decision;
     checks.push({
       name: `port ${role}`,
       status: decision.action === 'blocked' ? 'blocked' : 'ok',
       detail: `${decision.port} — ${decision.action} (${decision.reason})`,
     });
   }
-  return { checks, resolved };
+  return { checks, resolved, decisions };
 }
 
 // Holds BOTH devices ready for the length of a session, not just the one being
@@ -616,12 +638,23 @@ export async function prepareCapture(argv = process.argv.slice(2)) {
   const android = androidChecks({ fix });
   const ios = iosChecks();
   const ports = await portChecks();
-  const result = summarize([...android.checks, ...ios.checks, ...ports.checks]);
+  const usbProblem =
+    Array.isArray(ios.udids) &&
+    deviceAccessProblem({
+      androidDevices: android.devices,
+      iosDevices: ios.udids,
+      sandbox: process.env.CODEX_SANDBOX,
+    });
+  const deviceChecks = usbProblem
+    ? [{ name: 'device USB access', status: 'blocked', detail: usbProblem }]
+    : [...android.checks, ...ios.checks];
+  const result = summarize([...deviceChecks, ...ports.checks]);
   const report = {
     ...result,
     androidSerial: android.serial,
     iosUdid: ios.udid,
     ports: ports.resolved,
+    portDecisions: ports.decisions,
   };
 
   if (argv.includes('--json')) {

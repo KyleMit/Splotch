@@ -1,12 +1,22 @@
 ---
 name: start-capture-session
-description: Take over the physical iPad and Android capture rig at the start of a performance session — run the preflight, prove both devices will actually accept a capture, reclaim contended ports, and load the traps that produce plausible wrong numbers. Use before any physical-device profiling, capture campaign, or performance matrix run, and when picking up devices a previous session was using.
+description: Take over the physical iPad and Android capture rig at the start of a performance session — reserve and prove both devices, route around foreign host processes, and load the traps that produce plausible wrong numbers. Use before any physical-device profiling, targeted empirical review check, capture campaign, or performance matrix run, and when picking up devices a previous session was using.
 ---
 
 # Start capture session
 
 There is one iPad and one Android phone, so capture sessions run **in sequence, not in parallel**. A
-session that starts takes the rig over completely; the previous one is finished.
+user explicitly invoking this skill authorizes the session to reserve and use both physical devices;
+do not refuse takeover because another device user might exist. Automatic skill loading alone is not
+that authorization.
+
+The reservation covers the devices, not every process related to capture. Another worktree's
+preview, probe host, Appium server, or other listener remains that session's process. Leave it alone
+and use the alternate ports the preflight resolves.
+
+Takeover prepares the rig; it does not promise a campaign. Targeted physical-device checks are
+supported while reviewing existing work with the `leave-pr-review` skill. If no finding needs a
+capture, both devices verified and idle is a successful end state.
 
 ## In a fresh worktree, three things block before the preflight does
 
@@ -67,6 +77,13 @@ capture session's work.
 npm run perf:preflight -- --wake-android --verify-android-input --verify-ios-launch
 ```
 
+Run the full preflight and every command that touches either physical device outside the sandbox,
+using the runner's escalation mechanism. A sandboxed `adb` cannot reach the host adb server and a
+sandboxed `idevice_id` cannot open usbmuxd. If both enumerate nothing in a known sandbox, retry the
+same full preflight outside it before diagnosing cables, trust, or authorization. If escalation is
+unavailable but attachment was proved from a host shell, report exactly: **"devices are proven
+attached; I cannot reach USB from my sandbox."**
+
 Do not skip the two verifications on the grounds that the devices "were working a minute ago".
 Everything else the preflight checks is host-side, and that is exactly how a blocked device reports
 ready: enumeration, `ideviceinfo`, the tunnel, and every port check pass without ever launching an
@@ -107,20 +124,24 @@ that launch already pays for a WebDriverAgent build and already runs Safari. A f
 iPad's rotation lock, which is the cause a human can clear and the one a host-side check can never
 see.
 
-## Reuse what cost a human, reclaim what is cheap
+## Device ownership is not process ownership
 
-The repo's concurrent-worktree rule — never stop a listener another session owns — is written for
-parallel agents sharing a host. **It does not govern the device rig**, which has one owner at a
-time. The distinction that does apply is cost:
+The exclusive device reservation does not override the repo's concurrent-worktree rule. Never stop a
+listener merely because it occupies a canonical port. Unknown ownership is foreign ownership.
 
 * **Reuse the RemoteXPC tunnel** wherever it is running, no matter who started it. It is root-owned
   and its password prompt goes to a GUI dialog an unattended session cannot answer.
-* **Reclaim everything cheap** — preview servers, probe hosts, your own Appium. Leaving a stranger's
-  idle server on the canonical port and shifting to the next one is how a host accumulates litter
-  across sessions.
+* **Reuse compatible Appium** only after its handshake proves it is ready; use the resolved WDA port
+  so a borrowed server cannot collide with another session.
+* **Restart a preview only when its resolved cwd belongs to this checkout.** The same `vite preview`
+  command from another worktree is foreign. An unreadable cwd is foreign too.
+* **Reuse a probe host only when preflight proves all of its identity:** this checkout owns it, its
+  fixed upstream is the selected preview, the served build is this checkout's current build, and its
+  plan is not finished or stale. Otherwise leave it running and use the resolved alternate port.
 
-The preflight resolves every port for you and prints what it reused, restarted, or shifted. Take its
-answers rather than hardcoding ports.
+The preflight resolves preview and probe as a pair, then every other capture port. Record its device
+ids and resolved ports in the handoff; pass both an explicit LAN `--url=` and `--probe-host=` to
+captures instead of assuming 4173 or 4175.
 
 ## Read before capturing
 
@@ -150,6 +171,12 @@ For a full cross-target snapshot rather than a single capture, continue with the
   tool every cell, but `perf:device:serve` holds the injected page bootstrap in its module cache and
   `perf:serve` holds the build it started with. The two together read as "my fix did nothing", which
   invites a second wrong fix on top of a correct one. Prove the change is served, don't assume it.
+* **Do not let a targeted capture rebuild under a managed preview.** npm runs `preperf:*` hooks by
+  default, and several targeted capture hooks rebuild `web/build`, invalidating the manifest the
+  running preview holds. Use the documented no-rebuild form when takeover already established the
+  preview: `npm run <capture> --ignore-scripts -- --url=<resolved-lan-preview> ...`. If any command
+  rebuilds anyway, restart only this session's preview and re-prove its manifest before touching a
+  device.
 * **Do not retry a gate that cannot pass.** `--max-attempts` defaults to 3, so a target whose
   fidelity failure is structural spends triple the device time reaching the same verdict. Pass
   `--max-attempts=1` once you know which failure you are looking at.
@@ -168,7 +195,9 @@ artifact whose user agent contradicts the labelled runtime.
 
 ## Ending the session
 
-Leave the rig up unless you are told otherwise — the next session takes over and re-asserts what it
-needs anyway. What does **not** clean itself up is the state `--wake-android` wrote: the phone keeps
-`stayon` and a 30-minute screen timeout until something changes them back. Say so when you hand off,
-rather than leaving a phone that behaves oddly for reasons nobody can trace.
+Leave the rig up unless you are told otherwise — verified and idle is a valid handoff, and no
+campaign needs to be started to make takeover count. Report both device verifications and the
+resolved preview/probe/Appium/WDA ports. What does **not** clean itself up is the state
+`--wake-android` wrote: the phone keeps `stayon` and a 30-minute screen timeout until something
+changes them back. Say so when you hand off, rather than leaving a phone that behaves oddly for
+reasons nobody can trace.

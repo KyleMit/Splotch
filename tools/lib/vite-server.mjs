@@ -24,13 +24,28 @@ export function portListenerPids(port) {
 
 // A listener's working directory is what identifies which checkout owns it. Two
 // worktrees of this repo are different owners even though both are "Splotch".
-function listenerWorkingDirectory(pid) {
+export function listenerWorkingDirectory(pid) {
   const out = spawnSync('lsof', ['-a', '-p', String(pid), '-d', 'cwd', '-Fn'], {
     encoding: 'utf8',
   });
   if (out.error) return null;
   const line = (out.stdout || '').split('\n').find((entry) => entry.startsWith('n'));
   return line ? line.slice(1) : null;
+}
+
+export function portListenerOwners(port, root) {
+  const resolvedRoot = realPath(root);
+  return portListenerPids(port).map((pid) => {
+    const cwd = listenerWorkingDirectory(pid);
+    const resolvedCwd = cwd ? realPath(cwd) : null;
+    return {
+      pid,
+      cwd: resolvedCwd,
+      owned:
+        resolvedCwd !== null &&
+        (resolvedCwd === resolvedRoot || resolvedCwd.startsWith(`${resolvedRoot}/`)),
+    };
+  });
 }
 
 // Listeners on this port that belong to some OTHER checkout. freePort() SIGTERMs
@@ -42,16 +57,9 @@ function listenerWorkingDirectory(pid) {
 // A listener whose working directory cannot be read counts as foreign: refusing to
 // start is recoverable, and killing something unidentified is not.
 export function foreignPortListeners(port, root) {
-  // Both sides are resolved because macOS reports the real path (/private/var/...)
-  // where Node hands out the symlink (/var/...), and a mismatch there would call
-  // this session's own listener foreign.
-  const resolved = realPath(root);
-  return portListenerPids(port).filter((pid) => {
-    const cwd = listenerWorkingDirectory(pid);
-    if (!cwd) return true;
-    const owner = realPath(cwd);
-    return owner !== resolved && !owner.startsWith(`${resolved}/`);
-  });
+  return portListenerOwners(port, root)
+    .filter((listener) => !listener.owned)
+    .map((listener) => listener.pid);
 }
 
 function realPath(path) {

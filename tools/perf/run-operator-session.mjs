@@ -38,6 +38,7 @@ import {
   runMain,
 } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
+import { foreignPortListeners, freePort } from '../lib/vite-server.mjs';
 import { classifyLaunchProbe } from './lib/capture-readiness.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { DEFAULT_PROBE_PORT } from './split-capture/serve-probe-host.mjs';
@@ -161,10 +162,22 @@ function spawnDetached(command, args, logName, env = {}) {
   return child;
 }
 
-async function ensurePreview(port) {
-  if (await urlAnswers(`http://127.0.0.1:${port}/`)) {
+async function ensurePreview(port, action) {
+  if (action === 'restart') {
+    const foreign = foreignPortListeners(port, ROOT);
+    if (foreign.length) {
+      fail(
+        `preview port ${port} changed owners after preflight (foreign pid ${foreign.join(', ')}) — ` +
+          'run perf:preflight again'
+      );
+    }
+    freePort(port);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  } else if (action === 'reuse' && (await urlAnswers(`http://127.0.0.1:${port}/`))) {
     console.log(`  preview ${port} — reused`);
     return;
+  } else if (await urlAnswers(`http://127.0.0.1:${port}/`)) {
+    fail(`preview port ${port} became occupied after preflight — run perf:preflight again`);
   }
   if (!existsSync(join(ROOT, 'web', 'build')) || buildDirHoldsNativeExport()) {
     console.log('  web/build is missing or holds the native export — running perf:build…');
@@ -180,10 +193,13 @@ async function ensurePreview(port) {
   console.log(`  preview ${port} — started`);
 }
 
-async function ensureProbeHost(port, previewPort) {
-  if (await urlAnswers(`http://127.0.0.1:${port}/__probe/state`)) {
+async function ensureProbeHost(port, previewPort, action) {
+  if (action === 'reuse' && (await urlAnswers(`http://127.0.0.1:${port}/__probe/state`))) {
     console.log(`  probe host ${port} — reused`);
     return;
+  }
+  if (await urlAnswers(`http://127.0.0.1:${port}/__probe/state`)) {
+    fail(`probe port ${port} became occupied after preflight — run perf:preflight again`);
   }
   spawnDetached(
     process.execPath,
@@ -338,7 +354,9 @@ export async function runOperatorSession() {
   const seconds = Number(argFlag('seconds', DEFAULT_DRAW_SECONDS));
   const lan = lanAddresses()[0];
   if (!lan) fail('no LAN address — the devices cannot reach a probe host on this machine');
-  const probePort = Number(argFlag('probe-port', DEFAULT_PROBE_PORT));
+  const probePort = Number(argFlag('probe-port', report.ports.probe ?? DEFAULT_PROBE_PORT));
+  const probeAction =
+    probePort === report.ports.probe ? report.portDecisions.probe.action : 'start';
   const host = `http://${lan}:${probePort}`;
   const outputDir = join(OUTPUT_ROOT, new Date().toISOString().replaceAll(':', '-'));
 
@@ -347,8 +365,8 @@ export async function runOperatorSession() {
 
   console.log('\nBringing the rig up (reused where already running, left running after):');
   if (active.some((item) => item.step !== 'grant')) {
-    await ensurePreview(report.ports.preview);
-    await ensureProbeHost(probePort, report.ports.preview);
+    await ensurePreview(report.ports.preview, report.portDecisions.preview.action);
+    await ensureProbeHost(probePort, report.ports.preview, probeAction);
   }
   if (active.some((item) => item.step === 'grant')) await ensureAppium(report.ports.appium);
 
