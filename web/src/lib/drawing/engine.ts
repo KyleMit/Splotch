@@ -64,7 +64,7 @@ import {
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
-import { flushCrayonBuffer } from './crayonPassBuffer';
+import { flushCrayonBuffer, restampPendingCrayon } from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -969,6 +969,9 @@ const rasterQueue = createStrokeRasterQueue<PointerState>({
   strokeSpeed,
   strokeSegments,
   onFlushed: (speed) => callbacks.onDrawSound?.({ speed, isStrokeStart: false }),
+  // EXPERIMENT (exp/crayon-i2-frame-restamp): batch the frame's crayon
+  // restamps into one blit per touched tile.
+  onDrainEnd: restampPendingCrayon,
 });
 
 function draw(e: PointerEvent) {

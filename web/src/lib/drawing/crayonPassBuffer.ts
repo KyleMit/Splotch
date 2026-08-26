@@ -64,6 +64,9 @@ interface CrayonPassBuffer {
   // re-applying the glaze — the stamp stays a pure function of
   // (buffer, under) per pixel and per-op re-stamping cannot compound.
   under: CanvasRenderingContext2D | null;
+  // EXPERIMENT (exp/crayon-i2-frame-restamp): the frame's accumulated
+  // restamp rect — ops only grow it; one restamp per drained frame applies it.
+  pendingRect: { x0: number; y0: number; x1: number; y1: number } | null;
   dirty: boolean;
   // Device-px bounding box of the open pass's ink, so the stamp and the
   // post-stamp clear touch only the pass-sized rect — a flush stays
@@ -100,7 +103,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, mirror: null, under: null, dirty: false, bounds: null };
+    buf = { ctx: g, mirror: null, under: null, pendingRect: null, dirty: false, bounds: null };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -249,9 +252,14 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  // EXPERIMENT (exp/crayon-i1-restamp): every op already restamped its rect
-  // onto the target, so the target holds the exact pass-close pixels — the
-  // flush only resets the pass state.
+  // EXPERIMENT (exp/crayon-i2-frame-restamp): settle this target's pending
+  // restamp before the pass state resets, so the target holds the exact
+  // pass-close pixels.
+  if (buf.pendingRect) {
+    restampRect(target, buf, buf.pendingRect);
+    buf.pendingRect = null;
+    pendingRestamps.delete(target);
+  }
   clearCrayonBounds(buf);
 }
 
@@ -286,6 +294,27 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   paintCrayon(buf.ctx, op);
   buf.dirty = true;
   const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
-  if (rect) restampRect(target, buf, rect);
+  if (rect) {
+    if (!buf.pendingRect) buf.pendingRect = { ...rect };
+    else {
+      buf.pendingRect.x0 = Math.min(buf.pendingRect.x0, rect.x0);
+      buf.pendingRect.y0 = Math.min(buf.pendingRect.y0, rect.y0);
+      buf.pendingRect.x1 = Math.max(buf.pendingRect.x1, rect.x1);
+      buf.pendingRect.y1 = Math.max(buf.pendingRect.y1, rect.y1);
+    }
+    pendingRestamps.set(target, buf);
+  }
   unionCrayonBounds(buf, rect);
+}
+
+// EXPERIMENT (exp/crayon-i2-frame-restamp): the frame's dirty buffers, each
+// restamped once per drained frame instead of once per op.
+const pendingRestamps = new Map<CanvasRenderingContext2D, CrayonPassBuffer>();
+
+export function restampPendingCrayon() {
+  for (const [target, buf] of pendingRestamps) {
+    if (buf.pendingRect && buf.dirty) restampRect(target, buf, buf.pendingRect);
+    buf.pendingRect = null;
+  }
+  pendingRestamps.clear();
 }

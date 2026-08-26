@@ -59,6 +59,9 @@ export type StrokeRasterQueueDeps<P extends RasterPointer> = {
   strokeSpeed: (ps: P, last: Point, now: number) => number;
   strokeSegments: (ps: P, points: Point[], moveCount: number) => void;
   onFlushed: (speed: number) => void;
+  // EXPERIMENT (exp/crayon-i2-frame-restamp): fires once per drained frame
+  // after every pointer's ops have been rasterized.
+  onDrainEnd?: () => void;
 };
 
 export function createStrokeRasterQueue<P extends RasterPointer>(deps: StrokeRasterQueueDeps<P>) {
@@ -125,6 +128,9 @@ export function createStrokeRasterQueue<P extends RasterPointer>(deps: StrokeRas
     if (PERF_MARKS) performance.mark('engine.draw:start');
     try {
       for (const ps of deps.activePointers.values()) flushPointer(ps);
+      // EXPERIMENT (exp/crayon-i2-frame-restamp): one restamp per drained
+      // frame, after every pointer's ops have grown the pending rects.
+      deps.onDrainEnd?.();
     } finally {
       if (PERF_MARKS) {
         performance.mark('engine.draw:end');
