@@ -76,17 +76,21 @@ function openedFor(nonce) {
   window.happyDOM?.setURL?.(`http://probe-host.test/?probe=${encodeURIComponent(nonce)}`);
 }
 
-function runBootstrap(plan) {
-  openedFor(plan.nonce);
+function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
+  if (openedWithoutProbe) window.happyDOM?.setURL?.('http://probe-host.test/');
+  else openedFor(plan.nonce);
   const posted = [];
   let readyResolve;
   const readyPosted = new Promise((resolve) => (readyResolve = resolve));
+  let staleResolve;
+  const stalePosted = new Promise((resolve) => (staleResolve = resolve));
 
   global.fetch = vi.fn(async (path, init) => {
     if (path === '/__probe/plan') return { json: async () => plan };
     const body = init?.body ? JSON.parse(init.body) : null;
     posted.push({ path, body });
     if (path === '/__probe/ready') readyResolve(body);
+    if (path === '/__probe/log' && body?.kind === 'stale-page') staleResolve(body);
     return { json: async () => ({}) };
   });
 
@@ -107,7 +111,7 @@ function runBootstrap(plan) {
   };
 
   new Function(pageBootstrapSource())();
-  return { readyPosted, posted };
+  return { readyPosted, stalePosted, posted };
 }
 
 beforeEach(() => {
@@ -176,6 +180,46 @@ describe('the bootstrap actually setting the theme', () => {
       const { readyPosted } = runBootstrap({ brush: 'pen', nonce: 'default-theme-run' });
 
       expect((await readyPosted).resolvedTheme).toBe('light');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
+// Issue 1309's second gap, the page half: the native WebView and the manual
+// hand capture open pages that cannot carry the run nonce, so their plans set
+// `requirePageIdentity: false` — and nothing ever EXECUTED that exemption.
+// Fault injection restored the unconditional identity check and the suite
+// stayed green, even though those transports would stand down forever.
+describe('the page-identity exemption, executed', () => {
+  it(
+    'proceeds to readiness without a probe param when the plan asks for no proof',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { readyPosted, posted } = runBootstrap(
+        { brush: 'pen', theme: 'light', nonce: 'native-run', requirePageIdentity: false },
+        { openedWithoutProbe: true }
+      );
+
+      expect((await readyPosted).resolvedTheme).toBe('light');
+      expect(posted.some((call) => call.body?.kind === 'stale-page')).toBe(false);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'still stands an unproven page down when the plan demands proof',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light' });
+
+      const { stalePosted, posted } = runBootstrap(
+        { brush: 'pen', theme: 'light', nonce: 'browser-run' },
+        { openedWithoutProbe: true }
+      );
+
+      const stale = await stalePosted;
+      expect(stale).toMatchObject({ kind: 'stale-page', openedFor: null, nonce: 'browser-run' });
+      expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);
     },
     BOOTSTRAP_TIMEOUT_MS
   );

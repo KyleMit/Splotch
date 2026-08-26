@@ -6,6 +6,7 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  rotationFirstFrameNa,
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
@@ -23,6 +24,11 @@ import {
 } from '../lib/campaign-state.mjs';
 
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
+// The runtime this transport is judged as (tools/perf/lib/input-fidelity.mjs
+// vocabulary, and the mac-* targets' declared `captureRuntime`). One runtime
+// spans all three engines; rotation first-frame applicability additionally
+// keys on the engine (ROTATION_INERT_DESKTOP_ENGINES).
+const DESKTOP_CAPTURE_RUNTIME = 'desktop-playwright';
 const DEFAULT_VIEWPORT = { width: 1512, height: 982 };
 const DEFAULT_DEVICE_SCALE_FACTOR = 2;
 const READY_TIMEOUT_MS = 60_000;
@@ -65,6 +71,48 @@ function browserLaunchOptions(engineName, headless) {
   return engineName === 'chromium'
     ? { headless, executablePath: chromiumExecutablePath(chromium) }
     : { headless };
+}
+
+// The artifact envelope, as a pure value (the drivenCaptureArtifact pattern):
+// the fields a later reader TRUSTS — `captureRuntime` feeding the matrix's
+// runtime-agreement check and `engine` feeding the per-engine rotation
+// declaration — can be asserted without launching a browser.
+export function desktopActionsArtifact({
+  engineName,
+  base,
+  viewport,
+  deviceScaleFactor,
+  headless,
+  theme,
+  settingsShell,
+  actions,
+  repeats,
+  samples,
+  summaries,
+  passed,
+}) {
+  return {
+    device: {
+      name: `Mac desktop (${engineName})`,
+      os: process.platform,
+    },
+    appUrl: base,
+    engine: engineName,
+    // Recorded so the matrix's runtime-agreement check has an artifact side
+    // to compare against the target's declared runtime — a desktop capture
+    // folded into a device target (or vice versa) must collide, not score
+    // under the other's rotation rules.
+    captureRuntime: DESKTOP_CAPTURE_RUNTIME,
+    viewport: { ...viewport, deviceScaleFactor },
+    headless,
+    theme,
+    settingsShell,
+    actions,
+    repeats,
+    samples,
+    summaries,
+    passed,
+  };
 }
 
 export async function runDesktopActions(argv = process.argv.slice(2)) {
@@ -166,20 +214,19 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       );
     }
 
-    const summaries = summarizeActions(samples, expectedLabels);
+    const summaries = summarizeActions(samples, expectedLabels, {}, (label) =>
+      rotationFirstFrameNa(DESKTOP_CAPTURE_RUNTIME, label, engineName)
+    );
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??
       join(profilePath('desktop-actions', engineName, flag('label', 'full-suite')), 'actions.json');
     mkdirSync(dirname(output), { recursive: true });
-    const artifact = {
-      device: {
-        name: `Mac desktop (${engineName})`,
-        os: process.platform,
-      },
-      appUrl: base,
-      engine: engineName,
-      viewport: { ...viewport, deviceScaleFactor },
+    const artifact = desktopActionsArtifact({
+      engineName,
+      base,
+      viewport,
+      deviceScaleFactor,
       headless,
       theme: baselineTheme,
       settingsShell,
@@ -188,7 +235,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       samples,
       summaries,
       passed: failures.length === 0,
-    };
+    });
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);
     console.log('\nDesktop discrete action response');
     console.table(actionRows(summaries));

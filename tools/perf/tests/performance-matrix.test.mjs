@@ -164,7 +164,7 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport, captureRuntime }
+  { orientation, theme, summaries, samples, transport, captureRuntime, engine }
 ) {
   const path = join(directory, name);
   writeFileSync(
@@ -177,6 +177,7 @@ function writeActionCapture(
       samples,
       transport,
       captureRuntime,
+      engine,
     })
   );
   return name;
@@ -360,6 +361,91 @@ describe('deployment matrix report', () => {
 
     expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
       'records captureRuntime android-chrome, but target ipad-device-web declares ios-safari'
+    );
+  });
+
+  // ADR-0142's second amendment: the desktop runtime spans three engines, and
+  // only WebKit shares Safari's inert construction (measured in
+  // perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/). A
+  // mac-safari rotation row is N/A; a mac-chrome one keeps its gate.
+  it('declares desktop WebKit rotation first frames not-applicable and keeps Chromium gated', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const rotationLabel = 'with ink: PORTRAIT to LANDSCAPE rotation';
+    const rotationSamples = Array.from({ length: 4 }, (_, index) => ({
+      ...actionSample(rotationLabel, index === 0),
+      firstFrameMs: 100,
+    }));
+    const capture = (name, engine) =>
+      writeActionCapture(manifestDirectory, name, {
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        captureRuntime: 'desktop-playwright',
+        engine,
+        samples: rotationSamples,
+      });
+    const foldedFor = (targetId, source) => {
+      const source_manifest = manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source_manifest.targets[0].id = targetId;
+      return normalizeMatrix(source_manifest, manifestDirectory).targets[0].modes[0].actions
+        .results[0];
+    };
+
+    const webkitResult = foldedFor('mac-safari', capture('webkit-actions.json', 'webkit'));
+    expect(webkitResult.firstFrame.na).toBe(true);
+    expect(webkitResult.passed).toBe(true);
+
+    const chromiumResult = foldedFor('mac-chrome', capture('chromium-actions.json', 'chromium'));
+    expect(chromiumResult.firstFrame.na).toBeUndefined();
+    expect(chromiumResult.passed).toBe(false);
+
+    // The misfile hole the review found: an artifact recording NEITHER
+    // runtime nor engine (the Android CDP action runner's shape) folded under
+    // mac-safari must keep its gate — the declaration alone cannot remove it.
+    // Its 100 ms first frames then surface the misfile as a red cell.
+    const anonymous = writeActionCapture(manifestDirectory, 'anonymous-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: rotationSamples,
+    });
+    const anonymousResult = foldedFor('mac-safari', anonymous);
+    expect(anonymousResult.firstFrame.na).toBeUndefined();
+    expect(anonymousResult.passed).toBe(false);
+  });
+
+  // The engine gets the runtime's agreement rule: a capture recorded under one
+  // engine must not fold into a target declaring another, because the rotation
+  // rules it is scored under are the engine's.
+  it('refuses an artifact whose recorded engine disagrees with the target’s declared one', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'cross-desktop-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      captureRuntime: 'desktop-playwright',
+      engine: 'chromium',
+      samples: [
+        actionSample('with ink: PORTRAIT to LANDSCAPE rotation', true),
+        ...Array.from({ length: 3 }, () =>
+          actionSample('with ink: PORTRAIT to LANDSCAPE rotation', false)
+        ),
+      ],
+    });
+    const source_manifest = manifest([
+      capturedManifestMode(modeSpecs[0], {
+        actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+      }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source_manifest.targets[0].id = 'mac-safari';
+
+    expect(() => normalizeMatrix(source_manifest, manifestDirectory)).toThrow(
+      'records engine chromium, but target mac-safari declares webkit'
     );
   });
 
@@ -891,6 +977,87 @@ describe('the gesture-repeat contract in a folded cell', () => {
     expect(() => normalizeMatrix(manifest(modesWith([ten, three])), directory)).toThrow(
       'folds captures with different gesture-repeat counts (10, 3)'
     );
+  });
+});
+
+// Issue 1292's companion boundary: HOW the repeats were fed ink. An unrefilled
+// eraser run is optimistic by an unknown amount, so folding it beside a
+// refilled one launders the optimism into the cell. A run predating the field
+// (null) proves nothing and folds as before.
+describe('the gesture-plan contract in a folded cell', () => {
+  function writeDrawingCapture(directory, name, gesturePlan) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gesturePlan,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  it('publishes each run’s recorded plan and refuses to fold two different ones', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const refilled = writeDrawingCapture(
+      directory,
+      'eraser-refilled.json',
+      'fixed-geometry-refilled'
+    );
+    const legacy = writeDrawingCapture(directory, 'eraser-legacy.json', undefined);
+    const modesWith = (eraser) => [
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ];
+
+    const matrix = normalizeMatrix(manifest(modesWith([refilled, legacy])), directory);
+    const runs = matrix.targets[0].modes[0].drawing.eraser.runs;
+    expect(runs.map((run) => run.gesturePlan)).toEqual(['fixed-geometry-refilled', null]);
+
+    const unrefilled = writeDrawingCapture(directory, 'eraser-unrefilled.json', 'fixed-geometry');
+    expect(() => normalizeMatrix(manifest(modesWith([refilled, unrefilled])), directory)).toThrow(
+      'folds captures under different gesture plans (fixed-geometry-refilled, fixed-geometry)'
+    );
+  });
+
+  // A single run is the published norm, so the run-vs-run refusal above never
+  // fires for it — a lone eraser run recording a retired or unrefilled plan
+  // must collide with the CONTRACT on a repeat-driven target. An unknown
+  // target has no contract, and a null-plan artifact stays accepted.
+  it('refuses a lone recorded plan that disagrees with a repeat-driven target’s contract', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const unrefilled = writeDrawingCapture(directory, 'eraser-unrefilled.json', 'fixed-geometry');
+    const legacy = writeDrawingCapture(directory, 'eraser-legacy.json', undefined);
+    const manifestFor = (eraser, targetId) => {
+      const built = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      if (targetId) built.targets[0].id = targetId;
+      return built;
+    };
+
+    expect(() =>
+      normalizeMatrix(manifestFor([unrefilled], 'android-device-web'), directory)
+    ).toThrow(
+      'folds a capture recording gesture plan fixed-geometry, not the campaign contract of ' +
+        'fixed-geometry-refilled'
+    );
+    expect(() =>
+      normalizeMatrix(manifestFor([legacy], 'android-device-web'), directory)
+    ).not.toThrow();
+    expect(() => normalizeMatrix(manifestFor([unrefilled], null), directory)).not.toThrow();
   });
 });
 

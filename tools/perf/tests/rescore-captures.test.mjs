@@ -1,12 +1,22 @@
-import { describe, expect, it } from 'vitest';
-import { brushOf, rawReportOf, rescoreCapture } from '../rescore-captures.mjs';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  brushOf,
+  evidenceIndexUnattributable,
+  rawReportOf,
+  rescoreCapture,
+  rescoreCaptures,
+} from '../rescore-captures.mjs';
+import { relative } from 'node:path';
+import { ROOT } from '../../lib/proc.mjs';
 import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   destinationBlocked,
   evidenceFileName,
+  failedRepresentativeProblem,
+  keepCaptureEvidence,
   modeOf,
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
@@ -140,6 +150,143 @@ describe('evidenceIndexTargets', () => {
   });
 });
 
+// Issue 1298 closing issue 1315's loop: the corpus index marks contaminated
+// captures where tools can read the marking, and this is the tool that reads
+// it. A capture whose frame tables belong to another cell re-scores cleanly
+// and answers wrongly, so the rescorer refuses it by default and re-admits it
+// only on an explicit flag.
+describe('the rescorer honours cellAttributable', () => {
+  const corpusWith = (index) => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-unattributable-'));
+    writeFileSync(join(dir, 'index.json'), JSON.stringify(index));
+    return dir;
+  };
+
+  it('reads exactly the entries an index marks unattributable, with their nonces', () => {
+    const dir = corpusWith({
+      kept: [
+        { file: 'clean.json', target: 'ipad-device-web' },
+        {
+          file: 'contaminated.json',
+          target: 'ipad-device-web',
+          cellAttributable: false,
+          reportNonce: 'other-cell-1-2',
+        },
+        { file: 'explicitly-clean.json', cellAttributable: true },
+      ],
+    });
+
+    const marked = evidenceIndexUnattributable(dir);
+
+    expect([...marked.keys()]).toEqual(['contaminated.json']);
+    expect(marked.get('contaminated.json')).toEqual({ reportNonce: 'other-cell-1-2' });
+    expect(evidenceIndexUnattributable(mkdtempSync(join(tmpdir(), 'splotch-clean-'))).size).toBe(0);
+  });
+
+  // The real evidence corpus nests one campaign directory per promotion, each
+  // with its own index — the shape whose naive per-index keying already
+  // mis-targeted every capture once (see evidenceIndexTargets). A flat fixture
+  // cannot fail on the join, so this one nests.
+  it('keys a nested corpus by path relative to the corpus root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-nested-unattributable-'));
+    mkdirSync(join(root, '2026-08-24-campaign'), { recursive: true });
+    writeFileSync(
+      join(root, '2026-08-24-campaign', 'index.json'),
+      JSON.stringify({
+        kept: [
+          { file: 'contaminated.json', cellAttributable: false, reportNonce: 'other-9-9' },
+          { file: 'clean.json' },
+        ],
+      })
+    );
+
+    const marked = evidenceIndexUnattributable(root);
+
+    expect([...marked.keys()]).toEqual(['2026-08-24-campaign/contaminated.json']);
+  });
+
+  it('refuses a marked capture by default and re-admits it only on the flag', async () => {
+    const dir = corpusWith({
+      kept: [
+        { file: 'clean.json', target: 'ipad-device-web' },
+        {
+          file: 'contaminated.json',
+          target: 'ipad-device-web',
+          cellAttributable: false,
+          reportNonce: 'other-cell-1-2',
+        },
+      ],
+    });
+    writeFileSync(join(dir, 'clean.json'), JSON.stringify({ brush: 'crayon', report }));
+    writeFileSync(join(dir, 'contaminated.json'), JSON.stringify({ brush: 'crayon', report }));
+    const corpus = relative(ROOT, dir);
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const quietTable = vi.spyOn(console, 'table').mockImplementation(() => {});
+
+    try {
+      const refusedRun = await rescoreCaptures({ corpus });
+      expect(refusedRun.refused).toEqual([{ name: 'contaminated', reportNonce: 'other-cell-1-2' }]);
+      expect(refusedRun.scored.map((entry) => entry.name)).toEqual(['clean']);
+
+      const includedRun = await rescoreCaptures({ corpus, includeUnattributable: true });
+      expect(includedRun.refused).toEqual([]);
+      expect(includedRun.scored.map((entry) => entry.name).sort()).toEqual([
+        'clean',
+        'contaminated',
+      ]);
+      // Re-admitted is not laundered: the marking rides the scored entry (and
+      // from there the table row and the JSON export), and the run reports the
+      // re-admittance instead of claiming zero refusals.
+      expect(includedRun.readmitted.map((entry) => entry.name)).toEqual(['contaminated']);
+      const readmitted = includedRun.scored.find((entry) => entry.name === 'contaminated');
+      expect(readmitted).toMatchObject({
+        cellAttributable: false,
+        reportNonce: 'other-cell-1-2',
+      });
+      expect(
+        includedRun.scored.find((entry) => entry.name === 'clean').cellAttributable
+      ).toBeUndefined();
+    } finally {
+      quiet.mockRestore();
+      quietTable.mockRestore();
+    }
+  });
+
+  // An all-refused corpus produced an empty table and exit 0 — the same shape
+  // as a clean success, on the tool whose own comments say a silent omission
+  // is how an answer goes wrong.
+  it('exits non-zero when every capture in the corpus is refused', async () => {
+    const dir = corpusWith({
+      kept: [
+        {
+          file: 'contaminated.json',
+          target: 'ipad-device-web',
+          cellAttributable: false,
+          reportNonce: 'other-cell-1-2',
+        },
+      ],
+    });
+    writeFileSync(join(dir, 'contaminated.json'), JSON.stringify({ brush: 'crayon', report }));
+    const corpus = relative(ROOT, dir);
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const quietError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const quietTable = vi.spyOn(console, 'table').mockImplementation(() => {});
+    const previousExitCode = process.exitCode;
+
+    try {
+      const run = await rescoreCaptures({ corpus });
+      expect(run.scored).toEqual([]);
+      expect(run.refused).toHaveLength(1);
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.exitCode = previousExitCode;
+      quiet.mockRestore();
+      quietError.mockRestore();
+      quietTable.mockRestore();
+    }
+  });
+});
+
 describe('keep-capture-evidence', () => {
   it('reads the target from the campaign tree layout', () => {
     expect(targetOf({}, 'android-device-web/landscape-light/crayon-real-screen')).toBe(
@@ -182,6 +329,154 @@ describe('keep-capture-evidence', () => {
     ]);
 
     expect(kept.map((entry) => entry.file)).toEqual(['1', '3', '4']);
+  });
+
+  // Issue 1305: building the #1291 corpus, the keeper selected a
+  // fidelity=false eraser — a cell that had failed all three attempts — as the
+  // brush's representative beside three passing captures, and nothing refused
+  // it. Preference is by scoreability, never by score: within a tier the first
+  // seen still wins, so the corpus cannot flatter the metric.
+  const passing = { passed: true, checks: { trustedTouch: true, cadence: true } };
+  const numberInvalid = { passed: false, checks: { trustedTouch: true, cadence: false } };
+  // The shape the review's blocker proved must NOT count as failed: a verdict
+  // whose only failures are per-runtime calibration checks — every native
+  // runtime lives here permanently, and so does the whole pre-table banked
+  // corpus (which predates the `uncalibrated` field entirely).
+  const calibrationOnly = {
+    passed: false,
+    checks: { trustedTouch: true, cadence: true, coalescing: false, pressure: false },
+  };
+
+  it('prefers a passing capture over an earlier failing or unreported one', () => {
+    const kept = selectEvidence([
+      { target: 'a', brush: 'pen', file: 'failed', fidelity: numberInvalid },
+      { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
+      { target: 'a', brush: 'pen', file: 'passing-1', fidelity: passing },
+      { target: 'a', brush: 'pen', file: 'passing-2', fidelity: passing },
+    ]);
+
+    expect(kept).toHaveLength(1);
+    expect(kept[0]).toMatchObject({
+      file: 'passing-1',
+      candidateCount: 4,
+      passingCandidateCount: 2,
+      failedCandidateCount: 1,
+    });
+  });
+
+  // The review's blocking case: `passed: false` with the failures confined to
+  // per-runtime calibration checks describes every native-runtime capture and
+  // every pre-table banked one — those numbers stand, and they outrank both an
+  // unreported verdict and a number-invalidating failure.
+  it('ranks a calibration-only failure above unreported, and both above invalid numbers', () => {
+    const kept = selectEvidence([
+      { target: 'a', brush: 'pen', file: 'invalid', fidelity: numberInvalid },
+      { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
+      { target: 'a', brush: 'pen', file: 'uncalibrated', fidelity: calibrationOnly },
+    ]);
+
+    expect(kept[0]).toMatchObject({ file: 'uncalibrated', failedCandidateCount: 1 });
+    expect(
+      selectEvidence([
+        { target: 'a', brush: 'pen', file: 'invalid', fidelity: numberInvalid },
+        { target: 'a', brush: 'pen', file: 'unreported', fidelity: null },
+      ])[0]
+    ).toMatchObject({ file: 'unreported' });
+  });
+
+  // A cell with no scoreable representative is a fact to surface, not paper
+  // over — and an unreported candidate must not silence the guard a failed
+  // sibling should trigger (the dodge the review proved).
+  it('refuses a cell whose pool holds invalid numbers and nothing scoreable', () => {
+    const allFailed = selectEvidence([
+      { target: 'a', brush: 'eraser', file: 'f1', fidelity: numberInvalid },
+      { target: 'a', brush: 'eraser', file: 'f2', fidelity: numberInvalid },
+      { target: 'a', brush: 'pen', file: 'ok', fidelity: passing },
+    ]);
+    const problem = failedRepresentativeProblem(allFailed, { allowFailed: false });
+    expect(problem).toContain(
+      'a/eraser (2 of 2 candidates failed a number-invalidating check; none passed)'
+    );
+    expect(problem).toContain('--allow-failed');
+    expect(failedRepresentativeProblem(allFailed, { allowFailed: true })).toBeNull();
+
+    const dodged = selectEvidence([
+      { target: 'a', brush: 'eraser', file: 'f1', fidelity: numberInvalid },
+      { target: 'a', brush: 'eraser', file: 'unreported', fidelity: null },
+    ]);
+    expect(failedRepresentativeProblem(dodged, {})).toContain('a/eraser');
+
+    // A calibration-only verdict IS scoreable, so it neither refuses nor is
+    // outranked by silence — the native targets promote.
+    const nativeShaped = selectEvidence([
+      { target: 'a', brush: 'pen', file: 'uncalibrated', fidelity: calibrationOnly },
+      { target: 'a', brush: 'pen', file: 'invalid', fidelity: numberInvalid },
+    ]);
+    expect(failedRepresentativeProblem(nativeShaped, {})).toBeNull();
+
+    const healthy = selectEvidence([{ target: 'a', brush: 'pen', file: 'ok', fidelity: passing }]);
+    expect(failedRepresentativeProblem(healthy)).toBeNull();
+    // A hand capture records what a finger measured; a failed verdict there is
+    // itself the calibration evidence, so it is exempt from the refusal.
+    const hand = selectEvidence([
+      { handCapture: true, relativePath: 'h.json', fidelity: numberInvalid, brush: 'pen' },
+    ]);
+    expect(failedRepresentativeProblem(hand, { allowFailed: false })).toBeNull();
+  });
+
+  // The CLI wiring end to end — the review proved deleting the refusal call,
+  // flipping the flag default, or dropping the index counts all left the unit
+  // suite green. Promotes a real two-capture corpus into a tmpdir evidence
+  // root and reads the written index back.
+  it('promotes a corpus end to end, recording the pool behind each representative', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-keep-corpus-'));
+    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-keep-evidence-'));
+    mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
+    const cell = (name, fidelity) =>
+      writeFileSync(
+        join(corpusDir, 'ipad-device-web', 'portrait-light', name),
+        JSON.stringify({
+          brush: 'crayon',
+          orientation: 'PORTRAIT',
+          theme: 'light',
+          fidelity,
+          report,
+        })
+      );
+    cell('crayon-real-screen.json', {
+      passed: false,
+      checks: { trustedTouch: true, cadence: false },
+    });
+    cell('crayon-retry-real-screen.json', {
+      passed: true,
+      checks: { trustedTouch: true, cadence: true },
+    });
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    try {
+      const { selected } = await keepCaptureEvidence({
+        corpus: relative(ROOT, corpusDir),
+        campaign: 'e2e-test',
+        evidenceRoot: relative(ROOT, evidenceDir),
+      });
+      expect(selected).toHaveLength(1);
+      const index = JSON.parse(readFileSync(join(evidenceDir, 'e2e-test', 'index.json'), 'utf8'));
+      expect(index.kept).toHaveLength(1);
+      expect(index.kept[0]).toMatchObject({
+        target: 'ipad-device-web',
+        brush: 'crayon',
+        fidelityPassed: true,
+        source: 'ipad-device-web/portrait-light/crayon-retry-real-screen.json',
+        candidateCount: 2,
+        passingCandidateCount: 1,
+        failedCandidateCount: 1,
+      });
+      expect(existsSync(join(evidenceDir, 'e2e-test', 'ipad-device-web-crayon.json'))).toBe(true);
+    } finally {
+      quiet.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+      rmSync(evidenceDir, { recursive: true, force: true });
+    }
   });
 
   // Two hand captures of different runtimes both resolved to the unknown target

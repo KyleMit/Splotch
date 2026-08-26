@@ -15,7 +15,12 @@ import {
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
-import { CAMPAIGN_TARGETS, recordedGestureRepeats } from './lib/campaign-plan.mjs';
+import {
+  CAMPAIGN_TARGETS,
+  gesturePlanFor,
+  recordedGesturePlan,
+  recordedGestureRepeats,
+} from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
   LOST_FRAME_TIME_SHARE_GATE,
@@ -264,6 +269,12 @@ function normalizeDrawingRun(
     // field. Read through the same helper acceptance uses, so the two readers
     // cannot drift.
     gestureRepeats: recordedGestureRepeats(profile),
+    // How those repeats were fed ink (issue 1292): an unrefilled eraser capture
+    // erased mostly-transparent pixels on passes 2..N and is optimistic by an
+    // unknown amount, so plans mark a comparability boundary the same way the
+    // repeat count does. Null for artifacts predating the field. Same shared
+    // reader as acceptance, so the two cannot drift.
+    gesturePlan: recordedGesturePlan(profile),
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
@@ -369,6 +380,45 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
             `Sources: ${sources}`
         );
       }
+      // The same refusal for HOW the repeats were fed ink: two recorded plans in
+      // one cell folds an unrefilled eraser number into a refilled one, and the
+      // unrefilled one is optimistic by an unknown amount (issue 1292). A null
+      // (an artifact predating the field, accepted by standing decision — see
+      // `recordedGesturePlan`) never conflicts. `typeof`, matching the repeat
+      // count's Number.isFinite above: a run object not built by
+      // normalizeDrawingRun must not enter the set as `undefined`.
+      const plans = [
+        ...new Set(runs.map((run) => run.gesturePlan).filter((plan) => typeof plan === 'string')),
+      ];
+      if (plans.length > 1) {
+        const planSources = runs
+          .map((run) => `${run.source} (${run.gesturePlan ?? 'unrecorded'})`)
+          .join(', ');
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds captures under different gesture plans ` +
+            `(${plans.join(', ')}) — how each pass was fed ink is part of what the cell measured. ` +
+            `Sources: ${planSources}`
+        );
+      }
+      // A single run is the published norm (one capture decides a cell), so the
+      // run-vs-run refusal above never fires for it — a lone run recording a
+      // retired or foreign plan must still collide with the CONTRACT. Scoped to
+      // repeat-driven targets: the desktop transport drives no gesture plan,
+      // and an unknown target has no contract to compare against.
+      const target = CAMPAIGN_TARGETS[targetId];
+      if (target && target.transport !== 'desktop') {
+        const contract = gesturePlanFor(brush);
+        const foreign = runs.find(
+          (run) => typeof run.gesturePlan === 'string' && run.gesturePlan !== contract
+        );
+        if (foreign) {
+          throw new Error(
+            `${targetId} ${mode.id} ${brush} folds a capture recording gesture plan ` +
+              `${foreign.gesturePlan}, not the campaign contract of ${contract}. ` +
+              `Source: ${foreign.source}`
+          );
+        }
+      }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
   );
@@ -417,9 +467,30 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
     );
   }
   const runtime = declaredRuntime ?? recordedRuntime;
+  // The desktop runtime spans three engines and rotation first-frame
+  // applicability differs per engine (ADR-0142 amendment), so the engine gets
+  // the same agreement rule as the runtime: both sides present must match, or
+  // a capture from one engine scores under rules declared for another.
+  // Non-desktop targets declare no engine and their artifacts record none.
+  const declaredEngine = CAMPAIGN_TARGETS[targetId]?.desktopEngine ?? null;
+  const recordedEngine = profile.engine ?? null;
+  if (declaredEngine && recordedEngine && declaredEngine !== recordedEngine) {
+    throw new Error(
+      `${spec.source} records engine ${recordedEngine}, but target ${targetId} declares ` +
+        `${declaredEngine} — an artifact from another engine cannot fold into this target`
+    );
+  }
+  // The N/A decision takes the RECORDED engine only, never the target's
+  // declaration alone: the desktop runner has recorded `engine` since its
+  // first artifact, so every genuine desktop capture qualifies — while an
+  // artifact recording neither runtime nor engine (the Android CDP action
+  // runner's shape) misfiled under a desktop target would otherwise have its
+  // rotation gate silently removed by the declaration. Such an artifact stays
+  // gated, and its 100 ms first frames turn the misfile into a red cell
+  // instead of an N/A.
   const summaries = profile.samples
     ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
-        rotationFirstFrameNa(runtime, label)
+        rotationFirstFrameNa(runtime, label, recordedEngine)
       )
     : profile.summaries;
   const results = summaries

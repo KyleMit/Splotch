@@ -20,7 +20,7 @@
 // branch and run this over the corpus. That is how the credited charge was
 // judged, and it exercises the real code path rather than a parallel one.
 
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
@@ -100,8 +100,12 @@ export function targetOf(parsed, relativePath, fallback) {
 // shape the corpus actually has — one campaign directory per promotion, each with
 // its own index — so the documented whole-corpus command fell through to the path
 // segment and mis-targeted every capture.
-export function evidenceIndexTargets(root) {
-  const targets = new Map();
+// Every index entry under the corpus, keyed by the capture's path relative to
+// the corpus ROOT — the nested-corpus join both consumers below depend on (one
+// campaign directory per promotion, each with its own index; a naive per-index
+// key mis-targeted every capture once already).
+function evidenceIndexEntries(root) {
+  const entries = [];
   for (const file of findCaptureFiles(root)) {
     if (basename(file) !== 'index.json') continue;
     let index;
@@ -111,11 +115,36 @@ export function evidenceIndexTargets(root) {
       continue;
     }
     for (const entry of index.kept ?? []) {
-      if (!entry?.file || !isKnownTarget(entry.target)) continue;
-      targets.set(relative(root, join(dirname(file), entry.file)), entry.target);
+      if (!entry?.file) continue;
+      entries.push({ key: relative(root, join(dirname(file), entry.file)), entry });
     }
   }
+  return entries;
+}
+
+export function evidenceIndexTargets(root) {
+  const targets = new Map();
+  for (const { key, entry } of evidenceIndexEntries(root)) {
+    if (isKnownTarget(entry.target)) targets.set(key, entry.target);
+  }
   return targets;
+}
+
+// The captures a corpus index marks `cellAttributable: false` (issue 1315): the
+// frame tables are genuine driven data, but the report's ?probe= nonce names a
+// different cell than the file's label, so no number can be attributed to the
+// brush/mode/theme it is filed under. Issue 1298's point: the marking existed
+// where tools could read it and this tool did not read it — it walked the
+// directory and scored contaminated evidence exactly like clean evidence.
+// The value object carries the recorded nonce so both the refusal and a
+// deliberate re-admittance can say what the capture actually saw.
+export function evidenceIndexUnattributable(root) {
+  const unattributable = new Map();
+  for (const { key, entry } of evidenceIndexEntries(root)) {
+    if (entry.cellAttributable !== false) continue;
+    unattributable.set(key, { reportNonce: entry.reportNonce ?? null });
+  }
+  return unattributable;
 }
 
 export function rescoreCapture(parsed, { name, targetId }) {
@@ -153,6 +182,9 @@ function row(scored) {
   const lost = contact?.lostFrameTimeShare ?? phase.pacing?.lostFrameTimeShare;
   return {
     capture: scored.name,
+    // Present only on deliberately re-admitted rows, so a marked capture can
+    // never sit in the table looking exactly like a clean one.
+    ...(scored.cellAttributable === false ? { cell: 'UNATTRIBUTABLE' } : {}),
     target: scored.target ?? '(unknown)',
     brush: scored.brush,
     'mv/s': round(phase.input?.movesPerSecond, 1),
@@ -185,6 +217,7 @@ export async function rescoreCaptures({
   filter = argFlag('filter'),
   targetId = argFlag('target'),
   jsonOut = argFlag('json'),
+  includeUnattributable = process.argv.includes('--include-unattributable'),
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   const root = join(ROOT, corpus);
@@ -192,10 +225,25 @@ export async function rescoreCaptures({
   if (!files.length) fail(`no capture JSON under ${corpus}${filter ? ` matching ${filter}` : ''}`);
 
   const indexTargets = evidenceIndexTargets(root);
+  const unattributable = evidenceIndexUnattributable(root);
   const scored = [];
   const skipped = [];
+  const refused = [];
   for (const file of files) {
     const name = relative(root, file).replace(/\.json$/, '');
+    // Refused by default, not silently skipped: a contaminated capture
+    // re-scores cleanly and answers wrongly, and the whole reason the index
+    // carries the marking is so this tool cannot quote one by accident.
+    // --include-unattributable re-admits them deliberately, for questions
+    // about the instrument rather than the cell — and a re-admitted capture
+    // stays VISIBLY marked in the table, the summary, and the JSON export,
+    // because deliberateness recorded nowhere past the shell prompt is the
+    // "kept, annotated in prose" weakness issue 1298 opened about.
+    const marking = unattributable.get(relative(root, file));
+    if (marking && !includeUnattributable) {
+      refused.push({ name, reportNonce: marking.reportNonce });
+      continue;
+    }
     let parsed;
     try {
       parsed = JSON.parse(readFileSync(file, 'utf8'));
@@ -217,17 +265,46 @@ export async function rescoreCaptures({
       skipped.push({ name, reason: error.message });
       continue;
     }
-    if (result) scored.push(result);
-    else skipped.push({ name, reason: 'no raw frame table' });
+    if (result) {
+      if (marking) {
+        result.cellAttributable = false;
+        result.reportNonce = marking.reportNonce;
+      }
+      scored.push(result);
+    } else skipped.push({ name, reason: 'no raw frame table' });
   }
 
   console.table(scored.map(row));
   const unscoreable = scored.filter((entry) => !entry.fidelity.passed);
   const unknownTarget = scored.filter((entry) => entry.gateShare === null);
+  const readmitted = scored.filter((entry) => entry.cellAttributable === false);
   console.log(
     `\n${scored.length} rescored · ${unscoreable.length} failed input fidelity · ` +
-      `${unknownTarget.length} with no target identity · ${skipped.length} skipped`
+      `${unknownTarget.length} with no target identity · ${skipped.length} skipped · ` +
+      (readmitted.length
+        ? `${readmitted.length} re-admitted as cell-unattributable`
+        : `${refused.length} refused as cell-unattributable`)
   );
+  if (refused.length) {
+    for (const entry of refused) {
+      console.log(
+        `  refused ${entry.name} — its index marks cellAttributable: false` +
+          (entry.reportNonce ? ` (report nonce: ${entry.reportNonce})` : '')
+      );
+    }
+    console.log(
+      '  These frame tables belong to a different cell than their label (issue 1315). ' +
+        'Pass --include-unattributable to re-score them deliberately, for questions ' +
+        'about the instrument rather than the cell.'
+    );
+  }
+  for (const entry of readmitted) {
+    console.log(
+      `  re-admitted ${entry.name} — cell-unattributable, its numbers answer for the ` +
+        `instrument, not the labelled cell` +
+        (entry.reportNonce ? ` (report nonce: ${entry.reportNonce})` : '')
+    );
+  }
   if (unknownTarget.length) {
     console.log(
       '  UNSCORED rows carry no target, so no gate applies — pass --target= for a ' +
@@ -237,6 +314,13 @@ export async function rescoreCaptures({
   // Named rather than counted: a corpus is usually re-scored to answer a question
   // about a specific cell, and a silent omission is how that answer goes wrong.
   for (const entry of skipped) console.log(`  skipped ${entry.name} — ${entry.reason}`);
+  // A corpus where nothing survived to score is not a success, for the same
+  // reason an empty --filter match is not: an empty table must not read as a
+  // clean answer. The refusals are already named above.
+  if (!scored.length && refused.length) {
+    console.error('every capture in this corpus was refused as cell-unattributable');
+    process.exitCode = 1;
+  }
 
   if (jsonOut) {
     const out = join(ROOT, jsonOut);
@@ -251,6 +335,11 @@ export async function rescoreCaptures({
           fidelity: entry.fidelity,
           drawing: entry.drawing,
           summaries: entry.summaries,
+          // The marking must outlive the terminal: an exported row from a
+          // re-admitted capture carries its unattributability with it.
+          ...(entry.cellAttributable === false
+            ? { cellAttributable: false, reportNonce: entry.reportNonce ?? null }
+            : {}),
         })),
         null,
         2
@@ -258,7 +347,7 @@ export async function rescoreCaptures({
     );
     console.log(`Wrote ${jsonOut}`);
   }
-  return { scored, skipped };
+  return { scored, skipped, refused, readmitted };
 }
 
 if (isMain(import.meta.url)) {

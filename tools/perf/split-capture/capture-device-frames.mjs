@@ -32,7 +32,7 @@ import {
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
-import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
+import { GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -340,13 +340,9 @@ export function drivenCaptureArtifact({
     // refuses a banked cell recording a count other than its contract (issue
     // 1297).
     gestureRepeats,
-    // How the repeats were fed ink (issue 1292): 'fixed-geometry-refilled' for
-    // the eraser — identical geometry every pass, tiles refilled between passes
-    // — and 'fixed-geometry' otherwise. Artifacts predating the field were all
-    // unrefilled fixed-geometry, so their eraser passes 2..N erased nothing and
-    // those numbers are optimistic and not comparable to refilled ones. (A
-    // 'per-repeat-offsets' value existed briefly inside the unmerged stack and
-    // never captured a cell.)
+    // How the repeats were fed ink — `gesturePlanFor` owns the vocabulary and
+    // the comparability boundary (issue 1292). (A 'per-repeat-offsets' value
+    // existed briefly inside the unmerged stack and never captured a cell.)
     gesturePlan: gesturePlan ?? null,
     // The verified eraser-fill evidence (issue 1302); null for other brushes
     // and for captures predating verification.
@@ -550,7 +546,7 @@ export async function captureDeviceFrames({
     orientation,
     theme,
     gestureRepeats: repeats,
-    gesturePlan: brush === 'eraser' ? 'fixed-geometry-refilled' : 'fixed-geometry',
+    gesturePlan: gesturePlanFor(brush),
     ready,
     nativeApp,
     requirePageIdentity,

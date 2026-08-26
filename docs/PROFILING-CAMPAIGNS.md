@@ -124,9 +124,16 @@ with geometry identical to every other brush — moving the strokes instead was 
 because even the optimal placement schedule saturates a landscape phone canvas by pass 5. The setup
 fill is verified rather than trusted (issue 1302), each refill re-verifies, and the artifact records
 all of it (`eraserFill`, `eraserRefills`, and `gesturePlan`: `fixed-geometry-refilled` for the
-eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). Do not compare an
+eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). The boundary is
+enforced for any plan an artifact RECORDS: campaign acceptance refuses a banked cell whose recorded
+plan disagrees with the contract (`wrong-gesture-plan`, checked after the repeat count for the same
+most-fundamental-rejection-first reason), and the matrix refuses both a recorded plan that disagrees
+with a repeat-driven target's contract and two runs recording different plans in one cell. An
+artifact predating the field is a known quantity — unrefilled — and is accepted anyway, by the
+standing decision that banked pre-fix evidence stays foldable until the campaign-end recapture
+supersedes it. The enforcement therefore does not cover the absent-plan case: do not compare an
 eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
-once the campaign-end recapture lands.
+once the recapture lands.
 
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and
@@ -590,15 +597,18 @@ EOF
 A capture with no `probe` parameter is not a failure — the Appium and desktop transports do not use
 one, and a native or hand capture cannot (it records `pageIdentity: "unprovable"`).
 
-This audit ran over every tracked corpus on 2026-08-25 (issue 1315): **25 files across eight
-2026-08-23/24 corpora are contaminated** — everything captured before the page-identity guard
-(commit cfb1b6c9), including the corpora the 2026-08-24 landscape investigations were argued from —
-and everything after it is clean. A contaminated file is marked in its corpus `index.json`
-(`cellAttributable: false`, plus the mismatched `reportNonce` and a corpus-level
-`crossRunContamination` block), which is where tools should look before re-scoring; marked corpora
-remain usable as runtime-level calibration (real driven input from that device), never as cells.
-`tools/perf/tests/corpus-attribution.test.mjs` re-runs the nonce audit in CI and fails if a marking
-disagrees with the evidence — including a future corpus promoted with contamination unmarked.
+This audit ran over every tracked corpus on 2026-08-25 (issue 1315): **25 files across nine
+2026-08-23/24 corpora are contaminated** (the count said "eight" until the stack-1353 review
+re-swept it — `2026-08-24-android-web-quiet-light-crayon` is the ninth) — everything captured before
+the page-identity guard (commit cfb1b6c9), including the corpora the 2026-08-24 landscape
+investigations were argued from — and everything after it is clean. A contaminated file is marked in
+its corpus `index.json` (`cellAttributable: false`, plus the mismatched `reportNonce` and a
+corpus-level `crossRunContamination` block), and `perf:rescore` reads the marking: marked captures
+are refused by default, and `--include-unattributable` re-admits them deliberately — visibly marked
+in the table, summary, and JSON export — for runtime-level calibration questions (real driven input
+from that device), never as cells. `tools/perf/tests/corpus-attribution.test.mjs` re-runs the nonce
+audit in CI and fails if a marking disagrees with the evidence — including a future corpus promoted
+with contamination unmarked.
 
 ### Stopping a campaign does not lose the cells it banked
 
@@ -652,7 +662,10 @@ npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=<name>
 That is what makes a metric correction cost device time rather than seconds: when the beat estimator
 and the charge were corrected, every published cell kept the old number because re-scoring needs the
 raw frames. ADR-0138 tracks one capture per target × brush so the next correction can be re-scored
-against history with `perf:rescore`.
+against history with `perf:rescore`. Selection prefers a scoreable representative (issue 1305: a
+plain run once kept a failed eraser beside three passing captures), and the promotion **refuses** a
+cell whose every candidate failed a number-invalidating check — `--allow-failed` keeps one
+deliberately, `--filter` narrows to cells that can be scored.
 
 This step is not enforced anywhere, and the moment it gets skipped is the moment a campaign ends in
 a hurry — which is every campaign.

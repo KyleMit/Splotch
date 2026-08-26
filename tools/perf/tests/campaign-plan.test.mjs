@@ -135,6 +135,25 @@ describe('campaign plan', () => {
     }
   });
 
+  // Issue 1292's companion contract: how the repeats are fed ink. Exactly the
+  // repeat-driven cells carry a plan — the eraser's refilled, every other
+  // brush's plain — and the desktop and action cells, which drive no gesture
+  // plan, carry none to compare. Pinned to the literal strings the banked
+  // artifacts record, so renaming the vocabulary cannot silently orphan them.
+  it('stamps the gesture-plan contract on exactly the repeat-driven cells', () => {
+    for (const [targetId, target] of Object.entries(CAMPAIGN_TARGETS)) {
+      for (const cell of plan(targetId)) {
+        const expected =
+          cell.item === 'actions' || target.transport === 'desktop'
+            ? null
+            : cell.item === 'eraser'
+              ? 'fixed-geometry-refilled'
+              : 'fixed-geometry';
+        expect(cell.gesturePlan, `${targetId} ${cell.id}`).toBe(expected);
+      }
+    }
+  });
+
   // Issue 1301, resized by review: a bare Appium/CDP cell self-serves behind
   // the build-freshness guard, so it is a warned 'guarded-default', not a
   // refused unknown. Only a command the classifier does not know maps to null.

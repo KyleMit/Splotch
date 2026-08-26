@@ -55,9 +55,31 @@ const ROTATION_ACTION_LABEL = new RegExp(
 // record it too — and Android Chrome is exactly the runtime ADR-0142 says must
 // keep the gate (0.1-54 ms of real post-resize dynamic range). The native
 // WKWebView keeps it too: its first `resize` precedes committed layout, a real
-// if pre-layout reading. Only `ios-safari` is structurally inert.
-export function rotationFirstFrameNa(captureRuntime, label) {
-  return captureRuntime === 'ios-safari' && ROTATION_ACTION_LABEL.test(label);
+// if pre-layout reading.
+//
+// The desktop runner drives one runtime (`desktop-playwright`) across three
+// engines, and the engine decides where the `resize` dispatch sits relative to
+// the rendering turn — so desktop applicability needs the ENGINE beside the
+// runtime. Declared per engine from the local measurements in
+// perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/ (ADR-0142's
+// second amendment). The discriminator is the sub-1 ms share of scored
+// rotation first frames — WebKit 31/32, Firefox 11/32, Chromium 2/32 — since
+// Playwright WebKit reports whole-millisecond timestamps and an exactly-zero
+// comparison across engines would compare clocks: WebKit shares Safari's
+// engine construction and cannot plausibly reach the 33.5 ms gate, while
+// Chromium (two sub-1 ms samples, the rest 3.3-8.0 ms) and Firefox (bimodal to
+// 9.5 ms) carry real dynamic range and stay gated. An engine absent from the
+// set — and every non-desktop caller, which passes no engine — keeps the gate.
+// Exported only for the declaration-pin test, which fails a drive-by addition
+// that carries no measured corpus.
+export const ROTATION_INERT_DESKTOP_ENGINES = new Set(['webkit']);
+
+export function rotationFirstFrameNa(captureRuntime, label, desktopEngine = null) {
+  if (!ROTATION_ACTION_LABEL.test(label)) return false;
+  if (captureRuntime === 'ios-safari') return true;
+  return (
+    captureRuntime === 'desktop-playwright' && ROTATION_INERT_DESKTOP_ENGINES.has(desktopEngine)
+  );
 }
 
 const maximum = (values) => (values.length ? Math.max(...values) : undefined);

@@ -24,12 +24,55 @@ function reportNonce(artifact) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+// A probe nonce is `${label}-${pid}-${counter}` — the mint in
+// capture-device-frames.mjs and capture-hand-input.mjs, the only two that can
+// reach a corpus (the verify-* tools set label equal to the whole nonce, but
+// they report over ?verify= and write no artifact). So attribution demands the
+// label followed by EXACTLY `-<digits>-<digits>`: a bare prefix match would
+// attribute a `…-pen-undo` nonce to a `…-pen` label, and an unanchored tail
+// would attribute a `magic-light-3` repeat's nonce to a hypothetical
+// `magic-light` label — the numeric-suffix naming the tracked repeat sets
+// already use. No verdict on today's corpus differs between the loose and
+// strict forms; the anchor is armed against naming, not repairing a defect.
+function nonceAttributableToLabel(nonce, label) {
+  if (!label) return false;
+  if (!nonce.startsWith(`${label}-`)) return false;
+  return /^\d+-\d+$/.test(nonce.slice(label.length + 1));
+}
+
 function corpora() {
   return readdirSync(EVIDENCE_ROOT, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => join(EVIDENCE_ROOT, entry.name))
     .filter((directory) => existsSync(join(directory, 'index.json')));
 }
+
+describe('nonce attribution is delimiter-aware', () => {
+  const pen = 'android-device-web-portrait-light-pen';
+
+  it('attributes a nonce only to the label the mint delimited', () => {
+    expect(nonceAttributableToLabel(`${pen}-12345-678`, pen)).toBe(true);
+    expect(nonceAttributableToLabel(`${pen}-undo-12345-678`, `${pen}-undo`)).toBe(true);
+  });
+
+  // The traps the anchors exist for: `…-pen` is a prefix of `…-pen-undo`, so
+  // a bare startsWith would call a pen-undo capture's nonce attributable to a
+  // pen label — and an unanchored tail would call a numeric-suffixed sibling's
+  // nonce (`magic-light-3-34307-81`, the repeat-set naming the tracked
+  // evidence already uses) attributable to the shorter `magic-light`.
+  it('does not attribute a longer label’s nonce to its prefix label', () => {
+    expect(nonceAttributableToLabel(`${pen}-undo-12345-678`, pen)).toBe(false);
+    expect(nonceAttributableToLabel('magic-light-3-34307-81', 'magic-light')).toBe(false);
+    expect(nonceAttributableToLabel('magic-light-3-34307-81', 'magic-light-3')).toBe(true);
+    expect(nonceAttributableToLabel(`${pen}-2-12345-678`, pen)).toBe(false);
+  });
+
+  it('rejects an empty label, a bare label, and a non-numeric next segment', () => {
+    expect(nonceAttributableToLabel(`${pen}-12345-678`, '')).toBe(false);
+    expect(nonceAttributableToLabel(pen, pen)).toBe(false);
+    expect(nonceAttributableToLabel(`${pen}-eraser-12345-678`, pen)).toBe(false);
+  });
+});
 
 describe('tracked evidence corpora state their own cell attribution', () => {
   it.each(corpora().map((directory) => [directory.slice(EVIDENCE_ROOT.length + 1), directory]))(
@@ -48,7 +91,7 @@ describe('tracked evidence corpora state their own cell attribution', () => {
         // captures carry none, and their attribution rests on other guards.
         if (nonce === null) continue;
         const label = artifact.label ?? '';
-        const attributable = label !== '' && nonce.startsWith(label);
+        const attributable = nonceAttributableToLabel(nonce, label);
         // One unconditional assertion per audited file: the marking must match
         // the evidence, and a contaminated entry must name the nonce it saw
         // (an attributable one records no nonce claim to check).

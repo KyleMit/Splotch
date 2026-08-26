@@ -88,9 +88,40 @@ the gate. Android retains dynamic range, and the native WKWebView reading — th
 stated so nobody infers more than was measured: the evidence behind it is physical-iPad only, and
 `ipad-simulator-web` joins by engine identity (`captureRuntime: 'ios-safari'`) while its published
 action cells stay preserved until the campaign-end recapture; the published matrix itself is
-unchanged until that recapture regenerates it; and `mac-safari`'s desktop rotation rows publish the
-same inert-zero shape under a runner that records no runtime — they stay gated, a smaller instance
-of this class deliberately left for the desktop runner to declare on its own evidence.
+unchanged until that recapture regenerates it; and `mac-safari`'s desktop rotation rows published
+the same inert-zero shape under a runner that recorded no runtime — a smaller instance of this
+class, deliberately left at the time for the desktop runner to declare on its own evidence.
+
+*Second amendment (2026-08, the desktop declaration).* The desktop runner declared. Local
+measurement on the Mac (corpus `perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/`:
+the campaign's rotation cells, 8 scored samples per rotation label per engine, 32 per engine — one
+condition: landscape 1366×915, light theme, headless, so the declaration extends to the other three
+modes by engine identity, the same inference the first amendment makes for the simulator) split the
+three engines. The runner is headless Playwright WebKit/Chromium/Firefox, not shipped Safari — the
+declaration is about the engine's dispatch construction, which they share. And because Playwright
+WebKit reports whole-millisecond timestamps while the other two report microseconds, the
+cross-engine discriminator is the **sub-1 ms share** of scored rotation first frames, not "exactly
+zero" (which would compare clocks):
+
+* **WebKit: 31 of 32 sub-1 ms** (all reading 0.0 on its whole-ms clock; the one non-zero sample is
+  6.0 ms — real, and still nowhere near the gate). Same engine construction as iPad Safari: `resize`
+  dispatched inside the rendering turn whose rAF timestamp the probe records, so the reading is
+  dominated by dispatch scheduling and cannot plausibly reach the 33.5 ms gate — an uninformative
+  gate, per ADR-0139 declared rather than left silently passing. Declared inert:
+  `ROTATION_INERT_DESKTOP_ENGINES` in `tools/perf/lib/action-stats.mjs`.
+* **Chromium: 2 of 32 sub-1 ms** (one an effective float zero, one 0.2 ms; the other 30 spread
+  3.3–8.0 ms) and **Firefox: 11 of 32 sub-1 ms** (bimodal; the rest 7.3–9.5 ms). Both carry real
+  post-`resize` dynamic range and keep the gate, on the numbers rather than by analogy to Android.
+
+The desktop runner spans three engines under one runtime, so applicability keys on the runtime **and
+the engine**: the runner now records `captureRuntime: 'desktop-playwright'` and applies the
+declaration to its own summaries, and the matrix holds a recorded `engine` to the target's declared
+`desktopEngine` with the same both-present-must-agree rule the runtime uses — while the N/A decision
+itself takes only the **recorded** engine, so an artifact recording neither runtime nor engine
+misfiled under a desktop target keeps its gate and surfaces as a red cell rather than an N/A.
+`mac-safari`'s published 16/16 rotation zeros render N/A only when the campaign-end **recapture**
+replaces their preserved sections — regeneration alone republishes preserved results verbatim,
+exactly as the iPad Safari cells do; nothing regenerates early.
 
 − Previously published rotation first-frame numbers are incomparable with post-change numbers, and
 `check:matrix-staleness` cannot see the boundary — its measured surface is deliberately product

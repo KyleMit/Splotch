@@ -21,6 +21,7 @@ import { createHash } from 'node:crypto';
 import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
+import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
 
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 
@@ -42,9 +43,6 @@ function viewportOrientation(parsed) {
   return width > height ? 'LANDSCAPE' : 'PORTRAIT';
 }
 
-// One per target x brush. Ties are broken by keeping the FIRST seen rather than
-// the best: picking the best sample would preserve a corpus that flatters the
-// metric it exists to let someone re-examine.
 // Returns true when promotion must stop. With --force the existing corpus is
 // removed WHOLE rather than merged into, so a run selecting fewer targets cannot
 // leave the previous run's captures behind an index that no longer names them.
@@ -55,17 +53,73 @@ export function destinationBlocked(destination, { force }) {
   return false;
 }
 
+// Scoreability tiers, best first. Preference is by scoreability, never by
+// score — within a tier the FIRST seen wins, because picking the best NUMBER
+// would preserve a corpus that flatters the metric it exists to let someone
+// re-examine. A verdict failing only calibration checks outranks no verdict
+// at all (ADR-0138: a capture that cannot prove its fidelity will be
+// believed), and both outrank a number-invalidating failure — a policy owned
+// by input-fidelity beside the check vocabulary it classifies, so keying
+// selection on `fidelity.passed` (which several runtimes can never satisfy)
+// cannot creep back in here.
+function scoreabilityTier(fidelity) {
+  if (!fidelity) return 2;
+  if (fidelity.passed === true) return 0;
+  return numberInvalidatingFailure(fidelity) ? 3 : 1;
+}
+
 export function selectEvidence(candidates) {
-  const kept = new Map();
+  const groups = new Map();
   for (const candidate of candidates) {
     // A hand capture is one a person paid for, and a hand corpus exists to show
     // spread (see 2026-08-23-hand): every one is kept, not one per target x brush.
     const key = candidate.handCapture
       ? candidate.relativePath
       : `${candidate.target}:${candidate.brush}`;
-    if (!kept.has(key)) kept.set(key, candidate);
+    const group = groups.get(key) ?? [];
+    group.push(candidate);
+    groups.set(key, group);
   }
-  return [...kept.values()];
+  return [...groups.values()].map((group) => {
+    const tiers = group.map((candidate) => scoreabilityTier(candidate.fidelity));
+    const bestTier = Math.min(...tiers);
+    const representative = group[tiers.indexOf(bestTier)];
+    return {
+      ...representative,
+      fidelityTier: bestTier,
+      candidateCount: group.length,
+      passingCandidateCount: tiers.filter((tier) => tier === 0).length,
+      failedCandidateCount: tiers.filter((tier) => tier === 3).length,
+    };
+  });
+}
+
+// A cell whose best candidate is unreported-or-worse while a number-invalidating
+// failure sits in its pool has no scoreable representative, which is a fact to
+// surface rather than paper over: the kept capture would be a wrong (or
+// unprovable) number waiting to be quoted, and issue 1305's incident was
+// exactly one of these arriving looking like its healthy neighbours. Keying the
+// refusal on the group rather than the representative alone is deliberate — a
+// failed candidate hiding behind an unreported one must not silence the guard.
+// Hand captures are exempt: a failed verdict there is itself the calibration
+// evidence. Returns the refusal message, or null when promotion may proceed.
+// Pure so the policy is testable without the exit.
+export function failedRepresentativeProblem(selected, { allowFailed } = {}) {
+  const stranded = selected.filter(
+    (entry) => !entry.handCapture && entry.fidelityTier >= 2 && entry.failedCandidateCount > 0
+  );
+  if (!stranded.length || allowFailed) return null;
+  const cells = stranded
+    .map(
+      (entry) =>
+        `${entry.target}/${entry.brush} (${entry.failedCandidateCount} of ` +
+        `${entry.candidateCount} candidates failed a number-invalidating check; none passed)`
+    )
+    .join(', ');
+  return (
+    `no scoreable representative for: ${cells}. Pass --allow-failed to keep one ` +
+    'deliberately, or --filter to narrow the promotion to cells that can be scored.'
+  );
 }
 
 // A campaign capture is filed by the cell it measured; a hand capture has no
@@ -87,6 +141,10 @@ export async function keepCaptureEvidence({
   target = argFlag('target'),
   filter = argFlag('filter'),
   force = argFlag('force') !== undefined || process.argv.includes('--force'),
+  allowFailed = argFlag('allow-failed') !== undefined || process.argv.includes('--allow-failed'),
+  // Overridable so the end-to-end test promotes into a tmpdir instead of the
+  // tracked corpus; production callers pass nothing.
+  evidenceRoot = EVIDENCE_ROOT,
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
@@ -119,7 +177,7 @@ export async function keepCaptureEvidence({
       handCapture: parsed.handCapture === true,
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
-      fidelity: parsed.fidelity?.passed ?? null,
+      fidelity: parsed.fidelity ?? null,
       // A hand capture's index row carries what the finger measured, so the
       // corpus is readable without opening a minified frame table — the shape
       // the 2026-08-23-hand corpus established.
@@ -137,7 +195,9 @@ export async function keepCaptureEvidence({
   if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
 
   const selected = selectEvidence(candidates);
-  const destination = join(ROOT, EVIDENCE_ROOT, campaign);
+  const noValidRepresentative = failedRepresentativeProblem(selected, { allowFailed });
+  if (noValidRepresentative) fail(noValidRepresentative);
+  const destination = join(ROOT, evidenceRoot, campaign);
 
   // Reusing a campaign name does NOT replace the corpus — it overwrites only the
   // files this run happens to select. A second promotion with fewer targets left
@@ -149,7 +209,7 @@ export async function keepCaptureEvidence({
   // known to be non-empty — so a failed promotion cannot leave nothing behind.
   if (destinationBlocked(destination, { force })) {
     fail(
-      `${EVIDENCE_ROOT}/${campaign} already exists. Promoting into it would leave ` +
+      `${evidenceRoot}/${campaign} already exists. Promoting into it would leave ` +
         'captures this run did not select beside an index that no longer names them, ' +
         'and perf:rescore scores every JSON it finds. Pass --force to replace the ' +
         'corpus, or use a new --campaign name.'
@@ -188,7 +248,7 @@ export async function keepCaptureEvidence({
           target: entry.target,
           brush: entry.brush,
           mode: entry.mode,
-          fidelityPassed: entry.fidelity,
+          fidelityPassed: entry.fidelity?.passed ?? null,
           source: entry.relativePath,
           ...(entry.handCapture
             ? {
@@ -199,7 +259,16 @@ export async function keepCaptureEvidence({
                 pageDelivery: entry.pageDelivery,
                 drawSeconds: entry.drawSeconds,
               }
-            : {}),
+            : {
+                // How rich the pool behind this representative was: "8
+                // candidates, 7 passing, 1 failed" reads very differently
+                // from "1 candidate" (issue 1305), and the failed count keeps
+                // the tri-state a bare passing count collapses — 0 passing of
+                // 12 unreported is not 0 passing of 12 failed.
+                candidateCount: entry.candidateCount,
+                passingCandidateCount: entry.passingCandidateCount,
+                failedCandidateCount: entry.failedCandidateCount,
+              }),
         })),
       },
       null,
@@ -208,11 +277,20 @@ export async function keepCaptureEvidence({
   );
 
   console.log(
-    `Kept ${selected.length} of ${candidates.length} captures in ${EVIDENCE_ROOT}/${campaign}`
+    `Kept ${selected.length} of ${candidates.length} captures in ${evidenceRoot}/${campaign}`
   );
   for (const entry of selected) {
+    // The pool counts are meaningful only where the pool exists — a hand
+    // capture is always kept alone, and printing 1/1 beside every one would
+    // say nothing (the index omits the counts there for the same reason).
+    const pool = entry.handCapture
+      ? ''
+      : `(${entry.passingCandidateCount}/${entry.candidateCount} passing, ` +
+        `${entry.failedCandidateCount} failed)  `;
     console.log(
-      `  ${entry.target}/${entry.brush}  ${entry.mode}  fidelity=${entry.fidelity ?? 'unreported'}  <- ${basename(entry.relativePath)}`
+      `  ${entry.target}/${entry.brush}  ${entry.mode}  ` +
+        `fidelity=${entry.fidelity?.passed ?? 'unreported'}  ${pool}` +
+        `<- ${basename(entry.relativePath)}`
     );
   }
   return { selected, candidates };

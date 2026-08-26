@@ -507,7 +507,7 @@ function transportArgs(target, host) {
 // would be silently dropped, which is the shape of every defect this campaign
 // found: a flag that looks like it asked for something and did not.
 function splitDrawingArgs(item, mode) {
-  const brush = item === 'pen-undo' ? 'pen' : item;
+  const brush = brushFor(item);
   return [
     `--brush=${brush}`,
     `--gesture-repeats=${GESTURE_REPEATS}`,
@@ -517,7 +517,7 @@ function splitDrawingArgs(item, mode) {
 }
 
 function drawingArgs(item, mode) {
-  const brush = item === 'pen-undo' ? 'pen' : item;
+  const brush = brushFor(item);
   const args = [
     `--brush=${brush}`,
     `--gesture-repeats=${GESTURE_REPEATS}`,
@@ -533,6 +533,48 @@ function gestureRepeatsFromArgs(args) {
   const flag = args.find((arg) => arg.startsWith('--gesture-repeats='));
   if (!flag) return null;
   return Number(flag.slice('--gesture-repeats='.length));
+}
+
+function brushFor(item) {
+  return item === 'pen-undo' ? 'pen' : item;
+}
+
+// How a repeat-driven capture feeds its passes ink (issue 1292): the eraser
+// replays identical geometry every pass with the tiles refilled between passes
+// — every pass erases full real ink — and every other brush replays identical
+// geometry with no refill needed. Both capture runners write this value and
+// acceptance compares against it, all through this one function, so the writer
+// and the readers cannot drift. Artifacts predating the field are unrefilled
+// fixed-geometry: their eraser passes 2..N erased mostly-transparent pixels,
+// which is why an eraser cell recording a different plan is a different
+// quantity, not a different label.
+export function gesturePlanFor(brush) {
+  return brush === 'eraser' ? 'fixed-geometry-refilled' : 'fixed-geometry';
+}
+
+// The gesture plan a drawing capture recorded, top level on both artifacts (the
+// gestureRepeats top-level/automation split was a defect this field avoided
+// from the start). Shared by acceptance and the matrix like
+// `recordedGestureRepeats`. Null means the field is ABSENT, and unlike the
+// repeat count that absence is determinate — every pre-field artifact is
+// unrefilled fixed-geometry — yet consumers deliberately accept it: the
+// standing decision (PR 1335's disposition, the issue-1225 record) keeps
+// banked pre-fix evidence foldable until the campaign-end recapture supersedes
+// it, and docs/PROFILING-CAMPAIGNS.md carries the do-not-compare caution for
+// exactly that uncovered case. A field that is present but not a string is a
+// malformed artifact and THROWS rather than collapsing into that null;
+// acceptance maps the throw to a rejection, the matrix lets it surface as a
+// loud fold error.
+export function recordedGesturePlan(artifact) {
+  const recorded = artifact?.gesturePlan ?? null;
+  if (recorded === null) return null;
+  if (typeof recorded !== 'string') {
+    throw new Error(
+      `the artifact records gesturePlan ${JSON.stringify(recorded)}, which is not a string — ` +
+        'a malformed plan is an invalid artifact, not a historical one'
+    );
+  }
+  return recorded;
 }
 
 // The repeat count a drawing capture recorded, wherever its runner filed it:
@@ -625,6 +667,9 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
             ...(useSplit ? [] : ['--report-only']),
           ];
 
+      // Read back from the args the child is actually given, so the contract
+      // the inspection enforces can never drift from the command it drove.
+      const gestureRepeats = gestureRepeatsFromArgs(args);
       plan.push({
         id: `${mode.id}/${item}`,
         targetId,
@@ -634,9 +679,12 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         command,
         reportsFidelity: commandReportsFidelity(command),
         reportsRefreshRegime: commandReportsRefreshRegime(command),
-        // Read back from the args the child is actually given, so the contract
-        // the inspection enforces can never drift from the command it drove.
-        gestureRepeats: gestureRepeatsFromArgs(args),
+        gestureRepeats,
+        // Exactly the repeat-driven cells carry a gesture plan: the desktop
+        // transport drives the probe's own synthetic driver and the action
+        // sweeps drive no gesture, and neither takes --gesture-repeats — so the
+        // flag's presence, not a second transport switch, decides both.
+        gesturePlan: gestureRepeats === null ? null : gesturePlanFor(brushFor(item)),
         args,
       });
     }

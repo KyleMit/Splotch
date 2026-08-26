@@ -1,0 +1,19 @@
+{
+  "campaign": "2026-08-25-desktop-rotation-first-frames",
+  "why": "The evidence behind ADR-0142's desktop declaration: the amendment left mac-safari's 16/16 inert rotation zeros 'for the desktop runner to declare on its own evidence'. These three sweeps are that evidence — the same rotation cells (--actions=rotation, campaign landscape viewport 1366x915, light theme, headless, 9 repeats = 8 scored samples per rotation label, 32 per engine) driven through the desktop Playwright transport on each engine. The discriminator is the sub-1 ms share of scored rotation first frames — WebKit 31/32, Firefox 11/32, Chromium 2/32 — because Playwright WebKit reports whole-millisecond timestamps, so cross-engine comparison of 'exactly 0.0' would compare clocks, not dispatch behaviour.",
+  "capturedFrom": "perf:web:actions --actions=rotation --repeats=9 --viewport=1366x915 --report-only, local Mac (macOS darwin), quiet host, production preview build at the stack's fork point c12c46cdd4fbd421ef7b21a5f15703ef6a8eb170",
+  "kept": [
+    {
+      "file": "webkit-rotation.json",
+      "note": "31 of 32 scored rotation first frames read 0.0 ms on WebKit's whole-millisecond clock (sub-millisecond in truth); the single non-zero sample is 6.0 ms — real, unexplained by rounding, and still far below the 33.5 ms gate. The resize dispatch shares the rendering turn whose rAF timestamp the probe records — the iPad Safari engine construction — so the reading cannot plausibly reach the gate: declared N/A (ROTATION_INERT_DESKTOP_ENGINES)."
+    },
+    {
+      "file": "chromium-rotation.json",
+      "note": "2 of 32 scored rotation first frames land sub-1 ms (one an effective float zero at 1.2e-8 ms, one 0.2 ms); the other 30 spread 3.3-8.0 ms. Real post-resize dynamic range — the gate stays live for mac-chrome."
+    },
+    {
+      "file": "firefox-rotation.json",
+      "note": "Bimodal: 11 of 32 scored rotation first frames land sub-1 ms, the rest 7.3-9.5 ms. The variation is real dynamic range, not a constructed zero — the gate stays live for mac-firefox."
+    }
+  ]
+}
