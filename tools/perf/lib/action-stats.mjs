@@ -24,17 +24,18 @@ export const ACTION_FRAME_MAX_GATE_MS = 33.5;
 // ONLY, recorded into the capture, never a default). 'open Settings' has
 // breached the max gate at 44-55 ms on every theme-focused automated run
 // since 2026-08-17, identically at base and branch, while its post-open P95
-// stayed inside the 26 ms allowance. Attributed 2026-08-26 (issue 1130): an
-// Animation Hitches trace over a focused six-open sweep put every hitch in
-// AutomationModeUI, pointeruid (the synthetic-touch pointer overlay),
-// SpringBoard, and MobileSafari chrome — com.apple.WebKit.WebContent never
-// hitched — corroborating the earlier Time Profiler finding of no saturated
-// WebContent main-thread run under the frame. The stall is the automation
-// apparatus's own compositor contention around the showModal flip, not
-// product cost; a real finger's open should not show it, which the next
-// operator eyeball can spot-check. 56 covers the observed three-beat frame
-// (3 x 16.7 = 50 ms) plus scheduling jitter; a genuine product regression
-// past it still fails.
+// stayed inside the 26 ms allowance. The attribution (issue 1130, ADR-0090's
+// 2026-08-26 amendment) is a NARROWING, not an acquittal: no WebContent
+// main-thread saturation (Time Profiler) and zero WebContent hitches with
+// every hitch on the automation overlay stack (Animation Hitches) — but the
+// trace attributes per layer, so it cannot separate overlay cost from
+// app-triggered composition, and the real-finger control was confounded by
+// the persistent AutomationModeUI overlay. This is therefore a
+// CAPTURE-ENVIRONMENT allowance with a recorded reopen condition: a
+// clean-device control (overlay verifiably absent) that still shows the
+// frame converts it to a product finding and retires this entry. 56 covers
+// the observed three-beat frame (3 x 16.7 = 50 ms) plus scheduling jitter; a
+// genuine product regression past it still fails.
 const IOS_ACTION_FRAME_MAX_ALLOWANCES_MS = {
   'open Settings': 56,
 };

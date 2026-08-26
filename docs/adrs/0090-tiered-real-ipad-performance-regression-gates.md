@@ -318,21 +318,30 @@ Desktop and Android actions harnesses pass no allowances, and historical capture
 cross-platform snapshots reuse the transport and schema, never the iPad baseline. A regression past
 an allowance still fails; the full measurements live in ADR-0049's amendment.
 
-## Amendment (2026-08-26): a max-frame allowance for the same action, attributed off-app
+## Amendment (2026-08-26): a capture-environment max-frame allowance for the same action
 
 `open Settings` breached the separate 33.5 ms max-frame gate at 44-55 ms on every theme-focused
 automated physical run since 2026-08-17, identically at base and branch, while staying inside its
-P95 allowance (issue 1130). Two independent instruments attribute the frame off the app: the issue's
-Time Profiler capture found no saturated `com.apple.WebKit.WebContent` main-thread run under it, and
-a 2026-08-26 Animation Hitches trace over a focused six-open sweep put every hitch in
-`AutomationModeUI`, `pointeruid` (the synthetic-touch pointer overlay), SpringBoard, and
-MobileSafari chrome — WebContent never hitched. The stall is the automation apparatus's own
-compositor contention around the `showModal` flip, so the exception ledger gains a max-frame half
-under the same rules: `IOS_ACTION_GATE_ALLOWANCES` carries `{ p95, max }`, `open Settings` is
-allowed 56 ms (the observed three-beat frame plus jitter), a flat legacy `gateAllowances` map
-re-scores exactly as it always did (P95 allowance only), and every other action and target stays on
-the base max gate. A real finger's open should not show the frame at all — worth a spot-check
-whenever an operator is at the device.
+P95 allowance (issue 1130). What the instruments establish is a **narrowing, not an acquittal**: the
+issue's Time Profiler capture found no saturated `com.apple.WebKit.WebContent` main-thread run under
+the frame, and a 2026-08-26 Animation Hitches trace over a focused six-open sweep recorded every
+hitch against `AutomationModeUI`, `pointeruid`, SpringBoard, and MobileSafari chrome with zero
+WebContent hitches — but the trace attributes per *layer*, and identical hitch rows across those
+processes are consistent with one composited update multi-counted, so it cannot separate overlay
+cost from app-triggered composition (`showModal` can enqueue a commit that stalls downstream while
+WebContent itself stays unsaturated). A real-finger control the same day was **confounded**: the
+`AutomationModeUI` overlay persists after WDA sessions and was still rendering during the hand
+opens, which themselves showed hitches in the same 34-58 ms band — leaving both hypotheses alive.
+
+So the exception ledger gains a max-frame half as a **capture-environment allowance**, scoped as
+ever to the calibrated physical-iOS automated capture: `IOS_ACTION_GATE_ALLOWANCES` carries
+`{ p95, max }`, `open Settings` is allowed 56 ms (the observed three-beat frame plus jitter), a flat
+legacy `gateAllowances` map re-scores exactly as it always did (P95 allowance only), and every other
+action and target stays on the base max gate. **Reopen condition:** a clean-device control — the
+automation overlay verifiably absent (device restarted or overlay timed out, proven by a trace with
+no `AutomationModeUI` process) — that still shows the 44-55 ms open-Settings frame converts this to
+a product finding, retires the allowance, and files the frame for a product fix or an ADR-0137-style
+product exception argued from that evidence.
 
 ## Amendment (2026-08): theme switches activate by trusted native tap
 
