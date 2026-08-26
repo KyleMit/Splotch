@@ -1171,3 +1171,17 @@ describe('the verify-foreground guard', () => {
     expect(d.forwardCalls.at(-1)).toBe('adb -s s forward --remove tcp:9234');
   });
 });
+
+// Issue 1323 (Android half): a bundled capture's identity is the DEBUGGER's
+// answer for the attached target, and only the app's build-time origin counts —
+// a probe-host page or a restored tab must refuse, however healthy it looks.
+describe('bundledPageProblem', () => {
+  it('accepts only the bundled Capacitor origins', async () => {
+    const { bundledPageProblem } = await import('../android/capture-bundled-frames.mjs');
+    expect(bundledPageProblem('https://localhost/')).toBeNull();
+    expect(bundledPageProblem('capacitor://localhost/index.html')).toBeNull();
+    expect(bundledPageProblem('http://192.168.40.53:4185/?probe=x')).toMatch(/not a bundled/);
+    expect(bundledPageProblem('https://localhost.evil.example/')).toMatch(/not a bundled/);
+    expect(bundledPageProblem('about:blank')).toMatch(/not a bundled/);
+  });
+});
