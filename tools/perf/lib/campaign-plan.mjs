@@ -701,3 +701,34 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
   }
   return plan;
 }
+
+// The refill entries that prove an eraser capture's passes 2..N erased real ink
+// (issue 1302 records them; issue 1355 decided they invalidate). The in-page
+// recorder deliberately records an anomaly rather than throwing — aborting
+// mid-gesture would destroy the capture the evidence exists to judge — and THIS
+// is the reader that decision was waiting on: acceptance refuses the artifact,
+// the matrix refuses the fold, and the recorded proof is what both act on.
+//
+// Null means the field is absent: a non-eraser capture, or an artifact banked
+// before the recorder existed — accepted by the same standing decision as the
+// absent plan, with the pre-refill eraser numbers already marked optimistic and
+// superseded. A present field that is not an array is a malformed artifact and
+// throws, exactly as a malformed plan or count does. An entry is anomalous when
+// the refill errored, was still pending (backings not realized — the fill would
+// have been wiped), or left transparent tiles (passes after it erased nothing).
+export function anomalousEraserRefills(artifact) {
+  const recorded = artifact?.eraserRefills ?? null;
+  if (recorded === null) return null;
+  if (!Array.isArray(recorded)) {
+    throw new Error(
+      `the artifact records eraserRefills ${JSON.stringify(recorded)}, which is not a list — ` +
+        'a malformed refill record is an invalid artifact, not a historical one'
+    );
+  }
+  return recorded.filter(
+    (refill) =>
+      refill?.error !== undefined ||
+      refill?.pending === true ||
+      (refill?.transparentTiles?.length ?? 0) > 0
+  );
+}

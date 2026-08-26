@@ -8,6 +8,7 @@ import {
   recordedGestureRepeats,
 } from '../lib/campaign-plan.mjs';
 import {
+  ERASER_FILL_FAILED,
   COMPLETE,
   FAILED,
   OFF_REFRESH_REGIME,
@@ -525,5 +526,59 @@ describe('cellInspection', () => {
         target
       ).ok
     ).toBe(true);
+  });
+});
+
+// The refill record was proof nothing read (issue 1355): a capture whose
+// between-pass refills recorded an anomaly banked as a plausible number while
+// its later passes erased blank paper. Acceptance now reads the record the
+// in-page recorder deliberately keeps instead of throwing.
+describe('eraser refill acceptance (issue 1355)', () => {
+  const accepted = (eraserRefills) =>
+    inspectArtifact(artifactAt({ ...scoreable, eraserRefills }), 'web', {
+      verdictRequired: true,
+      expectedRefreshRegime: '60hz',
+    });
+
+  it('accepts verified refills and the absent-field historical tolerance', () => {
+    expect(accepted([{ afterStroke: 2, pending: false, transparentTiles: [] }])).toMatchObject({
+      ok: true,
+      status: COMPLETE,
+    });
+    expect(accepted(undefined)).toMatchObject({ ok: true, status: COMPLETE });
+    expect(accepted(null)).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it.each([
+    ['a pending refill', [{ afterStroke: 2, pending: true, transparentTiles: [] }]],
+    ['transparent tiles', [{ afterStroke: 4, pending: false, transparentTiles: [3, 7] }]],
+    ['a refill error', [{ afterStroke: 6, error: 'no live tiles to fill for the eraser' }]],
+  ])('refuses %s with the record as the reason', (_case, eraserRefills) => {
+    const verdict = accepted(eraserRefills);
+
+    expect(verdict).toMatchObject({ ok: false, status: ERASER_FILL_FAILED });
+    expect(verdict.anomalousRefills).toHaveLength(1);
+  });
+
+  // Present-but-malformed is an invalid artifact, exactly as a malformed plan or
+  // count is — never a historical absence.
+  it('treats a malformed refill record as an invalid artifact', () => {
+    expect(accepted('refilled fine, trust me')).toMatchObject({ ok: false, status: FAILED });
+  });
+
+  // The one refusal ordering that matters most: a capture that was barely driven
+  // has meaningless refills as well as a meaningless number, and
+  // UNCALIBRATED_RUNTIME must never be preempted by a retryable status.
+  it('reports the more fundamental rejection first', () => {
+    const underDriven = artifactAt({
+      ...scoreable,
+      fidelity: { passed: false, checks: { cadence: false }, uncalibrated: [] },
+      eraserRefills: [{ afterStroke: 2, pending: true }],
+    });
+
+    expect(inspectArtifact(underDriven, 'web', { verdictRequired: true })).toMatchObject({
+      ok: false,
+      status: UNSCOREABLE,
+    });
   });
 });

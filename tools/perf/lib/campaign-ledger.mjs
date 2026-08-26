@@ -45,6 +45,15 @@ export const WRONG_GESTURE_REPEATS = 'wrong-gesture-repeats';
 // WRONG_GESTURE_REPEATS does.
 export const WRONG_GESTURE_PLAN = 'wrong-gesture-plan';
 
+// An eraser capture whose between-pass refills recorded an anomaly (pending,
+// transparent tiles, or an error): its later passes erased blank paper, so the
+// number measures the wrong quantity however plausible it looks (issue 1355).
+// Spends attempts like a fidelity failure — a pending refill can be transient
+// (a stalled frame during backing realization), so bounded retries are worth
+// their device time, and a structural failure exhausts them into a named P1
+// rather than banking an optimistic number.
+export const ERASER_FILL_FAILED = 'eraser-fill-failed';
+
 export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
   return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
 }
@@ -71,7 +80,8 @@ export function attemptsFor(rows, cellId) {
         row.status?.startsWith(UNCALIBRATED_RUNTIME) ||
         row.status?.startsWith(OFF_REFRESH_REGIME) ||
         row.status?.startsWith(WRONG_GESTURE_REPEATS) ||
-        row.status?.startsWith(WRONG_GESTURE_PLAN))
+        row.status?.startsWith(WRONG_GESTURE_PLAN) ||
+        row.status?.startsWith(ERASER_FILL_FAILED))
   ).length;
 }
 

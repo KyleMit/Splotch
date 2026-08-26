@@ -17,6 +17,7 @@ import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
 import {
   CAMPAIGN_TARGETS,
+  anomalousEraserRefills,
   gesturePlanFor,
   recordedGesturePlan,
   recordedGestureRepeats,
@@ -279,6 +280,10 @@ function normalizeDrawingRun(
     // repeat count does. Null for artifacts predating the field. Same shared
     // reader as acceptance, so the two cannot drift.
     gesturePlan: recordedGesturePlan(profile),
+    // Same shared reader as acceptance (issue 1355): a capture whose refills
+    // recorded an anomaly measured erasing blank paper on later passes, so the
+    // fold below refuses it rather than publishing an optimistic cell.
+    anomalousEraserRefills: anomalousEraserRefills(profile),
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
@@ -394,6 +399,22 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
       const plans = [
         ...new Set(runs.map((run) => run.gesturePlan).filter((plan) => typeof plan === 'string')),
       ];
+      const refillFailures = runs.filter((run) => (run.anomalousEraserRefills?.length ?? 0) > 0);
+      if (refillFailures.length) {
+        const detail = refillFailures
+          .map(
+            (run) =>
+              `${run.source} (${run.anomalousEraserRefills
+                .map((refill) => JSON.stringify(refill))
+                .join(', ')})`
+          )
+          .join('; ');
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds a capture whose eraser refills recorded an ` +
+            `anomaly — its later passes erased blank paper, so the number measures the wrong ` +
+            `quantity (issue 1355). Recapture the cell. Sources: ${detail}`
+        );
+      }
       if (plans.length > 1) {
         const planSources = runs
           .map((run) => `${run.source} (${run.gesturePlan ?? 'unrecorded'})`)

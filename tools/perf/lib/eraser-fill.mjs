@@ -57,7 +57,10 @@ export const ERASER_FILL_BACKING_TIMEOUT_MS = 4_000;
 // `window.__eraserRefills` and travels home in the report, so the artifact can
 // prove every pass had ink — an anomalous refill (pending or transparent) is
 // recorded rather than thrown, because aborting mid-gesture would destroy the
-// capture the evidence exists to judge.
+// capture the evidence exists to judge. The record is CONSUMED downstream
+// (issue 1355): `anomalousEraserRefills` in campaign-plan.mjs is the shared
+// reader, acceptance refuses the artifact (`eraser-fill-failed`), and the
+// matrix refuses the fold — recorded-not-thrown here, read-and-refused there.
 export function eraserRefillFunctionSource() {
   return `function armEraserRefill(everyStrokes, totalStrokes, fillEraserInk) {
     const refills = [];

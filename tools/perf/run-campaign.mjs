@@ -25,6 +25,7 @@ import {
   MAX_ATTEMPTS,
   SPLIT_SCREEN_COMMAND,
   artifactMatchesRuntime,
+  anomalousEraserRefills,
   artifactPassedFidelity,
   campaignTarget,
   cellServerSource,
@@ -38,6 +39,7 @@ import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument
 import {
   ALREADY_VALID,
   COMPLETE,
+  ERASER_FILL_FAILED,
   EXHAUSTED,
   FAILED,
   LEDGER_HEADER,
@@ -161,6 +163,22 @@ export function inspectArtifact(
     recordedPlan !== expectedGesturePlan
   ) {
     return { ok: false, status: WRONG_GESTURE_PLAN, recordedPlan };
+  }
+  // Last of all: the plan states the INTENT of the eraser's between-pass
+  // refills, and the refill record states the OUTCOME. A capture whose refills
+  // recorded an anomaly measured erasing blank paper on its later passes —
+  // materially the quantity the plan contract exists to refuse — so it is
+  // refused with the record as the reason rather than banked as a plausible
+  // number (issue 1355). Absent refills are the standing historical tolerance;
+  // a malformed record is an invalid artifact like a malformed plan.
+  let refills;
+  try {
+    refills = anomalousEraserRefills(artifact);
+  } catch {
+    return { ok: false, status: FAILED };
+  }
+  if (refills !== null && refills.length > 0) {
+    return { ok: false, status: ERASER_FILL_FAILED, anomalousRefills: refills };
   }
   return { ok: true, status: COMPLETE, regime };
 }
