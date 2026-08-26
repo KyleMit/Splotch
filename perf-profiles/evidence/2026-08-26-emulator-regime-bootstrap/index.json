@@ -14,7 +14,7 @@
    "failedCandidateCount": 0,
    "runtime": "android-chrome",
    "transport": "split-adb",
-   "note": "64.86 moves/s, 1.09 moves/frame, gap p95 18 ms; beat 16.7 ms; fidelity PASS; drawing PASS 0% in-contact lost"
+   "note": "64.86 moves/s, 1.09 moves/frame, gap p95 18 ms; beat 16.7 ms; fidelity PASS; drawing PASS at 0.86% in-contact lost \u2014 under the 1% gate but close to it, not comfortably clean"
   }
  ],
  "why": "The regime-declaration evidence for android-emulator-web, and the first fidelity-PASSING emulator capture this project has produced: the ADR-0145 density floor passes what the rate floor structurally refused (64.86 moves/s at 1.09 moves per frame - the emulator's input is frame-locked to its emulated 60 Hz display). Beat 16.7 ms across 3510 in-contact frames with zero sustained minority-band presentation (the regimeMixture field's first tracked reading). Captured through the ADR-0135 split transport (adb input against the probe host) on Pixel_7_Pro_API_33, this worktree's instrumented build, freshness-verified.",
