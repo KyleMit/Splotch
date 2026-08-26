@@ -1,7 +1,10 @@
 // Drive one deployment-target capture campaign to completion, resumably.
 //
 //   npm run perf:campaign -- --target=ipad-simulator-native --capabilities-file=<file>
-//   npm run perf:campaign -- --target=android-emulator-web --device-id=emulator-5554 --url=http://127.0.0.1:4173/
+//   npm run perf:campaign -- --target=android-emulator-web --device-id=emulator-5554 \
+//     --url=http://127.0.0.1:4173/ --probe-host=http://<lan-ip>:4175
+//   (emulator drawing rides the split transport, so --probe-host is required —
+//   --url covers only its CDP action cells)
 //   npm run perf:campaign -- --target=android-emulator-native --dry-run
 //
 // Resumability is the point. A cell whose artifact already parses is skipped, a
@@ -25,8 +28,11 @@ import {
   MAX_ATTEMPTS,
   SPLIT_SCREEN_COMMAND,
   artifactMatchesRuntime,
+  anomalousEraserRefills,
   artifactPassedFidelity,
   campaignTarget,
+  effectiveFidelity,
+  eraserRefillShortfall,
   cellServerSource,
   recordedGesturePlan,
   recordedGestureRepeats,
@@ -38,6 +44,7 @@ import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument
 import {
   ALREADY_VALID,
   COMPLETE,
+  ERASER_FILL_FAILED,
   EXHAUSTED,
   FAILED,
   LEDGER_HEADER,
@@ -78,9 +85,10 @@ function absolute(path) {
 // accept exactly what the runner accepts; when status rebuilt these options itself
 // it dropped the reportsRefreshRegime gate and reported four complete action
 // sweeps — which carry no frame intervals by design — as off-refresh-regime.
-export function cellInspection(cell, { runtime, refreshRegime }) {
+export function cellInspection(cell, { runtime, refreshRegime, captureRuntime = null }) {
   return inspectArtifact(cell.artifact, runtime, {
     verdictRequired: cell.reportsFidelity,
+    captureRuntime,
     expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
     expectedGestureRepeats: cell.gestureRepeats ?? null,
     expectedGesturePlan: cell.gesturePlan ?? null,
@@ -92,6 +100,7 @@ export function inspectArtifact(
   runtime,
   {
     verdictRequired = false,
+    captureRuntime = null,
     expectedRefreshRegime = null,
     expectedGestureRepeats = null,
     expectedGesturePlan = null,
@@ -106,16 +115,34 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
-  if (!artifactPassedFidelity(artifact, { verdictRequired })) {
+  // The required-verdict check comes BEFORE re-derivation (the PR 1368 review's
+  // boundary finding): a fidelity-reporting runner always writes the block, so
+  // an artifact without one is stale or foreign — healthy-looking input stats
+  // cannot substitute for it. The status stays the historic UNSCOREABLE two
+  // acceptance tests deliberately pin; attempt accounting is identical, and
+  // renaming a ledger status is not this fix's business.
+  if (verdictRequired && !artifact?.fidelity) return { ok: false, status: UNSCOREABLE };
+  // Judged by the RE-DERIVED verdict, by exactly the matrix's rule
+  // (effectiveFidelity): a banked capture whose stored verdict predates a table
+  // correction is accepted rather than recaptured, and a flattering stored
+  // verdict with no measurements behind it re-derives to a failure — the
+  // matrix already scores both that way; acceptance must not disagree.
+  if (!artifactPassedFidelity(artifact, { verdictRequired, captureRuntime })) {
     return {
       ok: false,
-      status: onlyUncalibratedChecksFailed(artifact?.fidelity) ? UNCALIBRATED_RUNTIME : UNSCOREABLE,
+      status: onlyUncalibratedChecksFailed(effectiveFidelity(artifact, captureRuntime))
+        ? UNCALIBRATED_RUNTIME
+        : UNSCOREABLE,
     };
   }
   // Checked after fidelity so the more fundamental rejection is the one reported:
   // a capture that was barely driven has a meaningless beat as well as a meaningless
   // number, and naming the regime would send the next session after the wrong thing.
-  const regime = refreshRegimeVerdict(artifact?.summaries?.intervalMs, expectedRefreshRegime);
+  const regime = refreshRegimeVerdict(
+    artifact?.summaries?.intervalMs,
+    expectedRefreshRegime,
+    artifact?.summaries?.regimeMixture
+  );
   if (!regime.matched) return { ok: false, status: OFF_REFRESH_REGIME, regime };
   // Checked LAST, after fidelity and regime, for the reason those two are
   // ordered: the more fundamental rejection must be the one reported. A capture
@@ -157,6 +184,28 @@ export function inspectArtifact(
     recordedPlan !== expectedGesturePlan
   ) {
     return { ok: false, status: WRONG_GESTURE_PLAN, recordedPlan };
+  }
+  // Last of all: the plan states the INTENT of the eraser's between-pass
+  // refills, and the refill record states the OUTCOME. A capture whose refills
+  // recorded an anomaly measured erasing blank paper on its later passes —
+  // materially the quantity the plan contract exists to refuse — so it is
+  // refused with the record as the reason rather than banked as a plausible
+  // number (issue 1355). Absent refills are the standing historical tolerance;
+  // a malformed record is an invalid artifact like a malformed plan.
+  let refills;
+  try {
+    refills = anomalousEraserRefills(artifact);
+  } catch {
+    return { ok: false, status: FAILED };
+  }
+  if (refills !== null && refills.length > 0) {
+    return { ok: false, status: ERASER_FILL_FAILED, anomalousRefills: refills };
+  }
+  // A refill record that is clean but SHORT proves the refills never fired:
+  // zero recorded anomalies while the later passes erased blank paper.
+  const shortfall = eraserRefillShortfall(artifact, expectedGestureRepeats);
+  if (shortfall !== null) {
+    return { ok: false, status: ERASER_FILL_FAILED, refillShortfall: shortfall };
   }
   return { ok: true, status: COMPLETE, regime };
 }
@@ -253,10 +302,19 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // its fallback.
   const unknownServerCells = plan.filter((cell) => cellServerSource(cell) === null);
   if (unknownServerCells.length) {
+    // A split drawing cell lands here exactly when --probe-host was omitted, and
+    // recommending --url would send the operator to a flag the split child
+    // ignores (the PR 1368 review hit this on the header's own emulator
+    // example).
+    const splitCells = unknownServerCells.filter((cell) => cell.command === SPLIT_SCREEN_COMMAND);
+    const advice = splitCells.length
+      ? `Split-transport drawing cells require --probe-host=<this host's LAN address, as the ` +
+        `device sees it>; --url cannot satisfy them.`
+      : `Teach cellServerSource the command, or pass --url= explicitly.`;
     fail(
       `these cells' commands have no known server source, so nothing is proven about their ` +
         `fallback:\n${unknownServerCells.map((cell) => `  ${cell.id} (${cell.command})`).join('\n')}\n` +
-        `Teach cellServerSource the command, or pass --url= explicitly.`
+        advice
     );
   }
   const guardedDefaultCells = plan.filter((cell) => cellServerSource(cell) === 'guarded-default');
@@ -342,7 +400,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
-      artifactValid: cellInspection(cell, { runtime, refreshRegime }).ok,
+      artifactValid: cellInspection(cell, {
+        runtime,
+        refreshRegime,
+        captureRuntime: targetCaptureRuntime,
+      }).ok,
       maxAttempts,
       runtimeStillUncalibrated: runtimeHasUncalibratedChecks(targetCaptureRuntime),
     });
@@ -389,7 +451,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         ['run', cell.command, '--ignore-scripts', '--', ...cell.args],
         { cwd: ROOT, stdio: 'inherit' }
       );
-      const inspected = cellInspection(cell, { runtime, refreshRegime });
+      const inspected = cellInspection(cell, {
+        runtime,
+        refreshRegime,
+        captureRuntime: targetCaptureRuntime,
+      });
       landed = inspected.ok;
       appendLedger(ledgerPath, {
         cell: cell.id,
@@ -419,6 +485,14 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         console.log(
           `RETRY ${cell.id} — captured under the ${inspected.recordedPlan} gesture plan, ` +
             `not the campaign contract of ${cell.gesturePlan}`
+        );
+      } else if (inspected.status === ERASER_FILL_FAILED) {
+        const reason = inspected.refillShortfall
+          ? `recorded ${inspected.refillShortfall.recorded} refills where the contract expects ` +
+            `${inspected.refillShortfall.expected} — the refills never fired`
+          : `first anomalous refill: ${JSON.stringify(inspected.anomalousRefills?.[0])}`;
+        console.log(
+          `RETRY ${cell.id} — the eraser's between-pass refills did not prove ink (${reason})`
         );
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);

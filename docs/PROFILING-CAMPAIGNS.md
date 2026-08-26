@@ -128,12 +128,16 @@ eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). The
 enforced for any plan an artifact RECORDS: campaign acceptance refuses a banked cell whose recorded
 plan disagrees with the contract (`wrong-gesture-plan`, checked after the repeat count for the same
 most-fundamental-rejection-first reason), and the matrix refuses both a recorded plan that disagrees
-with a repeat-driven target's contract and two runs recording different plans in one cell. An
-artifact predating the field is a known quantity — unrefilled — and is accepted anyway, by the
-standing decision that banked pre-fix evidence stays foldable until the campaign-end recapture
-supersedes it. The enforcement therefore does not cover the absent-plan case: do not compare an
-eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
-once the recapture lands.
+with a repeat-driven target's contract and two runs recording different plans in one cell. The
+refill record itself is consumed too (issue 1355): an anomalous entry — pending, transparent tiles,
+an error, or any shape the reader does not recognize — refuses the capture (`eraser-fill-failed`,
+checked after the plan so the most fundamental rejection is named first), as does a clean record
+shorter than the contract implies (repeats − 1 entries; fewer means the refills never fired), and
+the matrix refuses to fold either case. An artifact predating the field is a known quantity —
+unrefilled — and is accepted anyway, by the standing decision that banked pre-fix evidence stays
+foldable until the campaign-end recapture supersedes it. The enforcement therefore does not cover
+the absent-plan case: do not compare an eraser number across that boundary, and treat the matrix's
+pre-refill eraser column as superseded once the recapture lands.
 
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and
@@ -231,15 +235,18 @@ check did not pass, and in which of three ways:
 `android-chrome` is the third kind, established on 2026-08-23 by pairing a hand capture with an
 `adb`-driven one through the same probe: pressure 1 against 1, no contact geometry against none, 0
 coalesced samples against 0. Its verdict is `trustedTouch` and `cadence`, and its captures are
-scoreable. `android-capacitor-webview` and the desktop runtime remain uncalibrated.
+scoreable. `android-capacitor-webview` remains uncalibrated on pressure and contact geometry, as
+does the desktop runtime.
 
-The Capacitor WKWebView's `coalescing` entry is the standing uncalibrated one. An earlier revision
-inverted it — more than zero coalesced samples, where Safari expects none — on the strength of four
-healthy captures, and review refuted it with a negative control: the under-driven Android WebView
-probe recorded more than zero at 47.81 moves/s, so the inversion would have passed exactly the
-capture the check exists to reject. It stays uncalibrated until a known-bad WKWebView run exists
-(issue 1272). Do not widen it to cover both runtimes either; widening retires it in Safari, where it
-does real work.
+`coalescing` is retired from the verdict in **every** runtime (ADR-0144) and recorded as a witness
+instead. Two measurements ended it: the value tracks page delivery, not input — the same WKWebView
+at matched cadence reports ~1 with a bundled page and 0 delivered remotely, through automation and a
+real finger alike — and the probe records `getCoalescedEvents().length` raw, whose floor in a
+populated list is 1 (the event rides in its own list), so the check never measured merging at all.
+An earlier inverted revision — more than zero coalesced samples, where Safari expects none — had
+already been refuted by a negative control (the under-driven Android WebView probe recorded more
+than zero at 47.81 moves/s). Keep reading `coalescedPerMove` in artifacts: it is the field that
+exposed the delivery dependence, and ADR-0144 names the capture that would reopen the decision.
 
 ### A threshold set from the automation is not calibrated
 

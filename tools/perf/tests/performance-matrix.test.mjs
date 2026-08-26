@@ -1161,3 +1161,203 @@ describe('release gate prose', () => {
     );
   });
 });
+
+// The refill record is consumed at the fold too (issue 1355, hardened by the
+// PR 1363 review): a run with a recorded anomaly, or a clean record shorter
+// than its own repeat contract implies, measured erasing blank paper — the
+// fold refuses loudly instead of publishing the optimistic cell.
+describe('the eraser refill record in a folded cell', () => {
+  function writeEraserCapture(directory, name, { eraserRefills, gestureRepeats } = {}) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gestureRepeats,
+        eraserRefills,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  const eraserManifest = (eraser) =>
+    manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+
+  it('refuses a fold containing an anomalous refill, naming the source and record', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const anomalous = writeEraserCapture(directory, 'eraser-anomalous.json', {
+      eraserRefills: [{ afterStroke: 4, pending: true, transparentTiles: [] }],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([anomalous]), directory)).toThrow(
+      /eraser folds a capture whose eraser refills recorded an anomaly.*eraser-anomalous\.json/s
+    );
+  });
+
+  it('refuses a clean record shorter than its own repeat contract', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const short = writeEraserCapture(directory, 'eraser-short.json', {
+      gestureRepeats: 10,
+      eraserRefills: [{ afterStroke: 4, pending: false, transparentTiles: [] }],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([short]), directory)).toThrow(
+      /refills never fired.*eraser-short\.json \(recorded 1, expected 9\)/s
+    );
+  });
+
+  it('folds an absent record and a complete clean one as before', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const legacy = writeEraserCapture(directory, 'eraser-legacy.json', {});
+    const complete = writeEraserCapture(directory, 'eraser-complete.json', {
+      gestureRepeats: 3,
+      eraserRefills: [
+        { afterStroke: 4, pending: false, transparentTiles: [] },
+        { afterStroke: 8, pending: false, transparentTiles: [] },
+      ],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([legacy]), directory)).not.toThrow();
+    expect(() => normalizeMatrix(eraserManifest([complete]), directory)).not.toThrow();
+  });
+});
+
+// The eraserInk trust dimension's positive paths, on synthetic profiles the
+// corpus cannot supply (its captures predate the fill recorder).
+describe('the eraserInk trust dimension', () => {
+  function writeEraserTrustCapture(directory, name, extra) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+        ...extra,
+      })
+    );
+    return name;
+  }
+
+  const eraserTrust = (directory, source) => {
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser: [source] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const matrix = normalizeMatrix(built, directory);
+    const run = matrix.targets[0].modes[0].drawing.eraser.runs[0];
+    return run.trust.find((entry) => entry.name === 'eraserInk');
+  };
+
+  it('verifies a sound fill, carrying a settle repair in the detail', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const sound = writeEraserTrustCapture(directory, 'eraser-sound.json', {
+      eraserFill: { tiles: 16, backings: [], transparentTiles: [] },
+    });
+    const repaired = writeEraserTrustCapture(directory, 'eraser-repaired.json', {
+      eraserFill: { tiles: 16, backings: [], transparentTiles: [], repairedAfterSettle: true },
+    });
+
+    expect(eraserTrust(directory, sound)).toEqual({ name: 'eraserInk', state: 'verified' });
+    expect(eraserTrust(directory, repaired)).toEqual({
+      name: 'eraserInk',
+      state: 'verified',
+      detail: 'repaired-after-settle',
+    });
+  });
+
+  it('fails a refill record with no setup fill behind it', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const orphanRefills = writeEraserTrustCapture(directory, 'eraser-orphan.json', {
+      eraserRefills: [{ afterStroke: 4, pending: false, transparentTiles: [] }],
+    });
+
+    expect(eraserTrust(directory, orphanRefills)).toEqual({
+      name: 'eraserInk',
+      state: 'failed',
+      detail: 'no setup fill recorded',
+    });
+  });
+});
+
+// The PR 1366 review: the test named for this mapping never exercised it — the
+// corpus re-derives to a clean pass, and the fabricated verdict only reached
+// the classifier, so reverting `unrecorded` back to `failed` stayed green.
+// This drives an uncalibrated-only artifact through normalizeMatrix itself:
+// android-emulator-native's judging runtime (android-capacitor-webview) still
+// has uncalibrated pressure/contact expectations, so a capture passing every
+// real check re-derives to passed:false with only uncalibrated non-passes.
+describe('trust publishes instrument silence as unrecorded', () => {
+  it('maps an uncalibrated-only verdict to unrecorded with its detail', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, 'native-pen.json'),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        // A stored verdict makes the artifact a fidelity-reporting capture (the
+        // desktop carve-out re-derives nothing) — and a FLATTERING one proves
+        // re-derivation overrides it rather than trusting the day-of claim.
+        fidelity: { passed: true, checks: { trustedTouch: true, cadence: true } },
+        summaries: {
+          intervalMs: 16.7,
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+              input: {
+                kinds: 'touch',
+                trust: { share: 1 },
+                movesPerSecond: 116,
+                movesPerFrame: 1.9,
+                moveGapP95Ms: 9,
+              },
+            },
+          ],
+        },
+      })
+    );
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: ['native-pen.json'] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    built.targets[0].id = 'android-emulator-native';
+
+    const matrix = normalizeMatrix(built, directory);
+    const run = matrix.targets[0].modes[0].drawing.pen.runs[0];
+
+    expect(run.fidelity.passed).toBe(false);
+    expect(run.fidelity.uncalibrated).toEqual(['pressure', 'contactGeometry']);
+    expect(run.trust.find((entry) => entry.name === 'inputFidelity')).toEqual({
+      name: 'inputFidelity',
+      state: 'unrecorded',
+      detail: 'pressure(uncalibrated)+contactGeometry(uncalibrated)',
+    });
+  });
+});

@@ -3,7 +3,10 @@ import {
   ERASER_FILL_COLOR,
   eraserFillFunctionSource,
   eraserRefillFunctionSource,
+  eraserRefillArming,
 } from '../lib/eraser-fill.mjs';
+import { GESTURE_REPEATS, eraserRefillShortfall } from '../lib/campaign-plan.mjs';
+import { STROKES_PER_GESTURE_REPEAT } from '../ios/capture-xcuitest-screen.mjs';
 
 // The fill runs inside a capture page, so the source is executed here against a
 // stubbed DOM — the same standard bootstrap-theme.test.mjs set: prove it runs,
@@ -234,5 +237,40 @@ describe('the between-pass eraser refill', () => {
       { afterStroke: 4, pending: false, transparentTiles: [1] },
       { afterStroke: 6, error: 'tiles vanished' },
     ]);
+  });
+});
+
+// The writer/reader refill-count contract, bound behaviorally through the ONE
+// production helper both writers arm with (the PR 1368 review changed a
+// writer's totalStrokes expression and the previous constants-only guard
+// stayed green — it reconstructed the arithmetic instead of executing it).
+// This drives eraserRefillArming -> the recorder -> eraserRefillShortfall as
+// one chain, so arithmetic drift in the helper breaks here first, and a
+// writer bypassing the helper is one grep away.
+describe('the refill-count contract between the writers and the reader', () => {
+  it('records exactly repeats - 1 refills under the campaign arming, and the reader agrees', () => {
+    const { everyStrokes, totalStrokes } = eraserRefillArming(
+      GESTURE_REPEATS,
+      STROKES_PER_GESTURE_REPEAT
+    );
+    const listeners = [];
+    const windowStub = {
+      addEventListener: (type, handler, capture) => listeners.push({ type, handler, capture }),
+    };
+    const refills = new Function(
+      'window',
+      `${eraserRefillFunctionSource()}\nreturn armEraserRefill(${everyStrokes}, ${totalStrokes}, arguments[1]);`
+    )(windowStub, () => ({ tiles: 16, transparentTiles: [] }));
+    const onStack = { closest: (selector) => (selector === '.canvas-stack' ? {} : null) };
+    for (let stroke = 0; stroke < totalStrokes; stroke += 1) {
+      listeners[0].handler({ target: onStack });
+    }
+
+    expect(refills).toHaveLength(GESTURE_REPEATS - 1);
+    expect(eraserRefillShortfall({ eraserRefills: refills }, GESTURE_REPEATS)).toBeNull();
+    expect(eraserRefillShortfall({ eraserRefills: refills.slice(1) }, GESTURE_REPEATS)).toEqual({
+      recorded: GESTURE_REPEATS - 2,
+      expected: GESTURE_REPEATS - 1,
+    });
   });
 });

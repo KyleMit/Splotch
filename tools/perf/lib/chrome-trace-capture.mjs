@@ -10,6 +10,13 @@ const TRACE_CATEGORIES = [
   'devtools.timeline',
   'disabled-by-default-devtools.timeline',
   'disabled-by-default-devtools.timeline.frame',
+  // Style-invalidation attribution: which attribute/property change scheduled a
+  // recalc and which selectors it invalidated. Costs a little tracer overhead,
+  // which a --trace run accepts by construction (tracing is the diagnostic
+  // mode; scored captures never trace) — added when a 161 ms theme-flip recalc
+  // over 191 elements could not be attributed without it.
+  'disabled-by-default-devtools.timeline.invalidationTracking',
+  'disabled-by-default-blink.invalidation',
   'blink.user_timing',
   'disabled-by-default-v8.cpu_profiler',
   'v8.execute',

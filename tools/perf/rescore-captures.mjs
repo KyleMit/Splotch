@@ -171,7 +171,8 @@ export function rescoreCapture(parsed, { name, targetId }) {
   const fidelity = inputFidelity(phase.input ?? {}, runtime);
   const regime = refreshRegimeVerdict(
     summaries.intervalMs,
-    targetId ? (CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null) : null
+    targetId ? (CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null) : null,
+    summaries.regimeMixture
   );
   return { name, target: targetId, brush, gateShare, summaries, drawing, fidelity, regime };
 }

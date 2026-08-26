@@ -86,10 +86,20 @@ describe('campaign plan', () => {
     }
   });
 
-  it('routes Android browser actions to direct CDP and its drawing to Appium', () => {
+  it('routes Android browser actions to direct CDP and its drawing to the split transport', () => {
+    // Drawing moved off the Appium browser path after the 60 Hz controls
+    // measured its per-run main-thread-stall distortion at stream statistics no
+    // gate separates from real starvation (2026-08-26-appium-60hz-controls) —
+    // the same routing the physical phone has carried since ADR-0135.
     const cells = plan('android-emulator-web', {
       modes: ['landscape-light'],
-      host: { ...HOST, deviceId: 'emulator-5554', cdpPort: '9225', url: 'http://127.0.0.1:4173/' },
+      host: {
+        ...HOST,
+        deviceId: 'emulator-5554',
+        cdpPort: '9225',
+        url: 'http://127.0.0.1:4173/',
+        probeHost: 'http://192.168.0.9:4175',
+      },
     });
     const actions = cells.find((cell) => cell.item === 'actions');
     const drawing = cells.find((cell) => cell.item === 'crayon');
@@ -97,7 +107,8 @@ describe('campaign plan', () => {
     expect(actions.command).toBe('perf:android:browser:actions');
     expect(actions.args).toContain('--cdp-port=9225');
     expect(actions.args).not.toContain('--appium-url=http://127.0.0.1:4723');
-    expect(drawing.command).toBe('perf:ios:xcuitest:screen');
+    expect(drawing.command).toBe('perf:device:frames');
+    expect(drawing.args).toContain('--platform=android');
   });
 
   it('attaches a native run to the app WebView and never to a URL', () => {
@@ -159,8 +170,11 @@ describe('campaign plan', () => {
   // refused unknown. Only a command the classifier does not know maps to null.
   it('names every cell’s server source, with bare Appium cells as guarded defaults', () => {
     const withUrl = { ...HOST, url: 'http://127.0.0.1:4173/', deviceId: 'emulator-5554' };
-    const bare = plan('android-emulator-web', { modes: ['portrait-light'] });
-    const served = plan('android-emulator-web', { modes: ['portrait-light'], host: withUrl });
+    // The bare/served Appium-browser shapes now come from the iPad Simulator —
+    // the emulator's drawing is split-transport and appears as the second
+    // probe-host case below.
+    const bare = plan('ipad-simulator-web', { modes: ['portrait-light'] });
+    const served = plan('ipad-simulator-web', { modes: ['portrait-light'], host: withUrl });
     const split = plan('android-device-web', {
       modes: ['portrait-light'],
       host: { ...withUrl, probeHost: 'http://192.168.0.9:4175' },
@@ -171,6 +185,11 @@ describe('campaign plan', () => {
     expect(bare.every((cell) => cellServerSource(cell) === 'guarded-default')).toBe(true);
     expect(served.every((cell) => cellServerSource(cell) === 'explicit-url')).toBe(true);
     expect(cellServerSource(split.find((cell) => cell.item === 'crayon'))).toBe('probe-host');
+    const emulator = plan('android-emulator-web', {
+      modes: ['portrait-light'],
+      host: { ...withUrl, probeHost: 'http://192.168.0.9:4175' },
+    });
+    expect(cellServerSource(emulator.find((cell) => cell.item === 'crayon'))).toBe('probe-host');
     expect(native.every((cell) => cellServerSource(cell) === 'native-server-url')).toBe(true);
     expect(desktop.every((cell) => cellServerSource(cell) === 'self-served')).toBe(true);
     expect(cellServerSource({ command: 'perf:not-a-command', args: [] })).toBeNull();

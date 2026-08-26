@@ -97,15 +97,43 @@ describe('campaign resume', () => {
   it('still skips a cell whose artifact already parses', async () => {
     const root = scratch();
     seedLedger(`${root}/ledger.tsv`, MAX_ATTEMPTS);
-    const artifact = join(root, artifactPath('out', 'android-emulator-web', MODE, 'pen-undo'));
+    // ipad-simulator-web keeps the Appium-browser cell shape this test needs —
+    // the emulator's drawing is split-transport since the 60 Hz controls, and a
+    // split target refuses to plan without a probe host.
+    const artifact = join(root, artifactPath('out', 'ipad-simulator-web', MODE, 'pen-undo'));
     mkdirSync(dirname(artifact), { recursive: true });
-    // A real capture from this runner carries a fidelity verdict; the fixture used
-    // to omit it, which only passed while a missing verdict was tolerated globally.
-    writeFileSync(artifact, JSON.stringify({ transport: 'browser', fidelity: { passed: true } }));
+    // A real capture from this runner carries a fidelity verdict, a beat, AND
+    // its phase input — acceptance re-derives the verdict from the input by the
+    // matrix's own rule, so a stored pass with nothing behind it no longer
+    // banks. The fixture grew each field as the check that reads it landed.
+    writeFileSync(
+      artifact,
+      JSON.stringify({
+        transport: 'browser',
+        fidelity: { passed: true },
+        summaries: {
+          intervalMs: 16.7,
+          phases: [
+            {
+              input: {
+                kinds: 'touch',
+                trust: { share: 1 },
+                movesPerSecond: 116,
+                movesPerFrame: 1.9,
+                moveGapP95Ms: 9,
+                pressure: { p50: 0 },
+                contactWidth: { p50: 74 },
+                contactHeight: { p50: 74 },
+              },
+            },
+          ],
+        },
+      })
+    );
 
-    const { ran } = await run('android-emulator-web', root);
+    const { ran } = await run('ipad-simulator-web', root);
 
-    expect(campaignTarget('android-emulator-web').runtime).toBe('web');
+    expect(campaignTarget('ipad-simulator-web').runtime).toBe('web');
     expect(ran).toEqual([{ cell: CELL, status: 'already-valid' }]);
   });
 
@@ -114,11 +142,11 @@ describe('campaign resume', () => {
   // banked unscoreable cells as complete.
   it('refuses an artifact with no fidelity verdict from a runner that writes one', async () => {
     const root = scratch();
-    const artifact = join(root, artifactPath('out', 'android-emulator-web', MODE, 'pen-undo'));
+    const artifact = join(root, artifactPath('out', 'ipad-simulator-web', MODE, 'pen-undo'));
     mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(artifact, JSON.stringify({ transport: 'browser' }));
 
-    const { ran } = await run('android-emulator-web', root, ['--max-attempts=1']);
+    const { ran } = await run('ipad-simulator-web', root, ['--max-attempts=1']);
 
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
   });
@@ -132,7 +160,7 @@ describe('campaign resume', () => {
     const root = scratch();
     seedLedgerRow(`${root}/ledger.tsv`, `${UNCALIBRATED_RUNTIME}-exit-1`);
 
-    const { ran } = await run('ipad-simulator-native', root);
+    const { ran } = await run('android-emulator-native', root);
 
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
     const ledger = readFileSync(`${root}/ledger.tsv`, 'utf8');
@@ -167,10 +195,13 @@ describe('an uncalibrated-runtime row after the runtime is calibrated', () => {
   });
 
   // The scenario is real rather than hypothetical: this campaign introduced the
-  // status one PR before calibrating Android Chrome.
-  it('reads android-chrome as calibrated and the WebViews as not', () => {
+  // status one PR before calibrating Android Chrome, and the iPad WebView crossed
+  // the same line when the coalescing check was retired — its remaining
+  // expectations (pressure, contact geometry) are calibrated, so a banked
+  // uncalibrated-runtime verdict for it must not outlive that change either.
+  it('reads only the Android WebView as still uncalibrated', () => {
     expect(runtimeHasUncalibratedChecks('android-chrome')).toBe(false);
-    expect(runtimeHasUncalibratedChecks('ios-capacitor-webview')).toBe(true);
+    expect(runtimeHasUncalibratedChecks('ios-capacitor-webview')).toBe(false);
     expect(runtimeHasUncalibratedChecks('android-capacitor-webview')).toBe(true);
   });
 });

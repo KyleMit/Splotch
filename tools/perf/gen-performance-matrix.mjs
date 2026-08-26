@@ -13,10 +13,17 @@ import {
   summarizeActions,
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
-import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
-import { DEFAULT_CAPTURE_RUNTIME, inputFidelity } from './lib/input-fidelity.mjs';
+import { IN_REGIME, UNESTABLISHED_REGIME, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import {
+  DEFAULT_CAPTURE_RUNTIME,
+  describeFidelityFailures,
+  inputFidelity,
+  onlyUncalibratedChecksFailed,
+} from './lib/input-fidelity.mjs';
 import {
   CAMPAIGN_TARGETS,
+  anomalousEraserRefills,
+  eraserRefillShortfall,
   gesturePlanFor,
   recordedGesturePlan,
   recordedGestureRepeats,
@@ -242,6 +249,122 @@ function rederiveFidelity(profile, phases, captureRuntime) {
   return inputFidelity(phases?.[0]?.input ?? {}, captureRuntime);
 }
 
+// The per-run trust ledger issue 1304 asked for: one composed list answering
+// "can I trust this number?", built from the fields the instrument-fix stacks
+// accreted one by one — because a run fine on five RECORDED dimensions looked
+// identical to one fine on five with two unrecorded. A LIST, not a score: the
+// interesting case is always which guarantee is missing. Three states:
+// `verified` (measured and sound), `failed` (measured and not), `unrecorded`
+// (nothing measured — the state this structure exists to make visible).
+// `hostQuiet` is deliberately present and permanently unrecorded until a
+// measurement exists (issue 1304 names it as the first dimension designed into
+// the block): a capture taken on a busy host looks identical to a clean one,
+// and this row is what keeps that gap legible instead of forgotten. The
+// eraser-ink dimension appears only on runs that recorded fill machinery —
+// absence of an inapplicable dimension is not an absent guarantee.
+function composeRunTrust(
+  profile,
+  { fidelity, refreshRegime, gestureRepeats, gesturePlan, anomalousRefills, judgingRuntime }
+) {
+  const trust = [];
+  if (fidelity?.passed === true) {
+    trust.push({ name: 'inputFidelity', state: 'verified' });
+  } else if (fidelity?.passed === false && onlyUncalibratedChecksFailed(fidelity)) {
+    // Instrument silence, not capture failure: every real check passed and the
+    // only non-passes are checks the instrument has no measured expectation
+    // for. Publishing this as `failed` would brand every android-native run a
+    // bad capture at the campaign-end regen (the PR 1364 review's blocking
+    // finding); `unrecorded` is the ledger's own word for nothing-measured,
+    // and the (uncalibrated) suffix in the detail keeps the row self-explaining.
+    trust.push({
+      name: 'inputFidelity',
+      state: 'unrecorded',
+      detail: describeFidelityFailures(fidelity),
+    });
+  } else if (fidelity?.passed === false) {
+    trust.push({
+      name: 'inputFidelity',
+      state: 'failed',
+      detail: describeFidelityFailures(fidelity),
+    });
+  } else {
+    trust.push({ name: 'inputFidelity', state: 'unrecorded' });
+  }
+  if (refreshRegime?.verdict === IN_REGIME) {
+    trust.push({ name: 'refreshRegime', state: 'verified', detail: `${refreshRegime.observed}` });
+  } else if (refreshRegime?.verdict === UNESTABLISHED_REGIME) {
+    trust.push({
+      name: 'refreshRegime',
+      state: 'unrecorded',
+      // Unestablished only means the TARGET declares no regime — the beat
+      // itself may well have been measured, and it is the one thing worth
+      // carrying.
+      detail: refreshRegime.observed
+        ? `no established regime (measured ${refreshRegime.observed})`
+        : 'no established regime',
+    });
+  } else {
+    trust.push({ name: 'refreshRegime', state: 'failed', detail: refreshRegime?.verdict });
+  }
+  trust.push(
+    Number.isFinite(gestureRepeats)
+      ? { name: 'gestureRepeats', state: 'verified', detail: `${gestureRepeats}` }
+      : { name: 'gestureRepeats', state: 'unrecorded' }
+  );
+  trust.push(
+    typeof gesturePlan === 'string'
+      ? { name: 'gesturePlan', state: 'verified', detail: gesturePlan }
+      : { name: 'gesturePlan', state: 'unrecorded' }
+  );
+  const fill = profile?.eraserFill ?? null;
+  if (fill !== null || anomalousRefills !== null) {
+    const fillProblems = [];
+    if (fill === null) fillProblems.push('no setup fill recorded');
+    else if (fill.pending || (fill.transparentTiles?.length ?? 0) > 0) {
+      fillProblems.push('setup fill unsound');
+    }
+    if ((anomalousRefills?.length ?? 0) > 0) fillProblems.push('anomalous refills');
+    if (fillProblems.length) {
+      trust.push({ name: 'eraserInk', state: 'failed', detail: fillProblems.join(' + ') });
+    } else {
+      // A repaired fill is verified — the re-check proved opaque ink — but the
+      // recorded settle-wipe instability is evidence kept on purpose, so it
+      // rides the detail instead of vanishing into a bare verified.
+      trust.push(
+        fill.repairedAfterSettle
+          ? { name: 'eraserInk', state: 'verified', detail: 'repaired-after-settle' }
+          : { name: 'eraserInk', state: 'verified' }
+      );
+    }
+  }
+  const identity = profile?.pageIdentity ?? null;
+  if (identity === 'proven-by-url') {
+    trust.push({ name: 'pageIdentity', state: 'verified' });
+  } else {
+    trust.push({ name: 'pageIdentity', state: 'unrecorded', detail: identity ?? 'absent' });
+  }
+  // The stored label is the runner's day-of claim — the same frozen claim
+  // re-derivation exists to distrust — so it is `verified` only when it agrees
+  // with the runtime the run was actually judged under, and a disagreement is
+  // published as the contradiction it is rather than silently trusted (the
+  // PR 1364 review: the fallback's primary read is dead for drawing runs, so
+  // this row was fed exclusively by the stored fidelity label).
+  const storedRuntime = profile?.captureRuntime ?? profile?.fidelity?.runtime ?? null;
+  if (storedRuntime && storedRuntime === judgingRuntime) {
+    trust.push({ name: 'captureRuntime', state: 'verified', detail: storedRuntime });
+  } else if (storedRuntime) {
+    trust.push({
+      name: 'captureRuntime',
+      state: 'failed',
+      detail: `recorded ${storedRuntime}, judged as ${judgingRuntime}`,
+    });
+  } else {
+    trust.push({ name: 'captureRuntime', state: 'unrecorded' });
+  }
+  trust.push({ name: 'hostQuiet', state: 'unrecorded' });
+  return trust;
+}
+
 function normalizeDrawingRun(
   source,
   productCommit,
@@ -255,7 +378,11 @@ function normalizeDrawingRun(
   const summaries = profile.report ? summarizeRun(profile.report) : profile.summaries;
   const phases = summaries?.phases;
   const scored = scoreDrawingRun(phases ?? [], gateShare);
-  const refreshRegime = refreshRegimeVerdict(summaries?.intervalMs, expectedRefreshRegime);
+  const refreshRegime = refreshRegimeVerdict(
+    summaries?.intervalMs,
+    expectedRefreshRegime,
+    summaries?.regimeMixture
+  );
   const fidelity = rederiveFidelity(profile, phases, captureRuntime);
   const failedFidelityChecks = Object.entries(fidelity?.checks ?? {})
     .filter(([, passed]) => passed !== true)
@@ -275,6 +402,20 @@ function normalizeDrawingRun(
     // repeat count does. Null for artifacts predating the field. Same shared
     // reader as acceptance, so the two cannot drift.
     gesturePlan: recordedGesturePlan(profile),
+    // Same shared reader as acceptance (issue 1355): a capture whose refills
+    // recorded an anomaly measured erasing blank paper on later passes, so the
+    // fold below refuses it rather than publishing an optimistic cell.
+    anomalousEraserRefills: anomalousEraserRefills(profile),
+    eraserRefillShortfall: eraserRefillShortfall(profile, recordedGestureRepeats(profile)),
+    // One composed answer to "can I trust this number?" — see composeRunTrust.
+    trust: composeRunTrust(profile, {
+      fidelity,
+      refreshRegime,
+      gestureRepeats: recordedGestureRepeats(profile),
+      gesturePlan: recordedGesturePlan(profile),
+      anomalousRefills: anomalousEraserRefills(profile),
+      judgingRuntime: captureRuntime,
+    }),
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
     // Preserved cells carry normalized results and no beat, which is exactly why a
@@ -398,6 +539,42 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
           `${targetId} ${mode.id} ${brush} folds captures under different gesture plans ` +
             `(${plans.join(', ')}) — how each pass was fed ink is part of what the cell measured. ` +
             `Sources: ${planSources}`
+        );
+      }
+      // After the plan checks, mirroring acceptance's ordering so both readers
+      // name the same first problem: the plan states intent, the refills prove
+      // outcome. A run with a recorded anomaly, or a clean record SHORTER than
+      // the contract implies (repeats - 1: the refills never fired), measured
+      // erasing blank paper on later passes (issue 1355).
+      const refillFailures = runs.filter((run) => (run.anomalousEraserRefills?.length ?? 0) > 0);
+      if (refillFailures.length) {
+        const detail = refillFailures
+          .map(
+            (run) =>
+              `${run.source} (${run.anomalousEraserRefills
+                .map((refill) => JSON.stringify(refill))
+                .join(', ')})`
+          )
+          .join('; ');
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds a capture whose eraser refills recorded an ` +
+            `anomaly — its later passes erased blank paper, so the number measures the wrong ` +
+            `quantity (issue 1355). Recapture the cell. Sources: ${detail}`
+        );
+      }
+      const shortfalls = runs.filter((run) => run.eraserRefillShortfall !== null);
+      if (shortfalls.length) {
+        const detail = shortfalls
+          .map(
+            (run) =>
+              `${run.source} (recorded ${run.eraserRefillShortfall.recorded}, expected ` +
+              `${run.eraserRefillShortfall.expected})`
+          )
+          .join('; ');
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds a capture whose eraser refills never fired — ` +
+            `a clean record shorter than the contract proves the later passes erased blank ` +
+            `paper (issue 1355). Recapture the cell. Sources: ${detail}`
         );
       }
       // A single run is the published norm (one capture decides a cell), so the

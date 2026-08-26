@@ -8,6 +8,7 @@ import {
   recordedGestureRepeats,
 } from '../lib/campaign-plan.mjs';
 import {
+  ERASER_FILL_FAILED,
   COMPLETE,
   FAILED,
   OFF_REFRESH_REGIME,
@@ -525,5 +526,214 @@ describe('cellInspection', () => {
         target
       ).ok
     ).toBe(true);
+  });
+});
+
+// The refill record was proof nothing read (issue 1355): a capture whose
+// between-pass refills recorded an anomaly banked as a plausible number while
+// its later passes erased blank paper. Acceptance now reads the record the
+// in-page recorder deliberately keeps instead of throwing.
+describe('eraser refill acceptance (issue 1355)', () => {
+  const accepted = (eraserRefills) =>
+    inspectArtifact(artifactAt({ ...scoreable, eraserRefills }), 'web', {
+      verdictRequired: true,
+      expectedRefreshRegime: '60hz',
+    });
+
+  it('accepts verified refills and the absent-field historical tolerance', () => {
+    expect(accepted([{ afterStroke: 2, pending: false, transparentTiles: [] }])).toMatchObject({
+      ok: true,
+      status: COMPLETE,
+    });
+    expect(accepted(undefined)).toMatchObject({ ok: true, status: COMPLETE });
+    expect(accepted(null)).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it.each([
+    ['a pending refill', [{ afterStroke: 2, pending: true, transparentTiles: [] }]],
+    ['transparent tiles', [{ afterStroke: 4, pending: false, transparentTiles: [3, 7] }]],
+    ['a refill error', [{ afterStroke: 6, error: 'no live tiles to fill for the eraser' }]],
+  ])('refuses %s with the record as the reason', (_case, eraserRefills) => {
+    const verdict = accepted(eraserRefills);
+
+    expect(verdict).toMatchObject({ ok: false, status: ERASER_FILL_FAILED });
+    expect(verdict.anomalousRefills).toHaveLength(1);
+  });
+
+  // Present-but-malformed is an invalid artifact, exactly as a malformed plan or
+  // count is — never a historical absence.
+  it('treats a malformed refill record as an invalid artifact', () => {
+    expect(accepted('refilled fine, trust me')).toMatchObject({ ok: false, status: FAILED });
+  });
+
+  // The one refusal ordering that matters most: a capture that was barely driven
+  // has meaningless refills as well as a meaningless number, and
+  // UNCALIBRATED_RUNTIME must never be preempted by a retryable status.
+  it('reports the more fundamental rejection first', () => {
+    const underDriven = artifactAt({
+      ...scoreable,
+      fidelity: { passed: false, checks: { cadence: false }, uncalibrated: [] },
+      eraserRefills: [{ afterStroke: 2, pending: true }],
+    });
+
+    expect(inspectArtifact(underDriven, 'web', { verdictRequired: true })).toMatchObject({
+      ok: false,
+      status: UNSCOREABLE,
+    });
+  });
+});
+
+// The PR 1359 review's finding: acceptance read the STORED verdict while the
+// matrix re-derives, so a resumed campaign recaptured the sixteen banked
+// iPad-native cells whose capture-day verdicts predate the coalescing
+// retirement. With a judging runtime supplied, acceptance re-derives from the
+// artifact's own input stats and the two readers agree.
+describe('acceptance re-derives fidelity when it can', () => {
+  const healthyInput = {
+    kinds: 'touch',
+    trust: { share: 1 },
+    movesPerSecond: 115.5,
+    movesPerFrame: 1.93,
+    moveGapP95Ms: 16,
+    pressure: { p50: 0 },
+    contactWidth: { p50: 74 },
+    contactHeight: { p50: 74 },
+  };
+
+  it('accepts a banked capture whose stored verdict predates a table correction', () => {
+    const staleStored = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: false, checks: { coalescing: null }, uncalibrated: ['coalescing'] },
+      summaries: { intervalMs: 17, phases: [{ input: healthyInput }] },
+    });
+
+    expect(
+      inspectArtifact(staleStored, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('still refuses a bad capture whatever its stored verdict claims', () => {
+    const flattering = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: true },
+      summaries: {
+        intervalMs: 17,
+        phases: [{ input: { ...healthyInput, movesPerFrame: 0.44, moveGapP95Ms: 40 } }],
+      },
+    });
+
+    expect(
+      inspectArtifact(flattering, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+
+  // The PR 1368 review's blocking finding: the two readers disagreed on both
+  // absent-data boundaries, so a resumed campaign could bank an artifact the
+  // matrix judges differently. One rule now, shared in shape with the matrix's
+  // rederiveFidelity — pinned here from both sides.
+  it('refuses a fidelity-reporting artifact whose verdict block is missing, input or not', () => {
+    const noVerdict = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      summaries: { intervalMs: 17, phases: [{ input: healthyInput }] },
+    });
+
+    // Healthy input cannot substitute for the verdict the runner always
+    // writes: an artifact without one is stale or foreign. The status is the
+    // historic UNSCOREABLE the sibling missing-verdict tests pin.
+    expect(
+      inspectArtifact(noVerdict, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+
+  it('re-derives a failed verdict from missing phase input, never the stored claim', () => {
+    const flatteringNoInput = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: true },
+      summaries: { intervalMs: 17 },
+    });
+
+    expect(
+      inspectArtifact(flatteringNoInput, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+
+  it('re-derives a stored failing verdict the same way', () => {
+    const storedOnly = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: false, checks: { cadence: false }, uncalibrated: [] },
+      summaries: { intervalMs: 17 },
+    });
+
+    expect(
+      inspectArtifact(storedOnly, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+});
+
+// The PR 1363 review probed three unrecognized entry shapes through acceptance
+// and all three banked: the predicate failed open. An entry is now healthy only
+// when it affirmatively proves it, and a clean record SHORTER than the
+// contract implies (repeats - 1) proves the refills never fired.
+describe('eraser refill fail-closed hardening (PR 1363 review)', () => {
+  const accepted = (eraserRefills, expectedGestureRepeats = null) =>
+    inspectArtifact(artifactAt({ ...scoreable, eraserRefills }), 'web', {
+      verdictRequired: true,
+      expectedRefreshRegime: '60hz',
+      expectedGestureRepeats,
+    });
+
+  it.each([
+    [
+      'truthy-array pending (the pre-coercion recorder shape)',
+      [{ afterStroke: 2, pending: ['4096x4096 vs 100x100'], transparentTiles: [] }],
+    ],
+    ['an empty-object entry', [{}]],
+    ['a null entry', [null]],
+    ['a missing transparentTiles list', [{ afterStroke: 2, pending: false }]],
+  ])('refuses %s', (_case, eraserRefills) => {
+    expect(accepted(eraserRefills)).toMatchObject({ ok: false, status: ERASER_FILL_FAILED });
+  });
+
+  it('refuses a clean record shorter than the contract implies', () => {
+    const oneRefill = [{ afterStroke: 4, pending: false, transparentTiles: [] }];
+    const verdict = accepted(oneRefill, 10);
+
+    expect(verdict).toMatchObject({ ok: false, status: ERASER_FILL_FAILED });
+    expect(verdict.refillShortfall).toEqual({ recorded: 1, expected: 9 });
+  });
+
+  it('accepts a complete clean record against its contract', () => {
+    const nine = Array.from({ length: 9 }, (_, index) => ({
+      afterStroke: (index + 1) * 4,
+      pending: false,
+      transparentTiles: [],
+    }));
+
+    expect(accepted(nine, 10)).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('keeps the historical tolerances: absent field, and no repeat contract', () => {
+    expect(accepted(undefined, 10)).toMatchObject({ ok: true, status: COMPLETE });
+    const oneRefill = [{ afterStroke: 4, pending: false, transparentTiles: [] }];
+    expect(accepted(oneRefill, null)).toMatchObject({ ok: true, status: COMPLETE });
   });
 });

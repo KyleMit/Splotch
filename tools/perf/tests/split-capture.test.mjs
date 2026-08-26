@@ -227,31 +227,56 @@ describe('classifyInputCadence', () => {
     expect(detail).toContain('never reached it');
   });
 
-  it('fails the Appium Android transport at its measured rate', () => {
-    // 46.8 moves/s is what the campaign measured, and every cell captured that
-    // way was unscoreable while parsing perfectly.
-    const { ok, detail } = classifyInputCadence({ movesPerSecond: 46.8, moveGapP95Ms: 21 });
+  it('fails the Appium Android transport at its measured density', () => {
+    // 46.8 moves/s at 0.44 moves per frame is what the campaign measured, and
+    // every cell captured that way was unscoreable while parsing perfectly.
+    const { ok, detail } = classifyInputCadence({
+      movesPerSecond: 46.8,
+      movesPerFrame: 0.44,
+      moveGapP95Ms: 21,
+    });
 
     expect(ok).toBe(false);
     expect(detail).toContain('46.8');
     expect(detail).toContain('cannot be scored');
   });
 
-  it('passes the split transport at its measured rate', () => {
-    expect(classifyInputCadence({ movesPerSecond: 116.6, moveGapP95Ms: 11 }).ok).toBe(true);
+  it('passes the split transport at its measured density', () => {
+    expect(
+      classifyInputCadence({ movesPerSecond: 116.6, movesPerFrame: 0.97, moveGapP95Ms: 11 }).ok
+    ).toBe(true);
+  });
+
+  // The case the rate floor wrongly rejected (ADR-0145): a 60 Hz-locked device
+  // driven perfectly delivers ~60 moves/s and cannot do otherwise — the emulator
+  // measures 1.09 moves per frame and desktop WebKit exactly 1.0.
+  it('passes a 60 Hz-locked stream at full density', () => {
+    expect(
+      classifyInputCadence({ movesPerSecond: 60.1, movesPerFrame: 1, moveGapP95Ms: 19 }).ok
+    ).toBe(true);
+  });
+
+  it('fails a live capture that did not measure density', () => {
+    expect(classifyInputCadence({ movesPerSecond: 116.6, moveGapP95Ms: 11 }).ok).toBe(false);
   });
 
   // 240 was written as obviously-too-fast. A real finger on the target iPad
   // measured 268.4 on 2026-08-23, so the rate this asserted on is one a hand
   // produces — the ceiling is retired and an excess rate is reported instead.
   it('accepts a rate above the retired ceiling, because a hand reaches it', () => {
-    expect(classifyInputCadence({ movesPerSecond: 240, moveGapP95Ms: 4 }).ok).toBe(true);
+    expect(
+      classifyInputCadence({ movesPerSecond: 240, movesPerFrame: 2, moveGapP95Ms: 4 }).ok
+    ).toBe(true);
   });
 
   it('fails a stalling stream even when the mean rate looks fine', () => {
     // A burst-then-stall pattern averages into the band while presenting nothing
     // like a steady cadence.
-    const { ok, detail } = classifyInputCadence({ movesPerSecond: 120, moveGapP95Ms: 45 });
+    const { ok, detail } = classifyInputCadence({
+      movesPerSecond: 120,
+      movesPerFrame: 1,
+      moveGapP95Ms: 45,
+    });
 
     expect(ok).toBe(false);
     expect(detail).toContain('stalls');
@@ -263,6 +288,7 @@ describe('classifyInputCadence', () => {
     // check permanently red and therefore useless.
     const android = {
       movesPerSecond: 116.6,
+      movesPerFrame: 0.97,
       moveGapP95Ms: 11,
       pressure: { p50: 1 },
       contactWidth: { p50: 0 },

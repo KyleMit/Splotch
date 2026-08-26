@@ -8,6 +8,8 @@
 // one writes. Host identity — device ids, capability files, preview URLs — stays an
 // input, so nothing device-specific is committed.
 
+import { inputFidelity } from './input-fidelity.mjs';
+
 export const CAMPAIGN_MODES = [
   { id: 'portrait-light', orientation: 'PORTRAIT', theme: 'light' },
   { id: 'portrait-dark', orientation: 'PORTRAIT', theme: 'dark' },
@@ -93,12 +95,23 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-emulator-web': {
     captureRuntime: 'android-chrome',
-    refreshRegime: null,
+    // Measured from the 2026-08-26-emulator-regime-bootstrap capture: 16.7 ms
+    // beat across 3510 in-contact frames, the emulator's display emulated at a
+    // fixed 60 Hz. Declared via the bank-then-declare bootstrap the moment the
+    // ADR-0145 density floor made an emulator capture fidelity-passing at all;
+    // refresh-regime.test.mjs pins the corpus.
+    refreshRegime: '60hz',
     deviceClass: 'handset',
+    // Drawing through the ADR-0135 split transport, exactly as the physical
+    // phone: the Appium browser path measures 0.82 moves/frame here with
+    // per-run main-thread-stall distortion no stream statistic separates from
+    // real starvation (2026-08-26-appium-60hz-controls), while adb split input
+    // measures 1.09 and banked the regime evidence. Actions stay on direct CDP
+    // (ADR-0092).
     label: 'Android emulator · web',
-    transport: 'appium',
+    transport: SPLIT_TRANSPORT,
+    splitPlatform: 'android',
     runtime: 'web',
-    // ADR-0092: browser frames come from Appium, browser actions from direct CDP.
     actionsTransport: 'cdp',
     webviewClass: 'android.webkit.WebView',
   },
@@ -157,7 +170,11 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-device-native': {
     captureRuntime: 'android-capacitor-webview',
-    refreshRegime: null,
+    // Measured from the 2026-08-24-hand-native real-finger captures: both report an
+    // 8.3 ms beat in the installed Capacitor WebView on the SM-G990U1 — the same
+    // panel android-device-web is established at. Declared from those captures, not
+    // inferred from the sibling; refresh-regime.test.mjs pins the corpus.
+    refreshRegime: '120hz',
     deviceClass: 'handset',
     label: 'Android device · native',
     transport: 'appium',
@@ -192,8 +209,36 @@ export function artifactMatchesRuntime(artifact, runtime) {
 // is mandatory. So tolerance is granted per transport rather than globally, and a
 // runner that always writes a verdict has an absent one treated as no verdict at
 // all rather than as consent.
-export function artifactPassedFidelity(artifact, { verdictRequired = false } = {}) {
-  const passed = artifact?.fidelity?.passed;
+// The verdict is RE-DERIVED by exactly the matrix's algorithm (the PR 1368
+// review's blocking finding: the two readers disagreed on both absent-data
+// boundaries, so a resumed campaign could bank an artifact the matrix judges
+// differently). One rule, shared in shape with `rederiveFidelity`:
+//
+// - No stored `fidelity` block → null. The stored block is what marks a
+//   fidelity-reporting capture; whether its absence refuses is
+//   `verdictRequired`'s question, answered by the caller — never re-derive a
+//   verdict for a transport that legitimately reports none (desktop, actions).
+// - Stored block present and a judging runtime supplied → re-derive from the
+//   recorded phase input, `{}` when the input is missing. A fidelity-reporting
+//   artifact with no input re-derives to a FAILED verdict (trusted touch
+//   cannot pass on nothing), exactly as the matrix scores it — a flattering
+//   stored verdict with no measurements behind it is not a pass.
+// - Stored block present, no judging runtime → the stored verdict, as banked.
+export function effectiveFidelity(artifact, captureRuntime = null) {
+  if (!artifact?.fidelity) return null;
+  if (captureRuntime) {
+    const input = artifact?.summaries?.phases?.[0]?.input;
+    return inputFidelity(input && typeof input === 'object' ? input : {}, captureRuntime);
+  }
+  return artifact.fidelity;
+}
+
+export function artifactPassedFidelity(
+  artifact,
+  { verdictRequired = false, captureRuntime = null } = {}
+) {
+  const verdict = effectiveFidelity(artifact, captureRuntime);
+  const passed = verdict?.passed;
   if (passed === undefined) return !verdictRequired;
   return passed === true;
 }
@@ -696,4 +741,63 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
     throw new Error(`Campaign plan would overwrite ${duplicate} — output paths must be unique`);
   }
   return plan;
+}
+
+// The refill entries that prove an eraser capture's passes 2..N erased real ink
+// (issue 1302 records them; issue 1355 decided they invalidate). The in-page
+// recorder deliberately records an anomaly rather than throwing — aborting
+// mid-gesture would destroy the capture the evidence exists to judge — and THIS
+// is the reader that decision was waiting on: acceptance refuses the artifact,
+// the matrix refuses the fold, and the recorded proof is what both act on.
+//
+// Null means the field is absent: a non-eraser capture, or an artifact banked
+// before the recorder existed — accepted by the same standing decision as the
+// absent plan, with the pre-refill eraser numbers already marked optimistic and
+// superseded. A present field that is not an array is a malformed artifact and
+// throws, exactly as a malformed plan or count does. An entry is anomalous when
+// the refill errored, was still pending (backings not realized — the fill would
+// have been wiped), or left transparent tiles (passes after it erased nothing).
+export function anomalousEraserRefills(artifact) {
+  const recorded = artifact?.eraserRefills ?? null;
+  if (recorded === null) return null;
+  if (!Array.isArray(recorded)) {
+    throw new Error(
+      `the artifact records eraserRefills ${JSON.stringify(recorded)}, which is not a list — ` +
+        'a malformed refill record is an invalid artifact, not a historical one'
+    );
+  }
+  // FAIL CLOSED at the entry level (the PR 1363 review probed truthy-array
+  // `pending` — the recorder's own pre-coercion shape — plus `{}` and `null`
+  // entries through acceptance, and all three banked): an entry is healthy only
+  // when it affirmatively proves it, and any shape this reader does not
+  // recognize counts as anomalous rather than as consent.
+  return recorded.filter((refill) => !healthyRefillEntry(refill));
+}
+
+function healthyRefillEntry(refill) {
+  return (
+    refill !== null &&
+    typeof refill === 'object' &&
+    refill.error === undefined &&
+    refill.pending === false &&
+    Array.isArray(refill.transparentTiles) &&
+    refill.transparentTiles.length === 0
+  );
+}
+
+// The refill recorder is armed with (strokesPerRepeat, repeats x
+// strokesPerRepeat) and refills after every repeat's last stroke except the
+// final one, so a complete eraser capture records exactly repeats - 1 entries.
+// Fewer means refills silently never fired — zero recorded anomalies while the
+// later passes erased blank paper, the exact state the record exists to refuse
+// (the review's finding: the record proves recorded anomalies, not that
+// refills happened). Null when there is nothing to hold to a count: an absent
+// field (historical tolerance) or no expected repeat contract.
+export function eraserRefillShortfall(artifact, expectedRepeats) {
+  const recorded = artifact?.eraserRefills ?? null;
+  if (recorded === null || !Array.isArray(recorded)) return null;
+  if (!Number.isFinite(expectedRepeats) || expectedRepeats < 2) return null;
+  const expectedRefills = expectedRepeats - 1;
+  if (recorded.length === expectedRefills) return null;
+  return { recorded: recorded.length, expected: expectedRefills };
 }

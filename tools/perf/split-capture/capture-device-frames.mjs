@@ -14,6 +14,7 @@
 // contact moves per second against a 100-170 fidelity band, so cells captured
 // through it cannot be scored. This path clears the band.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { eraserRefillArming } from '../lib/eraser-fill.mjs';
 import { dirname, join } from 'node:path';
 import {
   argFlag,
@@ -385,6 +386,10 @@ export async function captureDeviceFrames({
   cdpPort = parsePositivePort(argFlag('cdp-port', PORT_ROLES.androidCdp.port), 'cdp-port'),
   wdaUrl = argFlag('wda-url', 'http://127.0.0.1:8100'),
   label = argFlag('label'),
+  // Without --output the composed artifact (fidelity, summaries, provenance) is
+  // printed and DISCARDED — only the raw page report lands in --report-dir. A
+  // capture meant to be banked or promoted to evidence must pass --output; a
+  // session lost a clean emulator capture to this before noticing.
   output = argFlag('output'),
   reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
   allowForeignBuild = process.argv.includes('--allow-foreign-build'),
@@ -428,8 +433,7 @@ export async function captureDeviceFrames({
     eraserRefill:
       brush === 'eraser'
         ? {
-            everyStrokes: STROKES_PER_GESTURE_REPEAT,
-            totalStrokes: repeats * STROKES_PER_GESTURE_REPEAT,
+            ...eraserRefillArming(repeats, STROKES_PER_GESTURE_REPEAT),
           }
         : null,
     finish: false,

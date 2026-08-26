@@ -1,3 +1,6 @@
+import { FIDELITY_MOVES_PER_FRAME_MIN } from './input-fidelity.mjs';
+import { regimeMixture } from './refresh-regime.mjs';
+
 // Turns the raw tables `real-screen-probe.js` records into the numbers a human
 // reads. Pure functions, no I/O: the device driver (`perf:ios:webkit:frames`), the
 // re-analyzer (`perf:analyze:frames`) and the Playwright replication feed it the
@@ -30,8 +33,10 @@ const LATE_FRAME_SHARE_FLOOR = 0.1;
 // runs AHEAD of the 60 Hz rAF beat — measured 1.9–4.2 moves per painted frame
 // with an Apple Pencil. Far below 1 means the moves never arrived at all (input
 // loss); far above 1 means the app is doing per-event work more than once per
-// frame it can actually present.
-const MOVES_PER_FRAME_FLOOR = 0.6;
+// frame it can actually present. The floor is the fidelity gate's own
+// (ADR-0145), imported so the diagnostic and the gate cannot disagree about
+// what an under-driven stream is.
+const MOVES_PER_FRAME_FLOOR = FIDELITY_MOVES_PER_FRAME_MIN;
 const MOVES_PER_FRAME_REDUNDANT = 1.5;
 // Input that sat this long before its handler ran is felt as lag even when
 // every frame afterwards is on time.
@@ -852,6 +857,26 @@ function labelPhases(phases) {
 // the one an artifact exists to outlive its maths with — vanished from every
 // saved `summaries`. The row builders below still take the phase array, so they
 // stay pure and independently testable.
+// One delta run per unbroken contact stretch, using the module's own frame
+// column names; resets at any non-contact frame so downstream run detection
+// cannot leak across lifts.
+function contactDeltaSegments(frames) {
+  const segments = [];
+  let current = null;
+  for (const frame of frames) {
+    if (frame[FRAME_CONTACT] === 1) {
+      if (!current) {
+        current = [];
+        segments.push(current);
+      }
+      current.push(frame[FRAME_DT]);
+      continue;
+    }
+    current = null;
+  }
+  return segments;
+}
+
 export function summarizeRun(report) {
   const { phases = [], meta = {} } = report;
   const frames = report.frames ?? [];
@@ -864,6 +889,13 @@ export function summarizeRun(report) {
   };
   return {
     intervalMs: tables.intervalMs,
+    // The in-contact band mixture the regime verdict demotes on: `intervalMs`
+    // alone reports one dominant beat, and an adaptive panel can hold sustained
+    // stretches at the other rate inside the same capture. Run-level rather
+    // than per-phase because the verdict is formed against the run-level beat.
+    // Segmented per unbroken contact stretch so a run cannot be concatenated
+    // across a lift (the same adjacency discipline `longStrokeTrend` applies).
+    regimeMixture: regimeMixture(contactDeltaSegments(frames), tables.intervalMs),
     phases: labelPhases(phases).map((phase) => summarizePhase(phase, tables)),
   };
 }

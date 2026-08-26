@@ -53,7 +53,7 @@ export async function campaignStatus({
   ledgerPath = argFlag('ledger'),
 } = {}) {
   if (!targetId) fail('--target= is required');
-  const { runtime, refreshRegime } = campaignTarget(targetId);
+  const { runtime, refreshRegime, captureRuntime } = campaignTarget(targetId);
   const plan = planCampaign(targetId, { outputRoot, host: {} });
   const ledger = absolute(ledgerPath ?? `${outputRoot}/${targetId}/ledger.tsv`);
   const ledgerRows = existsSync(ledger) ? parseLedger(readFileSync(ledger, 'utf8')) : [];
@@ -65,7 +65,7 @@ export async function campaignStatus({
   const { total, done, outstanding } = campaignProgress(plan, {
     runtime,
     ledgerRows,
-    inspect: (cell) => cellInspection(cell, { runtime, refreshRegime }),
+    inspect: (cell) => cellInspection(cell, { runtime, refreshRegime, captureRuntime }),
   });
 
   console.log(`${targetId}: ${done.length}/${total} cells complete`);

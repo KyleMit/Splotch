@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
@@ -9,6 +9,7 @@ import {
   DEFAULT_CAPTURE_RUNTIME,
   captureRuntime,
   describeFidelityFailures,
+  FIDELITY_MOVES_PER_FRAME_MIN,
   inputFidelity,
   numberInvalidatingFailure,
 } from '../lib/input-fidelity.mjs';
@@ -63,11 +64,12 @@ describe('every campaign target names a runtime the table knows', () => {
 describe('the 2026-08-23 iPad corpus', () => {
   const verdicts = verdictsFor('2026-08-23-ipad-main');
 
-  // The measurement this whole split rests on: same device, same night, same
-  // gesture at the same cadence, and the two runtimes disagree only on how they
-  // package the samples. Safari coalesces nothing; the WKWebView coalesces about
-  // one sample per move. If this stops holding, the table is describing a runtime
-  // that has changed and the entry has to be re-measured rather than widened.
+  // The bundled-delivery legs of the issue-1303 table, pinned to the corpus that
+  // measured them: at matched cadence on the same device the same night, Safari
+  // (remote HTTP) reports an empty coalesced-events list while the bundled
+  // WKWebView reports a populated one (~1 per move — the event itself, plus
+  // occasional doubles). This corpus fact is the evidence the check's retirement
+  // rests on; if it stops holding, the retirement's premises have changed.
   it('separates Safari from the Capacitor WKWebView on coalescing alone', () => {
     const safari = verdicts.filter((v) => v.target === 'ipad-device-web');
     const webview = verdicts.filter((v) => v.target === 'ipad-device-native');
@@ -91,25 +93,28 @@ describe('the 2026-08-23 iPad corpus', () => {
     }
   });
 
-  // The WKWebView's own coalescing expectation is UNCALIBRATED, so the runtime does
-  // not pass — and must not, until a known-bad WKWebView capture establishes what
-  // separates a driven capture from an under-driven one there. Everything else about
-  // these captures is faithful, which is exactly the distinction `uncalibrated`
-  // exists to make: the instrument is silent, the capture is not bad.
-  it('holds the WKWebView unscoreable on coalescing alone', () => {
+  // These four captures were held unscoreable by coalescing alone — first by a
+  // Safari-shaped `=== 0`, then by an UNCALIBRATED entry awaiting a known-bad
+  // capture. The delivery experiments (issue 1303) showed the value tracks page
+  // delivery rather than input, so the check is retired everywhere and the same
+  // banked captures now pass on the checks that do discriminate.
+  it('passes the WKWebView with coalescing excluded as a named witness', () => {
     for (const sample of verdicts.filter((v) => v.target === 'ipad-device-native')) {
       expect({ cell: `${sample.target}/${sample.brush}`, ...sample.fidelity }).toMatchObject({
-        passed: false,
-        uncalibrated: ['coalescing'],
+        passed: true,
+        uncalibrated: [],
         checks: { trustedTouch: true, cadence: true, pressure: true, contactGeometry: true },
       });
+      expect(sample.fidelity.notApplicable).toContain('coalescing');
     }
   });
 
-  // The negative control that stopped `> 0` being adopted: an under-driven Android
-  // Capacitor WebView at 47.81 contact moves/s also reported more than zero
-  // coalesced samples, so an inverted expectation would have passed exactly the
-  // capture it exists to reject.
+  // The negative control that stopped `> 0` being adopted, kept as history: an
+  // under-driven Android Capacitor WebView at 47.81 contact moves/s also reported
+  // more than zero coalesced samples, so an inverted expectation would have
+  // passed exactly the capture it exists to reject. Under the retirement the
+  // check is asked of no runtime — and the under-driven capture is still refused,
+  // by cadence, which is the check that actually discriminates.
   it('records why more-than-zero coalescing is not a discriminator', () => {
     const underDrivenWebView = {
       kinds: 'touch',
@@ -118,18 +123,11 @@ describe('the 2026-08-23 iPad corpus', () => {
       moveGapP95Ms: 40,
       coalescedPerMove: 1.05,
     };
+    const verdict = inputFidelity(underDrivenWebView, 'ios-capacitor-webview');
 
-    expect(inputFidelity(underDrivenWebView, 'ios-capacitor-webview').checks.coalescing).toBeNull();
-    expect(inputFidelity(underDrivenWebView, 'ios-capacitor-webview').passed).toBe(false);
-  });
-
-  // The Safari entry is untouched by any of that: it still has to reject a capture
-  // whose samples arrive coalesced, which is what catches an under-driven
-  // WebDriverAgent transport there.
-  it('still rejects a coalescing capture judged as Safari', () => {
-    const webview = verdicts.find((v) => v.target === 'ipad-device-native');
-
-    expect(inputFidelity(webview.input, 'ios-safari').checks.coalescing).toBe(false);
+    expect(Object.keys(verdict.checks)).not.toContain('coalescing');
+    expect(verdict.passed).toBe(false);
+    expect(describeFidelityFailures(verdict)).toContain('cadence');
   });
 });
 
@@ -268,7 +266,13 @@ describe('the runtime the 2026-08-23 hand corpus calibrated', () => {
   // its own reference input is measuring the digitizer, not the fidelity.
   it('accepts the rates a real hand actually produced on both devices', () => {
     const phone = inputFidelity(
-      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 177.97, moveGapP95Ms: 16.7 },
+      {
+        kinds: 'touch',
+        trust: { share: 1 },
+        movesPerSecond: 177.97,
+        movesPerFrame: 1.47,
+        moveGapP95Ms: 16.7,
+      },
       'android-chrome'
     );
     const ipad = inputFidelity(
@@ -276,6 +280,7 @@ describe('the runtime the 2026-08-23 hand corpus calibrated', () => {
         kinds: 'touch',
         trust: { share: 1 },
         movesPerSecond: 268.39,
+        movesPerFrame: 2.33,
         moveGapP95Ms: 16,
         coalescedPerMove: 0,
         pressure: { p50: 0 },
@@ -294,6 +299,7 @@ describe('a capture with no recorded runtime', () => {
   const calibratedSafari = {
     kinds: 'touch',
     movesPerSecond: 121,
+    movesPerFrame: 2,
     moveGapP95Ms: 9,
     coalescedPerMove: 0,
     trust: { share: 1 },
@@ -380,5 +386,182 @@ describe('numberInvalidatingFailure', () => {
     expect(
       numberInvalidatingFailure({ passed: false, checks: { trustedTouch: false, cadence: true } })
     ).toBe(true);
+  });
+});
+
+// Cadence gates on density — moves per observed frame — with the rate floor
+// surviving only as the legacy branch for artifacts that predate the field
+// (ADR-0145). Every fixture here uses android-chrome, whose other checks are
+// not-applicable, so `passed` isolates the cadence verdict.
+describe('cadence as a density floor (ADR-0145)', () => {
+  const verdict = (input) =>
+    inputFidelity({ kinds: 'touch', trust: { share: 1 }, ...input }, 'android-chrome');
+
+  // The case the rate floor wrongly rejected: a 60 Hz-locked device driven
+  // perfectly cannot exceed ~60 moves/s. The emulator measures 1.09 moves per
+  // frame at 65 moves/s and desktop WebKit exactly 1.0 at 60 — both denser than
+  // the physical phone capture that passes (0.97).
+  it('passes a 60 Hz-locked stream at full density', () => {
+    expect(
+      verdict({ movesPerSecond: 60.1, movesPerFrame: 1, moveGapP95Ms: 19 }).checks.cadence
+    ).toBe(true);
+  });
+
+  // The founding defect, judged by what actually made it a defect: frames going
+  // by with no input in them — not the rate, which merely correlated with it.
+  it('fails the under-driven transport on density even at a healthy-looking rate', () => {
+    expect(
+      verdict({ movesPerSecond: 46.8, movesPerFrame: 0.44, moveGapP95Ms: 21 }).checks.cadence
+    ).toBe(false);
+    expect(
+      verdict({ movesPerSecond: 120, movesPerFrame: 0.44, moveGapP95Ms: 21 }).checks.cadence
+    ).toBe(false);
+  });
+
+  // Present-but-broken is a failed measurement, not a legacy artifact: only the
+  // field's ABSENCE selects the rate branch.
+  it('fails a present non-finite density rather than falling back to rate', () => {
+    for (const movesPerFrame of [null, NaN, Infinity, 'high']) {
+      expect(
+        verdict({ movesPerSecond: 154, movesPerFrame, moveGapP95Ms: 10 }).checks.cadence,
+        String(movesPerFrame)
+      ).toBe(false);
+    }
+  });
+
+  // No rate fallback for an absent density: the PR 1361 review proved every
+  // artifact this gate has ever scored carries the field (summarizeRun writes
+  // it unconditionally, 0 not undefined, since before the gate existed), so
+  // the only input reaching a fallback is a doctored block — the field-omission
+  // dodge fail-closed must refuse. And a density whose RATE half is missing or
+  // zero (a truncated phase banks movesPerSecond 0) is not a measured stream.
+  it('fails closed on an absent density and on an unmeasured rate', () => {
+    expect(verdict({ movesPerSecond: 121, moveGapP95Ms: 9 }).checks.cadence).toBe(false);
+    expect(verdict({ movesPerSecond: 46.8, moveGapP95Ms: 21 }).checks.cadence).toBe(false);
+    expect(verdict({ movesPerSecond: 0, movesPerFrame: 1.9, moveGapP95Ms: 9 }).checks.cadence).toBe(
+      false
+    );
+    expect(verdict({ movesPerFrame: 1.9, moveGapP95Ms: 9 }).checks.cadence).toBe(false);
+  });
+
+  // The gap cap is burstiness's own check and applies on both branches. 25 ms is
+  // 1.5x the slowest supported beat: the healthy corpus tops out at 19 (36/36
+  // 60 Hz-paced desktop WebKit phases) and the founding under-driven capture
+  // reads 40.
+  it('caps the p95 gap at 25 ms', () => {
+    expect(
+      verdict({ movesPerSecond: 116, movesPerFrame: 0.97, moveGapP95Ms: 25 }).checks.cadence
+    ).toBe(true);
+    expect(
+      verdict({ movesPerSecond: 116, movesPerFrame: 0.97, moveGapP95Ms: 40 }).checks.cadence
+    ).toBe(false);
+    expect(
+      verdict({ movesPerSecond: 121, movesPerFrame: 2, moveGapP95Ms: 40 }).checks.cadence
+    ).toBe(false);
+  });
+});
+
+// The negative side of the density calibration, as a re-scorable tracked capture
+// rather than a number quoted in prose (the campaign's own provenance rule,
+// applied to its own founding defect): the ADR-0135-rejected Appium browser
+// transport, deliberately re-driven on the physical phone for ADR-0145.
+describe('the under-driven negative control (ADR-0145)', () => {
+  const [control] = corpusInputs('2026-08-25-underdriven-control');
+
+  it('reproduces the founding defect and is refused on cadence', () => {
+    expect(control.input.movesPerFrame).toBeGreaterThan(0.3);
+    expect(control.input.movesPerFrame).toBeLessThan(FIDELITY_MOVES_PER_FRAME_MIN);
+    expect(control.input.movesPerSecond).toBeLessThan(61);
+
+    const verdict = inputFidelity(control.input, 'android-chrome');
+    expect(verdict.checks.trustedTouch).toBe(true);
+    expect(verdict.checks.cadence).toBe(false);
+    expect(describeFidelityFailures(verdict)).toBe('cadence');
+  });
+});
+
+// The 60 Hz half of the calibration, measured after the PR 1361 review ran the
+// experiment ADR-0145 admitted was missing and falsified its narrowing: the
+// rejected Appium browser transport measures 0.82 moves/frame on every run
+// (five total — three in the review thread, two banked), and its distortion is
+// a per-run lottery no stream statistic separates (run A: fake 6.84% lost at
+// 0.11 ms/frame engine work; run B: genuinely 0.00% — identical density and
+// gap stats). Only the density it cannot exceed fences it, which is what moved
+// the floor from 0.6 to 0.9.
+describe('the 60 Hz negative controls (ADR-0145, revised)', () => {
+  const controls = corpusInputs('2026-08-26-appium-60hz-controls');
+
+  it('holds both banked runs at 0.82 and refuses each on cadence', () => {
+    expect(controls).toHaveLength(2);
+    for (const control of controls) {
+      expect(control.input.movesPerFrame).toBe(0.82);
+      const verdict = inputFidelity(control.input, 'android-chrome');
+      expect(verdict.checks.cadence).toBe(false);
+      expect(describeFidelityFailures(verdict)).toBe('cadence');
+    }
+  });
+
+  it('pins the floor between the measured sides', () => {
+    const passes = (movesPerFrame) =>
+      inputFidelity(
+        {
+          kinds: 'touch',
+          trust: { share: 1 },
+          movesPerSecond: 60,
+          movesPerFrame,
+          moveGapP95Ms: 19,
+        },
+        'android-chrome'
+      ).checks.cadence;
+
+    expect(FIDELITY_MOVES_PER_FRAME_MIN).toBe(0.9);
+    expect(passes(0.82)).toBe(false);
+    expect(passes(0.9)).toBe(true);
+    expect(passes(0.96)).toBe(true);
+  });
+});
+
+// The GOOD side of the density calibration, bound to the tracked population
+// (the PR 1368 review: the bad side was corpus-pinned while 0.96 — the stated
+// healthy floor the margins lean on — was only a synthetic fixture, so healthy
+// evidence drifting below the gate floor could bank without this failing).
+// Excludes exactly the two deliberate negative-control corpora; a population
+// floor makes silent shrinkage fail loudly, and the 0.96 assertion fails in
+// the direction that requires re-deriving the floor rather than widening it.
+describe('the healthy density population (ADR-0145)', () => {
+  const NEGATIVE_CONTROL_CORPORA = new Set([
+    '2026-08-25-underdriven-control',
+    '2026-08-26-appium-60hz-controls',
+  ]);
+
+  it('keeps every tracked healthy phase above the floor, with 0.96 the observed minimum', () => {
+    const densities = [];
+    for (const campaign of readdirSync(EVIDENCE)) {
+      if (NEGATIVE_CONTROL_CORPORA.has(campaign)) continue;
+      const dir = join(EVIDENCE, campaign);
+      if (!statSync(dir).isDirectory()) continue;
+      for (const file of readdirSync(dir)) {
+        if (!file.endsWith('.json') || file === 'index.json') continue;
+        let capture;
+        try {
+          capture = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+        } catch {
+          continue;
+        }
+        for (const phase of capture.summaries?.phases ?? []) {
+          const input = phase.input;
+          if (!input || !Number.isFinite(input.movesPerFrame) || !(input.movesPerSecond > 0)) {
+            continue;
+          }
+          densities.push({ id: `${campaign}/${file}#${phase.key}`, value: input.movesPerFrame });
+        }
+      }
+    }
+
+    expect(densities.length).toBeGreaterThanOrEqual(160);
+    for (const { id, value } of densities) {
+      expect(value, id).toBeGreaterThanOrEqual(FIDELITY_MOVES_PER_FRAME_MIN);
+    }
+    expect(Math.min(...densities.map(({ value }) => value))).toBeGreaterThanOrEqual(0.96);
   });
 });

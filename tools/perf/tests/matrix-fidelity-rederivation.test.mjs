@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { normalizeMatrix } from '../gen-performance-matrix.mjs';
+import { onlyUncalibratedChecksFailed } from '../lib/input-fidelity.mjs';
 
 // The tracked corpus holds one real capture per target and brush (ADR-0138), all
 // four of these taken LANDSCAPE-dark, so a one-mode manifest over them exercises the
@@ -58,38 +59,38 @@ describe('a matrix cell re-derives its input-fidelity verdict', () => {
   // grounds that a frozen number describes a superseded metric. The fidelity verdict
   // was the one thing left frozen, so a correction to the expectations reached
   // published cells only through device time.
+  // Re-derivation is what lets a check-level decision reach published cells
+  // without device time: these sixteen native cells were held unscoreable first
+  // by a Safari-shaped `=== 0` expectation, then by an UNCALIBRATED entry, and
+  // the delivery experiments retired the check itself (see the coalescing block
+  // in input-fidelity.mjs). Same banked captures, now scoreable.
   it('judges a Capacitor WKWebView capture by the WKWebView expectations', () => {
     const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
 
     for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
       const run = runs[brush].runs[0];
       expect(run.fidelity.runtime).toBe('ios-capacitor-webview');
-      // Everything the WKWebView has a calibrated expectation for passes. What holds
-      // it unscoreable is `coalescing`, which has none: the healthy corpus shows the
-      // runtime coalesces, and the under-driven Android WebView probe shows that
-      // coalescing does not separate a driven capture from an under-driven one
-      // (ADR-0139).
-      expect(run.fidelity.uncalibrated).toEqual(['coalescing']);
-      expect(run.fidelity.passed).toBe(false);
-      expect(runs[brush].aggregate.failedFidelityChecks).toEqual(['coalescing']);
-      expect(runs[brush].aggregate.scoreable).toBe(false);
+      expect(run.fidelity.uncalibrated).toEqual([]);
+      expect(run.fidelity.notApplicable).toContain('coalescing');
+      expect(run.fidelity.passed).toBe(true);
+      expect(runs[brush].aggregate.failedFidelityChecks).toEqual([]);
+      expect(runs[brush].aggregate.scoreable).toBe(true);
     }
   });
 
-  // Re-deriving still does work even though the verdict lands in the same place: the
-  // reason is now a named uncalibrated check rather than a stale Safari-shaped
-  // failure, so what would make this target scoreable is one negative-control
-  // capture rather than an unexplained recapture.
-  it('names the uncalibrated check rather than a stale failure', () => {
+  // The excluded check is absent from `checks` — never present-and-true, so no
+  // reader can believe the runtime answered a question it was never asked.
+  it('omits the excluded check rather than passing it', () => {
     const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
+    const checks = runs.crayon.runs[0].fidelity.checks;
 
-    expect(runs.crayon.runs[0].fidelity.checks).toMatchObject({
+    expect(checks).toMatchObject({
       trustedTouch: true,
       cadence: true,
-      coalescing: null,
       pressure: true,
       contactGeometry: true,
     });
+    expect(Object.keys(checks)).not.toContain('coalescing');
   });
 
   it('leaves a Safari capture passing, judged by Safari expectations', () => {
@@ -118,5 +119,74 @@ describe('a matrix cell re-derives its input-fidelity verdict', () => {
     }
     expect(runs.pen.aggregate.refreshRegime).toBe('60hz');
     expect(runs.pen.aggregate.offRefreshRegime).toBe(false);
+  });
+});
+
+// One composed answer per run to "can I trust this number?" (issue 1304): a
+// list, not a score, because the interesting case is which guarantee is
+// missing. hostQuiet is deliberately present and unrecorded — the dimension
+// with no measurement yet, kept visible instead of forgotten.
+describe('the per-run trust ledger', () => {
+  it('composes verified dimensions for a sound capture', () => {
+    const runs = drawingRuns('ipad-device-web', 'ipad-device-web');
+    const trust = runs.pen.runs[0].trust;
+    const byName = Object.fromEntries(trust.map((entry) => [entry.name, entry]));
+
+    expect(byName.inputFidelity.state).toBe('verified');
+    expect(byName.refreshRegime).toMatchObject({ state: 'verified', detail: '60hz' });
+    expect(byName.hostQuiet.state).toBe('unrecorded');
+    expect(byName.pageIdentity.state).toBe('unrecorded');
+  });
+
+  it('names an absent guarantee apart from a failed one', () => {
+    const runs = drawingRuns('ipad-device-web', 'ipad-device-web');
+    for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
+      for (const entry of runs[brush].runs[0].trust) {
+        expect(['verified', 'failed', 'unrecorded']).toContain(entry.state);
+      }
+    }
+  });
+
+  it('adds the eraser-ink dimension only to runs that recorded fill machinery', () => {
+    const runs = drawingRuns('ipad-device-web', 'ipad-device-web');
+    const names = (brush) => runs[brush].runs[0].trust.map((entry) => entry.name);
+
+    // These corpus captures predate the fill recorder, so the dimension is
+    // absent-as-inapplicable rather than unrecorded — for every brush, the
+    // eraser included — and every run still carries the universal dimensions.
+    for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
+      expect(names(brush), brush).not.toContain('eraserInk');
+      expect(names(brush), brush).toContain('hostQuiet');
+      expect(names(brush), brush).toContain('inputFidelity');
+    }
+  });
+
+  // This corpus re-derives to a clean pass, so it exercises the verified
+  // branch; the uncalibrated-to-unrecorded mapping itself is pinned end to end
+  // in performance-matrix.test.mjs ('trust publishes instrument silence as
+  // unrecorded'), which drives an uncalibrated-only artifact through
+  // normalizeMatrix — the PR 1366 review caught this test's old title claiming
+  // that coverage without providing it.
+  it('publishes a clean re-derived verdict as verified', () => {
+    const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
+    const entry = runs.pen.runs[0].trust.find((row) => row.name === 'inputFidelity');
+    expect(entry.state).toBe('verified');
+    expect(
+      onlyUncalibratedChecksFailed({
+        passed: false,
+        checks: { cadence: true, pressure: null },
+        uncalibrated: ['pressure'],
+      })
+    ).toBe(true);
+  });
+
+  // The stored runtime label is the runner's day-of claim; it is trusted only
+  // when it matches the runtime the run was judged under. These corpus blobs
+  // predate the label entirely, so the row must read unrecorded — never a
+  // stale label presented as verified.
+  it('publishes an absent stored runtime as unrecorded', () => {
+    const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
+    const entry = runs.pen.runs[0].trust.find((row) => row.name === 'captureRuntime');
+    expect(entry.state).toBe('unrecorded');
   });
 });
