@@ -72,7 +72,7 @@ export function refreshRegimeBand(regime) {
 // honesty: a capture just under it can still carry up to roughly a point of
 // mis-priced lost time; the spread work in issue 1344 is what would tighten
 // this further.
-export const REGIME_MIXTURE_RUN_MIN_FRAMES = 3;
+const REGIME_MIXTURE_RUN_MIN_FRAMES = 3;
 export const MIXED_REGIME_SUSTAINED_SHARE_MAX = 0.015;
 
 // `contactSegments` is a list of delta runs, one per unbroken contact stretch,
