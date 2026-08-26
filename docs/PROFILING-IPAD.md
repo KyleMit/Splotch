@@ -206,8 +206,8 @@ Both matter, for opposite reasons.
   coordinates. It is the regression path for felt lag: one WebDriver session opens MobileSafari,
   injects the same recorder in web context, draws in `NATIVE_APP`, then returns to read the raw
   tables. Its calibrated fidelity gate requires trusted touch events, hand-like
-  cadence/coalescing/pressure/contact geometry, and fails the command before a mismatched run can be
-  used as lag evidence.
+  cadence/pressure/contact geometry (coalescing is recorded but retired from the verdict, ADR-0144),
+  and fails the command before a mismatched run can be used as lag evidence.
 
 > **A hand-drawn A/B cannot attribute anything.** In the first capture a human ran 7 to 45 strokes
 > per phase; the suppression deltas came out non-monotonic and the "worst" phase was simply the one

@@ -231,15 +231,18 @@ check did not pass, and in which of three ways:
 `android-chrome` is the third kind, established on 2026-08-23 by pairing a hand capture with an
 `adb`-driven one through the same probe: pressure 1 against 1, no contact geometry against none, 0
 coalesced samples against 0. Its verdict is `trustedTouch` and `cadence`, and its captures are
-scoreable. `android-capacitor-webview` and the desktop runtime remain uncalibrated.
+scoreable. `android-capacitor-webview` remains uncalibrated on pressure and contact geometry, as
+does the desktop runtime.
 
-The Capacitor WKWebView's `coalescing` entry is the standing uncalibrated one. An earlier revision
-inverted it — more than zero coalesced samples, where Safari expects none — on the strength of four
-healthy captures, and review refuted it with a negative control: the under-driven Android WebView
-probe recorded more than zero at 47.81 moves/s, so the inversion would have passed exactly the
-capture the check exists to reject. It stays uncalibrated until a known-bad WKWebView run exists
-(issue 1272). Do not widen it to cover both runtimes either; widening retires it in Safari, where it
-does real work.
+`coalescing` is retired from the verdict in **every** runtime (ADR-0144) and recorded as a witness
+instead. Two measurements ended it: the value tracks page delivery, not input — the same WKWebView
+at matched cadence reports ~1 with a bundled page and 0 delivered remotely, through automation and a
+real finger alike — and the probe records `getCoalescedEvents().length` raw, whose floor in a
+populated list is 1 (the event rides in its own list), so the check never measured merging at all.
+An earlier inverted revision — more than zero coalesced samples, where Safari expects none — had
+already been refuted by a negative control (the under-driven Android WebView probe recorded more
+than zero at 47.81 moves/s). Keep reading `coalescedPerMove` in artifacts: it is the field that
+exposed the delivery dependence, and ADR-0144 names the capture that would reopen the decision.
 
 ### A threshold set from the automation is not calibrated
 

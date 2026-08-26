@@ -28,6 +28,7 @@ import {
   anomalousEraserRefills,
   artifactPassedFidelity,
   campaignTarget,
+  effectiveFidelity,
   cellServerSource,
   recordedGesturePlan,
   recordedGestureRepeats,
@@ -80,9 +81,10 @@ function absolute(path) {
 // accept exactly what the runner accepts; when status rebuilt these options itself
 // it dropped the reportsRefreshRegime gate and reported four complete action
 // sweeps — which carry no frame intervals by design — as off-refresh-regime.
-export function cellInspection(cell, { runtime, refreshRegime }) {
+export function cellInspection(cell, { runtime, refreshRegime, captureRuntime = null }) {
   return inspectArtifact(cell.artifact, runtime, {
     verdictRequired: cell.reportsFidelity,
+    captureRuntime,
     expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
     expectedGestureRepeats: cell.gestureRepeats ?? null,
     expectedGesturePlan: cell.gesturePlan ?? null,
@@ -94,6 +96,7 @@ export function inspectArtifact(
   runtime,
   {
     verdictRequired = false,
+    captureRuntime = null,
     expectedRefreshRegime = null,
     expectedGestureRepeats = null,
     expectedGesturePlan = null,
@@ -108,10 +111,16 @@ export function inspectArtifact(
     return { ok: false, status: FAILED };
   }
   if (!artifactMatchesRuntime(artifact, runtime)) return { ok: false, status: FAILED };
-  if (!artifactPassedFidelity(artifact, { verdictRequired })) {
+  // Judged by the RE-DERIVED verdict when the artifact's input stats and the
+  // target's runtime allow it (effectiveFidelity), so a banked capture whose
+  // stored verdict predates a table correction is accepted rather than
+  // recaptured — the matrix already scores it; acceptance must not disagree.
+  if (!artifactPassedFidelity(artifact, { verdictRequired, captureRuntime })) {
     return {
       ok: false,
-      status: onlyUncalibratedChecksFailed(artifact?.fidelity) ? UNCALIBRATED_RUNTIME : UNSCOREABLE,
+      status: onlyUncalibratedChecksFailed(effectiveFidelity(artifact, captureRuntime))
+        ? UNCALIBRATED_RUNTIME
+        : UNSCOREABLE,
     };
   }
   // Checked after fidelity so the more fundamental rejection is the one reported:
@@ -364,7 +373,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
 
   for (const cell of plan) {
     const decision = nextAction(spentRows, cell.id, {
-      artifactValid: cellInspection(cell, { runtime, refreshRegime }).ok,
+      artifactValid: cellInspection(cell, {
+        runtime,
+        refreshRegime,
+        captureRuntime: targetCaptureRuntime,
+      }).ok,
       maxAttempts,
       runtimeStillUncalibrated: runtimeHasUncalibratedChecks(targetCaptureRuntime),
     });
@@ -411,7 +424,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         ['run', cell.command, '--ignore-scripts', '--', ...cell.args],
         { cwd: ROOT, stdio: 'inherit' }
       );
-      const inspected = cellInspection(cell, { runtime, refreshRegime });
+      const inspected = cellInspection(cell, {
+        runtime,
+        refreshRegime,
+        captureRuntime: targetCaptureRuntime,
+      });
       landed = inspected.ok;
       appendLedger(ledgerPath, {
         cell: cell.id,

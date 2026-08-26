@@ -57,7 +57,7 @@ export const FIDELITY_MOVES_PER_FRAME_MIN = 0.6;
 // keeps scoring exactly as it did when banked rather than failing on a
 // measurement its capture never took (the same principle as
 // LEGACY_NUMBER_INVALIDATING_CHECKS below). Measured from both sides at the
-// time: rejected transports 46.8-61 moves/s, slowest hand 117.5 (ADR-0141).
+// time: rejected transports 46.8-61 moves/s; the slowest banked hand was 117.5 when the floor was set (ADR-0141) and 104.43 since (2026-08-25-hand-wkwebview).
 const LEGACY_FIDELITY_MOVES_PER_SECOND_MIN = 100;
 
 // The gap cap rejects BURSTINESS — a stream whose average density is fine but

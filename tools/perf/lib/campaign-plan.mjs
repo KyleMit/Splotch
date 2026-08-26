@@ -8,6 +8,8 @@
 // one writes. Host identity — device ids, capability files, preview URLs — stays an
 // input, so nothing device-specific is committed.
 
+import { inputFidelity } from './input-fidelity.mjs';
+
 export const CAMPAIGN_MODES = [
   { id: 'portrait-light', orientation: 'PORTRAIT', theme: 'light' },
   { id: 'portrait-dark', orientation: 'PORTRAIT', theme: 'dark' },
@@ -196,8 +198,27 @@ export function artifactMatchesRuntime(artifact, runtime) {
 // is mandatory. So tolerance is granted per transport rather than globally, and a
 // runner that always writes a verdict has an absent one treated as no verdict at
 // all rather than as consent.
-export function artifactPassedFidelity(artifact, { verdictRequired = false } = {}) {
-  const passed = artifact?.fidelity?.passed;
+// The verdict is RE-DERIVED from the artifact's own input stats when a judging
+// runtime is supplied and the stats exist, exactly as the matrix does — a stored
+// verdict is the capture day's table, and holding a resumed campaign to it made
+// acceptance recapture cells the matrix simultaneously scores from the bank (the
+// PR 1359 review's finding: sixteen banked iPad-native captures store
+// passed:false under the retired coalescing entry while passing today's table).
+// The stored verdict remains the answer when re-derivation has nothing to read.
+export function effectiveFidelity(artifact, captureRuntime = null) {
+  const input = artifact?.summaries?.phases?.[0]?.input;
+  if (captureRuntime && input && typeof input === 'object') {
+    return inputFidelity(input, captureRuntime);
+  }
+  return artifact?.fidelity ?? null;
+}
+
+export function artifactPassedFidelity(
+  artifact,
+  { verdictRequired = false, captureRuntime = null } = {}
+) {
+  const verdict = effectiveFidelity(artifact, captureRuntime);
+  const passed = verdict?.passed;
   if (passed === undefined) return !verdictRequired;
   return passed === true;
 }

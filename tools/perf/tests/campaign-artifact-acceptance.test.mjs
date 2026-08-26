@@ -582,3 +582,71 @@ describe('eraser refill acceptance (issue 1355)', () => {
     });
   });
 });
+
+// The PR 1359 review's finding: acceptance read the STORED verdict while the
+// matrix re-derives, so a resumed campaign recaptured the sixteen banked
+// iPad-native cells whose capture-day verdicts predate the coalescing
+// retirement. With a judging runtime supplied, acceptance re-derives from the
+// artifact's own input stats and the two readers agree.
+describe('acceptance re-derives fidelity when it can', () => {
+  const healthyInput = {
+    kinds: 'touch',
+    trust: { share: 1 },
+    movesPerSecond: 115.5,
+    movesPerFrame: 1.93,
+    moveGapP95Ms: 16,
+    pressure: { p50: 0 },
+    contactWidth: { p50: 74 },
+    contactHeight: { p50: 74 },
+  };
+
+  it('accepts a banked capture whose stored verdict predates a table correction', () => {
+    const staleStored = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: false, checks: { coalescing: null }, uncalibrated: ['coalescing'] },
+      summaries: { intervalMs: 17, phases: [{ input: healthyInput }] },
+    });
+
+    expect(
+      inspectArtifact(staleStored, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('still refuses a bad capture whatever its stored verdict claims', () => {
+    const flattering = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: true },
+      summaries: {
+        intervalMs: 17,
+        phases: [{ input: { ...healthyInput, movesPerFrame: 0.44, moveGapP95Ms: 40 } }],
+      },
+    });
+
+    expect(
+      inspectArtifact(flattering, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+        expectedRefreshRegime: '60hz',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+
+  it('falls back to the stored verdict when there is nothing to re-derive from', () => {
+    const storedOnly = artifactAt({
+      transport: NATIVE_TRANSPORT,
+      fidelity: { passed: false, checks: { cadence: false }, uncalibrated: [] },
+      summaries: { intervalMs: 17 },
+    });
+
+    expect(
+      inspectArtifact(storedOnly, 'native', {
+        verdictRequired: true,
+        captureRuntime: 'ios-capacitor-webview',
+      })
+    ).toMatchObject({ ok: false, status: UNSCOREABLE });
+  });
+});

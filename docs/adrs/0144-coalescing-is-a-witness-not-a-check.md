@@ -16,11 +16,12 @@ Two measurements retired the per-runtime framing, then the check itself.
 answered three times, each answer refuting the previous framing (the comment thread on issue 1303
 holds the full sequence). The final table: at matched cadence on the same physical iPad, the same
 WKWebView reports `coalescedPerMove` 1.05–1.08 when its page loads from the app bundle, and 0 when
-the same page is delivered remotely from the probe host — through Appium, through WDA-direct, and by
-a **real finger** alike (corpora `2026-08-25-wkwebview-delivery` and `2026-08-25-hand-wkwebview`;
-the bundled legs are `2026-08-23-ipad-main`). With transport and input held fixed and only delivery
-varied, the value moved. Whatever expectation were recorded per runtime would describe whichever
-delivery happened to take the calibration capture.
+the same page is delivered remotely from the probe host — through Appium (corpus
+`2026-08-25-wkwebview-delivery`), by a **real finger** (corpus `2026-08-25-hand-wkwebview`), and
+through WDA-direct (the 2026-08-24 leg, recorded in issue 1303's comment table; that capture was not
+banked). The bundled legs are `2026-08-23-ipad-main`. With transport and input held fixed and only
+delivery varied, the value moved. Whatever expectation were recorded per runtime would describe
+whichever delivery happened to take the calibration capture.
 
 **The recorded quantity never measured merging.** The probe stores `getCoalescedEvents().length`
 raw, and in the WebKit configurations that populate the list at all, the list carries the event
@@ -28,8 +29,10 @@ itself — its floor is 1, not 0. So "1.05" was a list of one with occasional do
 merging, consistent with those captures delivering ~1.95 pointermove events per frame — every
 digitizer sample as its own event), and "0" is WebKit returning an **empty** list. The field
 distinguishes whether the list mechanism is populated in a given context — API bookkeeping — not how
-input arrived. No official documentation specifies this behavior; MDN and the Pointer Events spec
-leave the no-coalescing list contents undefined, and the variation lives only in WebKit's source.
+input arrived. The Pointer Events spec makes this sharper, not vaguer: the coalesced events list of
+a trusted `pointermove` always contains at least one event, so the observed 0 is WebKit *deviating*
+from the spec in remote-delivery contexts, and the "1.05" contexts are the conformant ones. MDN
+documents nothing either way, and which contexts deviate is recorded only in WebKit's source.
 
 The check also never caught anything on the runtimes where it was calibrated: Safari's `=== 0` was
 measured identically for a real finger and for automation (the same equivalence that made ADR-0141's
