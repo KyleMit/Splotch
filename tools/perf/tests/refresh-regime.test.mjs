@@ -296,7 +296,12 @@ describe('the mixed-regime verdict', () => {
 // the machine-driven side enumerates the whole tracked population rather than
 // sampling it: every capture with raw frames, hand captures identified by
 // their recorded transport.
-describe('the mixture threshold holds against the tracked corpora', () => {
+// Every test in here walks the WHOLE tracked population, and the corpus
+// deliberately grew on 2026-08-26 (the ADR-0138 study exception banked a
+// 19-capture spread set, plus the android-native and bundled-channel
+// corpora) — the default 5 s per-test budget times out on CI runners while
+// the claims themselves hold.
+describe('the mixture threshold holds against the tracked corpora', { timeout: 60_000 }, () => {
   const population = () => {
     const rows = [];
     for (const campaign of readdirSync(EVIDENCE)) {
@@ -323,27 +328,18 @@ describe('the mixture threshold holds against the tracked corpora', () => {
     return rows;
   };
 
-  // The whole-population walk parses every tracked capture, and the corpus
-  // deliberately grew on 2026-08-26 (the ADR-0138 study exception banked a
-  // 19-capture spread set, plus the android-native and bundled-channel
-  // corpora) — the default 5 s budget now times out on CI runners while the
-  // claim itself still holds.
-  it(
-    'sits above every machine-driven capture in the whole tracked population',
-    { timeout: 60_000 },
-    () => {
-      const rows = population();
-      const machine = rows.filter((row) => !row.byHand);
+  it('sits above every machine-driven capture in the whole tracked population', () => {
+    const rows = population();
+    const machine = rows.filter((row) => !row.byHand);
 
-      // The population floor: if corpora stop carrying raw frames, this claim
-      // silently shrinks — fail loudly instead.
-      expect(rows.length).toBeGreaterThanOrEqual(70);
-      expect(machine.length).toBeGreaterThanOrEqual(60);
-      for (const row of machine) {
-        expect(row.share, row.id).toBeLessThanOrEqual(MIXED_REGIME_SUSTAINED_SHARE_MAX);
-      }
+    // The population floor: if corpora stop carrying raw frames, this claim
+    // silently shrinks — fail loudly instead.
+    expect(rows.length).toBeGreaterThanOrEqual(70);
+    expect(machine.length).toBeGreaterThanOrEqual(60);
+    for (const row of machine) {
+      expect(row.share, row.id).toBeLessThanOrEqual(MIXED_REGIME_SUSTAINED_SHARE_MAX);
     }
-  );
+  });
 
   it('sits below the known mixed-presentation hand captures', () => {
     const rows = population();
