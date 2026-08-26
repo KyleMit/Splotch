@@ -21,6 +21,7 @@ import {
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
 import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
+import { unattributableCaptureProblem } from '../analyze-frame-capture.mjs';
 import { buildDirHoldsNativeExport } from '../lib/build-variant.mjs';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 
@@ -318,6 +319,22 @@ describe('keep-capture-evidence', () => {
     ).toBe('LANDSCAPE-dark');
     expect(modeOf({ mode: 'landscape-dark' })).toBe('landscape-dark');
     expect(modeOf({})).toBe('unknown');
+  });
+
+  // Issue 1344: a spread or repeat-count study's evidence IS the set, so
+  // --keep-all extends the hand-corpus treatment to automation studies —
+  // every capture kept, filed injectively like hand captures.
+  it('keeps every capture of one cell under --keep-all, filed injectively', () => {
+    const kept = selectEvidence(
+      [
+        { target: 'a', brush: 'crayon', file: '1', relativePath: 'x/one.json' },
+        { target: 'a', brush: 'crayon', file: '2', relativePath: 'x/two.json' },
+      ],
+      { keepAll: true }
+    );
+    expect(kept).toHaveLength(2);
+    const names = kept.map((entry) => evidenceFileName(entry, { keepAll: true }));
+    expect(new Set(names).size).toBe(2);
   });
 
   it('keeps one capture per target and brush', () => {
@@ -626,5 +643,82 @@ describe('a nested evidence corpus', () => {
   it('refuses an unknown declared target rather than gating on it', () => {
     expect(targetOf({ targetId: 'not-a-real-target' }, 'x/y')).toBeNull();
     expect(targetOf({ targetId: 'mac-safari' }, 'x/y')).toBe('mac-safari');
+  });
+});
+
+// Issue 1356: the cellAttributable marking had enforcing readers and no
+// producer — its correctness rested on hand-typed index fields. Promotion now
+// computes it from each artifact's own report URL, and the last uncovered
+// reader (perf:analyze:frames) refuses what the index marks.
+describe('attribution is stamped at promotion and read by the analyzer', () => {
+  it('stamps cellAttributable/reportNonce from the report URL, not by hand', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-stamp-corpus-'));
+    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-stamp-evidence-'));
+    mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
+    const cell = (name, body) =>
+      writeFileSync(
+        join(corpusDir, 'ipad-device-web', 'portrait-light', name),
+        JSON.stringify({ orientation: 'PORTRAIT', theme: 'light', report, ...body })
+      );
+    const passing = { passed: true, checks: { trustedTouch: true, cadence: true } };
+    cell('crayon-real-screen.json', {
+      brush: 'crayon',
+      label: 'clean-cell',
+      fidelity: passing,
+      report: { ...report, meta: { ...report.meta, url: 'http://lan:4185/?probe=clean-cell-1-2' } },
+    });
+    cell('pen-real-screen.json', {
+      brush: 'pen',
+      label: 'this-cell',
+      fidelity: passing,
+      report: { ...report, meta: { ...report.meta, url: 'http://lan:4185/?probe=other-cell-9-9' } },
+    });
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await keepCaptureEvidence({
+        corpus: relative(ROOT, corpusDir),
+        campaign: 'stamp-test',
+        evidenceRoot: relative(ROOT, evidenceDir),
+      });
+      const index = JSON.parse(readFileSync(join(evidenceDir, 'stamp-test', 'index.json'), 'utf8'));
+      const byBrush = Object.fromEntries(index.kept.map((entry) => [entry.brush, entry]));
+      // The attributable capture records no claim — absence means attributable
+      // to the sweep — and the contaminated one names the nonce it saw.
+      expect(byBrush.crayon.cellAttributable).toBeUndefined();
+      expect(byBrush.crayon.reportNonce).toBeUndefined();
+      expect(byBrush.pen).toMatchObject({
+        cellAttributable: false,
+        reportNonce: 'other-cell-9-9',
+      });
+    } finally {
+      quiet.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+      rmSync(evidenceDir, { recursive: true, force: true });
+    }
+  });
+
+  it('analyze refuses an index-marked capture unless deliberately included', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'splotch-analyze-refusal-'));
+    try {
+      const capturePath = join(dir, 'pen.json');
+      writeFileSync(capturePath, JSON.stringify({ report }));
+      // No sibling index: a scratch capture analyzes as before.
+      expect(unattributableCaptureProblem(capturePath)).toBeNull();
+      writeFileSync(
+        join(dir, 'index.json'),
+        JSON.stringify({
+          kept: [
+            { file: 'pen.json', cellAttributable: false, reportNonce: 'other-cell-9-9' },
+            { file: 'clean.json' },
+          ],
+        })
+      );
+      expect(unattributableCaptureProblem(capturePath)).toContain('other-cell-9-9');
+      expect(unattributableCaptureProblem(capturePath, { includeUnattributable: true })).toBeNull();
+      // An entry without the marking stays analyzable.
+      expect(unattributableCaptureProblem(join(dir, 'clean.json'))).toBeNull();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -47,6 +47,8 @@ import {
   readResolvedTheme,
 } from '../lib/campaign-state.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
+import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import {
   EXPAND_CONTROLS_SOURCE,
   UNDO_ACTION_PAUSE_MS,
@@ -181,6 +183,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     // without this the identity assertion covered only the path nobody uses. A
     // coherent server can still be serving another checkout's build.
     await assertServedBuildIsFresh(url, { allowForeignBuild: has('allow-foreign-build') });
+    const hostLoadStart = sampleHostLoad();
     browser = await engine.launcher.launch({ headless });
     const context = await browser.newContext({
       viewport,
@@ -237,7 +240,11 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     if (undoCount > 0) {
       await execute(EXPAND_CONTROLS_SOURCE);
       const undoReady = await pollUntil(
-        () => execute(UNDO_BUTTON_READY_SOURCE).catch(() => false),
+        () =>
+          execute(UNDO_BUTTON_READY_SOURCE).catch((error) => {
+            rethrowIfBroken(error);
+            return false;
+          }),
         UNDO_BUTTON_READY_TIMEOUT_MS,
         UNDO_BUTTON_READY_POLL_MS
       );
@@ -268,6 +275,9 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       viewport: { ...viewport, deviceScaleFactor },
       headless,
       theme,
+      // Desktop cells are driven and measured on this same host, so host
+      // business is a measured variable here too (issue 1304).
+      hostQuiet: hostQuietRecord(hostLoadStart, sampleHostLoad()),
       report,
       console: pageLogs,
     };

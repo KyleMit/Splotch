@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  grantLogLine,
   handCaptureArgs,
   handItemInstructions,
   operatorSessionPlan,
   runHandItem,
 } from '../run-operator-session.mjs';
+import { grantLogLine } from '../lib/grant-log.mjs';
 import { openWithDevicectl, runtimeUaProblem } from '../split-capture/capture-hand-input.mjs';
 
 // Real user agents from tracked captures: the Safari one is from the mislabeled

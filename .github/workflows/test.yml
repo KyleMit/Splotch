@@ -299,16 +299,30 @@ jobs:
     permissions:
       contents: read
       issues: write
+    outputs:
+      gate-outcome: ${{ steps.verdict.outputs.gate }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-playwright-webkit
 
       - name: Run fast WebKit commit gate
+        id: gate
         run: npm run perf:web:undo:webkit:fast
 
+      # The retry job keys on THIS STEP's outcome, not on failure() — at job
+      # scope failure() also fires for a checkout or setup failure, and a
+      # setup-failed retry would file "gate failed on main" for a gate that
+      # never ran (the PR 1381 review).
+      - name: Record the gate verdict
+        id: verdict
+        if: always()
+        run: echo "gate=${{ steps.gate.outcome }}" >> "$GITHUB_OUTPUT"
+
+      # Uploaded on green runs too (issue 1250): the noise investigation had
+      # outcomes but no distributions, because only failures kept their tables.
       - name: Upload WebKit undo diagnostics
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: webkit-undo-fast-diagnostics
@@ -317,6 +331,78 @@ jobs:
             perf-profiles/**/undo-scenarios.md
           if-no-files-found: warn
           retention-days: 7
+
+      # A post-merge gate nobody is watching is not a gate — but a breach on
+      # this job alone no longer files: a shared macOS runner can stall long
+      # enough to span this whole job, measure and confirmation both, so a
+      # same-VM confirmation cannot acquit it (issue 1250: two post-merge
+      # failures on main — one on a docs-only merge — against five consecutive
+      # clean dispatch reruns of the same code). The fresh-runner retry job
+      # below re-measures on a new VM and owns the filing decision.
+
+  webkit-commit-gate-fast-retry:
+    name: WebKit commit gate (fast, fresh-runner retry)
+    needs: webkit-commit-gate-fast
+    # Push arm only: a dispatch failure is delivered by the red run itself, to
+    # the person who fired it. Keyed on the GATE STEP's outcome, not failure():
+    # a checkout/setup/upload failure on the first VM is not a breach, and a
+    # retry started for one could file "gate failed on main" for a gate that
+    # never ran. always() is required for the job to be considered at all
+    # behind a failed needs.
+    if: >-
+      always() && needs.webkit-commit-gate-fast.outputs.gate-outcome == 'failure' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    timeout-minutes: 15
+    concurrency:
+      group: webkit-commit-gate-fast
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-playwright-webkit
+
+      # The variable that matters is the VM, not the retry: ADR-0140's in-job
+      # confirmation already re-measures, and the 2026-08-26 failure breached
+      # both halves with a 197 ms stall spanning them. A fresh runner is the
+      # only rerun that changes the environment the breach happened in.
+      # continue-on-error so the filing/acquittal steps below always run from
+      # this step's recorded outcome; the last step re-fails the job when the
+      # breach reproduced, so a real regression still lands a red retry.
+      - name: Re-run the fast WebKit commit gate on a fresh runner
+        id: gate
+        continue-on-error: true
+        run: npm run perf:web:undo:webkit:fast
+
+      - name: Upload WebKit undo retry diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webkit-undo-fast-retry-diagnostics
+          path: |
+            perf-profiles/**/undo-scenarios.json
+            perf-profiles/**/undo-scenarios.md
+          if-no-files-found: warn
+          retention-days: 7
+
+      # Deliberately "not reproduced", not "acquitted": the first job stays
+      # red on main as telemetry (the noisy first run is a real observation
+      # worth counting), and this summary is where a reader of that red job
+      # learns no issue was filed and why.
+      - name: Record the non-reproduction
+        if: steps.gate.outcome == 'success'
+        run: |
+          {
+            echo '## WebKit commit gate: breach not reproduced on a fresh runner'
+            echo
+            echo 'The post-merge gate breached on its first runner and passed on this one.'
+            echo 'Recorded as host noise per issue 1250; no issue filed. The first job'
+            echo 'stays red as deliberate telemetry; a real regression fails both runners.'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # A post-merge gate nobody is watching is not a gate. One open issue
       # collects every red commit until it is closed, so a broken main does not
@@ -331,7 +417,7 @@ jobs:
       # open or append a false production-breakage report. A dispatch failure
       # is delivered by the red run itself, to the person who fired it.
       - name: File the failure
-        if: failure() && github.event_name == 'push'
+        if: steps.gate.outcome == 'failure' && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -357,6 +443,12 @@ jobs:
           else
             gh issue create --title "$title" --label type:bug --label area:ci-testing --body-file "$body_file"
           fi
+
+      # continue-on-error above kept this job green so far; a reproduced
+      # breach must still land a red retry job.
+      - name: Fail on a reproduced breach
+        if: steps.gate.outcome == 'failure'
+        run: exit 1
 
   webkit-commit-gate-full:
     name: WebKit commit gate (full)

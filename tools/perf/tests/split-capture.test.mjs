@@ -908,13 +908,36 @@ describe('clearing the tooling litter', () => {
       fetchImpl,
     });
 
-    expect(result).toEqual({ closed: 3 });
+    expect(result).toEqual({ closed: 3, attempted: 3 });
     expect(calls).toEqual([
       'http://127.0.0.1:9224/json/list',
       'http://127.0.0.1:9224/json/close/stale-probe',
       'http://127.0.0.1:9224/json/close/stale-verify',
       'http://127.0.0.1:9224/json/close/husk',
     ]);
+  });
+
+  // fetch resolves normally for HTTP 4xx/5xx: a 500 from /json/close must not
+  // count as a close (PR 1376 review), and a network throw must not either.
+  it('counts only closes the endpoint accepted', async () => {
+    const targets = [
+      { id: 'ok-tab', type: 'page', url: 'http://host:4175/?probe=stale-1' },
+      { id: 'err-tab', type: 'page', url: 'http://host:4175/?probe=stale-2' },
+      { id: 'down-tab', type: 'page', url: 'http://host:4175/?probe=stale-3' },
+    ];
+    const fetchImpl = async (url) => {
+      if (url.endsWith('/json/list')) return { ok: true, json: async () => targets };
+      if (url.includes('err-tab')) return { ok: false, status: 500 };
+      if (url.includes('down-tab')) throw new Error('ECONNREFUSED');
+      return { ok: true };
+    };
+    const result = await clearToolingLitter({
+      cdpBase: 'http://127.0.0.1:9224',
+      hostname: 'host',
+      nonce: 'run-9',
+      fetchImpl,
+    });
+    expect(result).toEqual({ closed: 1, attempted: 3 });
   });
 });
 
@@ -1169,5 +1192,25 @@ describe('the verify-foreground guard', () => {
 
     expect(result.guarded).toBe(false);
     expect(d.forwardCalls.at(-1)).toBe('adb -s s forward --remove tcp:9234');
+  });
+});
+
+// Issue 1323 (Android half): a bundled capture's identity is the DEBUGGER's
+// answer for the attached target, and only the app's build-time origin counts —
+// a probe-host page or a restored tab must refuse, however healthy it looks.
+describe('bundledPageProblem', () => {
+  it('accepts only the bundled Capacitor origins', async () => {
+    const { bundledPageProblem } = await import('../android/capture-bundled-frames.mjs');
+    // The one origin capacitor.config.json fixes (androidScheme https) — a
+    // permissive list once accepted http://localhost, which can name locally
+    // served content and is exactly the delivery this guard refuses.
+    expect(bundledPageProblem('https://localhost/')).toBeNull();
+    expect(bundledPageProblem('https://localhost/index.html')).toBeNull();
+    expect(bundledPageProblem('http://localhost/')).toMatch(/not the bundled/);
+    expect(bundledPageProblem('http://192.168.40.53:4185/?probe=x')).toMatch(/not the bundled/);
+    expect(bundledPageProblem('https://localhost.evil.example/')).toMatch(/not the bundled/);
+    expect(bundledPageProblem('about:blank')).toMatch(/not the bundled/);
+    // A different configured scheme flows through the origin parameter.
+    expect(bundledPageProblem('capacitor://localhost/', 'capacitor://localhost')).toBeNull();
   });
 });

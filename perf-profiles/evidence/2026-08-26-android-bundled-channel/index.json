@@ -1,0 +1,17 @@
+{
+  "campaign": "2026-08-26-android-bundled-channel",
+  "capturedFrom": "perf-profiles/bundled",
+  "kept": [
+    {
+      "file": "android-device-native-pen.json",
+      "target": "android-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "1323-proof-pen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

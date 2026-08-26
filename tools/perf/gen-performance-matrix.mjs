@@ -14,6 +14,7 @@ import {
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { IN_REGIME, UNESTABLISHED_REGIME, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { describeHostQuiet, hostQuietTrustState } from './lib/host-quiet.mjs';
 import {
   DEFAULT_CAPTURE_RUNTIME,
   describeFidelityFailures,
@@ -256,10 +257,11 @@ function rederiveFidelity(profile, phases, captureRuntime) {
 // interesting case is always which guarantee is missing. Three states:
 // `verified` (measured and sound), `failed` (measured and not), `unrecorded`
 // (nothing measured — the state this structure exists to make visible).
-// `hostQuiet` is deliberately present and permanently unrecorded until a
-// measurement exists (issue 1304 names it as the first dimension designed into
-// the block): a capture taken on a busy host looks identical to a clean one,
-// and this row is what keeps that gap legible instead of forgotten. The
+// `hostQuiet` re-derives from the raw load samples the runners now bracket a
+// capture with (issue 1304; lib/host-quiet.mjs owns the threshold), and stays
+// a visible `unrecorded` for every capture predating them: a capture taken on
+// a busy host looks identical to a clean one, and this row is what keeps that
+// gap legible instead of forgotten. The
 // eraser-ink dimension appears only on runs that recorded fill machinery —
 // absence of an inapplicable dimension is not an absent guarantee.
 function composeRunTrust(
@@ -361,7 +363,16 @@ function composeRunTrust(
   } else {
     trust.push({ name: 'captureRuntime', state: 'unrecorded' });
   }
-  trust.push({ name: 'hostQuiet', state: 'unrecorded' });
+  const hostQuietState = hostQuietTrustState(profile?.hostQuiet);
+  if (hostQuietState) {
+    trust.push({
+      name: 'hostQuiet',
+      state: hostQuietState,
+      detail: describeHostQuiet(profile.hostQuiet),
+    });
+  } else {
+    trust.push({ name: 'hostQuiet', state: 'unrecorded' });
+  }
   return trust;
 }
 

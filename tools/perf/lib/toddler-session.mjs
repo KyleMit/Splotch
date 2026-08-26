@@ -26,6 +26,7 @@ import {
   markPhase,
 } from './chrome-trace-capture.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
+import { rethrowIfBroken } from './error-classification.mjs';
 
 // Brand palette (src/lib/state/colors.svelte) — the swatches the harness clicks.
 const COLORS = ['#EC534E', '#F89C45', '#F9D24F', '#8CC864', '#62A2E9', '#AB71E1'];
@@ -172,7 +173,13 @@ async function runToddlerSession(page, box) {
       if (await brushMenu.count()) await brushMenu.click();
       await sleep(150);
       const eraser = page.locator('#eraserButton');
-      if (await eraser.isVisible().catch(() => false)) await eraser.click();
+      if (
+        await eraser.isVisible().catch((error) => {
+          rethrowIfBroken(error);
+          return false;
+        })
+      )
+        await eraser.click();
       await sleep(150);
       await drawStroke(
         page,

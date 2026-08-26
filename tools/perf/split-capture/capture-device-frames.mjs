@@ -15,6 +15,10 @@
 // through it cannot be scored. This path clears the band.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { eraserRefillArming } from '../lib/eraser-fill.mjs';
+import { mintProbeNonce } from '../lib/capture-attribution.mjs';
+import { pollFor } from './lib/poll.mjs';
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
+import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { dirname, join } from 'node:path';
 import {
   argFlag,
@@ -62,7 +66,6 @@ const PROBE_READY_TIMEOUT_MS = 90_000;
 // deciding the launch did not land, not how long a slow page may take.
 const PROBE_READY_OPEN_TIMEOUT_MS = 30_000;
 const REPORT_TIMEOUT_MS = 120_000;
-const POLL_INTERVAL_MS = 1_000;
 // After the last pointerUp the engine still has queued raster work; ending the
 // phase immediately would clip it out of the capture.
 const GESTURE_TAIL_MS = 1_200;
@@ -265,7 +268,10 @@ function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
       const element = await wda(wdaUrl, 'POST', `/session/${sessionId}/element`, {
         using: 'class name',
         value: 'XCUIElementTypeWebView',
-      }).catch(() => null);
+      }).catch((error) => {
+        rethrowIfBroken(error);
+        return null;
+      });
       const key = 'element-6066-11e4-a52e-4f735466cecf';
       const webViewBounds = element
         ? await wda(
@@ -300,21 +306,12 @@ function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
   };
 }
 
-async function pollFor(callback, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const value = await callback().catch(() => null);
-    if (value) return value;
-    await sleep(POLL_INTERVAL_MS);
-  }
-  return null;
-}
-
 // The artifact envelope, as a pure value. Extracted so the fields a later reader
 // TRUSTS can be asserted without a device: `observedTheme` had no test, and
 // deleting the assignment left the suite green while recreating the exact gap it
 // closes — the handshake knew the theme and the saved file could not prove it.
 export function drivenCaptureArtifact({
+  hostQuiet = null,
   runLabel,
   platform,
   brush,
@@ -367,6 +364,10 @@ export function drivenCaptureArtifact({
     // rather than assumed, because the guarantee genuinely differs by transport.
     pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
     transport: 'split-input-measurement',
+    // The host drives the input, so host business is a measured variable
+    // (issue 1304): two raw load samples bracketing the capture; readers
+    // re-derive the verdict from them (lib/host-quiet.mjs).
+    hostQuiet,
     fidelity,
     drawing,
     summaries,
@@ -417,7 +418,8 @@ export async function captureDeviceFrames({
   await assertServedBuildIsFresh(host, { allowForeignBuild });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
-  const nonce = `${runLabel}-${process.pid}-${Math.round(performance.now())}`;
+  const hostLoadStart = sampleHostLoad();
+  const nonce = mintProbeNonce(runLabel);
   // Only a page opened at a URL we chose can prove which run it belongs to. A
   // native run cannot: the WebView loads the app's own `server.url`.
   const requirePageIdentity = !nativeApp;
@@ -483,7 +485,10 @@ export async function captureDeviceFrames({
 
   await driver.dispatch(geometry, repeats);
   await sleep(GESTURE_TAIL_MS);
-  const pulsed = await probeState(host).catch(() => null);
+  const pulsed = await probeState(host).catch((error) => {
+    rethrowIfBroken(error);
+    return null;
+  });
   const inputProblem = zeroInputProblem(pulsed?.pulse);
   if (inputProblem) fail(inputProblem);
   await control(host, { finish: true });
@@ -544,6 +549,7 @@ export async function captureDeviceFrames({
   // a capture against the mode it was filed under and refuses one that cannot
   // prove which mode it measured.
   const artifact = drivenCaptureArtifact({
+    hostQuiet: hostQuietRecord(hostLoadStart, sampleHostLoad()),
     runLabel,
     platform,
     brush,

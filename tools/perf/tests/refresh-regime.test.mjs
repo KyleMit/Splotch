@@ -296,7 +296,12 @@ describe('the mixed-regime verdict', () => {
 // the machine-driven side enumerates the whole tracked population rather than
 // sampling it: every capture with raw frames, hand captures identified by
 // their recorded transport.
-describe('the mixture threshold holds against the tracked corpora', () => {
+// Every test in here walks the WHOLE tracked population, and the corpus
+// deliberately grew on 2026-08-26 (the ADR-0138 study exception banked a
+// 19-capture spread set, plus the android-native and bundled-channel
+// corpora) — the default 5 s per-test budget times out on CI runners while
+// the claims themselves hold.
+describe('the mixture threshold holds against the tracked corpora', { timeout: 60_000 }, () => {
   const population = () => {
     const rows = [];
     for (const campaign of readdirSync(EVIDENCE)) {

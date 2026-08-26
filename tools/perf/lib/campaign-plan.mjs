@@ -177,7 +177,14 @@ export const CAMPAIGN_TARGETS = {
     refreshRegime: '120hz',
     deviceClass: 'handset',
     label: 'Android device · native',
-    transport: 'appium',
+    // ADR-0135 applied to the native runtime (issue 1274): the Appium transport
+    // under-drives this device (47.81 contact moves/s, issue 1217), so every
+    // drawing cell it produced was unscoreable and the published 0.03% was not
+    // a measurement. Drawing rides the split transport into the installed
+    // Capacitor WebView via server.url (the PR-1287 path); actions stay on
+    // Appium, which drives discrete taps fine.
+    transport: SPLIT_TRANSPORT,
+    splitPlatform: 'android',
     runtime: 'native',
     webviewClass: 'android.webkit.WebView',
   },
@@ -193,8 +200,25 @@ export const NATIVE_TRANSPORT = 'native-capacitor-webview';
 // eyeballed per cell; a queue of 20 is exactly where eyeballing stops happening.
 // Acceptance stays "a parseable artifact" so a red gate survives, but the artifact
 // has to be one of the thing the cell asked for.
+// The transports whose artifacts legitimately carry `nativeApp: true`: the
+// split runner (issue 1274) and the bundled CDP channel (issue 1323) attach
+// to the installed app while keeping their own transport strings. The Appium
+// native runner marks native-ness in `transport` itself.
+const NATIVE_CAPABLE_TRANSPORTS = new Set(['split-input-measurement', 'cdp-bundled']);
+
 export function artifactMatchesRuntime(artifact, runtime) {
-  const isNative = artifact?.transport === NATIVE_TRANSPORT;
+  // Contract-specific, fail-closed (the PR 1380 review): a bare
+  // `nativeApp: true` must not override the artifact's actual transport — a
+  // browser artifact wearing a stray native flag was accepted for a native
+  // cell, which is the exact wrong-runtime banking this guard exists to stop.
+  // An artifact whose fields contradict each other matches NEITHER runtime.
+  const transport = artifact?.transport;
+  const nativeFlag = artifact?.nativeApp === true;
+  const isNative =
+    transport === NATIVE_TRANSPORT || (NATIVE_CAPABLE_TRANSPORTS.has(transport) && nativeFlag);
+  const contradictory =
+    nativeFlag && transport !== NATIVE_TRANSPORT && !NATIVE_CAPABLE_TRANSPORTS.has(transport);
+  if (contradictory) return false;
   return runtime === 'native' ? isNative : !isNative;
 }
 
@@ -501,6 +525,9 @@ export function splitTransportIdentityProblem(target, host) {
 
 function splitTransportArgs(target, host) {
   const args = [`--platform=${target.splitPlatform}`];
+  // The split runner opens the installed app instead of a browser tab; the
+  // page still arrives from the probe host through the app's server.url.
+  if (target.runtime === 'native') args.push('--native-app');
   if (target.splitPlatform === 'android' && host.deviceId) {
     args.push(`--device-serial=${host.deviceId}`);
   }

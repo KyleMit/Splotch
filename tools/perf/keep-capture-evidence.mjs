@@ -22,6 +22,7 @@ import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
 import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
+import { attributionOf } from './lib/capture-attribution.mjs';
 
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 
@@ -68,14 +69,18 @@ function scoreabilityTier(fidelity) {
   return numberInvalidatingFailure(fidelity) ? 3 : 1;
 }
 
-export function selectEvidence(candidates) {
+export function selectEvidence(candidates, { keepAll = false } = {}) {
   const groups = new Map();
   for (const candidate of candidates) {
     // A hand capture is one a person paid for, and a hand corpus exists to show
     // spread (see 2026-08-23-hand): every one is kept, not one per target x brush.
-    const key = candidate.handCapture
-      ? candidate.relativePath
-      : `${candidate.target}:${candidate.brush}`;
+    // --keep-all extends the same treatment to an automation STUDY corpus
+    // (issue 1344): a spread or repeat-count study's evidence IS the set —
+    // deduping it to one representative deletes the quantity it measured.
+    const key =
+      candidate.handCapture || keepAll
+        ? candidate.relativePath
+        : `${candidate.target}:${candidate.brush}`;
     const group = groups.get(key) ?? [];
     group.push(candidate);
     groups.set(key, group);
@@ -129,8 +134,8 @@ export function failedRepresentativeProblem(selected, { allowFailed } = {}) {
 // not injective: run--a/hand.json and run/a--hand.json both flattened to the
 // same name, and the second write silently replaced the first — the exact
 // loss this function exists to prevent.
-export function evidenceFileName(entry) {
-  if (!entry.handCapture) return `${entry.target}-${entry.brush}.json`;
+export function evidenceFileName(entry, { keepAll = false } = {}) {
+  if (!entry.handCapture && !keepAll) return `${entry.target}-${entry.brush}.json`;
   const digest = createHash('sha256').update(entry.relativePath).digest('hex').slice(0, 8);
   return `${basename(entry.relativePath, '.json')}--${digest}.json`;
 }
@@ -141,6 +146,8 @@ export async function keepCaptureEvidence({
   target = argFlag('target'),
   filter = argFlag('filter'),
   force = argFlag('force') !== undefined || process.argv.includes('--force'),
+  keepAll = argFlag('keep-all') !== undefined || process.argv.includes('--keep-all'),
+  study = argFlag('study'),
   allowFailed = argFlag('allow-failed') !== undefined || process.argv.includes('--allow-failed'),
   // Overridable so the end-to-end test promotes into a tmpdir instead of the
   // tracked corpus; production callers pass nothing.
@@ -148,6 +155,17 @@ export async function keepCaptureEvidence({
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
+  // --keep-all bypasses ADR-0138's one-per-target-x-brush retention decision,
+  // so it is not a context-free boolean (the PR 1383 review): it requires the
+  // study rationale that justifies keeping the whole set, recorded in the
+  // index where the next reader of the corpus will look for it.
+  if (keepAll && !study) {
+    fail(
+      '--keep-all requires --study=<one-line rationale> — a study corpus keeps ' +
+        'every capture because the SET is the result (ADR-0138 amendment); name ' +
+        'what this set measures.'
+    );
+  }
   const root = join(ROOT, corpus);
 
   const candidates = [];
@@ -178,6 +196,11 @@ export async function keepCaptureEvidence({
       brush: brushOf(parsed, relativePath),
       mode: modeOf(parsed),
       fidelity: parsed.fidelity ?? null,
+      // Computed from the artifact's own report URL at promotion time (issue
+      // 1356) — the index marking the readers refuse on must never be
+      // hand-typed. `cellAttributable: null` means the capture carries no
+      // probe nonce and is outside this audit.
+      attribution: attributionOf(parsed),
       // A hand capture's index row carries what the finger measured, so the
       // corpus is readable without opening a minified frame table — the shape
       // the 2026-08-23-hand corpus established.
@@ -194,7 +217,7 @@ export async function keepCaptureEvidence({
   }
   if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
 
-  const selected = selectEvidence(candidates);
+  const selected = selectEvidence(candidates, { keepAll });
   const noValidRepresentative = failedRepresentativeProblem(selected, { allowFailed });
   if (noValidRepresentative) fail(noValidRepresentative);
   const destination = join(ROOT, evidenceRoot, campaign);
@@ -225,7 +248,7 @@ export async function keepCaptureEvidence({
   // exists to prevent, so it fails loudly instead.
   const emitted = new Set();
   for (const entry of selected) {
-    const name = evidenceFileName(entry);
+    const name = evidenceFileName(entry, { keepAll });
     if (emitted.has(name)) {
       fail(`evidence file name collision: ${name} (from ${entry.relativePath})`);
     }
@@ -243,13 +266,22 @@ export async function keepCaptureEvidence({
       {
         campaign,
         capturedFrom: corpus,
+        ...(keepAll ? { study } : {}),
         kept: selected.map((entry) => ({
-          file: evidenceFileName(entry),
+          file: evidenceFileName(entry, { keepAll }),
           target: entry.target,
           brush: entry.brush,
           mode: entry.mode,
           fidelityPassed: entry.fidelity?.passed ?? null,
           source: entry.relativePath,
+          // Stamped only when the nonce audit applies and contradicts the
+          // label: an attributable capture records no claim (the sweep treats
+          // absence as attributable), and a nonce-less transport is outside
+          // the audit rather than clean — conflating those would let a
+          // contaminated promotion pass by simply dropping the field.
+          ...(entry.attribution?.cellAttributable === false
+            ? { cellAttributable: false, reportNonce: entry.attribution.reportNonce }
+            : {}),
           ...(entry.handCapture
             ? {
                 handCapture: true,

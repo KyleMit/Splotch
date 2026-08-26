@@ -13,6 +13,7 @@ import { fail, hasCommand, pollUntil, sleep } from '../../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../../lib/net.mjs';
 import { assertServedBuildIsFresh } from './profile-preview.mjs';
 import { spawnPerfServe } from '../serve-profile-build.mjs';
+import { rethrowIfBroken } from './error-classification.mjs';
 import {
   PROXY_COMMAND,
   attachToPage,
@@ -114,7 +115,8 @@ async function findResponsivePage(device, accept = () => true) {
       });
       await session.evaluate('1');
       return page;
-    } catch {
+    } catch (error) {
+      rethrowIfBroken(error);
       // Suspended, or the tab went away mid-probe.
     } finally {
       session?.close();
@@ -179,7 +181,11 @@ export async function openDevicePage(device, url, { onConsole, onEvent, ready, r
 
   const session = await attachToPage(loaded.webSocketDebuggerUrl, { onConsole, onEvent });
   const isReady = await pollUntil(
-    () => session.readJson(`!!(${ready})`).catch(() => false),
+    () =>
+      session.readJson(`!!(${ready})`).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
     PAGE_READY_TIMEOUT_MS,
     PAGE_POLL_INTERVAL_MS
   );

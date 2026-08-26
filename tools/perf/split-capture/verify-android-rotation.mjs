@@ -36,13 +36,13 @@ import {
 } from './lib/android-input.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
 import { lanAddress } from './verify-android-input.mjs';
+import { pollFor } from './lib/poll.mjs';
 
 const DEFAULT_PORT = 4177;
 const APP_STOP_SETTLE_MS = 1_500;
 const ROTATION_SETTLE_MS = 2_500;
 const PAGE_SETTLE_MS = 6_000;
 const READY_TIMEOUT_MS = 60_000;
-const POLL_INTERVAL_MS = 1_000;
 // Landscape first: it is the one that fails, so a broken rig reports in half the
 // time. Portrait follows to prove the device comes back rather than being stuck the
 // other way, which looks identical from a single landscape sample.
@@ -64,16 +64,6 @@ function readRotationSettings(serial) {
       adb(serial, ['shell', 'settings', 'get', 'system', key]).trim(),
     ])
   );
-}
-
-async function pollFor(callback, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const value = await callback().catch(() => null);
-    if (value) return value;
-    await sleep(POLL_INTERVAL_MS);
-  }
-  return null;
 }
 
 async function observeOrientation(serial, state, pageUrl, orientation) {

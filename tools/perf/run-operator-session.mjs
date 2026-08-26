@@ -24,7 +24,7 @@
 // session. The rig it brings up — preview, probe host, Appium — is left running
 // on purpose (see the start-capture-session skill).
 import { spawn, spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, openSync } from 'node:fs';
+import { existsSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import {
@@ -45,9 +45,11 @@ import {
   waitForPortRelease,
 } from '../lib/vite-server.mjs';
 import { classifyLaunchProbe, explicitProbePortDecision } from './lib/capture-readiness.mjs';
+import { GRANT_LOG, recordGrantAttempt } from './lib/grant-log.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { DEFAULT_PROBE_PORT } from './split-capture/serve-probe-host.mjs';
 import { prepareCapture, probeIosLaunch, probeProbeHost } from './prepare-capture.mjs';
+import { rethrowIfBroken } from './lib/error-classification.mjs';
 
 const STEP_NAMES = ['grant', 'android-hand', 'ios-hand'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -60,10 +62,6 @@ const SERVER_READY_TIMEOUT_MS = 90_000;
 const GRANT_MAX_ATTEMPTS = 2;
 const OUTPUT_ROOT = join('perf-profiles', 'split-capture', 'hand-native');
 const LOG_DIR = join(ROOT, 'perf-profiles', 'operator-logs');
-// Tracked (perf-profiles/evidence is the one un-gitignored perf path), because
-// this file IS the longitudinal dataset issue 1299 wants: an untracked log is
-// one `rm -rf perf-profiles` from erasing the only grant-lifetime evidence.
-const GRANT_LOG = join(ROOT, 'perf-profiles', 'evidence', 'operator', 'ipad-grant-log.tsv');
 
 export function operatorSessionPlan({
   steps = STEP_NAMES,
@@ -151,7 +149,10 @@ export function handCaptureArgs({
 async function urlAnswers(url) {
   return fetch(url, { signal: AbortSignal.timeout(2_000) })
     .then((response) => response.ok)
-    .catch(() => false);
+    .catch((error) => {
+      rethrowIfBroken(error);
+      return false;
+    });
 }
 
 function spawnDetached(command, args, logName, env = {}) {
@@ -248,26 +249,6 @@ async function ensureAppium(port) {
   spawnDetached('appium', ['--port', String(port), '--log-timestamp'], 'appium.log');
   await waitForUrl(`http://127.0.0.1:${port}/status`, SERVER_READY_TIMEOUT_MS);
   console.log(`  appium ${port} — started`);
-}
-
-// One row per WDA launch attempt: the only dataset that can ever answer how
-// long an automation grant lasts. Values are flattened to single-line fields so
-// a multi-sentence Appium message cannot break the TSV.
-export function grantLogLine({ timestamp, udid, outcome, detail }) {
-  const cell = (value) =>
-    String(value ?? '')
-      .replace(/\s+/g, ' ')
-      .trim();
-  return `${cell(timestamp)}\t${cell(udid)}\t${cell(outcome)}\t${cell(detail)}\n`;
-}
-
-function recordGrantAttempt(udid, outcome, detail) {
-  mkdirSync(join(ROOT, 'perf-profiles', 'evidence', 'operator'), { recursive: true });
-  if (!existsSync(GRANT_LOG)) appendFileSync(GRANT_LOG, 'timestamp\tudid\toutcome\tdetail\n');
-  appendFileSync(
-    GRANT_LOG,
-    grantLogLine({ timestamp: new Date().toISOString(), udid, outcome, detail })
-  );
 }
 
 async function runGrantStep({ udid, appiumPort, wdaPort, ask }) {
