@@ -157,7 +157,11 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-device-native': {
     captureRuntime: 'android-capacitor-webview',
-    refreshRegime: null,
+    // Measured from the 2026-08-24-hand-native real-finger captures: both report an
+    // 8.3 ms beat in the installed Capacitor WebView on the SM-G990U1 — the same
+    // panel android-device-web is established at. Declared from those captures, not
+    // inferred from the sibling; refresh-regime.test.mjs pins the corpus.
+    refreshRegime: '120hz',
     deviceClass: 'handset',
     label: 'Android device · native',
     transport: 'appium',
