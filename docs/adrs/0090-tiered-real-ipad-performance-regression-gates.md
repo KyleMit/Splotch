@@ -322,9 +322,9 @@ an allowance still fails; the full measurements live in ADR-0049's amendment.
 
 `open Settings` breached the separate 33.5 ms max-frame gate at 44-55 ms on every theme-focused
 automated physical run since 2026-08-17, identically at base and branch, while staying inside its
-P95 allowance (issue 1130). Two independent instruments attribute the frame off the app: the
-issue's Time Profiler capture found no saturated `com.apple.WebKit.WebContent` main-thread run
-under it, and a 2026-08-26 Animation Hitches trace over a focused six-open sweep put every hitch in
+P95 allowance (issue 1130). Two independent instruments attribute the frame off the app: the issue's
+Time Profiler capture found no saturated `com.apple.WebKit.WebContent` main-thread run under it, and
+a 2026-08-26 Animation Hitches trace over a focused six-open sweep put every hitch in
 `AutomationModeUI`, `pointeruid` (the synthetic-touch pointer overlay), SpringBoard, and
 MobileSafari chrome — WebContent never hitched. The stall is the automation apparatus's own
 compositor contention around the `showModal` flip, so the exception ledger gains a max-frame half
