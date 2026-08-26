@@ -1161,3 +1161,78 @@ describe('release gate prose', () => {
     );
   });
 });
+
+// The refill record is consumed at the fold too (issue 1355, hardened by the
+// PR 1363 review): a run with a recorded anomaly, or a clean record shorter
+// than its own repeat contract implies, measured erasing blank paper — the
+// fold refuses loudly instead of publishing the optimistic cell.
+describe('the eraser refill record in a folded cell', () => {
+  function writeEraserCapture(directory, name, { eraserRefills, gestureRepeats } = {}) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        gestureRepeats,
+        eraserRefills,
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  const eraserManifest = (eraser) =>
+    manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+
+  it('refuses a fold containing an anomalous refill, naming the source and record', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const anomalous = writeEraserCapture(directory, 'eraser-anomalous.json', {
+      eraserRefills: [{ afterStroke: 4, pending: true, transparentTiles: [] }],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([anomalous]), directory)).toThrow(
+      /eraser folds a capture whose eraser refills recorded an anomaly.*eraser-anomalous\.json/s
+    );
+  });
+
+  it('refuses a clean record shorter than its own repeat contract', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const short = writeEraserCapture(directory, 'eraser-short.json', {
+      gestureRepeats: 10,
+      eraserRefills: [{ afterStroke: 4, pending: false, transparentTiles: [] }],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([short]), directory)).toThrow(
+      /refills never fired.*eraser-short\.json \(recorded 1, expected 9\)/s
+    );
+  });
+
+  it('folds an absent record and a complete clean one as before', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const legacy = writeEraserCapture(directory, 'eraser-legacy.json', {});
+    const complete = writeEraserCapture(directory, 'eraser-complete.json', {
+      gestureRepeats: 3,
+      eraserRefills: [
+        { afterStroke: 4, pending: false, transparentTiles: [] },
+        { afterStroke: 8, pending: false, transparentTiles: [] },
+      ],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([legacy]), directory)).not.toThrow();
+    expect(() => normalizeMatrix(eraserManifest([complete]), directory)).not.toThrow();
+  });
+});

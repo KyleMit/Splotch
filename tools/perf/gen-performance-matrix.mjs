@@ -22,6 +22,7 @@ import {
 import {
   CAMPAIGN_TARGETS,
   anomalousEraserRefills,
+  eraserRefillShortfall,
   gesturePlanFor,
   recordedGesturePlan,
   recordedGestureRepeats,
@@ -361,6 +362,7 @@ function normalizeDrawingRun(
     // recorded an anomaly measured erasing blank paper on later passes, so the
     // fold below refuses it rather than publishing an optimistic cell.
     anomalousEraserRefills: anomalousEraserRefills(profile),
+    eraserRefillShortfall: eraserRefillShortfall(profile, recordedGestureRepeats(profile)),
     // One composed answer to "can I trust this number?" — see composeRunTrust.
     trust: composeRunTrust(profile, {
       fidelity,
@@ -484,6 +486,21 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
       const plans = [
         ...new Set(runs.map((run) => run.gesturePlan).filter((plan) => typeof plan === 'string')),
       ];
+      if (plans.length > 1) {
+        const planSources = runs
+          .map((run) => `${run.source} (${run.gesturePlan ?? 'unrecorded'})`)
+          .join(', ');
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds captures under different gesture plans ` +
+            `(${plans.join(', ')}) — how each pass was fed ink is part of what the cell measured. ` +
+            `Sources: ${planSources}`
+        );
+      }
+      // After the plan checks, mirroring acceptance's ordering so both readers
+      // name the same first problem: the plan states intent, the refills prove
+      // outcome. A run with a recorded anomaly, or a clean record SHORTER than
+      // the contract implies (repeats - 1: the refills never fired), measured
+      // erasing blank paper on later passes (issue 1355).
       const refillFailures = runs.filter((run) => (run.anomalousEraserRefills?.length ?? 0) > 0);
       if (refillFailures.length) {
         const detail = refillFailures
@@ -500,14 +517,19 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
             `quantity (issue 1355). Recapture the cell. Sources: ${detail}`
         );
       }
-      if (plans.length > 1) {
-        const planSources = runs
-          .map((run) => `${run.source} (${run.gesturePlan ?? 'unrecorded'})`)
-          .join(', ');
+      const shortfalls = runs.filter((run) => run.eraserRefillShortfall !== null);
+      if (shortfalls.length) {
+        const detail = shortfalls
+          .map(
+            (run) =>
+              `${run.source} (recorded ${run.eraserRefillShortfall.recorded}, expected ` +
+              `${run.eraserRefillShortfall.expected})`
+          )
+          .join('; ');
         throw new Error(
-          `${targetId} ${mode.id} ${brush} folds captures under different gesture plans ` +
-            `(${plans.join(', ')}) — how each pass was fed ink is part of what the cell measured. ` +
-            `Sources: ${planSources}`
+          `${targetId} ${mode.id} ${brush} folds a capture whose eraser refills never fired — ` +
+            `a clean record shorter than the contract proves the later passes erased blank ` +
+            `paper (issue 1355). Recapture the cell. Sources: ${detail}`
         );
       }
       // A single run is the published norm (one capture decides a cell), so the

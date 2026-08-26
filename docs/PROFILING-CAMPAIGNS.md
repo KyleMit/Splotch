@@ -128,12 +128,16 @@ eraser, `fixed-geometry` otherwise; absent means unrefilled fixed-geometry). The
 enforced for any plan an artifact RECORDS: campaign acceptance refuses a banked cell whose recorded
 plan disagrees with the contract (`wrong-gesture-plan`, checked after the repeat count for the same
 most-fundamental-rejection-first reason), and the matrix refuses both a recorded plan that disagrees
-with a repeat-driven target's contract and two runs recording different plans in one cell. An
-artifact predating the field is a known quantity — unrefilled — and is accepted anyway, by the
-standing decision that banked pre-fix evidence stays foldable until the campaign-end recapture
-supersedes it. The enforcement therefore does not cover the absent-plan case: do not compare an
-eraser number across that boundary, and treat the matrix's pre-refill eraser column as superseded
-once the recapture lands.
+with a repeat-driven target's contract and two runs recording different plans in one cell. The
+refill record itself is consumed too (issue 1355): an anomalous entry — pending, transparent tiles,
+an error, or any shape the reader does not recognize — refuses the capture (`eraser-fill-failed`,
+checked after the plan so the most fundamental rejection is named first), as does a clean record
+shorter than the contract implies (repeats − 1 entries; fewer means the refills never fired), and
+the matrix refuses to fold either case. An artifact predating the field is a known quantity —
+unrefilled — and is accepted anyway, by the standing decision that banked pre-fix evidence stays
+foldable until the campaign-end recapture supersedes it. The enforcement therefore does not cover
+the absent-plan case: do not compare an eraser number across that boundary, and treat the matrix's
+pre-refill eraser column as superseded once the recapture lands.
 
 **A drawing cell captured at a different `--gesture-repeats` count is not the campaign's cell.**
 First-contact costs — tile realization, base raster promotion, history bookkeeping — happen once and

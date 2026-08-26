@@ -746,10 +746,38 @@ export function anomalousEraserRefills(artifact) {
         'a malformed refill record is an invalid artifact, not a historical one'
     );
   }
-  return recorded.filter(
-    (refill) =>
-      refill?.error !== undefined ||
-      refill?.pending === true ||
-      (refill?.transparentTiles?.length ?? 0) > 0
+  // FAIL CLOSED at the entry level (the PR 1363 review probed truthy-array
+  // `pending` — the recorder's own pre-coercion shape — plus `{}` and `null`
+  // entries through acceptance, and all three banked): an entry is healthy only
+  // when it affirmatively proves it, and any shape this reader does not
+  // recognize counts as anomalous rather than as consent.
+  return recorded.filter((refill) => !healthyRefillEntry(refill));
+}
+
+function healthyRefillEntry(refill) {
+  return (
+    refill !== null &&
+    typeof refill === 'object' &&
+    refill.error === undefined &&
+    refill.pending === false &&
+    Array.isArray(refill.transparentTiles) &&
+    refill.transparentTiles.length === 0
   );
+}
+
+// The refill recorder is armed with (strokesPerRepeat, repeats x
+// strokesPerRepeat) and refills after every repeat's last stroke except the
+// final one, so a complete eraser capture records exactly repeats - 1 entries.
+// Fewer means refills silently never fired — zero recorded anomalies while the
+// later passes erased blank paper, the exact state the record exists to refuse
+// (the review's finding: the record proves recorded anomalies, not that
+// refills happened). Null when there is nothing to hold to a count: an absent
+// field (historical tolerance) or no expected repeat contract.
+export function eraserRefillShortfall(artifact, expectedRepeats) {
+  const recorded = artifact?.eraserRefills ?? null;
+  if (recorded === null || !Array.isArray(recorded)) return null;
+  if (!Number.isFinite(expectedRepeats) || expectedRepeats < 2) return null;
+  const expectedRefills = expectedRepeats - 1;
+  if (recorded.length === expectedRefills) return null;
+  return { recorded: recorded.length, expected: expectedRefills };
 }

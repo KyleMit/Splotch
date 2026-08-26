@@ -650,3 +650,52 @@ describe('acceptance re-derives fidelity when it can', () => {
     ).toMatchObject({ ok: false, status: UNSCOREABLE });
   });
 });
+
+// The PR 1363 review probed three unrecognized entry shapes through acceptance
+// and all three banked: the predicate failed open. An entry is now healthy only
+// when it affirmatively proves it, and a clean record SHORTER than the
+// contract implies (repeats - 1) proves the refills never fired.
+describe('eraser refill fail-closed hardening (PR 1363 review)', () => {
+  const accepted = (eraserRefills, expectedGestureRepeats = null) =>
+    inspectArtifact(artifactAt({ ...scoreable, eraserRefills }), 'web', {
+      verdictRequired: true,
+      expectedRefreshRegime: '60hz',
+      expectedGestureRepeats,
+    });
+
+  it.each([
+    [
+      'truthy-array pending (the pre-coercion recorder shape)',
+      [{ afterStroke: 2, pending: ['4096x4096 vs 100x100'], transparentTiles: [] }],
+    ],
+    ['an empty-object entry', [{}]],
+    ['a null entry', [null]],
+    ['a missing transparentTiles list', [{ afterStroke: 2, pending: false }]],
+  ])('refuses %s', (_case, eraserRefills) => {
+    expect(accepted(eraserRefills)).toMatchObject({ ok: false, status: ERASER_FILL_FAILED });
+  });
+
+  it('refuses a clean record shorter than the contract implies', () => {
+    const oneRefill = [{ afterStroke: 4, pending: false, transparentTiles: [] }];
+    const verdict = accepted(oneRefill, 10);
+
+    expect(verdict).toMatchObject({ ok: false, status: ERASER_FILL_FAILED });
+    expect(verdict.refillShortfall).toEqual({ recorded: 1, expected: 9 });
+  });
+
+  it('accepts a complete clean record against its contract', () => {
+    const nine = Array.from({ length: 9 }, (_, index) => ({
+      afterStroke: (index + 1) * 4,
+      pending: false,
+      transparentTiles: [],
+    }));
+
+    expect(accepted(nine, 10)).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
+  it('keeps the historical tolerances: absent field, and no repeat contract', () => {
+    expect(accepted(undefined, 10)).toMatchObject({ ok: true, status: COMPLETE });
+    const oneRefill = [{ afterStroke: 4, pending: false, transparentTiles: [] }];
+    expect(accepted(oneRefill, null)).toMatchObject({ ok: true, status: COMPLETE });
+  });
+});

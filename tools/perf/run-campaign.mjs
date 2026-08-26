@@ -29,6 +29,7 @@ import {
   artifactPassedFidelity,
   campaignTarget,
   effectiveFidelity,
+  eraserRefillShortfall,
   cellServerSource,
   recordedGesturePlan,
   recordedGestureRepeats,
@@ -188,6 +189,12 @@ export function inspectArtifact(
   }
   if (refills !== null && refills.length > 0) {
     return { ok: false, status: ERASER_FILL_FAILED, anomalousRefills: refills };
+  }
+  // A refill record that is clean but SHORT proves the refills never fired:
+  // zero recorded anomalies while the later passes erased blank paper.
+  const shortfall = eraserRefillShortfall(artifact, expectedGestureRepeats);
+  if (shortfall !== null) {
+    return { ok: false, status: ERASER_FILL_FAILED, refillShortfall: shortfall };
   }
   return { ok: true, status: COMPLETE, regime };
 }
@@ -458,6 +465,14 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         console.log(
           `RETRY ${cell.id} — captured under the ${inspected.recordedPlan} gesture plan, ` +
             `not the campaign contract of ${cell.gesturePlan}`
+        );
+      } else if (inspected.status === ERASER_FILL_FAILED) {
+        const reason = inspected.refillShortfall
+          ? `recorded ${inspected.refillShortfall.recorded} refills where the contract expects ` +
+            `${inspected.refillShortfall.expected} — the refills never fired`
+          : `first anomalous refill: ${JSON.stringify(inspected.anomalousRefills?.[0])}`;
+        console.log(
+          `RETRY ${cell.id} — the eraser's between-pass refills did not prove ink (${reason})`
         );
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);
