@@ -59,11 +59,16 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
   mirror: CanvasRenderingContext2D | null;
-  // EXPERIMENT (exp/crayon-i18-hybrid): snapshot of the target's pre-pass
-  // pixels, captured INCREMENTALLY as the pass bounds grow, so restamps can
-  // restore the under-ink before re-applying the glaze. Valid exactly over
-  // `bounds`; only non-virgin passes maintain it.
+  // EXPERIMENT (exp/crayon-i19-shadow-under): offscreen shadow of the
+  // target's pixels, used to restore the under-ink before each restamp.
+  // Captured from the target AT MOST once per invalidation — reading a
+  // composited live canvas per op forces GPU pipeline syncs and froze the
+  // page outright (i18: 97% lost) — and thereafter maintained purely
+  // offscreen by folding each pass's glaze into it at flush.
   under: CanvasRenderingContext2D | null;
+  // Whether `under` still mirrors the target. Foreign ink, eraser, undo,
+  // clear, repaint, and a virgin pass's direct paint all invalidate it.
+  underValid: boolean;
   // True while the open pass sits on a tile that was blank at pass open —
   // the glaze over blank paper collapses to exactly the wax, so ops paint
   // the target directly and nothing needs buffering or flushing.
@@ -105,7 +110,15 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, mirror: null, under: null, virgin: false, dirty: false, bounds: null };
+    buf = {
+      ctx: g,
+      mirror: null,
+      under: null,
+      underValid: false,
+      virgin: false,
+      dirty: false,
+      bounds: null,
+    };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -127,41 +140,27 @@ export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
 }
 
 // A repaint clears the tiles and replays ops from scratch, so any open pass
-// state (buffered wax, under snapshot, virginity) describes pixels that no
+// state (buffered wax, under shadow, virginity) describes pixels that no
 // longer exist. Reset before replaying.
 export function resetCrayonPassStateForRepaint(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
-  if (buf?.dirty) clearCrayonBounds(buf);
+  if (buf) {
+    if (buf.dirty) clearCrayonBounds(buf);
+    buf.underValid = false;
+  }
   blankAtPassOpen.delete(target);
 }
 
-// Up to four pieces of `rect` lying outside `hole` — the region of a new op
-// rect not yet covered by the pass bounds.
-function subtractRect(rect: DeviceRect, hole: DeviceRect): DeviceRect[] {
-  const pieces: DeviceRect[] = [];
-  const ix0 = Math.max(rect.x0, hole.x0);
-  const iy0 = Math.max(rect.y0, hole.y0);
-  const ix1 = Math.min(rect.x1, hole.x1);
-  const iy1 = Math.min(rect.y1, hole.y1);
-  if (ix1 <= ix0 || iy1 <= iy0) return [rect];
-  if (rect.y0 < iy0) pieces.push({ x0: rect.x0, y0: rect.y0, x1: rect.x1, y1: iy0 });
-  if (iy1 < rect.y1) pieces.push({ x0: rect.x0, y0: iy1, x1: rect.x1, y1: rect.y1 });
-  if (rect.x0 < ix0) pieces.push({ x0: rect.x0, y0: iy0, x1: ix0, y1: iy1 });
-  if (ix1 < rect.x1) pieces.push({ x0: ix1, y0: iy0, x1: rect.x1, y1: iy1 });
-  return pieces;
+// Anything that changes the target's pixels outside this module's own stamps
+// makes the under shadow stale.
+export function invalidateCrayonUnder(target: CanvasRenderingContext2D) {
+  const buf = existingBufferFor(target);
+  if (buf) buf.underValid = false;
 }
 
-// Grow the under snapshot to cover the pass bounds' expansion by the new op
-// rect. The expansion region holds only un-restamped target pixels (restamps
-// stay inside the current bounds), so copying it now is exact. Capturing the
-// full bounds expansion — not just the op rect's remainder — keeps the
-// captured region a rect equal to `bounds`, so disjoint ops inside one pass
-// can never leave an uncaptured gap that a later restamp would wipe.
-function captureUnderExpansion(
-  buf: CrayonPassBuffer,
-  target: CanvasRenderingContext2D,
-  rect: DeviceRect
-) {
+// Refresh the under shadow from the target — the one read of a composited
+// canvas this architecture permits, and only when the shadow went stale.
+function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingContext2D) {
   const w = target.canvas.width;
   const h = target.canvas.height;
   if (!buf.under) {
@@ -172,23 +171,11 @@ function captureUnderExpansion(
   } else if (buf.under.canvas.width !== w || buf.under.canvas.height !== h) {
     buf.under.canvas.width = w;
     buf.under.canvas.height = h;
+  } else {
+    buf.under.clearRect(0, 0, w, h);
   }
-  const grown: DeviceRect = buf.bounds
-    ? {
-        x0: Math.min(buf.bounds.x0, rect.x0),
-        y0: Math.min(buf.bounds.y0, rect.y0),
-        x1: Math.max(buf.bounds.x1, rect.x1),
-        y1: Math.max(buf.bounds.y1, rect.y1),
-      }
-    : rect;
-  const pieces = buf.bounds ? subtractRect(grown, buf.bounds) : [grown];
-  for (const p of pieces) {
-    const pw = p.x1 - p.x0;
-    const ph = p.y1 - p.y0;
-    if (pw <= 0 || ph <= 0) continue;
-    buf.under.clearRect(p.x0, p.y0, pw, ph);
-    buf.under.drawImage(target.canvas, p.x0, p.y0, pw, ph, p.x0, p.y0, pw, ph);
-  }
+  buf.under.drawImage(target.canvas, 0, 0);
+  buf.underValid = true;
 }
 
 // Restore the op's rect from the under snapshot, then re-apply the two-blit
@@ -303,15 +290,32 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  // EXPERIMENT (exp/crayon-i18-hybrid): the target already holds the exact
-  // pass-close pixels — a virgin pass painted them directly, a non-virgin
-  // pass restamped every op rect — so the flush only resets pass state.
+  // The target already holds the exact pass-close pixels — a virgin pass
+  // painted them directly, a non-virgin pass restamped every op rect — so
+  // the flush's pixel work is keeping the under SHADOW current instead:
+  // fold this pass's glaze into it offscreen, so the next pass needs no
+  // read of the composited target. A virgin pass buffered nothing, so its
+  // wax cannot be folded — the shadow goes stale instead and the next
+  // non-virgin pass open re-reads once.
+  if (buf.virgin) {
+    buf.underValid = false;
+  } else if (buf.under && buf.underValid && buf.bounds) {
+    const b = buf.bounds;
+    const w = b.x1 - b.x0;
+    const h = b.y1 - b.y0;
+    const under = buf.under;
+    stampSubtractiveGlaze(under, getCrayonMix(), () => {
+      under.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
+    });
+    under.globalCompositeOperation = 'source-over';
+  }
   clearCrayonBounds(buf);
 }
 
 // A 'clear' op's crayon side effects, without the pixel wipe.
 export function resetCrayonStateForClear(target: CanvasRenderingContext2D) {
   dropCrayonBuffer(target);
+  invalidateCrayonUnder(target);
 }
 
 // Discard the target's open pass without stamping — a 'clear' wipes everything,
@@ -335,9 +339,12 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   }
   const buf = crayonBufferFor(target);
   if (!buf.dirty) {
-    // Pass open: a tile the renderer marked blank takes the virgin fast path.
+    // Pass open: a tile the renderer marked blank takes the virgin fast
+    // path; a non-virgin pass refreshes the under shadow only if something
+    // invalidated it since the last fold.
     buf.virgin = blankAtPassOpen.has(target);
     blankAtPassOpen.delete(target);
+    if (!buf.virgin && !buf.underValid) captureUnderSnapshot(buf, target);
   }
   if (buf.virgin) {
     // Over blank paper the glaze collapses to exactly the wax (see the
@@ -353,7 +360,6 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   buf.dirty = true;
   const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
   if (rect) {
-    captureUnderExpansion(buf, target, rect);
     restampRect(target, buf, rect);
     unionCrayonBounds(buf, rect);
   }
