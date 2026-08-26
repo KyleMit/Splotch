@@ -169,8 +169,10 @@ let lastColorChangeTime = 0;
 // `1 - mix`-opacity preview until the flush.
 //
 function syncCrayonOverlayMix() {
-  const opacity = String(1 - crayonColorMix());
-  syncTiledCrayonMix(opacity);
+  // EXPERIMENT (exp/crayon-i4-single-plane): the top plane holds premixed
+  // glaze pixels, so it composites at full opacity; the bottom plane is
+  // hidden storage and its darken blend never runs.
+  syncTiledCrayonMix('1');
 }
 
 // Close the current deposition pass by stamping each tile's live buffer and

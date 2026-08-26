@@ -59,6 +59,10 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
   mirror: CanvasRenderingContext2D | null;
+  // EXPERIMENT (exp/crayon-i4-single-plane): snapshot of the target's pixels
+  // at pass open, so the single preview plane can show the exact premixed
+  // glaze without any blend-mode compositing.
+  under: CanvasRenderingContext2D | null;
   dirty: boolean;
   // Device-px bounding box of the open pass's ink, so the stamp and the
   // post-stamp clear touch only the pass-sized rect — a flush stays
@@ -78,7 +82,7 @@ export function setCrayonBufferForTarget(
 ) {
   buffer.canvas.hidden = true;
   mirror.canvas.hidden = true;
-  bufferByTarget.set(target, { ctx: buffer, mirror, dirty: false, bounds: null });
+  bufferByTarget.set(target, { ctx: buffer, mirror, under: null, dirty: false, bounds: null });
 }
 
 function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
@@ -92,7 +96,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, mirror: null, dirty: false, bounds: null };
+    buf = { ctx: g, mirror: null, under: null, dirty: false, bounds: null };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -237,38 +241,73 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     paintCrayon(target, op);
     return;
   }
+  // EXPERIMENT (exp/crayon-i4-single-plane): the bottom plane is pure hidden
+  // storage; the top plane (CSS blend normal, opacity 1) is the ONLY
+  // composited preview, and it shows the exact premixed glaze: under-ink
+  // restored from a pass-open snapshot, then the two-blit stamp — the same
+  // pixels the flush will bake into the tile.
   const buf = crayonBufferFor(target);
-  buf.ctx.canvas.hidden = false;
   if (buf.mirror) buf.mirror.canvas.hidden = false;
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
-  buf.mirror?.setTransform(matrix);
+  if (!buf.dirty && buf.mirror) captureUnderSnapshot(buf, target);
   paintCrayon(buf.ctx, op);
   buf.dirty = true;
   const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
   if (buf.mirror && rect) {
-    // The mirror's pixels are the buffer's pixels — same op, same seed, same
-    // patterns — so re-running the pattern fill to produce them is pure
-    // duplicate work. Clearing and copying the op's own rect gives byte-identical
-    // output for one blit instead of `passes` pattern-filled strokes, which on
-    // the default two-pass crayon halves the fills every op does.
     const width = rect.x1 - rect.x0;
     const height = rect.y1 - rect.y0;
-    buf.mirror.save();
-    buf.mirror.setTransform(1, 0, 0, 1, 0, 0);
-    buf.mirror.clearRect(rect.x0, rect.y0, width, height);
-    buf.mirror.drawImage(
-      buf.ctx.canvas,
-      rect.x0,
-      rect.y0,
-      width,
-      height,
-      rect.x0,
-      rect.y0,
-      width,
-      height
-    );
-    buf.mirror.restore();
+    const preview = buf.mirror;
+    preview.save();
+    preview.setTransform(1, 0, 0, 1, 0, 0);
+    preview.globalCompositeOperation = 'source-over';
+    preview.clearRect(rect.x0, rect.y0, width, height);
+    if (buf.under) {
+      preview.drawImage(
+        buf.under.canvas,
+        rect.x0,
+        rect.y0,
+        width,
+        height,
+        rect.x0,
+        rect.y0,
+        width,
+        height
+      );
+    }
+    stampSubtractiveGlaze(preview, getCrayonMix(), () => {
+      preview.drawImage(
+        buf.ctx.canvas,
+        rect.x0,
+        rect.y0,
+        width,
+        height,
+        rect.x0,
+        rect.y0,
+        width,
+        height
+      );
+    });
+    preview.restore();
   }
   unionCrayonBounds(buf, rect);
+}
+
+// EXPERIMENT (exp/crayon-i4-single-plane): copy the target's current pixels
+// into the pass's under snapshot at pass open.
+function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingContext2D) {
+  const w = target.canvas.width;
+  const h = target.canvas.height;
+  if (!buf.under) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    buf.under = c.getContext('2d')!;
+  } else if (buf.under.canvas.width !== w || buf.under.canvas.height !== h) {
+    buf.under.canvas.width = w;
+    buf.under.canvas.height = h;
+  } else {
+    buf.under.clearRect(0, 0, w, h);
+  }
+  buf.under.drawImage(target.canvas, 0, 0);
 }
