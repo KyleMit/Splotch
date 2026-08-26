@@ -239,14 +239,15 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   }
   const buf = crayonBufferFor(target);
   buf.ctx.canvas.hidden = false;
-  if (buf.mirror) buf.mirror.canvas.hidden = false;
+  // ABLATION EXPERIMENT (exp/crayon-ablate-3-no-mirror): top plane never
+  // shown, mirror blit skipped.
+  const ABLATE_NO_MIRROR = true;
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
-  buf.mirror?.setTransform(matrix);
   paintCrayon(buf.ctx, op);
   buf.dirty = true;
   const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
-  if (buf.mirror && rect) {
+  if (!ABLATE_NO_MIRROR && buf.mirror && rect) {
     // The mirror's pixels are the buffer's pixels — same op, same seed, same
     // patterns — so re-running the pattern fill to produce them is pure
     // duplicate work. Clearing and copying the op's own rect gives byte-identical
