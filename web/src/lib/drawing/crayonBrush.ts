@@ -141,10 +141,8 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
   // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
   colorMix: 0.55,
-  passes: [
-    { widthScale: 1.0, coverage: 0.45 },
-    { widthScale: 0.68, coverage: 0.63 },
-  ],
+  // ABLATION EXPERIMENT (exp/crayon-ablate-2-single-pass): one density pass.
+  passes: [{ widthScale: 1.0, coverage: 0.63 }],
 };
 
 let opts: CrayonOptions = clone(CRAYON_DEFAULTS);
