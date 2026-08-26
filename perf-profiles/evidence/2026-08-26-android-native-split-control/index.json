@@ -1,0 +1,17 @@
+{
+  "campaign": "2026-08-26-android-native-split-control",
+  "capturedFrom": "perf-profiles/campaign-1274",
+  "kept": [
+    {
+      "file": "android-device-native-pen.json",
+      "target": "android-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "android-device-native/portrait-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

@@ -155,7 +155,7 @@ const fingerSizedContact = (input) =>
 //
 // Pressure and contact geometry are stated per runtime, each with the capture
 // that set it.
-const RUNTIME_EXPECTATIONS = {
+export const RUNTIME_EXPECTATIONS = {
   'ios-safari': {
     coalescing: NOT_APPLICABLE,
     pressure: noReportedPressure,
@@ -188,15 +188,37 @@ const RUNTIME_EXPECTATIONS = {
     pressure: NOT_APPLICABLE,
     contactGeometry: NOT_APPLICABLE,
   },
-  // The Android WebView is very likely to report what Chrome reports, and this
-  // campaign retracted three thresholds argued from exactly that kind of
-  // likelihood. Pressure and contact geometry stay uncalibrated until a capture
-  // in this runtime is read against a hand — issue 1275's corpus holds both
-  // sides and can close this when taken up.
+  // Measured on the same phone in the same installed WebView, page delivered
+  // by the probe host in both arms (issue 1274, closing issue 1218's native
+  // half): a real finger (2026-08-24-hand-native, two captures) and `adb
+  // shell input` (2026-08-26-android-native-split-control) report pressure
+  // IDENTICALLY — p50/p95/max all 1 against 1 — so pressure cannot tell a
+  // hand from a robot and is not a check, the ADR-0141 rule verbatim. (The
+  // runtime DOES report pressure now, where the 2026-08-23 probe on issue
+  // 1217 read 0; it reports the same constant for both drivers, which is what
+  // matters.) Contact geometry is different in kind: it CAN separate the two
+  // drivers — a finger reports ~3.1-3.5 px p50 radii, adb reports exactly 0 —
+  // but both drivers are trusted-path touch (trust.share 1 on both sides), so
+  // it distinguishes WHICH faithful driver, never faithful from unfaithful.
+  // The failures the verdict exists for are covered elsewhere: JS-synthesized
+  // events fail trustedTouch, under-driving fails the cadence density floor.
+  // An expectation requiring finger geometry would structurally refuse the
+  // only automatable transport; one accepting both sides is not a check.
+  // This is deliberately a THIRD exclusion ground, distinct from ADR-0141's
+  // cannot-discriminate rule — geometry CAN separate the two drivers, but it
+  // distinguishes WHICH faithful driver, never faithful from unfaithful — and
+  // it is recorded per ADR-0144's amendment as a WITNESS, not erased: every
+  // artifact keeps its raw contactWidth/Height, so the discriminator the
+  // corpus shows stays available. Reopen condition (ADR-0144 amendment): a
+  // third driver class appears, or a capture's recorded geometry contradicts
+  // its claimed driver — a finger-labelled capture reporting 0-radii, or an
+  // adb-labelled one reporting finger radii — at which point geometry
+  // graduates from witness to check. Both arms' figures are pinned by
+  // android-webview-fidelity.test.mjs.
   'android-capacitor-webview': {
     coalescing: NOT_APPLICABLE,
-    pressure: UNCALIBRATED,
-    contactGeometry: UNCALIBRATED,
+    pressure: NOT_APPLICABLE,
+    contactGeometry: NOT_APPLICABLE,
   },
   // Desktop capture synthesizes touch through Playwright and reports a
   // trusted-touch share of 0, so it can never pass `trustedTouch` and pressure

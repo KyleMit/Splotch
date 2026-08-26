@@ -151,12 +151,14 @@ describe('campaign resume', () => {
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
   });
 
-  // One attempt, not three. The cell is held by an instrument that has no
-  // expectation for its runtime, and recapturing cannot supply one — so a resumed
-  // run must not spend the remaining budget rediscovering that. The row carries
-  // the runner's `-exit-N` suffix, which is how it is written in a real ledger and
-  // the reason this is matched by prefix rather than equality.
-  it('does not retry a cell whose runtime has no measured expectation', async () => {
+  // The becomes-capturable branch, end to end, with the real expectations
+  // table: this row was seeded while the Android WebView had no measured
+  // pressure/contact expectations, and the runtime has since been calibrated
+  // (android-webview-fidelity.test.mjs) — so the recorded conclusion must not
+  // outlive the calibration, and the resume RE-CAPTURES instead of holding the
+  // cell terminal. (The one-attempt-while-uncalibrated behavior itself stays
+  // pinned runtime-independently by the nextAction cases below.)
+  it('recaptures a cell whose runtime gained calibration after the row was written', async () => {
     const root = scratch();
     seedLedgerRow(`${root}/ledger.tsv`, `${UNCALIBRATED_RUNTIME}-exit-1`);
 
@@ -164,8 +166,11 @@ describe('campaign resume', () => {
 
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
     const ledger = readFileSync(`${root}/ledger.tsv`, 'utf8');
-    expect(ledger).toContain(EXHAUSTED);
-    expect(ledger.split('\n').filter((line) => line.includes(`${FAILED}-exit-`))).toHaveLength(0);
+    // Attempts were SPENT: the sandbox has no emulator, so each recapture
+    // records a failed attempt — which is the proof the hold was released.
+    expect(
+      ledger.split('\n').filter((line) => line.includes(`${FAILED}-exit-`)).length
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -195,13 +200,16 @@ describe('an uncalibrated-runtime row after the runtime is calibrated', () => {
   });
 
   // The scenario is real rather than hypothetical: this campaign introduced the
-  // status one PR before calibrating Android Chrome, and the iPad WebView crossed
-  // the same line when the coalescing check was retired — its remaining
-  // expectations (pressure, contact geometry) are calibrated, so a banked
-  // uncalibrated-runtime verdict for it must not outlive that change either.
-  it('reads only the Android WebView as still uncalibrated', () => {
+  // status one PR before calibrating Android Chrome, the iPad WebView crossed
+  // the line when the coalescing check was retired, and the Android WebView
+  // crossed it when its pressure/contact checks were measured against a hand
+  // (android-webview-fidelity.test.mjs). Every runtime that writes a fidelity
+  // verdict is now calibrated; only the desktop table entry — which never
+  // writes a verdict of its own — still carries UNCALIBRATED rows.
+  it('reads every verdict-writing runtime as calibrated', () => {
     expect(runtimeHasUncalibratedChecks('android-chrome')).toBe(false);
     expect(runtimeHasUncalibratedChecks('ios-capacitor-webview')).toBe(false);
-    expect(runtimeHasUncalibratedChecks('android-capacitor-webview')).toBe(true);
+    expect(runtimeHasUncalibratedChecks('android-capacitor-webview')).toBe(false);
+    expect(runtimeHasUncalibratedChecks('desktop-playwright')).toBe(true);
   });
 });
