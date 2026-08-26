@@ -194,24 +194,49 @@ describe('regimeMixture', () => {
   it('measures sustained minority runs and ignores isolated other-band frames', () => {
     // Isolated 16.7s at a 120 Hz beat are indistinguishable from genuinely
     // dropped frames, and charging those is CORRECT — they must not count.
-    const isolated = [...at120(50), 16.7, ...at120(50), 16.7, ...at120(50)];
-    expect(regimeMixture(isolated).sustainedMinorityShare).toBe(0);
+    const isolated = [[...at120(50), 16.7, ...at120(50), 16.7, ...at120(50)]];
+    expect(regimeMixture(isolated, 8.3).sustainedMinorityShare).toBe(0);
 
     // Three or more consecutive mean the panel actually presented there.
-    const sustained = [...at120(100), ...at60(10), ...at120(90)];
-    expect(regimeMixture(sustained).sustainedMinorityShare).toBe(0.05);
-    expect(regimeMixture(sustained).minorityRegime).toBe('60hz');
+    const sustained = [[...at120(100), ...at60(10), ...at120(90)]];
+    expect(regimeMixture(sustained, 8.3).sustainedMinorityShare).toBe(0.05);
+    expect(regimeMixture(sustained, 8.3).minorityRegime).toBe('60hz');
+    expect(regimeMixture(sustained, 8.3).slowerThanObserved).toBe(true);
   });
 
-  it('returns null with nothing to measure', () => {
-    expect(regimeMixture([])).toBeNull();
-    expect(regimeMixture(undefined)).toBeNull();
+  // The PR 1362 review constructed the fabrication this pins against: an
+  // adaptive panel decays at every stroke edge, so sub-threshold fragments sit
+  // at the ends of every contact stretch, and counting runs across lifts sums
+  // them into a refusal a correct counter reads as zero.
+  it('never concatenates a run across a contact gap', () => {
+    const strokeWithEdges = [16.7, 16.7, ...at120(100), 16.7, 16.7];
+    const twentyStrokes = Array.from({ length: 20 }, () => [...strokeWithEdges]);
+    expect(regimeMixture(twentyStrokes, 8.3).sustainedMinorityShare).toBe(0);
+
+    // The same fragments inside ONE stretch DO merge — that is a real run.
+    const oneStretch = [[16.7, 16.7, 16.7, 16.7, ...at120(100)]];
+    expect(regimeMixture(oneStretch, 8.3).sustainedMinorityShare).toBeGreaterThan(0);
+  });
+
+  it('measures the minority relative to the run-level beat, not by count', () => {
+    // Majority of these contact deltas sit at 60 Hz, but the run-level beat
+    // says 120 Hz — the band that matters is the one the capture is NOT scored
+    // at, whatever the contact-frame counts say.
+    const mixture = regimeMixture([[...at60(80), ...at120(20)]], 8.3);
+    expect(mixture.minorityRegime).toBe('60hz');
+    expect(mixture.observedRegime).toBe('120hz');
+  });
+
+  it('returns null with nothing to measure or no classifiable beat', () => {
+    expect(regimeMixture([], 8.3)).toBeNull();
+    expect(regimeMixture([[8.3, 8.3]], 33.3)).toBeNull();
+    expect(regimeMixture([[8.3, 8.3]], undefined)).toBeNull();
   });
 });
 
 describe('the mixed-regime verdict', () => {
-  const mixed = { sustainedMinorityShare: 0.043, minorityRegime: '60hz' };
-  const clean = { sustainedMinorityShare: 0.007, minorityRegime: '60hz' };
+  const mixed = { sustainedMinorityShare: 0.043, minorityRegime: '60hz', slowerThanObserved: true };
+  const clean = { sustainedMinorityShare: 0.007, minorityRegime: '60hz', slowerThanObserved: true };
 
   // The 2026-08-23 vigorous-hand Safari capture: dominant 8 ms, 4.31% of
   // in-contact frames in sustained 60 Hz runs (the longest is 73 frames). Its
@@ -230,9 +255,24 @@ describe('the mixed-regime verdict', () => {
 
   it('passes a clean capture and one at the calibrated boundary', () => {
     expect(refreshRegimeVerdict(8, '120hz', clean).verdict).toBe('in-regime');
-    expect(refreshRegimeVerdict(8, '120hz', { sustainedMinorityShare: 0.015 }).verdict).toBe(
-      'in-regime'
-    );
+    expect(
+      refreshRegimeVerdict(8, '120hz', { slowerThanObserved: true, sustainedMinorityShare: 0.015 })
+        .verdict
+    ).toBe('in-regime');
+  });
+
+  // A FASTER minority band costs the scorer nothing — early frames are never
+  // charged — so it is reported but must not demote: refusing it would burn
+  // device attempts on captures whose numbers are untouched (the PR 1362
+  // review's direction finding, aimed at the 60hz iPad targets on ProMotion
+  // glass).
+  it('does not demote on a faster minority band', () => {
+    const fastMinority = {
+      slowerThanObserved: false,
+      minorityRegime: '120hz',
+      sustainedMinorityShare: 0.043,
+    };
+    expect(refreshRegimeVerdict(17, '60hz', fastMinority).verdict).toBe('in-regime');
   });
 
   // Mixture only DEMOTES an in-regime answer: off-regime and unestablished
@@ -254,8 +294,21 @@ describe('the mixed-regime verdict', () => {
 describe('the mixture threshold holds against the tracked corpora', () => {
   const mixtureOf = (campaign, file) => {
     const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, file), 'utf8'));
-    const deltas = (capture.report?.frames ?? []).filter((f) => f[2] === 1).map((f) => f[1]);
-    return regimeMixture(deltas);
+    const frames = capture.report?.frames ?? [];
+    const segments = [];
+    let current = null;
+    for (const frame of frames) {
+      if (frame[2] === 1) {
+        if (!current) {
+          current = [];
+          segments.push(current);
+        }
+        current.push(frame[1]);
+      } else {
+        current = null;
+      }
+    }
+    return regimeMixture(segments, capture.summaries?.intervalMs);
   };
 
   it('sits above every machine-driven scored capture', () => {

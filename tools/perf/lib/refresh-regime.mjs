@@ -46,55 +46,72 @@ export function refreshRegimeBand(regime) {
 
 // A capture can hold its declared beat for most of its frames and still spend
 // sustained stretches presenting at the OTHER rate — an adaptive panel shifting
-// mid-capture. The 2026-08-23 vigorous-hand Safari capture holds a 73-frame
-// 60 Hz run inside a 120 Hz capture, and every frame of such a run is charged
-// ~half its duration as lost time by a scorer pricing against the dominant
-// beat. That is a scoring artifact, not app loss, so a capture carrying enough
-// of it is refused rather than mis-scored.
+// mid-capture. The 2026-08-23 vigorous-hand Safari capture holds a sustained
+// 60 Hz run of 59 in-contact frames (73 counting the adjacent non-contact
+// frames) inside a 120 Hz capture, and when the minority band is SLOWER than
+// the beat the capture is scored against, every frame of such a run is charged
+// ~half its duration as lost time while the panel presents perfectly steadily.
+// That is a scoring artifact, not app loss, so a capture carrying enough of it
+// is refused rather than mis-scored. A FASTER minority band costs the scorer
+// nothing — early frames are never charged — so it is measured and reported but
+// does not demote (the PR 1362 review's direction finding).
 //
-// The discriminator is RUNS, not total minority share: an isolated other-band
-// delta is indistinguishable from a genuinely dropped frame (one 16.7 ms gap at
-// a 120 Hz beat IS one missed slot, and charging it is correct), while three or
-// more consecutive other-band deltas mean the panel was actually presenting
-// there. Calibrated across all 74 tracked captures' in-contact frames: every
-// machine-driven scored capture measures at most 0.68% of its frames in
-// sustained minority runs (62 of 74 at exactly zero), while captures with
-// genuinely mixed presentation — real hands whose pace moved an adaptive panel
-// — measure 2.15-4.31%. The threshold sits in that gap. Residual honesty: a
-// capture just under it can still carry up to roughly a point of mis-priced
-// lost time; the spread work in issue 1344 is what would tighten this further.
+// The discriminator is RUNS WITHIN ONE CONTACT STRETCH, not total minority
+// share: an isolated other-band delta is indistinguishable from a genuinely
+// dropped frame (one 16.7 ms gap at a 120 Hz beat IS one missed slot, and
+// charging it is correct), while three or more consecutive other-band deltas
+// mean the panel was actually presenting there — and a run must not be
+// concatenated across a finger lift, or sub-threshold fragments at every
+// stroke edge (exactly where an adaptive panel decays and re-ramps) sum into a
+// fabricated refusal (the review constructed 3.65% from fragments a correct
+// counter reads as 0%). Calibrated across all 74 tracked captures' in-contact
+// frames: every machine-driven scored capture measures at most 0.68% of its
+// frames in sustained minority runs (67 of 74 at exactly zero), while captures
+// with genuinely mixed presentation — real hands whose pace moved an adaptive
+// panel — measure 2.15-4.31%. The threshold sits in that gap. Residual
+// honesty: a capture just under it can still carry up to roughly a point of
+// mis-priced lost time; the spread work in issue 1344 is what would tighten
+// this further.
 export const REGIME_MIXTURE_RUN_MIN_FRAMES = 3;
 export const MIXED_REGIME_SUSTAINED_SHARE_MAX = 0.015;
 
-// Share of in-contact frame deltas that sit in sustained runs (length >=
-// REGIME_MIXTURE_RUN_MIN_FRAMES) of whichever regime band holds FEWER of the
-// capture's frames. Computed at summary time from the raw deltas and carried in
-// `summaries.regimeMixture`, because the verdict sites hold only the summary.
-export function regimeMixture(contactDeltas = []) {
-  const deltas = contactDeltas.filter((v) => Number.isFinite(v) && v > 0);
-  if (!deltas.length) return null;
-  const bands = Object.keys(REFRESH_REGIMES).map((regime) => {
-    const [low, high] = refreshRegimeBand(regime);
-    return { regime, low, high, count: deltas.filter((v) => v >= low && v <= high).length };
-  });
-  bands.sort((a, b) => a.count - b.count);
-  const minority = bands[0];
+// `contactSegments` is a list of delta runs, one per unbroken contact stretch,
+// so run detection cannot leak across lifts. The minority band is the regime
+// the capture's own run-level beat does NOT classify to — measured relative to
+// the beat rather than by raw count, because a hand capture is majority
+// non-contact and a count-tie would otherwise pick a band arbitrarily. Returns
+// null when the beat classifies to no regime (an erratic capture already has
+// its off-regime answer).
+export function regimeMixture(contactSegments = [], intervalMs = undefined) {
+  const observed = classifyRefreshRegime(intervalMs);
+  if (observed === null) return null;
+  const minorityRegime = Object.keys(REFRESH_REGIMES).find((regime) => regime !== observed);
+  const [low, high] = refreshRegimeBand(minorityRegime);
+  let frames = 0;
   let sustained = 0;
-  let run = 0;
-  for (const value of deltas) {
-    if (value >= minority.low && value <= minority.high) {
-      run += 1;
-      continue;
+  for (const segment of contactSegments) {
+    let run = 0;
+    for (const value of segment) {
+      if (!Number.isFinite(value) || value <= 0) continue;
+      frames += 1;
+      if (value >= low && value <= high) {
+        run += 1;
+        continue;
+      }
+      if (run >= REGIME_MIXTURE_RUN_MIN_FRAMES) sustained += run;
+      run = 0;
     }
     if (run >= REGIME_MIXTURE_RUN_MIN_FRAMES) sustained += run;
-    run = 0;
   }
-  if (run >= REGIME_MIXTURE_RUN_MIN_FRAMES) sustained += run;
+  if (!frames) return null;
   return {
-    minorityRegime: minority.regime,
-    sustainedMinorityShare: Math.round((sustained / deltas.length) * 10000) / 10000,
+    observedRegime: observed,
+    minorityRegime,
+    slowerThanObserved:
+      REFRESH_REGIMES[minorityRegime].nominalMs > REFRESH_REGIMES[observed].nominalMs,
+    sustainedMinorityShare: Math.round((sustained / frames) * 10000) / 10000,
     runMinFrames: REGIME_MIXTURE_RUN_MIN_FRAMES,
-    frames: deltas.length,
+    frames,
   };
 }
 
@@ -144,6 +161,7 @@ export function refreshRegimeVerdict(intervalMs, expected = null, mixture = null
     expected === null ? UNESTABLISHED_REGIME : observed === expected ? IN_REGIME : OFF_REGIME;
   if (
     verdict === IN_REGIME &&
+    mixture?.slowerThanObserved === true &&
     Number.isFinite(mixture?.sustainedMinorityShare) &&
     mixture.sustainedMinorityShare > MIXED_REGIME_SUSTAINED_SHARE_MAX
   ) {
