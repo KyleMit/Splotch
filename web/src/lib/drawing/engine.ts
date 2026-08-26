@@ -201,7 +201,8 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 // every tile surface rescaled in place.
 const MAX_RENDER_SCALE = 2;
 // Bound live crayon memory without making ordinary short strokes pay a checkpoint.
-const CRAYON_CHECKPOINT_OPS = 64;
+// ABLATION EXPERIMENT (exp/crayon-ablate-1-no-split): checkpoint disabled.
+const CRAYON_CHECKPOINT_OPS = Number.POSITIVE_INFINITY;
 let renderScale = 1;
 let crayonOpsSinceFlush = 0;
 
@@ -592,8 +593,10 @@ function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) 
 function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) {
   let batch: Point[] = [];
   let didSplit = false;
+  // ABLATION EXPERIMENT (exp/crayon-ablate-1-no-split): pass tracker bypassed.
+  const ABLATE_NO_SPLIT = true;
   for (const p of points) {
-    if (ps.passTracker!.advance(p) === 'split') {
+    if (!ABLATE_NO_SPLIT && ps.passTracker!.advance(p) === 'split') {
       // A split flushes and resets the counter itself, so the moves in the
       // batch it closes cannot carry toward the next checkpoint.
       strokeSmoothSegments(ps, batch, 0);
