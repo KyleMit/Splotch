@@ -25,7 +25,26 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   for (let i = 0; i < passCount; i++) {
     const pattern = crayonPatternFor(target, op.color, seed, i);
     if (!pattern) continue;
-    paintOpShape(target, op, pattern, crayonPassWidthScale(i));
+    // EXPERIMENT (exp/crayon-i12-merged-direct): a merged op strokes each
+    // quadratic segment as its own stroke() call, so the per-call dirty
+    // rect stays segment-sized — testing whether ADR-0146's Safari merge
+    // regression was per-stroke dirty-region area rather than merging.
+    if (op.kind === 'path') {
+      target.strokeStyle = pattern;
+      target.lineWidth = op.lineWidth * crayonPassWidthScale(i);
+      let sx = op.startX;
+      let sy = op.startY;
+      for (const s of op.segs) {
+        target.beginPath();
+        target.moveTo(sx, sy);
+        target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+        target.stroke();
+        sx = s.x;
+        sy = s.y;
+      }
+    } else {
+      paintOpShape(target, op, pattern, crayonPassWidthScale(i));
+    }
   }
 }
 

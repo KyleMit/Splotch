@@ -962,7 +962,10 @@ const rasterQueue = createStrokeRasterQueue<PointerState>({
   // Compile-time per-runtime choice (see CrayonOpGranularity): the WKWebView
   // pays more per op, Safari pays more per path-length, and the measured
   // optimum flips between them — issue 1236.
-  crayonOpGranularity: __IS_CAPACITOR__ ? 'per-frame' : 'per-move',
+  // EXPERIMENT (exp/crayon-i12-merged-direct): per-frame merging on web too —
+  // retesting the ADR-0146 Safari merge regression with no planes and
+  // per-segment strokes (small dirty rect per stroke() call).
+  crayonOpGranularity: 'per-frame',
   paperMinEdge: () => Math.min(paper.pxW, paper.pxH),
   pointerWasResumed,
   restartStrokeIfResumed,
