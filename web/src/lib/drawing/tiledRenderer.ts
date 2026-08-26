@@ -1,4 +1,8 @@
-import { crayonBufferIsDirty, resetCrayonStateForClear } from './crayonPassBuffer';
+import {
+  crayonBufferIsDirty,
+  noteCrayonTargetBlank,
+  resetCrayonStateForClear,
+} from './crayonPassBuffer';
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import type { MagicSheetSnapshot } from './magicBrush';
@@ -275,6 +279,12 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
   // EXPERIMENT (exp/crayon-i1-restamp): crayon ops restamp the normal tile
   // directly, so it must be shown like any ink op.
   if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
+  // EXPERIMENT (exp/crayon-i16-virgin-fast-path): a still-hidden tile is
+  // blank (prepareTileForMutation just ran), so a crayon op landing on it
+  // can open its pass on the single-blit fast path.
+  if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase && tile.canvas.hidden) {
+    noteCrayonTargetBlank(tile.ctx);
+  }
   tile.canvas.hidden = false;
 }
 

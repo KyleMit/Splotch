@@ -64,6 +64,11 @@ interface CrayonPassBuffer {
   // re-applying the glaze — the stamp stays a pure function of
   // (buffer, under) per pixel and per-op re-stamping cannot compound.
   under: CanvasRenderingContext2D | null;
+  // EXPERIMENT (exp/crayon-i16-virgin-fast-path): true while the open pass
+  // sits on a tile that was blank at pass open — the glaze over blank paper
+  // collapses to exactly the wax, so the restamp is clearRect + one blit and
+  // the under snapshot is never taken.
+  virgin: boolean;
   dirty: boolean;
   // Device-px bounding box of the open pass's ink, so the stamp and the
   // post-stamp clear touch only the pass-sized rect — a flush stays
@@ -100,7 +105,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, mirror: null, under: null, dirty: false, bounds: null };
+    buf = { ctx: g, mirror: null, under: null, virgin: false, dirty: false, bounds: null };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -146,13 +151,28 @@ function restampRect(
   target.setTransform(1, 0, 0, 1, 0, 0);
   target.globalCompositeOperation = 'source-over';
   target.clearRect(rect.x0, rect.y0, w, h);
-  if (buf.under) {
-    target.drawImage(buf.under.canvas, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
-  }
-  stampSubtractiveGlaze(target, getCrayonMix(), () => {
+  if (buf.virgin) {
+    // Over blank paper the two-blit glaze collapses to exactly the wax
+    // (see the pass-buffer notes: darken onto transparent yields S, then
+    // S over S at any alpha is S) — one blit reproduces it byte-exactly.
     target.drawImage(buf.ctx.canvas, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
-  });
+  } else {
+    if (buf.under) {
+      target.drawImage(buf.under.canvas, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
+    }
+    stampSubtractiveGlaze(target, getCrayonMix(), () => {
+      target.drawImage(buf.ctx.canvas, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
+    });
+  }
   target.restore();
+}
+
+// EXPERIMENT (exp/crayon-i16-virgin-fast-path): tiles the renderer knows were
+// blank when a crayon op arrived — consumed at the next pass open.
+const blankAtPassOpen = new WeakSet<CanvasRenderingContext2D>();
+
+export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
+  blankAtPassOpen.add(target);
 }
 
 function existingBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer | null {
@@ -282,7 +302,13 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   const buf = crayonBufferFor(target);
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
-  if (!buf.dirty) captureUnderSnapshot(buf, target);
+  if (!buf.dirty) {
+    // Pass open: a tile the renderer marked blank takes the virgin fast path
+    // — no under snapshot, single-blit restamps.
+    buf.virgin = blankAtPassOpen.has(target);
+    blankAtPassOpen.delete(target);
+    if (!buf.virgin) captureUnderSnapshot(buf, target);
+  }
   paintCrayon(buf.ctx, op);
   buf.dirty = true;
   const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
