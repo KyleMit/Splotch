@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
@@ -518,5 +518,50 @@ describe('the 60 Hz negative controls (ADR-0145, revised)', () => {
     expect(passes(0.82)).toBe(false);
     expect(passes(0.9)).toBe(true);
     expect(passes(0.96)).toBe(true);
+  });
+});
+
+// The GOOD side of the density calibration, bound to the tracked population
+// (the PR 1368 review: the bad side was corpus-pinned while 0.96 — the stated
+// healthy floor the margins lean on — was only a synthetic fixture, so healthy
+// evidence drifting below the gate floor could bank without this failing).
+// Excludes exactly the two deliberate negative-control corpora; a population
+// floor makes silent shrinkage fail loudly, and the 0.96 assertion fails in
+// the direction that requires re-deriving the floor rather than widening it.
+describe('the healthy density population (ADR-0145)', () => {
+  const NEGATIVE_CONTROL_CORPORA = new Set([
+    '2026-08-25-underdriven-control',
+    '2026-08-26-appium-60hz-controls',
+  ]);
+
+  it('keeps every tracked healthy phase above the floor, with 0.96 the observed minimum', () => {
+    const densities = [];
+    for (const campaign of readdirSync(EVIDENCE)) {
+      if (NEGATIVE_CONTROL_CORPORA.has(campaign)) continue;
+      const dir = join(EVIDENCE, campaign);
+      if (!statSync(dir).isDirectory()) continue;
+      for (const file of readdirSync(dir)) {
+        if (!file.endsWith('.json') || file === 'index.json') continue;
+        let capture;
+        try {
+          capture = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+        } catch {
+          continue;
+        }
+        for (const phase of capture.summaries?.phases ?? []) {
+          const input = phase.input;
+          if (!input || !Number.isFinite(input.movesPerFrame) || !(input.movesPerSecond > 0)) {
+            continue;
+          }
+          densities.push({ id: `${campaign}/${file}#${phase.key}`, value: input.movesPerFrame });
+        }
+      }
+    }
+
+    expect(densities.length).toBeGreaterThanOrEqual(160);
+    for (const { id, value } of densities) {
+      expect(value, id).toBeGreaterThanOrEqual(FIDELITY_MOVES_PER_FRAME_MIN);
+    }
+    expect(Math.min(...densities.map(({ value }) => value))).toBeGreaterThanOrEqual(0.96);
   });
 });
