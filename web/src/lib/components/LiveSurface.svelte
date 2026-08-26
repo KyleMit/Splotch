@@ -88,7 +88,9 @@
 
   .live-crayon-tile {
     z-index: 2;
-    mix-blend-mode: darken;
+    /* EXPERIMENT (exp/crayon-i11-normal-blend-probe): normal instead of
+       darken — the preview loses the glaze look; diagnostic only. */
+    mix-blend-mode: normal;
   }
 
   .live-crayon-tile-top {
