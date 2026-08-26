@@ -64,6 +64,11 @@ interface CrayonPassBuffer {
   // re-applying the glaze — the stamp stays a pure function of
   // (buffer, under) per pixel and per-op re-stamping cannot compound.
   under: CanvasRenderingContext2D | null;
+  // EXPERIMENT (exp/crayon-i20-idle-shadow): whether `under` still mirrors
+  // the target. Refreshed by plain reads only (never blended into — i19's
+  // fold deoptimized the canvas as a blit source), and refreshed at IDLE
+  // after a stroke rather than inside a drawing frame whenever possible.
+  underValid: boolean;
   // EXPERIMENT (exp/crayon-i16-virgin-fast-path): true while the open pass
   // sits on a tile that was blank at pass open — the glaze over blank paper
   // collapses to exactly the wax, so the restamp is clearRect + one blit and
@@ -105,7 +110,15 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, mirror: null, under: null, virgin: false, dirty: false, bounds: null };
+    buf = {
+      ctx: g,
+      mirror: null,
+      under: null,
+      underValid: false,
+      virgin: false,
+      dirty: false,
+      bounds: null,
+    };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -135,6 +148,44 @@ function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingCont
     buf.under.clearRect(0, 0, w, h);
   }
   buf.under.drawImage(target.canvas, 0, 0);
+  buf.underValid = true;
+}
+
+// EXPERIMENT (exp/crayon-i20-idle-shadow): targets whose shadow went stale —
+// refreshed together at idle so the composited-canvas read stays off the
+// interaction frames. A pass opening before the refresh lands pays one
+// synchronous read as the fallback.
+const pendingShadowRefresh = new Set<CanvasRenderingContext2D>();
+
+export function invalidateCrayonUnder(target: CanvasRenderingContext2D) {
+  const buf = existingBufferFor(target);
+  if (!buf) return;
+  buf.underValid = false;
+  pendingShadowRefresh.add(target);
+}
+
+// A repaint clears the tiles and replays ops from scratch, so any open pass
+// state describes pixels that no longer exist. Reset before replaying.
+export function resetCrayonPassStateForRepaint(target: CanvasRenderingContext2D) {
+  const buf = existingBufferFor(target);
+  if (buf) {
+    if (buf.dirty) clearCrayonBounds(buf);
+    buf.underValid = false;
+  }
+  blankAtPassOpen.delete(target);
+  pendingShadowRefresh.add(target);
+}
+
+export function refreshPendingCrayonShadows() {
+  for (const target of pendingShadowRefresh) {
+    const buf = existingBufferFor(target);
+    // A hidden target is blank — the next pass takes the virgin path and
+    // never reads the shadow, so skip the read entirely.
+    if (buf && !buf.underValid && !buf.dirty && !target.canvas.hidden) {
+      captureUnderSnapshot(buf, target);
+    }
+  }
+  pendingShadowRefresh.clear();
 }
 
 // EXPERIMENT (exp/crayon-i1-restamp): restore the op's rect from the under
@@ -269,15 +320,20 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  // EXPERIMENT (exp/crayon-i1-restamp): every op already restamped its rect
-  // onto the target, so the target holds the exact pass-close pixels — the
-  // flush only resets the pass state.
+  // The target already holds the exact pass-close pixels — every op painted
+  // (virgin) or restamped (non-virgin) them — so the flush only resets pass
+  // state. The pass's wax made the shadow stale; queue an idle refresh.
   clearCrayonBounds(buf);
+  buf.underValid = false;
+  pendingShadowRefresh.add(target);
 }
 
 // A 'clear' op's crayon side effects, without the pixel wipe.
 export function resetCrayonStateForClear(target: CanvasRenderingContext2D) {
   dropCrayonBuffer(target);
+  const buf = existingBufferFor(target);
+  if (buf) buf.underValid = false;
+  pendingShadowRefresh.delete(target);
 }
 
 // Discard the target's open pass without stamping — a 'clear' wipes everything,
@@ -304,10 +360,11 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   buf.ctx.setTransform(matrix);
   if (!buf.dirty) {
     // Pass open: a tile the renderer marked blank takes the virgin fast path
-    // — no under snapshot, single-blit restamps.
+    // — no under snapshot, single-blit restamps. A non-virgin pass reads the
+    // target only when the idle refresh has not already restored the shadow.
     buf.virgin = blankAtPassOpen.has(target);
     blankAtPassOpen.delete(target);
-    if (!buf.virgin) captureUnderSnapshot(buf, target);
+    if (!buf.virgin && !buf.underValid) captureUnderSnapshot(buf, target);
   }
   paintCrayon(buf.ctx, op);
   buf.dirty = true;

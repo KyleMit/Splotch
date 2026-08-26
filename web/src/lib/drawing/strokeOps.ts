@@ -3,7 +3,12 @@
 
 import { captureMagicSheet, sheetPatternFor, type MagicSheetSnapshot } from './magicBrush';
 import { paintOpShape } from './opGeometry';
-import { flushCrayonBuffer, renderCrayonOp, resetCrayonStateForClear } from './crayonPassBuffer';
+import {
+  flushCrayonBuffer,
+  invalidateCrayonUnder,
+  renderCrayonOp,
+  resetCrayonStateForClear,
+} from './crayonPassBuffer';
 import type { RecordedPaperState } from './undoHistory';
 
 // One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
@@ -120,6 +125,9 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     op.magicSheet ??= snapshot ?? undefined;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    // EXPERIMENT (exp/crayon-i20-idle-shadow): foreign ink stales the
+    // crayon under shadow.
+    invalidateCrayonUnder(target);
     return;
   }
   if (op.crayon && !op.erase) {
@@ -130,4 +138,7 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
   paintOpShape(target, op, op.color);
   target.globalCompositeOperation = 'source-over';
+  // EXPERIMENT (exp/crayon-i20-idle-shadow): foreign ink stales the crayon
+  // under shadow.
+  invalidateCrayonUnder(target);
 }

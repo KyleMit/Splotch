@@ -64,7 +64,7 @@ import {
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
-import { flushCrayonBuffer } from './crayonPassBuffer';
+import { flushCrayonBuffer, refreshPendingCrayonShadows } from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -754,6 +754,13 @@ function finishGroupWhenCanvasIdle() {
   if (activePointers.size > 0) return;
   if (penStreamAdopter.hasCanvasExit()) callbacks.onDrawStop?.();
   else finishStrokeGroup();
+  // EXPERIMENT (exp/crayon-i20-idle-shadow): refresh stale crayon shadows
+  // once the child's fingers are up, so the composited-canvas reads land
+  // between strokes instead of inside a drawing frame. Skipped if a new
+  // stroke has already started; that pass pays one synchronous read.
+  scheduleIdle(() => {
+    if (activePointers.size === 0) refreshPendingCrayonShadows();
+  });
 }
 
 // Pointer speed (which drives the drawing sound) is averaged over the most

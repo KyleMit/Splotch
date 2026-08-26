@@ -1,6 +1,7 @@
 import {
   crayonBufferIsDirty,
   noteCrayonTargetBlank,
+  resetCrayonPassStateForRepaint,
   resetCrayonStateForClear,
 } from './crayonPassBuffer';
 import { createDrawingWorkCounters } from './drawingWorkDebug';
@@ -382,6 +383,9 @@ export function repaintTiledRenderer(
     ensureNormalTileBacking(tile);
     tile.canvas.hidden = true;
     clearTileBacking(tile);
+    // EXPERIMENT (exp/crayon-i20-idle-shadow): open-pass state describes
+    // pixels the clear just destroyed — reset before the replay.
+    resetCrayonPassStateForRepaint(tile.ctx);
     for (const base of historyBase) {
       if (base.painted && tilesIntersect(base, tile)) {
         tile.ctx.drawImage(base.canvas, base.x, base.y);
