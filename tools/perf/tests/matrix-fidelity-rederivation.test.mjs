@@ -124,8 +124,9 @@ describe('a matrix cell re-derives its input-fidelity verdict', () => {
 
 // One composed answer per run to "can I trust this number?" (issue 1304): a
 // list, not a score, because the interesting case is which guarantee is
-// missing. hostQuiet is deliberately present and unrecorded — the dimension
-// with no measurement yet, kept visible instead of forgotten.
+// missing. hostQuiet re-derives from the load samples the runners bracket a
+// capture with; these fixtures predate the samples, so the row must read
+// unrecorded — never a pass invented for an unmeasured host.
 describe('the per-run trust ledger', () => {
   it('composes verified dimensions for a sound capture', () => {
     const runs = drawingRuns('ipad-device-web', 'ipad-device-web');

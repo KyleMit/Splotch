@@ -21,6 +21,7 @@ import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
+import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -233,6 +234,7 @@ export function calibrationReading(input = {}) {
 // capture is the one a person paid for, so what it can prove about itself later
 // matters more here than anywhere else.
 export function handCaptureArtifact({
+  hostQuiet = null,
   runLabel,
   runtime,
   platform,
@@ -267,6 +269,7 @@ export function handCaptureArtifact({
     device: device ?? null,
     drawSeconds: seconds,
     transport: 'human-finger',
+    hostQuiet,
     reading,
     fidelity,
     summaries,
@@ -309,6 +312,7 @@ export async function captureHandInput({
 
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
+  const hostLoadStart = sampleHostLoad();
   const nonce = mintProbeNonce(runLabel);
   // Only a page opened at a URL carrying the nonce can prove which run it
   // belongs to. A native WebView loads a build-time URL, so it cannot — the
@@ -419,6 +423,7 @@ export async function captureHandInput({
   );
 
   const artifact = handCaptureArtifact({
+    hostQuiet: hostQuietRecord(hostLoadStart, sampleHostLoad()),
     runLabel,
     runtime,
     platform,
