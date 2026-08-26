@@ -204,7 +204,17 @@ export const RUNTIME_EXPECTATIONS = {
   // events fail trustedTouch, under-driving fails the cadence density floor.
   // An expectation requiring finger geometry would structurally refuse the
   // only automatable transport; one accepting both sides is not a check.
-  // Both arms' figures are pinned by android-webview-fidelity.test.mjs.
+  // This is deliberately a THIRD exclusion ground, distinct from ADR-0141's
+  // cannot-discriminate rule — geometry CAN separate the two drivers, but it
+  // distinguishes WHICH faithful driver, never faithful from unfaithful — and
+  // it is recorded per ADR-0144's amendment as a WITNESS, not erased: every
+  // artifact keeps its raw contactWidth/Height, so the discriminator the
+  // corpus shows stays available. Reopen condition (ADR-0144 amendment): a
+  // third driver class appears, or a capture's recorded geometry contradicts
+  // its claimed driver — a finger-labelled capture reporting 0-radii, or an
+  // adb-labelled one reporting finger radii — at which point geometry
+  // graduates from witness to check. Both arms' figures are pinned by
+  // android-webview-fidelity.test.mjs.
   'android-capacitor-webview': {
     coalescing: NOT_APPLICABLE,
     pressure: NOT_APPLICABLE,

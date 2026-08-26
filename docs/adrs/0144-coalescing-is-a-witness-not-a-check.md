@@ -78,3 +78,24 @@ fix). If that capture reports a populated list where the remote finger reported 
 under this ADR (delivery-keyed); what would reopen the decision is the bundled finger **disagreeing
 with the bundled automation legs** — that would mean the value discriminates input after all, within
 a delivery mode, and the check would deserve re-admission per (runtime × delivery).
+
+## Amendment (2026-08-26): a third exclusion ground — driver-discriminating checks
+
+Coalescing was excluded because it tracks page delivery rather than the runtime it claimed to
+describe. `android-capacitor-webview`'s `contactGeometry` (PR 1382) is excluded on a ground this ADR
+did not yet name: the measurement genuinely discriminates — a real finger reports ~3.1–3.5 px p50
+radii in the installed WebView while `adb shell input` reports exactly 0 — but both of those drivers
+are trusted-path touch (`trust.share` 1 on both arms), so the check separates **which faithful
+driver took the capture**, never faithful from unfaithful. The failure modes the fidelity verdict
+exists for are covered by `trustedTouch` (JS-synthesized events) and the ADR-0145 density floor
+(under-driving); an expectation requiring finger geometry would structurally refuse the only
+automatable transport, and one accepting both sides is not a check.
+
+Like coalescing, the value is a **recorded witness, not an erased one**: every artifact keeps its
+raw `contactWidth`/`contactHeight`, so the discriminator the two-arm corpus shows
+(`2026-08-24-hand-native` positive arm — n=2, stated plainly — against the
+`2026-08-26-android-native-split-control` negative arm) stays available to any later dispute.
+**Reopen condition:** a third driver class appears on this runtime, or a capture's recorded geometry
+contradicts its claimed driver — a finger-labelled capture reporting zero radii, or an adb-labelled
+one reporting finger-sized radii — at which point geometry graduates from witness to check with the
+corpus as its calibration.
