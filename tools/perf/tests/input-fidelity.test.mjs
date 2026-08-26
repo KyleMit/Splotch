@@ -266,7 +266,13 @@ describe('the runtime the 2026-08-23 hand corpus calibrated', () => {
   // its own reference input is measuring the digitizer, not the fidelity.
   it('accepts the rates a real hand actually produced on both devices', () => {
     const phone = inputFidelity(
-      { kinds: 'touch', trust: { share: 1 }, movesPerSecond: 177.97, moveGapP95Ms: 16.7 },
+      {
+        kinds: 'touch',
+        trust: { share: 1 },
+        movesPerSecond: 177.97,
+        movesPerFrame: 1.47,
+        moveGapP95Ms: 16.7,
+      },
       'android-chrome'
     );
     const ipad = inputFidelity(
@@ -274,6 +280,7 @@ describe('the runtime the 2026-08-23 hand corpus calibrated', () => {
         kinds: 'touch',
         trust: { share: 1 },
         movesPerSecond: 268.39,
+        movesPerFrame: 2.33,
         moveGapP95Ms: 16,
         coalescedPerMove: 0,
         pressure: { p50: 0 },
@@ -292,6 +299,7 @@ describe('a capture with no recorded runtime', () => {
   const calibratedSafari = {
     kinds: 'touch',
     movesPerSecond: 121,
+    movesPerFrame: 2,
     moveGapP95Ms: 9,
     coalescedPerMove: 0,
     trust: { share: 1 },
@@ -421,25 +429,35 @@ describe('cadence as a density floor (ADR-0145)', () => {
     }
   });
 
-  // An artifact banked before the field existed keeps scoring exactly as it did
-  // — the rate floor, both sides of its boundary.
-  it('scores a pre-field artifact by the legacy rate floor', () => {
-    expect(verdict({ movesPerSecond: 121, moveGapP95Ms: 9 }).checks.cadence).toBe(true);
+  // No rate fallback for an absent density: the PR 1361 review proved every
+  // artifact this gate has ever scored carries the field (summarizeRun writes
+  // it unconditionally, 0 not undefined, since before the gate existed), so
+  // the only input reaching a fallback is a doctored block — the field-omission
+  // dodge fail-closed must refuse. And a density whose RATE half is missing or
+  // zero (a truncated phase banks movesPerSecond 0) is not a measured stream.
+  it('fails closed on an absent density and on an unmeasured rate', () => {
+    expect(verdict({ movesPerSecond: 121, moveGapP95Ms: 9 }).checks.cadence).toBe(false);
     expect(verdict({ movesPerSecond: 46.8, moveGapP95Ms: 21 }).checks.cadence).toBe(false);
+    expect(verdict({ movesPerSecond: 0, movesPerFrame: 1.9, moveGapP95Ms: 9 }).checks.cadence).toBe(
+      false
+    );
+    expect(verdict({ movesPerFrame: 1.9, moveGapP95Ms: 9 }).checks.cadence).toBe(false);
   });
 
   // The gap cap is burstiness's own check and applies on both branches. 25 ms is
   // 1.5x the slowest supported beat: the healthy corpus tops out at 19 (36/36
   // 60 Hz-paced desktop WebKit phases) and the founding under-driven capture
   // reads 40.
-  it('caps the p95 gap at 25 ms on both branches', () => {
+  it('caps the p95 gap at 25 ms', () => {
     expect(
       verdict({ movesPerSecond: 116, movesPerFrame: 0.97, moveGapP95Ms: 25 }).checks.cadence
     ).toBe(true);
     expect(
       verdict({ movesPerSecond: 116, movesPerFrame: 0.97, moveGapP95Ms: 40 }).checks.cadence
     ).toBe(false);
-    expect(verdict({ movesPerSecond: 121, moveGapP95Ms: 40 }).checks.cadence).toBe(false);
+    expect(
+      verdict({ movesPerSecond: 121, movesPerFrame: 2, moveGapP95Ms: 40 }).checks.cadence
+    ).toBe(false);
   });
 });
 
