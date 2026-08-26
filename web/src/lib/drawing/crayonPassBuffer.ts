@@ -19,14 +19,13 @@ import type { DotOp, PathOp } from './strokeOps';
 // tooth tile is buildable (a DOM canvas exists), matching the magic sheet's
 // decode-pending skip.
 function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
-  const seed = op.seed ?? 0;
-  const passCount = crayonPassCount();
+  // ABLATION EXPERIMENT (exp/crayon-ablate-5-solid): flat colour instead of
+  // the wax pattern — crayon geometry and routing, pen paint.
+  void crayonPassCount;
+  void crayonPatternFor;
+  void crayonPassWidthScale;
   target.globalCompositeOperation = 'source-over';
-  for (let i = 0; i < passCount; i++) {
-    const pattern = crayonPatternFor(target, op.color, seed, i);
-    if (!pattern) continue;
-    paintOpShape(target, op, pattern, crayonPassWidthScale(i));
-  }
+  paintOpShape(target, op, op.color);
 }
 
 // --- Crayon pass buffer ------------------------------------------------------
