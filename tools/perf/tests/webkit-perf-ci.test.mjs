@@ -106,19 +106,34 @@ describe('WebKit performance CI', () => {
   });
 
   // A gate that lands after the merge needs the failure to reach a human by
-  // itself, and needs the write scope that requires.
-  it('files the post-merge failure instead of waiting to be noticed', () => {
+  // itself, and needs the write scope that requires. The filing moved to the
+  // fresh-runner retry job (issue 1250): a shared-runner stall spans the whole
+  // first job, so an issue is filed only when the breach reproduces on a
+  // second VM.
+  it('files the post-merge failure from the fresh-runner retry, not the first VM', () => {
     const fastJob = job('webkit-commit-gate-fast');
+    const retryJob = job('webkit-commit-gate-fast-retry');
 
-    expect(fastJob).toContain('issues: write');
-    expect(fastJob).toContain('name: File the failure');
-    // The filing step is push-arm only: its issue says main broke, and a
-    // manual dispatch failing on an investigation branch must not file it.
-    expect(fastJob).toContain("if: failure() && github.event_name == 'push'");
-    expect(fastJob).toContain('gh issue create');
+    expect(fastJob).not.toContain('name: File the failure');
+    expect(retryJob).toContain('issues: write');
+    expect(retryJob).toContain('name: File the failure');
+    // The retry (and therefore the filing) is push-arm only: its issue says
+    // main broke, and a manual dispatch failing on an investigation branch
+    // must not file it. The dispatch arm keeps its failure in the red run.
+    expect(retryJob).toContain(
+      "if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'"
+    );
+    expect(retryJob).toContain('needs: webkit-commit-gate-fast');
+    expect(retryJob).toContain('gh issue create');
     // One open issue collects every red commit; a broken main must not file one
     // issue per merge.
-    expect(fastJob).toContain('gh issue comment');
+    expect(retryJob).toContain('gh issue comment');
+    // An acquitted breach is explained where someone looks, not left as an
+    // unexplained red job on main.
+    expect(retryJob).toContain('Record the acquittal');
+    // The retry runs the IDENTICAL gate — a different command would measure a
+    // different quantity and acquit nothing.
+    expect(retryJob).toContain('npm run perf:web:undo:webkit:fast');
   });
 
   // The filing step is a check-then-create, so "one open issue" only holds while
@@ -295,12 +310,14 @@ describe('WebKit performance CI', () => {
     expect(fullJob).toContain('if [[ "$restore_ok" -eq 0 ]]');
   });
 
-  it.each(['webkit-commit-gate-fast', 'webkit-commit-gate-full'])(
+  it.each(['webkit-commit-gate-fast', 'webkit-commit-gate-fast-retry', 'webkit-commit-gate-full'])(
     '%s attempts both diagnostic reports without masking an earlier failure',
     (jobId) => {
       const workflowJob = job(jobId);
 
-      expect(workflowJob).toContain(jobId.endsWith('fast') ? 'if: failure()' : 'if: always()');
+      // Green runs upload too (issue 1250): the noise investigation had
+      // outcomes but no distributions, because only failures kept their tables.
+      expect(workflowJob).toContain('if: always()');
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.json');
       expect(workflowJob).toContain('perf-profiles/**/undo-scenarios.md');
       expect(workflowJob).toContain('if-no-files-found: warn');
