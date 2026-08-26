@@ -1,4 +1,3 @@
-import { rethrowIfBroken } from '../lib/error-classification.mjs';
 // The real-screen probe without an iPad: same probe, same maths, driven against
 // `/` in a local browser so a frame-pacing baseline costs a command instead of a
 // USB cable.
@@ -48,6 +47,7 @@ import {
   readResolvedTheme,
 } from '../lib/campaign-state.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import {
   EXPAND_CONTROLS_SOURCE,
   UNDO_ACTION_PAUSE_MS,

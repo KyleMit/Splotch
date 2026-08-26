@@ -1,4 +1,3 @@
-import { rethrowIfBroken } from './error-classification.mjs';
 // The shared "toddler session": the deterministic sequence of interactions
 // (multi-finger draw, color changes, stroke-size changes, erase, undo, clear)
 // plus trace + metrics capture and report generation. Web (capture-web-session.mjs) and native
@@ -27,6 +26,7 @@ import {
   markPhase,
 } from './chrome-trace-capture.mjs';
 import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
+import { rethrowIfBroken } from './error-classification.mjs';
 
 // Brand palette (src/lib/state/colors.svelte) — the swatches the harness clicks.
 const COLORS = ['#EC534E', '#F89C45', '#F9D24F', '#8CC864', '#62A2E9', '#AB71E1'];

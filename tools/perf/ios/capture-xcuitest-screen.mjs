@@ -1,4 +1,3 @@
-import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
@@ -24,6 +23,7 @@ import {
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import {
   EXPAND_CONTROLS_SOURCE,
   UNDO_ACTION_PAUSE_MS,

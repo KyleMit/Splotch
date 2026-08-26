@@ -1,4 +1,3 @@
-import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
@@ -29,6 +28,7 @@ import {
 } from './capture-xcuitest-screen.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import {
   SETTINGS_SECTION_ROWS,
   RESOLVED_THEME_EXPRESSION,

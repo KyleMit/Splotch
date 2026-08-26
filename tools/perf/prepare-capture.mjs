@@ -1,4 +1,3 @@
-import { rethrowIfBroken } from './lib/error-classification.mjs';
 // Preflight for a physical-device performance campaign.
 //
 //   npm run perf:preflight                    report only
@@ -38,9 +37,11 @@ import {
   resolvePort,
   summarize,
 } from './lib/capture-readiness.mjs';
+import { describeGrantHistory, recordGrantAttempt } from './lib/grant-log.mjs';
 import { servedBuildFingerprintProblem } from './lib/profile-preview.mjs';
 import { verifyAndroidInput } from './split-capture/verify-android-input.mjs';
 import { verifyAndroidRotation } from './split-capture/verify-android-rotation.mjs';
+import { rethrowIfBroken } from './lib/error-classification.mjs';
 
 const ANDROID_STAY_AWAKE_TIMEOUT_MS = 1_800_000;
 // Android clears stay-awake on its own across a USB reconnect or a reboot, and a
@@ -726,6 +727,14 @@ if (isMain(import.meta.url)) {
         '\nprobing a real WebDriverAgent launch and a rotation ' +
           '(this builds WDA and takes a minute)…'
       );
+      // Issue 1299: the automation grant expires silently, and the passcode
+      // prompt exists ONLY while this launch is failing — so the warning has
+      // to land before the attempt, while someone nearby can still look.
+      console.log(
+        '  If the automation grant has expired, the iPad will show "Enter iPad ' +
+          'Passcode for XCTest" DURING this minute and nowhere else — watch the device.'
+      );
+      console.log(`  ${describeGrantHistory(report.iosUdid)}`);
       const probe = classifyLaunchProbe(
         await probeIosLaunch({
           udid: report.iosUdid,
@@ -734,6 +743,9 @@ if (isMain(import.meta.url)) {
           verifyRotation: true,
         })
       );
+      // Every launch attempt feeds the grant-lifetime dataset, not only the
+      // operator harness's — the preflight makes most of them.
+      recordGrantAttempt(report.iosUdid, probe.status, probe.detail);
       console.log(
         `${probe.status === 'ok' ? '✓' : '✗'} ${'ios launch'.padEnd(22)} ${probe.detail}`
       );
