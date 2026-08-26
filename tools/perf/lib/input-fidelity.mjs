@@ -20,11 +20,15 @@
 // closed by measuring the runtime, not by re-running the capture.
 const UNCALIBRATED = 'uncalibrated';
 
-// A check whose runtime reports the SAME value for a real finger and for
-// synthesized touch. It carries no information about how a capture was driven,
-// so it is not part of the verdict at all — which is a different statement from
-// UNCALIBRATED. An uncalibrated check is a gap the instrument could still close
-// by measuring; a not-applicable one has been measured and found to be silent.
+// A check that has been measured and found to carry no information about how a
+// capture was driven, so it is not part of the verdict at all — which is a
+// different statement from UNCALIBRATED. An uncalibrated check is a gap the
+// instrument could still close by measuring; a not-applicable one has been
+// measured and found to be silent. Two grounds have earned it so far: a runtime
+// reporting the SAME value for a real finger and for synthesized touch
+// (android-chrome's pressure, contact geometry and coalescing, ADR-0141), and a
+// value shown to track a variable that has nothing to do with input at all
+// (coalescing everywhere else — see the block above RUNTIME_EXPECTATIONS).
 const NOT_APPLICABLE = 'not-applicable';
 
 // The floor is the half of cadence that discriminates, and it is measured from
@@ -75,7 +79,6 @@ const cadence = (input) =>
   input.movesPerSecond >= FIDELITY_MOVES_PER_SECOND_MIN &&
   input.moveGapP95Ms <= FIDELITY_MOVE_GAP_P95_MAX_MS;
 
-const noCoalescedSamples = (input) => input.coalescedPerMove === 0;
 const noReportedPressure = (input) => input.pressure?.p50 === 0;
 
 const fingerSizedContact = (input) =>
@@ -90,28 +93,43 @@ const fingerSizedContact = (input) =>
 // iPad, so an upper bound describes hardware rather than fidelity. The floor
 // describes fidelity on both and is what this table relies on.
 //
-// The other three are stated per runtime, each with the capture that set it.
+// `coalescing` is NOT_APPLICABLE in every runtime, on two measurements that
+// together retired it as a check (see the ADR on coalescing as a witness):
+//
+// - The value tracks PAGE DELIVERY, not input. The same physical-iPad WKWebView
+//   at matched cadence reports 1.05-1.08 when its page is bundled and 0 when the
+//   page is delivered remotely — through Appium, through WDA-direct, and by a
+//   real finger alike (the three-leg table on issue 1303, corpora
+//   2026-08-25-wkwebview-delivery and 2026-08-25-hand-wkwebview). A check whose
+//   answer moves with an input-irrelevant variable cannot verify input.
+// - The recorded quantity never measured merging. The probe stores
+//   `getCoalescedEvents().length` raw, and a populated list carries the event
+//   itself — so its floor is 1, "1.05" is a list of one with occasional doubles,
+//   and "0" is WebKit returning an EMPTY list. The value distinguishes whether
+//   the list mechanism is populated in that context, not how input arrived.
+//
+// `coalescedPerMove` stays recorded in every artifact — it is the field that
+// exposed the delivery dependence, and the banked values become the dataset that
+// confirms a mechanism when one is finally named. The decision reopens if a
+// bundled-delivery finger capture (blocked on issue 1323's report channel)
+// contradicts the automation legs.
+//
+// Pressure and contact geometry are stated per runtime, each with the capture
+// that set it.
 const RUNTIME_EXPECTATIONS = {
   'ios-safari': {
-    // Safari delivers one pointermove per sample with nothing coalesced behind it.
-    // Measured 0 across every ipad-device-web capture in the tracked corpus.
-    coalescing: noCoalescedSamples,
+    coalescing: NOT_APPLICABLE,
     pressure: noReportedPressure,
     contactGeometry: fingerSizedContact,
   },
+  // This entry spent two revisions chasing a per-runtime coalescing expectation —
+  // first `=== 0` (failed every bundled capture), then UNCALIBRATED pending a
+  // known-bad WKWebView capture. The delivery experiments made the question
+  // unanswerable per runtime: whatever value was recorded would describe
+  // whichever DELIVERY happened to take the calibration capture. See the
+  // coalescing block above RUNTIME_EXPECTATIONS.
   'ios-capacitor-webview': {
-    // The Capacitor WKWebView packages 1.05-1.08 coalesced samples per move where
-    // Safari packages none, measured on 2026-08-23 across four brushes at the same
-    // cadence on the same device the same night. That establishes the two runtimes
-    // report differently. It does NOT establish that `> 0` identifies a well-driven
-    // capture, and the negative control says it does not: the under-driven Android
-    // Capacitor WebView probe on 2026-08-23 recorded `coalescing: false` under the
-    // old `=== 0` rule at 47.81 contact moves/s — that is, more than zero coalesced
-    // samples — which an inverted expectation would have passed. A check satisfied
-    // by exactly the captures it exists to reject is not a check, so this stays
-    // uncalibrated until a WKWebView capture of a KNOWN-BAD transport establishes a
-    // discriminator.
-    coalescing: UNCALIBRATED,
+    coalescing: NOT_APPLICABLE,
     pressure: noReportedPressure,
     contactGeometry: fingerSizedContact,
   },
@@ -133,20 +151,21 @@ const RUNTIME_EXPECTATIONS = {
   },
   // The Android WebView is very likely to report what Chrome reports, and this
   // campaign retracted three thresholds argued from exactly that kind of
-  // likelihood. It stays uncalibrated until a capture in this runtime is read —
-  // issue 1275, now that the transport into it works.
+  // likelihood. Pressure and contact geometry stay uncalibrated until a capture
+  // in this runtime is read against a hand — issue 1275's corpus holds both
+  // sides and can close this when taken up.
   'android-capacitor-webview': {
-    coalescing: UNCALIBRATED,
+    coalescing: NOT_APPLICABLE,
     pressure: UNCALIBRATED,
     contactGeometry: UNCALIBRATED,
   },
   // Desktop capture synthesizes touch through Playwright and reports a
-  // trusted-touch share of 0, so it can never pass `trustedTouch` and the other
-  // three were never calibrated for it. It is here so a desktop capture run
-  // through the rescorer is described rather than judged against Safari on an
-  // iPad; the desktop transport writes no fidelity block of its own.
+  // trusted-touch share of 0, so it can never pass `trustedTouch` and pressure
+  // and contact geometry were never calibrated for it. It is here so a desktop
+  // capture run through the rescorer is described rather than judged against
+  // Safari on an iPad; the desktop transport writes no fidelity block of its own.
   'desktop-playwright': {
-    coalescing: UNCALIBRATED,
+    coalescing: NOT_APPLICABLE,
     pressure: UNCALIBRATED,
     contactGeometry: UNCALIBRATED,
   },

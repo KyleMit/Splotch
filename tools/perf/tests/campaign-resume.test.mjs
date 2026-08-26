@@ -132,7 +132,7 @@ describe('campaign resume', () => {
     const root = scratch();
     seedLedgerRow(`${root}/ledger.tsv`, `${UNCALIBRATED_RUNTIME}-exit-1`);
 
-    const { ran } = await run('ipad-simulator-native', root);
+    const { ran } = await run('android-emulator-native', root);
 
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
     const ledger = readFileSync(`${root}/ledger.tsv`, 'utf8');
@@ -167,10 +167,13 @@ describe('an uncalibrated-runtime row after the runtime is calibrated', () => {
   });
 
   // The scenario is real rather than hypothetical: this campaign introduced the
-  // status one PR before calibrating Android Chrome.
-  it('reads android-chrome as calibrated and the WebViews as not', () => {
+  // status one PR before calibrating Android Chrome, and the iPad WebView crossed
+  // the same line when the coalescing check was retired — its remaining
+  // expectations (pressure, contact geometry) are calibrated, so a banked
+  // uncalibrated-runtime verdict for it must not outlive that change either.
+  it('reads only the Android WebView as still uncalibrated', () => {
     expect(runtimeHasUncalibratedChecks('android-chrome')).toBe(false);
-    expect(runtimeHasUncalibratedChecks('ios-capacitor-webview')).toBe(true);
+    expect(runtimeHasUncalibratedChecks('ios-capacitor-webview')).toBe(false);
     expect(runtimeHasUncalibratedChecks('android-capacitor-webview')).toBe(true);
   });
 });

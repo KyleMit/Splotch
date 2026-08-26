@@ -58,38 +58,38 @@ describe('a matrix cell re-derives its input-fidelity verdict', () => {
   // grounds that a frozen number describes a superseded metric. The fidelity verdict
   // was the one thing left frozen, so a correction to the expectations reached
   // published cells only through device time.
+  // Re-derivation is what lets a check-level decision reach published cells
+  // without device time: these sixteen native cells were held unscoreable first
+  // by a Safari-shaped `=== 0` expectation, then by an UNCALIBRATED entry, and
+  // the delivery experiments retired the check itself (see the coalescing block
+  // in input-fidelity.mjs). Same banked captures, now scoreable.
   it('judges a Capacitor WKWebView capture by the WKWebView expectations', () => {
     const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
 
     for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
       const run = runs[brush].runs[0];
       expect(run.fidelity.runtime).toBe('ios-capacitor-webview');
-      // Everything the WKWebView has a calibrated expectation for passes. What holds
-      // it unscoreable is `coalescing`, which has none: the healthy corpus shows the
-      // runtime coalesces, and the under-driven Android WebView probe shows that
-      // coalescing does not separate a driven capture from an under-driven one
-      // (ADR-0139).
-      expect(run.fidelity.uncalibrated).toEqual(['coalescing']);
-      expect(run.fidelity.passed).toBe(false);
-      expect(runs[brush].aggregate.failedFidelityChecks).toEqual(['coalescing']);
-      expect(runs[brush].aggregate.scoreable).toBe(false);
+      expect(run.fidelity.uncalibrated).toEqual([]);
+      expect(run.fidelity.notApplicable).toContain('coalescing');
+      expect(run.fidelity.passed).toBe(true);
+      expect(runs[brush].aggregate.failedFidelityChecks).toEqual([]);
+      expect(runs[brush].aggregate.scoreable).toBe(true);
     }
   });
 
-  // Re-deriving still does work even though the verdict lands in the same place: the
-  // reason is now a named uncalibrated check rather than a stale Safari-shaped
-  // failure, so what would make this target scoreable is one negative-control
-  // capture rather than an unexplained recapture.
-  it('names the uncalibrated check rather than a stale failure', () => {
+  // The excluded check is absent from `checks` — never present-and-true, so no
+  // reader can believe the runtime answered a question it was never asked.
+  it('omits the excluded check rather than passing it', () => {
     const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
+    const checks = runs.crayon.runs[0].fidelity.checks;
 
-    expect(runs.crayon.runs[0].fidelity.checks).toMatchObject({
+    expect(checks).toMatchObject({
       trustedTouch: true,
       cadence: true,
-      coalescing: null,
       pressure: true,
       contactGeometry: true,
     });
+    expect(Object.keys(checks)).not.toContain('coalescing');
   });
 
   it('leaves a Safari capture passing, judged by Safari expectations', () => {
