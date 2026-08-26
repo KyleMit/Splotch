@@ -272,7 +272,8 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
     tile.needsClear = false;
     return;
   }
-  if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase) return;
+  // EXPERIMENT (exp/crayon-i5-two-pass-direct): zero-mix crayon paints the
+  // normal tile directly, so it must be shown like any ink op.
   if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
   tile.canvas.hidden = false;
 }

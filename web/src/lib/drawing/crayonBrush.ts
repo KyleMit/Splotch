@@ -140,7 +140,9 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   // 0.55 lands blue-over-yellow at (98,162,146) and yellow-over-blue at
   // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
   // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
-  colorMix: 0.55,
+  // EXPERIMENT (exp/crayon-i5-two-pass-direct): zero mix = direct paint of
+  // BOTH density passes into the normal tile, no buffer/planes/glaze.
+  colorMix: 0,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
