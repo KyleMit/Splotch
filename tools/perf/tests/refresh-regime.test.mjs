@@ -18,11 +18,20 @@ const EVIDENCE = join(ROOT, 'perf-profiles', 'evidence');
 
 // `campaignTarget` overrides the index's own `target` field for corpora that key
 // their entries by capture runtime instead of campaign-target id — the hand
-// corpora predate the campaign target vocabulary.
+// pipeline writes runtime keys (a capture rig knows its runtime, not its matrix
+// row), so every hand corpus bound here needs the override. The override is not
+// taken on trust: each capture must record the runtime the named target is
+// judged under, or a same-regime misbinding (this corpus pinned to the target's
+// web sibling, say) would pass silently — a mutation probe showed exactly that.
 function corpusBeats(campaign, campaignTarget) {
   const index = JSON.parse(readFileSync(join(EVIDENCE, campaign, 'index.json'), 'utf8'));
+  const expectedRuntime = campaignTarget ? CAMPAIGN_TARGETS[campaignTarget].captureRuntime : null;
   return index.kept.map((entry) => {
     const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, entry.file), 'utf8'));
+    if (expectedRuntime) {
+      const runtime = capture.runtime ?? capture.fidelity?.runtime ?? null;
+      expect({ campaign, file: entry.file, runtime }).toMatchObject({ runtime: expectedRuntime });
+    }
     return {
       target: campaignTarget ?? entry.target,
       brush: entry.brush,
