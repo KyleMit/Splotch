@@ -59,12 +59,23 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
 interface CrayonPassBuffer {
   ctx: CanvasRenderingContext2D;
   mirror: CanvasRenderingContext2D | null;
+  // EXPERIMENT (exp/crayon-i18-hybrid): snapshot of the target's pre-pass
+  // pixels, captured INCREMENTALLY as the pass bounds grow, so restamps can
+  // restore the under-ink before re-applying the glaze. Valid exactly over
+  // `bounds`; only non-virgin passes maintain it.
+  under: CanvasRenderingContext2D | null;
+  // True while the open pass sits on a tile that was blank at pass open —
+  // the glaze over blank paper collapses to exactly the wax, so ops paint
+  // the target directly and nothing needs buffering or flushing.
+  virgin: boolean;
   dirty: boolean;
   // Device-px bounding box of the open pass's ink, so the stamp and the
   // post-stamp clear touch only the pass-sized rect — a flush stays
   // proportional to the pass, not the canvas.
   bounds: { x0: number; y0: number; x1: number; y1: number } | null;
 }
+
+type DeviceRect = { x0: number; y0: number; x1: number; y1: number };
 
 // Intentionally has no reset seam: a WeakMap keyed by each target's own context
 // self-cleans per key — a fresh target/mount gets a fresh entry, and the old
@@ -76,9 +87,11 @@ export function setCrayonBufferForTarget(
   buffer: CanvasRenderingContext2D,
   mirror: CanvasRenderingContext2D
 ) {
+  // EXPERIMENT (exp/crayon-i18-hybrid): the composited preview planes are
+  // never registered — wax lands on the normal ink tile per op, exactly the
+  // pixels the flush used to bake. The planes stay hidden all session.
   buffer.canvas.hidden = true;
   mirror.canvas.hidden = true;
-  bufferByTarget.set(target, { ctx: buffer, mirror, dirty: false, bounds: null });
 }
 
 function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
@@ -92,7 +105,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     const g = c.getContext('2d')!;
     g.lineCap = 'round';
     g.lineJoin = 'round';
-    buf = { ctx: g, mirror: null, dirty: false, bounds: null };
+    buf = { ctx: g, mirror: null, under: null, virgin: false, dirty: false, bounds: null };
     bufferByTarget.set(target, buf);
   } else if (buf.ctx.canvas.width !== w || buf.ctx.canvas.height !== h) {
     buf.ctx.canvas.width = w;
@@ -103,6 +116,98 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
     buf.bounds = null;
   }
   return buf;
+}
+
+// Tiles the renderer observed to be blank when a crayon op arrived — consumed
+// at the next pass open to select the virgin fast path.
+const blankAtPassOpen = new WeakSet<CanvasRenderingContext2D>();
+
+export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
+  blankAtPassOpen.add(target);
+}
+
+// A repaint clears the tiles and replays ops from scratch, so any open pass
+// state (buffered wax, under snapshot, virginity) describes pixels that no
+// longer exist. Reset before replaying.
+export function resetCrayonPassStateForRepaint(target: CanvasRenderingContext2D) {
+  const buf = existingBufferFor(target);
+  if (buf?.dirty) clearCrayonBounds(buf);
+  blankAtPassOpen.delete(target);
+}
+
+// Up to four pieces of `rect` lying outside `hole` — the region of a new op
+// rect not yet covered by the pass bounds.
+function subtractRect(rect: DeviceRect, hole: DeviceRect): DeviceRect[] {
+  const pieces: DeviceRect[] = [];
+  const ix0 = Math.max(rect.x0, hole.x0);
+  const iy0 = Math.max(rect.y0, hole.y0);
+  const ix1 = Math.min(rect.x1, hole.x1);
+  const iy1 = Math.min(rect.y1, hole.y1);
+  if (ix1 <= ix0 || iy1 <= iy0) return [rect];
+  if (rect.y0 < iy0) pieces.push({ x0: rect.x0, y0: rect.y0, x1: rect.x1, y1: iy0 });
+  if (iy1 < rect.y1) pieces.push({ x0: rect.x0, y0: iy1, x1: rect.x1, y1: rect.y1 });
+  if (rect.x0 < ix0) pieces.push({ x0: rect.x0, y0: iy0, x1: ix0, y1: iy1 });
+  if (ix1 < rect.x1) pieces.push({ x0: ix1, y0: iy0, x1: rect.x1, y1: iy1 });
+  return pieces;
+}
+
+// Grow the under snapshot to cover the pass bounds' expansion by the new op
+// rect. The expansion region holds only un-restamped target pixels (restamps
+// stay inside the current bounds), so copying it now is exact. Capturing the
+// full bounds expansion — not just the op rect's remainder — keeps the
+// captured region a rect equal to `bounds`, so disjoint ops inside one pass
+// can never leave an uncaptured gap that a later restamp would wipe.
+function captureUnderExpansion(
+  buf: CrayonPassBuffer,
+  target: CanvasRenderingContext2D,
+  rect: DeviceRect
+) {
+  const w = target.canvas.width;
+  const h = target.canvas.height;
+  if (!buf.under) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    buf.under = c.getContext('2d')!;
+  } else if (buf.under.canvas.width !== w || buf.under.canvas.height !== h) {
+    buf.under.canvas.width = w;
+    buf.under.canvas.height = h;
+  }
+  const grown: DeviceRect = buf.bounds
+    ? {
+        x0: Math.min(buf.bounds.x0, rect.x0),
+        y0: Math.min(buf.bounds.y0, rect.y0),
+        x1: Math.max(buf.bounds.x1, rect.x1),
+        y1: Math.max(buf.bounds.y1, rect.y1),
+      }
+    : rect;
+  const pieces = buf.bounds ? subtractRect(grown, buf.bounds) : [grown];
+  for (const p of pieces) {
+    const pw = p.x1 - p.x0;
+    const ph = p.y1 - p.y0;
+    if (pw <= 0 || ph <= 0) continue;
+    buf.under.clearRect(p.x0, p.y0, pw, ph);
+    buf.under.drawImage(target.canvas, p.x0, p.y0, pw, ph, p.x0, p.y0, pw, ph);
+  }
+}
+
+// Restore the op's rect from the under snapshot, then re-apply the two-blit
+// glaze from the wax buffer — the target always shows the exact pass-close
+// pixels, with no composited preview plane.
+function restampRect(target: CanvasRenderingContext2D, buf: CrayonPassBuffer, rect: DeviceRect) {
+  const w = rect.x1 - rect.x0;
+  const h = rect.y1 - rect.y0;
+  target.save();
+  target.setTransform(1, 0, 0, 1, 0, 0);
+  target.globalCompositeOperation = 'source-over';
+  target.clearRect(rect.x0, rect.y0, w, h);
+  if (buf.under) {
+    target.drawImage(buf.under.canvas, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
+  }
+  stampSubtractiveGlaze(target, getCrayonMix(), () => {
+    target.drawImage(buf.ctx.canvas, rect.x0, rect.y0, w, h, rect.x0, rect.y0, w, h);
+  });
+  target.restore();
 }
 
 function existingBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer | null {
@@ -177,8 +282,7 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   }
   buf.bounds = null;
   buf.dirty = false;
-  buf.ctx.canvas.hidden = true;
-  if (buf.mirror) buf.mirror.canvas.hidden = true;
+  buf.virgin = false;
 }
 
 function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, blit: () => void) {
@@ -199,17 +303,9 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
-  const b = buf.bounds;
-  if (b) {
-    const w = b.x1 - b.x0;
-    const h = b.y1 - b.y0;
-    target.save();
-    target.setTransform(1, 0, 0, 1, 0, 0);
-    stampSubtractiveGlaze(target, getCrayonMix(), () => {
-      target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
-    });
-    target.restore();
-  }
+  // EXPERIMENT (exp/crayon-i18-hybrid): the target already holds the exact
+  // pass-close pixels — a virgin pass painted them directly, a non-virgin
+  // pass restamped every op rect — so the flush only resets pass state.
   clearCrayonBounds(buf);
 }
 
@@ -238,37 +334,27 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     return;
   }
   const buf = crayonBufferFor(target);
-  buf.ctx.canvas.hidden = false;
-  if (buf.mirror) buf.mirror.canvas.hidden = false;
+  if (!buf.dirty) {
+    // Pass open: a tile the renderer marked blank takes the virgin fast path.
+    buf.virgin = blankAtPassOpen.has(target);
+    blankAtPassOpen.delete(target);
+  }
+  if (buf.virgin) {
+    // Over blank paper the glaze collapses to exactly the wax (see the
+    // pass-buffer notes), so the pattern strokes land straight on the
+    // target — no buffering, no blits, nothing to flush.
+    paintCrayon(target, op);
+    buf.dirty = true;
+    return;
+  }
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
-  buf.mirror?.setTransform(matrix);
   paintCrayon(buf.ctx, op);
   buf.dirty = true;
   const rect = deviceRectFor(buf, matrix, opPaddedUserBounds(op));
-  if (buf.mirror && rect) {
-    // The mirror's pixels are the buffer's pixels — same op, same seed, same
-    // patterns — so re-running the pattern fill to produce them is pure
-    // duplicate work. Clearing and copying the op's own rect gives byte-identical
-    // output for one blit instead of `passes` pattern-filled strokes, which on
-    // the default two-pass crayon halves the fills every op does.
-    const width = rect.x1 - rect.x0;
-    const height = rect.y1 - rect.y0;
-    buf.mirror.save();
-    buf.mirror.setTransform(1, 0, 0, 1, 0, 0);
-    buf.mirror.clearRect(rect.x0, rect.y0, width, height);
-    buf.mirror.drawImage(
-      buf.ctx.canvas,
-      rect.x0,
-      rect.y0,
-      width,
-      height,
-      rect.x0,
-      rect.y0,
-      width,
-      height
-    );
-    buf.mirror.restore();
+  if (rect) {
+    captureUnderExpansion(buf, target, rect);
+    restampRect(target, buf, rect);
+    unionCrayonBounds(buf, rect);
   }
-  unionCrayonBounds(buf, rect);
 }
