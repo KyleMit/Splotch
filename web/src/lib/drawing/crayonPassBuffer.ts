@@ -342,7 +342,10 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     // Pass open: a tile the renderer marked blank takes the virgin fast
     // path; a non-virgin pass refreshes the under shadow only if something
     // invalidated it since the last fold.
-    buf.virgin = blankAtPassOpen.has(target);
+    // DIAGNOSTIC (exp/crayon-i19b-no-virgin): virgin path disabled — every
+    // pass takes the buffered restamp path, isolating whether mixing direct
+    // paint and restamps on one canvas caused i19's regression.
+    buf.virgin = false;
     blankAtPassOpen.delete(target);
     if (!buf.virgin && !buf.underValid) captureUnderSnapshot(buf, target);
   }
