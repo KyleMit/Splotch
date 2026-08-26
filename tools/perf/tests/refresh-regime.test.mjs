@@ -5,11 +5,13 @@ import { ROOT } from '../../lib/proc.mjs';
 import { CAMPAIGN_TARGETS } from '../lib/campaign-plan.mjs';
 import { OFF_REFRESH_REGIME, UNSCOREABLE, attemptsFor } from '../lib/campaign-ledger.mjs';
 import {
+  MIXED_REGIME_SUSTAINED_SHARE_MAX,
   REFRESH_REGIMES,
   classifyRefreshRegime,
   refreshRegimeBand,
   describeRefreshRegime,
   refreshRegimeVerdict,
+  regimeMixture,
 } from '../lib/refresh-regime.mjs';
 
 const EVIDENCE = join(ROOT, 'perf-profiles', 'evidence');
@@ -169,5 +171,107 @@ describe('the campaign ledger', () => {
 
     expect(OFF_REFRESH_REGIME).not.toBe(UNSCOREABLE);
     expect(attemptsFor(rows, 'crayon')).toBe(2);
+  });
+});
+
+// A capture can hold its declared beat for most frames and still spend sustained
+// stretches at the other rate — an adaptive panel shifting mid-capture. Scored
+// against one dominant beat, every frame of such a stretch is charged ~half its
+// duration as lost time while the display presents perfectly steadily.
+describe('regimeMixture', () => {
+  const at120 = (n) => Array(n).fill(8.3);
+  const at60 = (n) => Array(n).fill(16.7);
+
+  it('measures sustained minority runs and ignores isolated other-band frames', () => {
+    // Isolated 16.7s at a 120 Hz beat are indistinguishable from genuinely
+    // dropped frames, and charging those is CORRECT — they must not count.
+    const isolated = [...at120(50), 16.7, ...at120(50), 16.7, ...at120(50)];
+    expect(regimeMixture(isolated).sustainedMinorityShare).toBe(0);
+
+    // Three or more consecutive mean the panel actually presented there.
+    const sustained = [...at120(100), ...at60(10), ...at120(90)];
+    expect(regimeMixture(sustained).sustainedMinorityShare).toBe(0.05);
+    expect(regimeMixture(sustained).minorityRegime).toBe('60hz');
+  });
+
+  it('returns null with nothing to measure', () => {
+    expect(regimeMixture([])).toBeNull();
+    expect(regimeMixture(undefined)).toBeNull();
+  });
+});
+
+describe('the mixed-regime verdict', () => {
+  const mixed = { sustainedMinorityShare: 0.043, minorityRegime: '60hz' };
+  const clean = { sustainedMinorityShare: 0.007, minorityRegime: '60hz' };
+
+  // The 2026-08-23 vigorous-hand Safari capture: dominant 8 ms, 4.31% of
+  // in-contact frames in sustained 60 Hz runs (the longest is 73 frames). Its
+  // 5.6% "lost" reading is mostly those runs charged against the 120 Hz beat.
+  it('demotes an in-regime verdict carrying sustained minority presentation', () => {
+    const verdict = refreshRegimeVerdict(8, '120hz', mixed);
+
+    expect(verdict).toMatchObject({
+      verdict: 'mixed-regime',
+      matched: false,
+      scoreable: false,
+    });
+    expect(describeRefreshRegime(verdict)).toContain('mixed presentation');
+    expect(describeRefreshRegime(verdict)).toContain('4.3%');
+  });
+
+  it('passes a clean capture and one at the calibrated boundary', () => {
+    expect(refreshRegimeVerdict(8, '120hz', clean).verdict).toBe('in-regime');
+    expect(refreshRegimeVerdict(8, '120hz', { sustainedMinorityShare: 0.015 }).verdict).toBe(
+      'in-regime'
+    );
+  });
+
+  // Mixture only DEMOTES an in-regime answer: off-regime and unestablished
+  // already carry their own responses (retry / bank), and a capture without the
+  // field is judged exactly as it was banked.
+  it('changes nothing off-regime, unestablished, or pre-field', () => {
+    expect(refreshRegimeVerdict(8, '60hz', mixed).verdict).toBe('off-regime');
+    expect(refreshRegimeVerdict(8, null, mixed).verdict).toBe('unestablished');
+    expect(refreshRegimeVerdict(8, '120hz').verdict).toBe('in-regime');
+    expect(refreshRegimeVerdict(8, '120hz', null).verdict).toBe('in-regime');
+  });
+});
+
+// The threshold is calibrated from the tracked corpora, so the calibration is
+// pinned to them: every machine-driven scored capture must sit at or under the
+// boundary, and the known mixed-presentation captures above it. If either side
+// drifts, the threshold's evidence has changed and it must be re-derived, not
+// widened.
+describe('the mixture threshold holds against the tracked corpora', () => {
+  const mixtureOf = (campaign, file) => {
+    const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, file), 'utf8'));
+    const deltas = (capture.report?.frames ?? []).filter((f) => f[2] === 1).map((f) => f[1]);
+    return regimeMixture(deltas);
+  };
+
+  it('sits above every machine-driven scored capture', () => {
+    for (const [campaign, file] of [
+      ['2026-08-23-android-split', 'android-device-web-crayon.json'],
+      ['2026-08-24-android-web-magic-over-gate', 'android-device-web-magic.json'],
+      ['2026-08-23-ipad-main', 'ipad-device-web-pen.json'],
+      ['2026-08-25-campaign-1322-android', 'android-device-web-pen.json'],
+    ]) {
+      const mixture = mixtureOf(campaign, file);
+      expect(mixture.sustainedMinorityShare, `${campaign}/${file}`).toBeLessThanOrEqual(
+        MIXED_REGIME_SUSTAINED_SHARE_MAX
+      );
+    }
+  });
+
+  it('sits below the known mixed-presentation captures', () => {
+    for (const [campaign, file] of [
+      ['2026-08-23-hand', 'ios-safari-b.json'],
+      ['2026-08-23-hand', 'android-chrome-d-clean.json'],
+    ]) {
+      const mixture = mixtureOf(campaign, file);
+      expect(mixture.sustainedMinorityShare, `${campaign}/${file}`).toBeGreaterThan(
+        MIXED_REGIME_SUSTAINED_SHARE_MAX
+      );
+    }
   });
 });

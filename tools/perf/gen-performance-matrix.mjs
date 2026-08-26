@@ -255,7 +255,11 @@ function normalizeDrawingRun(
   const summaries = profile.report ? summarizeRun(profile.report) : profile.summaries;
   const phases = summaries?.phases;
   const scored = scoreDrawingRun(phases ?? [], gateShare);
-  const refreshRegime = refreshRegimeVerdict(summaries?.intervalMs, expectedRefreshRegime);
+  const refreshRegime = refreshRegimeVerdict(
+    summaries?.intervalMs,
+    expectedRefreshRegime,
+    summaries?.regimeMixture
+  );
   const fidelity = rederiveFidelity(profile, phases, captureRuntime);
   const failedFidelityChecks = Object.entries(fidelity?.checks ?? {})
     .filter(([, passed]) => passed !== true)

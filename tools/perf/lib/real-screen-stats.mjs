@@ -1,4 +1,5 @@
 import { FIDELITY_MOVES_PER_FRAME_MIN } from './input-fidelity.mjs';
+import { regimeMixture } from './refresh-regime.mjs';
 
 // Turns the raw tables `real-screen-probe.js` records into the numbers a human
 // reads. Pure functions, no I/O: the device driver (`perf:ios:webkit:frames`), the
@@ -868,6 +869,11 @@ export function summarizeRun(report) {
   };
   return {
     intervalMs: tables.intervalMs,
+    // The in-contact band mixture the regime verdict demotes on: `intervalMs`
+    // alone reports one dominant beat, and an adaptive panel can hold sustained
+    // stretches at the other rate inside the same capture. Run-level rather than
+    // per-phase because the verdict is formed against the run-level beat.
+    regimeMixture: regimeMixture(frames.filter((f) => f[2] === 1).map((f) => f[1])),
     phases: labelPhases(phases).map((phase) => summarizePhase(phase, tables)),
   };
 }

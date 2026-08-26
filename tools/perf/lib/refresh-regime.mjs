@@ -44,6 +44,60 @@ export function refreshRegimeBand(regime) {
   return [observedMs[0] - marginMs, observedMs[1] + marginMs];
 }
 
+// A capture can hold its declared beat for most of its frames and still spend
+// sustained stretches presenting at the OTHER rate — an adaptive panel shifting
+// mid-capture. The 2026-08-23 vigorous-hand Safari capture holds a 73-frame
+// 60 Hz run inside a 120 Hz capture, and every frame of such a run is charged
+// ~half its duration as lost time by a scorer pricing against the dominant
+// beat. That is a scoring artifact, not app loss, so a capture carrying enough
+// of it is refused rather than mis-scored.
+//
+// The discriminator is RUNS, not total minority share: an isolated other-band
+// delta is indistinguishable from a genuinely dropped frame (one 16.7 ms gap at
+// a 120 Hz beat IS one missed slot, and charging it is correct), while three or
+// more consecutive other-band deltas mean the panel was actually presenting
+// there. Calibrated across all 74 tracked captures' in-contact frames: every
+// machine-driven scored capture measures at most 0.68% of its frames in
+// sustained minority runs (62 of 74 at exactly zero), while captures with
+// genuinely mixed presentation — real hands whose pace moved an adaptive panel
+// — measure 2.15-4.31%. The threshold sits in that gap. Residual honesty: a
+// capture just under it can still carry up to roughly a point of mis-priced
+// lost time; the spread work in issue 1344 is what would tighten this further.
+export const REGIME_MIXTURE_RUN_MIN_FRAMES = 3;
+export const MIXED_REGIME_SUSTAINED_SHARE_MAX = 0.015;
+
+// Share of in-contact frame deltas that sit in sustained runs (length >=
+// REGIME_MIXTURE_RUN_MIN_FRAMES) of whichever regime band holds FEWER of the
+// capture's frames. Computed at summary time from the raw deltas and carried in
+// `summaries.regimeMixture`, because the verdict sites hold only the summary.
+export function regimeMixture(contactDeltas = []) {
+  const deltas = contactDeltas.filter((v) => Number.isFinite(v) && v > 0);
+  if (!deltas.length) return null;
+  const bands = Object.keys(REFRESH_REGIMES).map((regime) => {
+    const [low, high] = refreshRegimeBand(regime);
+    return { regime, low, high, count: deltas.filter((v) => v >= low && v <= high).length };
+  });
+  bands.sort((a, b) => a.count - b.count);
+  const minority = bands[0];
+  let sustained = 0;
+  let run = 0;
+  for (const value of deltas) {
+    if (value >= minority.low && value <= minority.high) {
+      run += 1;
+      continue;
+    }
+    if (run >= REGIME_MIXTURE_RUN_MIN_FRAMES) sustained += run;
+    run = 0;
+  }
+  if (run >= REGIME_MIXTURE_RUN_MIN_FRAMES) sustained += run;
+  return {
+    minorityRegime: minority.regime,
+    sustainedMinorityShare: Math.round((sustained / deltas.length) * 10000) / 10000,
+    runMinFrames: REGIME_MIXTURE_RUN_MIN_FRAMES,
+    frames: deltas.length,
+  };
+}
+
 // null rather than a nearest-match fallback: a beat that belongs to neither band is
 // a capture nobody has a budget for, and quietly filing it under the closer one is
 // the failure this module exists to stop.
@@ -76,20 +130,38 @@ export function classifyRefreshRegime(intervalMs) {
 const IN_REGIME = 'in-regime';
 const OFF_REGIME = 'off-regime';
 const UNESTABLISHED_REGIME = 'unestablished';
+const MIXED_REGIME = 'mixed-regime';
 
-export function refreshRegimeVerdict(intervalMs, expected = null) {
+// `mixture` is the capture's `summaries.regimeMixture`, when it recorded one. A
+// capture without the field (banked before it existed) is judged exactly as it
+// was — the same legacy principle as the fidelity table's pre-field artifacts.
+// Mixture can only DEMOTE an in-regime verdict: an off-regime or unestablished
+// capture already has its answer, and both are worth their existing responses
+// (retry / bank) rather than a third one.
+export function refreshRegimeVerdict(intervalMs, expected = null, mixture = null) {
   const observed = classifyRefreshRegime(intervalMs);
-  const verdict =
+  let verdict =
     expected === null ? UNESTABLISHED_REGIME : observed === expected ? IN_REGIME : OFF_REGIME;
+  if (
+    verdict === IN_REGIME &&
+    Number.isFinite(mixture?.sustainedMinorityShare) &&
+    mixture.sustainedMinorityShare > MIXED_REGIME_SUSTAINED_SHARE_MAX
+  ) {
+    verdict = MIXED_REGIME;
+  }
   return {
     intervalMs: Number.isFinite(intervalMs) ? intervalMs : null,
     observed,
     expected,
     verdict,
+    mixture: mixture ?? null,
     // Retained as the "is this the regime it should be" question alone, which is
-    // what the campaign runner retries on. Scoreability is a separate question and
-    // has its own field, because an unestablished target answers them differently.
-    matched: verdict !== OFF_REGIME,
+    // what the campaign runner retries on. A mixed capture is worth retrying for
+    // the same reason an off-regime one is: an adaptive panel presenting at the
+    // other rate that run is exactly what a second attempt fixes. Scoreability
+    // is a separate question and has its own field, because an unestablished
+    // target answers them differently.
+    matched: verdict !== OFF_REGIME && verdict !== MIXED_REGIME,
     scoreable: verdict === IN_REGIME,
   };
 }
@@ -99,6 +171,12 @@ export function describeRefreshRegime(verdict) {
   const observed = verdict.observed ?? 'unrecognized';
   if (verdict.verdict === UNESTABLISHED_REGIME) {
     return `${beat} (${observed}, no established regime — not scoreable)`;
+  }
+  if (verdict.verdict === MIXED_REGIME) {
+    const share = Math.round((verdict.mixture?.sustainedMinorityShare ?? 0) * 1000) / 10;
+    return `${beat} (${observed}, but ${share}% of in-contact frames in sustained ${
+      verdict.mixture?.minorityRegime
+    } runs — mixed presentation, not scoreable against one beat)`;
   }
   if (verdict.verdict === IN_REGIME) return `${beat} (${observed})`;
   return `${beat} (${observed}, expected ${verdict.expected})`;

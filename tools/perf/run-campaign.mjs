@@ -115,7 +115,11 @@ export function inspectArtifact(
   // Checked after fidelity so the more fundamental rejection is the one reported:
   // a capture that was barely driven has a meaningless beat as well as a meaningless
   // number, and naming the regime would send the next session after the wrong thing.
-  const regime = refreshRegimeVerdict(artifact?.summaries?.intervalMs, expectedRefreshRegime);
+  const regime = refreshRegimeVerdict(
+    artifact?.summaries?.intervalMs,
+    expectedRefreshRegime,
+    artifact?.summaries?.regimeMixture
+  );
   if (!regime.matched) return { ok: false, status: OFF_REFRESH_REGIME, regime };
   // Checked LAST, after fidelity and regime, for the reason those two are
   // ordered: the more fundamental rejection must be the one reported. A capture
