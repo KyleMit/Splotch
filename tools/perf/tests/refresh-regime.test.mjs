@@ -348,3 +348,36 @@ describe('the mixture threshold holds against the tracked corpora', () => {
     }
   });
 });
+
+// The segmentation BRIDGE itself, pinned through summarizeRun (the PR 1368
+// review flattened contactDeltaSegments into one run across all lifts and
+// both corpus tests stayed green — the tracked captures just carry enough
+// margin that the exact regression moves no witness across the threshold).
+// This fixture is built so the flattened and per-stretch readings disagree:
+// every contact stretch ends AND begins with two minority-band deltas, so a
+// segmenter that concatenates across lifts sees runs of four where the truth
+// is fragments of two.
+describe('the mixture segmentation bridge', () => {
+  it('reads stroke-edge fragments as zero sustained share through summarizeRun', () => {
+    const frames = [];
+    let t = 0;
+    const push = (dt, contact) => {
+      t += dt;
+      frames.push([Math.round(t * 10) / 10, dt, contact]);
+    };
+    for (let stretch = 0; stretch < 12; stretch += 1) {
+      push(16.7, 1);
+      push(16.7, 1);
+      for (let i = 0; i < 50; i += 1) push(8.3, 1);
+      push(16.7, 1);
+      push(16.7, 1);
+      for (let lift = 0; lift < 6; lift += 1) push(8.3, 0);
+    }
+
+    const mixture = summarizeRun({ phases: [], frames }).regimeMixture;
+
+    expect(mixture.observedRegime).toBe('120hz');
+    expect(mixture.minorityRegime).toBe('60hz');
+    expect(mixture.sustainedMinorityShare).toBe(0);
+  });
+});
