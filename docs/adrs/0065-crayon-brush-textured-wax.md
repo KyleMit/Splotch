@@ -9,7 +9,10 @@ layers, and nondeterministic grain are lifted. Also amended by ADR-0067 (2026-07
 longer the only free-draw mode — the solid pen returned as a sibling brush type, both selected from
 the Brush Menu, with the pen as the default. Also amended by ADR-0068 (2026-07): closed passes now
 commit as live-captured rasters, so the fold blits them instead of re-rendering this ADR's pattern
-fills — the deposit itself is unchanged. **Date:** 2026-07
+fills — the deposit itself is unchanged. Also amended by ADR-0146 (2026-08): wax-deposition op
+granularity is a per-runtime decision — the web build keeps one op per pointermove while the native
+Capacitor build merges a frame's moves into one capped op; the deposit and its visual output are
+unchanged, and this file's "per-frame ops" phrasing predates that split. **Date:** 2026-07
 
 ## Context
 
