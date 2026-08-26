@@ -321,6 +321,22 @@ describe('keep-capture-evidence', () => {
     expect(modeOf({})).toBe('unknown');
   });
 
+  // Issue 1344: a spread or repeat-count study's evidence IS the set, so
+  // --keep-all extends the hand-corpus treatment to automation studies —
+  // every capture kept, filed injectively like hand captures.
+  it('keeps every capture of one cell under --keep-all, filed injectively', () => {
+    const kept = selectEvidence(
+      [
+        { target: 'a', brush: 'crayon', file: '1', relativePath: 'x/one.json' },
+        { target: 'a', brush: 'crayon', file: '2', relativePath: 'x/two.json' },
+      ],
+      { keepAll: true }
+    );
+    expect(kept).toHaveLength(2);
+    const names = kept.map((entry) => evidenceFileName(entry, { keepAll: true }));
+    expect(new Set(names).size).toBe(2);
+  });
+
   it('keeps one capture per target and brush', () => {
     const kept = selectEvidence([
       { target: 'a', brush: 'pen', file: '1' },

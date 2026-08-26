@@ -69,14 +69,18 @@ function scoreabilityTier(fidelity) {
   return numberInvalidatingFailure(fidelity) ? 3 : 1;
 }
 
-export function selectEvidence(candidates) {
+export function selectEvidence(candidates, { keepAll = false } = {}) {
   const groups = new Map();
   for (const candidate of candidates) {
     // A hand capture is one a person paid for, and a hand corpus exists to show
     // spread (see 2026-08-23-hand): every one is kept, not one per target x brush.
-    const key = candidate.handCapture
-      ? candidate.relativePath
-      : `${candidate.target}:${candidate.brush}`;
+    // --keep-all extends the same treatment to an automation STUDY corpus
+    // (issue 1344): a spread or repeat-count study's evidence IS the set —
+    // deduping it to one representative deletes the quantity it measured.
+    const key =
+      candidate.handCapture || keepAll
+        ? candidate.relativePath
+        : `${candidate.target}:${candidate.brush}`;
     const group = groups.get(key) ?? [];
     group.push(candidate);
     groups.set(key, group);
@@ -130,8 +134,8 @@ export function failedRepresentativeProblem(selected, { allowFailed } = {}) {
 // not injective: run--a/hand.json and run/a--hand.json both flattened to the
 // same name, and the second write silently replaced the first — the exact
 // loss this function exists to prevent.
-export function evidenceFileName(entry) {
-  if (!entry.handCapture) return `${entry.target}-${entry.brush}.json`;
+export function evidenceFileName(entry, { keepAll = false } = {}) {
+  if (!entry.handCapture && !keepAll) return `${entry.target}-${entry.brush}.json`;
   const digest = createHash('sha256').update(entry.relativePath).digest('hex').slice(0, 8);
   return `${basename(entry.relativePath, '.json')}--${digest}.json`;
 }
@@ -142,6 +146,7 @@ export async function keepCaptureEvidence({
   target = argFlag('target'),
   filter = argFlag('filter'),
   force = argFlag('force') !== undefined || process.argv.includes('--force'),
+  keepAll = argFlag('keep-all') !== undefined || process.argv.includes('--keep-all'),
   allowFailed = argFlag('allow-failed') !== undefined || process.argv.includes('--allow-failed'),
   // Overridable so the end-to-end test promotes into a tmpdir instead of the
   // tracked corpus; production callers pass nothing.
@@ -200,7 +205,7 @@ export async function keepCaptureEvidence({
   }
   if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
 
-  const selected = selectEvidence(candidates);
+  const selected = selectEvidence(candidates, { keepAll });
   const noValidRepresentative = failedRepresentativeProblem(selected, { allowFailed });
   if (noValidRepresentative) fail(noValidRepresentative);
   const destination = join(ROOT, evidenceRoot, campaign);
@@ -231,7 +236,7 @@ export async function keepCaptureEvidence({
   // exists to prevent, so it fails loudly instead.
   const emitted = new Set();
   for (const entry of selected) {
-    const name = evidenceFileName(entry);
+    const name = evidenceFileName(entry, { keepAll });
     if (emitted.has(name)) {
       fail(`evidence file name collision: ${name} (from ${entry.relativePath})`);
     }
@@ -250,7 +255,7 @@ export async function keepCaptureEvidence({
         campaign,
         capturedFrom: corpus,
         kept: selected.map((entry) => ({
-          file: evidenceFileName(entry),
+          file: evidenceFileName(entry, { keepAll }),
           target: entry.target,
           brush: entry.brush,
           mode: entry.mode,
