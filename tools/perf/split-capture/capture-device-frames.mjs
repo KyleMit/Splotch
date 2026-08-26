@@ -385,6 +385,10 @@ export async function captureDeviceFrames({
   cdpPort = parsePositivePort(argFlag('cdp-port', PORT_ROLES.androidCdp.port), 'cdp-port'),
   wdaUrl = argFlag('wda-url', 'http://127.0.0.1:8100'),
   label = argFlag('label'),
+  // Without --output the composed artifact (fidelity, summaries, provenance) is
+  // printed and DISCARDED — only the raw page report lands in --report-dir. A
+  // capture meant to be banked or promoted to evidence must pass --output; a
+  // session lost a clean emulator capture to this before noticing.
   output = argFlag('output'),
   reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
   allowForeignBuild = process.argv.includes('--allow-foreign-build'),
