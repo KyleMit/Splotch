@@ -1303,3 +1303,61 @@ describe('the eraserInk trust dimension', () => {
     });
   });
 });
+
+// The PR 1366 review: the test named for this mapping never exercised it — the
+// corpus re-derives to a clean pass, and the fabricated verdict only reached
+// the classifier, so reverting `unrecorded` back to `failed` stayed green.
+// This drives an uncalibrated-only artifact through normalizeMatrix itself:
+// android-emulator-native's judging runtime (android-capacitor-webview) still
+// has uncalibrated pressure/contact expectations, so a capture passing every
+// real check re-derives to passed:false with only uncalibrated non-passes.
+describe('trust publishes instrument silence as unrecorded', () => {
+  it('maps an uncalibrated-only verdict to unrecorded with its detail', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, 'native-pen.json'),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        // A stored verdict makes the artifact a fidelity-reporting capture (the
+        // desktop carve-out re-derives nothing) — and a FLATTERING one proves
+        // re-derivation overrides it rather than trusting the day-of claim.
+        fidelity: { passed: true, checks: { trustedTouch: true, cadence: true } },
+        summaries: {
+          intervalMs: 16.7,
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+              input: {
+                kinds: 'touch',
+                trust: { share: 1 },
+                movesPerSecond: 116,
+                movesPerFrame: 1.9,
+                moveGapP95Ms: 9,
+              },
+            },
+          ],
+        },
+      })
+    );
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: ['native-pen.json'] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    built.targets[0].id = 'android-emulator-native';
+
+    const matrix = normalizeMatrix(built, directory);
+    const run = matrix.targets[0].modes[0].drawing.pen.runs[0];
+
+    expect(run.fidelity.passed).toBe(false);
+    expect(run.fidelity.uncalibrated).toEqual(['pressure', 'contactGeometry']);
+    expect(run.trust.find((entry) => entry.name === 'inputFidelity')).toEqual({
+      name: 'inputFidelity',
+      state: 'unrecorded',
+      detail: 'pressure(uncalibrated)+contactGeometry(uncalibrated)',
+    });
+  });
+});

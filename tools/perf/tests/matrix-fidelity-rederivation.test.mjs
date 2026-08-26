@@ -161,24 +161,23 @@ describe('the per-run trust ledger', () => {
     }
   });
 
-  // The PR 1364 review's blocking finding: an uncalibrated-only fidelity
-  // verdict is instrument silence, not capture failure — publishing it as
-  // `failed` would brand every android-native run a bad capture at the
-  // campaign-end regen. The hand-native corpus is the live case: every real
-  // check passes and only pressure/contactGeometry are uncalibrated.
-  it('publishes instrument silence as unrecorded, never as failed', () => {
+  // This corpus re-derives to a clean pass, so it exercises the verified
+  // branch; the uncalibrated-to-unrecorded mapping itself is pinned end to end
+  // in performance-matrix.test.mjs ('trust publishes instrument silence as
+  // unrecorded'), which drives an uncalibrated-only artifact through
+  // normalizeMatrix — the PR 1366 review caught this test's old title claiming
+  // that coverage without providing it.
+  it('publishes a clean re-derived verdict as verified', () => {
     const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
     const entry = runs.pen.runs[0].trust.find((row) => row.name === 'inputFidelity');
     expect(entry.state).toBe('verified');
-
-    const stored = {
-      passed: false,
-      checks: { cadence: true, pressure: null },
-      uncalibrated: ['pressure'],
-    };
-    // Direct check of the classifier the mapping leans on, against a
-    // silence-shaped verdict.
-    expect(onlyUncalibratedChecksFailed(stored)).toBe(true);
+    expect(
+      onlyUncalibratedChecksFailed({
+        passed: false,
+        checks: { cadence: true, pressure: null },
+        uncalibrated: ['pressure'],
+      })
+    ).toBe(true);
   });
 
   // The stored runtime label is the runner's day-of claim; it is trusted only
