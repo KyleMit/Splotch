@@ -160,4 +160,20 @@ describe('the repository', () => {
   ])('skips %s, which has to spell the form it rejects', (file) => {
     expect(scannedFiles()).not.toContain(file);
   });
+
+  // The evidence-corpus exclusion is exactly the bulky capture artifacts (the
+  // multi-megabyte frame tables that timed this sweep out) — the human-authored
+  // prose beside them stays in scope: the READMEs, and the index.json files
+  // whose why/note/finding fields can carry a sigil as readily as any doc.
+  it('keeps evidence prose in the sweep while excluding only capture artifacts', () => {
+    const files = scannedFiles();
+
+    expect(files).toContain('perf-profiles/evidence/README.md');
+    expect(files).toContain(
+      'perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/index.json'
+    );
+    expect(files).not.toContain(
+      'perf-profiles/evidence/2026-08-25-desktop-rotation-first-frames/webkit-rotation.json'
+    );
+  });
 });

@@ -282,9 +282,19 @@ export function scannedFiles(root = ROOT) {
       // Captured measurement artifacts are frame tables and event tuples, not
       // prose — no skill reference can originate there, and sweeping megabytes
       // of evidence JSON is what pushed this check past its own test timeout
-      // when the desktop rotation corpus landed (stack 1353). JSON only: the
-      // README prose living beside the artifacts stays in the sweep.
-      .filter((file) => !(file.startsWith('perf-profiles/') && file.endsWith('.json')))
+      // when the desktop rotation corpus landed (stack 1353). The exclusion is
+      // exactly the bulky artifacts: the READMEs beside them AND the corpus
+      // index.json files stay in the sweep, because an index's why/note/finding
+      // fields are human-authored shared prose that can carry a sigil as
+      // readily as any doc.
+      .filter(
+        (file) =>
+          !(
+            file.startsWith('perf-profiles/') &&
+            file.endsWith('.json') &&
+            !file.endsWith('/index.json')
+          )
+      )
       .filter((file) => !SELF_REFERENTIAL_PATHS.includes(file))
   );
 }
