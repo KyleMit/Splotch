@@ -144,9 +144,13 @@ export function classifyRefreshRegime(intervalMs) {
 // exactly the kind of thing a second attempt fixes. An unestablished target cannot
 // be fixed by retrying at all — the gap is a missing measurement — so the campaign
 // banks the artifact and the matrix refuses to score the cell.
-const IN_REGIME = 'in-regime';
+// The two verdicts the matrix's trust composition branches on are exported as
+// boundary vocabulary (declared once, imported everywhere) — a bare literal
+// there would reroute a renamed verdict into the wrong trust state silently.
+// The other two stay module-local until a consumer imports them.
+export const IN_REGIME = 'in-regime';
 const OFF_REGIME = 'off-regime';
-const UNESTABLISHED_REGIME = 'unestablished';
+export const UNESTABLISHED_REGIME = 'unestablished';
 const MIXED_REGIME = 'mixed-regime';
 
 // `mixture` is the capture's `summaries.regimeMixture`, when it recorded one. A

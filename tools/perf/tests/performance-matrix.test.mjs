@@ -1236,3 +1236,70 @@ describe('the eraser refill record in a folded cell', () => {
     expect(() => normalizeMatrix(eraserManifest([complete]), directory)).not.toThrow();
   });
 });
+
+// The eraserInk trust dimension's positive paths, on synthetic profiles the
+// corpus cannot supply (its captures predate the fill recorder).
+describe('the eraserInk trust dimension', () => {
+  function writeEraserTrustCapture(directory, name, extra) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+        ...extra,
+      })
+    );
+    return name;
+  }
+
+  const eraserTrust = (directory, source) => {
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { eraser: [source] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const matrix = normalizeMatrix(built, directory);
+    const run = matrix.targets[0].modes[0].drawing.eraser.runs[0];
+    return run.trust.find((entry) => entry.name === 'eraserInk');
+  };
+
+  it('verifies a sound fill, carrying a settle repair in the detail', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const sound = writeEraserTrustCapture(directory, 'eraser-sound.json', {
+      eraserFill: { tiles: 16, backings: [], transparentTiles: [] },
+    });
+    const repaired = writeEraserTrustCapture(directory, 'eraser-repaired.json', {
+      eraserFill: { tiles: 16, backings: [], transparentTiles: [], repairedAfterSettle: true },
+    });
+
+    expect(eraserTrust(directory, sound)).toEqual({ name: 'eraserInk', state: 'verified' });
+    expect(eraserTrust(directory, repaired)).toEqual({
+      name: 'eraserInk',
+      state: 'verified',
+      detail: 'repaired-after-settle',
+    });
+  });
+
+  it('fails a refill record with no setup fill behind it', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const orphanRefills = writeEraserTrustCapture(directory, 'eraser-orphan.json', {
+      eraserRefills: [{ afterStroke: 4, pending: false, transparentTiles: [] }],
+    });
+
+    expect(eraserTrust(directory, orphanRefills)).toEqual({
+      name: 'eraserInk',
+      state: 'failed',
+      detail: 'no setup fill recorded',
+    });
+  });
+});

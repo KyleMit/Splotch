@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { normalizeMatrix } from '../gen-performance-matrix.mjs';
+import { onlyUncalibratedChecksFailed } from '../lib/input-fidelity.mjs';
 
 // The tracked corpus holds one real capture per target and brush (ADR-0138), all
 // four of these taken LANDSCAPE-dark, so a one-mode manifest over them exercises the
@@ -151,9 +152,42 @@ describe('the per-run trust ledger', () => {
     const names = (brush) => runs[brush].runs[0].trust.map((entry) => entry.name);
 
     // These corpus captures predate the fill recorder, so the dimension is
-    // absent-as-inapplicable rather than unrecorded — and every run still
-    // carries the universal dimensions.
-    expect(names('pen')).toContain('hostQuiet');
-    expect(names('pen')).toContain('inputFidelity');
+    // absent-as-inapplicable rather than unrecorded — for every brush, the
+    // eraser included — and every run still carries the universal dimensions.
+    for (const brush of ['pen', 'crayon', 'magic', 'eraser']) {
+      expect(names(brush), brush).not.toContain('eraserInk');
+      expect(names(brush), brush).toContain('hostQuiet');
+      expect(names(brush), brush).toContain('inputFidelity');
+    }
+  });
+
+  // The PR 1364 review's blocking finding: an uncalibrated-only fidelity
+  // verdict is instrument silence, not capture failure — publishing it as
+  // `failed` would brand every android-native run a bad capture at the
+  // campaign-end regen. The hand-native corpus is the live case: every real
+  // check passes and only pressure/contactGeometry are uncalibrated.
+  it('publishes instrument silence as unrecorded, never as failed', () => {
+    const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
+    const entry = runs.pen.runs[0].trust.find((row) => row.name === 'inputFidelity');
+    expect(entry.state).toBe('verified');
+
+    const stored = {
+      passed: false,
+      checks: { cadence: true, pressure: null },
+      uncalibrated: ['pressure'],
+    };
+    // Direct check of the classifier the mapping leans on, against a
+    // silence-shaped verdict.
+    expect(onlyUncalibratedChecksFailed(stored)).toBe(true);
+  });
+
+  // The stored runtime label is the runner's day-of claim; it is trusted only
+  // when it matches the runtime the run was judged under. These corpus blobs
+  // predate the label entirely, so the row must read unrecorded — never a
+  // stale label presented as verified.
+  it('publishes an absent stored runtime as unrecorded', () => {
+    const runs = drawingRuns('ipad-device-native', 'ipad-device-native');
+    const entry = runs.pen.runs[0].trust.find((row) => row.name === 'captureRuntime');
+    expect(entry.state).toBe('unrecorded');
   });
 });

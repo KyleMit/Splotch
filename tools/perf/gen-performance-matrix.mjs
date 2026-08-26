@@ -13,11 +13,12 @@ import {
   summarizeActions,
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
-import { refreshRegimeVerdict } from './lib/refresh-regime.mjs';
+import { IN_REGIME, UNESTABLISHED_REGIME, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
 import {
   DEFAULT_CAPTURE_RUNTIME,
   describeFidelityFailures,
   inputFidelity,
+  onlyUncalibratedChecksFailed,
 } from './lib/input-fidelity.mjs';
 import {
   CAMPAIGN_TARGETS,
@@ -263,11 +264,23 @@ function rederiveFidelity(profile, phases, captureRuntime) {
 // absence of an inapplicable dimension is not an absent guarantee.
 function composeRunTrust(
   profile,
-  { fidelity, refreshRegime, gestureRepeats, gesturePlan, anomalousRefills }
+  { fidelity, refreshRegime, gestureRepeats, gesturePlan, anomalousRefills, judgingRuntime }
 ) {
   const trust = [];
   if (fidelity?.passed === true) {
     trust.push({ name: 'inputFidelity', state: 'verified' });
+  } else if (fidelity?.passed === false && onlyUncalibratedChecksFailed(fidelity)) {
+    // Instrument silence, not capture failure: every real check passed and the
+    // only non-passes are checks the instrument has no measured expectation
+    // for. Publishing this as `failed` would brand every android-native run a
+    // bad capture at the campaign-end regen (the PR 1364 review's blocking
+    // finding); `unrecorded` is the ledger's own word for nothing-measured,
+    // and the (uncalibrated) suffix in the detail keeps the row self-explaining.
+    trust.push({
+      name: 'inputFidelity',
+      state: 'unrecorded',
+      detail: describeFidelityFailures(fidelity),
+    });
   } else if (fidelity?.passed === false) {
     trust.push({
       name: 'inputFidelity',
@@ -277,10 +290,19 @@ function composeRunTrust(
   } else {
     trust.push({ name: 'inputFidelity', state: 'unrecorded' });
   }
-  if (refreshRegime?.verdict === 'in-regime') {
+  if (refreshRegime?.verdict === IN_REGIME) {
     trust.push({ name: 'refreshRegime', state: 'verified', detail: `${refreshRegime.observed}` });
-  } else if (refreshRegime?.verdict === 'unestablished') {
-    trust.push({ name: 'refreshRegime', state: 'unrecorded', detail: 'no established regime' });
+  } else if (refreshRegime?.verdict === UNESTABLISHED_REGIME) {
+    trust.push({
+      name: 'refreshRegime',
+      state: 'unrecorded',
+      // Unestablished only means the TARGET declares no regime — the beat
+      // itself may well have been measured, and it is the one thing worth
+      // carrying.
+      detail: refreshRegime.observed
+        ? `no established regime (measured ${refreshRegime.observed})`
+        : 'no established regime',
+    });
   } else {
     trust.push({ name: 'refreshRegime', state: 'failed', detail: refreshRegime?.verdict });
   }
@@ -295,15 +317,25 @@ function composeRunTrust(
       : { name: 'gesturePlan', state: 'unrecorded' }
   );
   const fill = profile?.eraserFill ?? null;
-  const refills = anomalousRefills;
-  if (fill !== null || refills !== null) {
-    const fillSound = fill !== null && !fill.pending && (fill.transparentTiles?.length ?? 0) === 0;
-    const refillsSound = refills === null || refills.length === 0;
-    trust.push(
-      fillSound && refillsSound
-        ? { name: 'eraserInk', state: 'verified' }
-        : { name: 'eraserInk', state: 'failed' }
-    );
+  if (fill !== null || anomalousRefills !== null) {
+    const fillProblems = [];
+    if (fill === null) fillProblems.push('no setup fill recorded');
+    else if (fill.pending || (fill.transparentTiles?.length ?? 0) > 0) {
+      fillProblems.push('setup fill unsound');
+    }
+    if ((anomalousRefills?.length ?? 0) > 0) fillProblems.push('anomalous refills');
+    if (fillProblems.length) {
+      trust.push({ name: 'eraserInk', state: 'failed', detail: fillProblems.join(' + ') });
+    } else {
+      // A repaired fill is verified — the re-check proved opaque ink — but the
+      // recorded settle-wipe instability is evidence kept on purpose, so it
+      // rides the detail instead of vanishing into a bare verified.
+      trust.push(
+        fill.repairedAfterSettle
+          ? { name: 'eraserInk', state: 'verified', detail: 'repaired-after-settle' }
+          : { name: 'eraserInk', state: 'verified' }
+      );
+    }
   }
   const identity = profile?.pageIdentity ?? null;
   if (identity === 'proven-by-url') {
@@ -311,12 +343,24 @@ function composeRunTrust(
   } else {
     trust.push({ name: 'pageIdentity', state: 'unrecorded', detail: identity ?? 'absent' });
   }
-  const runtime = profile?.captureRuntime ?? profile?.fidelity?.runtime ?? null;
-  trust.push(
-    runtime
-      ? { name: 'captureRuntime', state: 'verified', detail: runtime }
-      : { name: 'captureRuntime', state: 'unrecorded' }
-  );
+  // The stored label is the runner's day-of claim — the same frozen claim
+  // re-derivation exists to distrust — so it is `verified` only when it agrees
+  // with the runtime the run was actually judged under, and a disagreement is
+  // published as the contradiction it is rather than silently trusted (the
+  // PR 1364 review: the fallback's primary read is dead for drawing runs, so
+  // this row was fed exclusively by the stored fidelity label).
+  const storedRuntime = profile?.captureRuntime ?? profile?.fidelity?.runtime ?? null;
+  if (storedRuntime && storedRuntime === judgingRuntime) {
+    trust.push({ name: 'captureRuntime', state: 'verified', detail: storedRuntime });
+  } else if (storedRuntime) {
+    trust.push({
+      name: 'captureRuntime',
+      state: 'failed',
+      detail: `recorded ${storedRuntime}, judged as ${judgingRuntime}`,
+    });
+  } else {
+    trust.push({ name: 'captureRuntime', state: 'unrecorded' });
+  }
   trust.push({ name: 'hostQuiet', state: 'unrecorded' });
   return trust;
 }
@@ -370,6 +414,7 @@ function normalizeDrawingRun(
       gestureRepeats: recordedGestureRepeats(profile),
       gesturePlan: recordedGesturePlan(profile),
       anomalousRefills: anomalousEraserRefills(profile),
+      judgingRuntime: captureRuntime,
     }),
     fidelity,
     // Published so a cell can be audited for the regime it was scored against.
