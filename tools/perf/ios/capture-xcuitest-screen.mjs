@@ -4,6 +4,7 @@ import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mj
 import {
   ERASER_FILL_BACKING_TIMEOUT_MS,
   eraserFillFunctionSource,
+  eraserRefillArming,
   eraserRefillFunctionSource,
 } from '../lib/eraser-fill.mjs';
 import { NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
@@ -768,10 +769,11 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       }
       // The page refills between gesture passes so every pass erases real ink
       // (issue 1292); the refill log is read back after the sweep.
+      const arming = eraserRefillArming(gestureRepeats, STROKES_PER_GESTURE_REPEAT);
       await execute(
         `${eraserFillFunctionSource()}\n${eraserRefillFunctionSource()}\n` +
-          `armEraserRefill(${STROKES_PER_GESTURE_REPEAT}, ` +
-          `${gestureRepeats * STROKES_PER_GESTURE_REPEAT}, fillEraserInk); return true;`
+          `armEraserRefill(${arming.everyStrokes}, ` +
+          `${arming.totalStrokes}, fillEraserInk); return true;`
       );
     }
 

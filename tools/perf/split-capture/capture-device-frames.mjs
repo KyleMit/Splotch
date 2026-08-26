@@ -14,6 +14,7 @@
 // contact moves per second against a 100-170 fidelity band, so cells captured
 // through it cannot be scored. This path clears the band.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { eraserRefillArming } from '../lib/eraser-fill.mjs';
 import { dirname, join } from 'node:path';
 import {
   argFlag,
@@ -432,8 +433,7 @@ export async function captureDeviceFrames({
     eraserRefill:
       brush === 'eraser'
         ? {
-            everyStrokes: STROKES_PER_GESTURE_REPEAT,
-            totalStrokes: repeats * STROKES_PER_GESTURE_REPEAT,
+            ...eraserRefillArming(repeats, STROKES_PER_GESTURE_REPEAT),
           }
         : null,
     finish: false,

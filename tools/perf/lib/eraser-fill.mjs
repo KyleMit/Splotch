@@ -61,6 +61,19 @@ export const ERASER_FILL_BACKING_TIMEOUT_MS = 4_000;
 // (issue 1355): `anomalousEraserRefills` in campaign-plan.mjs is the shared
 // reader, acceptance refuses the artifact (`eraser-fill-failed`), and the
 // matrix refuses the fold — recorded-not-thrown here, read-and-refused there.
+// The one place the arming arithmetic lives (the PR 1368 review changed a
+// writer's totalStrokes expression and the constants-only drift guard stayed
+// green): both writers arm the recorder through this helper, and the guard in
+// eraser-fill.test.mjs drives helper -> recorder -> reader as one chain, so
+// arithmetic drift here - or a writer bypassing it - is one grep and one red
+// test away instead of a hardware campaign rejecting every eraser cell.
+export function eraserRefillArming(gestureRepeats, strokesPerRepeat) {
+  return {
+    everyStrokes: strokesPerRepeat,
+    totalStrokes: gestureRepeats * strokesPerRepeat,
+  };
+}
+
 export function eraserRefillFunctionSource() {
   return `function armEraserRefill(everyStrokes, totalStrokes, fillEraserInk) {
     const refills = [];

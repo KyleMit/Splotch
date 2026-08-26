@@ -3,6 +3,7 @@ import {
   ERASER_FILL_COLOR,
   eraserFillFunctionSource,
   eraserRefillFunctionSource,
+  eraserRefillArming,
 } from '../lib/eraser-fill.mjs';
 import { GESTURE_REPEATS, eraserRefillShortfall } from '../lib/campaign-plan.mjs';
 import { STROKES_PER_GESTURE_REPEAT } from '../ios/capture-xcuitest-screen.mjs';
@@ -239,18 +240,19 @@ describe('the between-pass eraser refill', () => {
   });
 });
 
-// The writer/reader refill-count contract, bound behaviorally (the PR 1366
-// review: the agreement "expected refills = repeats - 1" was maintained only by
-// prose across three modules). Both arming call sites —
-// capture-xcuitest-screen.mjs and capture-device-frames.mjs — arm the recorder
-// with (STROKES_PER_GESTURE_REPEAT, repeats x STROKES_PER_GESTURE_REPEAT) from
-// the same imported constants this test uses, so a writer that changes its
-// grouping or total arithmetic, or a recorder that changes when it fires,
-// breaks this test before it breaks a hardware campaign.
+// The writer/reader refill-count contract, bound behaviorally through the ONE
+// production helper both writers arm with (the PR 1368 review changed a
+// writer's totalStrokes expression and the previous constants-only guard
+// stayed green — it reconstructed the arithmetic instead of executing it).
+// This drives eraserRefillArming -> the recorder -> eraserRefillShortfall as
+// one chain, so arithmetic drift in the helper breaks here first, and a
+// writer bypassing the helper is one grep away.
 describe('the refill-count contract between the writers and the reader', () => {
   it('records exactly repeats - 1 refills under the campaign arming, and the reader agrees', () => {
-    const everyStrokes = STROKES_PER_GESTURE_REPEAT;
-    const totalStrokes = GESTURE_REPEATS * STROKES_PER_GESTURE_REPEAT;
+    const { everyStrokes, totalStrokes } = eraserRefillArming(
+      GESTURE_REPEATS,
+      STROKES_PER_GESTURE_REPEAT
+    );
     const listeners = [];
     const windowStub = {
       addEventListener: (type, handler, capture) => listeners.push({ type, handler, capture }),
