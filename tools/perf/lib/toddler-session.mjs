@@ -1,3 +1,4 @@
+import { rethrowIfBroken } from './error-classification.mjs';
 // The shared "toddler session": the deterministic sequence of interactions
 // (multi-finger draw, color changes, stroke-size changes, erase, undo, clear)
 // plus trace + metrics capture and report generation. Web (capture-web-session.mjs) and native
@@ -172,7 +173,13 @@ async function runToddlerSession(page, box) {
       if (await brushMenu.count()) await brushMenu.click();
       await sleep(150);
       const eraser = page.locator('#eraserButton');
-      if (await eraser.isVisible().catch(() => false)) await eraser.click();
+      if (
+        await eraser.isVisible().catch((error) => {
+          rethrowIfBroken(error);
+          return false;
+        })
+      )
+        await eraser.click();
       await sleep(150);
       await drawStroke(
         page,

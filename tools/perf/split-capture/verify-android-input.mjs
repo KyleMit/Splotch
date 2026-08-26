@@ -18,6 +18,7 @@ import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidGestureInstructions, swipeArgs } from './lib/android-input.mjs';
+import { pollFor } from './lib/poll.mjs';
 import { classifyInputCadence, describeContactSamples } from './lib/input-verdict.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
@@ -28,7 +29,6 @@ const PAGE_SETTLE_MS = 6_000;
 const APP_STOP_SETTLE_MS = 1_500;
 const READY_TIMEOUT_MS = 60_000;
 const REPORT_TIMEOUT_MS = 60_000;
-const POLL_INTERVAL_MS = 1_000;
 const GESTURE_TAIL_MS = 1_200;
 // Long enough for a cadence estimate to settle, short enough that a preflight
 // stays a preflight.
@@ -45,16 +45,6 @@ const adb = (serial, args) => capture('adb', ['-s', serial, ...args]);
 // 169.254 interface sits on exactly this rig.
 export function lanAddress() {
   return lanAddresses()[0] ?? null;
-}
-
-async function pollFor(callback, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const value = await callback().catch(() => null);
-    if (value) return value;
-    await sleep(POLL_INTERVAL_MS);
-  }
-  return null;
 }
 
 // The same restored-tab race the capture runner guards against: session

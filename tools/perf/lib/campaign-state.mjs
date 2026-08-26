@@ -1,4 +1,5 @@
 import { pollUntil, sleep } from '../../lib/proc.mjs';
+import { rethrowIfBroken } from './error-classification.mjs';
 
 const READY_TIMEOUT_MS = 30_000;
 const READY_POLL_MS = 50;
@@ -96,7 +97,11 @@ export async function readResolvedTheme(execute) {
 
 async function waitForUi(execute, expression, hint) {
   const ready = await pollUntil(
-    () => execute(`return !!(${expression});`).catch(() => false),
+    () =>
+      execute(`return !!(${expression});`).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
     READY_TIMEOUT_MS,
     READY_POLL_MS
   );
@@ -128,7 +133,9 @@ async function openAppearanceSettings(execute, hint) {
       if (await execute(`return document.querySelector('${SETTINGS_MODAL}')?.open === true;`)) {
         return true;
       }
-      await clickSetupElement(execute, SETTINGS_BUTTON).catch(() => {});
+      await clickSetupElement(execute, SETTINGS_BUTTON).catch((error) => {
+        rethrowIfBroken(error);
+      });
       return false;
     },
     READY_TIMEOUT_MS,

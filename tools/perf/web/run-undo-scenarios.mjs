@@ -873,8 +873,12 @@ async function confirmBreaches({
     if (timeline) {
       try {
         timeline.append(await collectMeasures(page));
-      } catch {
-        // The stitched timeline is diagnostic; a failed drain must not sink the run.
+      } catch (error) {
+        // The stitched timeline is diagnostic; a failed drain must not sink the
+        // run — but a silent one reads as a timeline with no re-measure data
+        // (issue 1296), so it says what it dropped like its sibling above.
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Could not collect re-measure timeline for ${suspect.key}: ${message}`);
       }
     }
   }

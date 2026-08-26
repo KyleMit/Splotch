@@ -1,3 +1,4 @@
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
@@ -384,12 +385,22 @@ export async function clearDeviceWebCache(executeAsync) {
         return;
       }
       return Promise.all(found.map((registration) => registration.unregister().catch(() => false)))
-        .then(() =>
-          'caches' in window
+        .then((unregistered) =>
+          ('caches' in window
             ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-            : null
-        )
-        .then(() => done({ ok: true, registrations: found.length, controlled, cachesCleared: true }));
+            : Promise.resolve(null)
+          ).then(() =>
+            done({
+              ok: true,
+              registrations: found.length,
+              controlled,
+              // Honest, not optimistic: a swallowed unregister used to report
+              // cachesCleared: true anyway (issue 1296), and the capture then
+              // measured a page a stale worker could still be serving.
+              cachesCleared: unregistered.every(Boolean),
+            })
+          )
+        );
     }).catch((error) => done({ ok: false, message: String(error) }));
   `);
   if (!cacheEvictionAcceptable(state)) {
@@ -537,11 +548,22 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           .request('POST', `/session/${sessionId}/orientation`, {
             orientation: originalOrientation,
           })
-          .catch(() => {});
+          .catch((error) =>
+            console.warn(`cleanup: orientation restore failed (${error.message})`)
+          );
       }
       if (sessionId && execute && restoreNativeRotationLock) {
-        await switchToWebContext(client, sessionId).catch(() => null);
-        await setNativeRotationLock(execute, true).catch(() => null);
+        // A silent failure here leaves the iPad rotation-unlocked, which
+        // changes what the NEXT cell measures with no record anywhere
+        // (issue 1296) — the warning is the record.
+        await switchToWebContext(client, sessionId).catch((error) =>
+          console.warn(`cleanup: web-context switch failed (${error.message})`)
+        );
+        await setNativeRotationLock(execute, true).catch((error) =>
+          console.warn(
+            `cleanup: rotation-lock restore failed (${error.message}) — the device may measure the next cell unlocked`
+          )
+        );
       }
       if (sessionId && ownsSession) {
         await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
@@ -594,7 +616,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       () =>
         execute(
           "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-        ).catch(() => false),
+        ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
       WEBVIEW_READY_TIMEOUT_MS,
       WEBVIEW_READY_POLL_MS
     );
@@ -624,7 +649,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           () =>
             execute(
               "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-            ).catch(() => false),
+            ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
           WEBVIEW_READY_TIMEOUT_MS,
           WEBVIEW_READY_POLL_MS
         );
@@ -645,7 +673,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
                 ? size.height > size.width
                 : size.width > size.height
             )
-            .catch(() => false),
+            .catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
         ROTATION_SETTLE_TIMEOUT_MS,
         WEBVIEW_READY_POLL_MS
       );
@@ -668,7 +699,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       () =>
         execute(
           "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-        ).catch(() => false),
+        ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
       WEBVIEW_READY_TIMEOUT_MS,
       WEBVIEW_READY_POLL_MS
     );
@@ -679,7 +713,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     const theme = await readResolvedTheme(execute);
     if (undoCount > 0) {
       const debugReady = await pollUntil(
-        () => execute('return !!window.__drawingDebug?.getUndoDebug;').catch(() => false),
+        () => execute('return !!window.__drawingDebug?.getUndoDebug;').catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
         BRUSH_SELECT_TIMEOUT_MS,
         WEBVIEW_READY_POLL_MS
       );
@@ -696,7 +733,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         `document.querySelector('button[aria-label="Expand controls"]')?.click(); return true;`
       );
       const drawerReady = await pollUntil(
-        () => execute(`return !!document.querySelector('#brushButton');`).catch(() => false),
+        () => execute(`return !!document.querySelector('#brushButton');`).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
         BRUSH_SELECT_TIMEOUT_MS,
         WEBVIEW_READY_POLL_MS
       );
@@ -811,7 +851,14 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         const webViewId = webView['element-6066-11e4-a52e-4f735466cecf'] ?? webView.ELEMENT;
         return client.request('GET', `/session/${sessionId}/element/${webViewId}/rect`);
       })
-      .catch(() => nativeWindow);
+      .catch((error) => {
+        // Substituting the whole native window for the WebView rect changes
+        // the canvas geometry every gesture is computed from — plausible
+        // numbers, wrong frame. Fine when they coincide, but never silent
+        // (issue 1296).
+        console.warn(`WebView rect unavailable (${error.message}); using the native window rect`);
+        return nativeWindow;
+      });
     const orientation = await client.request('GET', `/session/${sessionId}/orientation`);
     const canvasBounds = nativeCanvasBounds({
       webGeometry,
@@ -872,7 +919,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     if (undoCount > 0) {
       await execute(EXPAND_CONTROLS_SOURCE);
       const undoReady = await pollUntil(
-        () => execute(UNDO_BUTTON_READY_SOURCE).catch(() => false),
+        () => execute(UNDO_BUTTON_READY_SOURCE).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
         UNDO_BUTTON_READY_TIMEOUT_MS,
         UNDO_BUTTON_READY_POLL_MS
       );

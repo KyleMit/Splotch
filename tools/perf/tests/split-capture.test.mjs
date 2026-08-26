@@ -908,7 +908,7 @@ describe('clearing the tooling litter', () => {
       fetchImpl,
     });
 
-    expect(result).toEqual({ closed: 3 });
+    expect(result).toEqual({ closed: 3, attempted: 3 });
     expect(calls).toEqual([
       'http://127.0.0.1:9224/json/list',
       'http://127.0.0.1:9224/json/close/stale-probe',

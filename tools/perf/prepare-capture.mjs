@@ -1,3 +1,4 @@
+import { rethrowIfBroken } from './lib/error-classification.mjs';
 // Preflight for a physical-device performance campaign.
 //
 //   npm run perf:preflight                    report only
@@ -497,7 +498,10 @@ export async function diagnoseLaunchFailure(
     while (!ready && Date.now() < deadline && !spawnError && exited === null) {
       ready = await fetch(`http://127.0.0.1:${port}/status`)
         .then((response) => response.ok)
-        .catch(() => false);
+        .catch((error) => {
+          rethrowIfBroken(error);
+          return false;
+        });
       if (!ready) await new Promise((resolve) => setTimeout(resolve, DIAGNOSTIC_APPIUM_POLL_MS));
     }
     if (spawnError) {

@@ -1,3 +1,4 @@
+import { rethrowIfBroken } from './lib/error-classification.mjs';
 // Guided session for the capture inputs only a human at the devices can give,
 // so the rest of a campaign can run unattended (issues 1275 and 1299).
 //
@@ -151,7 +152,10 @@ export function handCaptureArgs({
 async function urlAnswers(url) {
   return fetch(url, { signal: AbortSignal.timeout(2_000) })
     .then((response) => response.ok)
-    .catch(() => false);
+    .catch((error) => {
+      rethrowIfBroken(error);
+      return false;
+    });
 }
 
 function spawnDetached(command, args, logName, env = {}) {

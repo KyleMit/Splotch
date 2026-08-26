@@ -122,10 +122,14 @@ function gitSurfaceReader(base) {
         cwd: ROOT,
         encoding: 'utf8',
       }).trim();
-    } catch {
-      // The path did not exist at that commit. That is a real difference in the
-      // measured surface, not an unreadable one — the commit itself was already
-      // proven reachable below.
+    } catch (error) {
+      // A nonzero git exit means the path did not exist at that commit — a
+      // real difference in the measured surface, not an unreadable one (the
+      // commit itself was already proven reachable below). A spawn failure
+      // (no git, bad cwd) has no exit status and must not read as 'absent':
+      // two wholesale-failing reads compare equal and report the matrix
+      // current (issue 1296).
+      if (error?.status == null) throw error;
       return 'absent';
     }
   };

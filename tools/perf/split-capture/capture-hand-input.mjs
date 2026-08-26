@@ -20,6 +20,7 @@ import { dirname, join } from 'node:path';
 import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
+import { pollFor } from './lib/poll.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -44,7 +45,6 @@ const PROBE_READY_TIMEOUT_MS = 180_000;
 // way the full three-minute ready poll did twice on 2026-08-25 (issue 1316).
 const FIRST_CONTACT_TIMEOUT_MS = 15_000;
 const REPORT_TIMEOUT_MS = 120_000;
-const POLL_INTERVAL_MS = 1_000;
 // The probe ends a phase on its own once the banked contact time runs out; a
 // hand run is ended by the clock below instead, so the bank has to outlast it.
 const CONTACT_BANK_MS = 600_000;
@@ -77,16 +77,6 @@ const control = (host, body) =>
   }).then((response) => response.json());
 
 const probeState = (host) => fetch(`${host}/__probe/state`).then((response) => response.json());
-
-async function pollFor(callback, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const value = await callback().catch(() => null);
-    if (value) return value;
-    await sleep(POLL_INTERVAL_MS);
-  }
-  return null;
-}
 
 // The runtime is the one mode dimension the page can answer for itself, and the
 // one this tool used to copy from the request: a hand capture labelled

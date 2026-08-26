@@ -1,3 +1,4 @@
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
 // The real-screen probe without an iPad: same probe, same maths, driven against
 // `/` in a local browser so a frame-pacing baseline costs a command instead of a
 // USB cable.
@@ -237,7 +238,11 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     if (undoCount > 0) {
       await execute(EXPAND_CONTROLS_SOURCE);
       const undoReady = await pollUntil(
-        () => execute(UNDO_BUTTON_READY_SOURCE).catch(() => false),
+        () =>
+          execute(UNDO_BUTTON_READY_SOURCE).catch((error) => {
+            rethrowIfBroken(error);
+            return false;
+          }),
         UNDO_BUTTON_READY_TIMEOUT_MS,
         UNDO_BUTTON_READY_POLL_MS
       );

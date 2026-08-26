@@ -71,10 +71,18 @@ export function toolingLitter(targets, hostname, keepNonce) {
 export async function clearToolingLitter({ cdpBase, hostname, nonce, fetchImpl = fetch }) {
   const targets = await fetchImpl(`${cdpBase}/json/list`).then((response) => response.json());
   const litter = toolingLitter(targets, hostname, nonce);
+  let closed = 0;
   for (const target of litter) {
-    await fetchImpl(`${cdpBase}/json/close/${target.id}`).catch(() => null);
+    // Counting attempts as closes reported a clean prune while a stale tab
+    // stayed up to answer for the next run (issue 1296) — only a close that
+    // went through counts.
+    const done = await fetchImpl(`${cdpBase}/json/close/${target.id}`).then(
+      () => true,
+      () => false
+    );
+    if (done) closed += 1;
   }
-  return { closed: litter.length };
+  return { closed, attempted: litter.length };
 }
 
 export function runChromePage(targets, nonce, param = 'probe') {

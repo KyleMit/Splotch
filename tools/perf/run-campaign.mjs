@@ -40,6 +40,7 @@ import {
   planCampaign,
   splitTransportIdentityProblem,
 } from './lib/campaign-plan.mjs';
+import { rethrowIfBroken } from './lib/error-classification.mjs';
 import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument-fingerprint.mjs';
 import {
   ALREADY_VALID,
@@ -156,7 +157,8 @@ export function inspectArtifact(
   let recordedRepeats;
   try {
     recordedRepeats = recordedGestureRepeats(artifact);
-  } catch {
+  } catch (error) {
+    rethrowIfBroken(error);
     return { ok: false, status: FAILED };
   }
   if (
@@ -175,7 +177,8 @@ export function inspectArtifact(
   let recordedPlan;
   try {
     recordedPlan = recordedGesturePlan(artifact);
-  } catch {
+  } catch (error) {
+    rethrowIfBroken(error);
     return { ok: false, status: FAILED };
   }
   if (
@@ -195,7 +198,8 @@ export function inspectArtifact(
   let refills;
   try {
     refills = anomalousEraserRefills(artifact);
-  } catch {
+  } catch (error) {
+    rethrowIfBroken(error);
     return { ok: false, status: FAILED };
   }
   if (refills !== null && refills.length > 0) {
@@ -242,7 +246,8 @@ async function probeHostResponds(probeHost) {
     });
     if (!response.ok) return false;
     return isProbePlan(await response.json());
-  } catch {
+  } catch (error) {
+    rethrowIfBroken(error);
     return false;
   }
 }

@@ -1,3 +1,4 @@
+import { rethrowIfBroken } from './error-classification.mjs';
 // Device-session plumbing shared by the iPad entry points: the USB relay, the
 // LAN preview server, tab selection, navigation, readiness, and the
 // poll-for-a-global convention the protocol forces on anything long-running.
@@ -114,7 +115,8 @@ async function findResponsivePage(device, accept = () => true) {
       });
       await session.evaluate('1');
       return page;
-    } catch {
+    } catch (error) {
+      rethrowIfBroken(error);
       // Suspended, or the tab went away mid-probe.
     } finally {
       session?.close();
@@ -179,7 +181,11 @@ export async function openDevicePage(device, url, { onConsole, onEvent, ready, r
 
   const session = await attachToPage(loaded.webSocketDebuggerUrl, { onConsole, onEvent });
   const isReady = await pollUntil(
-    () => session.readJson(`!!(${ready})`).catch(() => false),
+    () =>
+      session.readJson(`!!(${ready})`).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
     PAGE_READY_TIMEOUT_MS,
     PAGE_POLL_INTERVAL_MS
   );

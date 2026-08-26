@@ -29,6 +29,7 @@ import { createServer } from 'node:http';
 import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { lanAddress } from './verify-android-input.mjs';
 import { CHROME_PACKAGE } from './lib/android-input.mjs';
+import { pollFor } from './lib/poll.mjs';
 
 const DEFAULT_PORT = 4198;
 const DEFAULT_UPSTREAM = 'http://127.0.0.1:4196';
@@ -236,15 +237,6 @@ export function createOverheadHost({
 // plan happened to be, which made the measured brush a property of run order rather
 // than of the run. It is now requested, committed through a probe-arm page, and
 // verified before any sample is taken.
-async function pollFor(callback, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const value = await callback().catch(() => null);
-    if (value) return value;
-    await sleep(POLL_INTERVAL_MS);
-  }
-  return null;
-}
 
 async function primeBrush(serial, pageUrl, probeHost, brush) {
   // Reset first: the probe host keeps the last page's `ready` payload, and polling
@@ -257,10 +249,14 @@ async function primeBrush(serial, pageUrl, probeHost, brush) {
   });
   if (!plan.ok) fail(`could not set the probe plan to ${brush}`);
   await launchArm(serial, pageUrl, 'probe');
-  const committed = await pollFor(async () => {
-    const ready = await fetch(`${probeHost}/__probe/state`).then((response) => response.json());
-    return ready?.ready?.committed === brush ? ready.ready : null;
-  }, BRUSH_COMMIT_TIMEOUT_MS);
+  const committed = await pollFor(
+    async () => {
+      const ready = await fetch(`${probeHost}/__probe/state`).then((response) => response.json());
+      return ready?.ready?.committed === brush ? ready.ready : null;
+    },
+    BRUSH_COMMIT_TIMEOUT_MS,
+    { intervalMs: POLL_INTERVAL_MS }
+  );
   if (!committed) fail(`the page never committed ${brush}; measuring would compare two brushes`);
   return brush;
 }

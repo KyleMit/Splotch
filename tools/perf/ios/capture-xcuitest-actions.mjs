@@ -1,3 +1,4 @@
+import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
@@ -719,7 +720,10 @@ async function ensureStableTrustedStroke(client, sessionId, execute) {
       () =>
         execute(
           "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-        ).catch(() => false),
+        ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
       READY_TIMEOUT_MS,
       POLL_MS
     );
@@ -731,7 +735,10 @@ async function ensureStableTrustedStroke(client, sessionId, execute) {
     const stable = await execute(`
       return typeof window.__actionProbe?.begin === 'function' &&
         document.querySelector('#screenshotButton')?.disabled === false;
-    `).catch(() => false);
+    `).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      });
     if (stable) return;
   }
   throw new Error('The native WebView did not retain the action probe and setup stroke');
@@ -1571,11 +1578,22 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
           ?.request('POST', `/session/${sessionId}/orientation`, {
             orientation: restoreOrientation,
           })
-          .catch(() => {});
+          .catch((error) =>
+            console.warn(`cleanup: orientation restore failed (${error.message})`)
+          );
       }
       if (sessionId && execute && restoreNativeRotationLock) {
-        await switchToWebContext(client, sessionId).catch(() => null);
-        await setNativeRotationLock(execute, true).catch(() => null);
+        // A silent failure here leaves the iPad rotation-unlocked, which
+        // changes what the NEXT cell measures with no record anywhere
+        // (issue 1296) — the warning is the record.
+        await switchToWebContext(client, sessionId).catch((error) =>
+          console.warn(`cleanup: web-context switch failed (${error.message})`)
+        );
+        await setNativeRotationLock(execute, true).catch((error) =>
+          console.warn(
+            `cleanup: rotation-lock restore failed (${error.message}) — the device may measure the next cell unlocked`
+          )
+        );
       }
       if (sessionId && ownsSession) {
         await client?.request('DELETE', `/session/${sessionId}`).catch(() => {});
@@ -1629,7 +1647,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       () =>
         execute(
           "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-        ).catch(() => false),
+        ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
       READY_TIMEOUT_MS,
       POLL_MS
     );
@@ -1658,7 +1679,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
           () =>
             execute(
               "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-            ).catch(() => false),
+            ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
           READY_TIMEOUT_MS,
           POLL_MS
         );
@@ -1694,7 +1718,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         () =>
           execute(
             "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-          ).catch(() => false),
+          ).catch((error) => {
+        rethrowIfBroken(error);
+        return false;
+      }),
         READY_TIMEOUT_MS,
         POLL_MS
       );
