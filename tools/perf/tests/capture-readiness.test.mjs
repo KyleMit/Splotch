@@ -372,16 +372,23 @@ describe('the launch diagnostic end to end', () => {
 // isolation mistake issue 1309's finding 1 indicts. diagnoseLaunchFailure's
 // own exit listener and finally are the code under test here.
 describe('tearing down a diagnostic server that goes quietly', () => {
+  // The `denial` fixture, deliberately: the silent server pays the full 5 s
+  // log settle before teardown, which left no cutoff that both tolerates
+  // shared-runner scheduling delay and stays reliably below the broken shape
+  // (round-2 review: 5.6 s measured against a 9.5 s bound with the regression
+  // at ~10.5). A classified cause exits the settle loop immediately, so the
+  // correct path here is sub-second and the broken shape's extra SIGKILL
+  // settle on the already-exited child is the ONLY multi-second contributor —
+  // structural separation instead of a margin contest.
   it('returns promptly after the server exits by signal, without a second escalation wait', async () => {
     const startedAt = Date.now();
-    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('silent') });
+    const probe = await diagnoseLaunchFailure({}, { spawnDiagnostic: fakeAppium('denial') });
     const elapsedMs = Date.now() - startedAt;
 
-    expect(probe.diagnostic).toContain('logged no cause');
-    // Fixed shape ≈ fixture startup + the 5 s log settle + a ~10 ms SIGTERM
-    // exit; the broken shape adds a full 5 s SIGKILL settle on a child that
-    // had already left (measured ≥ 11.5 s).
-    expect(elapsedMs).toBeLessThan(9_500);
+    expect(probe.cause).toContain('Enable UI Automation');
+    // Fixed shape ≈ fixture startup + classification (~0.5 s measured) plus a
+    // ~10 ms SIGTERM exit; the broken tracking adds a full 5 s SIGKILL settle.
+    expect(elapsedMs).toBeLessThan(4_000);
   }, 60_000);
 
   // The same clause spares the ENOENT child: spawn's error path never emits

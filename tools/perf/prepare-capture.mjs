@@ -524,12 +524,16 @@ export async function diagnoseLaunchFailure(
 // The child's own exitCode/signalCode are consulted beside the caller's
 // tracking: an exit that lands between the check and the settle has already
 // fired its event, and waiting on a corpse's next exit runs out the full
-// escalation timeout with nothing to wait for.
-// Exported for its bounded-teardown test; production reaches it through
-// diagnoseLaunchFailure's finally.
-export async function terminateDiagnostic(child, hasExited) {
+// escalation timeout with nothing to wait for. (This clause is also what
+// spares the ENOENT child two settles: spawn's error path never emits `exit`,
+// while the child object still records how it ended.) Checked positively
+// rather than as !== null, so an injected fake child without the properties
+// reads as still running instead of already gone.
+async function terminateDiagnostic(child, hasExited) {
   const exitedNow = () =>
-    hasExited() !== null || child.exitCode !== null || child.signalCode !== null;
+    hasExited() !== null ||
+    Number.isInteger(child.exitCode) ||
+    typeof child.signalCode === 'string';
   const settle = (ms) =>
     Promise.race([
       new Promise((resolve) => child.once('exit', resolve)),
