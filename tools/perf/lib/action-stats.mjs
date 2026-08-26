@@ -15,11 +15,48 @@ export const ACTION_FRAME_P95_GATE_MS = 20;
 // 47 ms) and the mid-animation 41-45 ms paint stalls were eliminated.
 // Measured on the physical iPad (iPadOS 26.5, 120 Hz). A regression past an
 // allowance still fails.
-export const IOS_ACTION_FRAME_P95_ALLOWANCES_MS = {
+const IOS_ACTION_FRAME_P95_ALLOWANCES_MS = {
   'open Settings': 26,
 };
 // Two exact 60 Hz vsync intervals are 33.33 ms; the next interval is the visible 50 ms freeze.
 export const ACTION_FRAME_MAX_GATE_MS = 33.5;
+// The max-frame counterpart, same rules (calibrated physical-iOS capture
+// ONLY, recorded into the capture, never a default). 'open Settings' has
+// breached the max gate at 44-55 ms on every theme-focused automated run
+// since 2026-08-17, identically at base and branch, while its post-open P95
+// stayed inside the 26 ms allowance. Attributed 2026-08-26 (issue 1130): an
+// Animation Hitches trace over a focused six-open sweep put every hitch in
+// AutomationModeUI, pointeruid (the synthetic-touch pointer overlay),
+// SpringBoard, and MobileSafari chrome — com.apple.WebKit.WebContent never
+// hitched — corroborating the earlier Time Profiler finding of no saturated
+// WebContent main-thread run under the frame. The stall is the automation
+// apparatus's own compositor contention around the showModal flip, not
+// product cost; a real finger's open should not show it, which the next
+// operator eyeball can spot-check. 56 covers the observed three-beat frame
+// (3 x 16.7 = 50 ms) plus scheduling jitter; a genuine product regression
+// past it still fails.
+const IOS_ACTION_FRAME_MAX_ALLOWANCES_MS = {
+  'open Settings': 56,
+};
+// What the iOS harness passes and records: both ledgers, keyed by statistic.
+// A capture predating the split stored the flat P95 map; the scorer's
+// normalizer keeps those artifacts scoring exactly as they did.
+export const IOS_ACTION_GATE_ALLOWANCES = {
+  p95: IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
+  max: IOS_ACTION_FRAME_MAX_ALLOWANCES_MS,
+};
+
+// Both allowance shapes reach the scorer: the structured {p95, max} ledgers
+// above, and the flat per-label P95 map every artifact recorded before the
+// max ledger existed (the matrix re-summarizes from the ARTIFACT's stored
+// gateAllowances, so the legacy shape must keep scoring as it always did —
+// P95 allowance applied, max gate base).
+function normalizedAllowances(allowances) {
+  if (allowances && (allowances.p95 || allowances.max)) {
+    return { p95: allowances.p95 ?? {}, max: allowances.max ?? {} };
+  }
+  return { p95: allowances ?? {}, max: {} };
+}
 export const ACTION_FIRST_FRAME_GATE_MS = 33.5;
 export const WARMUP_REPEATS = 1;
 export const MIN_GATED_SAMPLES = 3;
@@ -179,12 +216,13 @@ export function summarizeActionGroup(actions, label, allowances = {}, firstFrame
   };
   activation.passed = activation.valid === actions.length;
   const minimumSamples = hasWarmupMetadata ? MIN_GATED_SAMPLES : 1;
+  const gate = normalizedAllowances(allowances);
   const passed =
     scoredActions.length >= minimumSamples &&
     activation.passed &&
     (firstFrameNa || firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS) &&
-    frames.p95 <= (allowances[label] ?? ACTION_FRAME_P95_GATE_MS) &&
-    frames.max <= ACTION_FRAME_MAX_GATE_MS;
+    frames.p95 <= (gate.p95[label] ?? ACTION_FRAME_P95_GATE_MS) &&
+    frames.max <= (gate.max[label] ?? ACTION_FRAME_MAX_GATE_MS);
   return {
     count: scoredActions.length,
     totalCount: actions.length,

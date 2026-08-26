@@ -318,6 +318,22 @@ Desktop and Android actions harnesses pass no allowances, and historical capture
 cross-platform snapshots reuse the transport and schema, never the iPad baseline. A regression past
 an allowance still fails; the full measurements live in ADR-0049's amendment.
 
+## Amendment (2026-08-26): a max-frame allowance for the same action, attributed off-app
+
+`open Settings` breached the separate 33.5 ms max-frame gate at 44-55 ms on every theme-focused
+automated physical run since 2026-08-17, identically at base and branch, while staying inside its
+P95 allowance (issue 1130). Two independent instruments attribute the frame off the app: the
+issue's Time Profiler capture found no saturated `com.apple.WebKit.WebContent` main-thread run
+under it, and a 2026-08-26 Animation Hitches trace over a focused six-open sweep put every hitch in
+`AutomationModeUI`, `pointeruid` (the synthetic-touch pointer overlay), SpringBoard, and
+MobileSafari chrome — WebContent never hitched. The stall is the automation apparatus's own
+compositor contention around the `showModal` flip, so the exception ledger gains a max-frame half
+under the same rules: `IOS_ACTION_GATE_ALLOWANCES` carries `{ p95, max }`, `open Settings` is
+allowed 56 ms (the observed three-beat frame plus jitter), a flat legacy `gateAllowances` map
+re-scores exactly as it always did (P95 allowance only), and every other action and target stays on
+the base max gate. A real finger's open should not show the frame at all — worth a spot-check
+whenever an operator is at the device.
+
 ## Amendment (2026-08): theme switches activate by trusted native tap
 
 The dialog-controls rule above ("ordinary `onclick` controls inside dialogs use WebDriver's semantic
