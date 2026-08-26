@@ -1,5 +1,6 @@
 import { DEVICES, resolveDevice } from './profile-devices.mjs';
 import { fail } from '../../lib/proc.mjs';
+import { PORT_ROLES } from './capture-readiness.mjs';
 
 // `entry`-gated numeric parsing: an unparsable flag is fatal for a real CLI
 // invocation, but a library import (vitest's own argv) must not exit — mirrors
@@ -73,7 +74,7 @@ export function parsePerfArgs(
     deviceName,
     device,
     throttle,
-    port: requireNumberFlag('port', flag('port', '4173'), entry),
+    port: requireNumberFlag('port', flag('port', String(PORT_ROLES.preview.port)), entry),
     build: !has('no-build'),
   };
 }

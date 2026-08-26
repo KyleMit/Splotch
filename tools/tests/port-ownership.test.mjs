@@ -8,6 +8,7 @@ import {
   freePort,
   portListenerOwners,
   portListenerPids,
+  waitForPortRelease,
 } from '../lib/vite-server.mjs';
 
 // A listener started from somewhere that is deliberately not this checkout.
@@ -82,7 +83,7 @@ describe('freePort', () => {
   // decides whether it may be reached at all.
   it('stops a listener when it is called', async () => {
     freePort(port);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await waitForPortRelease(port);
 
     expect(portListenerPids(port)).not.toContain(child.pid);
   });

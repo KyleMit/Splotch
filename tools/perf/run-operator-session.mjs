@@ -38,11 +38,16 @@ import {
   runMain,
 } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';
-import { foreignPortListeners, freePort } from '../lib/vite-server.mjs';
-import { classifyLaunchProbe } from './lib/capture-readiness.mjs';
+import {
+  foreignPortListeners,
+  freePort,
+  portListenerOwners,
+  waitForPortRelease,
+} from '../lib/vite-server.mjs';
+import { classifyLaunchProbe, explicitProbePortDecision } from './lib/capture-readiness.mjs';
 import { buildDirHoldsNativeExport } from './lib/build-variant.mjs';
 import { DEFAULT_PROBE_PORT } from './split-capture/serve-probe-host.mjs';
-import { prepareCapture, probeIosLaunch } from './prepare-capture.mjs';
+import { prepareCapture, probeIosLaunch, probeProbeHost } from './prepare-capture.mjs';
 
 const STEP_NAMES = ['grant', 'android-hand', 'ios-hand'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -172,10 +177,7 @@ async function ensurePreview(port, action) {
       );
     }
     freePort(port);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  } else if (action === 'reuse' && (await urlAnswers(`http://127.0.0.1:${port}/`))) {
-    console.log(`  preview ${port} — reused`);
-    return;
+    await waitForPortRelease(port);
   } else if (await urlAnswers(`http://127.0.0.1:${port}/`)) {
     fail(`preview port ${port} became occupied after preflight — run perf:preflight again`);
   }
@@ -213,6 +215,28 @@ async function ensureProbeHost(port, previewPort, action) {
   );
   await waitForUrl(`http://127.0.0.1:${port}/__probe/state`, SERVER_READY_TIMEOUT_MS);
   console.log(`  probe host ${port} — started`);
+}
+
+async function requestedProbeAction({ requestedPort, report }) {
+  if (requestedPort === report.ports.probe) return report.portDecisions.probe.action;
+  const listeners = portListenerOwners(requestedPort, ROOT);
+  const listener = listeners.find((candidate) => !candidate.owned) ?? listeners[0] ?? null;
+  const intendedUpstream = `http://127.0.0.1:${report.ports.preview}`;
+  const decision = explicitProbePortDecision({
+    requestedPort,
+    resolvedPort: report.ports.probe,
+    resolvedAction: report.portDecisions.probe.action,
+    holder: listener && {
+      pid: listener.pid,
+      cwd: listener.cwd,
+      ours: listener.owned,
+      probe: listener.owned ? await probeProbeHost(requestedPort, intendedUpstream) : undefined,
+    },
+  });
+  if (decision.action === 'blocked') {
+    fail(`explicit probe port ${requestedPort} cannot be used: ${decision.reason}`);
+  }
+  return decision.action;
 }
 
 async function ensureAppium(port) {
@@ -355,15 +379,16 @@ export async function runOperatorSession() {
   const lan = lanAddresses()[0];
   if (!lan) fail('no LAN address — the devices cannot reach a probe host on this machine');
   const probePort = Number(argFlag('probe-port', report.ports.probe ?? DEFAULT_PROBE_PORT));
-  const probeAction =
-    probePort === report.ports.probe ? report.portDecisions.probe.action : 'start';
+  const probeAction = await requestedProbeAction({ requestedPort: probePort, report });
   const host = `http://${lan}:${probePort}`;
   const outputDir = join(OUTPUT_ROOT, new Date().toISOString().replaceAll(':', '-'));
 
   const active = plan.filter((item) => !item.skipped);
   if (active.length === 0) fail('nothing to do — every step is skipped');
 
-  console.log('\nBringing the rig up (reused where already running, left running after):');
+  console.log(
+    '\nBringing the rig up (owned preview restarted; compatible probe/Appium reused; left running after):'
+  );
   if (active.some((item) => item.step !== 'grant')) {
     await ensurePreview(report.ports.preview, report.portDecisions.preview.action);
     await ensureProbeHost(probePort, report.ports.preview, probeAction);

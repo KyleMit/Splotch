@@ -143,7 +143,15 @@ function holderDescription(holder) {
   return `pid ${holder.pid}${holder.cwd ? `, cwd ${holder.cwd}` : ', cwd unreadable'}`;
 }
 
-export function resolvePort(role, { holder, free }) {
+function freeAlternative(alternatives) {
+  return alternatives.find(({ holder }) => !holder);
+}
+
+function ownedAlternative(alternatives, verdictFor) {
+  return alternatives.find(({ holder }) => holder?.ours && verdictFor(holder).reuse);
+}
+
+export function resolvePort(role, { holder, alternatives = [] }) {
   const spec = PORT_ROLES[role];
   if (!spec) throw new Error(`Unknown capture port role ${role}`);
   if (!holder) return { port: spec.port, action: 'start', reason: 'free' };
@@ -156,10 +164,18 @@ export function resolvePort(role, { holder, free }) {
         reason: `held by this checkout (${holderDescription(holder)})`,
       };
     }
-    const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
+    const owned = ownedAlternative(alternatives, () => ({ reuse: true }));
+    if (owned) {
+      return {
+        port: owned.port,
+        action: 'restart',
+        reason: `${spec.port} is foreign; alternate held by this checkout (${holderDescription(owned.holder)})`,
+      };
+    }
+    const next = freeAlternative(alternatives);
     return next
       ? {
-          port: next,
+          port: next.port,
           action: 'start',
           reason: `${spec.port} is foreign (${holderDescription(holder)})`,
         }
@@ -176,23 +192,48 @@ export function resolvePort(role, { holder, free }) {
     if (verdict.reuse) {
       return { port: spec.port, action: 'reuse', reason: verdict.reason };
     }
-    const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
+    const reusable = ownedAlternative(alternatives, (candidate) => probeHostReuse(candidate.probe));
+    if (reusable) {
+      return {
+        port: reusable.port,
+        action: 'reuse',
+        reason: probeHostReuse(reusable.holder.probe).reason,
+      };
+    }
+    const next = freeAlternative(alternatives);
     return next
-      ? { port: next, action: 'start', reason: `${spec.port}: ${verdict.reason}` }
+      ? { port: next.port, action: 'start', reason: `${spec.port}: ${verdict.reason}` }
       : { port: spec.port, action: 'blocked', reason: verdict.reason };
   }
   if (spec.onConflict === 'reuse-or-shift') {
     const verdict = appiumReuse(holder.appium);
     if (verdict.reuse) return { port: spec.port, action: 'reuse', reason: verdict.reason };
-    const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
+    const next = freeAlternative(alternatives);
     return next
-      ? { port: next, action: 'start', reason: `${spec.port}: ${verdict.reason}` }
+      ? { port: next.port, action: 'start', reason: `${spec.port}: ${verdict.reason}` }
       : { port: spec.port, action: 'blocked', reason: verdict.reason };
   }
-  const next = (spec.shiftTo ?? []).find((candidate) => free.includes(candidate));
+  const next = freeAlternative(alternatives);
   return next
-    ? { port: next, action: 'start', reason: `${spec.port} is taken (pid ${holder.pid})` }
+    ? { port: next.port, action: 'start', reason: `${spec.port} is taken (pid ${holder.pid})` }
     : { port: spec.port, action: 'blocked', reason: 'no alternate port is free' };
+}
+
+export function explicitProbePortDecision({ requestedPort, resolvedPort, resolvedAction, holder }) {
+  if (requestedPort === resolvedPort) {
+    return { action: resolvedAction, reason: 'preflight decision' };
+  }
+  if (!holder) return { action: 'start', reason: 'explicit port is free' };
+  if (!holder.ours) {
+    return {
+      action: 'blocked',
+      reason: `explicit port is held by another checkout (${holderDescription(holder)})`,
+    };
+  }
+  const verdict = probeHostReuse(holder.probe);
+  return verdict.reuse
+    ? { action: 'reuse', reason: verdict.reason }
+    : { action: 'blocked', reason: verdict.reason };
 }
 
 // Android goes to sleep mid-campaign and takes the capture with it. Screen state

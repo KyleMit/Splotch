@@ -61,10 +61,6 @@ function portHolder(port) {
   return listeners.find((listener) => !listener.owned) ?? listeners[0] ?? null;
 }
 
-function freePorts(candidates) {
-  return candidates.filter((port) => !portHolder(port));
-}
-
 function androidChecks({ fix }) {
   const checks = [];
   const devices = sh('adb', ['devices'])
@@ -219,7 +215,7 @@ async function probeAppium(port) {
   };
 }
 
-async function probeProbeHost(port, intendedUpstream) {
+export async function probeProbeHost(port, intendedUpstream) {
   const base = `http://127.0.0.1:${port}`;
   const response = await fetch(`${base}/__probe/state`, {
     signal: AbortSignal.timeout(APPIUM_PROBE_TIMEOUT_MS),
@@ -235,25 +231,41 @@ async function probeProbeHost(port, intendedUpstream) {
   return { ...identity, buildProblem };
 }
 
+async function inspectedPortHolder(role, port, intendedProbeUpstream) {
+  const holder = portHolder(port);
+  if (!holder) return null;
+  return {
+    pid: holder.pid,
+    cwd: holder.cwd,
+    ours: holder.owned,
+    probe:
+      role === 'probe' && holder.owned
+        ? await probeProbeHost(port, intendedProbeUpstream)
+        : undefined,
+    appium: role === 'appium' ? await probeAppium(port) : undefined,
+  };
+}
+
 async function portChecks() {
   const checks = [];
   const resolved = {};
   const decisions = {};
   for (const [role, spec] of Object.entries(PORT_ROLES)) {
-    const holder = portHolder(spec.port);
+    if (role === 'probe' && resolved.preview === undefined) {
+      throw new Error('PORT_ROLES must resolve preview before probe');
+    }
     const intendedProbeUpstream =
       role === 'probe' ? `http://127.0.0.1:${resolved.preview}` : undefined;
+    const holder = await inspectedPortHolder(role, spec.port, intendedProbeUpstream);
+    const alternatives = await Promise.all(
+      (spec.shiftTo ?? []).map(async (port) => ({
+        port,
+        holder: await inspectedPortHolder(role, port, intendedProbeUpstream),
+      }))
+    );
     const decision = resolvePort(role, {
-      holder: holder && {
-        pid: holder.pid,
-        cwd: holder.cwd,
-        ours: holder.owned,
-        probe:
-          role === 'probe' ? await probeProbeHost(spec.port, intendedProbeUpstream) : undefined,
-        // Proven by handshake rather than inferred from a command line.
-        appium: role === 'appium' ? await probeAppium(spec.port) : undefined,
-      },
-      free: freePorts(spec.shiftTo ?? []),
+      holder,
+      alternatives,
     });
     resolved[role] = decision.port;
     decisions[role] = decision;
@@ -643,6 +655,8 @@ export async function prepareCapture(argv = process.argv.slice(2)) {
     deviceAccessProblem({
       androidDevices: android.devices,
       iosDevices: ios.udids,
+      // Codex exposes a sandbox marker; Claude Code exposes none, so its identical
+      // USB denial must be diagnosed by re-running this preflight outside its sandbox.
       sandbox: process.env.CODEX_SANDBOX,
     });
   const deviceChecks = usbProblem

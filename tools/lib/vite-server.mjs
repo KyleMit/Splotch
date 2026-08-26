@@ -11,6 +11,9 @@ import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './proc.mjs';
 
+const PORT_RELEASE_TIMEOUT_MS = 5_000;
+const PORT_RELEASE_POLL_INTERVAL_MS = 50;
+
 // Best-effort: kill whatever is listening on `port` so strictPort doesn't fail
 // and we never reuse a stale server from a previous run.
 export function portListenerPids(port) {
@@ -87,6 +90,20 @@ export function freePort(port) {
     } catch {
       // already gone
     }
+  }
+}
+
+export async function waitForPortRelease(port) {
+  const deadline = Date.now() + PORT_RELEASE_TIMEOUT_MS;
+  for (;;) {
+    const pids = portListenerPids(port);
+    if (pids.length === 0) return;
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `port ${port} is still held by pid ${pids.join(', ')} after ${PORT_RELEASE_TIMEOUT_MS}ms`
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, PORT_RELEASE_POLL_INTERVAL_MS));
   }
 }
 
