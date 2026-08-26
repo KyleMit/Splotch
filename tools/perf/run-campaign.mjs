@@ -1,7 +1,10 @@
 // Drive one deployment-target capture campaign to completion, resumably.
 //
 //   npm run perf:campaign -- --target=ipad-simulator-native --capabilities-file=<file>
-//   npm run perf:campaign -- --target=android-emulator-web --device-id=emulator-5554 --url=http://127.0.0.1:4173/
+//   npm run perf:campaign -- --target=android-emulator-web --device-id=emulator-5554 \
+//     --url=http://127.0.0.1:4173/ --probe-host=http://<lan-ip>:4175
+//   (emulator drawing rides the split transport, so --probe-host is required —
+//   --url covers only its CDP action cells)
 //   npm run perf:campaign -- --target=android-emulator-native --dry-run
 //
 // Resumability is the point. A cell whose artifact already parses is skipped, a
@@ -299,10 +302,19 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // its fallback.
   const unknownServerCells = plan.filter((cell) => cellServerSource(cell) === null);
   if (unknownServerCells.length) {
+    // A split drawing cell lands here exactly when --probe-host was omitted, and
+    // recommending --url would send the operator to a flag the split child
+    // ignores (the PR 1368 review hit this on the header's own emulator
+    // example).
+    const splitCells = unknownServerCells.filter((cell) => cell.command === SPLIT_SCREEN_COMMAND);
+    const advice = splitCells.length
+      ? `Split-transport drawing cells require --probe-host=<this host's LAN address, as the ` +
+        `device sees it>; --url cannot satisfy them.`
+      : `Teach cellServerSource the command, or pass --url= explicitly.`;
     fail(
       `these cells' commands have no known server source, so nothing is proven about their ` +
         `fallback:\n${unknownServerCells.map((cell) => `  ${cell.id} (${cell.command})`).join('\n')}\n` +
-        `Teach cellServerSource the command, or pass --url= explicitly.`
+        advice
     );
   }
   const guardedDefaultCells = plan.filter((cell) => cellServerSource(cell) === 'guarded-default');
