@@ -21,6 +21,7 @@ import { createHash } from 'node:crypto';
 import { basename, join, relative } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
 import { brushOf, findCaptureFiles, rawReportOf, targetOf } from './rescore-captures.mjs';
+import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
 
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 
@@ -52,30 +53,19 @@ export function destinationBlocked(destination, { force }) {
   return false;
 }
 
-// The two checks whose failure invalidates a capture's NUMBERS, not merely its
-// per-runtime calibration: an untrusted touch is synthetic input, and cadence
-// is "the one that invalidates a number outright" (rescore-captures.mjs's row
-// rule). The other checks — coalescing, pressure, contactGeometry — are
-// per-runtime table entries whose expectations have churned (issue 1303) and
-// which several runtimes can NEVER pass as things stand; keying selection on
-// `fidelity.passed` would therefore refuse every native-target promotion
-// permanently. Keyed on the checks themselves rather than the artifact's
-// `uncalibrated` list because the banked corpus predates that field.
-const NUMBER_INVALIDATING_CHECKS = ['trustedTouch', 'cadence'];
-
 // Scoreability tiers, best first. Preference is by scoreability, never by
 // score — within a tier the FIRST seen wins, because picking the best NUMBER
 // would preserve a corpus that flatters the metric it exists to let someone
 // re-examine. A verdict failing only calibration checks outranks no verdict
 // at all (ADR-0138: a capture that cannot prove its fidelity will be
-// believed), and both outrank a number-invalidating failure.
+// believed), and both outrank a number-invalidating failure — a policy owned
+// by input-fidelity beside the check vocabulary it classifies, so keying
+// selection on `fidelity.passed` (which several runtimes can never satisfy)
+// cannot creep back in here.
 function scoreabilityTier(fidelity) {
   if (!fidelity) return 2;
   if (fidelity.passed === true) return 0;
-  const invalidated = NUMBER_INVALIDATING_CHECKS.some(
-    (check) => fidelity.checks?.[check] === false
-  );
-  return invalidated ? 3 : 1;
+  return numberInvalidatingFailure(fidelity) ? 3 : 1;
 }
 
 export function selectEvidence(candidates) {

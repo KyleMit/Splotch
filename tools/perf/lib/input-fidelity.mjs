@@ -230,3 +230,28 @@ export function onlyUncalibratedChecksFailed(fidelity) {
     .map(([name]) => name);
   return notPassing.length > 0 && notPassing.every((name) => uncalibrated.has(name));
 }
+
+// The two universal checks whose failure invalidated a capture's NUMBERS under
+// every table this module has ever shipped: an untrusted touch is synthetic
+// input, and cadence is the one that invalidates a number outright (the
+// rescorer's row rule). Only the legacy branch below reads this list — a
+// modern verdict says which of its failures were calibrated itself.
+const LEGACY_NUMBER_INVALIDATING_CHECKS = ['trustedTouch', 'cadence'];
+
+// Whether a failed verdict invalidates the capture's NUMBERS, as opposed to
+// failing only per-runtime calibration checks the numbers survive. Owned here
+// beside the check vocabulary so a future check addition lands in the policy
+// that classifies it, not in a restated list in a consumer (evidence
+// selection was the consumer that restated it, stack 1353's second review
+// round). Two branches, keyed on whether the verdict can speak for itself:
+//
+// - A MODERN verdict carries `uncalibrated`, so a failure confined to
+//   uncalibrated checks is a silent instrument (see above) and anything else
+//   is a real calibrated failure — the same split acceptance scores with.
+// - A LEGACY verdict predates the field; deriving from it would strand the
+//   whole banked corpus, so the stable universal pair decides.
+export function numberInvalidatingFailure(fidelity) {
+  if (fidelity?.passed !== false) return false;
+  if (Array.isArray(fidelity.uncalibrated)) return !onlyUncalibratedChecksFailed(fidelity);
+  return LEGACY_NUMBER_INVALIDATING_CHECKS.some((check) => fidelity.checks?.[check] === false);
+}

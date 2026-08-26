@@ -10,6 +10,7 @@ import {
   captureRuntime,
   describeFidelityFailures,
   inputFidelity,
+  numberInvalidatingFailure,
 } from '../lib/input-fidelity.mjs';
 
 const EVIDENCE = join(ROOT, 'perf-profiles', 'evidence');
@@ -320,5 +321,64 @@ describe('an unknown runtime', () => {
   // would score a capture against a table nobody chose for it.
   it('throws rather than picking a table', () => {
     expect(() => inputFidelity({}, 'ipad-simulator')).toThrow(/Unknown capture runtime/);
+  });
+});
+
+// Whether a failed verdict invalidates the NUMBERS or only the per-runtime
+// calibration. Owned here rather than restated in evidence selection (stack
+// 1353's second review round), with two branches keyed on whether the verdict
+// can speak for itself.
+describe('numberInvalidatingFailure', () => {
+  it('says nothing about a pass or an absent verdict', () => {
+    expect(numberInvalidatingFailure({ passed: true, checks: { cadence: true } })).toBe(false);
+    expect(numberInvalidatingFailure(null)).toBe(false);
+    expect(numberInvalidatingFailure(undefined)).toBe(false);
+  });
+
+  // A modern verdict carries `uncalibrated`: a failure confined to those
+  // checks is a silent instrument, anything else failed a calibrated
+  // expectation — including a per-runtime check like pressure, whose modern
+  // failure acceptance also scores as unscoreable.
+  it('splits a modern verdict by its own calibrated/uncalibrated record', () => {
+    expect(
+      numberInvalidatingFailure({
+        passed: false,
+        checks: { trustedTouch: true, cadence: true, coalescing: null },
+        uncalibrated: ['coalescing'],
+      })
+    ).toBe(false);
+    expect(
+      numberInvalidatingFailure({
+        passed: false,
+        checks: { trustedTouch: true, cadence: true, pressure: false, coalescing: null },
+        uncalibrated: ['coalescing'],
+      })
+    ).toBe(true);
+    expect(
+      numberInvalidatingFailure({
+        passed: false,
+        checks: { trustedTouch: true, cadence: false },
+        uncalibrated: [],
+      })
+    ).toBe(true);
+  });
+
+  // A legacy verdict predates the field, and deriving from it would strand the
+  // whole banked corpus: the stable universal pair decides. The android-split
+  // shape (pressure/contactGeometry failed under the old table, cadence true)
+  // must NOT invalidate, and a legacy cadence failure must.
+  it('falls back to the stable trustedTouch/cadence pair for a legacy verdict', () => {
+    expect(
+      numberInvalidatingFailure({
+        passed: false,
+        checks: { trustedTouch: true, cadence: true, pressure: false, contactGeometry: false },
+      })
+    ).toBe(false);
+    expect(
+      numberInvalidatingFailure({ passed: false, checks: { trustedTouch: true, cadence: false } })
+    ).toBe(true);
+    expect(
+      numberInvalidatingFailure({ passed: false, checks: { trustedTouch: false, cadence: true } })
+    ).toBe(true);
   });
 });
