@@ -1,8 +1,9 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ROOT } from '../../lib/proc.mjs';
 import { CAMPAIGN_TARGETS } from '../lib/campaign-plan.mjs';
+import { summarizeRun } from '../lib/real-screen-stats.mjs';
 import { OFF_REFRESH_REGIME, UNSCOREABLE, attemptsFor } from '../lib/campaign-ledger.mjs';
 import {
   MIXED_REGIME_SUSTAINED_SHARE_MAX,
@@ -288,53 +289,62 @@ describe('the mixed-regime verdict', () => {
 });
 
 // The threshold is calibrated from the tracked corpora, so the calibration is
-// pinned to them: every machine-driven scored capture must sit at or under the
-// boundary, and the known mixed-presentation captures above it. If either side
-// drifts, the threshold's evidence has changed and it must be re-derived, not
-// widened.
+// pinned to them THROUGH THE PRODUCTION PATH (the PR 1366 review: a private
+// reimplementation of the segmenter left both calibration tests green while
+// the published verdict changed). Every value below comes from
+// summarizeRun(report).regimeMixture — the exact field artifacts publish — and
+// the machine-driven side enumerates the whole tracked population rather than
+// sampling it: every capture with raw frames, hand captures identified by
+// their recorded transport.
 describe('the mixture threshold holds against the tracked corpora', () => {
-  const mixtureOf = (campaign, file) => {
-    const capture = JSON.parse(readFileSync(join(EVIDENCE, campaign, file), 'utf8'));
-    const frames = capture.report?.frames ?? [];
-    const segments = [];
-    let current = null;
-    for (const frame of frames) {
-      if (frame[2] === 1) {
-        if (!current) {
-          current = [];
-          segments.push(current);
+  const population = () => {
+    const rows = [];
+    for (const campaign of readdirSync(EVIDENCE)) {
+      const dir = join(EVIDENCE, campaign);
+      if (!statSync(dir).isDirectory()) continue;
+      for (const file of readdirSync(dir)) {
+        if (!file.endsWith('.json') || file === 'index.json') continue;
+        let capture;
+        try {
+          capture = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+        } catch {
+          continue;
         }
-        current.push(frame[1]);
-      } else {
-        current = null;
+        if (!Array.isArray(capture.report?.frames) || !capture.report.frames.length) continue;
+        const mixture = summarizeRun(capture.report).regimeMixture;
+        if (!mixture) continue;
+        rows.push({
+          id: `${campaign}/${file}`,
+          byHand: capture.transport === 'human-finger',
+          share: mixture.sustainedMinorityShare,
+        });
       }
     }
-    return regimeMixture(segments, capture.summaries?.intervalMs);
+    return rows;
   };
 
-  it('sits above every machine-driven scored capture', () => {
-    for (const [campaign, file] of [
-      ['2026-08-23-android-split', 'android-device-web-crayon.json'],
-      ['2026-08-24-android-web-magic-over-gate', 'android-device-web-magic.json'],
-      ['2026-08-23-ipad-main', 'ipad-device-web-pen.json'],
-      ['2026-08-25-campaign-1322-android', 'android-device-web-pen.json'],
-    ]) {
-      const mixture = mixtureOf(campaign, file);
-      expect(mixture.sustainedMinorityShare, `${campaign}/${file}`).toBeLessThanOrEqual(
-        MIXED_REGIME_SUSTAINED_SHARE_MAX
-      );
+  it('sits above every machine-driven capture in the whole tracked population', () => {
+    const rows = population();
+    const machine = rows.filter((row) => !row.byHand);
+
+    // The population floor: if corpora stop carrying raw frames, this claim
+    // silently shrinks — fail loudly instead.
+    expect(rows.length).toBeGreaterThanOrEqual(70);
+    expect(machine.length).toBeGreaterThanOrEqual(60);
+    for (const row of machine) {
+      expect(row.share, row.id).toBeLessThanOrEqual(MIXED_REGIME_SUSTAINED_SHARE_MAX);
     }
   });
 
-  it('sits below the known mixed-presentation captures', () => {
-    for (const [campaign, file] of [
-      ['2026-08-23-hand', 'ios-safari-b.json'],
-      ['2026-08-23-hand', 'android-chrome-d-clean.json'],
+  it('sits below the known mixed-presentation hand captures', () => {
+    const rows = population();
+    const byId = Object.fromEntries(rows.map((row) => [row.id, row.share]));
+
+    for (const id of [
+      '2026-08-23-hand/ios-safari-b.json',
+      '2026-08-23-hand/android-chrome-d-clean.json',
     ]) {
-      const mixture = mixtureOf(campaign, file);
-      expect(mixture.sustainedMinorityShare, `${campaign}/${file}`).toBeGreaterThan(
-        MIXED_REGIME_SUSTAINED_SHARE_MAX
-      );
+      expect(byId[id], id).toBeGreaterThan(MIXED_REGIME_SUSTAINED_SHARE_MAX);
     }
   });
 });
