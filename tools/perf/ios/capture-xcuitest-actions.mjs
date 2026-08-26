@@ -54,6 +54,10 @@ const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
 const MIN_WEBVIEW_WINDOW_AREA_FRACTION = 0.5;
 const READY_TIMEOUT_MS = 30_000;
 const POLL_MS = 50;
+// How long the custom-color hexagon may keep moving after the picker reports
+// open, before the sweep declares the fly-in stuck. The animation itself is a
+// few hundred ms; ten seconds is a hang, not a slow frame.
+const PICKER_SETTLE_TIMEOUT_MS = 10_000;
 const SCRIPT_TIMEOUT_MS = 45_000;
 const ACTION_SETTLE_MS = 650;
 const ANIMATED_ACTION_SETTLE_MS = 1_100;
@@ -952,14 +956,51 @@ export async function runActionSweep({
       })
     );
     const colorGrid = await execute(`return innerWidth > innerHeight ? 'landscape' : 'portrait';`);
+    // The first non-selected hexagon can carry a hue the PALETTE also carries
+    // (the landscape transpose's first cell is the palette pink), and the app
+    // deliberately routes an exact palette hue to its palette swatch instead
+    // of the gradient swatch — so a ready condition demanding the gradient
+    // swatch can never come true for that pick. Completion is judged by what
+    // BOTH routings do: the picker closes and the selection ring moves.
+    const hexSelector = `#color-picker .grid.${colorGrid} .hexagon:not(.selected)`;
+    // The dialog's fly-in moves the hexagon between coordinate resolution and
+    // the native tap. In a short landscape viewport the displacement is large
+    // enough that the tap lands on the backdrop and light-dismisses the picker
+    // with no selection — both landscape action cells of the 2026-08-26
+    // android recapture failed here deterministically, with the transition-
+    // cancel storm on record. Tap only once the target holds still across
+    // consecutive polls.
+    const preRingedSwatch = await execute(
+      `return [...document.querySelectorAll('.color-swatch')].findIndex((s) => (s.getAttribute('style') || '').includes('box-shadow'));`
+    );
+    const rectStable = await pollUntil(
+      () =>
+        execute(
+          `const el = document.querySelector(${JSON.stringify(hexSelector)});
+           if (!el) return false;
+           const r = el.getBoundingClientRect();
+           const key = [r.x, r.y, r.width, r.height].map((v) => Math.round(v * 10)).join(',');
+           const prev = window.__pickerRectProbe;
+           window.__pickerRectProbe = key;
+           return prev === key && r.width > 0;`
+        ).catch((error) => {
+          rethrowIfBroken(error);
+          return false;
+        }),
+      PICKER_SETTLE_TIMEOUT_MS,
+      POLL_MS
+    );
+    if (!rectStable) throw new Error('the custom color grid never settled after the picker opened');
     await record(
       measureClick({
         client,
         sessionId,
         execute,
         label: 'select custom color',
-        selector: `#color-picker .grid.${colorGrid} .hexagon:not(.selected)`,
-        ready: `document.querySelector('#color-picker')?.open !== true && document.querySelector('.gradient-swatch')?.classList.contains('active') === true`,
+        selector: hexSelector,
+        ready:
+          `document.querySelector('#color-picker')?.open !== true && ` +
+          `[...document.querySelectorAll('.color-swatch')].findIndex((s) => (s.getAttribute('style') || '').includes('box-shadow')) !== ${preRingedSwatch}`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
         eventTypes: customColorSelectionEventTypes(),
       })
