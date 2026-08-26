@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   ACTION_FRAME_MAX_GATE_MS,
-  IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
+  IOS_ACTION_GATE_ALLOWANCES,
   ACTION_FRAME_P95_GATE_MS,
   ACTION_SETTLE_TAIL_FRAMES,
   scoredActionFrameGaps,
@@ -140,7 +140,7 @@ describe('actionGateAllowances', () => {
         requestedCapabilities: null,
         session: physicalIpadSession,
       })
-    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+    ).toBe(IOS_ACTION_GATE_ALLOWANCES);
   });
 
   // The shape a real device actually reports: udid, platformName, platformVersion and
@@ -163,7 +163,7 @@ describe('actionGateAllowances', () => {
           },
         },
       })
-    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+    ).toBe(IOS_ACTION_GATE_ALLOWANCES);
   });
 
   it('keeps a handset on the base gates even when the session names no device', () => {
@@ -208,7 +208,7 @@ describe('actionGateAllowances', () => {
         },
         session: { capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' } },
       })
-    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+    ).toBe(IOS_ACTION_GATE_ALLOWANCES);
   });
 
   it('recognizes a borrowed physical iPad web session and a legacy physical UDID', () => {
@@ -226,7 +226,7 @@ describe('actionGateAllowances', () => {
           },
         },
       })
-    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+    ).toBe(IOS_ACTION_GATE_ALLOWANCES);
   });
 
   it.each([
@@ -791,8 +791,8 @@ describe('action-owned frame attribution', () => {
     const overGate = Array.from({ length: 40 }, (_, i) =>
       frame(i * 16.7, i < 2 ? ACTION_FRAME_P95_GATE_MS + 4 : 16.7)
     );
-    const ledger = IOS_ACTION_FRAME_P95_ALLOWANCES_MS;
-    expect(ledger['open Settings']).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
+    const ledger = IOS_ACTION_GATE_ALLOWANCES;
+    expect(ledger.p95['open Settings']).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
     expect(summarizeActionGroup([action(overGate)], 'open Settings', ledger).passed).toBe(true);
     expect(summarizeActionGroup([action(overGate)], 'close Settings', ledger).passed).toBe(false);
   });
@@ -805,11 +805,43 @@ describe('action-owned frame attribution', () => {
   });
 
   it('fails an allowed action past its own allowance', () => {
-    const ledger = IOS_ACTION_FRAME_P95_ALLOWANCES_MS;
+    const ledger = IOS_ACTION_GATE_ALLOWANCES;
     const overAllowance = Array.from({ length: 40 }, (_, i) =>
-      frame(i * 16.7, i < 3 ? ledger['open Settings'] + 1 : 16.7)
+      frame(i * 16.7, i < 3 ? ledger.max['open Settings'] + 1 : 16.7)
     );
     expect(summarizeActionGroup([action(overAllowance)], 'open Settings', ledger).passed).toBe(
+      false
+    );
+  });
+
+  // Issue 1130's allowance is max-frame only: a single worst frame inside 56 ms
+  // passes while the P95 allowance still binds, a flat legacy P95 map applies
+  // no max allowance at all, and past 56 the cell fails — the allowance is a
+  // measured residual, never an exemption.
+  it('honors the max-frame allowance for the calibrated open Settings, and only there', () => {
+    const ledger = IOS_ACTION_GATE_ALLOWANCES;
+    // The real capture's shape (perf-profiles/study-1130): pooled repeats
+    // whose P95 sits in the low-20s inside the 26 ms allowance while ONE
+    // worst frame reaches the 50 ms three-beat band — small single samples
+    // cannot express that, because a small pool's P95 IS its max.
+    const typicalOpen = () =>
+      action([
+        frame(0, 24),
+        frame(24, 24),
+        ...Array.from({ length: 5 }, (_, i) => frame(48 + i * 16.7, 16.7)),
+      ]);
+    const openWithStall = action([
+      frame(0, 24),
+      frame(24, ledger.max['open Settings'] - 1),
+      ...Array.from({ length: 5 }, (_, i) => frame(100 + i * 16.7, 16.7)),
+    ]);
+    const pooled = [typicalOpen(), typicalOpen(), typicalOpen(), typicalOpen(), openWithStall];
+    expect(summarizeActionGroup(pooled, 'open Settings', ledger).passed).toBe(true);
+    expect(summarizeActionGroup(pooled, 'close Settings', ledger).passed).toBe(false);
+    // The legacy flat shape every pre-split artifact stored: P95 allowance
+    // applies, max allowance does not — historical captures keep scoring as
+    // they always did.
+    expect(summarizeActionGroup(pooled, 'open Settings', { 'open Settings': 26 }).passed).toBe(
       false
     );
   });

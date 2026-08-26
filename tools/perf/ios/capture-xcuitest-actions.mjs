@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
 import {
-  IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
+  IOS_ACTION_GATE_ALLOWANCES,
   MIN_GATED_SAMPLES,
   WARMUP_REPEATS,
   actionFailures,
@@ -199,7 +199,7 @@ export function actionGateAllowances({
   const isTablet = deviceClass === 'tablet' || deviceName.includes('ipad');
   const isCalibratedPhysicalIpadWeb =
     !nativeApp && platformName === 'ios' && isTablet && physicalDevice;
-  return isCalibratedPhysicalIpadWeb ? IOS_ACTION_FRAME_P95_ALLOWANCES_MS : {};
+  return isCalibratedPhysicalIpadWeb ? IOS_ACTION_GATE_ALLOWANCES : {};
 }
 
 export function settingsSectionMeasurement(section, label, settingsModalUsesSidebar) {
