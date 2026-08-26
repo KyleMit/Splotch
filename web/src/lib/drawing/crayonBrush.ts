@@ -436,14 +436,23 @@ function cacheColorTile(build: ColorTileBuild) {
   return build.canvas;
 }
 
+// EXPERIMENT (exp/crayon-i9-hygiene): the hot path hits the same key for a
+// whole stroke; skip the Map delete/set reorder churn when the key is
+// already the newest.
+let newestColorTileKey: string | null = null;
+
 function colorTile(color: string, passIdx: number): HTMLCanvasElement | null {
   const key = `${color}@${passIdx}`;
   const hit = colorTileCache.get(key);
   if (hit) {
-    colorTileCache.delete(key);
-    colorTileCache.set(key, hit);
+    if (key !== newestColorTileKey) {
+      colorTileCache.delete(key);
+      colorTileCache.set(key, hit);
+      newestColorTileKey = key;
+    }
     return hit;
   }
+  newestColorTileKey = key;
   const build = createColorTileBuild(color, passIdx);
   if (!build) return null;
   fillColorTilePixels(build, 0, build.fields.height.length);
@@ -591,9 +600,15 @@ export function crayonPatternFor(
     byKey.set(key, pattern);
   }
   const [px, py] = cachedSeedPhase(seed, crayonFields().tile);
-  pattern.setTransform({ e: px, f: py });
+  // EXPERIMENT (exp/crayon-i9-hygiene): reuse one transform-init object
+  // instead of allocating a literal per call (2 per op per tile).
+  SEED_TRANSFORM.e = px;
+  SEED_TRANSFORM.f = py;
+  pattern.setTransform(SEED_TRANSFORM);
   return pattern;
 }
+
+const SEED_TRANSFORM = { e: 0, f: 0 };
 
 // --- Mid-stroke pass splitting -----------------------------------------------
 //

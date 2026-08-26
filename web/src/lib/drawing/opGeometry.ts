@@ -67,6 +67,13 @@ export function opGeometricExtent(op: DotOp | PathOp): {
 // The op's user-space bounding box plus the pad that covers its stroke
 // half-width and AA bleed. Fed straight into unionCrayonBounds to grow a pass
 // buffer's dirty region.
+// EXPERIMENT (exp/crayon-i9-hygiene): a crayon op's bounds are computed three
+// times per tile visit (intersection test, undo capture, pass-buffer rect) on
+// identical geometry — a one-entry identity memo collapses the repeats. Ops
+// are immutable once first rendered, so identity implies identical bounds.
+let lastBoundsOp: DotOp | PathOp | null = null;
+let lastBounds: { x0: number; y0: number; x1: number; y1: number; pad: number } | null = null;
+
 export function opPaddedUserBounds(op: DotOp | PathOp): {
   x0: number;
   y0: number;
@@ -74,6 +81,9 @@ export function opPaddedUserBounds(op: DotOp | PathOp): {
   y1: number;
   pad: number;
 } {
+  if (op === lastBoundsOp && lastBounds) return lastBounds;
   const { x0, y0, x1, y1, halfWidth } = opGeometricExtent(op);
-  return { x0, y0, x1, y1, pad: halfWidth + AA_PAD_PX };
+  lastBoundsOp = op;
+  lastBounds = { x0, y0, x1, y1, pad: halfWidth + AA_PAD_PX };
+  return lastBounds;
 }

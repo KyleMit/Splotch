@@ -238,8 +238,10 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     return;
   }
   const buf = crayonBufferFor(target);
-  buf.ctx.canvas.hidden = false;
-  if (buf.mirror) buf.mirror.canvas.hidden = false;
+  // EXPERIMENT (exp/crayon-i9-hygiene): skip the redundant DOM writes — the
+  // planes are already visible on every op after the first.
+  if (buf.ctx.canvas.hidden) buf.ctx.canvas.hidden = false;
+  if (buf.mirror && buf.mirror.canvas.hidden) buf.mirror.canvas.hidden = false;
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
   buf.mirror?.setTransform(matrix);
