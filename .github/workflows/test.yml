@@ -307,8 +307,10 @@ jobs:
       - name: Run fast WebKit commit gate
         run: npm run perf:web:undo:webkit:fast
 
+      # Uploaded on green runs too (issue 1250): the noise investigation had
+      # outcomes but no distributions, because only failures kept their tables.
       - name: Upload WebKit undo diagnostics
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: webkit-undo-fast-diagnostics
@@ -317,6 +319,63 @@ jobs:
             perf-profiles/**/undo-scenarios.md
           if-no-files-found: warn
           retention-days: 7
+
+      # A post-merge gate nobody is watching is not a gate — but a breach on
+      # this job alone no longer files: a shared macOS runner can stall long
+      # enough to span this whole job, measure and confirmation both, so a
+      # same-VM confirmation cannot acquit it (issue 1250: two post-merge
+      # failures on main — one on a docs-only merge — against five consecutive
+      # clean dispatch reruns of the same code). The fresh-runner retry job
+      # below re-measures on a new VM and owns the filing decision.
+
+  webkit-commit-gate-fast-retry:
+    name: WebKit commit gate (fast, fresh-runner retry)
+    needs: webkit-commit-gate-fast
+    # Push arm only: a dispatch failure is delivered by the red run itself, to
+    # the person who fired it. failure() here means the gate job breached.
+    if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    timeout-minutes: 15
+    concurrency:
+      group: webkit-commit-gate-fast
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-playwright-webkit
+
+      # The variable that matters is the VM, not the retry: ADR-0140's in-job
+      # confirmation already re-measures, and the 2026-08-26 failure breached
+      # both halves with a 197 ms stall spanning them. A fresh runner is the
+      # only rerun that changes the environment the breach happened in.
+      - name: Re-run the fast WebKit commit gate on a fresh runner
+        run: npm run perf:web:undo:webkit:fast
+
+      - name: Upload WebKit undo retry diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webkit-undo-fast-retry-diagnostics
+          path: |
+            perf-profiles/**/undo-scenarios.json
+            perf-profiles/**/undo-scenarios.md
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Record the acquittal
+        if: success()
+        run: |
+          {
+            echo '## WebKit commit gate: acquitted on a fresh runner'
+            echo
+            echo 'The post-merge gate breached on its first runner and passed on this one.'
+            echo 'Recorded as host noise per issue 1250; no issue filed. A regression that'
+            echo 'is real fails both runners.'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # A post-merge gate nobody is watching is not a gate. One open issue
       # collects every red commit until it is closed, so a broken main does not
