@@ -209,12 +209,12 @@ same build at 116 moves/s reports 0.41–1.55%.
 Transports differ in what they can produce, and a change aimed at one condition cannot be judged on
 a transport that cannot create it:
 
-| Transport                            | Contact moves/s | Notes                                      |
-| ------------------------------------ | --------------: | ------------------------------------------ |
-| Appium XCUITest (iPad)               |         115–117 | Calibrated. ~1.95 moves per painted frame. |
-| `adb shell input swipe` (Android)    |         113–120 | Fidelity-passing.                          |
-| WebDriverAgent HTTP directly (iPad)  |           60–61 | Below the band; ~0.9 moves per frame.      |
-| Appium UiAutomator2 (Android Chrome) |              47 | Below the band. Do not score.              |
+| Transport                            | Contact moves/s | Notes                                                                                                                      |
+| ------------------------------------ | --------------: | -------------------------------------------------------------------------------------------------------------------------- |
+| Appium XCUITest (iPad)               |         115–117 | Calibrated. ~1.95 moves per painted frame.                                                                                 |
+| `adb shell input swipe` (Android)    |         113–120 | Fidelity-passing.                                                                                                          |
+| WebDriverAgent HTTP directly (iPad)  |         115–117 | Re-derived 2026-08-24 (issue 1272): ~1.95 moves per frame, Safari and WKWebView alike. An earlier 60–61 did not reproduce. |
+| Appium UiAutomator2 (Android Chrome) |              47 | Below the band. Do not score.                                                                                              |
 
 ### A failed verdict has two meanings, and they need different work
 
@@ -851,6 +851,25 @@ was *before* the build broke. The variable that was compared on was not the vari
 A control that ran an hour ago is a memory, not a control. When something fails and a working case
 is the evidence that it should not have, re-run the working case **now**, on the same build and the
 same server — it costs one capture and it is the difference between a finding and a retraction.
+
+## Gate-semantics changes ship as their own campaign
+
+Adopted 2026-08-26 from the stack-1365 review round (the strategy critique and its disposition are
+recorded on PR 1366). Two rules for how instrument changes reach `main`:
+
+* **A change to what a gate means — what counts as a valid capture, a scoreable cell, a passing
+  verdict — ships as its own dedicated stack**, not interleaved with product fixes or routine
+  instrument work. The critique was empirically backed: mid-stack, the loosenings briefly outpaced
+  the added protections — a transport the retired cadence ceiling refused passed the shipped density
+  floor at 0.6, and an independent experiment caught it before merge (fixed in PR 1368 by the 0.9
+  floor, both sides banked). Redefining validity in the same stack that consumes it leaves no stable
+  ground to review either against.
+* **A review finding against a gate or calibration change is fixed in an immediate child of the PR
+  that introduced it** — a new PR inserted directly above it, accepting the rebase cascade — so the
+  stack's reviewable history states the true gate behavior at every layer. The top-of-stack sweep-up
+  convention (the `create-stacked-prs` skill) still applies to ordinary findings; it cost reviewers
+  a three-layer reconstruction (decision PR → sweep-up → feedback PR) exactly where the reviews
+  caught the most, and gate semantics are where that reconstruction is least affordable.
 
 ## Provenance a capture did not observe is not provenance
 

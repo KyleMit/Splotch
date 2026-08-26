@@ -45,7 +45,10 @@ There is no documented or enforced maximum stack size — a 13-PR chain linked i
   find a problem in A, B, or C — your own or from review — **do not fix it in place.** Ship the fix
   as a new commit in the PR at the top of the stack.
 * **Plan the sweep-up PR.** The final PR collects every surviving issue from the earlier ones in one
-  pass. Expect to write it; plan for it rather than treating it as a failure.
+  pass. Expect to write it; plan for it rather than treating it as a failure. One carve-out: a
+  finding against a **performance-gate or calibration change** is fixed in an immediate child of the
+  PR that introduced it, accepting the rebase cascade — see "Gate-semantics changes ship as their
+  own campaign" in `docs/PROFILING-CAMPAIGNS.md`.
 * **Open each PR as soon as its first commit lands.** Do not batch them to the end — an unopened PR
   is invisible to review and to CI.
 * **Order the stack so cheap, unblocked work sits at the bottom.** Anything above a stuck PR is
