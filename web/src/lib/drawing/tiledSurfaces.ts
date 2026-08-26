@@ -89,8 +89,10 @@ export function historyBaseContextsNeedRecovery(tiles: readonly HistoryBaseTile[
 export function rebindLiveTileContexts(tiles: readonly LiveTile[]) {
   for (const tile of tiles) {
     const context = tile.canvas.getContext('2d');
-    const crayonBottomContext = tile.crayonBottom.getContext('2d');
-    const crayonTopContext = tile.crayonTop.getContext('2d');
+    // EXPERIMENT (exp/crayon-i13-desync-planes): low-latency hint on the
+    // crayon preview planes only.
+    const crayonBottomContext = tile.crayonBottom.getContext('2d', { desynchronized: true });
+    const crayonTopContext = tile.crayonTop.getContext('2d', { desynchronized: true });
     if (!context || !crayonBottomContext || !crayonTopContext) return false;
     tile.ctx = context;
     tile.crayonBottomCtx = crayonBottomContext;
@@ -186,9 +188,10 @@ export function createLiveTiles(canvasElement: HTMLCanvasElement): LiveTile[] {
     canvas: tileCanvas,
     ctx: tileCanvas.getContext('2d')!,
     crayonBottom: crayonBottoms[index],
-    crayonBottomCtx: crayonBottoms[index].getContext('2d')!,
+    // EXPERIMENT (exp/crayon-i13-desync-planes): low-latency hint on the planes.
+    crayonBottomCtx: crayonBottoms[index].getContext('2d', { desynchronized: true })!,
     crayonTop: crayonTops[index],
-    crayonTopCtx: crayonTops[index].getContext('2d')!,
+    crayonTopCtx: crayonTops[index].getContext('2d', { desynchronized: true })!,
     needsClear: false,
     x: 0,
     y: 0,
