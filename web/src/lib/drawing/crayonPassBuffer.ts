@@ -313,6 +313,10 @@ export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
 // shown like any ink op — and a still-hidden tile is blank
 // (prepareTileForMutation has run), which is what opens the virgin fast path.
 export function crayonOpShowsTile(target: CanvasRenderingContext2D, targetHidden: boolean) {
+  // NATIVE ABLATION rung 4: zero-mix direct paint mutates the tile, so it
+  // must be shown in every deposition mode.
+  return true;
+  // eslint-disable-next-line no-unreachable
   if (depositionMode !== 'restamp') return false;
   if (targetHidden) blankAtPassOpen.add(target);
   return true;
