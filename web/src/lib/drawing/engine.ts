@@ -64,7 +64,7 @@ import {
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
-import { flushCrayonBuffer } from './crayonPassBuffer';
+import { flushCrayonBuffer, refreshPendingCrayonShadows } from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -156,25 +156,18 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// Each live tile has two crayon canvases holding the open deposition pass at
-// full opacity. The bottom layer
-// composites with mix-blend-mode: darken and the top with CSS opacity
-// (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
-// pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
-// stamp will bake into the normal tile at close (see crayonPassBuffer.ts)
-// — no visible snap. pointer-events: none, so input still lands on the canvas
-// beneath. LiveSurface's `.canvas-stack` sets `isolation: isolate`, confining
-// the darken blend to the drawing pixels. Without it the blend sees the
-// composited paper, and dark paper erases the bottom layer into a faint
-// `1 - mix`-opacity preview until the flush.
-//
+// The crayon preview planes are vestigial — the restamp renderer keeps them
+// hidden for the whole session (see crayonPassBuffer.ts) — but their CSS
+// opacity is still kept in sync with the authored mix so a future
+// re-activation cannot silently present at a stale value.
 function syncCrayonOverlayMix() {
   const opacity = String(1 - crayonColorMix());
   syncTiledCrayonMix(opacity);
 }
 
-// Close the current deposition pass by stamping each tile's live buffer and
-// recording the same flush in the command retained for history and export.
+// Close the current deposition pass — the tiles already hold the stamped
+// pixels, so this resets pass state — and record the flush in the command
+// retained for history and export.
 function recordCrayonFlush() {
   const flush: StrokeOp = { kind: 'crayonFlush' };
   renderTiledOp(flush);
@@ -754,6 +747,16 @@ function finishGroupWhenCanvasIdle() {
   if (activePointers.size > 0) return;
   if (penStreamAdopter.hasCanvasExit()) callbacks.onDrawStop?.();
   else finishStrokeGroup();
+  // Refresh stale crayon under shadows two frames after the lift: the
+  // composited-canvas read then lands in between-stroke time, and Safari's
+  // scheduleIdle fallback demands an input-quiet window a fast scribbler
+  // never grants. Skipped if a new stroke has already started; that pass
+  // pays one synchronous read as the fallback (crayonPassBuffer.ts).
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (activePointers.size === 0) refreshPendingCrayonShadows();
+    });
+  });
 }
 
 // Pointer speed (which drives the drawing sound) is averaged over the most

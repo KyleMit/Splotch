@@ -1,4 +1,9 @@
-import { crayonBufferIsDirty, resetCrayonStateForClear } from './crayonPassBuffer';
+import {
+  crayonBufferIsDirty,
+  noteCrayonTargetBlank,
+  resetCrayonPassStateForRepaint,
+  resetCrayonStateForClear,
+} from './crayonPassBuffer';
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import type { MagicSheetSnapshot } from './magicBrush';
@@ -272,8 +277,13 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
     tile.needsClear = false;
     return;
   }
-  if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase) return;
   if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
+  // Crayon ops restamp the normal tile directly, so it is shown like any
+  // ink op — and a still-hidden tile is blank (prepareTileForMutation just
+  // ran), which is what lets the pass open on the virgin fast path.
+  if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase && tile.canvas.hidden) {
+    noteCrayonTargetBlank(tile.ctx);
+  }
   tile.canvas.hidden = false;
 }
 
@@ -296,7 +306,8 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
     for (const [index, tile] of liveTiles.entries()) {
       if (geometryIntersectsTile(op, tile)) {
         ensureNormalTileBacking(tile);
-        if (op.crayon && !op.erase) ensureCrayonTileBacking(tile);
+        // The crayon preview planes are vestigial (crayonPassBuffer.ts);
+        // no crayon backing to allocate.
         prepareTileForMutation(tile, index);
         if (command && !command.wasEmpty) {
           undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
@@ -370,6 +381,9 @@ export function repaintTiledRenderer(
     ensureNormalTileBacking(tile);
     tile.canvas.hidden = true;
     clearTileBacking(tile);
+    // Open-pass crayon state describes pixels the clear just destroyed —
+    // reset before the replay re-renders them.
+    resetCrayonPassStateForRepaint(tile.ctx);
     for (const base of historyBase) {
       if (base.painted && tilesIntersect(base, tile)) {
         tile.ctx.drawImage(base.canvas, base.x, base.y);

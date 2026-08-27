@@ -132,7 +132,7 @@ describe('idle tiled canvas visibility', () => {
     ).toBe(clearCallsBeforeBlankUndo);
   });
 
-  it('counts seam overdraw and lazily realized crayon backings', () => {
+  it('counts seam overdraw with no crayon plane backings realized', () => {
     const { canvas } = rendererElements();
     adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
@@ -155,9 +155,11 @@ describe('idle tiled canvas visibility', () => {
     recordTiledOp(crayonDot);
     commitTiledCommand();
 
+    // The restamp renderer deposits wax on the normal tiles; the vestigial
+    // preview planes never realize a backing (crayonPassBuffer.ts).
     expect(tiledWorkDebug()).toMatchObject({
-      realizedCrayonBackings: 8,
-      totalLiveBackingBytes: 960_000,
+      realizedCrayonBackings: 0,
+      totalLiveBackingBytes: 640_000,
       lastCommand: { inputOps: 1, rasterizedOps: 4, maxSurfaceVisitsPerOp: 4 },
     });
     undoTiledCommand(1);
@@ -365,7 +367,7 @@ describe('idle tiled canvas visibility', () => {
     expect(captureFrames).toBe(4);
   });
 
-  it('hides and invalidates an open crayon pass before the tile is reused', () => {
+  it('drops an open crayon pass when the paper is cleared', () => {
     const { host, canvas } = rendererElements();
     adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
@@ -396,19 +398,25 @@ describe('idle tiled canvas visibility', () => {
     beginTiledCommand(true);
     renderTiledOp(crayonDot);
     recordTiledOp(crayonDot);
-    expect(crayonLayers.filter((layer) => !layer.hidden)).toHaveLength(2);
-
-    clearTiledRenderer(true);
+    // Wax lands on the normal tile; the vestigial preview planes stay hidden.
+    expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
+      1
+    );
     expect(crayonLayers.every((layer) => layer.hidden)).toBe(true);
 
+    clearTiledRenderer(true);
+    expect(
+      host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')
+    ).toHaveLength(0);
+
+    // A redraw after the clear opens a fresh pass rather than resurrecting
+    // the dropped one.
     renderTiledOp(crayonDot);
     recordTiledOp(crayonDot);
-    expect(crayonLayers.filter((layer) => !layer.hidden)).toHaveLength(2);
-    expect(
-      crayonLayers.some(
-        (layer) => vi.mocked(layer.getContext('2d')!.clearRect).mock.calls.length > 0
-      )
-    ).toBe(true);
+    expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
+      1
+    );
+    expect(crayonLayers.every((layer) => layer.hidden)).toBe(true);
 
     const crayonFlush: StrokeOp = { kind: 'crayonFlush' };
     renderTiledOp(crayonFlush);

@@ -3,7 +3,12 @@
 
 import { captureMagicSheet, sheetPatternFor, type MagicSheetSnapshot } from './magicBrush';
 import { paintOpShape } from './opGeometry';
-import { flushCrayonBuffer, renderCrayonOp, resetCrayonStateForClear } from './crayonPassBuffer';
+import {
+  flushCrayonBuffer,
+  invalidateCrayonUnder,
+  renderCrayonOp,
+  resetCrayonStateForClear,
+} from './crayonPassBuffer';
 import type { RecordedPaperState } from './undoHistory';
 
 // One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
@@ -27,12 +32,11 @@ interface PathSeg {
 // crayonBrush.ts, phase-shifted by `seed` so overlapping same-colour strokes
 // build up (fill tooth) at a constant hue. Every op in one pass shares its
 // seed.
-// Crayon ops do not paint the target directly: they accumulate on a per-target
-// PASS BUFFER at full opacity, and a 'crayonFlush' op stamps the buffer onto
-// the target as a subtractive glaze (see crayonPassBuffer.ts) — that single
-// stamp is what lets a new pass mix slightly with the ink under it
-// (blue over yellow → green) without the pass ever mixing with its own
-// overlapping per-frame ops.
+// Crayon ops accumulate on a per-target PASS BUFFER at full opacity and
+// restamp the pass's subtractive glaze onto the target per op (see
+// crayonPassBuffer.ts) — the buffered pass is what lets new wax mix once
+// with the ink under it (blue over yellow → green) without ever mixing with
+// its own overlapping per-frame ops; a 'crayonFlush' op closes the pass.
 export type StrokeOp =
   | {
       kind: 'dot';
@@ -99,9 +103,9 @@ export function clearAllOf(target: CanvasRenderingContext2D) {
 
 // Paint one recorded op onto a tile or export context. Erasing composites
 // destination-out; a magic op reveals the color sheet and paints nothing until
-// the sheet has decoded; a crayon op accumulates on the target's pass buffer
-// until a 'crayonFlush' stamps it. Any non-crayon ink op flushes an open pass
-// first so compositing order matches the op order.
+// the sheet has decoded; a crayon op deposits through the target's pass buffer
+// and a 'crayonFlush' closes the pass. Any non-crayon ink op flushes an open
+// pass first so compositing order matches the op order.
 export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   if (op.kind === 'clear') {
     resetCrayonStateForClear(target);
@@ -120,6 +124,8 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     op.magicSheet ??= snapshot ?? undefined;
     target.globalCompositeOperation = 'source-over';
     paintOpShape(target, op, pattern);
+    // Foreign ink stales the crayon under shadow.
+    invalidateCrayonUnder(target);
     return;
   }
   if (op.crayon && !op.erase) {
@@ -130,4 +136,6 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
   target.globalCompositeOperation = op.erase ? 'destination-out' : 'source-over';
   paintOpShape(target, op, op.color);
   target.globalCompositeOperation = 'source-over';
+  // Foreign ink stales the crayon under shadow.
+  invalidateCrayonUnder(target);
 }

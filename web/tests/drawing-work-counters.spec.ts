@@ -14,9 +14,9 @@ const COUNTER_STROKE_MOVE_STEPS = 12;
 const MAX_LIVE_SURFACE_ELEMENTS = 48;
 const MAX_REALIZED_NORMAL_BACKINGS = 16;
 
-// The fixed crayon input stays inside one cell, so lazy allocation may realize only that cell's
-// bottom/top pair. A larger count means culling or lazy allocation regressed.
-const MAX_REALIZED_CRAYON_BACKINGS = 2;
+// The restamp renderer deposits wax on the normal tiles and never realizes the vestigial preview
+// planes (crayonPassBuffer.ts). Any realized crayon backing means the plane path came back.
+const MAX_REALIZED_CRAYON_BACKINGS = 0;
 
 // The fixed protocol input is one start dot plus twelve pointer moves. A scheduler cannot change
 // the protocol event count, so any extra op is engine work rather than timing noise.

@@ -10,6 +10,7 @@ vi.mock('./crayonBrush', () => ({
 import {
   crayonBufferIsDirty,
   flushCrayonBuffer,
+  noteCrayonTargetBlank,
   setCrayonBufferForTarget,
 } from './crayonPassBuffer';
 import { renderOp, type StrokeOp } from './strokeOps';
@@ -71,7 +72,7 @@ function crayonDot(overrides: Partial<Extract<StrokeOp, { kind: 'dot' }>> = {}):
 }
 
 describe('tiled crayon pass buffers', () => {
-  it('shows preview canvases only while their pass is dirty', () => {
+  it('keeps the preview planes hidden for the whole pass lifecycle', () => {
     const target = context2d();
     const buffer = context2d();
     const mirror = context2d();
@@ -83,8 +84,8 @@ describe('tiled crayon pass buffers', () => {
     renderOp(target, crayonDot());
 
     expect(crayonBufferIsDirty(target)).toBe(true);
-    expect(buffer.canvas.hidden).toBe(false);
-    expect(mirror.canvas.hidden).toBe(false);
+    expect(buffer.canvas.hidden).toBe(true);
+    expect(mirror.canvas.hidden).toBe(true);
 
     renderOp(target, { kind: 'crayonFlush' });
 
@@ -93,20 +94,36 @@ describe('tiled crayon pass buffers', () => {
     expect(mirror.canvas.hidden).toBe(true);
   });
 
-  it('unions all transformed corners when flushing a pass', () => {
+  it('restamps each op onto the target across all transformed corners', () => {
     const target = context2d();
     const matrix = new DOMMatrix([1, 1, 1, -1, 100, 100]);
     (target as unknown as { getTransform: () => DOMMatrix }).getTransform = () => matrix;
 
     renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
-    flushCrayonBuffer(target);
 
+    // Non-virgin restamp: restore the under shadow, then the two glaze blits
+    // — three target blits, every one covering the op's transformed rect.
     const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(3);
     for (const call of calls) {
       const [source, sx, sy, sw, sh, dx, dy, dw, dh] = call;
       expect(source).toBeInstanceOf(HTMLCanvasElement);
       expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([106, 86, 28, 28, 106, 86, 28, 28]);
     }
+
+    // Closing the pass stamps nothing further — the target already holds the
+    // pass-close pixels.
+    flushCrayonBuffer(target);
+    expect(calls).toHaveLength(3);
+  });
+
+  it('a pass opening on a blank tile restamps with a single blit', () => {
+    const target = context2d();
+    noteCrayonTargetBlank(target);
+
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(1);
   });
 });
