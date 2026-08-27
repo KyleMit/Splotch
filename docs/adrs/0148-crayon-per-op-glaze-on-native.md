@@ -58,13 +58,26 @@ crayon's own colour at `PER_OP_GLAZE_RETURN` — and `crayonFlush` becomes a no-
 state exists to close. Selected from the same compile-time `CAPACITOR=true` signal as ADR-0146's op
 granularity and ADR-0147's deposition fork (`engine.ts`). **Web is untouched and keeps restamp.**
 
-`PER_OP_GLAZE_RETURN = 0.1` is the load-bearing constant. It is **not** the pass-cadence `1 − mix`:
+`PER_OP_GLAZE_RETURN = 0.16` is the load-bearing constant. It is **not** the pass-cadence `1 − mix`:
 a pixel covered by k overlapping ops retains `1 − (1−B)^k` of the crayon colour, so reusing 0.45 per
 op reaches 75% after two ops and ~99% at hand speed — measured on the device as a crossing that kept
 its green only at the single-op fringe. Solving `(1−B)^k = mix` for a hand-speed k brackets B near
-0.06; 0.06 read as too green, and **0.10 was settled by eye on the physical iPad**. Treat the
-formula as the bracket that found the value, not as its derivation — recomputing it and "correcting"
-the constant would undo a human judgement.
+0.06, which read as too green on the device.
+
+**0.16 was settled by drawing on the physical iPad**, cross-checked against a sweep that measures
+each candidate's crossing colour against the web pipeline's across colour pairs and redraw depths
+(`tools/perf/find-glaze-web-match.mjs`, and the proof sheet beside it). That sweep put the
+fast-stroke optimum at 0.18 by inverting the same model — `k = ln(0.55)/ln(0.82) ≈ 3` overlapping
+ops for its stroke geometry, which independently confirms the mechanism — and showed web's first
+crossing at a blue channel of 153 against 121 for 0.10, i.e. 0.10 sat greener than the shipped web
+appearance at first contact. Treat the formula as the bracket that found the range, not as a
+derivation: recomputing it and "correcting" the constant would undo a human judgement.
+
+The constant is **appearance-only**. A controlled A/B on the device measured 0.02 against 0.45 and
+found the apparent 15× difference was session drift rather than glaze — the same 0.02 build re-run
+at the end of the session measured 0.47% against its own earlier 0.03%. Per-op work is identical at
+every value (two paints, the same pattern-fill count, only a blend coefficient differing), so this
+value can be moved on looks alone without re-capturing.
 
 Two invariants make the per-op form safe where it is not visibly different:
 

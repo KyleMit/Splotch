@@ -147,10 +147,12 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
   colorMix: 0.55,
   // Solving (1-B)^k = colorMix for a hand-speed overlap k brackets this near
-  // 0.06; 0.06 read as too green on the physical iPad and 0.10 was settled by
-  // eye in the 2026-08-27 tuning session. The formula found the bracket, it did
+  // 0.06, which read as too green on the physical iPad. 0.16 was settled in the
+  // 2026-08-27 session that drew on the device and cross-checked against a sweep
+  // scoring each candidate's crossing colour against the web pipeline's
+  // (tools/perf/find-glaze-web-match.mjs). The formula found the range; it did
   // not derive the value — do not recompute it and "correct" it.
-  perOpGlazeReturn: 0.1,
+  perOpGlazeReturn: 0.16,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },

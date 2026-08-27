@@ -385,7 +385,8 @@ the crayon colour, so two ops already reach 75% and a hand-speed stroke — whic
 roughly 8-12 times — reaches ~99%. Only single-op fringe pixels kept any mix.
 
 Solving `(1-B)^k = mix` for a hand-speed k brackets B near 0.06. That read as too green on the
-device; **0.10 was settled by eye** in the same session, using a dev-harness setter
+device; **0.16 was settled on the device**, after 0.10 was cross-checked against the web pipeline
+and found greener than it at first contact in the same session, using a dev-harness setter
 (`set-crayon-glaze-return.mjs`, kept on `exp/crayon-native2-d5-per-op-glaze` rather than shipped —
 its `window` setter has no production caller, and reaching for `__DEV_HARNESS__` at module scope
 broke SSR) that changes the value on the running build in about ten seconds instead of a
@@ -394,8 +395,8 @@ three-minute rebuild-and-reinstall loop.
 | Cell                        | lost % samples                   | median   |
 | --------------------------- | -------------------------------- | -------- |
 | `planes` baseline, portrait | 1.87 / 1.10 / 1.16 / 1.33 / 1.54 | 1.33     |
-| **D5 @0.10 portrait**       | 0.36 / 0.35 / 0.00 / 0.08 / 0.02 | **0.08** |
-| **D5 @0.10 landscape**      | 0.03 / 0.01 / 0.05               | **0.03** |
+| **D5 portrait**             | 0.36 / 0.35 / 0.00 / 0.08 / 0.02 | **0.08** |
+| **D5 landscape**            | 0.03 / 0.01 / 0.05               | **0.03** |
 | pen control, same build     | 0.00                             | 0.00     |
 
 All fidelity-PASS, `uncalibrated: []`, cadence 116-117 moves/s. **Crayon is at the native pen
@@ -427,3 +428,29 @@ port and does not start one. With no server the probe's `fetch` is refused and t
 bare **`fetch failed`**, which names neither Appium nor the port. Starting
 `appium --port <resolved>` first turns it into the real verdict. Worth fixing in
 `prepare-capture.mjs`.
+
+## Choosing the constant (2026-08-27, after the captures)
+
+The captures above were taken at a per-op return of 0.10. The value moved to **0.16** afterwards,
+and because the constant is appearance-only they were not re-taken — a controlled A/B measured 0.02
+against 0.45 and found the apparent 15× difference was **session drift, not glaze**: the same 0.02
+build re-run at the end of the session measured 0.47% against its own earlier 0.03%. Per-op work is
+identical at every value.
+
+Two tools decided it, and they agreed once their disagreement was understood:
+
+* `gen:crayon-glaze-match` scores each candidate's crossing colour against the web pipeline's across
+  colour pairs and redraw depths. Clean V, minimum at **0.18** (error 9.0 against a same-colour
+  control reading 1.0–4.2, so the noise floor is ~2). Inverting the model on that minimum gives
+  `k = ln(0.55)/ln(0.82) ≈ 3` overlapping ops per pixel for its stroke geometry — the mechanism
+  confirming itself rather than being assumed.
+* `gen:crayon-glaze-sheet` renders the same space with the web pipeline as a reference row
+  (`crayon-native2-evidence/crayon-glaze-sweep.html`). It shows what the scalar score hides: **the
+  first crossing and the accumulation curve want different values.** Web's first crossing is 153;
+  0.10 is 121 (greener than web), 0.14 is 179, 0.18 is 186. But 0.24 and 0.45 saturate at 232 by the
+  second redraw and stop, while 0.04 never arrives at all.
+
+The harness prefers a higher value than the hand did because it draws FAST — ~3 overlapping ops per
+pixel against a hand stroke's 8–12 — and per-op glazing is speed-dependent by construction. 0.18
+implies k≈3, 0.10 implies k≈5.7, 0.06 implies k≈9.7. They are the same model at different speeds,
+not competing answers. 0.16 was the human call with both in view.
