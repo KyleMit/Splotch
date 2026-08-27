@@ -755,11 +755,14 @@ function finishGroupWhenCanvasIdle() {
   if (penStreamAdopter.hasCanvasExit()) callbacks.onDrawStop?.();
   else finishStrokeGroup();
   // EXPERIMENT (exp/crayon-i20-idle-shadow): refresh stale crayon shadows
-  // once the child's fingers are up, so the composited-canvas reads land
-  // between strokes instead of inside a drawing frame. Skipped if a new
-  // stroke has already started; that pass pays one synchronous read.
-  scheduleIdle(() => {
-    if (activePointers.size === 0) refreshPendingCrayonShadows();
+  // two frames after the lift — between-stroke time is free for the
+  // in-contact gate, and Safari's scheduleIdle fallback demands 300 ms of
+  // input quiet that a fast scribbler never grants. Skipped if a new stroke
+  // has already started; that pass pays one synchronous read as fallback.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (activePointers.size === 0) refreshPendingCrayonShadows();
+    });
   });
 }
 
