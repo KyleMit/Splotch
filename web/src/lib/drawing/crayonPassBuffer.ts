@@ -445,9 +445,14 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
       const h = b.y1 - b.y0;
       target.save();
       target.setTransform(1, 0, 0, 1, 0, 0);
-      stampSubtractiveGlaze(target, getCrayonMix(), () => {
-        target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
-      });
+      // PROBE P1: the SAME two blits with no blend mode and no alpha, so the
+      // only difference from the shipped bake is `darken` + `globalAlpha`.
+      // Wrong pixels over existing ink; this build exists to price the blend
+      // mode, never to ship.
+      target.globalCompositeOperation = 'source-over';
+      target.globalAlpha = 1;
+      target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
+      target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
       target.restore();
     }
     clearCrayonBounds(buf);
