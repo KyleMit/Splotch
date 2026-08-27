@@ -68,6 +68,14 @@ export function createTiledUndoPatches() {
     });
   }
 
+  // TRIAL T9: the deferred crayon pipeline seeds its under shadow from the
+  // snapshot this module already captured, so crayon never reads the
+  // composited tile itself. Only meaningful before crop().
+  function peek(command: StrokeGroupCommand, index: number): HTMLCanvasElement | null {
+    const snapshot = byCommand.get(command)?.get(index);
+    return snapshot && !snapshot.cropped ? snapshot.canvas : null;
+  }
+
   function crop(command: StrokeGroupCommand) {
     const snapshots = byCommand.get(command);
     if (!snapshots) return;
@@ -109,6 +117,7 @@ export function createTiledUndoPatches() {
   }
 
   return {
+    peek,
     capture,
     crop,
     bytes,

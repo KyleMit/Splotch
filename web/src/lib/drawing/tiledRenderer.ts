@@ -6,6 +6,7 @@ import type { MagicSheetSnapshot } from './magicBrush';
 import type { PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { isCrayonInkOp, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
+import { setCrayonReplayContext, setCrayonUnderProvider } from './crayonPassBuffer';
 import { MAX_UNDO_DEPTH, type RecordedPaperState } from './undoHistory';
 import {
   geometryIntersectsTile,
@@ -79,6 +80,16 @@ const tiledContextRecovery = createTiledContextRecovery(
   () => repaintTiledRenderer(),
   () => historyBase
 );
+
+// TRIAL T9: the deferred crayon pipeline's under source — the undo system's
+// own pre-command snapshot for live tiles, so crayon adds zero tile reads.
+setCrayonUnderProvider((target) => {
+  const index = liveTiles.findIndex((tile) => tile.ctx === target);
+  if (index < 0) return { kind: 'offscreen' };
+  if (!activeCommand || activeCommand.wasEmpty) return { kind: 'blank' };
+  const patch = undoPatches.peek(activeCommand, index);
+  return patch ? { kind: 'patch', canvas: patch } : { kind: 'blank' };
+});
 
 export function adoptTiledRenderer(
   canvasElement: HTMLCanvasElement,
@@ -323,7 +334,12 @@ function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = fal
   const paper = host?.paperSize();
   if (!paper) return;
   clipTilesToPaper(liveTiles, paper);
-  for (const op of command.ops) renderTiledOpForCommand(op, captureUndo ? command : null);
+  setCrayonReplayContext(true);
+  try {
+    for (const op of command.ops) renderTiledOpForCommand(op, captureUndo ? command : null);
+  } finally {
+    setCrayonReplayContext(false);
+  }
   restoreTileContexts(liveTiles);
   if (captureUndo) undoPatches.crop(command);
 }

@@ -333,6 +333,49 @@ export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
   blankAtPassOpen.add(target);
 }
 
+// TRIAL T9: where a deferred pass's under pixels come from, WITHOUT crayon
+// ever reading the composited tile (the WKWebView's measured poison):
+//   'patch'      — the undo system's pre-command snapshot (it already paid
+//                  the read; blank commands capture nothing and are virgin)
+//   'offscreen'  — the target is not a live tile (history base, export):
+//                  reading it directly is safe
+// A repaint replay flips replayContext: direct reads are acceptable off the
+// gesture path.
+type CrayonUnderSource =
+  | { kind: 'patch'; canvas: HTMLCanvasElement }
+  | { kind: 'blank' }
+  | { kind: 'offscreen' };
+let underProvider: (target: CanvasRenderingContext2D) => CrayonUnderSource = () => ({
+  kind: 'offscreen',
+});
+let replayContext = false;
+
+export function setCrayonUnderProvider(
+  provider: (target: CanvasRenderingContext2D) => CrayonUnderSource
+) {
+  underProvider = provider;
+}
+
+export function setCrayonReplayContext(active: boolean) {
+  replayContext = active;
+}
+
+function seedUnderFromCanvas(buf: CrayonPassBuffer, source: HTMLCanvasElement) {
+  if (!buf.under) {
+    const c = document.createElement('canvas');
+    c.width = source.width;
+    c.height = source.height;
+    buf.under = c.getContext('2d')!;
+  } else if (buf.under.canvas.width !== source.width || buf.under.canvas.height !== source.height) {
+    buf.under.canvas.width = source.width;
+    buf.under.canvas.height = source.height;
+  } else {
+    buf.under.clearRect(0, 0, source.width, source.height);
+  }
+  buf.under.drawImage(source, 0, 0);
+  buf.underValid = true;
+}
+
 // The renderer's one-call seam for a crayon ink op's tile visibility: plane
 // deposition previews on the composited planes, so the tile must stay as it
 // was (returns false); restamp deposition mutates the tile directly, so it is
@@ -418,6 +461,8 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   buf.bounds = null;
   buf.dirty = false;
   buf.virgin = false;
+  // A pending post-lift stamp describes pixels this reset just invalidated.
+  buf.pendingStamp = null;
   if (depositionMode === 'planes') {
     buf.ctx.canvas.hidden = true;
     if (buf.mirror) buf.mirror.canvas.hidden = true;
@@ -562,7 +607,12 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
       settlePendingStamp(target, buf);
       buf.virgin = blankAtPassOpen.has(target);
       blankAtPassOpen.delete(target);
-      if (!buf.virgin) captureUnderSnapshot(buf, target);
+      if (!buf.virgin) {
+        const source = replayContext ? { kind: 'offscreen' as const } : underProvider(target);
+        if (source.kind === 'patch') seedUnderFromCanvas(buf, source.canvas);
+        else if (source.kind === 'offscreen') captureUnderSnapshot(buf, target);
+        else buf.virgin = true;
+      }
     }
     paintCrayon(buf.ctx, op);
     paintCrayon(target, op);

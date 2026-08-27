@@ -189,8 +189,13 @@ describe('deferred deposition (the WKWebView pipeline, ADR-0147)', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('applies the glaze once at pass close across all transformed corners', () => {
+  it('stashes the glaze at close and stamps it two frames after the lift', () => {
     configureCrayonDeposition('deferred');
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
     const target = context2d();
     const matrix = new DOMMatrix([1, 1, 1, -1, 100, 100]);
     (target as unknown as { getTransform: () => DOMMatrix }).getTransform = () => matrix;
@@ -198,15 +203,21 @@ describe('deferred deposition (the WKWebView pipeline, ADR-0147)', () => {
     renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
     flushCrayonBuffer(target);
 
-    // Close-time restore-and-stamp: the under snapshot plus the two glaze
-    // blits, every one covering the pass's transformed corner union.
+    // Nothing lands on the composited target inside the contact window —
+    // the stamp waits for the post-lift frames.
     const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(0);
+    while (frames.length) frames.shift()!(0);
+
+    // The settle: the under restore plus the two glaze blits, every one
+    // covering the pass's transformed corner union.
     expect(calls).toHaveLength(3);
     for (const call of calls) {
       const [source, sx, sy, sw, sh, dx, dy, dw, dh] = call;
       expect(source).toBeInstanceOf(HTMLCanvasElement);
       expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([106, 86, 28, 28, 106, 86, 28, 28]);
     }
+    vi.unstubAllGlobals();
   });
 
   it('a virgin pass closes without any stamp — the direct wax already is the glaze', () => {
