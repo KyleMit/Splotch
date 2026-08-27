@@ -6,11 +6,11 @@
       "file": "ipad-device-native-crayon.json",
       "target": "ipad-device-native",
       "brush": "crayon",
-      "mode": "PORTRAIT-light",
+      "mode": "LANDSCAPE-light",
       "fidelityPassed": true,
-      "source": "ipad-device-native/baseline-planes-s1/crayon-real-screen.json",
-      "candidateCount": 26,
-      "passingCandidateCount": 26,
+      "source": "ipad-device-native/landscape-s1/crayon-real-screen.json",
+      "candidateCount": 8,
+      "passingCandidateCount": 8,
       "failedCandidateCount": 0
     },
     {
@@ -19,7 +19,7 @@
       "brush": "pen",
       "mode": "PORTRAIT-light",
       "fidelityPassed": true,
-      "source": "ipad-device-native/d5-glaze-direct-pen-control/pen-real-screen.json",
+      "source": "ipad-device-native/pen-control/pen-real-screen.json",
       "candidateCount": 1,
       "passingCandidateCount": 1,
       "failedCandidateCount": 0
