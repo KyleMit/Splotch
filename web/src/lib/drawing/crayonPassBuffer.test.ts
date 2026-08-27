@@ -12,6 +12,7 @@ import {
   crayonBufferIsDirty,
   flushCrayonBuffer,
   noteCrayonTargetBlank,
+  resetCrayonStateForClear,
   setCrayonBufferForTarget,
   setCrayonUnderProvider,
 } from './crayonPassBuffer';
@@ -246,6 +247,66 @@ describe('deferred deposition (the WKWebView pipeline, ADR-0147)', () => {
     const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
     expect(calls).toHaveLength(0);
     expect(crayonBufferIsDirty(target)).toBe(false);
+  });
+
+  it('a reset cancels a stamp still pending, so undone pixels cannot reappear', () => {
+    configureCrayonDeposition('deferred');
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const patch = document.createElement('canvas');
+    patch.width = 300;
+    patch.height = 300;
+    setCrayonUnderProvider(() => ({ kind: 'patch', canvas: patch }));
+
+    const target = context2d();
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    renderOp(target, { kind: 'crayonFlush', final: true });
+
+    // Undo/clear/repaint all replace the tile's pixels through this reset. The
+    // pass is already closed (not dirty), so cancellation cannot depend on the
+    // dirty flag.
+    resetCrayonStateForClear(target);
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    while (frames.length) frames.shift()!(0);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('a cancelled pass leaves no wax behind for the next pass to stamp', () => {
+    configureCrayonDeposition('deferred');
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const patch = document.createElement('canvas');
+    patch.width = 300;
+    patch.height = 300;
+    setCrayonUnderProvider(() => ({ kind: 'patch', canvas: patch }));
+
+    const target = context2d();
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    renderOp(target, { kind: 'crayonFlush', final: true });
+    resetCrayonStateForClear(target);
+    while (frames.length) frames.shift()!(0);
+
+    // The cancelled pass's wax must be gone from the buffer, not merely
+    // unscheduled: the next pass stamps its own bounds out of that buffer.
+    renderOp(target, crayonDot({ x: 200, y: 200, radius: 5 }));
+    renderOp(target, { kind: 'crayonFlush', final: true });
+    while (frames.length) frames.shift()!(0);
+
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    // Only the second pass's own rect is restored+stamped (3 blits), all of
+    // them over its own bounds — never the cancelled pass's rect.
+    expect(calls).toHaveLength(3);
+    for (const call of calls) {
+      const [, sx, sy] = call as [unknown, number, number];
+      expect(sx).toBeGreaterThan(100);
+      expect(sy).toBeGreaterThan(100);
+    }
   });
 
   it('a direct flush closes synchronously for export and foreign-op ordering', () => {

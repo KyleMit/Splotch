@@ -21,6 +21,7 @@ import {
   undoTiledCommand,
 } from './tiledRenderer';
 import { installTiledRendererTestHarness, rendererElements } from './tiledRendererTestHarness';
+import { configureCrayonDeposition } from './crayonPassBuffer';
 
 vi.mock('./crayonBrush', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./crayonBrush')>()),
@@ -365,6 +366,81 @@ describe('idle tiled canvas visibility', () => {
       previousBytes = bytes;
     }
     expect(captureFrames).toBe(4);
+  });
+
+  it('an undone deferred crayon stroke cannot reappear two frames later', () => {
+    configureCrayonDeposition('deferred');
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const drain = () => {
+      while (frames.length) frames.shift()!(0);
+    };
+    const crayonStroke = (seed: number, wasEmpty: boolean) => {
+      beginTiledCommand(wasEmpty);
+      const dot: StrokeOp = {
+        kind: 'dot',
+        x: 50,
+        y: 50,
+        radius: 5,
+        color: '#ff0000',
+        erase: false,
+        crayon: true,
+        seed,
+      };
+      renderTiledOp(dot);
+      recordTiledOp(dot);
+      const close: StrokeOp = { kind: 'crayonFlush', final: true };
+      renderTiledOp(close);
+      recordTiledOp(close);
+      commitTiledCommand();
+      drain();
+    };
+
+    // First stroke onto blank paper, then a second over that ink — the second
+    // is the non-virgin pass that arms a deferred stamp.
+    crayonStroke(1, true);
+    crayonStroke(2, false);
+    const tile = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')].find(
+      (candidate) => !candidate.hidden
+    )!;
+
+    beginTiledCommand(false);
+    const dot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#00ff00',
+      erase: false,
+      crayon: true,
+      seed: 3,
+    };
+    renderTiledOp(dot);
+    recordTiledOp(dot);
+    const close: StrokeOp = { kind: 'crayonFlush', final: true };
+    renderTiledOp(close);
+    recordTiledOp(close);
+    commitTiledCommand();
+
+    // Undo lands inside the stamp's two-frame window: the restore must win,
+    // and the pending stamp must never repaint the undone wax.
+    undoTiledCommand(1);
+    const context = vi.mocked(tile.getContext('2d')!);
+    const blitsAfterUndo = context.drawImage.mock.calls.length;
+    drain();
+    expect(context.drawImage.mock.calls.length).toBe(blitsAfterUndo);
+
+    configureCrayonDeposition('restamp');
   });
 
   it('drops an open crayon pass when the paper is cleared', () => {

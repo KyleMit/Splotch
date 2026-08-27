@@ -577,11 +577,30 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
 // shadow is marked stale and left on the scheduled drain, which skips
 // still-hidden (blank) targets rather than reading them.
 export function resetCrayonStateForClear(target: CanvasRenderingContext2D) {
+  // Either of those replaces the pixels a pending stamp was computed against,
+  // so disarm it before anything else — and independently of `dirty`, since a
+  // closed-but-unstamped pass is exactly the state that is NOT dirty.
+  const existing = existingBufferFor(target);
+  if (existing) cancelPendingStamp(existing);
   dropCrayonBuffer(target);
   const buf = existingBufferFor(target);
   if (!buf) return;
   buf.underValid = false;
   markShadowStale(target);
+}
+
+// Disarm a stamp still pending from a closed pass, and drop the wax it was
+// going to stamp. Both halves matter: the scheduled callback bails on a null
+// token, and the buffer must not keep that pass's wax, because the next pass
+// stamps its own bounds out of the same buffer.
+function cancelPendingStamp(buf: CrayonPassBuffer) {
+  const pending = buf.pendingStamp;
+  if (!pending) return;
+  buf.pendingStamp = null;
+  buf.ctx.save();
+  buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  buf.ctx.clearRect(pending.x0, pending.y0, pending.x1 - pending.x0, pending.y1 - pending.y0);
+  buf.ctx.restore();
 }
 
 // Discard the target's open pass without stamping — a 'clear' wipes everything,

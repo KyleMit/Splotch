@@ -51,24 +51,47 @@ undo system's own pre-command tile snapshot (crayon adds zero composited-tile re
 capture no patch and are exactly the virgin passes needing no under); `crayonFlush` ops carry a
 `final` flag, so checkpoints and scribble splits are pure seed boundaries and only the closing flush
 stamps the glaze — two frames after the lift, off the in-contact window, followed by a one-pixel
-readback that forces WebKit to flush the stamp's command buffer (idle time never flushes it; only a
-read does, and an unflushed stamp taxes the next stroke's undo capture in-contact: 1.7% against
-0.37% flushed). Direct `flushCrayonBuffer` calls (export, a foreign op compositing over the open
-pass) close synchronously, and offscreen targets and repaint replays bypass the deferral.
+readback. Direct `flushCrayonBuffer` calls (export, a foreign op compositing over the open pass)
+close synchronously; offscreen targets and repaint replays bypass the deferral; and any reset that
+replaces the tile's pixels (undo patch restore, clear, repaint) cancels a stamp still pending,
+because a closed-but-unstamped pass is precisely the state the `dirty` flag no longer marks.
 
-Native trial ladder (physical iPad, trusted XCUITest touch, comparative — the native instrument is
-fidelity-uncalibrated per ADR-0139): planes 1.24% lost → deferred with pass-open tile reads 2.8 →
-stroke-cadence 3.0 → post-lift stamp unflushed 3.5 → patch-shared under 1.7 → plus forced flush
-**0.22–0.46% against a 0.01–0.05% native pen floor**. Four WKWebView rules earned: pattern strokes
-and detached-canvas work are free while any tile-involving blit at pass cadence costs ~1.4 points; a
-composited-tile read is priced by the unflushed work before it; only reads flush the command buffer;
-the undo snapshot is a free under source.
+**The readback's effect is measured; its mechanism is not.** Without it the same build costs 1.7%
+and with it 0.37%, and the cost lands on the *next* stroke's undo capture rather than on the stamp.
+The explanation — that WebKit defers the stamp's canvas work until something forces a flush, and
+that a read is what forces it — is a hypothesis consistent with those timings. A 75-second Time
+Profiler capture over a 19-stroke native session (recorded in PR 1414's review) showed App,
+WebContent, GPU, remote-image-buffer and generic flush stacks, but no sampled readback frame tying
+the 1-px call to the next capture. Treat the workaround as empirically justified and mechanistically
+unexplained; its durability across WebKit versions rests on the part that is not established.
 
-Visual concession, pending the issue-1372-style human pass: over existing ink the live preview is
-unmixed opaque wax and the exact glaze appears at the post-lift stamp; over blank paper — the
-dominant toddler case — pixels are byte-exact throughout. The plane pipeline remains in the
-`configureCrayonDeposition` seam as the measured, unit-tested fallback; removing it (and the
-vestigial plane elements) is the follow-up once deferred soaks.
+Native trial ladder (physical iPad, trusted XCUITest touch): planes 1.24% lost → deferred with
+pass-open tile reads 2.8 → stroke-cadence 3.0 → post-lift stamp unflushed 3.5 → patch-shared under
+1.7 → plus forced flush **0.22–0.46% against a 0.01–0.05% native pen floor**. These are
+**same-instrument comparative** numbers, not release-gate scores:
+[ADR-0144](0144-coalescing-is-a-witness-not-a-check.md) retired `ios-capacitor-webview`'s last
+uncalibrated check — every capture here records `passed: true`, `uncalibrated: []`, coalescing not
+applicable — so the limitation is gate class (the matrix reserves the calibrated release gate for
+Safari), not a calibration gap. Three WKWebView rules earned: pattern strokes and detached-canvas
+work are free while any tile-involving blit at pass cadence costs ~1.4 points; a composited-tile
+read is priced by the unflushed work before it; the undo snapshot is a free under source.
+
+**Visual concession, gating activation:** over existing ink the live preview is unmixed opaque wax
+and the exact glaze appears at the post-lift stamp; over blank paper — the dominant toddler case —
+pixels are byte-exact throughout. Automation cannot close this, and the campaign's own history says
+why: its broken blank renderer scored 0.00% with passing input fidelity. A person must draw on the
+device and judge the over-ink behaviour (blue over yellow, and a long stroke crossing a wax
+checkpoint) before this pipeline is activated. Until that sign-off exists the plane pipeline remains
+native's default; the deferred pipeline lands behind the `configureCrayonDeposition` seam as
+measured, unit-tested, inactive code.
+
+**Unmet productization condition, recorded rather than inherited:**
+[ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) requires its repeated live-surface grid sweep
+to be re-run after any renderer or brush-buffer change, and this decision is both. The 4×4 grid was
+selected when every tile carried three live canvases and crayon mutated two of them per op; both
+pipelines here delete that hot-path cost, so the old 2×1/3×1/2×2/4×4 ordering does not establish the
+optimum under restamp or deferred deposition. The grid is carried forward **unverified** for these
+pipelines. Re-run that sweep before treating either topology as settled.
 
 The original decision text below records the state this amendment supersedes. The pipeline is
 injected through `configureCrayonDeposition` in `web/src/lib/drawing/crayonPassBuffer.ts` — vitest
