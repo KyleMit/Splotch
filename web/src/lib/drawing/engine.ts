@@ -73,7 +73,10 @@ import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer
 // 'deferred' is the measured native optimum (ADR-0147) but stays INACTIVE
 // until a person judges its over-ink behaviour on the device — swap the
 // native literal below after that sign-off.
-configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp', () => activePointers.size > 0);
+configureCrayonDeposition(
+  __IS_CAPACITOR__ ? 'planes-deferred' : 'restamp',
+  () => activePointers.size > 0
+);
 import {
   setCrayonOptions,
   crayonColorMix,

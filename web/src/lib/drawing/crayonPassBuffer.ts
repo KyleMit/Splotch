@@ -94,7 +94,7 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
 // the pass bounds from a pass-open under snapshot and stamping the buffer.
 // Over blank tiles the direct wax already equals the glaze, so virgin passes
 // skip both the snapshot and the close-time stamp.
-type CrayonDepositionMode = 'restamp' | 'planes' | 'deferred';
+type CrayonDepositionMode = 'restamp' | 'planes' | 'deferred' | 'planes-deferred';
 
 // A dependency rather than a compile-time literal for the same reason as
 // ADR-0146's granularity seam: vitest pins __IS_CAPACITOR__ true and would
@@ -125,8 +125,15 @@ export function configureCrayonDeposition(
 
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
 // renderer uses this to decide tile visibility and plane backing allocation.
+// Both plane pipelines preview on the composited planes, so the tile must
+// keep its pre-pass pixels while a pass is open. They differ only in WHEN the
+// bake lands, never in what the child sees.
+function usesPreviewPlanes() {
+  return depositionMode === 'planes' || depositionMode === 'planes-deferred';
+}
+
 export function crayonDepositsOnTiles() {
-  return depositionMode !== 'planes';
+  return !usesPreviewPlanes();
 }
 
 interface CrayonPassBuffer {
@@ -170,7 +177,7 @@ export function setCrayonBufferForTarget(
 ) {
   buffer.canvas.hidden = true;
   mirror.canvas.hidden = true;
-  if (depositionMode !== 'planes') return;
+  if (!usesPreviewPlanes()) return;
   bufferByTarget.set(target, {
     ctx: buffer,
     mirror,
@@ -337,6 +344,10 @@ function restampRect(
 // fold, export replay) and repaint replays close synchronously — nothing
 // there is racing a finger.
 export function closeCrayonPassOp(target: CanvasRenderingContext2D, final: boolean) {
+  if (depositionMode === 'planes-deferred') {
+    closeDeferredPlanePass(target, final);
+    return;
+  }
   if (depositionMode !== 'deferred') {
     flushCrayonBuffer(target);
     return;
@@ -367,6 +378,38 @@ export function closeCrayonPassOp(target: CanvasRenderingContext2D, final: boole
   });
 }
 
+// The plane pipeline with the BAKE deferred and the preview left alone.
+//
+// A mid-stroke seed boundary does nothing at all: the pass keeps accumulating
+// on the same plane pair under a fresh pattern phase, so the wax builds up as
+// it always did and the child keeps seeing the exact glaze through CSS
+// compositing. Only a pass CLOSE bakes, and it bakes two frames after the
+// lift, outside the contact window the lost-frame metric charges.
+//
+// This is the quadrant campaign one never entered. Its trials all deferred the
+// bake on a DIRECT-PAINT preview, so the mixing itself arrived late and read as
+// a colour glitch; here the mixing was never deferred, only the transfer of
+// already-visible pixels from the planes to the tile.
+function closeDeferredPlanePass(target: CanvasRenderingContext2D, final: boolean) {
+  if (!final) return;
+  const buf = existingBufferFor(target);
+  if (!buf || !buf.dirty) return;
+  // Offscreen targets (history-base fold, export replay) have no planes and
+  // no finger to race — close them synchronously.
+  if (!buf.mirror) {
+    flushCrayonBuffer(target);
+    return;
+  }
+  buf.pendingStamp = buf.bounds;
+  buf.bounds = null;
+  buf.dirty = false;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      settlePendingPlaneBake(target, buf);
+    });
+  });
+}
+
 // Apply a closed pass's deferred glaze — restore + stamp over the stashed
 // bounds, force WebKit to flush the stamp's command buffer while we are
 // still between strokes (idle time does not flush it, only a read does, and
@@ -391,6 +434,43 @@ function settlePendingStamp(target: CanvasRenderingContext2D, buf: CrayonPassBuf
   buf.underValid = false;
 }
 
+// Stamp a plane pass into the tile as the two-blit glaze. Buffer and target
+// share backing dimensions and ops were painted through the target's own
+// transform, so the blits are 1:1 rect copies in device space.
+function bakePlanePassIntoTile(
+  target: CanvasRenderingContext2D,
+  buf: CrayonPassBuffer,
+  bounds: { x0: number; y0: number; x1: number; y1: number } | null
+) {
+  if (!bounds) return;
+  const w = bounds.x1 - bounds.x0;
+  const h = bounds.y1 - bounds.y0;
+  target.save();
+  target.setTransform(1, 0, 0, 1, 0, 0);
+  stampSubtractiveGlaze(target, getCrayonMix(), () => {
+    target.drawImage(buf.ctx.canvas, bounds.x0, bounds.y0, w, h, bounds.x0, bounds.y0, w, h);
+  });
+  target.restore();
+}
+
+// Land a plane pass's deferred bake and retire its planes in the same turn.
+// The planes were showing exactly these pixels through CSS compositing, so
+// the tile gaining them as the planes clear is a swap the eye cannot see —
+// which is the whole reason this pipeline can defer at all.
+function settlePendingPlaneBake(target: CanvasRenderingContext2D, buf: CrayonPassBuffer) {
+  const pending = buf.pendingStamp;
+  if (!pending) return;
+  buf.pendingStamp = null;
+  bakePlanePassIntoTile(target, buf, pending);
+  // TRIAL T10: force WebKit to flush the bake's command buffer NOW, while we
+  // are still between strokes. Deferring the bake without this merely moves
+  // its cost onto the next stroke's undo capture, in contact (T8: 3.5%).
+  target.getImageData(pending.x0, pending.y0, 1, 1);
+  buf.bounds = pending;
+  buf.dirty = true;
+  clearCrayonBounds(buf);
+}
+
 // A CLOSED pass whose deferred glaze has not landed yet still owes the target
 // its committed pixels. Clear takes an undo snapshot of the tile, so that debt
 // must be paid before the snapshot — otherwise the snapshot preserves pre-glaze
@@ -401,7 +481,9 @@ function settlePendingStamp(target: CanvasRenderingContext2D, buf: CrayonPassBuf
 // must not resurrect wiped wax (ADR-0068), which is what dropping it achieves.
 export function settleClosedCrayonPass(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
-  if (buf) settlePendingStamp(target, buf);
+  if (!buf) return;
+  if (depositionMode === 'planes-deferred') settlePendingPlaneBake(target, buf);
+  else settlePendingStamp(target, buf);
 }
 
 // Tiles the renderer observed to be blank when a crayon op arrived — consumed
@@ -463,7 +545,7 @@ function seedUnderFromCanvas(buf: CrayonPassBuffer, source: HTMLCanvasElement) {
 // shown like any ink op — and a still-hidden tile is blank
 // (prepareTileForMutation has run), which is what opens the virgin fast path.
 export function crayonOpShowsTile(target: CanvasRenderingContext2D, targetHidden: boolean) {
-  if (depositionMode === 'planes') return false;
+  if (usesPreviewPlanes()) return false;
   if (targetHidden) blankAtPassOpen.add(target);
   return true;
 }
@@ -544,7 +626,7 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   buf.virgin = false;
   // A pending post-lift stamp describes pixels this reset just invalidated.
   buf.pendingStamp = null;
-  if (depositionMode === 'planes') {
+  if (usesPreviewPlanes()) {
     buf.ctx.canvas.hidden = true;
     if (buf.mirror) buf.mirror.canvas.hidden = true;
   }
@@ -583,18 +665,8 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
     return;
   }
   if (!buf.dirty) return;
-  if (depositionMode === 'planes') {
-    const b = buf.bounds;
-    if (b) {
-      const w = b.x1 - b.x0;
-      const h = b.y1 - b.y0;
-      target.save();
-      target.setTransform(1, 0, 0, 1, 0, 0);
-      stampSubtractiveGlaze(target, getCrayonMix(), () => {
-        target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
-      });
-      target.restore();
-    }
+  if (usesPreviewPlanes()) {
+    bakePlanePassIntoTile(target, buf, buf.bounds);
     clearCrayonBounds(buf);
     return;
   }
@@ -629,6 +701,16 @@ function cancelPendingStamp(buf: CrayonPassBuffer) {
   const pending = buf.pendingStamp;
   if (!pending) return;
   buf.pendingStamp = null;
+  if (usesPreviewPlanes()) {
+    // Here the buffer IS the bottom preview plane and there is a mirror beside
+    // it, both still composited over the tile because a deferred bake leaves
+    // them up. Clearing only the buffer would retire half the preview and
+    // leave the mirror showing the wax the undo just discarded.
+    buf.bounds = pending;
+    buf.dirty = true;
+    clearCrayonBounds(buf);
+    return;
+  }
   buf.ctx.save();
   buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
   buf.ctx.clearRect(pending.x0, pending.y0, pending.x1 - pending.x0, pending.y1 - pending.y0);
@@ -657,7 +739,13 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   const buf = crayonBufferFor(target);
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
-  if (depositionMode === 'planes') {
+  if (usesPreviewPlanes()) {
+    // A pass opening while an earlier pass's bake is still pending must land
+    // that bake FIRST: both passes share one plane pair, so the new wax would
+    // otherwise join the old pass's pixels and be glazed with it as a single
+    // pass. Synchronous, and it only fires when strokes arrive closer together
+    // than the two-frame settle.
+    if (!buf.dirty) settlePendingPlaneBake(target, buf);
     buf.ctx.canvas.hidden = false;
     if (buf.mirror) buf.mirror.canvas.hidden = false;
     paintCrayon(buf.ctx, op);
