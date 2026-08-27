@@ -973,6 +973,14 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       appUrl,
       transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
       theme,
+      // The brush the ENGINE committed, not the one requested — the selection
+      // above polls __committedBrushMode and throws unless they agree, so by
+      // here they do. Recorded because a reader that cannot find it falls back
+      // to guessing from the path, and `brushOf` guesses 'pen' (issue 1305's
+      // rescore path). A crayon capture whose label carried no brush token was
+      // therefore filed as pen and dropped by the one-per-target-x-brush
+      // retention, silently, on 2026-08-27.
+      brush,
       // Same top-level home the split artifact uses for these fields, so the
       // shared reader needs no second location (the review caught gesturePlan
       // reproducing the gestureRepeats top-level/automation split).
