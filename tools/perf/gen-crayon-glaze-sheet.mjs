@@ -29,10 +29,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // The candidates worth looking at, bracketing the shipped default. 0.45 is the
 // pass-cadence `1 - colorMix` reused per op — the first thing tried, and the
 // one a reader is most likely to reach for again.
-const DEFAULT_RETURNS = [0.03, 0.06, 0.1, 0.16, 0.25, 0.45];
+const DEFAULT_RETURNS = [0.04, 0.06, 0.08, 0.1, 0.14, 0.18, 0.24, 0.45];
 // How many times the crossing colour is drawn over the underlying band. One is
 // the first crossing; the rest are a child going back over it.
-const DEFAULT_PASSES = [1, 2, 3, 5];
+const DEFAULT_PASSES = [1, 2, 3, 5, 8];
 
 const CELL_PX = 190;
 const STROKE_WIDTH_PX = 26;
@@ -69,9 +69,9 @@ function parseList(value, fallback) {
 // Returns the measured crossing colour beside the image. The whole point of the
 // sweep is a colour, and an eyeballed thumbnail cannot be compared across twenty
 // cells — `pixelsIn` reads what the glaze actually produced.
-async function renderCell(page, { glazeReturn, passes, under, over }) {
+async function renderCell(page, { mode, glazeReturn, passes, under, over }) {
   return page.evaluate(
-    ({ glazeReturn, passes, under, over, width, CROSSING_SAMPLE_HALF_PX }) => {
+    ({ mode, glazeReturn, passes, under, over, width, CROSSING_SAMPLE_HALF_PX }) => {
       const engine = window.__engine;
       const canvas = document.getElementById('drawingCanvas');
       const w = canvas.clientWidth;
@@ -83,8 +83,8 @@ async function renderCell(page, { glazeReturn, passes, under, over }) {
       engine.clearCanvas();
       engine.setCrayonMode(true);
       engine.setStrokeWidth(width);
-      engine.setCrayonDeposition('glaze-direct');
-      engine.setCrayonParams({ perOpGlazeReturn: glazeReturn });
+      engine.setCrayonDeposition(mode);
+      if (glazeReturn !== null) engine.setCrayonParams({ perOpGlazeReturn: glazeReturn });
 
       const line = (from, to) =>
         Array.from({ length: 41 }, (_, i) => ({
@@ -129,7 +129,7 @@ async function renderCell(page, { glazeReturn, passes, under, over }) {
       });
       return { rgb, centre: { x: midX, y: midY } };
     },
-    { glazeReturn, passes, under, over, width: STROKE_WIDTH_PX, CROSSING_SAMPLE_HALF_PX }
+    { mode, glazeReturn, passes, under, over, width: STROKE_WIDTH_PX, CROSSING_SAMPLE_HALF_PX }
   );
 }
 
@@ -157,11 +157,21 @@ export async function generateGlazeSheet() {
     await page.goto(`${url}/dev/engine`);
     await page.waitForFunction(() => Boolean(window.__engine));
 
+    // The web pipeline first, as the row every candidate is being judged against.
+    // Without it the sheet shows how the values differ from EACH OTHER and not
+    // how any of them differ from the appearance that already ships.
     const cells = [];
-    for (const glazeReturn of returns) {
+    for (const arm of [{ label: 'web', mode: 'restamp', glazeReturn: null }].concat(
+      returns.map((glazeReturn) => ({
+        label: String(glazeReturn),
+        mode: 'glaze-direct',
+        glazeReturn,
+      }))
+    )) {
+      const { label, mode, glazeReturn } = arm;
       const row = [];
       for (const passes of passCounts) {
-        const { rgb, centre } = await renderCell(page, { glazeReturn, passes, under, over });
+        const { rgb, centre } = await renderCell(page, { mode, glazeReturn, passes, under, over });
         // The centre is in CANVAS coordinates; page.screenshot clips in viewport
         // coordinates, so the canvas's own box has to be added or every cell is
         // cropped from the wrong place.
@@ -178,7 +188,7 @@ export async function generateGlazeSheet() {
           }),
         });
       }
-      cells.push({ glazeReturn, row });
+      cells.push({ label, row });
     }
 
     mkdirSync(join(ROOT, outDir), { recursive: true });
@@ -199,8 +209,8 @@ function renderSheetHtml(cells, passCounts) {
   const header = passCounts.map((n) => `<th>${n} pass${n === 1 ? '' : 'es'} of blue</th>`).join('');
   const rows = cells
     .map(
-      ({ glazeReturn, row }) =>
-        `<tr><th class="v">${glazeReturn}</th>${row
+      ({ label, row }) =>
+        `<tr class="${label === 'web' ? 'ref' : ''}"><th class="v">${label}</th>${row
           .map(
             ({ png, rgb }) =>
               `<td><img alt="" src="data:image/png;base64,${png.toString('base64')}">` +
@@ -215,6 +225,8 @@ function renderSheetHtml(cells, passCounts) {
   table { border-collapse: collapse; }
   th, td { padding: 6px; text-align: center; }
   th.v { font-variant-numeric: tabular-nums; }
+  tr.ref { background: #eef3ff; }
+  tr.ref th.v { font-weight: 700; }
   code { display: block; font-size: 12px; color: #666; padding-top: 4px; }
   img { display: block; width: ${CELL_PX}px; height: ${CELL_PX}px; border: 1px solid #ddd; }
   p { max-width: 60ch; line-height: 1.5; }
@@ -223,6 +235,9 @@ function renderSheetHtml(cells, passCounts) {
 <p>Yellow drawn first, then blue across it. Down the rows the per-op return rises, so the first
 crossing keeps more of the crayon's own colour. Across the columns the blue is redrawn, so each row
 shows how fast that value walks the crossing toward blue.</p>
+<p>The highlighted top row is the <strong>web pipeline</strong> — the appearance that ships today on
+Safari, glazed once per pass. It is the reference each candidate below is trying to resemble, not
+another candidate.</p>
 <p>The number under each cell is the median rgb at the crossing. Read the TREND along a row or a
 column, not a single cell: the wax is a binary tooth, so which pits fall in the sample window varies
 with the pattern seed and an individual value carries real variance.</p>
