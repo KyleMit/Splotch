@@ -68,3 +68,35 @@ Attribution:
   committed, never that pixels appeared. Module repaired, deferred contracts pinned by unit tests
   (per-op zero blits; close-time 3-blit corner-union stamp; virgin closes stampless), recapture
   below.
+
+## Trial results
+
+| Trial | lost % samples | median | paint max | verdict |
+| --- | --- | --- | --- | --- |
+| T1 first round | 0.00 / 0.00 / 0.01 | — | 26–28 | **DISCARDED** — build painted nothing (see above) |
+| T1B repaired deferred-glaze | 2.75 / 2.87 / 2.81 | 2.81 | 58–81 | REJECT — worse than planes; pen control 0.05% |
+
+T1B attribution question: the delta over a4's 0.02% comes from (a) the pass-open composited-tile
+read, (b) the close-time pass-bounds restore+stamp blits, or (c) per-op pattern painting into a
+DETACHED buffer canvas. Prior evidence de-weights (a): the undo machinery reads the tile once per
+command for every brush and native pen still measures 0.01–0.05%. Prime suspect: (c) — a detached
+canvas plausibly gets an unaccelerated backing on the WKWebView, making its per-op pattern strokes
+CPU work, where the same strokes into the tile (a4) and into the ATTACHED plane elements (planes
+pipeline) ride the GPU.
+
+* **T4** (`exp/crayon-native-t4-buffer-write`): a4 + per-op buffer painting only — 0.02 / 0.14%.
+  Detached-buffer writes are FREE; hypothesis (c) refuted.
+* **T2** (`exp/crayon-native-t2-no-read`): deferred with close-stamps kept, read removed —
+  1.44 / 1.56%. Completed arithmetic: close-stamps ≈ 1.4 points, the pass-open read ≈ 1.3 more,
+  and they add to T1B's 2.8.
+* **Retro-revelation:** T2's 1.50 ≈ a3's 1.49 ≈ planes' 1.24 — on the WKWebView the plane
+  pipeline's cost was never the composited planes; it was the SAME pass-cadence flush stamps.
+  The runtime's poison, precisely: canvas blits involving the composited tile at pass cadence, in
+  either direction — while pattern strokes and detached-canvas work are free, and pen's undo
+  machinery proves whole-tile reads at COMMAND cadence cost ~nothing (native pen 0.01–0.05%
+  includes one per command per tile).
+* **T7** (`exp/crayon-native-t7-stroke-cadence`): the cadence fix — read once and stamp once per
+  STROKE (mid-stroke checkpoints/splits neutralized for the trial; productization would keep seed
+  re-phasing while dropping only the mid-stroke stamp, making the glaze once-per-stroke — a
+  semantic simplification, since same-colour buildup is min-idempotent and colour can't change
+  mid-stroke). Pending.
