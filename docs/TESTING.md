@@ -11,7 +11,7 @@ pre-merge blob-encoding guard retired.
 
 | Layer                 | Tool                | Command                             | Runs in CI                                   |
 | --------------------- | ------------------- | ----------------------------------- | -------------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`                 | every push / PR                              |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit:coverage`        | every push / PR                              |
 | Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
 | Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
 | Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer/consumer paths + manual dispatch      |
@@ -29,7 +29,7 @@ A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 integration below. The hosted deploy smoke runs separately against real deployments; its narrower
 `test:blobs:smoke` diagnostic is manual.
 
-`npm test` runs the first five (`test:unit` + `test:asset-gen` + `test:store-drawings` +
+`npm test` runs the first five (`test:unit:coverage` + `test:asset-gen` + `test:store-drawings` +
 `test:tools` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
 they need an emulator/simulator and the native toolchains.
 
@@ -133,10 +133,16 @@ via a mocked `@capacitor/preferences`).
 
 The coverage command uses V8 over every TypeScript module under `web/src`, including unimported
 files at zero coverage; tests, declarations, and explicit `*TestHarness.ts` seams are excluded. The
-ratchet floors are 83% statements, 74% branches, 85% functions, and 86% lines, derived by rounding
-down the measured 83.90% / 74.57% / 85.73% / 86.56% baseline. CI runs this command in place of the
-non-coverage unit command. UI component bodies remain Playwright's layer and are not merged into
-this Vitest-only report.
+committed baseline floors are 83.8% statements, 74.5% branches, 85.6% functions, and 86.4% lines,
+derived from the measured 83.90% / 74.57% / 85.73% / 86.56% baseline and the 0.00–0.06 percentage
+point variance observed between Node 22 and Node 24. They advance through reviewed configuration
+changes rather than rewriting themselves during a test run.
+
+The TypeScript-only denominator is deliberate: `.svelte` component bodies are outside this report,
+even when a Vitest test imports a component's module script. Moving logic from a `.ts` module into a
+`.svelte` file can therefore raise the ratio without adding coverage; a green gate proves the
+committed floor only across the `.ts` surface. Browser and component coverage remain separate and
+are not merged into this Vitest-only report.
 
 Files that need no DOM at all — `lib/server/**` and pure-logic modules — carry a
 `// @vitest-environment node` first line so they skip the per-file happy-dom setup (the suite's
@@ -644,7 +650,7 @@ npm run test:android:device     # re-run as often as you like
 | `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip   |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
-public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` +
+public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:asset-gen` +
 `test:store-drawings` + `test:tools`) run in a browser-free `unit` job, and the Playwright e2e suite
 runs as a matrix in `Tests` — each shard builds the app itself (a shared build artifact was measured
 slower: it serializes shards behind `needs:`), and each uploads its own `playwright-report-shard-N`

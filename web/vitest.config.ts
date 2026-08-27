@@ -29,10 +29,10 @@ export default defineConfig({
       exclude: ['src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*TestHarness.ts'],
       reporter: ['text', 'json-summary'],
       thresholds: {
-        statements: 83,
-        branches: 74,
-        functions: 85,
-        lines: 86,
+        statements: 83.8,
+        branches: 74.5,
+        functions: 85.6,
+        lines: 86.4,
       },
     },
     // Worker threads spawn faster than the default child-process forks and
