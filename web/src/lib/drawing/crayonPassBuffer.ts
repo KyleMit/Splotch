@@ -10,6 +10,7 @@ import {
   getCrayonMix,
 } from './crayonBrush';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
+import { PERF_MARKS } from './perf';
 import type { DotOp, PathOp } from './strokeOps';
 
 // Lay a crayon op down as textured wax: one pass per density band (widest first),
@@ -405,6 +406,7 @@ function closeDeferredPlanePass(target: CanvasRenderingContext2D, final: boolean
   buf.dirty = false;
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
+      planeBakeSite = 'deferred';
       settlePendingPlaneBake(target, buf);
     });
   });
@@ -440,9 +442,11 @@ function settlePendingStamp(target: CanvasRenderingContext2D, buf: CrayonPassBuf
 function bakePlanePassIntoTile(
   target: CanvasRenderingContext2D,
   buf: CrayonPassBuffer,
-  bounds: { x0: number; y0: number; x1: number; y1: number } | null
+  bounds: { x0: number; y0: number; x1: number; y1: number } | null,
+  site: 'deferred' | 'atOpen' | 'sync' = 'sync'
 ) {
   if (!bounds) return;
+  if (PERF_MARKS) performance.measure(`engine.crayonBake.${site}`);
   const w = bounds.x1 - bounds.x0;
   const h = bounds.y1 - bounds.y0;
   target.save();
@@ -457,11 +461,16 @@ function bakePlanePassIntoTile(
 // The planes were showing exactly these pixels through CSS compositing, so
 // the tile gaining them as the planes clear is a swap the eye cannot see —
 // which is the whole reason this pipeline can defer at all.
+// Which call path is landing the bake. Only read by the profiling marks — a
+// capture has to be able to tell a bake that stayed off the contact window
+// from one the next stroke dragged back onto it.
+let planeBakeSite: 'deferred' | 'atOpen' | 'sync' = 'sync';
+
 function settlePendingPlaneBake(target: CanvasRenderingContext2D, buf: CrayonPassBuffer) {
   const pending = buf.pendingStamp;
   if (!pending) return;
   buf.pendingStamp = null;
-  bakePlanePassIntoTile(target, buf, pending);
+  bakePlanePassIntoTile(target, buf, pending, planeBakeSite);
   // TRIAL T10: force WebKit to flush the bake's command buffer NOW, while we
   // are still between strokes. Deferring the bake without this merely moves
   // its cost onto the next stroke's undo capture, in contact (T8: 3.5%).
@@ -666,7 +675,7 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   }
   if (!buf.dirty) return;
   if (usesPreviewPlanes()) {
-    bakePlanePassIntoTile(target, buf, buf.bounds);
+    bakePlanePassIntoTile(target, buf, buf.bounds, 'sync');
     clearCrayonBounds(buf);
     return;
   }
@@ -745,7 +754,10 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     // otherwise join the old pass's pixels and be glazed with it as a single
     // pass. Synchronous, and it only fires when strokes arrive closer together
     // than the two-frame settle.
-    if (!buf.dirty) settlePendingPlaneBake(target, buf);
+    if (!buf.dirty) {
+      planeBakeSite = 'atOpen';
+      settlePendingPlaneBake(target, buf);
+    }
     buf.ctx.canvas.hidden = false;
     if (buf.mirror) buf.mirror.canvas.hidden = false;
     paintCrayon(buf.ctx, op);
