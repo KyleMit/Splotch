@@ -10,7 +10,6 @@ import {
   getCrayonMix,
   getPerOpGlazeReturn,
 } from './crayonBrush';
-import { dev } from '$app/environment';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
 import type { DotOp, PathOp } from './strokeOps';
 
@@ -152,10 +151,16 @@ export function configureCrayonDeposition(
 // reason the pipelines differ. Never read performance off it;
 // tools/perf/gen-crayon-glaze-sheet.mjs is the consumer.
 //
-// The gate is inside the function on purpose: __DEV_HARNESS__ is a client seam,
-// and this module is evaluated during SSR, where a module-scope reference throws.
+// Gated inside the function, and on __DEV_HARNESS__ alone. Both halves are
+// load-bearing. A module-scope reference to that literal throws during SSR,
+// where the server build does not substitute it. And the sibling `dev` check
+// every other seam pairs with it is absent because importing `$app/environment`
+// here is a MODULE-LOAD dependency on the bundler's aliases, which Playwright
+// resolves in a plain Node context and cannot find — it took every E2E shard
+// down. The dev harness sets PUBLIC_ENABLE_DEV_HARNESS explicitly, so the
+// literal alone is sufficient for every caller this has.
 export function setCrayonDepositionForTuning(mode: CrayonDepositionMode) {
-  if (!dev && !__DEV_HARNESS__) return;
+  if (!__DEV_HARNESS__) return;
   configureCrayonDeposition(mode, strokeActiveProbe);
 }
 
