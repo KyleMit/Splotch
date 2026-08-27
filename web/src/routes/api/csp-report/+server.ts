@@ -1,7 +1,7 @@
 import { rateLimit } from '$lib/server/rateLimit';
 import { cspReportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { contentTypeOf, readBodyWithinLimit, throttled } from '$lib/server/http';
+import { asRecord, contentTypeOf, readBodyWithinLimit, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A single page load under a broken policy can fire dozens of violations, so
@@ -97,13 +97,8 @@ function extractViolations(payload: unknown): CspViolation[] {
       .filter(isReportingApiEntry)
       .map((entry) => fromReportingApiPayload(entry.body, entry.url));
   }
-  if (typeof payload === 'object' && payload !== null) {
-    const report = (payload as Record<string, unknown>)['csp-report'];
-    if (typeof report === 'object' && report !== null) {
-      return [fromReportUriPayload(report as Record<string, unknown>)];
-    }
-  }
-  return [];
+  const report = asRecord(asRecord(payload)?.['csp-report']);
+  return report ? [fromReportUriPayload(report)] : [];
 }
 
 /**

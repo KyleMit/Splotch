@@ -37,6 +37,25 @@ function postRaw(contentType: string, body: string) {
   );
 }
 
+/**
+ * A body that fails on any read makes limiter ordering observable: moving the
+ * limiter after body parsing turns the expected 429 into a rejected handler.
+ */
+function postUnreadableBody() {
+  const body = new ReadableStream({
+    start: (controller) => controller.error(new Error('body read before the rate limit')),
+  });
+  return handle(
+    new Request('http://localhost/api/csp-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/csp-report' },
+      body,
+      // A streamed request body needs an explicit duplex, which lib.dom's RequestInit omits.
+      duplex: 'half',
+    } as RequestInit)
+  );
+}
+
 beforeEach(() => {
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
 });
@@ -84,12 +103,12 @@ describe('POST /api/csp-report', () => {
     const response = await post('application/reports+json; charset=utf-8', [
       {
         type: 'csp-violation',
-        url: 'https://splotch.art/from-envelope',
+        url: 'https://user:p4ssw0rd@splotch.art/from-envelope?session=top-secret#fragment',
         body: {
           blockedURL: 'data',
           effectiveDirective: 'img-src',
           disposition: 'enforce',
-          sourceFile: 'https://splotch.art/app.js',
+          sourceFile: 'https://splotch.art/app.js?source-token=secret#fragment',
           lineNumber: 14,
           columnNumber: 3,
           sample: 'fetch(data)',
@@ -133,6 +152,7 @@ describe('POST /api/csp-report', () => {
 
     expect(response.status).toBe(415);
     expect(await response.text()).toBe('');
+    expect(rateLimit).toHaveBeenCalledOnce();
     expect(warn).not.toHaveBeenCalled();
   });
 
@@ -146,6 +166,7 @@ describe('POST /api/csp-report', () => {
 
     expect(response.status).toBe(413);
     expect(await response.text()).toBe('');
+    expect(rateLimit).toHaveBeenCalledOnce();
     expect(warn).not.toHaveBeenCalled();
   });
 
@@ -208,6 +229,7 @@ describe('POST /api/csp-report', () => {
 
   it.each([
     ['application/csp-report', null],
+    ['application/csp-report', { 'csp-report': [] }],
     ['application/reports+json', [{ type: 'deprecation', body: {} }]],
     ['application/json', { unrelated: true }],
   ])('answers accepted %s payloads with no usable reports', async (contentType, payload) => {
@@ -220,16 +242,29 @@ describe('POST /api/csp-report', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('throttles through the CSP report bucket', async () => {
+  it('throttles a limited IP before reading the body', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    rateLimit.mockReturnValue({ limited: true, retryAfter: 17 });
+
+    const response = await postUnreadableBody();
+
+    expect(response.status).toBe(429);
+    expect(rateLimit).toHaveBeenCalledOnce();
+    expect(rateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.cspReport);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('returns the canonical throttled response', async () => {
     rateLimit.mockReturnValue({ limited: true, retryAfter: 17 });
 
     const response = await postRaw('application/csp-report', '{}');
 
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('17');
-    expect(rateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.cspReport);
-    expect(warn).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Too many attempts. Please wait 17s.',
+    });
   });
 
   it('removes secrets from reported URLs while preserving CSP sentinels', async () => {
