@@ -39,18 +39,30 @@ function cappedString(value: unknown): string {
   return typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : '';
 }
 
+function sanitizeReportedUrl(value: unknown): string {
+  const reportedValue = cappedString(value);
+  try {
+    const url = new URL(reportedValue);
+    url.search = '';
+    url.hash = '';
+    return cappedString(url.toString());
+  } catch {
+    return reportedValue;
+  }
+}
+
 function finiteNumberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function fromReportUriPayload(report: Record<string, unknown>): CspViolation {
   return {
-    documentURL: cappedString(report['document-uri']),
-    blockedURL: cappedString(report['blocked-uri']),
+    documentURL: sanitizeReportedUrl(report['document-uri']),
+    blockedURL: sanitizeReportedUrl(report['blocked-uri']),
     directive:
       cappedString(report['effective-directive']) || cappedString(report['violated-directive']),
     disposition: cappedString(report['disposition']) || 'enforce',
-    sourceFile: cappedString(report['source-file']),
+    sourceFile: sanitizeReportedUrl(report['source-file']),
     line: finiteNumberOrNull(report['line-number']),
     column: finiteNumberOrNull(report['column-number']),
     sample: cappedString(report['script-sample']),
@@ -59,11 +71,11 @@ function fromReportUriPayload(report: Record<string, unknown>): CspViolation {
 
 function fromReportingApiPayload(body: Record<string, unknown>, url: unknown): CspViolation {
   return {
-    documentURL: cappedString(body.documentURL) || cappedString(url),
-    blockedURL: cappedString(body.blockedURL),
+    documentURL: sanitizeReportedUrl(body.documentURL) || sanitizeReportedUrl(url),
+    blockedURL: sanitizeReportedUrl(body.blockedURL),
     directive: cappedString(body.effectiveDirective),
     disposition: cappedString(body.disposition) || 'enforce',
-    sourceFile: cappedString(body.sourceFile),
+    sourceFile: sanitizeReportedUrl(body.sourceFile),
     line: finiteNumberOrNull(body.lineNumber),
     column: finiteNumberOrNull(body.columnNumber),
     sample: cappedString(body.sample),
