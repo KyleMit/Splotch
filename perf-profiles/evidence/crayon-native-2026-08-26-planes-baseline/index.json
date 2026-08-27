@@ -1,0 +1,28 @@
+{
+  "campaign": "crayon-native-2026-08-26-planes-baseline",
+  "capturedFrom": "perf-profiles/crayon-native-2026-08-26/base",
+  "kept": [
+    {
+      "file": "unknown-crayon.json",
+      "target": "unknown",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "crayon-1.json",
+      "candidateCount": 3,
+      "passingCandidateCount": 3,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "unknown-pen.json",
+      "target": "unknown",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "pen-1.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "campaign": "crayon-native-2026-08-26-deferred-shipped",
+  "capturedFrom": "perf-profiles/crayon-native-2026-08-26/final",
+  "kept": [
+    {
+      "file": "unknown-crayon.json",
+      "target": "unknown",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "crayon-landscape-1.json",
+      "candidateCount": 6,
+      "passingCandidateCount": 6,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "unknown-pen.json",
+      "target": "unknown",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "pen-portrait-1.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
