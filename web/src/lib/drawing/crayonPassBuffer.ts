@@ -70,24 +70,9 @@ function paintCrayon(
 // yields the source, and the source over itself is the source.
 const PER_OP_GLAZE_RETURN = 0.1;
 
-let perOpGlazeReturn = PER_OP_GLAZE_RETURN;
-
-// Live tuning seam for on-device appearance sessions — the value has to be
-// judged by eye at hand speed, and a rebuild-and-reinstall per candidate value
-// makes that a 3-minute loop instead of a 10-second one. Dev-harness only, so
-// the shipped build has no setter and no window surface.
-if (__DEV_HARNESS__ && typeof window !== 'undefined') {
-  (
-    window as unknown as { __setCrayonGlazeReturn?: (value: number) => number }
-  ).__setCrayonGlazeReturn = (value: number) => {
-    perOpGlazeReturn = Math.min(1, Math.max(0, value));
-    return perOpGlazeReturn;
-  };
-}
-
 function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   paintCrayon(target, op, 'darken');
-  paintCrayon(target, op, 'source-over', perOpGlazeReturn);
+  paintCrayon(target, op, 'source-over', PER_OP_GLAZE_RETURN);
 }
 
 // --- Crayon pass buffer ------------------------------------------------------

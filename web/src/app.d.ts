@@ -29,6 +29,15 @@ declare global {
   const __PERF_MARKS__: boolean;
   // Build-flag (PUBLIC_ENABLE_DEV_HARNESS=true) that keeps test/profiling
   // seams in opted-in bundles. Literal false in release builds.
+  // CLIENT SEAM ONLY. Server-rendered modules stay in the server build, where
+  // this literal is not substituted — a module-SCOPE reference therefore throws
+  // `ReferenceError: __DEV_HARNESS__ is not defined` the moment SSR evaluates
+  // the module, while `npm run build` still succeeds because building the server
+  // bundle never runs it. It surfaces as every Playwright shard failing at the
+  // WebServer, not as a build error (2026-08-27). Inside a function that only
+  // the browser calls it is fine, which is how every use in `lib/drawing/`
+  // reads. For a server-reachable gate use `devHarnessEnabled()` in
+  // `lib/devHarness.ts`, which is a runtime check for exactly this reason.
   const __DEV_HARNESS__: boolean;
 
   // Capacitor injects this global in the native shell and once @capacitor/core

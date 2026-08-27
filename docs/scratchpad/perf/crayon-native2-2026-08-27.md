@@ -386,8 +386,10 @@ roughly 8-12 times — reaches ~99%. Only single-op fringe pixels kept any mix.
 
 Solving `(1-B)^k = mix` for a hand-speed k brackets B near 0.06. That read as too green on the
 device; **0.10 was settled by eye** in the same session, using a dev-harness setter
-(`tools/perf/ios/set-crayon-glaze-return.mjs`) that changes the value on the running build in about
-ten seconds instead of a three-minute rebuild-and-reinstall loop.
+(`set-crayon-glaze-return.mjs`, kept on `exp/crayon-native2-d5-per-op-glaze` rather than shipped —
+its `window` setter has no production caller, and reaching for `__DEV_HARNESS__` at module scope
+broke SSR) that changes the value on the running build in about ten seconds instead of a
+three-minute rebuild-and-reinstall loop.
 
 | Cell                        | lost % samples                   | median   |
 | --------------------------- | -------------------------------- | -------- |
