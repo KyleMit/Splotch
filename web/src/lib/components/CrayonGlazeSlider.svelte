@@ -60,10 +60,13 @@
 <style>
   /* Fixed, and above the canvas: the engine binds pointer handlers to the
      canvas, so an overlay that sits outside it cannot start a stroke. */
+  /* Mid-right: the top-right corner is the Clear button and the iOS status bar,
+     the bottom corners are the Actions Panel and the Settings Button. */
   .glaze-tuner {
     position: fixed;
     right: 12px;
-    top: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 9999;
     display: flex;
     align-items: center;
