@@ -26,6 +26,11 @@ can."
 ## Method
 
 * Device: iPad UDID 00008103-0006202E3CF1001E, Safari (ipad-device-web), portrait-light.
+* Calibration note (corrected 2026-08-27 after review): native captures are **not**
+  fidelity-uncalibrated — ADR-0144 retired `ios-capacitor-webview`'s last uncalibrated check, and
+  these artifacts record `passed: true`, `uncalibrated: []`. Native is same-instrument comparative
+  evidence because the matrix reserves the calibrated release gate for Safari — a gate-class limit,
+  not a calibration gap.
 * Rig: preflight green 2026-08-26 (Android input 122 moves/s, iOS WDA launch + rotation verified).
   Preview 4173 (this checkout), probe 4215, Appium 4723 reused, WDA 8100.
 * Capture:
@@ -200,9 +205,14 @@ contract passed; only the device showed it. The one hot-path element i18 added o
 * per-op READS from a composited tile: fatal (i18: ~97%)
 * once-per-pass whole-tile reads: the 50–79 ms paint-max tail (i1/i16)
 
-**Rule earned: never read a composited live canvas on the pointer hot path — each read forces a GPU
-pipeline sync, and at digitizer rate the syncs compound into starvation.** (ADR-0068's warning about
-reading freshly-painted canvases, rediscovered in its accelerated-compositor form.)
+**Rule earned: never read a composited live canvas on the pointer hot path.** The i18 A/B
+establishes the rule — adding per-op live-tile reads, and nothing else, took the same build to ~97%
+lost frame time. The *mechanism* is inference, not measurement: "each read forces a GPU pipeline
+sync, and at digitizer rate the syncs compound" fits the timings, but no trace here attributes it
+(a later 75-second Time Profiler capture on the native side found no readback stack either).
+Stated as fact it would be exactly the observation→mechanism jump this runbook warns against.
+(Compare ADR-0068's warning about reading freshly-painted canvases — the same rule in its
+accelerated-compositor form.)
 
 ## Final iterations (3+ samples portrait, 2 landscape, fidelity PASS, instrumented)
 
@@ -228,7 +238,8 @@ measured cell at 0.61% / max 35), or accept and re-litigate the paint-max budget
 
 ## Rules earned (device-verified, this campaign)
 
-1. Never READ a composited live canvas on the pointer hot path — per-op reads froze the page (97%
+1. Never READ a composited live canvas on the pointer hot path (mechanism inferred, effect
+   measured) — per-op reads froze the page (97%
    lost). Once-per-invalidation reads cost a 50–79 ms frame when they land in-contact.
 2. Restamp cost scales with AREA per frame, not blit count: per-op small rects fine (0.8%),
    frame-union rects bad (2.6%), pass-bounds rects terrible (2.2%).

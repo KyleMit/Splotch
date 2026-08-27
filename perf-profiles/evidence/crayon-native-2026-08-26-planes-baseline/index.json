@@ -3,8 +3,8 @@
   "capturedFrom": "perf-profiles/crayon-native-2026-08-26/base",
   "kept": [
     {
-      "file": "unknown-crayon.json",
-      "target": "unknown",
+      "file": "ipad-device-native-crayon.json",
+      "target": "ipad-device-native",
       "brush": "crayon",
       "mode": "PORTRAIT-light",
       "fidelityPassed": true,
@@ -14,8 +14,8 @@
       "failedCandidateCount": 0
     },
     {
-      "file": "unknown-pen.json",
-      "target": "unknown",
+      "file": "ipad-device-native-pen.json",
+      "target": "ipad-device-native",
       "brush": "pen",
       "mode": "PORTRAIT-light",
       "fidelityPassed": true,
