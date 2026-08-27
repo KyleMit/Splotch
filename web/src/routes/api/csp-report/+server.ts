@@ -45,9 +45,11 @@ function sanitizeReportedUrl(value: unknown): string {
     const url = new URL(reportedValue);
     url.search = '';
     url.hash = '';
+    url.username = '';
+    url.password = '';
     return cappedString(url.toString());
   } catch {
-    return reportedValue;
+    return reportedValue.split(/[?#]/, 1)[0] ?? '';
   }
 }
 

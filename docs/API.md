@@ -384,9 +384,9 @@ tooling; anything else is `415`. Abuse is blunted the same way as `/api/report`:
 (10/min, the standard `throttled()` 429) plus hard caps — body over 32 KiB is `413`, at most 10
 reports are logged per payload, and every logged field is length-capped. Each report is normalized
 to one JSON log line (`documentURL`, `blockedURL`, `directive`, `disposition`, `sourceFile`, `line`,
-`column`, `sample`). Query strings and fragments are removed from the three URL-shaped fields before
-logging so credentials and other page-local secrets are not retained; non-URL CSP sentinel values
-remain unchanged.
+`column`, `sample`). Query strings, fragments, and URL username/password components are removed from
+the three URL-shaped fields before logging so credentials and other page-local secrets are not
+retained; non-URL CSP sentinel values remain unchanged.
 
 Every accepted payload — including malformed JSON, which is silently dropped — is answered `204`
 with no body; browsers ignore the response, so there is nothing to return.

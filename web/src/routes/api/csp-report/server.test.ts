@@ -8,16 +8,18 @@ afterEach(() => {
 });
 
 describe('POST /api/csp-report', () => {
-  it('strips query strings and fragments from a reported document URL before logging', async () => {
+  it('removes secrets from reported URLs while preserving CSP sentinels', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const request = new Request('http://localhost/api/csp-report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/csp-report' },
       body: JSON.stringify({
         'csp-report': {
-          'document-uri': 'https://splotch.art/draw?session=top-secret#private-fragment',
+          'document-uri':
+            'https://user:p4ssw0rd@splotch.art/draw?session=top-secret#private-fragment',
           'blocked-uri': 'inline',
           'effective-directive': 'script-src-elem',
+          'source-file': '//cdn.example.com/app.js?source-token=source-secret#source-fragment',
         },
       }),
     });
@@ -37,14 +39,19 @@ describe('POST /api/csp-report', () => {
         blockedURL: 'inline',
         directive: 'script-src-elem',
         disposition: 'enforce',
-        sourceFile: '',
+        sourceFile: '//cdn.example.com/app.js',
         line: null,
         column: null,
         sample: '',
       })
     );
     expect(logLine).toContain('https://splotch.art/draw');
+    expect(logLine).toContain('//cdn.example.com/app.js');
+    expect(logLine).not.toContain('user');
+    expect(logLine).not.toContain('p4ssw0rd');
     expect(logLine).not.toContain('session=top-secret');
     expect(logLine).not.toContain('private-fragment');
+    expect(logLine).not.toContain('source-token=source-secret');
+    expect(logLine).not.toContain('source-fragment');
   });
 });
