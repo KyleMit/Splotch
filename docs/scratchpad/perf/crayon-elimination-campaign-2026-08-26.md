@@ -253,3 +253,26 @@ i1's residual tail (paint max 79 once) is the pass-open whole-tile under snapsho
 * Productization must also fix i1's two known gaps: mid-stroke repaint (resize/undo-beneath) must
   reset open buffers before replay, and export-time flush semantics (checkpoint-equivalent close is
   acceptable and matches a checkpoint's behaviour).
+
+## Native WKWebView chapters (post-PR follow-through, same day)
+
+ADR-0146's both-runtimes rule was enforced and earned its keep. The restamp renderer REGRESSES the
+Capacitor WKWebView at every op shape tried (all fidelity-passing, same instrument, same day):
+
+| WKWebView crayon (portrait-light) | lost % samples     | median |
+| --------------------------------- | ------------------ | ------ |
+| plane pipeline (main)             | 1.19 / 1.24 / 1.39 | 1.24   |
+| restamp, merged cap 8             | 1.76 / 1.92 / 2.08 | 1.92   |
+| restamp, merged cap 3             | 1.88 / 2.10 / 2.12 | 2.10   |
+| restamp, per-move                 | 4.40 / 4.53 / 5.50 | 4.53   |
+
+Safari's optimum is the WKWebView's pessimum and vice versa — the same shape ADR-0146 found for op
+granularity, resolved the same way: deposition became a per-runtime decision
+(`configureCrayonDeposition`, ADR-0147 as landed on PR 1389). Per-move on the WKWebView is
+catastrophic under either pipeline, so the granularity fork also stands.
+
+Fork verification (per-runtime build of the PR branch): native 1.38/1.40% (its own band), web
+0.77/0.81%. Final-commit sanity after the line-budget refactor: web 0.85%, native 1.24%.
+
+Additional rule earned: the WKWebView charges per op far more steeply than Safari — a change that
+merely alters how many ops a frame emits swings the native cell 2.5x while Safari barely moves.
