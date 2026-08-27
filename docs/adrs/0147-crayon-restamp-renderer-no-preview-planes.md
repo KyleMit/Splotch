@@ -1,4 +1,4 @@
-# ADR-0147: Crayon Deposition Is a Per-Runtime Decision — Restamp on Web, Planes on Native
+# ADR-0147: Crayon Deposition Is a Per-Runtime Decision — Restamp on Web, Deferred Stamp on Native
 
 **Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s crayon preview
 architecture for the web build, extends [ADR-0146](0146-crayon-op-granularity-per-runtime.md)'s
@@ -41,10 +41,39 @@ canvas demote it as a blit source — 2.8%).
 
 **Crayon's deposition pipeline is decided per runtime, from the same compile-time `CAPACITOR=true`
 signal as its op granularity (ADR-0146): the web build deposits by restamp; the Capacitor WKWebView
-keeps ADR-0085's composited-plane pipeline.** The pipeline is injected through
-`configureCrayonDeposition` in `web/src/lib/drawing/crayonPassBuffer.ts` — vitest pins
-`__IS_CAPACITOR__` true and would dead-code-eliminate the web branch, and both pipelines stay pinned
-by unit tests — and the engine configures it at module evaluation.
+deposits by DEFERRED STAMP** (amended 2026-08-27 — the plane pipeline this ADR originally kept as
+native's optimum was itself eliminated the same day by a dedicated native campaign,
+`docs/scratchpad/perf/crayon-native-campaign-2026-08-26.md`).
+
+The deferred pipeline: the live preview is the opaque wax pattern-stroked directly onto the normal
+ink tile; the pass accumulates in parallel on an offscreen buffer; the under shadow seeds from the
+undo system's own pre-command tile snapshot (crayon adds zero composited-tile reads — blank commands
+capture no patch and are exactly the virgin passes needing no under); `crayonFlush` ops carry a
+`final` flag, so checkpoints and scribble splits are pure seed boundaries and only the closing flush
+stamps the glaze — two frames after the lift, off the in-contact window, followed by a one-pixel
+readback that forces WebKit to flush the stamp's command buffer (idle time never flushes it; only a
+read does, and an unflushed stamp taxes the next stroke's undo capture in-contact: 1.7% against
+0.37% flushed). Direct `flushCrayonBuffer` calls (export, a foreign op compositing over the open
+pass) close synchronously, and offscreen targets and repaint replays bypass the deferral.
+
+Native trial ladder (physical iPad, trusted XCUITest touch, comparative — the native instrument is
+fidelity-uncalibrated per ADR-0139): planes 1.24% lost → deferred with pass-open tile reads 2.8 →
+stroke-cadence 3.0 → post-lift stamp unflushed 3.5 → patch-shared under 1.7 → plus forced flush
+**0.22–0.46% against a 0.01–0.05% native pen floor**. Four WKWebView rules earned: pattern strokes
+and detached-canvas work are free while any tile-involving blit at pass cadence costs ~1.4 points; a
+composited-tile read is priced by the unflushed work before it; only reads flush the command buffer;
+the undo snapshot is a free under source.
+
+Visual concession, pending the issue-1372-style human pass: over existing ink the live preview is
+unmixed opaque wax and the exact glaze appears at the post-lift stamp; over blank paper — the
+dominant toddler case — pixels are byte-exact throughout. The plane pipeline remains in the
+`configureCrayonDeposition` seam as the measured, unit-tested fallback; removing it (and the
+vestigial plane elements) is the follow-up once deferred soaks.
+
+The original decision text below records the state this amendment supersedes. The pipeline is
+injected through `configureCrayonDeposition` in `web/src/lib/drawing/crayonPassBuffer.ts` — vitest
+pins `__IS_CAPACITOR__` true and would dead-code-eliminate the web branch, and both pipelines stay
+pinned by unit tests — and the engine configures it at module evaluation.
 
 The per-runtime split is measured, not hedged. The same-day native A/B on the same physical iPad
 priced the pipelines oppositely, the exact shape ADR-0146 found for op granularity:
