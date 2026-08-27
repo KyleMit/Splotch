@@ -97,22 +97,28 @@ try {
   const midY = Math.round(size.height / 2);
   const midX = Math.round(size.width / 2);
 
-  const pick = async (hex) => {
+  // By LABEL, never by hex — a duplicated palette hex drifts silently when the
+  // brand palette is re-tinted, which is what tools/tests/palette-source.test.mjs
+  // exists to prevent. The label is also what actually matters here: this needs
+  // "the yellow one" and "the blue one", not two specific values.
+  const pick = async (label) => {
     const picked = await evaluate(`
-      const swatch = document.querySelector('.color-swatch[data-color="${hex}"]');
+      const swatch = document.querySelector('.color-swatch[aria-label="${label}"]');
       if (!swatch) return null;
       swatch.click();
-      return "${hex}";
+      return swatch.getAttribute('data-color');
     `);
-    if (!picked) throw new Error(`no swatch for ${hex}`);
+    if (!picked) throw new Error(`no swatch labelled ${label}`);
+    return picked;
   };
 
   // A horizontal band, then a vertical band across it. The overlap is the only
   // pixels where the glaze does anything at all.
-  await pick('#F9D24F');
+  const under = await pick('Yellow');
   await drag({ x: midX - 260, y: midY }, { x: midX + 260, y: midY });
-  await pick('#62A2E9');
+  const over = await pick('Blue');
   await drag({ x: midX, y: midY - 260 }, { x: midX, y: midY + 260 });
+  console.log(`crossing: ${over} over ${under}`);
 
   await new Promise((resolve) => setTimeout(resolve, CROSSING_SETTLE_MS));
   const png = await call('GET', `/session/${id}/screenshot`);
@@ -120,5 +126,10 @@ try {
   writeFileSync(join(ROOT, OUT), Buffer.from(png, 'base64'));
   console.log(`wrote ${OUT}`);
 } finally {
-  await call('DELETE', `/session/${id}`).catch(() => {});
+  await call('DELETE', `/session/${id}`).catch((error) => {
+    // A teardown failure must not mask the capture's own outcome, but it must
+    // still be visible: a session left open holds WebDriverAgent and the next
+    // run fails somewhere unrelated.
+    console.warn(`session ${id} did not close: ${error.message}`);
+  });
 }

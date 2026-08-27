@@ -18,15 +18,76 @@ import type { DotOp, PathOp } from './strokeOps';
 // strokes build up coverage without shifting hue (ADR-0065). No-op until the
 // tooth tile is buildable (a DOM canvas exists), matching the magic sheet's
 // decode-pending skip.
-function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
+function paintCrayon(
+  target: CanvasRenderingContext2D,
+  op: DotOp | PathOp,
+  composite: GlobalCompositeOperation = 'source-over',
+  alpha = 1
+) {
   const seed = op.seed ?? 0;
   const passCount = crayonPassCount();
-  target.globalCompositeOperation = 'source-over';
+  target.globalCompositeOperation = composite;
+  target.globalAlpha = alpha;
   for (let i = 0; i < passCount; i++) {
     const pattern = crayonPatternFor(target, op.color, seed, i);
     if (!pattern) continue;
     paintOpShape(target, op, pattern, crayonPassWidthScale(i));
   }
+  target.globalAlpha = 1;
+}
+
+// The subtractive glaze applied to ONE op, straight onto the tile: darken to
+// min(S,D), then the crayon's own colour back over it at 1−mix. Identical
+// arithmetic to the two-blit stamp, and identical output wherever an op's
+// pixels are covered exactly once.
+//
+// Where ops OVERLAP inside a pass it compounds, and that is the whole design
+// question this pipeline poses rather than answers. Compounding is not simply a
+// defect here: it is also what makes redrawing drive toward the new colour, and
+// a pass-cadence glaze applied once per stroke has exactly the same property
+// across strokes. What changes is that a slow or scrubbing stroke now also
+// builds up WITHIN itself, where the buffered pipelines hold one stroke flat.
+// How much of the crayon's own colour each op returns over the darkened pixel.
+//
+// The buffered pipelines apply `1 - mix` (0.45) ONCE for a whole pass, because a
+// pass is one accumulated shape. Reusing that figure per op compounds: a pixel
+// covered by k overlapping ops retains 1 - (1-B)^k of the crayon, so at B = 0.45
+// two ops already reach 75% and a hand-speed stroke — which overlaps a pixel
+// roughly 8-12 times — reaches ~99%. Measured on the device 2026-08-27 as a
+// crossing that stayed blue except at the single-op fringe.
+//
+// Solving (1-B)^k = mix for a hand-speed k puts B near 0.06, which lands the
+// ACCUMULATED result where one pass used to. That is where the search started;
+// 0.06 read as too green on the device and the value was settled by eye at 0.10
+// in a 2026-08-27 tuning session, so treat the formula as the bracket it found
+// rather than as the derivation of this number.
+//
+// The trade this makes deliberately: mix depth now varies with stroke speed,
+// because a slower stroke overlaps a pixel more times — which is how wax
+// actually behaves, and the direction the same session's feedback asked for.
+//
+// Blank paper is unaffected at any value: darken over a transparent backdrop
+// yields the source, and the source over itself is the source.
+const PER_OP_GLAZE_RETURN = 0.1;
+
+let perOpGlazeReturn = PER_OP_GLAZE_RETURN;
+
+// Live tuning seam for on-device appearance sessions — the value has to be
+// judged by eye at hand speed, and a rebuild-and-reinstall per candidate value
+// makes that a 3-minute loop instead of a 10-second one. Dev-harness only, so
+// the shipped build has no setter and no window surface.
+if (__DEV_HARNESS__ && typeof window !== 'undefined') {
+  (
+    window as unknown as { __setCrayonGlazeReturn?: (value: number) => number }
+  ).__setCrayonGlazeReturn = (value: number) => {
+    perOpGlazeReturn = Math.min(1, Math.max(0, value));
+    return perOpGlazeReturn;
+  };
+}
+
+function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
+  paintCrayon(target, op, 'darken');
+  paintCrayon(target, op, 'source-over', perOpGlazeReturn);
 }
 
 // --- Crayon pass buffer ------------------------------------------------------
@@ -86,7 +147,11 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
 //   3. Never apply blend operations INTO a canvas that hot-path blits read
 //      from (folding the glaze into the shadow measured 2.8%) — the shadow is
 //      only ever written by plain reads.
-type CrayonDepositionMode = 'restamp' | 'planes';
+// 'glaze-direct' applies the shipped glaze per OP rather than per pass, on the
+// tile itself — no accumulation buffer, no preview planes, and no blit, which
+// is what the WKWebView actually charges for (this campaign's D1 measured the
+// composited planes, not the bake, as the plane pipeline's cost).
+type CrayonDepositionMode = 'restamp' | 'planes' | 'glaze-direct';
 
 // A dependency rather than a compile-time literal for the same reason as
 // ADR-0146's granularity seam: vitest pins __IS_CAPACITOR__ true and would
@@ -118,7 +183,7 @@ export function configureCrayonDeposition(
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
 // renderer uses this to decide tile visibility and plane backing allocation.
 export function crayonDepositsOnTiles() {
-  return depositionMode === 'restamp';
+  return depositionMode !== 'planes';
 }
 
 interface CrayonPassBuffer {
@@ -332,7 +397,7 @@ export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
 // shown like any ink op — and a still-hidden tile is blank
 // (prepareTileForMutation has run), which is what opens the virgin fast path.
 export function crayonOpShowsTile(target: CanvasRenderingContext2D, targetHidden: boolean) {
-  if (depositionMode !== 'restamp') return false;
+  if (depositionMode === 'planes') return false;
   if (targetHidden) blankAtPassOpen.add(target);
   return true;
 }
@@ -436,6 +501,8 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 // painted or restamped them — so only reset pass state; the pass's own wax
 // made the shadow stale, so queue a post-lift refresh.
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
+  // Each op already landed its own final pixels; there is no pass state to close.
+  if (depositionMode === 'glaze-direct') return;
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
   if (depositionMode === 'planes') {
@@ -488,6 +555,10 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   // cheap escape hatch. Flushes become no-ops on a clean buffer.
   if (getCrayonMix() === 0) {
     paintCrayon(target, op);
+    return;
+  }
+  if (depositionMode === 'glaze-direct') {
+    glazeCrayonOpDirect(target, op);
     return;
   }
   const buf = crayonBufferFor(target);
