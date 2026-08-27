@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { draw, gotoApp, renderedCanvasHandle, spaNavigate } from './helpers';
+import { draw, expectNoReload, gotoApp, renderedCanvasHandle, spaNavigate } from './helpers';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
 
@@ -85,17 +85,6 @@ test('non-canvas routes are normal documents by default (/privacy, /admin)', asy
   expect(admin.userSelect).not.toBe('none');
 });
 
-// Drive a real SvelteKit client-side navigation (no full reload), so it's a
-// component's effect cleanup — not the boot script, which only runs on load —
-// that has to put the document right. The sentinel a reload would wipe rides
-// along, so the caller can prove the page never reloaded.
-async function expectNoReload(page: Page) {
-  const noReload = await page.evaluate(
-    () => (window as unknown as { __spa?: boolean }).__spa === true
-  );
-  expect(noReload, 'expected a client-side navigation, not a full reload').toBe(true);
-}
-
 test('client-side nav off the drawing route drops the app-surface locks (effect cleanup)', async ({
   page,
 }) => {
@@ -171,15 +160,12 @@ test('drawing survives a real-route remount and the fresh tiled canvas accepts m
   const beforeNavigation = await opaquePixelCount(page);
   expect(beforeNavigation).toBeGreaterThan(0);
 
-  await page.evaluate(() => {
-    const link = document.createElement('a');
-    link.href = '/privacy';
-    document.body.appendChild(link);
-    link.click();
-  });
+  await spaNavigate(page, '/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expectNoReload(page);
   await page.goBack();
   await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await expectNoReload(page);
   expect(await opaquePixelCount(page)).toBeGreaterThanOrEqual(beforeNavigation);
 
   await draw(page, [

@@ -170,7 +170,7 @@ export async function seedCompletedSettingsActivitySessions(page: Page, count: n
 const DRAWING_READY_TIMEOUT_MS = 10_000;
 const DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS = 1500;
 
-function readDrawingHistory(page: Page): Promise<HistoryDebug | null> {
+export function readDrawingHistory(page: Page): Promise<HistoryDebug | null> {
   return page.evaluate(() => window.__drawingDebug?.getUndoDebug() ?? null);
 }
 
@@ -238,6 +238,8 @@ export async function registerServiceWorkerAndControl(page: Page) {
   });
 }
 
+/** Drive a real SvelteKit client-side navigation. The sentinel survives a SPA
+ *  route change but a full reload erases it, so callers can prove which path ran. */
 export async function spaNavigate(page: Page, href: string) {
   await page.evaluate(() => ((window as Window & { __spa?: boolean }).__spa = true));
   await page.evaluate((target) => {
@@ -246,6 +248,11 @@ export async function spaNavigate(page: Page, href: string) {
     document.body.appendChild(link);
     link.click();
   }, href);
+}
+
+export async function expectNoReload(page: Page) {
+  const noReload = await page.evaluate(() => (window as Window & { __spa?: boolean }).__spa);
+  expect(noReload, 'expected a client-side navigation, not a full reload').toBe(true);
 }
 
 // Open an overlay/flyout/dialog robustly and leave it open. Several of these

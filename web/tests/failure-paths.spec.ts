@@ -1,22 +1,16 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { invokeAiGeneration, prepareAiGeneration } from './ai-harness';
 import {
   drawCommittedStroke,
+  expectNoReload,
   firstOpaquePixel,
   gotoApp,
+  readDrawingHistory,
   registerServiceWorkerAndControl,
   spaNavigate,
 } from './helpers';
 import { openDrawer } from './flows-harness';
-
-async function drawingHistory(page: Page) {
-  return page.evaluate(() => {
-    const history = window.__drawingDebug?.getUndoDebug();
-    if (!history) throw new Error('drawing history is unavailable');
-    return history;
-  });
-}
 
 test('an offline PWA session preserves the drawing through supported client navigation', async ({
   page,
@@ -33,18 +27,17 @@ test('an offline PWA session preserves the drawing through supported client navi
     { x: 90, y: 120 },
     { x: 260, y: 190 },
   ]);
-  const beforeOffline = await drawingHistory(page);
-  expect(beforeOffline.snapshots).toBe(1);
+  await expect.poll(() => readDrawingHistory(page)).toMatchObject({ snapshots: 1 });
 
   await page.context().setOffline(true);
   await spaNavigate(page, '/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
-  expect(await page.evaluate(() => (window as Window & { __spa?: boolean }).__spa)).toBe(true);
+  await expectNoReload(page);
 
   await page.goBack();
   await expect(page.locator('#drawingCanvas')).toBeVisible();
-  expect(await page.evaluate(() => (window as Window & { __spa?: boolean }).__spa)).toBe(true);
-  await expect.poll(() => drawingHistory(page)).toMatchObject({ snapshots: 1 });
+  await expectNoReload(page);
+  await expect.poll(() => readDrawingHistory(page)).toMatchObject({ snapshots: 1 });
   expect(await firstOpaquePixel(page)).not.toBeNull();
 
   await drawCommittedStroke(page, [
@@ -55,7 +48,7 @@ test('an offline PWA session preserves the drawing through supported client navi
   const undo = page.locator('#undoButton');
   await expect(undo).toBeEnabled();
   await undo.click();
-  await expect.poll(() => drawingHistory(page)).toMatchObject({ snapshots: 1 });
+  await expect.poll(() => readDrawingHistory(page)).toMatchObject({ snapshots: 1 });
   expect(await firstOpaquePixel(page)).not.toBeNull();
 });
 
@@ -63,8 +56,7 @@ test('a stalled provider lets the child keep drawing, then recovers after failur
   page,
 }) => {
   const endpoint = await prepareAiGeneration(page);
-  const beforeRequest = await drawingHistory(page);
-  expect(beforeRequest.snapshots).toBe(1);
+  await expect.poll(() => readDrawingHistory(page)).toMatchObject({ snapshots: 1 });
 
   await invokeAiGeneration(page);
   await endpoint.waitForFirstRequest();
@@ -76,7 +68,7 @@ test('a stalled provider lets the child keep drawing, then recovers after failur
     { x: 80, y: 260 },
     { x: 300, y: 320 },
   ]);
-  await expect.poll(() => drawingHistory(page)).toMatchObject({ snapshots: 2 });
+  await expect.poll(() => readDrawingHistory(page)).toMatchObject({ snapshots: 2 });
   expect(await firstOpaquePixel(page)).not.toBeNull();
 
   await endpoint.fail(502);
@@ -84,13 +76,27 @@ test('a stalled provider lets the child keep drawing, then recovers after failur
   await page.locator('.ai-waiting-polaroid').click();
   await expect(page.getByText(/didn't work/i)).toBeVisible();
 
-  await invokeAiGeneration(page);
+  const resultDialog = page.locator('dialog.ai-result-modal');
+  await resultDialog.evaluate((dialog) => {
+    dialog.addEventListener('close', () => (dialog.dataset.closeSettled = ''), { once: true });
+  });
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(resultDialog).toHaveAttribute('data-close-settled', '');
+  await expect(resultDialog).toBeHidden();
+
+  await openDrawer(page);
+  const aiButton = page.locator('#aiImageButton');
+  await expect(aiButton).toBeEnabled();
+  await aiButton.click();
+  const magicalStyle = page.getByRole('button', { name: 'Magical' });
+  await expect(magicalStyle).toBeEnabled();
+  await magicalStyle.click();
   await expect.poll(() => endpoint.requests.length).toBe(2);
   await endpoint.succeed();
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Close' }).click();
 
-  await expect.poll(() => drawingHistory(page)).toMatchObject({ snapshots: 2 });
+  await expect.poll(() => readDrawingHistory(page)).toMatchObject({ snapshots: 2 });
   expect(await firstOpaquePixel(page)).not.toBeNull();
 });
 
