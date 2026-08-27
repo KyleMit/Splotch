@@ -18,6 +18,7 @@ import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
 import { createTiledUndoPatches } from './tiledUndoPatches';
 import { createTiledMagicRecode } from './tiledMagicRecode';
 import { createTiledContextRecovery } from './tiledContextRecovery';
+import { createBackingMigration } from './tileBackingMigration';
 import {
   clearTileBacking,
   clipTilesToPaper,
@@ -73,7 +74,7 @@ const history: StrokeGroupCommand[] = [];
 const undoPatches = createTiledUndoPatches();
 let undoableCommands = 0;
 let historyFoldTimer: ReturnType<typeof setTimeout> | null = null;
-let backingMigration = { revision: 0, pending: false };
+const backingMigration = createBackingMigration(() => liveTiles);
 const isDevHarness = typeof __DEV_HARNESS__ !== 'undefined' && __DEV_HARNESS__;
 const workCounters = import.meta.env?.DEV || isDevHarness ? createDrawingWorkCounters() : null;
 const tiledContextRecovery = createTiledContextRecovery(
@@ -86,8 +87,7 @@ const tiledContextRecovery = createTiledContextRecovery(
 setCrayonUnderProvider((target) => {
   const index = liveTiles.findIndex((tile) => tile.ctx === target);
   if (index < 0) return { kind: 'offscreen' };
-  if (!activeCommand || activeCommand.wasEmpty) return { kind: 'blank' };
-  const patch = undoPatches.peek(activeCommand, index);
+  const patch = activeCommand && !activeCommand.wasEmpty && undoPatches.peek(activeCommand, index);
   return patch ? { kind: 'patch', canvas: patch } : { kind: 'blank' };
 });
 
@@ -111,21 +111,6 @@ export function tiledSurfaceTopologyDebug() {
 
 export function syncTiledCrayonMix(opacity: string) {
   for (const tile of liveTiles) tile.crayonTop.style.opacity = opacity;
-}
-
-function migrateHiddenBackingsAcrossFrames() {
-  const revision = backingMigration.revision + 1;
-  backingMigration = { revision, pending: true };
-  let index = 0;
-  const migrateNext = () => {
-    if (revision !== backingMigration.revision) return;
-    const tile = liveTiles[index++];
-    if (tile?.canvas.hidden) ensureNormalTileBacking(tile);
-    if (index < liveTiles.length) {
-      requestAnimationFrame(migrateNext);
-    } else backingMigration.pending = false;
-  };
-  requestAnimationFrame(migrateNext);
 }
 
 export function resizeTiledRenderer(
@@ -184,8 +169,8 @@ export function resizeTiledRenderer(
     }
   }
   if (historyBase.length > 0) ensureHistoryBase();
-  if (deferHiddenBackings) migrateHiddenBackingsAcrossFrames();
-  else backingMigration = { revision: backingMigration.revision + 1, pending: false };
+  if (deferHiddenBackings) backingMigration.migrate();
+  else backingMigration.invalidate();
   return true;
 }
 
@@ -539,7 +524,7 @@ export function tiledHistoryDebug() {
 }
 
 export const tiledWorkDebug = () =>
-  workCounters?.debug(liveTiles, backingMigration.pending) ?? null;
+  workCounters?.debug(liveTiles, backingMigration.pending()) ?? null;
 
 export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
   return captureTiledCanvasReadback({
@@ -558,7 +543,7 @@ export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
 export function detachTiledRenderer() {
   cancelHistoryFold();
   clearCapture.cancel();
-  backingMigration = { revision: backingMigration.revision + 1, pending: false };
+  backingMigration.invalidate();
   tiledContextRecovery.detach();
   canvas = null;
   host = null;
