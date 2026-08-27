@@ -1,8 +1,10 @@
-# ADR-0147: Crayon Deposits Without Composited Preview Planes — the Restamp Renderer
+# ADR-0147: Crayon Deposition Is a Per-Runtime Decision — Restamp on Web, Planes on Native
 
 **Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s crayon preview
-architecture and re-opens [ADR-0137](0137-lost-frame-gate-exceptions.md)'s `ipad-device-web:crayon`
-exception for retirement **Date:** 2026-08
+architecture for the web build, extends [ADR-0146](0146-crayon-op-granularity-per-runtime.md)'s
+per-runtime pattern to the deposition pipeline, and re-opens
+[ADR-0137](0137-lost-frame-gate-exceptions.md)'s `ipad-device-web:crayon` exception for retirement
+**Date:** 2026-08
 
 ## Context
 
@@ -37,8 +39,29 @@ canvas demote it as a blit source — 2.8%).
 
 ## Decision
 
-**The open crayon pass deposits directly onto the normal ink tiles; nothing extra is composited
-while a child draws.** In `web/src/lib/drawing/crayonPassBuffer.ts`:
+**Crayon's deposition pipeline is decided per runtime, from the same compile-time `CAPACITOR=true`
+signal as its op granularity (ADR-0146): the web build deposits by restamp; the Capacitor WKWebView
+keeps ADR-0085's composited-plane pipeline.** The pipeline is injected through
+`configureCrayonDeposition` in `web/src/lib/drawing/crayonPassBuffer.ts` — vitest pins
+`__IS_CAPACITOR__` true and would dead-code-eliminate the web branch, and both pipelines stay pinned
+by unit tests — and the engine configures it at module evaluation.
+
+The per-runtime split is measured, not hedged. The same-day native A/B on the same physical iPad
+priced the pipelines oppositely, the exact shape ADR-0146 found for op granularity:
+
+| WKWebView crayon (portrait-light, 3 samples each) | lost frame time     |
+| ------------------------------------------------- | ------------------- |
+| plane pipeline (main)                             | 1.19 / 1.24 / 1.39% |
+| restamp, merged ops cap 8                         | 1.76 / 1.92 / 2.08% |
+| restamp, merged ops cap 3                         | 1.88 / 2.10 / 2.12% |
+| restamp, per-move ops                             | 4.40 / 4.53 / 5.50% |
+
+Safari's optimum (restamp) is the WKWebView's pessimum at every measured op shape, and vice versa —
+on Safari the planes are the entire crayon excess. ADR-0146's granularity fork also stands
+unchanged: per-move on the WKWebView is catastrophic under either pipeline.
+
+**On the web build, the open crayon pass deposits directly onto the normal ink tiles; nothing extra
+is composited while a child draws:**
 
 * The pass accumulates on an offscreen buffer, and every op restores its own padded rect from an
   offscreen "under" shadow of the pre-pass pixels, then re-applies the two-blit subtractive glaze
@@ -83,10 +106,10 @@ Three campaign-earned constraints bound any rework of this path:
   67 ms hard fail. The recorded lead is the merged-op/segmented-stroke shape that measured 0.61%
   with a flat 35 ms max (`exp/crayon-i12-merged-direct`); until then this is a deliberate trade of a
   permanently failing lost-frame gate for a marginally exceeding paint-max tail.
-* − The native WKWebView cell is unmeasured under this renderer. ADR-0146's rule stands: any crayon
-  rasterization change must be measured on both runtimes before the native granularity choice is
-  trusted, and per-frame merged ops make larger restamp rects — the very variable rule 2 above
-  prices.
+* − Two deposition pipelines now exist for one brush, compounding ADR-0146's two-granularity cost:
+  any change to crayon rasterization must be measured on BOTH runtimes, and web-side visual
+  verification no longer vouches for native (or vice versa). Collapsing the fork in either direction
+  re-imposes a measured regression on the other runtime.
 * − The under shadow adds an invalidation protocol (foreign ink, undo, clear, repaint) that new
   pixel-mutating paths must join; a missed invalidation restores stale under-ink on the next
   overlapping pass. The pixel-contract E2E specs are the guard.
