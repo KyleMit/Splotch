@@ -445,9 +445,12 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
       const h = b.y1 - b.y0;
       target.save();
       target.setTransform(1, 0, 0, 1, 0, 0);
-      stampSubtractiveGlaze(target, getCrayonMix(), () => {
-        target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
-      });
+      // PROBE P1b: ONE plain blit where the shipped bake does two. Paired with
+      // P1 (two plain blits) this separates per-blit pricing from per-bake-event
+      // pricing. Wrong pixels over existing ink; never ships.
+      target.globalCompositeOperation = 'source-over';
+      target.globalAlpha = 1;
+      target.drawImage(buf.ctx.canvas, b.x0, b.y0, w, h, b.x0, b.y0, w, h);
       target.restore();
     }
     clearCrayonBounds(buf);
