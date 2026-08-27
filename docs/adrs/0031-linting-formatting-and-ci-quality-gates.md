@@ -51,7 +51,15 @@ choices:
   pre-existing transitive advisory count under npm (ADR-0029). Dependency upgrades and the pnpm
   migration (ADR-0119) cleared that constraint, so high and critical advisories now block CI.
   Advisory-specific exceptions require evidence that the installed path is both unfixable and
-  non-exploitable here; severity-wide or dependency-class exclusions are not part of the policy.
+  non-exploitable here; severity-wide or dependency-class exclusions are not part of the policy. The
+  only sanctioned mechanism is an exact GHSA in pnpm's `auditConfig.ignoreGhsas`, accompanied in the
+  same change by a record under **Active dependency-audit status and exceptions** in
+  `docs/DEPENDENCIES.md`. The record names the locked dependency paths, upstream proof that no
+  patched resolution exists, repository-specific reachability evidence, approver and approval date,
+  a review-by date no more than 90 days later, and the removal trigger. The tool policy test rejects
+  every audit ignore today; a future exception must extend it to require exact agreement between the
+  configured GHSA set and unexpired evidence records. Lowering the threshold, ignoring a CVE family,
+  `--ignore-unfixable`, and `--ignore-registry-errors` are not exception mechanisms.
 * **`precheck` runs `svelte-kit sync`** so `npm run check` generates `.svelte-kit/tsconfig.json` and
   works standalone in CI (mirrors `predev`).
 

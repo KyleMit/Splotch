@@ -16,7 +16,7 @@
 # dependency isolation, so an undeclared transitive import stays resolvable here.
 nodeLinker: hoisted
 
-# Both entries moved verbatim from package.json's npm `overrides` block.
+# The sharp and tar entries moved verbatim from package.json's npm `overrides` block.
 overrides:
   # @capacitor/assets pins sharp@0.32.6, whose install script downloads a libvips binary
   # from GitHub releases — flaky behind proxies and 403 through the cloud sessions'
@@ -30,8 +30,8 @@ overrides:
   # replace@1.2.2 pins vulnerable minimatch exactly, and ajv@8.20.0's compatible
   # range retained vulnerable fast-uri. Lift only those resolved versions; the
   # high-severity audit gate verifies their replacements stay clean.
-  minimatch@3.0.5: 3.1.4
-  fast-uri@3.1.2: 3.1.5
+  minimatch@3.0.5: ^3.1.4
+  fast-uri@3.1.2: ^3.1.5
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19
