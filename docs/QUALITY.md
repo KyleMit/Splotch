@@ -3,9 +3,9 @@
 The axes Splotch is held to, and what backs each one today - a gate, a test, a skill, or a
 documented decision. Open work lives in GitHub issues, not here.
 
-* **product** - what it's like to use
-* **promise** - what we commit to
-* **practice** - how it's built
+* **Product** - what it's like to use
+* **Promise** - what we commit to
+* **Practice** - how it's built
 
 ## Product
 
