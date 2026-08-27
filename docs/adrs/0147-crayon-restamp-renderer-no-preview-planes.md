@@ -67,14 +67,15 @@ unexplained; its durability across WebKit versions rests on the part that is not
 
 Native trial ladder (physical iPad, trusted XCUITest touch): planes 1.24% lost → deferred with
 pass-open tile reads 2.8 → stroke-cadence 3.0 → post-lift stamp unflushed 3.5 → patch-shared under
-1.7 → plus forced flush **0.22–0.46% against a 0.01–0.05% native pen floor**. These are
-**same-instrument comparative** numbers, not release-gate scores:
-[ADR-0144](0144-coalescing-is-a-witness-not-a-check.md) retired `ios-capacitor-webview`'s last
-uncalibrated check — every capture here records `passed: true`, `uncalibrated: []`, coalescing not
-applicable — so the limitation is gate class (the matrix reserves the calibrated release gate for
-Safari), not a calibration gap. Three WKWebView rules earned: pattern strokes and detached-canvas
-work are free while any tile-involving blit at pass cadence costs ~1.4 points; a composited-tile
-read is priced by the unflushed work before it; the undo snapshot is a free under source.
+1.7 → plus forced flush **0.20–0.46% against a 0.01–0.05% native pen floor** (portrait 0.30–0.46
+over three samples, landscape 0.20–0.33 over four). These are **same-instrument comparative**
+numbers, not release-gate scores: [ADR-0144](0144-coalescing-is-a-witness-not-a-check.md) retired
+`ios-capacitor-webview`'s last uncalibrated check — every capture here records `passed: true`,
+`uncalibrated: []`, coalescing not applicable — so the limitation is gate class (the matrix reserves
+the calibrated release gate for Safari), not a calibration gap. Three WKWebView rules earned:
+pattern strokes and detached-canvas work are free while any tile-involving blit at pass cadence
+costs ~1.4 points; a composited-tile read is priced by the unflushed work before it; the undo
+snapshot is a free under source.
 
 **Visual concession, gating activation:** over existing ink the live preview is unmixed opaque wax
 and the exact glaze appears at the post-lift stamp; over blank paper — the dominant toddler case —
@@ -133,8 +134,12 @@ is composited while a child draws:**
   session, never given a backing (`realizedCrayonBackings` is pinned at 0 by
   `drawing-work-counters.spec.ts`). Removing the elements is a follow-up, not part of this decision.
 
-Measured on the physical iPad (Safari, trusted XCUITest touch): crayon lost frame time 0.77–0.97%
-against pen's 0.75% in the same session, both orientations — from a 1.11–1.35% baseline.
+Measured on the physical iPad (Safari, trusted XCUITest touch), **as corrected on 2026-08-27**:
+crayon lost frame time 0.83 / 0.88 / 0.77% portrait against a same-session pen control of 0.81% —
+parity — and 0.97 / 0.98 / 1.06% landscape, from a 1.11–1.35% baseline. The original text read
+"0.77–0.97%, both orientations", which rested on a two-sample landscape arm below the campaign
+runbook's own three-sample minimum. Taking the third sample both exposed a regression that had
+already merged (fixed in PR 1423) and moved landscape to *at* the 1% gate rather than under it.
 
 Three campaign-earned constraints bound any rework of this path:
 
@@ -146,9 +151,12 @@ Three campaign-earned constraints bound any rework of this path:
 
 ## Consequences
 
-* \+ Crayon reaches pen parity on the lost-frame gate on the target this app is judged on, passing
-  the flat 1% gate ADR-0137 exempted it from. The exception should be re-measured and retired at the
-  next matrix recapture (ADR-0137's own ratchet-down rule).
+* \+ Crayon reaches pen parity in portrait on the target this app is judged on. Landscape is
+  restored but sits at ~0.97–1.06%, so **ADR-0137's 1.5% exception stays in force and must not be
+  retired on this evidence** — the earlier revision of this ADR recommended retiring it, on the
+  two-sample landscape arm since withdrawn. The landscape residual is unresolved: shadow-read count,
+  restamp count, restamp area (+3.6% by geometry) and the paper transform were each excluded, and no
+  same-device A/B has isolated a cause.
 * \+ 32 live canvases, the per-op mirror blit, per-op `hidden` writes, and the 16-tile flush stamps
   leave the hot path entirely; the checkpoint's role shrinks to bounding buffer memory and pass
   semantics.

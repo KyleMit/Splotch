@@ -12,8 +12,10 @@ renderer (1.76–2.12% there) — then eliminate it.
 * Same-day cost curve already measured: per-move ops 4.4–5.5% (per-op pricing is steep), restamp
   merged 1.76–2.12%, planes 1.19–1.40%. Blend mode and GPU load previously exonerated (ADR-0137's N6
   and xctrace parity — both measured ON native).
-* Native fidelity is uncalibrated (ADR-0139): every number here is comparative A/B on one
-  instrument, never a gate score.
+* Every number here is same-instrument comparative A/B, never a gate score — but **not** because
+  native fidelity is uncalibrated. ADR-0144 retired `ios-capacitor-webview`'s last uncalibrated
+  check, and these artifacts record `passed: true`, `uncalibrated: []`, coalescing not applicable.
+  The limit is gate class: the matrix reserves the calibrated release gate for Safari.
 
 ## Method
 
@@ -103,14 +105,18 @@ pipeline) ride the GPU.
 
 * **T8** (`exp/crayon-native-t8-postlift-stamp`): stamp moved past the lift — 3.48/3.50/3.55, WORST
   yet, though the stamps themselves ran free between strokes (betweenStrokes lost ≈0). The poison
-  relocated: WebKit's canvas command buffer does not flush on idle, only on a read — so the NEXT
-  stroke's undo capture paid the accumulated sync in-contact.
+  relocated: the cost reappeared on the NEXT stroke's undo capture, in-contact. The hypothesis that
+  fits — WebKit's canvas command buffer not flushing until a read forces it — is stated here as a
+  hypothesis, not a finding: nothing in this campaign traced it.
 * **T9** (`exp/crayon-native-t9-patch-under`): under seeded from the undo system's own pre-command
   snapshot (crayon adds zero tile reads; blank commands capture nothing and are exactly the virgin
   passes) — 1.74/1.75/1.81. Better, still above planes: the unflushed stamp still taxed the undo
   capture.
 * **T10** (`exp/crayon-native-t10-postflush`): + a 1-px getImageData after the post-lift stamp,
-  forcing the flush while still between strokes — **0.30/0.36/0.46**. Theory confirmed end-to-end.
+  forcing the flush while still between strokes — **0.30/0.36/0.46**. The A/B is decisive about the
+  EFFECT; it does not confirm the mechanism, and a later 75-second Time Profiler capture over a
+  19-stroke native session (PR 1414 review) found no readback stack tying the 1-px call to a
+  command-buffer flush.
 
 ## Production result (`perf/crayon-native-deferred-stamp`)
 
@@ -118,22 +124,39 @@ Deferred pipeline productized: crayonFlush ops carry a `final` flag (checkpoints
 boundaries, no stamp; only the close stamps, post-lift + forced flush; direct flush calls stay
 synchronous for export/foreign-op ordering). Final confirmation, all fidelity-passing:
 
-| Cell                                  | lost %             | paint p95/p99/max |
-| ------------------------------------- | ------------------ | ----------------- |
-| native crayon portrait                | 0.35 / 0.32 / 0.32 | 15/16/33–52       |
-| native crayon landscape               | 0.22 / 0.33        | 15/16/34–44       |
-| native pen control                    | 0.04               | 16/16/38          |
-| web crayon sanity (restamp untouched) | 0.97               | 16/21/61          |
+| Cell                                  | lost %                    | paint p95/p99/max |
+| ------------------------------------- | ------------------------- | ----------------- |
+| native crayon portrait                | 0.35 / 0.32 / 0.32        | 15/16/33–52       |
+| native crayon landscape               | 0.20 / 0.22 / 0.28 / 0.33 | 15/16/34–44       |
+| native pen control                    | 0.04                      | 16/16/38          |
+| web crayon sanity (restamp untouched) | 0.97                      | 16/21/61          |
 
-## Rules earned (WKWebView, device-verified)
+The landscape cell originally had two samples, below this runbook's own three-sample minimum, and
+its 0.22% minimum was being quoted as the candidate's endpoint. Two further samples (2026-08-27,
+same build, deferred temporarily re-activated for the capture) came back 0.20% and 0.28%: the cell
+holds at **0.20–0.33%**, so quote that range rather than its floor. Unlike the Safari landscape arm,
+the extra samples confirmed this cell instead of overturning it — which is the point of taking them,
+not a reason to have skipped them.
+
+## What was measured (WKWebView) — and what is only inferred
+
+Measured, by controlled A/B on this device:
 
 1. Pattern strokes and detached-canvas work are free; EVERY canvas blit involving the composited
    tile at pass cadence costs ~1.4 points, direction and area barely mattering.
-2. A composited-tile READ is priced by the unflushed work preceding it — the read is the flush.
-3. Idle time never flushes the canvas command buffer; a deliberate 1-px readback right after a big
-   stamp, placed between strokes, is the difference between 1.7% and 0.37%.
-4. The undo system's pre-command snapshot is a free under source — its read is already paid by every
-   brush, and commands that skip it (blank paper) are exactly the passes needing no under.
+2. Moving the closing stamp past the lift does not by itself help — it relocates the cost onto the
+   next stroke's undo capture (T8: 3.5%).
+3. Adding a 1-px readback right after that post-lift stamp, between strokes, is worth 1.7% → 0.37%.
+4. The undo system's pre-command snapshot works as an under source at no measured cost — its read is
+   already paid by every brush, and commands that skip it (blank paper) are exactly the passes
+   needing no under.
+
+Inferred, and deliberately not promoted to a rule: that a composited-tile read is priced by the
+unflushed work preceding it, that idle never flushes the canvas command buffer, and that the read is
+what forces the flush. That story fits every measurement above and nothing here tests it; a
+75-second Time Profiler capture over a 19-stroke native session (PR 1414 review) found no readback
+stack tying the 1-px call to a flush. Anyone porting this workaround should re-measure rather than
+rely on the mechanism.
 
 Visual concessions for the human eyeball (issue-1372 style): over existing ink the live preview is
 unmixed opaque wax, with the exact glaze appearing at the post-lift stamp (~2 frames after the

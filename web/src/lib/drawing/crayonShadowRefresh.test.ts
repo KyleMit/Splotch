@@ -4,6 +4,7 @@ import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
 import {
   adoptTiledRenderer,
+  clearTiledRenderer,
   applyTiledView,
   beginTiledCommand,
   commitTiledCommand,
@@ -59,6 +60,75 @@ describe('crayon under-shadow refresh scheduling', () => {
     // the default so one test's probe cannot leak into the next.
     configureCrayonDeposition('restamp');
     vi.unstubAllGlobals();
+  });
+
+  it('Clear during the deferred stamp window cannot mutate the tile after its snapshot', () => {
+    // clearTiledRenderer hides the tiles and schedules its undo capture one
+    // frame at a time; resetCrayonStateForClear only runs later, when that
+    // backing is mutated. A stamp still pending from a closed pass therefore
+    // landed AFTER the Clear snapshot, splitting the undo image across pre-
+    // and post-glaze pixels.
+    configureCrayonDeposition('deferred');
+    const writes = trackDrawImageSources();
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const drain = () => {
+      for (let i = 0; i < 8 && frames.length; i++) frames.shift()!(0);
+    };
+    const crayonDot = (seed: number): StrokeOp => ({
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+      crayon: true,
+      seed,
+    });
+    const stroke = (seed: number, wasEmpty: boolean) => {
+      beginTiledCommand(wasEmpty);
+      renderTiledOp(crayonDot(seed));
+      recordTiledOp(crayonDot(seed));
+      const close: StrokeOp = { kind: 'crayonFlush', final: true };
+      renderTiledOp(close);
+      recordTiledOp(close);
+      commitTiledCommand();
+    };
+
+    stroke(1, true);
+    drain();
+    // A second stroke over that ink closes NON-virgin, arming a deferred stamp.
+    stroke(2, false);
+
+    const tile = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')].find(
+      (candidate) => !candidate.hidden
+    )!;
+    // A glaze stamp blits FROM an offscreen buffer; Clear's own progressive
+    // undo capture reads FROM the tile. Counting only the former isolates the
+    // mutation this test is about from the capture that legitimately runs in
+    // the same frames.
+    const stamps = () => writes.filter((source) => source !== tile).length;
+
+    // Clear lands inside the two-frame window.
+    clearTiledRenderer(false);
+    const atClear = stamps();
+    drain();
+
+    // The outstanding glaze is settled synchronously inside clearTiledRenderer,
+    // before its capture, so no stamp lands afterwards.
+    expect(stamps()).toBe(atClear);
+
+    configureCrayonDeposition('restamp');
   });
 
   it('a drain that lands mid-stroke re-arms instead of dropping', () => {
