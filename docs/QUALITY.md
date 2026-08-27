@@ -98,7 +98,8 @@ commit-P95 gate. `check-bundle-budgets.mjs` holds the startup, lazy-chunk, and n
 ## Resilience
 
 Every degraded path returns usable app state rather than a dead end - offline, provider outage,
-exhausted quota, denied storage, a crash mid-stroke. The child's work survives.
+exhausted quota, denied storage. Drawing history lives in memory for the session, so a reload starts
+a fresh page; carrying work across a restart is not a guarantee this axis makes today.
 
 **Backed by.** `early-boot.spec.ts` and `paper-texture-boot.spec.ts` on the startup path,
 `pwa-registration.spec.ts` on the service worker, `engine-pointer-recovery.spec.ts` on interrupted
@@ -139,8 +140,8 @@ the evidence being sent (ADR-0104).
 
 ## Security
 
-Credentials are never guessable, never logged, and never longer-lived than they need to be. Every
-endpoint resists brute force and abuse.
+Secrets compare in constant time, no endpoint echoes one back, and every credential oracle is rate
+limited so guessing is throttled rather than free. Access codes are revocable at any time.
 
 **Backed by.** `securityPolicy.ts` hashes the exact inline script bodies and fails on template
 drift. `securityHeaders.ts` pins HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, and frame
