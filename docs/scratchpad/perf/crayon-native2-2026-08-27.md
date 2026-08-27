@@ -195,9 +195,45 @@ number:
 
 # Results
 
-*Nothing measured yet — the iPad's automation grant expired and re-arming it needs a human at the
-device (`Timed out while enabling automation mode`; the passcode prompt exists only during a launch
-attempt).*
+All cells: physical iPad `00008103-0006202E3CF1001E`, iPadOS 26.5, installed Capacitor app
+(`capacitor://localhost`, runtime `ios-capacitor-webview`), crayon, portrait, light,
+`--gesture-repeats=10`. Every sample is fidelity-PASS with `uncalibrated: []`, cadence 116–117
+moves/s, and `report.meta.counts.measures` in the thousands.
+
+| Cell                                | lost % (in-contact) | median |
+| ----------------------------------- | ------------------- | ------ |
+| P1 — two plain blits, no blend mode | 1.21 / 1.44 / 1.55  | 1.44   |
+| P1b — one plain blit                | 1.26 / 1.46 / 1.60  | 1.46   |
+
+## What the probes refuted
+
+**The blend mode is not the cost.** P1 kept the shipped bake's two blits and removed only
+`globalCompositeOperation = 'darken'` and `globalAlpha = 1 − mix`. It did not improve on the
+baseline; it sat marginally above it. ADR-0137's N6 exonerated CSS `mix-blend-mode`; canvas `darken`
+is now exonerated too, by direct control rather than by inference.
+
+**The blit count is not the cost either.** P1b halved the bake to a single plain blit and measured
+the same. Combined with campaign one's finding that direction and area barely move it, the model
+sharpens to:
+
+> Touching the composited tile at pass cadence costs ~1.4 points **regardless of how you touch it**
+> — blend mode, blit count, direction and area all fail to move it. It is priced per bake-EVENT.
+
+That kills **C1** (offscreen glaze landed with one plain blit) outright: its only remaining
+mechanism was fewer or cheaper blits, and both are now measured as free variables. It heavily
+de-weights **C2** (pattern-fill bake) — the primitive itself was never swapped, so C2 is not
+formally refuted, but every other property of the bake has turned out not to matter, and spending
+device time on it after this is arguing from the one variable not yet found to be irrelevant.
+
+**This leaves only Group B.** If the tile cannot be touched cheaply during contact, it must not be
+touched during contact at all.
+
+## A caveat that changes how the rest is read
+
+All three probe cells sit at 1.44–1.46 against campaign one's 1.24 baseline, captured yesterday.
+That is either a real small regression from the probes or session/thermal drift on the device.
+Either way **a delta measured against yesterday's number is confounded**, so this campaign
+re-captures the shipped `planes` baseline in the same session before scoring any candidate.
 
 # Rig notes
 
