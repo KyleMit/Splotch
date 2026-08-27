@@ -4,6 +4,7 @@
 import { captureMagicSheet, sheetPatternFor, type MagicSheetSnapshot } from './magicBrush';
 import { paintOpShape } from './opGeometry';
 import {
+  closeCrayonPassOp,
   flushCrayonBuffer,
   invalidateCrayonUnder,
   renderCrayonOp,
@@ -67,7 +68,12 @@ export type StrokeOp =
       crayon?: boolean;
       seed?: number;
     }
-  | { kind: 'crayonFlush' }
+  | {
+      kind: 'crayonFlush';
+      // Absent (old recorded history) means final — a pass close. False marks
+      // a mid-stroke seed boundary (checkpoint/split); see engine.ts.
+      final?: boolean;
+    }
   | { kind: 'clear' };
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
@@ -119,7 +125,7 @@ export function renderOp(target: CanvasRenderingContext2D, op: StrokeOp) {
     return;
   }
   if (op.kind === 'crayonFlush') {
-    flushCrayonBuffer(target);
+    closeCrayonPassOp(target, op.final !== false);
     return;
   }
   if (op.magic) {

@@ -70,7 +70,8 @@ import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer
 // compile-time signal as its op granularity (ADR-0147, ADR-0146). Configured
 // at module evaluation, before any stroke can render; the probe lets the
 // deferred shadow drain yield to an in-flight stroke.
-configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp', () => activePointers.size > 0);
+// NATIVE TRIAL: deferred-glaze pipeline on the WKWebView.
+configureCrayonDeposition(__IS_CAPACITOR__ ? 'deferred' : 'restamp', () => activePointers.size > 0);
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -165,8 +166,12 @@ let lastColorChangeTime = 0;
 // Close the current deposition pass — the tiles already hold the stamped
 // pixels, so this resets pass state — and record the flush in the command
 // retained for history and export.
-function recordCrayonFlush() {
-  const flush: StrokeOp = { kind: 'crayonFlush' };
+// `final` distinguishes a pass CLOSE (finger-lift, a foreign op, teardown)
+// from a mid-stroke SEED BOUNDARY (checkpoint, scribble split). The plane and
+// restamp pipelines stamp on both; the WKWebView's deferred pipeline stamps
+// only on close — and after the lift, off the contact window (ADR-0147).
+function recordCrayonFlush(final: boolean) {
+  const flush: StrokeOp = { kind: 'crayonFlush', final };
   renderTiledOp(flush);
   recordCurrentOp(flush);
   crayonOpsSinceFlush = 0;
@@ -190,6 +195,7 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
 // every tile surface rescaled in place.
 const MAX_RENDER_SCALE = 2;
+// Bound live crayon memory without making ordinary short strokes pay a checkpoint.
 // Bound live crayon memory without making ordinary short strokes pay a checkpoint.
 const CRAYON_CHECKPOINT_OPS = 64;
 let renderScale = 1;
@@ -492,7 +498,7 @@ function beginStrokeGroup() {
 // operation order; continued crayon ops open a fresh pass.
 function closeCrayonPassBeforeForeignOp(ps: PointerState) {
   const hasOpenPass = crayonOpsSinceFlush > 0;
-  if (!(ps.crayon && !ps.erase) && hasOpenPass) recordCrayonFlush();
+  if (!(ps.crayon && !ps.erase) && hasOpenPass) recordCrayonFlush(true);
 }
 
 // The five style modifiers every `dot`/`path` op carries. Erasing clears pixels
@@ -563,7 +569,7 @@ function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) 
   if (ps.crayon && !ps.erase) {
     crayonOpsSinceFlush += moveCount;
     if (crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
-      recordCrayonFlush();
+      recordCrayonFlush(false);
       ps.seed = crayonSeedCounter++;
       ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
     }
@@ -589,7 +595,7 @@ function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) 
       strokeSmoothSegments(ps, batch, 0);
       batch = [];
       didSplit = true;
-      recordCrayonFlush();
+      recordCrayonFlush(false);
       ps.seed = crayonSeedCounter++;
       ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
       ps.passTracker.advance(p);
@@ -665,7 +671,7 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
 
   renderStrokeStart(pointerState);
   for (const point of paperPoints.slice(1)) strokeSegments(pointerState, [point]);
-  if (pointerState.passTracker) recordCrayonFlush();
+  if (pointerState.passTracker) recordCrayonFlush(true);
   finishStrokeGroup();
 }
 
@@ -932,7 +938,7 @@ function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
   // pass — close the current one (stamp + recorded flush), new seed, tracker
   // restarted at the resumed point.
   if (ps.passTracker) {
-    recordCrayonFlush();
+    recordCrayonFlush(true);
     ps.seed = crayonSeedCounter++;
     ps.passTracker = new CrayonPassTracker(resume.x, resume.y, ps.lineWidth);
   }
@@ -1035,7 +1041,7 @@ function stopDrawing(e: PointerEvent) {
   // buffered wax and recording the flush at the same point in the op order.
   // A discarded edge-swipe candidate rendered nothing, so it has no pass.
   if (pointerState?.passTracker && !pointerState.edgeSwipeGuard) {
-    recordCrayonFlush();
+    recordCrayonFlush(true);
   }
 
   activePointers.delete(e.pointerId);
@@ -1062,7 +1068,7 @@ export function releaseAllPointers() {
   // buffer is shared per target).
   for (const ps of activePointers.values()) {
     if (ps.passTracker && !ps.edgeSwipeGuard) {
-      recordCrayonFlush();
+      recordCrayonFlush(true);
       break;
     }
   }

@@ -86,7 +86,15 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
 //   3. Never apply blend operations INTO a canvas that hot-path blits read
 //      from (folding the glaze into the shadow measured 2.8%) — the shadow is
 //      only ever written by plain reads.
-type CrayonDepositionMode = 'restamp' | 'planes';
+// NATIVE TRIAL (exp/crayon-native-t1-deferred-glaze): 'deferred' paints the
+// wax DIRECTLY onto the tile as the live preview (zero per-op blits — the
+// WKWebView's expensive primitive; its ablation put direct paint at 0.02%
+// against the plane pipeline's 1.24%) while accumulating the same ops on the
+// offscreen buffer; the exact glaze lands ONCE at pass close by restoring
+// the pass bounds from a pass-open under snapshot and stamping the buffer.
+// Over blank tiles the direct wax already equals the glaze, so virgin passes
+// skip both the snapshot and the close-time stamp.
+type CrayonDepositionMode = 'restamp' | 'planes' | 'deferred';
 
 // A dependency rather than a compile-time literal for the same reason as
 // ADR-0146's granularity seam: vitest pins __IS_CAPACITOR__ true and would
@@ -112,7 +120,7 @@ export function configureCrayonDeposition(
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
 // renderer uses this to decide tile visibility and plane backing allocation.
 export function crayonDepositsOnTiles() {
-  return depositionMode === 'restamp';
+  return depositionMode !== 'planes';
 }
 
 interface CrayonPassBuffer {
@@ -130,6 +138,8 @@ interface CrayonPassBuffer {
   // 'restamp' mode: true while the open pass sits on a tile that was blank at
   // pass open — the single-blit fast path, no under shadow needed.
   virgin: boolean;
+  // TRIAL T8: a closed pass awaiting its post-lift glaze stamp.
+  pendingStamp: { x0: number; y0: number; x1: number; y1: number } | null;
   dirty: boolean;
   // Device-px bounding box of the open pass's ink, so the stamp and the
   // post-pass clear touch only the pass-sized rect.
@@ -161,6 +171,7 @@ export function setCrayonBufferForTarget(
     under: null,
     underValid: false,
     virgin: false,
+    pendingStamp: null,
     dirty: false,
     bounds: null,
   });
@@ -183,6 +194,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
       under: null,
       underValid: false,
       virgin: false,
+      pendingStamp: null,
       dirty: false,
       bounds: null,
     };
@@ -297,6 +309,69 @@ function restampRect(
   target.restore();
 }
 
+// A recorded 'crayonFlush' op. On the plane and restamp pipelines every
+// flush stamps/resets as ever. On the deferred pipeline only a FINAL flush
+// closes the pass — and it does so two frames later, off the contact window
+// (a mid-stroke checkpoint or split is a seed boundary: the buffer keeps
+// accumulating and the multi-seed wax stays order-exact, since the direct
+// preview painted it in the same op order). Offscreen targets (history-base
+// fold, export replay) and repaint replays close synchronously — nothing
+// there is racing a finger.
+export function closeCrayonPassOp(target: CanvasRenderingContext2D, final: boolean) {
+  if (depositionMode !== 'deferred') {
+    flushCrayonBuffer(target);
+    return;
+  }
+  if (!final) return;
+  const buf = existingBufferFor(target);
+  if (!buf || !buf.dirty) return;
+  if (replayContext || underProvider(target).kind === 'offscreen') {
+    flushCrayonBuffer(target);
+    return;
+  }
+  if (buf.virgin || !buf.bounds) {
+    clearCrayonBounds(buf);
+    buf.underValid = false;
+    return;
+  }
+  // The glaze stamp leaves the contact window: it runs two frames after the
+  // lift, where the in-contact lost-frame gate does not live. Buffer and
+  // under survive until then; a new pass opening first settles synchronously
+  // to preserve compositing order.
+  buf.pendingStamp = buf.bounds;
+  buf.bounds = null;
+  buf.dirty = false;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      settlePendingStamp(target, buf);
+    });
+  });
+}
+
+// Apply a closed pass's deferred glaze — restore + stamp over the stashed
+// bounds, force WebKit to flush the stamp's command buffer while we are
+// still between strokes (idle time does not flush it, only a read does, and
+// an unflushed stamp makes the NEXT stroke's undo capture pay the sync
+// in-contact — measured at 1.7% against 0.37% flushed), then release the
+// buffer.
+function settlePendingStamp(target: CanvasRenderingContext2D, buf: CrayonPassBuffer) {
+  const pending = buf.pendingStamp;
+  if (!pending) return;
+  buf.pendingStamp = null;
+  buf.virgin = false;
+  restampRect(target, buf, pending);
+  // TRIAL T10: force WebKit to flush the stamp's command buffer NOW, while
+  // we are still between strokes — idle time does not flush it, only a read
+  // does, and without this the NEXT stroke's undo capture pays the
+  // accumulated sync inside the contact window.
+  target.getImageData(pending.x0, pending.y0, 1, 1);
+  buf.ctx.save();
+  buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  buf.ctx.clearRect(pending.x0, pending.y0, pending.x1 - pending.x0, pending.y1 - pending.y0);
+  buf.ctx.restore();
+  buf.underValid = false;
+}
+
 // Tiles the renderer observed to be blank when a crayon op arrived — consumed
 // at the next pass open to select the virgin fast path. The renderer notes
 // blankness from tile visibility BEFORE it shows the tile for the op, which
@@ -307,13 +382,56 @@ export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
   blankAtPassOpen.add(target);
 }
 
+// TRIAL T9: where a deferred pass's under pixels come from, WITHOUT crayon
+// ever reading the composited tile (the WKWebView's measured poison):
+//   'patch'      — the undo system's pre-command snapshot (it already paid
+//                  the read; blank commands capture nothing and are virgin)
+//   'offscreen'  — the target is not a live tile (history base, export):
+//                  reading it directly is safe
+// A repaint replay flips replayContext: direct reads are acceptable off the
+// gesture path.
+type CrayonUnderSource =
+  | { kind: 'patch'; canvas: HTMLCanvasElement }
+  | { kind: 'blank' }
+  | { kind: 'offscreen' };
+let underProvider: (target: CanvasRenderingContext2D) => CrayonUnderSource = () => ({
+  kind: 'offscreen',
+});
+let replayContext = false;
+
+export function setCrayonUnderProvider(
+  provider: (target: CanvasRenderingContext2D) => CrayonUnderSource
+) {
+  underProvider = provider;
+}
+
+export function setCrayonReplayContext(active: boolean) {
+  replayContext = active;
+}
+
+function seedUnderFromCanvas(buf: CrayonPassBuffer, source: HTMLCanvasElement) {
+  if (!buf.under) {
+    const c = document.createElement('canvas');
+    c.width = source.width;
+    c.height = source.height;
+    buf.under = c.getContext('2d')!;
+  } else if (buf.under.canvas.width !== source.width || buf.under.canvas.height !== source.height) {
+    buf.under.canvas.width = source.width;
+    buf.under.canvas.height = source.height;
+  } else {
+    buf.under.clearRect(0, 0, source.width, source.height);
+  }
+  buf.under.drawImage(source, 0, 0);
+  buf.underValid = true;
+}
+
 // The renderer's one-call seam for a crayon ink op's tile visibility: plane
 // deposition previews on the composited planes, so the tile must stay as it
 // was (returns false); restamp deposition mutates the tile directly, so it is
 // shown like any ink op — and a still-hidden tile is blank
 // (prepareTileForMutation has run), which is what opens the virgin fast path.
 export function crayonOpShowsTile(target: CanvasRenderingContext2D, targetHidden: boolean) {
-  if (depositionMode !== 'restamp') return false;
+  if (depositionMode === 'planes') return false;
   if (targetHidden) blankAtPassOpen.add(target);
   return true;
 }
@@ -392,6 +510,8 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   buf.bounds = null;
   buf.dirty = false;
   buf.virgin = false;
+  // A pending post-lift stamp describes pixels this reset just invalidated.
+  buf.pendingStamp = null;
   if (depositionMode === 'planes') {
     buf.ctx.canvas.hidden = true;
     if (buf.mirror) buf.mirror.canvas.hidden = true;
@@ -418,7 +538,19 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 // made the shadow stale, so queue a post-lift refresh.
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
-  if (!buf || !buf.dirty) return;
+  if (!buf) return;
+  if (depositionMode === 'deferred') {
+    // Direct callers (export, a foreign op about to composite over the
+    // pass) need the exact glazed pixels NOW — close synchronously,
+    // settling any stamp still pending from an earlier close first.
+    settlePendingStamp(target, buf);
+    if (!buf.dirty) return;
+    if (!buf.virgin && buf.bounds) restampRect(target, buf, buf.bounds);
+    clearCrayonBounds(buf);
+    buf.underValid = false;
+    return;
+  }
+  if (!buf.dirty) return;
   if (depositionMode === 'planes') {
     const b = buf.bounds;
     if (b) {
@@ -505,6 +637,28 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
       buf.mirror.restore();
     }
     unionCrayonBounds(buf, rect);
+    return;
+  }
+  if (depositionMode === 'deferred') {
+    // NATIVE TRIAL: live preview is the opaque wax painted straight onto the
+    // tile — pattern strokes are free here, blits are not. The buffer keeps
+    // accumulating so the close-time glaze has the whole pass, and the
+    // pre-pass pixels are snapshotted once per non-virgin pass open.
+    if (!buf.dirty) {
+      settlePendingStamp(target, buf);
+      buf.virgin = blankAtPassOpen.has(target);
+      blankAtPassOpen.delete(target);
+      if (!buf.virgin) {
+        const source = replayContext ? { kind: 'offscreen' as const } : underProvider(target);
+        if (source.kind === 'patch') seedUnderFromCanvas(buf, source.canvas);
+        else if (source.kind === 'offscreen') captureUnderSnapshot(buf, target);
+        else buf.virgin = true;
+      }
+    }
+    paintCrayon(buf.ctx, op);
+    paintCrayon(target, op);
+    buf.dirty = true;
+    unionCrayonBounds(buf, deviceRectFor(buf, matrix, opPaddedUserBounds(op)));
     return;
   }
   if (!buf.dirty) {

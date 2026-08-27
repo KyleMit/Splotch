@@ -13,6 +13,7 @@ import {
   flushCrayonBuffer,
   noteCrayonTargetBlank,
   setCrayonBufferForTarget,
+  setCrayonUnderProvider,
 } from './crayonPassBuffer';
 import { renderOp, type StrokeOp } from './strokeOps';
 
@@ -39,6 +40,7 @@ beforeEach(() => {
       setTransform() {},
       getTransform: () => new DOMMatrix(),
       clearRect() {},
+      getImageData: () => ({}),
       drawImage(...args: unknown[]) {
         this.drawImageCalls.push(args);
       },
@@ -75,6 +77,8 @@ function crayonDot(overrides: Partial<Extract<StrokeOp, { kind: 'dot' }>> = {}):
 describe('tiled crayon pass buffers', () => {
   afterEach(() => {
     configureCrayonDeposition('restamp');
+    setCrayonUnderProvider(() => ({ kind: 'offscreen' }));
+    vi.unstubAllGlobals();
   });
 
   it('keeps the preview planes hidden for the whole pass lifecycle', () => {
@@ -173,5 +177,88 @@ describe('plane deposition (the WKWebView pipeline, ADR-0147)', () => {
       expect(source).toBeInstanceOf(HTMLCanvasElement);
       expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([106, 86, 28, 28, 106, 86, 28, 28]);
     }
+  });
+});
+
+describe('deferred deposition (the WKWebView pipeline, ADR-0147)', () => {
+  it('paints the target directly per op and stamps nothing while the pass is open', () => {
+    configureCrayonDeposition('deferred');
+    const target = context2d();
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+
+    // Direct pattern strokes only — zero blits, the WKWebView's expensive
+    // primitive (its ablation put per-op blits at 1.76-2.12% lost against
+    // 0.02% for direct paint).
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(0);
+  });
+
+  it('stashes the glaze at close and stamps it two frames after the lift', () => {
+    configureCrayonDeposition('deferred');
+    // Present as a live tile: the under comes from the undo system's patch
+    // snapshot, and a final close stashes for the post-lift frames.
+    const patch = document.createElement('canvas');
+    patch.width = 300;
+    patch.height = 300;
+    setCrayonUnderProvider(() => ({ kind: 'patch', canvas: patch }));
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const target = context2d();
+    const matrix = new DOMMatrix([1, 1, 1, -1, 100, 100]);
+    (target as unknown as { getTransform: () => DOMMatrix }).getTransform = () => matrix;
+
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+
+    // A mid-stroke checkpoint/split is a seed boundary: no stamp, pass open.
+    renderOp(target, { kind: 'crayonFlush', final: false });
+    expect(calls).toHaveLength(0);
+    expect(crayonBufferIsDirty(target)).toBe(true);
+
+    // The FINAL flush stashes: nothing lands on the composited target inside
+    // the contact window — the stamp waits for the post-lift frames.
+    renderOp(target, { kind: 'crayonFlush', final: true });
+    expect(calls).toHaveLength(0);
+    while (frames.length) frames.shift()!(0);
+
+    // The settle: the under restore plus the two glaze blits, every one
+    // covering the pass's transformed corner union.
+    expect(calls).toHaveLength(3);
+    for (const call of calls) {
+      const [source, sx, sy, sw, sh, dx, dy, dw, dh] = call;
+      expect(source).toBeInstanceOf(HTMLCanvasElement);
+      expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([106, 86, 28, 28, 106, 86, 28, 28]);
+    }
+    vi.unstubAllGlobals();
+  });
+
+  it('a virgin pass closes without any stamp — the direct wax already is the glaze', () => {
+    configureCrayonDeposition('deferred');
+    const target = context2d();
+    noteCrayonTargetBlank(target);
+
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    flushCrayonBuffer(target);
+
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(0);
+    expect(crayonBufferIsDirty(target)).toBe(false);
+  });
+
+  it('a direct flush closes synchronously for export and foreign-op ordering', () => {
+    configureCrayonDeposition('deferred');
+    const target = context2d();
+    const matrix = new DOMMatrix([1, 1, 1, -1, 100, 100]);
+    (target as unknown as { getTransform: () => DOMMatrix }).getTransform = () => matrix;
+
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    flushCrayonBuffer(target);
+
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(3);
+    expect(crayonBufferIsDirty(target)).toBe(false);
   });
 });
