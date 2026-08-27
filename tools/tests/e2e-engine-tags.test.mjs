@@ -22,8 +22,8 @@ const warmWorkflow = readFileSync(
   'utf8'
 );
 const ENGINE_SMOKE_PROJECTS = [
-  { name: 'firefox', requirement: 'REQUIRE_FIREFOX' },
-  { name: 'webkit', requirement: 'REQUIRE_WEBKIT' },
+  { label: 'Firefox', name: 'firefox', requirement: 'REQUIRE_FIREFOX' },
+  { label: 'WebKit', name: 'webkit', requirement: 'REQUIRE_WEBKIT' },
 ];
 
 const tagsSource = readFileSync(join(testsDir, 'tags.ts'), 'utf8');
@@ -55,6 +55,23 @@ function workflowJob(source, jobId) {
   return nextJob === -1 ? rest : rest.slice(0, nextJob + 1);
 }
 
+function standardWorkflowBrowsers(source) {
+  return [...new Set([...source.matchAll(/^ +browsers: (\S+)$/gm)].map((match) => match[1]))];
+}
+
+function unwarmedStandardBrowsers(standardWorkflow, cacheWorkflow) {
+  const used = standardWorkflowBrowsers(standardWorkflow);
+  const matrix = cacheWorkflow.slice(cacheWorkflow.indexOf('matrix:'));
+  return used.filter((browser) => !matrix.includes(browser));
+}
+
+function engineProjectContract({ label, name, requirement }) {
+  return new RegExp(
+    `engineAvailable\\('${label}', \\(\\) => ${name}\\.executablePath\\(\\), '${requirement}'\\)` +
+      `[\\s\\S]*?name: '${name}',[\\s\\S]*?grep: ENGINE_SMOKE,`
+  );
+}
+
 describe('E2E engine tags', () => {
   it('tags.ts exports the tag constants', () => {
     expect(exportedTags).toEqual(expect.arrayContaining(['ENGINE_SMOKE_TAG', 'ENGINE_SMOKE']));
@@ -68,15 +85,13 @@ describe('E2E engine tags', () => {
   });
 
   it('Chromium excludes the engine-smoke tag', () => {
-    expect(playwrightConfig).toMatch(
-      /name: 'chromium',[\s\S]*?grepInvert: ENGINE_SMOKE,[\s\S]*?name: 'firefox'/
-    );
+    expect(playwrightConfig).toMatch(/name: 'chromium',[\s\S]*?grepInvert: ENGINE_SMOKE,/);
   });
 
   it.each(ENGINE_SMOKE_PROJECTS)(
     '$name agrees across Playwright, its npm command, and its CI job',
-    ({ name, requirement }) => {
-      expect(playwrightConfig).toMatch(new RegExp(`name: '${name}',[\\s\\S]*?grep: ENGINE_SMOKE,`));
+    ({ label, name, requirement }) => {
+      expect(playwrightConfig).toMatch(engineProjectContract({ label, name, requirement }));
       expect(packageJson.scripts[`test:${name}:smoke`]).toBe(
         `node tools/run-web-tool.mjs playwright test --project ${name}`
       );
@@ -88,8 +103,35 @@ describe('E2E engine tags', () => {
     }
   );
 
+  it.each(ENGINE_SMOKE_PROJECTS)(
+    '$name rejects another engine binary at its availability seam',
+    (project) => {
+      const otherEngine = project.name === 'firefox' ? 'webkit' : 'firefox';
+      const swapped = playwrightConfig.replace(
+        `${project.name}.executablePath()`,
+        `${otherEngine}.executablePath()`
+      );
+      expect(swapped).not.toBe(playwrightConfig);
+      expect(swapped).not.toMatch(engineProjectContract(project));
+    }
+  );
+
   it('warms every browser cache used by the standard test workflow', () => {
-    expect(warmWorkflow).toContain('browsers: [chromium, firefox, webkit]');
+    expect(unwarmedStandardBrowsers(testWorkflow, warmWorkflow)).toEqual([]);
+  });
+
+  it('detects a standard-workflow browser missing from the warm matrix', () => {
+    const withEdgeSmoke = `${testWorkflow}\n  edge-smoke:\n    steps:\n      - with:\n          browsers: msedge\n`;
+    expect(unwarmedStandardBrowsers(withEdgeSmoke, warmWorkflow)).toEqual(['msedge']);
+  });
+
+  it('accepts an equivalent block-style warm matrix', () => {
+    const blockStyle = [
+      'matrix:',
+      '  browsers:',
+      ...standardWorkflowBrowsers(testWorkflow).map((browser) => `    - ${browser}`),
+    ].join('\n');
+    expect(unwarmedStandardBrowsers(testWorkflow, blockStyle)).toEqual([]);
   });
 
   for (const spec of specs) {
