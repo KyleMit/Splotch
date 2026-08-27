@@ -25,7 +25,7 @@ pre-merge blob-encoding guard retired.
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
-`npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
+`pnpm audit --audit-level=high`) also runs on every push/PR alongside the tests — see Continuous
 integration below. The hosted deploy smoke runs separately against real deployments; its narrower
 `test:blobs:smoke` diagnostic is manual.
 

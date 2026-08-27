@@ -1,7 +1,8 @@
 # ADR-0031: Linting, Formatting, and CI Quality Gates
 
 **Status:** Active **Date:** 2026-06 (amended 2026-07: ignore-based file selection; markdown handed
-to dprint — ADR-0057; hand-authored configuration brought into Prettier scope)
+to dprint — ADR-0057; hand-authored configuration brought into Prettier scope; amended 2026-08:
+dependency audit raised from critical to high)
 
 ## Context
 
@@ -46,10 +47,11 @@ choices:
 * **Enforcement is CI-only — no pre-commit hook.** No husky/lint-staged: it avoids an extra install
   step and an `install`-time `prepare` script, and keeps the local loop friction-free. The `quality`
   job is the gate.
-* **The dependency-audit gate is `critical` only.** `npm audit` reports a large pre-existing
-  transitive count (ADR-0029), mostly build-time and unfixable; a `high` gate would make CI
-  perpetually red and be ignored. Instead CI hard-fails only on `critical` severities — rare and
-  genuinely worth blocking a release for.
+* **The dependency-audit gate is `high`.** The original critical-only threshold accommodated a large
+  pre-existing transitive advisory count under npm (ADR-0029). Dependency upgrades and the pnpm
+  migration (ADR-0119) cleared that constraint, so high and critical advisories now block CI.
+  Advisory-specific exceptions require evidence that the installed path is both unfixable and
+  non-exploitable here; severity-wide or dependency-class exclusions are not part of the policy.
 * **`precheck` runs `svelte-kit sync`** so `npm run check` generates `.svelte-kit/tsconfig.json` and
   works standalone in CI (mirrors `predev`).
 
@@ -66,9 +68,8 @@ existing `test` job.
   TypeScript-version skew with typescript-eslint.
 * − A one-time Prettier reformat touched most source files; future `git blame` crosses that commit
   (isolated as a single `style:` commit to make it skippable).
-* − The `critical`-only audit gate does not block high/moderate advisories; those are triaged
-  out-of-band via periodic `npm audit` review, by design, to keep the gate meaningful rather than
-  perpetually red.
+* \+ High and critical dependency advisories block changes before merge.
+* − Moderate and low advisories remain visible in audit output but do not block CI.
 * − No pre-commit hook means a contributor can commit lint/format violations locally; CI catches
   them, at the cost of a round-trip. Run `npm run lint` and `npm run format` (or `lint:fix`) before
   pushing.

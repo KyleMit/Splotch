@@ -31,6 +31,10 @@ describe('the quality script mirrors the Quality job', () => {
     expect(QUALITY_COMMANDS).toEqual(commandsIn(qualityJobBlock(workflow)));
   });
 
+  it('blocks high and critical dependency advisories without broad exclusions', () => {
+    expect(QUALITY_COMMANDS.at(-1)).toBe('pnpm audit --audit-level=high');
+  });
+
   it('picks the quality job, not whatever job happens to be first', () => {
     const block = qualityJobBlock(workflow);
     expect(block).toContain('name: Quality');

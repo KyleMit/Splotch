@@ -27,6 +27,11 @@ overrides:
   # range out of package.json, which is where Dependabot reads it. Kept honest by
   # tools/tests/pnpm-overrides.test.mjs, which fails when the two ranges diverge.
   '@capacitor/assets>sharp': ^0.35.3
+  # replace@1.2.2 pins vulnerable minimatch exactly, and ajv@8.20.0's compatible
+  # range retained vulnerable fast-uri. Lift only those resolved versions; the
+  # high-severity audit gate verifies their replacements stay clean.
+  minimatch@3.0.5: 3.1.4
+  fast-uri@3.1.2: 3.1.5
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19

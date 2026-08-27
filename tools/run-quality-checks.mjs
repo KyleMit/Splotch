@@ -21,7 +21,7 @@ export const QUALITY_COMMANDS = [
   'npm run lint:dead',
   'npm run check:assets:manifest',
   'npm run scrapbook:check',
-  'pnpm audit --audit-level=critical',
+  'pnpm audit --audit-level=high',
 ];
 
 function runCommand(command) {

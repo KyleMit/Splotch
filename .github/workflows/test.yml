@@ -131,10 +131,10 @@ jobs:
       - name: Scrapbook index check
         run: npm run scrapbook:check
 
-      # Build-time/transitive advisories are mostly unfixable; CI only
-      # hard-fails on critical severities so the gate stays meaningful, not noisy.
+      # High and critical advisories block the build; lower severities remain
+      # visible in the audit output without making the quality gate permanently red.
       - name: Audit dependencies
-        run: pnpm audit --audit-level=critical
+        run: pnpm audit --audit-level=high
 
   # No browser and no app build: everything here is browserless Node, so
   # putting it in the e2e job would drag it through Playwright setup while
