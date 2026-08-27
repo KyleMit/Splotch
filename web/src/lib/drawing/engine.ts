@@ -70,16 +70,10 @@ import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer
 // compile-time signal as its op granularity (ADR-0147, ADR-0146). Configured
 // at module evaluation, before any stroke can render; the probe lets the
 // deferred shadow drain yield to an in-flight stroke.
-// NATIVE TRIAL: deferred-glaze pipeline on the WKWebView.
-// The native pipeline is 'deferred' on the evidence (ADR-0147) but stays
-// INACTIVE until a person has judged its over-ink behaviour on the device —
-// automation cannot: this campaign's broken blank renderer scored 0.00% with
-// passing input fidelity. Flip this one literal after that sign-off.
-const NATIVE_CRAYON_DEPOSITION = 'planes';
-configureCrayonDeposition(
-  __IS_CAPACITOR__ ? NATIVE_CRAYON_DEPOSITION : 'restamp',
-  () => activePointers.size > 0
-);
+// 'deferred' is the measured native optimum (ADR-0147) but stays INACTIVE
+// until a person judges its over-ink behaviour on the device — swap the
+// native literal below after that sign-off.
+configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp', () => activePointers.size > 0);
 import {
   setCrayonOptions,
   crayonColorMix,
