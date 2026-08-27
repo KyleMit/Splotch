@@ -96,8 +96,17 @@ type CrayonDepositionMode = 'restamp' | 'planes';
 // (unit tests, the dev harness).
 let depositionMode: CrayonDepositionMode = 'restamp';
 
-export function configureCrayonDeposition(mode: CrayonDepositionMode) {
+// Lets the scheduled shadow drain yield to an in-flight stroke. Defaults to
+// "never active" so the module works without the engine (unit tests, the dev
+// harness), where nothing races the drain.
+let strokeActiveProbe: () => boolean = () => false;
+
+export function configureCrayonDeposition(
+  mode: CrayonDepositionMode,
+  strokeActive: () => boolean = () => false
+) {
   depositionMode = mode;
+  strokeActiveProbe = strokeActive;
 }
 
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
@@ -210,34 +219,38 @@ function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingCont
   buf.underValid = true;
 }
 
-// Targets whose shadow went stale — refreshed together shortly after
-// finger-lift, so the composited-canvas read lands in between-stroke time. A
-// pass opening before the refresh pays one synchronous read as the fallback.
-// Only the restamp pipeline feeds or reads this set.
+// Targets whose shadow went stale — refreshed together two frames after the
+// staling event, so the composited-canvas read lands off the interaction
+// frames, whatever staled it: a stroke's own flush, foreign ink, an undo
+// patch restore, or a repaint's tile clear. Every staling site routes through
+// markShadowStale, which guarantees a scheduled drain — a pass opening before
+// the drain pays one synchronous read as the fallback. Only the restamp
+// pipeline feeds or reads this set.
 const pendingShadowRefresh = new Set<CanvasRenderingContext2D>();
+let shadowRefreshScheduled = false;
+
+function markShadowStale(target: CanvasRenderingContext2D) {
+  if (depositionMode !== 'restamp') return;
+  pendingShadowRefresh.add(target);
+  if (shadowRefreshScheduled) return;
+  shadowRefreshScheduled = true;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      shadowRefreshScheduled = false;
+      // Mid-stroke (a checkpoint flush), reading the tile is the very cost
+      // this defers — skip; the stroke's closing flush reschedules.
+      if (!strokeActiveProbe()) refreshPendingCrayonShadows();
+    });
+  });
+}
 
 // Anything that changes the target's pixels outside this module's own stamps
 // makes the under shadow stale.
 export function invalidateCrayonUnder(target: CanvasRenderingContext2D) {
-  if (depositionMode !== 'restamp') return;
   const buf = existingBufferFor(target);
   if (!buf) return;
   buf.underValid = false;
-  pendingShadowRefresh.add(target);
-}
-
-// Refresh stale shadows two frames after the last finger lifts: the
-// composited-canvas read lands in between-stroke time, and Safari's
-// scheduleIdle fallback demands an input-quiet window a fast scribbler never
-// grants. Skipped when a new stroke has already started — that pass pays one
-// synchronous read as the fallback.
-export function refreshCrayonShadowsAfterLift(strokeActive: () => boolean) {
-  if (depositionMode !== 'restamp') return;
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (!strokeActive()) refreshPendingCrayonShadows();
-    });
-  });
+  markShadowStale(target);
 }
 
 function refreshPendingCrayonShadows() {
@@ -423,17 +436,20 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   }
   clearCrayonBounds(buf);
   buf.underValid = false;
-  pendingShadowRefresh.add(target);
+  markShadowStale(target);
 }
 
-// A 'clear' op's crayon side effects, without the pixel wipe. A cleared tile
-// is blank, so the next restamp-mode pass goes virgin and needs no shadow —
-// drop the pending refresh rather than reading a blank canvas.
+// The crayon side effects of wiping or replacing a target's pixels, without
+// the pixel work itself. Callers are NOT all true clears — undo restores a
+// nonblank patch and a repaint reblits history right after this — so the
+// shadow is marked stale and left on the scheduled drain, which skips
+// still-hidden (blank) targets rather than reading them.
 export function resetCrayonStateForClear(target: CanvasRenderingContext2D) {
   dropCrayonBuffer(target);
   const buf = existingBufferFor(target);
-  if (buf) buf.underValid = false;
-  pendingShadowRefresh.delete(target);
+  if (!buf) return;
+  buf.underValid = false;
+  markShadowStale(target);
 }
 
 // Discard the target's open pass without stamping — a 'clear' wipes everything,

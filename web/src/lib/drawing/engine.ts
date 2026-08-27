@@ -65,12 +65,12 @@ import {
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
 import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
-import { refreshCrayonShadowsAfterLift } from './crayonPassBuffer';
 
 // Crayon's deposition pipeline is a per-runtime decision from the same
 // compile-time signal as its op granularity (ADR-0147, ADR-0146). Configured
-// at module evaluation, before any stroke can render.
-configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp');
+// at module evaluation, before any stroke can render; the probe lets the
+// deferred shadow drain yield to an in-flight stroke.
+configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp', () => activePointers.size > 0);
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -744,7 +744,6 @@ function finishGroupWhenCanvasIdle() {
   if (activePointers.size > 0) return;
   if (penStreamAdopter.hasCanvasExit()) callbacks.onDrawStop?.();
   else finishStrokeGroup();
-  refreshCrayonShadowsAfterLift(() => activePointers.size > 0);
 }
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
