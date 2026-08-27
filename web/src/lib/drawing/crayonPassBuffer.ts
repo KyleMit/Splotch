@@ -8,7 +8,9 @@ import {
   crayonPassWidthScale,
   crayonPatternFor,
   getCrayonMix,
+  getPerOpGlazeReturn,
 } from './crayonBrush';
+import { dev } from '$app/environment';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
 import type { DotOp, PathOp } from './strokeOps';
 
@@ -47,32 +49,9 @@ function paintCrayon(
 // a pass-cadence glaze applied once per stroke has exactly the same property
 // across strokes. What changes is that a slow or scrubbing stroke now also
 // builds up WITHIN itself, where the buffered pipelines hold one stroke flat.
-// How much of the crayon's own colour each op returns over the darkened pixel.
-//
-// The buffered pipelines apply `1 - mix` (0.45) ONCE for a whole pass, because a
-// pass is one accumulated shape. Reusing that figure per op compounds: a pixel
-// covered by k overlapping ops retains 1 - (1-B)^k of the crayon, so at B = 0.45
-// two ops already reach 75% and a hand-speed stroke — which overlaps a pixel
-// roughly 8-12 times — reaches ~99%. Measured on the device 2026-08-27 as a
-// crossing that stayed blue except at the single-op fringe.
-//
-// Solving (1-B)^k = mix for a hand-speed k puts B near 0.06, which lands the
-// ACCUMULATED result where one pass used to. That is where the search started;
-// 0.06 read as too green on the device and the value was settled by eye at 0.10
-// in a 2026-08-27 tuning session, so treat the formula as the bracket it found
-// rather than as the derivation of this number.
-//
-// The trade this makes deliberately: mix depth now varies with stroke speed,
-// because a slower stroke overlaps a pixel more times — which is how wax
-// actually behaves, and the direction the same session's feedback asked for.
-//
-// Blank paper is unaffected at any value: darken over a transparent backdrop
-// yields the source, and the source over itself is the source.
-const PER_OP_GLAZE_RETURN = 0.1;
-
 function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   paintCrayon(target, op, 'darken');
-  paintCrayon(target, op, 'source-over', PER_OP_GLAZE_RETURN);
+  paintCrayon(target, op, 'source-over', getPerOpGlazeReturn());
 }
 
 // --- Crayon pass buffer ------------------------------------------------------
@@ -163,6 +142,21 @@ export function configureCrayonDeposition(
   // one — its pending targets belong to the previous configuration's probe.
   pendingShadowRefresh.clear();
   shadowRefreshScheduled = false;
+}
+
+// Dev A/B seam: select the pipeline this build would otherwise pick from
+// __IS_CAPACITOR__, keeping the configured stroke probe. It exists so the native
+// pipeline can be swept for APPEARANCE from a desktop browser instead of a
+// build-and-install cycle per candidate — colour reproduces, since canvas
+// compositing is spec-defined, while frame cost does NOT, which is the whole
+// reason the pipelines differ. Never read performance off it;
+// tools/perf/gen-crayon-glaze-sheet.mjs is the consumer.
+//
+// The gate is inside the function on purpose: __DEV_HARNESS__ is a client seam,
+// and this module is evaluated during SSR, where a module-scope reference throws.
+export function setCrayonDepositionForTuning(mode: CrayonDepositionMode) {
+  if (!dev && !__DEV_HARNESS__) return;
+  configureCrayonDeposition(mode, strokeActiveProbe);
 }
 
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the

@@ -36,8 +36,12 @@ declare global {
         bodyVariationCell?: number;
         shadeVariation?: number;
         colorMix?: number;
+        perOpGlazeReturn?: number;
         passes?: { widthScale: number; coverage: number }[];
       }): void;
+      // Selects the deposition pipeline for an APPEARANCE sweep. Colour
+      // reproduces off-device; frame cost does not (ADR-0148).
+      setCrayonDeposition(mode: 'restamp' | 'planes' | 'glaze-direct'): void;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {

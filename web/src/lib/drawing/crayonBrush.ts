@@ -103,6 +103,11 @@ export interface CrayonOptions {
   // a few percent, converging — never compounding into mud. Low, not zero:
   // real crayons barely mix. See crayonPassBuffer.ts.
   colorMix: number;
+  // Per-OP glaze strength for the native pipeline (ADR-0148). NOT `1 - colorMix`:
+  // that figure is applied once for a whole pass, and reusing it per op compounds
+  // across a stroke's overlapping ops to ~99% crayon at hand speed. See the
+  // constant's default below.
+  perOpGlazeReturn: number;
   // The density passes, widest first.
   passes: CrayonPass[];
 }
@@ -141,6 +146,11 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
   // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
   colorMix: 0.55,
+  // Solving (1-B)^k = colorMix for a hand-speed overlap k brackets this near
+  // 0.06; 0.06 read as too green on the physical iPad and 0.10 was settled by
+  // eye in the 2026-08-27 tuning session. The formula found the bracket, it did
+  // not derive the value — do not recompute it and "correct" it.
+  perOpGlazeReturn: 0.1,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
@@ -277,6 +287,13 @@ export function getCrayonPasses(): CrayonPass[] {
 // Glaze strength ceiling: past this the two-blit stamp reads as paint blending,
 // not wax (see the colorMix note in CRAYON_DEFAULTS).
 export const MAX_CRAYON_MIX = 0.9;
+
+// How much of the crayon's own colour each OP returns over the darkened pixel,
+// for the pipeline that glazes per op instead of per pass (ADR-0148). Lives here
+// beside colorMix so the dev A/B seam can sweep it like every other crayon knob.
+export function getPerOpGlazeReturn(): number {
+  return Math.min(1, Math.max(0, opts.perOpGlazeReturn));
+}
 
 // The glaze strength for a deposition pass's stamp (see CrayonOptions).
 export function getCrayonMix(): number {

@@ -5,6 +5,7 @@ vi.mock('./crayonBrush', () => ({
   crayonPassWidthScale: () => 1,
   crayonPatternFor: () => ({}) as CanvasPattern,
   getCrayonMix: () => 0.55,
+  getPerOpGlazeReturn: () => 0.1,
 }));
 
 import { configureCrayonDeposition } from './crayonPassBuffer';
