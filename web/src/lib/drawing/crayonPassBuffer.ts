@@ -18,10 +18,14 @@ import type { DotOp, PathOp } from './strokeOps';
 // strokes build up coverage without shifting hue (ADR-0065). No-op until the
 // tooth tile is buildable (a DOM canvas exists), matching the magic sheet's
 // decode-pending skip.
-function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
+function paintCrayon(
+  target: CanvasRenderingContext2D,
+  op: DotOp | PathOp,
+  composite: GlobalCompositeOperation = 'source-over'
+) {
   const seed = op.seed ?? 0;
   const passCount = crayonPassCount();
-  target.globalCompositeOperation = 'source-over';
+  target.globalCompositeOperation = composite;
   for (let i = 0; i < passCount; i++) {
     const pattern = crayonPatternFor(target, op.color, seed, i);
     if (!pattern) continue;
@@ -86,7 +90,22 @@ function paintCrayon(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
 //   3. Never apply blend operations INTO a canvas that hot-path blits read
 //      from (folding the glaze into the shadow measured 2.8%) — the shadow is
 //      only ever written by plain reads.
-type CrayonDepositionMode = 'restamp' | 'planes';
+// 'darken-direct' drops the accumulate-then-glaze structure entirely: it paints
+// the wax onto the tile with 'darken' per op and is finished.
+//
+// That is only sound because of an algebraic property of the glaze. Per covered
+// pixel the pass applies out = (1−m)·S + m·min(S,D). Applied twice it gives
+// (1−m)·S + m(1−m)·S + m²·D, which is lighter — so at any 0 < m < 1 the mix
+// compounds under overdraw and has to be applied exactly ONCE per pass, which is
+// what forces a buffer to accumulate on and therefore a surface to preview from.
+// At m = 1 the expression collapses to min(S,D), and min is idempotent:
+// min(S, min(S,D)) = min(S,D). The mix can then be applied per op, straight onto
+// the tile, because applying it again changes nothing.
+//
+// m = 1 is the ONLY mix strength with that property, so this is a real trade:
+// it buys the pen-floor cost structure at the price of a fully subtractive
+// crossing, where the shipped 0.55 keeps 45% of the crayon's own colour.
+type CrayonDepositionMode = 'restamp' | 'planes' | 'darken-direct';
 
 // A dependency rather than a compile-time literal for the same reason as
 // ADR-0146's granularity seam: vitest pins __IS_CAPACITOR__ true and would
@@ -118,7 +137,7 @@ export function configureCrayonDeposition(
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
 // renderer uses this to decide tile visibility and plane backing allocation.
 export function crayonDepositsOnTiles() {
-  return depositionMode === 'restamp';
+  return depositionMode !== 'planes';
 }
 
 interface CrayonPassBuffer {
@@ -332,7 +351,7 @@ export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
 // shown like any ink op — and a still-hidden tile is blank
 // (prepareTileForMutation has run), which is what opens the virgin fast path.
 export function crayonOpShowsTile(target: CanvasRenderingContext2D, targetHidden: boolean) {
-  if (depositionMode !== 'restamp') return false;
+  if (depositionMode === 'planes') return false;
   if (targetHidden) blankAtPassOpen.add(target);
   return true;
 }
@@ -436,6 +455,9 @@ function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, bl
 // painted or restamped them — so only reset pass state; the pass's own wax
 // made the shadow stale, so queue a post-lift refresh.
 export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
+  // Every op already landed its own final pixels, and min has no pass state to
+  // close, so a flush has nothing to do.
+  if (depositionMode === 'darken-direct') return;
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
   if (depositionMode === 'planes') {
@@ -488,6 +510,10 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   // cheap escape hatch. Flushes become no-ops on a clean buffer.
   if (getCrayonMix() === 0) {
     paintCrayon(target, op);
+    return;
+  }
+  if (depositionMode === 'darken-direct') {
+    paintCrayon(target, op, 'darken');
     return;
   }
   const buf = crayonBufferFor(target);

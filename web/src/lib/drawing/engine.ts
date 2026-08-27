@@ -70,7 +70,10 @@ import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer
 // compile-time signal as its op granularity (ADR-0147, ADR-0146). Configured
 // at module evaluation, before any stroke can render; the probe lets the
 // deferred shadow drain yield to an in-flight stroke.
-configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp', () => activePointers.size > 0);
+configureCrayonDeposition(
+  __IS_CAPACITOR__ ? 'darken-direct' : 'restamp',
+  () => activePointers.size > 0
+);
 import {
   setCrayonOptions,
   crayonColorMix,
