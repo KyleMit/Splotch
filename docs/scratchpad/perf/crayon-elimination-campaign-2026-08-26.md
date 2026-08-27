@@ -329,20 +329,36 @@ the probe already collects), two samples per orientation:
 * **Not more whole-tile shadow reads** — identical counts, and 1–4 ms total across a 60-second
   capture, so that path is not the cost in *either* orientation.
 * **Not more restamps** — identical counts.
-* **Not restamp area.** Restamp area is pure geometry, so it was measured in a desktop browser at
-  both viewport shapes with identical normalized strokes: 116 restamps each, mean rect 1072 px
-  portrait against 1111 px landscape — **+3.6%**, nowhere near the +12–18% cost.
+* **Restamp area: measured as nearly equal, but NOT refuted as the cause.** Restamp geometry was
+  measured in a desktop browser at both viewport shapes with identical normalized strokes: 116
+  restamps each, mean rect 1072 px portrait against 1111 px landscape, **+3.6%**. What that
+  establishes is the geometry, on a different browser and GPU. Concluding "+3.6% area cannot produce
+  +12–18% cost" assumes the cost is roughly linear in area, and this campaign's own i2 result —
+  frame-union rects at 2.62% — is direct evidence that restamp area can behave **non-linearly** on
+  the device. Lost-frame share is a thresholded tail statistic, which is exactly where a
+  non-linearity would hide. Settling this needs a same-device A/B holding everything but rect size
+  constant; until then area is *not excluded*.
 * **Not the paper-view transform** — both orientations composite at `matrix(1,0,0,1,0,0)`.
 
-What remains is the tile aspect itself (256×300 portrait against 320×233 landscape at equal total
-area) interacting with WebKit's own damage/compositing, which is precisely the layer the engine
-marks cannot see (ADR-0085's premise). Attributing it further needs a WebKit-level trace, not
-another product experiment.
+**The residual is unresolved, and naming a cause for it would repeat the mistake this campaign keeps
+catching.** Tile aspect (256×300 portrait against 320×233 landscape at equal total area) is a
+candidate, not a conclusion — none of these diagnostics isolates it, and an earlier draft of this
+section asserted it as "what remains", which is a mechanism fitted to a residual.
 
-**Recorded and stopped, deliberately.** The effect is ~0.15 points on a cell whose gate exception is
-1.5%, and it sits close to the run-to-run spread (portrait 0.77–0.88 over five samples, landscape
-0.82–1.06 over five). Spending more device time to chase it would be the same mistake as inventing a
-mechanism for it.
+It is also wrong that only a WebKit trace could test it: **varying the live-tile grid on the same
+device, holding paper and strokes fixed, is the direct A/B** — and ADR-0085's grid sweep has never
+been re-run for this renderer, which ADR-0147 already records as an unmet condition. That sweep
+would test tile aspect and restamp area together, since both change with the grid.
+
+**Stopped deliberately, and recorded as unresolved rather than explained.** The effect is ~0.15
+points on a cell whose gate exception is 1.5%, and it sits close to the run-to-run spread (portrait
+0.77–0.88 over five samples, landscape 0.82–1.06 over five). Stopping is a resourcing judgement, not
+a finding: the honest state is *cause unknown, two candidates untested (restamp area on-device, tile
+aspect), one defined experiment available (ADR-0085's grid sweep)*.
+
+An independent re-review on 2026-08-27 measured the same restored build at landscape 0.84 / 0.79 /
+0.90 against portrait 0.85 / 0.93 / 0.72 — a smaller gap than this session's, and further reason to
+treat the residual as unresolved rather than characterised.
 
 **One earlier recommendation is withdrawn by this.** i12's merged-op + per-segment-stroke shape was
 recorded as the lead for the paint-max tail and looked like the lever for landscape too. It is not,
