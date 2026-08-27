@@ -235,6 +235,101 @@ That is either a real small regression from the probes or session/thermal drift 
 Either way **a delta measured against yesterday's number is confounded**, so this campaign
 re-captures the shipped `planes` baseline in the same session before scoring any candidate.
 
+## The same-session control
+
+| Cell                         | lost % (in-contact)              | median |
+| ---------------------------- | -------------------------------- | ------ |
+| `planes` baseline, 5 samples | 1.87 / 1.10 / 1.16 / 1.33 / 1.54 | 1.33   |
+
+The baseline's own range brackets both probes, so P1 and P1b are not merely "close to" baseline —
+they are indistinguishable from it. It also fixes this session's noise floor at roughly **0.7
+points**, which means only an elimination-scale result is resolvable here. A candidate landing near
+0.9% could not be told from noise; one landing at the pen floor can.
+
+## D1 — the plane bake deferred past the lift, planes kept up
+
+| Cell              | lost %             | median |
+| ----------------- | ------------------ | ------ |
+| D1 plane-deferred | 1.57 / 1.25 / 1.60 | 1.57   |
+
+**No improvement.** Because that is the campaign's central prediction failing, the build was
+instrumented rather than argued about: each bake now emits `engine.crayonBake.<site>`, and a further
+capture counted **543 bakes landed `deferred`** against **216 dragged back `atOpen`** by the next
+stroke arriving inside the two-frame settle. So 72% of bakes genuinely left the contact window, and
+the number did not move.
+
+### This overturns campaign one's central attribution
+
+Campaign one concluded the plane pipeline's cost "was never the composited planes; it was the SAME
+pass-cadence flush stamps," from three similar numbers across different pipelines (T2 1.50 ≈ a3 1.49
+≈ planes 1.24). That is the *observation is not a mechanism* trap this runbook warns about, and D1
+separates the two variables directly. Lining every cell up by whether composited planes were
+present:
+
+| Cell                                        | planes? | bake in contact? | lost %        |
+| ------------------------------------------- | ------- | ---------------- | ------------- |
+| `planes` baseline                           | yes     | yes              | 1.10–1.87     |
+| ADR-0137 N6 — `mix-blend-mode: normal`      | yes     | yes              | 1.26          |
+| P1 / P1b — bake blend and blit count varied | yes     | yes              | 1.21–1.60     |
+| a3 — mirror plane removed                   | yes     | yes              | 1.49          |
+| **D1 — 72% of bakes deferred**              | **yes** | **mostly no**    | **1.25–1.60** |
+| T10 — deferred glaze, direct paint          | no      | no               | 0.30–0.46     |
+| a4 — direct paint, no mixing                | no      | no               | 0.02          |
+
+**Everything with composited preview planes sits at 1.21–1.87. Everything without them sits at
+0.02–0.46.** Nothing done *inside* the plane pipeline — blend mode, blit count, plane count, bake
+timing — moves the number. The composited plane preview is the cost. ADR-0137 had already named this
+exact gap: N6 "bounds the blend mode rather than the cost of compositing two planes per tile."
+
+## D4 — the idempotent glaze
+
+That forces the mixed pixels onto the tile itself, and the only blit-free way there is per op —
+which the glaze normally forbids, because `out = (1−m)·S + m·min(S,D)` compounds under the
+overlapping ops of a single pass. Applied twice it yields `(1−m)S + m(1−m)S + m²D`. Needing to be
+applied exactly once per pass is *why* an accumulation surface has to exist at all.
+
+At **m = 1** it collapses to `min(S,D)`, and min is idempotent: `min(S, min(S,D)) = min(S,D)`. The
+mix can then be painted per op straight onto the tile, because painting it again changes nothing. m
+= 1 is the only mix strength with that property — there is no idempotent form of the shipped 0.55.
+
+| Cell                 | lost %             | median | paint p50/p95 |
+| -------------------- | ------------------ | ------ | ------------- |
+| D4 idempotent darken | 0.33 / 0.02 / 0.05 | 0.05   | 8 / 15–16     |
+| native pen floor     | 0.01–0.05          | —      | —             |
+
+**That is the pen floor**, from a baseline of 1.33 — the gap eliminated rather than shaved. Sample
+1's 0.33 carried a 173 ms starvation episode on the first run after install; samples 2 and 3 are
+0.02 and 0.05.
+
+### Proving the build painted, not the reverse
+
+Campaign one discarded a 0.00/0.00/0.01 round because the trial build painted nothing and the
+capture could not tell. This one was checked three ways rather than trusted: fidelity PASS with
+`uncalibrated: []` on all three samples, `measures` 3768–3774 (matching baseline's range), paint p50
+8 ms / p95 15 ms (baseline: 8 / 16 — real paint work, not an idle renderer), and a device screenshot
+of actual crayon strokes.
+
+### The appearance trade, measured on the device
+
+Two crossing strokes — yellow `#F9D24F` then blue `#62A2E9` — drawn through trusted touch on the
+iPad and screenshotted on both builds (`tools/perf/ios/capture-crayon-appearance.mjs`), then sampled
+over the crossing:
+
+| Build             | predicted crossing | measured mean   | reads as |
+| ----------------- | ------------------ | --------------- | -------- |
+| baseline m = 0.55 | (98, 162, 148)     | (104, 165, 152) | teal     |
+| D4 m = 1          | (98, 162, 79)      | (100, 162, 85)  | green    |
+
+Both match their algebra to within antialiasing, so this is the real and complete difference: at a
+crossing the blue channel lands at 152 instead of 85. Everywhere else the two builds are identical —
+over blank paper `darken` on a transparent backdrop yields the source exactly, and same-colour
+buildup is min's fixed point.
+
+**Crucially this is a steady-state difference, not a temporal one.** Campaign one's rejection was
+about a colour *shifting* after the finger lifted. Here nothing shifts: the mixed pixel is correct
+from the moment it is painted, and the live preview is the final pixel by construction. What changed
+is the mix strength at crossings, which is a taste question for a human, not a glitch.
+
 # Rig notes
 
 The preflight's `--verify-ios-launch` assumes an Appium server is already listening on the resolved
