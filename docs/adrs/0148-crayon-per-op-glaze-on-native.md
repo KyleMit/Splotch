@@ -1,0 +1,117 @@
+# ADR-0148: Native Crayon Applies the Glaze Per Op, Directly on the Tile
+
+**Status:** Active — supersedes the native half of
+[ADR-0147](0147-crayon-restamp-renderer-no-preview-planes.md) (web keeps restamp unchanged), retires
+[ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s preview planes on the Capacitor WKWebView,
+and refutes ADR-0147's attribution of the plane pipeline's cost **Date:** 2026-08
+
+## Context
+
+ADR-0147 decided planes for native at 1.19–1.40% of in-contact frame time against a native pen floor
+of 0.01–0.05% — crayon costing roughly 40× pen for what is visually a textured line. It also
+recorded a measured 4× (0.20–0.46%) that was **rejected on appearance**: that pipeline painted
+unmixed wax live and applied the glaze after the lift, and the correction at lift read as a colour
+glitch rather than as ink drying.
+
+The 2026-08-27 campaign (`docs/scratchpad/perf/crayon-native2-2026-08-27.md`) inverted the framing —
+live-accurate mixed preview is the constraint, the frame budget is the variable — and began by
+re-testing ADR-0147's own attribution, which held that the plane pipeline's cost was the
+pass-cadence bake that stamps the buffer into the tile. Every part of that attribution failed:
+
+* **The bake's blend mode is free.** Replacing `darken` + `source-over(1−mix)` with two plain
+  `source-over` blits measured 1.21/1.44/1.55 against a same-session baseline of 1.10–1.87.
+* **The bake's blit count is free.** Halving it to a single blit measured 1.26/1.46/1.60.
+* **The bake's timing is free.** Deferring the bake past the lift while keeping the preview planes
+  up measured 1.25/1.57/1.60. This one was instrumented rather than argued: naming each bake's call
+  site showed **543 bakes landed deferred against 216 dragged back** by the next stroke arriving
+  inside the settle, so 72% genuinely left the contact window and the number did not move.
+
+Sorted by whether composited preview planes were present, every cell separates cleanly: **planes
+present measures 1.21–1.87, planes absent measures 0.02–0.46** — across this campaign's probes,
+ADR-0137's N6, and ADR-0147's own a3, a4 and T10. The planes are the cost. ADR-0147 had inferred the
+opposite from three similar numbers taken across *different* pipelines (T2 1.50 ≈ a3 1.49 ≈ planes
+1.24), which is the "an observation is not a mechanism" failure `docs/PROFILING-CAMPAIGNS.md` warns
+about; ADR-0137 had already named this exact gap, noting its N6 "bounds the blend mode rather than
+the cost of compositing two planes per tile."
+
+That forces the mixed pixels onto the tile itself. Two ways to put them there were already measured
+and rejected: restamp restores each op's rect from an under shadow and re-glazes, which is per-op
+composited-tile blits (1.76–2.12% on native), and the deferred pipeline defers the mixing itself,
+which is the appearance rejection above. The third is to paint the glaze per op — which the glaze
+normally forbids, because `out = (1−m)·S + m·min(S,D)` compounds under a pass's overlapping ops.
+Needing to be applied exactly once per pass is *why* an accumulation surface has to exist at all.
+
+**A fully subtractive glaze was tried first and refuted at the device.** At `m = 1` the expression
+collapses to `min(S,D)`, which is idempotent, so it can be painted per op with no accumulation
+surface — and it measured 0.02–0.33%, the pen floor. A human drew on it and rejected it immediately:
+idempotence means `min` is a **fixed point**, so blue over yellow stays green however many times a
+child draws back over it, and the crayon reads as refusing to work. The shipped mix walks to the new
+colour precisely *because* it is not idempotent (n passes give `S·(1−mⁿ) + mⁿ·D`). The
+non-idempotence is the feature, and it is the same property that requires the expensive surface.
+
+## Decision
+
+**Native crayon applies the shipped glaze arithmetic per OP, painted straight onto the ink tile: no
+accumulation buffer, no preview planes, and no canvas-to-canvas blit.** The `glaze-direct` mode in
+`web/src/lib/drawing/crayonPassBuffer.ts` paints each op twice — `darken` at alpha 1, then the
+crayon's own colour at `PER_OP_GLAZE_RETURN` — and `crayonFlush` becomes a no-op, since no pass
+state exists to close. Selected from the same compile-time `CAPACITOR=true` signal as ADR-0146's op
+granularity and ADR-0147's deposition fork (`engine.ts`). **Web is untouched and keeps restamp.**
+
+`PER_OP_GLAZE_RETURN = 0.1` is the load-bearing constant. It is **not** the pass-cadence `1 − mix`:
+a pixel covered by k overlapping ops retains `1 − (1−B)^k` of the crayon colour, so reusing 0.45 per
+op reaches 75% after two ops and ~99% at hand speed — measured on the device as a crossing that kept
+its green only at the single-op fringe. Solving `(1−B)^k = mix` for a hand-speed k brackets B near
+0.06; 0.06 read as too green, and **0.10 was settled by eye on the physical iPad**. Treat the
+formula as the bracket that found the value, not as its derivation — recomputing it and "correcting"
+the constant would undo a human judgement.
+
+Two invariants make the per-op form safe where it is not visibly different:
+
+* **Blank paper is unaffected at any return value.** `darken` over a transparent backdrop yields the
+  source, and the source over itself is the source — so wax on blank paper is byte-identical to the
+  buffered pipelines. This is the dominant toddler case.
+* **Same-colour buildup is exact.** `min(S,S) = S`, and coverage still accumulates because each
+  pass's seed re-phases the tooth pattern into different pits.
+
+`crayonGlazeDirect.test.ts` pins the op sequence and alpha, pins that the pipeline issues zero
+blits, and — separately from any pipeline — pins the convergence requirement as arithmetic, so a
+future candidate cannot trade repeated-draw accumulation away without a red test.
+
+## Consequences
+
+\+ **The gap is eliminated, not shaved.** Physical iPad, installed Capacitor app, all fidelity-PASS
+with `uncalibrated: []`: portrait 0.36/0.35/0.00/0.08/0.02 (median 0.08) against the same-session
+plane baseline's median 1.33; landscape 0.01/0.03/0.05; pen control on the same build 0.00. Crayon
+now sits at the native pen floor, and the ~40× brush-to-pen ratio is gone.
+
+\+ **The whole preview-plane apparatus becomes dead weight on native** — two composited canvases per
+live tile, the per-op mirror blit, the pass bounds, the bake, and the settle-order machinery around
+it. Crayon deposits like any other brush.
+
+\+ **ADR-0137's `ipad-device-web:crayon` exception is not affected, but the native 1.5% exception is
+now unused headroom** and is a candidate for retirement on evidence rather than by argument.
+
+− **Mix depth varies with stroke speed.** A pixel's mix depends on how many ops covered it, so a
+fast swipe across existing ink leaves more of it showing than a slow deliberate stroke. The buffered
+pipelines hold a single stroke flat by construction; this one cannot, and **no value of
+`PER_OP_GLAZE_RETURN` removes it** — it is inherent to applying the glaze per op. Accepted on the
+device on the grounds that it is how wax behaves, and it is the same mechanism that produces the
+repeated-draw accumulation the buffered-once glaze also has.
+
+− **Native and web now differ in appearance at crossings, not merely in pipeline.** ADR-0147 already
+forks deposition per runtime, but those forks were byte-identical in output; this one is not. Web
+keeps the uniform per-pass glaze at mix 0.55. The divergence is confined to pixels where a stroke
+crosses *existing ink of a different colour* — blank paper and same-colour buildup match exactly —
+and it is deliberate rather than overlooked. Closing it means either porting this pipeline to web
+(where restamp already meets its gate, so the change would buy appearance consistency at unknown
+cost) or accepting it; that decision is open.
+
+− **The constant was set by eye and has no test that can fail on it.** Its value is a taste
+judgement recorded in an ADR and a comment, which is weaker than the drift-guards this repo prefers.
+A screenshot-diff gate over a crossing would close that, and does not exist.
+
+− **The glaze is no longer "once per pass" anywhere in the native path**, so reasoning that assumed
+the pass as the unit of mixing — including ADR-0065's buildup argument and ADR-0085's pass-tracker
+splits — now describes only the web pipeline. The splits and checkpoints still re-phase the seed on
+native and still matter for texture, but they no longer bound a mixing unit.

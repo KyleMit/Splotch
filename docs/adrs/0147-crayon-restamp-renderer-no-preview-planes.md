@@ -1,10 +1,12 @@
 # ADR-0147: Crayon Deposition Is a Per-Runtime Decision — Restamp on Web, Planes on Native
 
-**Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s crayon preview
-architecture for the web build, extends [ADR-0146](0146-crayon-op-granularity-per-runtime.md)'s
-per-runtime pattern to the deposition pipeline, and re-opens
-[ADR-0137](0137-lost-frame-gate-exceptions.md)'s `ipad-device-web:crayon` exception for retirement
-**Date:** 2026-08
+**Status:** Active for the web build; its native decision is superseded by
+[ADR-0148](0148-crayon-per-op-glaze-on-native.md), which also refutes this record's attribution of
+the plane pipeline's cost to the pass-cadence bake — amends
+[ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s crayon preview architecture for the web
+build, extends [ADR-0146](0146-crayon-op-granularity-per-runtime.md)'s per-runtime pattern to the
+deposition pipeline, and re-opens [ADR-0137](0137-lost-frame-gate-exceptions.md)'s
+`ipad-device-web:crayon` exception for retirement **Date:** 2026-08
 
 ## Context
 
