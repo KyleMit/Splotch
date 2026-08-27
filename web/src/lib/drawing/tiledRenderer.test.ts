@@ -405,9 +405,9 @@ describe('idle tiled canvas visibility', () => {
     expect(crayonLayers.every((layer) => layer.hidden)).toBe(true);
 
     clearTiledRenderer(true);
-    expect(
-      host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')
-    ).toHaveLength(0);
+    expect(host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]:not([hidden])')).toHaveLength(
+      0
+    );
 
     // A redraw after the clear opens a fresh pass rather than resurrecting
     // the dropped one.
