@@ -103,7 +103,7 @@ describe('the glaze applied per op, directly on the tile', () => {
     // crossing that kept its green only at the single-op fringe.
     expect(paintsOf(target)).toEqual([
       ['darken', 1],
-      ['source-over', 0.1],
+      ['source-over', 0.16],
     ]);
   });
 

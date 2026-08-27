@@ -57,10 +57,12 @@ function paintCrayon(
 // crossing that stayed blue except at the single-op fringe.
 //
 // Solving (1-B)^k = mix for a hand-speed k puts B near 0.06, which lands the
-// ACCUMULATED result where one pass used to. That is where the search started;
-// 0.06 read as too green on the device and the value was settled by eye at 0.10
-// in a 2026-08-27 tuning session, so treat the formula as the bracket it found
-// rather than as the derivation of this number.
+// ACCUMULATED result where one pass used to. That was the bracket the search
+// started from, not the answer: 0.06 read as too green on the device, and the
+// value was settled at 0.16 in a 2026-08-27 session that drew on a physical
+// iPad and cross-checked against a sweep measuring every candidate's crossing
+// colour against the web pipeline's (tools/perf/find-glaze-web-match.mjs, and
+// the proof sheet beside it). Do not recompute the formula and "correct" this.
 //
 // The trade this makes deliberately: mix depth now varies with stroke speed,
 // because a slower stroke overlaps a pixel more times — which is how wax
@@ -68,7 +70,7 @@ function paintCrayon(
 //
 // Blank paper is unaffected at any value: darken over a transparent backdrop
 // yields the source, and the source over itself is the source.
-const PER_OP_GLAZE_RETURN = 0.1;
+const PER_OP_GLAZE_RETURN = 0.16;
 
 function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   paintCrayon(target, op, 'darken');
