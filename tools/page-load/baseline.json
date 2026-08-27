@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "profileVersion": 1,
+  "sourceDigest": "14e979d69b7242ec5eee84725c476c9e4d6f69e5fa55bdf142b66cc4d2c09d95",
+  "calibratedOn": "2026-08-27",
+  "lighthouseVersion": "13.4.0",
+  "samplesPerProfile": 3,
+  "profiles": {
+    "phone-portrait": {
+      "first": {
+        "baseline": { "fcpMs": 1599, "lcpMs": 3022 },
+        "limits": { "fcpMs": 2600, "lcpMs": 5500 }
+      },
+      "repeat": {
+        "baseline": { "fcpMs": 705, "lcpMs": 822 },
+        "limits": { "fcpMs": 1200, "lcpMs": 2000 }
+      }
+    },
+    "tablet-landscape": {
+      "first": {
+        "baseline": { "fcpMs": 1599, "lcpMs": 3022 },
+        "limits": { "fcpMs": 2600, "lcpMs": 4500 }
+      },
+      "repeat": {
+        "baseline": { "fcpMs": 705, "lcpMs": 825 },
+        "limits": { "fcpMs": 1200, "lcpMs": 2000 }
+      }
+    }
+  }
+}

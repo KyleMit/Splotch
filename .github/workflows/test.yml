@@ -170,6 +170,37 @@ jobs:
       - name: API contract smoke
         run: npm run test:api:smoke
 
+  # Lighthouse's scheduler-derived TBT and score are too noisy to gate on a
+  # shared runner. Three samples make the median resilient to one outlier; the
+  # stable FCP/LCP medians keep deliberately wide regression thresholds. This
+  # is a production BUILD comparison, not a claim about the local preview's
+  # HTTP/1.1 numbers matching Netlify's CDN.
+  page-load-performance:
+    name: Page-load performance
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: Run page-load performance gate
+        run: npm run test:lighthouse:ci -- --port=4197
+
+      - name: Upload Lighthouse reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-page-load
+          path: lighthouse-reports/ci/
+          if-no-files-found: error
+          retention-days: 7
+
   # Each shard builds the app itself rather than restoring it from a build job:
   # a shared artifact serializes every shard behind `needs:` (measured ≈81s +
   # tests) while concurrent per-shard builds overlap (≈69s + tests). Playwright's
