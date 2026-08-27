@@ -64,7 +64,13 @@ import {
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
-import { flushCrayonBuffer } from './crayonPassBuffer';
+import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
+
+// Crayon's deposition pipeline is a per-runtime decision from the same
+// compile-time signal as its op granularity (ADR-0147, ADR-0146). Configured
+// at module evaluation, before any stroke can render; the probe lets the
+// deferred shadow drain yield to an in-flight stroke.
+configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp', () => activePointers.size > 0);
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -156,25 +162,9 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// Each live tile has two crayon canvases holding the open deposition pass at
-// full opacity. The bottom layer
-// composites with mix-blend-mode: darken and the top with CSS opacity
-// (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
-// pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
-// stamp will bake into the normal tile at close (see crayonPassBuffer.ts)
-// — no visible snap. pointer-events: none, so input still lands on the canvas
-// beneath. LiveSurface's `.canvas-stack` sets `isolation: isolate`, confining
-// the darken blend to the drawing pixels. Without it the blend sees the
-// composited paper, and dark paper erases the bottom layer into a faint
-// `1 - mix`-opacity preview until the flush.
-//
-function syncCrayonOverlayMix() {
-  const opacity = String(1 - crayonColorMix());
-  syncTiledCrayonMix(opacity);
-}
-
-// Close the current deposition pass by stamping each tile's live buffer and
-// recording the same flush in the command retained for history and export.
+// Close the current deposition pass — the tiles already hold the stamped
+// pixels, so this resets pass state — and record the flush in the command
+// retained for history and export.
 function recordCrayonFlush() {
   const flush: StrokeOp = { kind: 'crayonFlush' };
   renderTiledOp(flush);
@@ -961,7 +951,9 @@ const rasterQueue = createStrokeRasterQueue<PointerState>({
   activePointers,
   // Compile-time per-runtime choice (see CrayonOpGranularity): the WKWebView
   // pays more per op, Safari pays more per path-length, and the measured
-  // optimum flips between them — issue 1236.
+  // optimum flips between them — issue 1236, re-confirmed under the restamp
+  // renderer (per-move on the WKWebView measured 4.4-5.5% lost against
+  // 1.8-2.1% merged, 2026-08-26).
   crayonOpGranularity: __IS_CAPACITOR__ ? 'per-frame' : 'per-move',
   paperMinEdge: () => Math.min(paper.pxW, paper.pxH),
   pointerWasResumed,
@@ -1175,7 +1167,7 @@ export function getDrawingWorkDebug(): DrawingWorkDebug | null {
 export function setCrayonParams(params: Partial<CrayonOptions>) {
   if (!dev && !__DEV_HARNESS__) return;
   setCrayonOptions(params);
-  syncCrayonOverlayMix();
+  syncTiledCrayonMix(String(1 - crayonColorMix()));
   if (ctx) repaintTiledRenderer();
 }
 
@@ -1284,7 +1276,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     recordedPaper: recordedPaperState,
     hasActivePointers: () => activePointers.size > 0 || penStreamAdopter.hasCanvasExit(),
   });
-  syncCrayonOverlayMix();
+  syncTiledCrayonMix(String(1 - crayonColorMix()));
   wireMagicBrushHost();
 
   attachCallbacks(options);
