@@ -376,6 +376,48 @@ of overlapping per-frame ops and cancel itself toward pure crayon colour in the 
 treats it as disqualifying — but that judgement predates the feedback above, which asks for more
 buildup, not less. It is a device question.
 
+### D5 tuned and confirmed
+
+The first D5 build reused the pass-cadence `1 - mix` (0.45) as the per-op return, and the device
+verdict was that accumulation read right but a crossing barely turned green, only at the fringe. The
+arithmetic accounts for it exactly: a pixel covered by k overlapping ops retains `1 - (1-B)^k` of
+the crayon colour, so two ops already reach 75% and a hand-speed stroke — which overlaps a pixel
+roughly 8-12 times — reaches ~99%. Only single-op fringe pixels kept any mix.
+
+Solving `(1-B)^k = mix` for a hand-speed k brackets B near 0.06. That read as too green on the
+device; **0.10 was settled by eye** in the same session, using a dev-harness setter
+(`tools/perf/ios/set-crayon-glaze-return.mjs`) that changes the value on the running build in about
+ten seconds instead of a three-minute rebuild-and-reinstall loop.
+
+| Cell                        | lost % samples                   | median   |
+| --------------------------- | -------------------------------- | -------- |
+| `planes` baseline, portrait | 1.87 / 1.10 / 1.16 / 1.33 / 1.54 | 1.33     |
+| **D5 @0.10 portrait**       | 0.36 / 0.35 / 0.00 / 0.08 / 0.02 | **0.08** |
+| **D5 @0.10 landscape**      | 0.03 / 0.01 / 0.05               | **0.03** |
+| pen control, same build     | 0.00                             | 0.00     |
+
+All fidelity-PASS, `uncalibrated: []`, cadence 116-117 moves/s. **Crayon is at the native pen
+floor**, from a baseline of 1.33% — the gap eliminated rather than shaved, and the ~40x
+pen-to-crayon ratio this campaign opened with is gone.
+
+Portrait samples 1 and 2 (0.36, 0.35) each carried a render-starvation episode of 150-175 ms and
+were the first two runs after an install and launch; samples 3-5 and every landscape sample are
+0.00-0.08. Reported rather than excluded — the median is quoted from all five.
+
+## What this costs, stated plainly
+
+**Mix depth now varies with stroke speed.** A pixel's mix depends on how many ops covered it, so a
+fast swipe across existing ink leaves more of it showing and a slow deliberate stroke covers more.
+The buffered pipelines hold a single stroke flat by construction; this one cannot, and no value of
+the per-op return removes it — it is inherent to applying the glaze per op. It was judged acceptable
+on the device on the grounds that it is how wax behaves, and it is the same mechanism that gives the
+accumulation the device feedback asked for.
+
+**Native and web now differ in appearance at crossings**, not merely in pipeline. ADR-0147 already
+forks deposition per runtime, but those forks were byte-identical in output; this one is not. Web
+keeps `restamp` with the uniform per-pass glaze at mix 0.55. That divergence is a deliberate open
+decision, not an oversight — see the ADR.
+
 # Rig notes
 
 The preflight's `--verify-ios-launch` assumes an Appium server is already listening on the resolved
