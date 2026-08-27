@@ -9,6 +9,7 @@
   import DrawingCanvas from '$lib/components/DrawingCanvas.svelte';
   import ColorPalette from '$lib/components/ColorPalette.svelte';
   import ActionsPanel from '$lib/components/ActionsPanel.svelte';
+  import CrayonGlazeSlider from '$lib/components/CrayonGlazeSlider.svelte';
   import ClearButton from '$lib/components/ClearButton.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
   import SettingsButton from '$lib/components/SettingsButton.svelte';
@@ -118,6 +119,7 @@
   <DrawingCanvas />
 </main>
 
+<CrayonGlazeSlider />
 <ClearButton />
 <ActionsPanel />
 <SettingsButton />
