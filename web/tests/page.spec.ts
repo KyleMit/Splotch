@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { draw, gotoApp, renderedCanvasHandle } from './helpers';
+import { draw, gotoApp, renderedCanvasHandle, spaNavigate } from './helpers';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
 
@@ -89,16 +89,6 @@ test('non-canvas routes are normal documents by default (/privacy, /admin)', asy
 // component's effect cleanup — not the boot script, which only runs on load —
 // that has to put the document right. The sentinel a reload would wipe rides
 // along, so the caller can prove the page never reloaded.
-async function spaNavigate(page: Page, href: string) {
-  await page.evaluate(() => ((window as unknown as { __spa: boolean }).__spa = true));
-  await page.evaluate((target) => {
-    const a = document.createElement('a');
-    a.href = target;
-    document.body.appendChild(a);
-    a.click();
-  }, href);
-}
-
 async function expectNoReload(page: Page) {
   const noReload = await page.evaluate(
     () => (window as unknown as { __spa?: boolean }).__spa === true

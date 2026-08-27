@@ -225,6 +225,29 @@ export async function gotoApp(
   await waitForDrawableRenderedCanvas(page);
 }
 
+export async function registerServiceWorkerAndControl(page: Page) {
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    if (navigator.serviceWorker.controller) return;
+    await new Promise<void>((resolve) => {
+      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+        once: true,
+      });
+    });
+  });
+}
+
+export async function spaNavigate(page: Page, href: string) {
+  await page.evaluate(() => ((window as Window & { __spa?: boolean }).__spa = true));
+  await page.evaluate((target) => {
+    const link = document.createElement('a');
+    link.href = target;
+    document.body.appendChild(link);
+    link.click();
+  }, href);
+}
+
 // Open an overlay/flyout/dialog robustly and leave it open. Several of these
 // controls idle-mount (ADR-0049) or reposition on the first frame, so the first
 // click can land before the handler is wired and be dropped; a flyout toggle

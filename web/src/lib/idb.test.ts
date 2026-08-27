@@ -58,6 +58,15 @@ describe('requestPersistentStorage', () => {
 
     await expect(requestPersistentStorage()).resolves.toBe(false);
   });
+
+  it('returns false when the browser denies persistent storage', async () => {
+    const persist = vi.fn().mockResolvedValue(false);
+    vi.stubGlobal('navigator', { storage: { persist } });
+    const { requestPersistentStorage } = await import('./idb');
+
+    await expect(requestPersistentStorage()).resolves.toBe(false);
+    expect(persist).toHaveBeenCalledOnce();
+  });
 });
 
 describe('lazyIdbDatabase', () => {
