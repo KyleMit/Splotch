@@ -240,7 +240,7 @@ export function refreshCrayonShadowsAfterLift(strokeActive: () => boolean) {
   });
 }
 
-export function refreshPendingCrayonShadows() {
+function refreshPendingCrayonShadows() {
   for (const target of pendingShadowRefresh) {
     const buf = existingBufferFor(target);
     // A hidden target is blank — the next pass takes the virgin path and
