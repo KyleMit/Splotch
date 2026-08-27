@@ -41,6 +41,7 @@ canvas demote it as a blit source — 2.8%).
 
 **Crayon's deposition pipeline is decided per runtime, from the same compile-time `CAPACITOR=true`
 signal as its op granularity (ADR-0146): the web build deposits by restamp; the Capacitor WKWebView
+<<<<<<< HEAD
 deposits by DEFERRED STAMP** (amended 2026-08-27 — the plane pipeline this ADR originally kept as
 native's optimum was itself eliminated the same day by a dedicated native campaign,
 `docs/scratchpad/perf/crayon-native-campaign-2026-08-26.md`).
@@ -55,6 +56,27 @@ readback. Direct `flushCrayonBuffer` calls (export, a foreign op compositing ove
 close synchronously; offscreen targets and repaint replays bypass the deferral; and any reset that
 replaces the tile's pixels (undo patch restore, clear, repaint) cancels a stamp still pending,
 because a closed-but-unstamped pass is precisely the state the `dirty` flag no longer marks.
+=======
+keeps ADR-0085's composited-plane pipeline.**
+
+A third pipeline — DEFERRED STAMP — was built and measured for native, and **rejected on
+appearance** (2026-08-27). It is documented here because its measurements stand and its rejection is
+the decision: a 4× lost-frame improvement was available on native and was declined, so the next
+person to find that headroom knows it has already been spent against a visual cost and what that
+cost looked like.
+
+The rejected deferred pipeline worked like this: the live preview is the opaque wax pattern-stroked
+directly onto the normal ink tile; the pass accumulates in parallel on an offscreen buffer; the
+under shadow seeds from the undo system's own pre-command tile snapshot (crayon adds zero
+composited-tile reads — blank commands capture no patch and are exactly the virgin passes needing no
+under); `crayonFlush` ops carry a `final` flag, so checkpoints and scribble splits are pure seed
+boundaries and only the closing flush stamps the glaze — two frames after the lift, off the
+in-contact window, followed by a one-pixel readback. Direct `flushCrayonBuffer` calls (export, a
+foreign op compositing over the open pass) close synchronously; offscreen targets and repaint
+replays bypass the deferral; and any reset that replaces the tile's pixels (undo patch restore,
+clear, repaint) cancels a stamp still pending, because a closed-but-unstamped pass is precisely the
+state the `dirty` flag no longer marks.
+>>>>>>> origin/main
 
 **The readback's effect is measured; its mechanism is not.** Without it the same build costs 1.7%
 and with it 0.37%, and the cost lands on the *next* stroke's undo capture rather than on the stamp.
@@ -77,6 +99,7 @@ pattern strokes and detached-canvas work are free while any tile-involving blit 
 costs ~1.4 points; a composited-tile read is priced by the unflushed work before it; the undo
 snapshot is a free under source.
 
+<<<<<<< HEAD
 **Visual concession, gating activation:** over existing ink the live preview is unmixed opaque wax
 and the exact glaze appears at the post-lift stamp; over blank paper — the dominant toddler case —
 pixels are byte-exact throughout. Automation cannot close this, and the campaign's own history says
@@ -85,6 +108,23 @@ device and judge the over-ink behaviour (blue over yellow, and a long stroke cro
 checkpoint) before this pipeline is activated. Until that sign-off exists the plane pipeline remains
 native's default; the deferred pipeline lands behind the `configureCrayonDeposition` seam as
 measured, unit-tested, inactive code.
+=======
+**The visual gate is what rejected it.** Automation measured the win and could not see the cost; a
+person drawing on the device could, immediately. On 2026-08-27 the deferred build was installed on
+the physical iPad alongside Safari running the restamp pipeline as a live control, and the verdict
+was that the colour **visibly shifts when the stroke lands — bright wax darkening toward the
+background** — which reads as a glitch rather than as ink drying. That is disqualifying for a
+drawing app aimed at two-year-olds, whatever the frame numbers say.
+
+The concession, as designed: over existing ink the live preview is unmixed opaque wax and the exact
+glaze appears at the post-lift stamp; over blank paper — the dominant toddler case — pixels are
+byte-exact throughout. Automation cannot close this, and the campaign's own history says why: its
+broken blank renderer scored 0.00% with passing input fidelity. A person must draw on the device and
+judge the over-ink behaviour (blue over yellow, and a long stroke crossing a wax checkpoint) before
+this pipeline is activated. Until that sign-off exists the plane pipeline remains native's default;
+the deferred pipeline lands behind the `configureCrayonDeposition` seam as measured, unit-tested,
+inactive code.
+>>>>>>> origin/main
 
 **Unmet productization condition, recorded rather than inherited:**
 [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) requires its repeated live-surface grid sweep
@@ -151,12 +191,29 @@ Three campaign-earned constraints bound any rework of this path:
 
 ## Consequences
 
+<<<<<<< HEAD
+=======
+* \+ **Native keeps a pipeline whose appearance is known-good**, at a measured cost: the deferred
+  alternative was 1.24% → 0.20–0.46% (roughly 4×, against a 0.01–0.05% pen floor) and was declined
+  because the glaze arriving after the stroke reads as a colour glitch.
+* − **The native win is unclaimed, not unavailable.** Closing it needs a deposition that is cheap on
+  the WKWebView *and* mixes live. Every measured way of mixing live there runs through the
+  operations that runtime charges ~1.4 points for — which is why the plane pipeline exists. A future
+  attempt should treat "live-accurate preview" as the hard constraint and the frame budget as the
+  variable, which is the opposite of how this campaign was run.
+>>>>>>> origin/main
 * \+ Crayon reaches pen parity in portrait on the target this app is judged on. Landscape is
   restored but sits at ~0.97–1.06%, so **ADR-0137's 1.5% exception stays in force and must not be
   retired on this evidence** — the earlier revision of this ADR recommended retiring it, on the
   two-sample landscape arm since withdrawn. The landscape residual is unresolved: shadow-read count,
+<<<<<<< HEAD
   restamp count, restamp area (+3.6% by geometry) and the paper transform were each excluded, and no
   same-device A/B has isolated a cause.
+=======
+  restamp count and the paper transform were each excluded; restamp area measured nearly equal by
+  geometry (+3.6%) but is **not** excluded, since this campaign's own i2 result shows restamp area
+  can behave non-linearly on device.
+>>>>>>> origin/main
 * \+ 32 live canvases, the per-op mirror blit, per-op `hidden` writes, and the 16-tile flush stamps
   leave the hot path entirely; the checkpoint's role shrinks to bounding buffer memory and pass
   semantics.

@@ -162,3 +162,25 @@ Visual concessions for the human eyeball (issue-1372 style): over existing ink t
 unmixed opaque wax, with the exact glaze appearing at the post-lift stamp (~2 frames after the
 finger lifts); mid-stroke checkpoints no longer mix incrementally. Over blank paper — the dominant
 toddler case — pixels are byte-exact throughout.
+
+## Outcome: rejected on appearance (2026-08-27)
+
+The deferred pipeline was installed on the physical iPad with Safari serving the restamp pipeline as
+a live control, and a human drew on both. Verdict: **the colour visibly shifts when the stroke lands
+— bright wax darkening toward the background** — which reads as a glitch rather than as ink drying.
+Disqualifying for a drawing app aimed at two-year-olds, whatever the frame numbers say.
+
+Native therefore keeps ADR-0085's plane pipeline at 1.19–1.40%, and the measured 4× (0.20–0.46%
+against a 0.01–0.05% pen floor) is **declined, not unavailable**.
+
+The campaign's own framing is what went wrong, and it is worth stating for the next attempt: it
+treated the frame budget as the target and the appearance as a concession to be checked at the end.
+The constraint is the reverse. **The live preview must show the mixed appearance while the finger is
+down**; anything that defers mixing past the lift is disqualified before it is measured.
+
+Note also what the ablation says about *where* the plane cost lives, because it was never exploited:
+T2 isolated it as the pass-cadence stamps that bake the pass into the tile (~1.4 points), not the
+plane surfaces themselves (a3, which removed a plane, was WORSE at 1.49%). Planes already display
+the final glazed pixels — that is their design purpose (ADR-0085's "no visible snap") — so deferring
+only the BAKE while keeping the planes up is visually free by construction, and was never measured.
+Every native trial here (T1–T10) deferred the bake on a direct-paint preview instead.
