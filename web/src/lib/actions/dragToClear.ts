@@ -242,6 +242,13 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     }, EXIT_RETURN_DELAY_MS);
   }
 
+  function commitClear(o: DragToClearOptions): void {
+    commitClearSound();
+    o.onTutorialDismiss();
+    o.onClear();
+    playClearExit(o);
+  }
+
   // The return leg's easing is the only reason .clearing-return exists, so it
   // comes off when that transition ends — reading the duration off the animation
   // itself rather than re-encoding ClearButton.svelte's timing here. The icons
@@ -265,11 +272,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     finishDrag(o, e.pointerId);
 
     if (distance >= threshold) {
-      commitClearSound();
-      o.onTutorialDismiss();
-      o.onClear();
-
-      playClearExit(o);
+      commitClear(o);
     } else {
       cancelClearSound();
       resetDragVisuals(o);
@@ -278,6 +281,13 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.onDragEnd?.();
 
     suppress(e);
+  }
+
+  // detail 0 is keyboard/desktop-AT activation and stays outside toddler pointer input.
+  // Mobile screen readers synthesize touch/pointer activation, so this path does not cover them.
+  function onClick(e: MouseEvent) {
+    if (e.detail !== 0 || activePointerId !== null) return;
+    commitClear(getOptions());
   }
 
   function onPointerCancel(e: PointerEvent) {
@@ -302,6 +312,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   node.addEventListener('pointermove', onPointerMove);
   node.addEventListener('pointerup', onPointerUp);
   node.addEventListener('pointercancel', onPointerCancel);
+  node.addEventListener('click', onClick);
   node.addEventListener('transitionend', onTransitionEnd);
 
   return {
@@ -319,6 +330,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       node.removeEventListener('pointermove', onPointerMove);
       node.removeEventListener('pointerup', onPointerUp);
       node.removeEventListener('pointercancel', onPointerCancel);
+      node.removeEventListener('click', onClick);
       node.removeEventListener('transitionend', onTransitionEnd);
       if (acceptZoneFrame !== null) cancelAnimationFrame(acceptZoneFrame);
       for (const id of resetTimers) clearTimeout(id);

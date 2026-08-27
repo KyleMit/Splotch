@@ -284,6 +284,50 @@ describe('dragToClear pointer identity', () => {
   });
 });
 
+describe('dragToClear keyboard activation', () => {
+  let cleanup: (() => void) | null = null;
+  afterEach(() => {
+    cleanup?.();
+    cleanup = null;
+    vi.clearAllMocks();
+  });
+
+  it('commits the clear path for a detail-zero click', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
+
+    expect(options.onTutorialDismiss).toHaveBeenCalledOnce();
+    expect(options.onClear).toHaveBeenCalledOnce();
+    expect(node.classList.contains('clearing')).toBe(true);
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(true);
+  });
+
+  it('ignores a real pointer click', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+
+    expect(options.onTutorialDismiss).not.toHaveBeenCalled();
+    expect(options.onClear).not.toHaveBeenCalled();
+    expect(node.classList.contains('clearing')).toBe(false);
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
+  });
+
+  it('ignores a detail-zero click while a pointer owns the gesture', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
+
+    expect(options.onClear).not.toHaveBeenCalled();
+    expect(node.classList.contains('dragging')).toBe(true);
+  });
+});
+
 describe('dragToClear hold-to-show-tutorial timer', () => {
   let cleanup: (() => void) | null = null;
   afterEach(() => {
