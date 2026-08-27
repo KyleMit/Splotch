@@ -8,8 +8,8 @@ import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import type { HistoryDebug } from '../src/lib/drawing/undoHistory';
 
-// Shared E2E helpers used across specs. Keep this module WebKit-portable — no
-// CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
+// Shared E2E helpers used across specs. Keep this module cross-engine portable — no
+// CDP sessions or dev-harness routes — because engine-smoke.spec.ts imports it
 // (see web/tests/CLAUDE.md).
 
 // User agents for the specs that exercise the app's OS detection (isIosDevice /

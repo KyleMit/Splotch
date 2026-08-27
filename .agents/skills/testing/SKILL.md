@@ -14,7 +14,7 @@ command, and what CI runs it on), then a section per layer.
 | Server-contract smoke    | Changing an `/api/*` endpoint, the adapter, or the Netlify config                                                         |
 | Unit tests               | Writing Vitest for app code, the asset pipeline, store drawings, or repo scripts                                          |
 | E2E web tests            | Writing or running Playwright — **including "Writing flake-resistant specs", the section that earns its keep most often** |
-| WebKit smoke / a11y tier | Touching the critical path or anything with a11y surface                                                                  |
+| Engine smoke / a11y tier | Touching the critical path or anything with a11y surface                                                                  |
 | Cloud session gotchas    | Running Playwright inside a cloud session                                                                                 |
 | Native smoke (Maestro)   | Android/iOS smoke runs, or installing Maestro for the first time                                                          |
 | Continuous integration   | Debugging a CI failure, or deciding where a new suite should run                                                          |

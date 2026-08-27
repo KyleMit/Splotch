@@ -192,9 +192,9 @@ jobs:
 
       - uses: ./.github/actions/setup-pnpm
 
-      # Chromium alone: WebKit is deliberately absent, so playwright.config.ts
-      # drops the webkit project and this runs Chromium only. The webkit-smoke
-      # job below owns that coverage.
+      # Chromium alone: the non-Blink browsers are deliberately absent, so
+      # playwright.config.ts drops both engine-smoke projects. Their standalone
+      # jobs below own that coverage.
       - uses: ./.github/actions/setup-playwright
         with:
           browsers: chromium
@@ -226,6 +226,39 @@ jobs:
           name: playwright-report-shard-${{ matrix.shard }}
           # The HTML reporter resolves its default folder against the
           # package.json directory — the repo root here (ADR-0024), not web/.
+          path: playwright-report/
+          if-no-files-found: error
+          retention-days: 7
+
+  # Firefox uses the same small engine-smoke subset as WebKit but needs none of
+  # WebKit's GStreamer/ffmpeg stack. A separate parallel job closes the only
+  # remaining engine-family gap without adding another browser to every shard.
+  firefox-smoke:
+    name: Firefox smoke
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: firefox
+
+      - name: Run Firefox smoke
+        run: npm run test:firefox:smoke
+        env:
+          # Assert that the installed binary produced a Firefox project instead
+          # of letting Playwright silently drop the smoke from this job.
+          REQUIRE_FIREFOX: 1
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-firefox
           path: playwright-report/
           if-no-files-found: error
           retention-days: 7
