@@ -1,0 +1,28 @@
+{
+  "campaign": "crayon-elimination-2026-08-26",
+  "capturedFrom": "perf-profiles/crayon-2026-08-26",
+  "kept": [
+    {
+      "file": "unknown-crayon.json",
+      "target": "unknown",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ablate-1-no-split/crayon-1.json",
+      "candidateCount": 88,
+      "passingCandidateCount": 88,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "unknown-pen.json",
+      "target": "unknown",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "base/pen-1.json",
+      "candidateCount": 6,
+      "passingCandidateCount": 6,
+      "failedCandidateCount": 0
+    }
+  ]
+}
