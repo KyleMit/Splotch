@@ -1,48 +1,46 @@
 # Quality
 
-The axes Splotch is held to, and what backs each one today — a gate, a test, a skill, or a
+The axes Splotch is held to, and what backs each one today - a gate, a test, a skill, or a
 documented decision. Open work lives in GitHub issues, not here.
 
-```
-best in class product     — what it's like to use
-best in class promise     — what we commit to
-best in class practice    — how it's built
-```
+* **product** - what it's like to use
+* **promise** - what we commit to
+* **practice** - how it's built
 
 ## Product
 
-* **Usability** — how a toddler's hand meets the app: targets, gestures, forgiveness, flow (ux)
-* **Design System** — tokens, primitives, and visual consistency across every surface (design
+* **Usability** - how a toddler's hand meets the app: targets, gestures, forgiveness, flow (ux)
+* **Design System** - tokens, primitives, and visual consistency across every surface (design
   language, ui)
-* **Accessibility** — WCAG conformance, assistive-tech paths, contrast, motor accessibility
-* **Illustration** — quality and breadth of the coloring pages: outlines, fills, catalog (content,
+* **Accessibility** - WCAG conformance, assistive-tech paths, contrast, motor accessibility
+* **Illustration** - quality and breadth of the coloring pages: outlines, fills, catalog (content,
   artwork)
-* **Performance** — frame cost while drawing, and how fast the app loads (browser rendering, JS
+* **Performance** - frame cost while drawing, and how fast the app loads (browser rendering, JS
   performance, network performance, pre-rendering)
-* **Resilience** — degrades gracefully: offline, crashes, quota, outages still return usable state
+* **Resilience** - degrades gracefully: offline, crashes, quota, outages still return usable state
   (offline usability, crash tolerance, graceful degradation, progressive enhancement)
-* **Storefront** — the pre-install surface: listing, screenshots, icon, description, discovery
+* **Storefront** - the pre-install surface: listing, screenshots, icon, description, discovery
   (distribution)
 
 ## Promise
 
-* **Privacy** — what leaves the device, what's kept, and for how long
-* **Content Safety** — AI output stays appropriate for a two-year-old, every time
-* **Security** — credentials, endpoints, and supply chain resist misuse and attack (dependency
+* **Privacy** - what leaves the device, what's kept, and for how long
+* **Content Safety** - AI output stays appropriate for a two-year-old, every time
+* **Security** - credentials, endpoints, and supply chain resist misuse and attack (dependency
   vulnerabilities)
-* **Compliance** — store guidelines, COPPA, and kids-policy obligations, provably met
-* **Child Wellbeing** — whether the app is genuinely good for a developing child
+* **Compliance** - store guidelines, COPPA, and kids-policy obligations, provably met
+* **Child Wellbeing** - whether the app is genuinely good for a developing child
 
 ## Practice
 
-* **Architecture** — where code lives, how it's layered, and why
-* **Code Quality** — readable, conventional, well-named code with no dead weight
-* **Testing** — coverage, and whether the suite's signal can be trusted (test integrity, flake
+* **Architecture** - where code lives, how it's layered, and why
+* **Code Quality** - readable, conventional, well-named code with no dead weight
+* **Testing** - coverage, and whether the suite's signal can be trusted (test integrity, flake
   resistance)
-* **Compatibility** — native matches web; every supported browser and OS version runs (platform
+* **Compatibility** - native matches web; every supported browser and OS version runs (platform
   parity, portability)
-* **Documentation** — ADRs, guides, and docs that stay true as code moves
-* **Developer Experience** — tooling, CI, agent instructions, and dependency upkeep that keep
+* **Documentation** - ADRs, guides, and docs that stay true as code moves
+* **Developer Experience** - tooling, CI, agent instructions, and dependency upkeep that keep
   velocity (ci/cd, dependency management)
 
 ---
@@ -68,7 +66,7 @@ reference. The `design` skill carries the token vocabulary, primitives, and voic
 
 ## Accessibility
 
-Adult-facing surfaces hold WCAG 2.1 AA. The toddler canvas chrome is deliberately out of scope —
+Adult-facing surfaces hold WCAG 2.1 AA. The toddler canvas chrome is deliberately out of scope -
 giant wordless buttons and no reading order are not WCAG's model.
 
 **Backed by.** `a11y.spec.ts` runs axe-core, and hand-computes contrast for the cases axe reports as
@@ -80,7 +78,7 @@ giant wordless buttons and no reading order are not WCAG's model.
 Every coloring page ships clean outlines, theme-correct fills, and no shapes the generator invented
 that are absent from the source.
 
-**Backed by.** The `check:coloring-*` family — outline quality, invented shapes, night halo, fill
+**Backed by.** The `check:coloring-*` family - outline quality, invented shapes, night halo, fill
 eyes, fill drift, and golden scores. `check:assets:manifest` turns silent binary churn into a
 reviewable text diff. The pipeline keeps its own decision records in `tools/asset-gen/docs/`, and
 the `vectorize-image` skill covers raster-to-vector tracing.
@@ -99,7 +97,7 @@ commit-P95 gate. `check-bundle-budgets.mjs` holds the startup, lazy-chunk, and n
 
 ## Resilience
 
-Every degraded path returns usable app state rather than a dead end — offline, provider outage,
+Every degraded path returns usable app state rather than a dead end - offline, provider outage,
 exhausted quota, denied storage, a crash mid-stroke. The child's work survives.
 
 **Backed by.** `early-boot.spec.ts` and `paper-texture-boot.spec.ts` on the startup path,
@@ -119,7 +117,7 @@ answers. The `mobile` skill carries the store release checklists.
 
 No accounts, no analytics SDKs, no advertising identifiers, no child name, email, or location.
 Everything that leaves the device is disclosed in `/privacy` in parent-readable terms, with
-retention stated on both sides — what we keep, and what the provider keeps.
+retention stated on both sides - what we keep, and what the provider keeps.
 
 **Backed by.** `requiredNativePageProblems` and `requiredNativePageLinkProblems` in
 `tools/mobile/check-static-bundle.mjs` fail `build:cap` if the privacy page is missing from the
@@ -131,7 +129,7 @@ retention.
 ## Content Safety
 
 A generated picture is appropriate for a two-year-old, or it is refused with a message the child can
-act on. The prompt surface is closed — a child cannot type free text into a generator.
+act on. The prompt surface is closed - a child cannot type free text into a generator.
 
 **Backed by.** `openaiSafety.ts` classifies a response as image, safety refusal, or empty failure,
 with unit coverage beside it. ADR-0023 records why the Responses API is used instead of
@@ -163,7 +161,7 @@ identifier from the Play Families prohibited list, requests no location permissi
 
 ## Child Wellbeing
 
-The app asks whether a two-year-old is better off for having used it — not whether they stayed
+The app asks whether a two-year-old is better off for having used it - not whether they stayed
 longer. No streaks, no notifications pulling a child back, no engagement loop, and creative tools
 that build on what the child made rather than replacing it.
 
@@ -184,14 +182,14 @@ New code reads like the code around it. No dead exports, no unformatted files, n
 duplicate declarations.
 
 **Backed by.** `check:quality` runs the whole set in one pass and reports every failure rather than
-the first — format, svelte-check, eslint, ruler drift, token lint, knip, asset manifest, scrapbook
+the first - format, svelte-check, eslint, ruler drift, token lint, knip, asset manifest, scrapbook
 index, and audit. The `format-edited-file.sh` hook routes each edited file through Prettier or
 dprint. Skills: `code-audit` and `extract-audit` to find work, `vet-audits` to prune it,
 `fix-audits` and `burn-down-audits` to clear it, `simplify` and `code-review` on a working diff.
 
 ## Testing
 
-Three tiers — Vitest unit, Playwright end-to-end, and Maestro native smoke on both platforms — and a
+Three tiers - Vitest unit, Playwright end-to-end, and Maestro native smoke on both platforms - and a
 suite whose signal can be trusted rather than re-run until green.
 
 **Backed by.** Unit specs sit beside their sources in `web/src`, end-to-end specs in `web/tests`,
