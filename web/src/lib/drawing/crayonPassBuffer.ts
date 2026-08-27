@@ -529,10 +529,9 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     // tile — pattern strokes are free here, blits are not. The buffer keeps
     // accumulating so the close-time glaze has the whole pass, and the
     // pre-pass pixels are snapshotted once per non-virgin pass open.
+    // DIAGNOSTIC T4: no under read — isolating the detached-buffer writes.
     if (!buf.dirty) {
-      buf.virgin = blankAtPassOpen.has(target);
-      blankAtPassOpen.delete(target);
-      if (!buf.virgin) captureUnderSnapshot(buf, target);
+      buf.virgin = true;
     }
     paintCrayon(buf.ctx, op);
     paintCrayon(target, op);
