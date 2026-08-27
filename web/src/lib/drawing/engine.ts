@@ -64,7 +64,17 @@ import {
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
-import { flushCrayonBuffer, refreshPendingCrayonShadows } from './crayonPassBuffer';
+import {
+  configureCrayonDeposition,
+  flushCrayonBuffer,
+  refreshPendingCrayonShadows,
+} from './crayonPassBuffer';
+
+// Crayon's deposition pipeline is a per-runtime decision from the same
+// compile-time signal as its op granularity (ADR-0147, ADR-0146): the
+// WKWebView keeps the composited-plane pipeline, the web build deposits by
+// restamp. Configured at module evaluation, before any stroke can render.
+configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp');
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -964,7 +974,9 @@ const rasterQueue = createStrokeRasterQueue<PointerState>({
   activePointers,
   // Compile-time per-runtime choice (see CrayonOpGranularity): the WKWebView
   // pays more per op, Safari pays more per path-length, and the measured
-  // optimum flips between them — issue 1236.
+  // optimum flips between them — issue 1236, re-confirmed under the restamp
+  // renderer (per-move on the WKWebView measured 4.4-5.5% lost against
+  // 1.8-2.1% merged, 2026-08-26).
   crayonOpGranularity: __IS_CAPACITOR__ ? 'per-frame' : 'per-move',
   paperMinEdge: () => Math.min(paper.pxW, paper.pxH),
   pointerWasResumed,
