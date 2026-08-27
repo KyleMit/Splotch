@@ -64,6 +64,7 @@ import {
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
+import { createCrayonPassBoundaries } from './crayonPassBoundaries';
 import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
 
 // Crayon's deposition pipeline is a per-runtime decision from the same
@@ -166,25 +167,13 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// Close the current deposition pass — the tiles already hold the stamped
-// pixels, so this resets pass state — and record the flush in the command
-// retained for history and export.
-function recordCrayonFlush() {
-  const flush: StrokeOp = { kind: 'crayonFlush' };
-  renderTiledOp(flush);
-  recordCurrentOp(flush);
-  crayonOpsSinceFlush = 0;
-}
-
-// A per-pass seed stamped onto every crayon op, so the paper-tooth pattern is
-// phase-shifted per deposition pass (the source of wax buildup — ADR-0065). A
-// pass is usually a whole stroke, but a continuous gesture that re-covers its
-// own paper (a back-and-forth scribble) splits into further passes mid-stroke
-// — see strokeCrayonSegments. A monotonic counter guarantees consecutive
-// passes differ even when drawn over the same spot; the value is stored on the
-// op, so repaints reproduce the live pixels regardless of the counter's
-// position.
-let crayonSeedCounter = 1;
+// Pass boundaries — the checkpoint, the scribble split, the seed each new pass
+// takes — live in ./crayonPassBoundaries; this facade only supplies the two
+// recording halves it cannot own.
+const crayonPasses = createCrayonPassBoundaries({
+  renderOp: (op) => renderTiledOp(op),
+  recordOp: (op) => recordCurrentOp(op),
+});
 
 let callbacks: Omit<InitOptions, 'initialColor'> = {};
 
@@ -194,10 +183,7 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
 // every tile surface rescaled in place.
 const MAX_RENDER_SCALE = 2;
-// Bound live crayon memory without making ordinary short strokes pay a checkpoint.
-const CRAYON_CHECKPOINT_OPS = 64;
 let renderScale = 1;
-let crayonOpsSinceFlush = 0;
 
 function backingSizeOf(rect: DOMRect): { w: number; h: number } {
   return { w: Math.round(rect.width * renderScale), h: Math.round(rect.height * renderScale) };
@@ -491,14 +477,6 @@ function beginStrokeGroup() {
   groupHasDrawn = true;
 }
 
-// A mid-gesture brush switch can interleave a non-crayon op into a group whose
-// crayon pass is open. Flush at that boundary so tile compositing preserves the
-// operation order; continued crayon ops open a fresh pass.
-function closeCrayonPassBeforeForeignOp(ps: PointerState) {
-  const hasOpenPass = crayonOpsSinceFlush > 0;
-  if (!(ps.crayon && !ps.erase) && hasOpenPass) recordCrayonFlush();
-}
-
 // The five style modifiers every `dot`/`path` op carries. Erasing clears pixels
 // via destination-out; the stroke color is irrelevant there, only its (opaque)
 // alpha matters. A magic op ignores `color` too — it reveals the sheet — but
@@ -514,7 +492,7 @@ function strokeStyleOf(
 // edge-swipe candidate commits.
 function renderStrokeStart(ps: PointerState) {
   beginStrokeGroup();
-  closeCrayonPassBeforeForeignOp(ps);
+  crayonPasses.closeBeforeForeignOp(ps);
 
   const dot: StrokeOp = {
     kind: 'dot',
@@ -537,7 +515,7 @@ function renderStrokeStart(ps: PointerState) {
 // anti-aliasing behavior.
 function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) {
   if (points.length === 0) return;
-  closeCrayonPassBeforeForeignOp(ps);
+  crayonPasses.closeBeforeForeignOp(ps);
   const op: StrokeOp = {
     kind: 'path',
     pid: ps.id,
@@ -558,20 +536,7 @@ function strokeSmoothSegments(ps: PointerState, points: Point[], moveCount = 1) 
   }
   renderTiledOp(op);
   recordCurrentOp(op);
-  // Counted in POINTERMOVES, not in ops. ADR-0085 specifies one increment per
-  // recorded path op, which was the same thing when an op was exactly one
-  // pointermove. Rasterizing once per frame merges every move in a frame into a
-  // single op, so counting ops would stretch the pass to twice the wax before a
-  // checkpoint — ADR-0085 trial 23's failure, measured here as physical-iPad
-  // crayon going from 1.57% to 2.11% of in-contact frame time lost.
-  if (ps.crayon && !ps.erase) {
-    crayonOpsSinceFlush += moveCount;
-    if (crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
-      recordCrayonFlush();
-      ps.seed = crayonSeedCounter++;
-      ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
-    }
-  }
+  crayonPasses.creditMoves(ps, moveCount);
 }
 
 // Crayon-aware segment routing: feed each point through the stroke's pass
@@ -593,10 +558,7 @@ function strokeCrayonSegments(ps: PointerState, points: Point[], moveCount = 1) 
       strokeSmoothSegments(ps, batch, 0);
       batch = [];
       didSplit = true;
-      recordCrayonFlush();
-      ps.seed = crayonSeedCounter++;
-      ps.passTracker = new CrayonPassTracker(ps.x, ps.y, ps.lineWidth);
-      ps.passTracker.advance(p);
+      crayonPasses.rollToNextPass(ps, ps).advance(p);
     }
     batch.push(p);
   }
@@ -655,11 +617,12 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
     erase: eraserActive,
     magic: magicActive,
     crayon: crayonActive,
-    seed: crayonActive ? crayonSeedCounter++ : 0,
-    passTracker:
-      crayonActive && !eraserActive && !magicActive
-        ? new CrayonPassTracker(first.x, first.y, lineWidth)
-        : null,
+    ...crayonPasses.openStroke({
+      seeded: crayonActive,
+      tracked: crayonActive && !eraserActive && !magicActive,
+      at: first,
+      lineWidth,
+    }),
     lastTime: 0,
     speedSamples: [],
     edgeSwipeGuard: null,
@@ -669,7 +632,7 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
 
   renderStrokeStart(pointerState);
   for (const point of paperPoints.slice(1)) strokeSegments(pointerState, [point]);
-  if (pointerState.passTracker) recordCrayonFlush();
+  if (pointerState.passTracker) crayonPasses.recordFlush();
   finishStrokeGroup();
 }
 
@@ -838,9 +801,12 @@ function startDrawing(e: PointerEvent) {
     erase: eraserActive,
     magic: magicActive,
     crayon: crayonActive,
-    seed: crayonActive ? crayonSeedCounter++ : 0,
-    passTracker:
-      crayonActive && !eraserActive && !magicActive ? new CrayonPassTracker(x, y, lineWidth) : null,
+    ...crayonPasses.openStroke({
+      seeded: crayonActive,
+      tracked: crayonActive && !eraserActive && !magicActive,
+      at: { x, y },
+      lineWidth,
+    }),
     // Speed-window fields are seeded by resetSpeedWindow() immediately below.
     lastTime: 0,
     speedSamples: [],
@@ -935,11 +901,7 @@ function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
   // The finger really lifted, so a crayon's next contact is physically a fresh
   // pass — close the current one (stamp + recorded flush), new seed, tracker
   // restarted at the resumed point.
-  if (ps.passTracker) {
-    recordCrayonFlush();
-    ps.seed = crayonSeedCounter++;
-    ps.passTracker = new CrayonPassTracker(resume.x, resume.y, ps.lineWidth);
-  }
+  if (ps.passTracker) crayonPasses.rollToNextPass(ps, resume);
 }
 
 // Speed is sampled from the final event only: one chord per pointermove,
@@ -1039,7 +1001,7 @@ function stopDrawing(e: PointerEvent) {
   // buffered wax and recording the flush at the same point in the op order.
   // A discarded edge-swipe candidate rendered nothing, so it has no pass.
   if (pointerState?.passTracker && !pointerState.edgeSwipeGuard) {
-    recordCrayonFlush();
+    crayonPasses.recordFlush();
   }
 
   activePointers.delete(e.pointerId);
@@ -1066,7 +1028,7 @@ export function releaseAllPointers() {
   // buffer is shared per target).
   for (const ps of activePointers.values()) {
     if (ps.passTracker && !ps.edgeSwipeGuard) {
-      recordCrayonFlush();
+      crayonPasses.recordFlush();
       break;
     }
   }
@@ -1135,7 +1097,7 @@ export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppeara
 export function clearCanvas() {
   if (!canvas || !ctx) return;
   const state = clearTiledRenderer(canvasEmpty);
-  crayonOpsSinceFlush = 0;
+  crayonPasses.reset();
   setCanvasEmptyState(state.empty);
   setCanUndo(state.canUndo);
   clearMagicGradient();
@@ -1203,7 +1165,7 @@ function teardownEngine() {
   // mid-flight stroke into the log, so navigating away mid-stroke keeps
   // the ink.
   releaseAllPointers();
-  crayonOpsSinceFlush = 0;
+  crayonPasses.reset();
   idleEmptyScan.cancel();
   cancelCrayonWarmup();
   penStreamAdopter.reset();
