@@ -330,6 +330,52 @@ about a colour *shifting* after the finger lifted. Here nothing shifts: the mixe
 from the moment it is painted, and the live preview is the final pixel by construction. What changed
 is the mix strength at crossings, which is a taste question for a human, not a glitch.
 
+## D4 REFUTED at the device — idempotence is the bug, not the feature
+
+A human drew on the candidate and rejected it immediately, on a property the frame numbers cannot
+see and my framing had inverted:
+
+> the problem is that you cannot eventually drive the color to the new color. so drawing over a
+> yellow line with blue just makes green no matter how many times you draw back over with blue —
+> that feels odd — the new color strokes should accumulate
+
+That is exactly what idempotence means. `min(S, min(S,D)) = min(S,D)` is a **fixed point**, so no
+amount of redrawing moves the pixel. The crayon reads as refusing to work.
+
+The shipped mix does not stick, because it is *not* idempotent — n passes give `S·(1−mⁿ) + mⁿ·D`,
+which walks to `S`. So the property I was treating as the prize, and cited as the reason D4 could
+reach the pen floor, is the same property that makes wax build up toward the new colour. **The
+non-idempotence is the feature.**
+
+This sharpens the constraint into two timescales, which is the form it should have been in from the
+start:
+
+* **Within one pass** the glaze is applied once, so a single stroke shows a genuine mix.
+* **Across passes** it compounds, so redrawing drives toward the new colour.
+
+And that second requirement is precisely *why* an accumulation surface has to exist — which is the
+thing D1 measured as the WKWebView's entire crayon cost. That is the campaign's real tension, and D4
+was buying the frame budget by silently deleting half of it.
+
+The requirement is now pinned as arithmetic in `crayonGlazeDirect.test.ts`, so a future candidate
+cannot trade it away without a red test.
+
+## D5 — the shipped glaze, applied per op instead of per pass
+
+Keeps the arithmetic exactly (`darken`, then the crayon colour at `1 − mix`) and moves only *where*
+it runs: straight onto the tile, per op. No accumulation buffer, no preview planes, no blit — the
+three things this campaign measured as expensive.
+
+* A pixel covered exactly once by one op is **byte-identical** to the buffered pipelines.
+* Redrawing compounds toward the new colour, satisfying the requirement D4 broke.
+
+What it changes, and does not pretend to settle: where ops **overlap inside a single pass**, the
+glaze compounds early, so a slow or scrubbing stroke builds up within itself where the buffered
+pipelines hold one stroke flat. The module comment predicts this ("would compound across the dozens
+of overlapping per-frame ops and cancel itself toward pure crayon colour in the interior") and
+treats it as disqualifying — but that judgement predates the feedback above, which asks for more
+buildup, not less. It is a device question.
+
 # Rig notes
 
 The preflight's `--verify-ios-launch` assumes an Appium server is already listening on the resolved
