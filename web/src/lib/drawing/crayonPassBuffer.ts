@@ -400,15 +400,6 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   buf.bounds = null;
   buf.dirty = false;
   buf.virgin = false;
-  if (depositionMode === 'deferred') {
-    // NATIVE TRIAL: the one glaze application of the pass — restore the
-    // pre-pass pixels and stamp the buffered wax. A virgin pass's direct wax
-    // already equals the glaze, so it only resets state.
-    if (!buf.virgin && buf.bounds) restampRect(target, buf, buf.bounds);
-    clearCrayonBounds(buf);
-    buf.underValid = false;
-    return;
-  }
   if (depositionMode === 'planes') {
     buf.ctx.canvas.hidden = true;
     if (buf.mirror) buf.mirror.canvas.hidden = true;
@@ -500,15 +491,6 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
   const buf = crayonBufferFor(target);
   const matrix = target.getTransform();
   buf.ctx.setTransform(matrix);
-  if (depositionMode === 'deferred') {
-    // NATIVE TRIAL: the one glaze application of the pass — restore the
-    // pre-pass pixels and stamp the buffered wax. A virgin pass's direct wax
-    // already equals the glaze, so it only resets state.
-    if (!buf.virgin && buf.bounds) restampRect(target, buf, buf.bounds);
-    clearCrayonBounds(buf);
-    buf.underValid = false;
-    return;
-  }
   if (depositionMode === 'planes') {
     buf.ctx.canvas.hidden = false;
     if (buf.mirror) buf.mirror.canvas.hidden = false;
@@ -542,6 +524,22 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     unionCrayonBounds(buf, rect);
     return;
   }
+  if (depositionMode === 'deferred') {
+    // NATIVE TRIAL: live preview is the opaque wax painted straight onto the
+    // tile — pattern strokes are free here, blits are not. The buffer keeps
+    // accumulating so the close-time glaze has the whole pass, and the
+    // pre-pass pixels are snapshotted once per non-virgin pass open.
+    if (!buf.dirty) {
+      buf.virgin = blankAtPassOpen.has(target);
+      blankAtPassOpen.delete(target);
+      if (!buf.virgin) captureUnderSnapshot(buf, target);
+    }
+    paintCrayon(buf.ctx, op);
+    paintCrayon(target, op);
+    buf.dirty = true;
+    unionCrayonBounds(buf, deviceRectFor(buf, matrix, opPaddedUserBounds(op)));
+    return;
+  }
   if (!buf.dirty) {
     // Pass open: a tile the renderer marked blank takes the virgin fast path.
     // A non-virgin pass reads the target only when the post-lift refresh has
@@ -549,16 +547,6 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     buf.virgin = blankAtPassOpen.has(target);
     blankAtPassOpen.delete(target);
     if (!buf.virgin && !buf.underValid) captureUnderSnapshot(buf, target);
-  }
-  if (depositionMode === 'deferred') {
-    // NATIVE TRIAL: live preview is the opaque wax painted straight onto the
-    // tile — pattern strokes are free here, blits are not. The buffer keeps
-    // accumulating so the close-time glaze has the whole pass.
-    paintCrayon(buf.ctx, op);
-    paintCrayon(target, op);
-    buf.dirty = true;
-    unionCrayonBounds(buf, deviceRectFor(buf, matrix, opPaddedUserBounds(op)));
-    return;
   }
   paintCrayon(buf.ctx, op);
   buf.dirty = true;

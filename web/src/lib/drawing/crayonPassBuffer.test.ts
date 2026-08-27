@@ -175,3 +175,50 @@ describe('plane deposition (the WKWebView pipeline, ADR-0147)', () => {
     }
   });
 });
+
+describe('deferred deposition (the WKWebView pipeline, ADR-0147)', () => {
+  it('paints the target directly per op and stamps nothing while the pass is open', () => {
+    configureCrayonDeposition('deferred');
+    const target = context2d();
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+
+    // Direct pattern strokes only — zero blits, the WKWebView's expensive
+    // primitive (its ablation put per-op blits at 1.76-2.12% lost against
+    // 0.02% for direct paint).
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(0);
+  });
+
+  it('applies the glaze once at pass close across all transformed corners', () => {
+    configureCrayonDeposition('deferred');
+    const target = context2d();
+    const matrix = new DOMMatrix([1, 1, 1, -1, 100, 100]);
+    (target as unknown as { getTransform: () => DOMMatrix }).getTransform = () => matrix;
+
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    flushCrayonBuffer(target);
+
+    // Close-time restore-and-stamp: the under snapshot plus the two glaze
+    // blits, every one covering the pass's transformed corner union.
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(3);
+    for (const call of calls) {
+      const [source, sx, sy, sw, sh, dx, dy, dw, dh] = call;
+      expect(source).toBeInstanceOf(HTMLCanvasElement);
+      expect([sx, sy, sw, sh, dx, dy, dw, dh]).toEqual([106, 86, 28, 28, 106, 86, 28, 28]);
+    }
+  });
+
+  it('a virgin pass closes without any stamp — the direct wax already is the glaze', () => {
+    configureCrayonDeposition('deferred');
+    const target = context2d();
+    noteCrayonTargetBlank(target);
+
+    renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
+    flushCrayonBuffer(target);
+
+    const calls = (target as unknown as { drawImageCalls: unknown[][] }).drawImageCalls;
+    expect(calls).toHaveLength(0);
+    expect(crayonBufferIsDirty(target)).toBe(false);
+  });
+});
