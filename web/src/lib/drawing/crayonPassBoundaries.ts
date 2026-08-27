@@ -132,5 +132,3 @@ export function createCrayonPassBoundaries({ renderOp, recordOp }: CrayonPassBou
     },
   };
 }
-
-export type CrayonPassBoundaries = ReturnType<typeof createCrayonPassBoundaries>;
