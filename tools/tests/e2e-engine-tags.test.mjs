@@ -68,7 +68,7 @@ function unwarmedStandardBrowsers(standardWorkflow, cacheWorkflow) {
 function engineProjectContract({ label, name, requirement }) {
   return new RegExp(
     `engineAvailable\\('${label}', \\(\\) => ${name}\\.executablePath\\(\\), '${requirement}'\\)` +
-      `[\\s\\S]*?name: '${name}',[\\s\\S]*?grep: ENGINE_SMOKE,`
+      `[\\s\\S]*?name: '${name}',\\s*grep: ENGINE_SMOKE,`
   );
 }
 
@@ -115,6 +115,15 @@ describe('E2E engine tags', () => {
       expect(swapped).not.toMatch(engineProjectContract(project));
     }
   );
+
+  it.each(ENGINE_SMOKE_PROJECTS)('$name requires its own engine-smoke filter', (project) => {
+    const withoutOwnFilter = playwrightConfig.replace(
+      new RegExp(`(name: '${project.name}',\\s*)grep: ENGINE_SMOKE,`),
+      '$1'
+    );
+    expect(withoutOwnFilter).not.toBe(playwrightConfig);
+    expect(withoutOwnFilter).not.toMatch(engineProjectContract(project));
+  });
 
   it('warms every browser cache used by the standard test workflow', () => {
     expect(unwarmedStandardBrowsers(testWorkflow, warmWorkflow)).toEqual([]);
