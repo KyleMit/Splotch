@@ -71,6 +71,15 @@ curl -sf -o /dev/null "http://127.0.0.1:4173$entry" || echo "stale manifest"
 
 A page that did hydrate exposes `window.__committedBrushMode`; a page that did not, does not.
 
+**Running any Playwright E2E spec replaces the instrumented build.** `test:e2e`'s web server
+rebuilds `web/build` without `PERF_MARKS`, so a `perf:serve --ignore-scripts` started afterwards
+serves an uninstrumented bundle whose manifest resolves and whose build-identity checks pass — it IS
+this checkout's current build. The captures complete, pass fidelity, and score, with the only tell
+being `report.meta.counts.measures = 0` (no `engine.*` measures). This cost the 2026-08-26 crayon
+campaign a three-sample cell that had to be recaptured. Check `measures > 0` before scoring any
+capture, and re-run `perf:build` after any E2E invocation — verifying a change with tests and then
+measuring it are two steps with a rebuild between them.
+
 **A resolving manifest proves self-consistency, not whose build it is.** This host runs dozens of
 Codex worktrees, and a preview server left up by one of them keeps the canonical port for as long as
 it lives — on 2026-08-23, port 4173 was serving a *different worktree's* build from the night

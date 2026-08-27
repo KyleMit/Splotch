@@ -1,0 +1,28 @@
+{
+  "campaign": "crayon-elimination-2026-08-26",
+  "capturedFrom": "perf-profiles/crayon-2026-08-26/base",
+  "kept": [
+    {
+      "file": "ipad-device-web-crayon.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "crayon-1.json",
+      "candidateCount": 3,
+      "passingCandidateCount": 3,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-web-pen.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "pen-1.json",
+      "candidateCount": 3,
+      "passingCandidateCount": 3,
+      "failedCandidateCount": 0
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "campaign": "crayon-native-2026-08-26-deferred-candidate",
+  "capturedFrom": "perf-profiles/crayon-native-2026-08-26/final",
+  "kept": [
+    {
+      "file": "ipad-device-native-crayon.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "crayon-landscape-1.json",
+      "candidateCount": 6,
+      "passingCandidateCount": 6,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-native-pen.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "pen-portrait-1.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
