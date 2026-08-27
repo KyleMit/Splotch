@@ -302,3 +302,50 @@ Fork verification (per-runtime build of the PR branch): native 1.38/1.40% (its o
 
 Additional rule earned: the WKWebView charges per op far more steeply than Safari — a change that
 merely alters how many ops a frame emits swings the native cell 2.5x while Safari barely moves.
+
+## Landscape attribution — four hypotheses refuted, effect unexplained (2026-08-27)
+
+Once the corrected landscape number (0.97 / 0.98 / 1.06 against portrait's 0.83 / 0.88 / 0.77) made
+landscape the binding cell, it got the ablation it never had: **every one of the campaign's 21 web
+experiments was portrait-only**, so nothing explained the gap.
+
+Free diagnostics first, from artifacts already on disk:
+
+* **Not script.** `engine.draw` is identical across orientations — 0.09–0.11 ms/frame, overlapping
+  totals.
+* **Not more late frames.** `lateShare` is ~0.010 in both. The whole gap is a handful of *longer*
+  tails: max 56–66 ms landscape against 52–57 portrait.
+* **Not canvas size.** Landscape's canvas is 2.6% *smaller* in total pixels (1282×934 against
+  1024×1201).
+
+Then instrumentation (`exp/crayon-landscape-attribution`, marks on the existing `engine.*` channel
+the probe already collects), two samples per orientation:
+
+|           | shadow reads | restamps    | restamp JS |
+| --------- | ------------ | ----------- | ---------- |
+| portrait  | 629 / 629    | 7886 / 7901 | 64 / 66 ms |
+| landscape | 624 / 623    | 7883 / 7839 | 72 / 75 ms |
+
+* **Not more whole-tile shadow reads** — identical counts, and 1–4 ms total across a 60-second
+  capture, so that path is not the cost in *either* orientation.
+* **Not more restamps** — identical counts.
+* **Not restamp area.** Restamp area is pure geometry, so it was measured in a desktop browser at
+  both viewport shapes with identical normalized strokes: 116 restamps each, mean rect 1072 px
+  portrait against 1111 px landscape — **+3.6%**, nowhere near the +12–18% cost.
+* **Not the paper-view transform** — both orientations composite at `matrix(1,0,0,1,0,0)`.
+
+What remains is the tile aspect itself (256×300 portrait against 320×233 landscape at equal total
+area) interacting with WebKit's own damage/compositing, which is precisely the layer the engine
+marks cannot see (ADR-0085's premise). Attributing it further needs a WebKit-level trace, not
+another product experiment.
+
+**Recorded and stopped, deliberately.** The effect is ~0.15 points on a cell whose gate exception is
+1.5%, and it sits close to the run-to-run spread (portrait 0.77–0.88 over five samples, landscape
+0.82–1.06 over five). Spending more device time to chase it would be the same mistake as inventing a
+mechanism for it.
+
+**One earlier recommendation is withdrawn by this.** i12's merged-op + per-segment-stroke shape was
+recorded as the lead for the paint-max tail and looked like the lever for landscape too. It is not,
+for the restamp pipeline: merging ops there *is* i2 (frame-union restamp rects), measured at 2.62%
+and already rejected. i12's number came from the zero-mix direct-paint variant, where there are no
+restamp rects to enlarge. The lead applies only if deposition ever returns to direct paint.
