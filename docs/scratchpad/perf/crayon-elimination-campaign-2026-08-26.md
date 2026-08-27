@@ -208,13 +208,13 @@ contract passed; only the device showed it. The one hot-path element i18 added o
 **Rule earned: never read a composited live canvas on the pointer hot path.** The i18 A/B
 establishes the rule — adding per-op live-tile reads, and nothing else, took the same build to ~97%
 lost frame time. The *mechanism* is inference, not measurement: "each read forces a GPU pipeline
-sync, and at digitizer rate the syncs compound" fits the timings, but no trace here attributes it
-(a later 75-second Time Profiler capture on the native side found no readback stack either).
-Stated as fact it would be exactly the observation→mechanism jump this runbook warns against.
-(Compare ADR-0068's warning about reading freshly-painted canvases — the same rule in its
+sync, and at digitizer rate the syncs compound" fits the timings, but no trace here attributes it (a
+later 75-second Time Profiler capture on the native side found no readback stack either). Stated as
+fact it would be exactly the observation→mechanism jump this runbook warns against. (Compare
+ADR-0068's warning about reading freshly-painted canvases — the same rule in its
 accelerated-compositor form.)
 
-## Final iterations (3+ samples portrait, 2 landscape, fidelity PASS, instrumented)
+## Final iterations (3+ samples portrait, 2 landscape — see the correction below, fidelity PASS, instrumented)
 
 | Branch                                 | portrait lost      | landscape lost | paint max | notes                                                                                                             |
 | -------------------------------------- | ------------------ | -------------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -223,11 +223,26 @@ accelerated-compositor form.)
 | exp/crayon-i20-idle-shadow             | 1.05/0.67/0.75     | 0.85/0.84      | 50–67     | shadow refreshed by plain reads only; Safari's scheduleIdle (300 ms quiet) never fired under back-to-back strokes |
 | **exp/crayon-i20b (winner)**           | **0.79/0.90/0.78** | **0.97/0.77**  | 46–63     | double-rAF post-lift refresh; same-session pen 0.75 / paint max 36                                                |
 
-Winner verdict: **crayon at pen parity on the lost-frame gate, both orientations, full visual
+Winner verdict: **crayon at pen parity in portrait, near the gate in landscape, full visual
 contract** (all 5 crayon pixel-contract E2E specs + rotation + undo suites green; 4 of 2094 unit
 tests fail, all four asserting the retired plane/flush internals; 3 work-counter E2E assertions
-expect the old `realizedCrayonBackings === 2` topology). The ADR-0137 1.5% exception would retire —
-every winner sample passes the flat 1% gate.
+expect the old `realizedCrayonBackings === 2` topology).
+
+**Corrected 2026-08-27 after review.** The line above originally read "pen parity on the lost-frame
+gate, both orientations" and claimed the ADR-0137 1.5% exception would retire. That rested on a
+**two-sample** landscape arm (0.97 / 0.77) — below this runbook's own three-sample minimum, and the
+review said so. Taking the third sample did two things:
+
+* It exposed a **regression already merged to `main`** (PR 1423): the shadow drain stopped re-arming
+  when it yielded mid-stroke, taking crayon to 1.15–1.64% with pen unchanged. Fixed there.
+* With the fix and three samples per cell, landscape settles at **0.97 / 0.98 / 1.06** against
+  portrait's **0.83 / 0.88 / 0.77** and a same-session pen control of 0.76–0.81. So portrait is at
+  parity; landscape is restored but sits *at* the 1% gate rather than under it, and modestly above
+  pen. The ADR-0137 exception (1.5% for this cell) still covers it and should **not** be retired on
+  this evidence.
+
+The general lesson is the one the runbook already carried and this campaign still tripped over: a
+two-sample cell is not a result, and the sample that would have caught it was one capture away.
 
 Open item for productization: paint max 46–63 vs pen's 36 and the ≤50 soft gate (never reached the
 67 hard-fail). Forensics on the worst sample: the tall frames sit MID-contact with 6–9 moves and ≤1
@@ -238,9 +253,9 @@ measured cell at 0.61% / max 35), or accept and re-litigate the paint-max budget
 
 ## Rules earned (device-verified, this campaign)
 
-1. Never READ a composited live canvas on the pointer hot path (mechanism inferred, effect
-   measured) — per-op reads froze the page (97%
-   lost). Once-per-invalidation reads cost a 50–79 ms frame when they land in-contact.
+1. Never READ a composited live canvas on the pointer hot path (mechanism inferred, effect measured)
+   — per-op reads froze the page (97% lost). Once-per-invalidation reads cost a 50–79 ms frame when
+   they land in-contact.
 2. Restamp cost scales with AREA per frame, not blit count: per-op small rects fine (0.8%),
    frame-union rects bad (2.6%), pass-bounds rects terrible (2.2%).
 3. Never apply blend operations INTO a canvas that hot-path blits read from (i19: 2.8%).
