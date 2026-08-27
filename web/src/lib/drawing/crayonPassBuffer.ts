@@ -10,6 +10,7 @@ import {
   getCrayonMix,
 } from './crayonBrush';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
+import { PERF_MARKS } from './perf';
 import type { DotOp, PathOp } from './strokeOps';
 
 // Lay a crayon op down as textured wax: one pass per density band (widest first),
@@ -221,7 +222,16 @@ function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingCont
   } else {
     buf.under.clearRect(0, 0, w, h);
   }
+  if (PERF_MARKS) performance.mark('engine.crayonShadowRead:start');
   buf.under.drawImage(target.canvas, 0, 0);
+  if (PERF_MARKS) {
+    performance.mark('engine.crayonShadowRead:end');
+    performance.measure(
+      'engine.crayonShadowRead',
+      'engine.crayonShadowRead:start',
+      'engine.crayonShadowRead:end'
+    );
+  }
   buf.underValid = true;
 }
 
@@ -296,6 +306,11 @@ function restampRect(
 ) {
   const w = rect.x1 - rect.x0;
   const h = rect.y1 - rect.y0;
+  if (PERF_MARKS) {
+    performance.mark('engine.crayonRestamp:start');
+    restampedAreaPx += w * h;
+    restampCount += 1;
+  }
   target.save();
   target.setTransform(1, 0, 0, 1, 0, 0);
   target.globalCompositeOperation = 'source-over';
@@ -314,6 +329,23 @@ function restampRect(
     });
   }
   target.restore();
+  if (PERF_MARKS) {
+    performance.mark('engine.crayonRestamp:end');
+    performance.measure(
+      'engine.crayonRestamp',
+      'engine.crayonRestamp:start',
+      'engine.crayonRestamp:end'
+    );
+  }
+}
+
+// ATTRIBUTION (exp/crayon-landscape-attribution): summed restamp area and
+// count. PERF_MARKS-only; this branch exists to compare orientations.
+let restampedAreaPx = 0;
+let restampCount = 0;
+
+export function crayonRestampDebug() {
+  return { restampedAreaPx, restampCount };
 }
 
 // Tiles the renderer observed to be blank when a crayon op arrived — consumed
