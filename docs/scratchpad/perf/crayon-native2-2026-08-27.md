@@ -454,3 +454,60 @@ The harness prefers a higher value than the hand did because it draws FAST — ~
 pixel against a hand stroke's 8–12 — and per-op glazing is speed-dependent by construction. 0.18
 implies k≈3, 0.10 implies k≈5.7, 0.06 implies k≈9.7. They are the same model at different speeds,
 not competing answers. 0.16 was the human call with both in view.
+
+## Does the per-op glaze hold up on iOS WEB? (2026-08-27, follow-up)
+
+The reason to ask: ADR-0148 shipped native and web with **different crayon appearances** at
+crossings and left that as an open decision. If `glaze-direct` also wins on Safari, the deposition
+fork retires and the divergence closes.
+
+Physical iPad Safari, one session, arms rebuilt and the preview restarted between them, with an
+ordering control because of the drift finding above (issue 1458).
+
+| Arm                      | position | lost % samples         | median   |
+| ------------------------ | -------- | ---------------------- | -------- |
+| `glaze-direct`           | first    | ~~2.25~~ / 0.55 / 0.73 | 0.65     |
+| `restamp` (shipped)      | middle   | 0.96 / 1.04 / 0.87     | **0.96** |
+| `glaze-direct` (control) | last     | 0.65 / 0.63 / 0.66     | **0.65** |
+
+**`glaze-direct` is ~32% cheaper than the shipped web pipeline, and the ranges do not overlap**
+(0.55–0.73 against 0.87–1.04). Three things make that trustworthy rather than suggestive: the
+ordering control ran the candidate LAST, the position drift disadvantages, and it still returned the
+tightest block of the session (0.63–0.66); the `restamp` control reproduces ADR-0147's published
+0.83–1.06% almost exactly; and every capture is `ios-safari`, fidelity-PASS, `uncalibrated: []`,
+`measures` 3.7k+, cadence 114–119 moves/s.
+
+### One sample is struck, and NOT for the reason first given
+
+The 2.25% was initially explained as warm-up. That was wrong. Its estimated beat is **8 ms (120hz)**
+where every other capture in the session is **17 ms (60hz)** — it recorded double the frames at half
+the delta. `lostFrameTimeShare` is a share of the beat, so the same drawing charged against 8 ms
+instead of 17 ms reads as a catastrophe. It is the display, not the app, and the capture is not
+comparable with its siblings — the same exclusion ADR-0136's worked example makes.
+
+Host contention was raised as an alternative cause and does not fit: contention degrades input
+DISPATCH, which shows up as depressed cadence (the documented failures are 46.8 and ~58 moves/s),
+and every capture here sat at 114–119. What actually caused a single capture to present at 120 Hz is
+**not established** and is recorded as unexplained.
+
+### The harness gap this exposed, and the fix
+
+`refreshRegimeVerdict` already refuses an off-regime capture — `run-campaign.mjs` rejects such a
+cell as `off-refresh-regime`, and `rescore-captures.mjs` scores against it. The targeted capture
+`perf:ios:xcuitest:screen` called the same function **with no expected regime**, so it always
+resolved to "unestablished", printed a number, judged nothing, and recorded nothing. A guard that
+exists was simply never armed on the path a campaign actually uses for one-off comparisons.
+
+Now armed: `soleExpectedRegimeForRuntime` resolves the expectation where a runtime's targets declare
+exactly one (`ios-safari` → 60hz, since the simulator declares none) and stays null where they
+genuinely disagree (`android-chrome` is 60 Hz emulated and 120 Hz on the phone), with
+`--refresh-regime=` to say which. The verdict is recorded in the artifact so a later reader can see
+the beat a number was charged against instead of reconstructing it from frame counts by hand.
+
+### Not yet decided
+
+Adopting this on web means **changing the crayon appearance for existing users** — per-op glazing is
+speed-dependent, so crossings stop being uniform. Native was a new appearance; web is a changed one,
+and that is a product call. Separately, ADR-0137's `ipad-device-web:crayon` 1.5% exception would be
+unused at 0.65% (under even the base 1% gate), and retiring it is a gate-semantics change that ships
+as its own stack.
