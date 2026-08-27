@@ -123,12 +123,20 @@ Three Node smoke entry points guard the server contract:
 
 ```bash
 npm run test:unit          # one-shot
+npm run test:unit:coverage # one-shot with the measured coverage ratchet enforced
 npm run test:unit:watch    # watch mode
 ```
 
 Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom). Covers the pure
 logic + state modules (`colorRing`, `state/*`, `storage`, including the native dual-layer hydrate
 via a mocked `@capacitor/preferences`).
+
+The coverage command uses V8 over every TypeScript module under `web/src`, including unimported
+files at zero coverage; tests, declarations, and explicit `*TestHarness.ts` seams are excluded. The
+ratchet floors are 83% statements, 74% branches, 85% functions, and 86% lines, derived by rounding
+down the measured 83.90% / 74.57% / 85.73% / 86.56% baseline. CI runs this command in place of the
+non-coverage unit command. UI component bodies remain Playwright's layer and are not merged into
+this Vitest-only report.
 
 Files that need no DOM at all — `lib/server/**` and pure-logic modules — carry a
 `// @vitest-environment node` first line so they skip the per-file happy-dom setup (the suite's

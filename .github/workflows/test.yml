@@ -150,8 +150,8 @@ jobs:
 
       - uses: ./.github/actions/setup-pnpm
 
-      - name: Run unit tests
-        run: npm run test:unit
+      - name: Run unit tests with coverage
+        run: npm run test:unit:coverage
 
       - name: Run asset-pipeline tests
         run: npm run test:asset-gen
