@@ -448,7 +448,7 @@
     "eslint-plugin-playwright": "^2.11.0",
     "eslint-plugin-svelte": "^3.22.0",
     "fit-curve": "^0.2.0",
-    "globals": "^17.7.0",
+    "globals": "^17.11.0",
     "happy-dom": "^20.11.1",
     "knip": "^6.32.1",
     "prettier": "^3.8.4",
