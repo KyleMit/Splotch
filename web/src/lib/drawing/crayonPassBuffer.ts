@@ -226,16 +226,18 @@ export function invalidateCrayonUnder(target: CanvasRenderingContext2D) {
   pendingShadowRefresh.add(target);
 }
 
-// A repaint clears the tiles and replays ops from scratch, so any open pass
-// state describes pixels that no longer exist. Reset before replaying.
-export function resetCrayonPassStateForRepaint(target: CanvasRenderingContext2D) {
-  const buf = existingBufferFor(target);
-  if (buf) {
-    if (buf.dirty) clearCrayonBounds(buf);
-    buf.underValid = false;
-  }
-  blankAtPassOpen.delete(target);
-  if (depositionMode === 'restamp') pendingShadowRefresh.add(target);
+// Refresh stale shadows two frames after the last finger lifts: the
+// composited-canvas read lands in between-stroke time, and Safari's
+// scheduleIdle fallback demands an input-quiet window a fast scribbler never
+// grants. Skipped when a new stroke has already started — that pass pays one
+// synchronous read as the fallback.
+export function refreshCrayonShadowsAfterLift(strokeActive: () => boolean) {
+  if (depositionMode !== 'restamp') return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!strokeActive()) refreshPendingCrayonShadows();
+    });
+  });
 }
 
 export function refreshPendingCrayonShadows() {
@@ -290,6 +292,17 @@ const blankAtPassOpen = new WeakSet<CanvasRenderingContext2D>();
 
 export function noteCrayonTargetBlank(target: CanvasRenderingContext2D) {
   blankAtPassOpen.add(target);
+}
+
+// The renderer's one-call seam for a crayon ink op's tile visibility: plane
+// deposition previews on the composited planes, so the tile must stay as it
+// was (returns false); restamp deposition mutates the tile directly, so it is
+// shown like any ink op — and a still-hidden tile is blank
+// (prepareTileForMutation has run), which is what opens the virgin fast path.
+export function crayonOpShowsTile(target: CanvasRenderingContext2D, targetHidden: boolean) {
+  if (depositionMode !== 'restamp') return false;
+  if (targetHidden) blankAtPassOpen.add(target);
+  return true;
 }
 
 function existingBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer | null {

@@ -64,16 +64,12 @@ import {
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
-import {
-  configureCrayonDeposition,
-  flushCrayonBuffer,
-  refreshPendingCrayonShadows,
-} from './crayonPassBuffer';
+import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
+import { refreshCrayonShadowsAfterLift } from './crayonPassBuffer';
 
 // Crayon's deposition pipeline is a per-runtime decision from the same
-// compile-time signal as its op granularity (ADR-0147, ADR-0146): the
-// WKWebView keeps the composited-plane pipeline, the web build deposits by
-// restamp. Configured at module evaluation, before any stroke can render.
+// compile-time signal as its op granularity (ADR-0147, ADR-0146). Configured
+// at module evaluation, before any stroke can render.
 configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp');
 import {
   setCrayonOptions,
@@ -165,15 +161,6 @@ let eraserActive = false;
 let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
-
-// The crayon preview planes are vestigial — the restamp renderer keeps them
-// hidden for the whole session (see crayonPassBuffer.ts) — but their CSS
-// opacity is still kept in sync with the authored mix so a future
-// re-activation cannot silently present at a stale value.
-function syncCrayonOverlayMix() {
-  const opacity = String(1 - crayonColorMix());
-  syncTiledCrayonMix(opacity);
-}
 
 // Close the current deposition pass — the tiles already hold the stamped
 // pixels, so this resets pass state — and record the flush in the command
@@ -757,16 +744,7 @@ function finishGroupWhenCanvasIdle() {
   if (activePointers.size > 0) return;
   if (penStreamAdopter.hasCanvasExit()) callbacks.onDrawStop?.();
   else finishStrokeGroup();
-  // Refresh stale crayon under shadows two frames after the lift: the
-  // composited-canvas read then lands in between-stroke time, and Safari's
-  // scheduleIdle fallback demands an input-quiet window a fast scribbler
-  // never grants. Skipped if a new stroke has already started; that pass
-  // pays one synchronous read as the fallback (crayonPassBuffer.ts).
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (activePointers.size === 0) refreshPendingCrayonShadows();
-    });
-  });
+  refreshCrayonShadowsAfterLift(() => activePointers.size > 0);
 }
 
 // Pointer speed (which drives the drawing sound) is averaged over the most
@@ -1190,7 +1168,7 @@ export function getDrawingWorkDebug(): DrawingWorkDebug | null {
 export function setCrayonParams(params: Partial<CrayonOptions>) {
   if (!dev && !__DEV_HARNESS__) return;
   setCrayonOptions(params);
-  syncCrayonOverlayMix();
+  syncTiledCrayonMix(String(1 - crayonColorMix()));
   if (ctx) repaintTiledRenderer();
 }
 
@@ -1299,7 +1277,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     recordedPaper: recordedPaperState,
     hasActivePointers: () => activePointers.size > 0 || penStreamAdopter.hasCanvasExit(),
   });
-  syncCrayonOverlayMix();
+  syncTiledCrayonMix(String(1 - crayonColorMix()));
   wireMagicBrushHost();
 
   attachCallbacks(options);

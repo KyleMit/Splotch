@@ -1,16 +1,11 @@
-import {
-  crayonBufferIsDirty,
-  crayonDepositsOnTiles,
-  noteCrayonTargetBlank,
-  resetCrayonPassStateForRepaint,
-  resetCrayonStateForClear,
-} from './crayonPassBuffer';
+import { crayonBufferIsDirty, crayonDepositsOnTiles } from './crayonPassBuffer';
+import { crayonOpShowsTile, resetCrayonStateForClear } from './crayonPassBuffer';
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
 import type { MagicSheetSnapshot } from './magicBrush';
 import type { PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
-import { renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
+import { isCrayonInkOp, renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
 import { MAX_UNDO_DEPTH, type RecordedPaperState } from './undoHistory';
 import {
   geometryIntersectsTile,
@@ -278,16 +273,7 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
     tile.needsClear = false;
     return;
   }
-  if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) return;
-  if ((op.kind === 'dot' || op.kind === 'path') && op.crayon && !op.erase) {
-    // Plane deposition previews the pass on the composited planes, so the
-    // normal tile stays as it was until the flush. Restamp deposition
-    // mutates the tile directly, so it is shown like any ink op — and a
-    // still-hidden tile is blank (prepareTileForMutation just ran), which
-    // is what lets the pass open on the virgin fast path.
-    if (!crayonDepositsOnTiles()) return;
-    if (tile.canvas.hidden) noteCrayonTargetBlank(tile.ctx);
-  }
+  if (isCrayonInkOp(op) && !crayonOpShowsTile(tile.ctx, tile.canvas.hidden === true)) return;
   tile.canvas.hidden = false;
 }
 
@@ -295,9 +281,10 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
   let surfaceVisits = 0;
   if (op.kind !== 'dot' && op.kind !== 'path') {
     for (const [index, tile] of liveTiles.entries()) {
-      if (op.kind !== 'crayonFlush' || crayonBufferIsDirty(tile.ctx)) {
-        ensureNormalTileBacking(tile);
-      }
+      // A flush with nothing buffered has no pixel work anywhere on this
+      // tile — skip it before any backing or visibility bookkeeping.
+      if (op.kind === 'crayonFlush' && !crayonBufferIsDirty(tile.ctx)) continue;
+      ensureNormalTileBacking(tile);
       prepareTileForMutation(tile, index);
       if (command && !command.wasEmpty && op.kind !== 'crayonFlush') {
         undoPatches.capture(command, tile, index);
@@ -310,9 +297,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
     for (const [index, tile] of liveTiles.entries()) {
       if (geometryIntersectsTile(op, tile)) {
         ensureNormalTileBacking(tile);
-        if (op.crayon && !op.erase && !crayonDepositsOnTiles()) {
-          ensureCrayonTileBacking(tile);
-        }
+        if (isCrayonInkOp(op) && !crayonDepositsOnTiles()) ensureCrayonTileBacking(tile);
         prepareTileForMutation(tile, index);
         if (command && !command.wasEmpty) {
           undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
@@ -386,9 +371,6 @@ export function repaintTiledRenderer(
     ensureNormalTileBacking(tile);
     tile.canvas.hidden = true;
     clearTileBacking(tile);
-    // Open-pass crayon state describes pixels the clear just destroyed —
-    // reset before the replay re-renders them.
-    resetCrayonPassStateForRepaint(tile.ctx);
     for (const base of historyBase) {
       if (base.painted && tilesIntersect(base, tile)) {
         tile.ctx.drawImage(base.canvas, base.x, base.y);

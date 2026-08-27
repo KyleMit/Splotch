@@ -72,6 +72,12 @@ export type StrokeOp =
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 export type DotOp = Extract<StrokeOp, { kind: 'dot' }>;
+
+// An op that deposits crayon wax — the shape the renderer routes through the
+// pass buffer (a crayon-mode eraser op erases like any other).
+export function isCrayonInkOp(op: StrokeOp): op is (DotOp | PathOp) & { crayon: true } {
+  return (op.kind === 'dot' || op.kind === 'path') && op.crayon === true && !op.erase;
+}
 export type MagicStrokeOp = (PathOp | DotOp) & { magic: true };
 
 export interface MagicRecodeUndo {
