@@ -82,6 +82,7 @@ declare global {
       getDrawingWorkDebug: typeof import('$lib/drawing/engine').getDrawingWorkDebug;
       getLiveSurfaceTopology: typeof import('$lib/drawing/engine').getLiveSurfaceTopology;
       getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug;
+      getCrayonRestampDebug: typeof import('$lib/drawing/crayonPassBuffer').crayonRestampDebug;
     };
     // Dev-gated invoke handle for the production AI flow (ADR-0109).
     __aiGenerate?: typeof import('$lib/drawing/aiImage').generateAiImage;

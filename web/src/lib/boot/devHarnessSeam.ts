@@ -6,6 +6,7 @@ import {
   getUndoDebug,
   replayHarnessStroke,
 } from '$lib/drawing/engine';
+import { crayonRestampDebug } from '$lib/drawing/crayonPassBuffer';
 import { generateAiImage } from '$lib/drawing/aiImage';
 import { PALETTE_COLORS, type PaletteLabel } from '$lib/palette';
 import { PERF_MARKS } from '$lib/drawing/perf';
@@ -64,7 +65,12 @@ export function replayStoreDrawingStroke({ color, ...stroke }: StoreDrawingStrok
 export function installDevHarnessSeam(): () => void {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
-  window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
+  window.__drawingDebug = {
+    getDrawingWorkDebug,
+    getLiveSurfaceTopology,
+    getUndoDebug,
+    getCrayonRestampDebug: crayonRestampDebug,
+  };
   window.__aiGenerate = generateAiImage;
   if (dev || __DEV_HARNESS__) window.__replayStroke = replayStoreDrawingStroke;
   return () => {
