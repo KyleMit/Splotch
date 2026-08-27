@@ -372,6 +372,19 @@ function settlePendingStamp(target: CanvasRenderingContext2D, buf: CrayonPassBuf
   buf.underValid = false;
 }
 
+// A CLOSED pass whose deferred glaze has not landed yet still owes the target
+// its committed pixels. Clear takes an undo snapshot of the tile, so that debt
+// must be paid before the snapshot — otherwise the snapshot preserves pre-glaze
+// pixels and the scheduled callback mutates the tile afterwards, splitting the
+// Clear undo image across both.
+//
+// An OPEN pass is deliberately left alone: a stroke straddling drag-to-clear
+// must not resurrect wiped wax (ADR-0068), which is what dropping it achieves.
+export function settleClosedCrayonPass(target: CanvasRenderingContext2D) {
+  const buf = existingBufferFor(target);
+  if (buf) settlePendingStamp(target, buf);
+}
+
 // Tiles the renderer observed to be blank when a crayon op arrived — consumed
 // at the next pass open to select the virgin fast path. The renderer notes
 // blankness from tile visibility BEFORE it shows the tile for the op, which

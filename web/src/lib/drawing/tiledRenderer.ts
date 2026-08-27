@@ -1,4 +1,5 @@
 import { crayonBufferIsDirty, crayonDepositsOnTiles } from './crayonPassBuffer';
+import { settleClosedCrayonPass } from './crayonPassBuffer';
 import { crayonOpShowsTile, resetCrayonStateForClear } from './crayonPassBuffer';
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
@@ -476,6 +477,10 @@ export function undoTiledCommand(renderScale: number) {
 }
 
 export function clearTiledRenderer(wasEmpty: boolean) {
+  // Pay any closed pass's outstanding glaze before the progressive capture
+  // snapshots these tiles — the deferred callback would otherwise land after
+  // the snapshot and mutate pixels the Clear undo step is meant to preserve.
+  for (const tile of liveTiles) settleClosedCrayonPass(tile.ctx);
   const clearCommand = recordedCommand([{ kind: 'clear' }], wasEmpty);
   const captureIndices: number[] = [];
   history.push(clearCommand);
