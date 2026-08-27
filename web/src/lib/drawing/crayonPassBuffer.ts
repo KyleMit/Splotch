@@ -316,6 +316,11 @@ function settlePendingStamp(target: CanvasRenderingContext2D, buf: CrayonPassBuf
   buf.pendingStamp = null;
   buf.virgin = false;
   restampRect(target, buf, pending);
+  // TRIAL T10: force WebKit to flush the stamp's command buffer NOW, while
+  // we are still between strokes — idle time does not flush it, only a read
+  // does, and without this the NEXT stroke's undo capture pays the
+  // accumulated sync inside the contact window.
+  target.getImageData(pending.x0, pending.y0, 1, 1);
   buf.ctx.save();
   buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
   buf.ctx.clearRect(pending.x0, pending.y0, pending.x1 - pending.x0, pending.y1 - pending.y0);
