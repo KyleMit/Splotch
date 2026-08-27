@@ -286,7 +286,9 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   // detail 0 is keyboard/desktop-AT activation and stays outside toddler pointer input.
   // Mobile screen readers synthesize touch/pointer activation, so this path does not cover them.
   function onClick(e: MouseEvent) {
-    if (e.detail !== 0 || activePointerId !== null) return;
+    if (e.detail !== 0 || activePointerId !== null || node.classList.contains('clearing')) return;
+    releaseAllPointers();
+    startClearSound();
     commitClear(getOptions());
   }
 

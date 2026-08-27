@@ -41,8 +41,9 @@
   <!-- scribbleGuard cancels a stylus tap's touch stream so it can't arm iPadOS
        Scribble against the next stroke (ADR-0038) — a pen tap here that starts
        no drag is exactly the arming gesture, and the swallowed stroke that
-       follows is invisible. No companion scribbleTap: dragToClear activates off
-       pointerup, so the click the guard suppresses is one nothing listens for. -->
+       follows is invisible. No companion scribbleTap: its pointerup activation
+       would bypass the drag, while dragToClear accepts only detail-zero clicks;
+       the stylus click suppressed here has detail >= 1 and is intentionally ignored. -->
   <button
     class="clear-button"
     id="clearButton"
