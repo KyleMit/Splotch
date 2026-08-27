@@ -102,6 +102,8 @@ type CrayonDepositionMode = 'restamp' | 'planes' | 'deferred';
 // stay testable. The engine configures it once at module evaluation; the
 // default is the web pipeline so the module is usable without the engine
 // (unit tests, the dev harness).
+const pendingShadowRefresh = new Set<CanvasRenderingContext2D>();
+let shadowRefreshScheduled = false;
 let depositionMode: CrayonDepositionMode = 'restamp';
 
 // Lets the scheduled shadow drain yield to an in-flight stroke. Defaults to
@@ -115,6 +117,10 @@ export function configureCrayonDeposition(
 ) {
   depositionMode = mode;
   strokeActiveProbe = strokeActive;
+  // Reconfiguring the pipeline invalidates any drain scheduled under the old
+  // one — its pending targets belong to the previous configuration's probe.
+  pendingShadowRefresh.clear();
+  shadowRefreshScheduled = false;
 }
 
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
@@ -238,20 +244,33 @@ function captureUnderSnapshot(buf: CrayonPassBuffer, target: CanvasRenderingCont
 // markShadowStale, which guarantees a scheduled drain — a pass opening before
 // the drain pays one synchronous read as the fallback. Only the restamp
 // pipeline feeds or reads this set.
-const pendingShadowRefresh = new Set<CanvasRenderingContext2D>();
-let shadowRefreshScheduled = false;
 
 function markShadowStale(target: CanvasRenderingContext2D) {
   if (depositionMode !== 'restamp') return;
   pendingShadowRefresh.add(target);
+  scheduleShadowDrain();
+}
+
+function scheduleShadowDrain() {
   if (shadowRefreshScheduled) return;
   shadowRefreshScheduled = true;
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       shadowRefreshScheduled = false;
-      // Mid-stroke (a checkpoint flush), reading the tile is the very cost
-      // this defers — skip; the stroke's closing flush reschedules.
-      if (!strokeActiveProbe()) refreshPendingCrayonShadows();
+      // A drain landing mid-stroke would pay the very in-contact read it
+      // exists to defer, so it yields — but it must RE-ARM rather than
+      // simply drop. A mid-stroke checkpoint flush schedules a drain; the
+      // stroke's closing flush then finds one already scheduled and rides
+      // it; that drain fires while the finger is still down and yields. If
+      // yielding just cleared the flag, nothing would re-arm until the NEXT
+      // stroke's first checkpoint — by which time that stroke's pass has
+      // already opened on a synchronous whole-tile read, which is the whole
+      // cost this machinery removes.
+      if (strokeActiveProbe()) {
+        if (pendingShadowRefresh.size > 0) scheduleShadowDrain();
+        return;
+      }
+      refreshPendingCrayonShadows();
     });
   });
 }
