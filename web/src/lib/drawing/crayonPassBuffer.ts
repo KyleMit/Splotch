@@ -138,6 +138,8 @@ interface CrayonPassBuffer {
   // 'restamp' mode: true while the open pass sits on a tile that was blank at
   // pass open — the single-blit fast path, no under shadow needed.
   virgin: boolean;
+  // TRIAL T8: a closed pass awaiting its post-lift glaze stamp.
+  pendingStamp: { x0: number; y0: number; x1: number; y1: number } | null;
   dirty: boolean;
   // Device-px bounding box of the open pass's ink, so the stamp and the
   // post-pass clear touch only the pass-sized rect.
@@ -191,6 +193,7 @@ function crayonBufferFor(target: CanvasRenderingContext2D): CrayonPassBuffer {
       under: null,
       underValid: false,
       virgin: false,
+      pendingStamp: null,
       dirty: false,
       bounds: null,
     };
@@ -303,6 +306,21 @@ function restampRect(
     });
   }
   target.restore();
+}
+
+// TRIAL T8: apply a closed pass's deferred glaze — restore + stamp over the
+// stashed bounds, then release the buffer.
+function settlePendingStamp(target: CanvasRenderingContext2D, buf: CrayonPassBuffer) {
+  const pending = buf.pendingStamp;
+  if (!pending) return;
+  buf.pendingStamp = null;
+  buf.virgin = false;
+  restampRect(target, buf, pending);
+  buf.ctx.save();
+  buf.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  buf.ctx.clearRect(pending.x0, pending.y0, pending.x1 - pending.x0, pending.y1 - pending.y0);
+  buf.ctx.restore();
+  buf.underValid = false;
 }
 
 // Tiles the renderer observed to be blank when a crayon op arrived — consumed
@@ -428,10 +446,21 @@ export function flushCrayonBuffer(target: CanvasRenderingContext2D) {
   const buf = existingBufferFor(target);
   if (!buf || !buf.dirty) return;
   if (depositionMode === 'deferred') {
-    // NATIVE TRIAL: the one glaze application of the pass — restore the
-    // pre-pass pixels and stamp the buffered wax. A virgin pass's direct wax
-    // already equals the glaze, so it only resets state.
-    if (!buf.virgin && buf.bounds) restampRect(target, buf, buf.bounds);
+    // TRIAL T8: the glaze stamp leaves the contact window — it runs two
+    // frames after the lift, where the in-contact gate does not live. The
+    // buffer and under survive until then; a new pass opening first settles
+    // the pending stamp synchronously to preserve order.
+    if (!buf.virgin && buf.bounds) {
+      buf.pendingStamp = buf.bounds;
+      buf.bounds = null;
+      buf.dirty = false;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          settlePendingStamp(target, buf);
+        });
+      });
+      return;
+    }
     clearCrayonBounds(buf);
     buf.underValid = false;
     return;
@@ -530,6 +559,7 @@ export function renderCrayonOp(target: CanvasRenderingContext2D, op: DotOp | Pat
     // accumulating so the close-time glaze has the whole pass, and the
     // pre-pass pixels are snapshotted once per non-virgin pass open.
     if (!buf.dirty) {
+      settlePendingStamp(target, buf);
       buf.virgin = blankAtPassOpen.has(target);
       blankAtPassOpen.delete(target);
       if (!buf.virgin) captureUnderSnapshot(buf, target);
