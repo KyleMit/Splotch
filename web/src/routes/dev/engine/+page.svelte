@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import LiveSurface from '$lib/components/LiveSurface.svelte';
   import { compositeVisibleLiveTiles } from '$lib/drawing/liveTileComposite';
+  import { setCrayonDepositionForTuning } from '$lib/drawing/crayonPassBuffer';
   import {
     INITIAL_ENGINE_VIEW_STATE,
     initDrawingCanvas,
@@ -128,6 +129,7 @@
       // knobs. The spec draws crayon strokes via strokeSync after setCrayonMode.
       setCrayonMode,
       setCrayonParams,
+      setCrayonDeposition: setCrayonDepositionForTuning,
       // Rotation seam: pins the screen angle the engine reads, so a spec can
       // simulate a device rotation (setScreenAngleOverride(90) + resizeTo(...))
       // and inspect the resulting paper view (ADR-0050).

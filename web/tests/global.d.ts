@@ -36,8 +36,14 @@ declare global {
         bodyVariationCell?: number;
         shadeVariation?: number;
         colorMix?: number;
+        perOpGlazeReturn?: number;
         passes?: { widthScale: number; coverage: number }[];
       }): void;
+      // Selects the deposition pipeline for an APPEARANCE sweep. Colour
+      // reproduces off-device; frame cost does not (ADR-0148).
+      // Narrower than the mode union: 'planes' cannot be entered after tile
+      // adoption, so the seam does not offer it (crayonPassBuffer).
+      setCrayonDeposition(mode: 'restamp' | 'glaze-direct'): void;
       setScreenAngleOverride(angle: number | null): void;
       remount(): void;
       getViewState(): {

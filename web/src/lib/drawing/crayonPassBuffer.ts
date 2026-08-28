@@ -8,6 +8,7 @@ import {
   crayonPassWidthScale,
   crayonPatternFor,
   getCrayonMix,
+  getPerOpGlazeReturn,
 } from './crayonBrush';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
 import type { DotOp, PathOp } from './strokeOps';
@@ -87,16 +88,17 @@ function paintCrayon(
 // appearance fixed when the band count changes.
 //
 // The device tuning that set this drew with two bands at a per-band 0.16, whose
-// effective full-coverage return is the value below — so this is the appearance
-// that was signed off, restated in the terms that survive a band-count change.
-const PER_OP_GLAZE_RETURN = 0.2944;
+// effective full-coverage return is the option's default — so that is the
+// appearance signed off, restated in terms that survive a band-count change.
+// The value itself lives in CrayonOptions so the dev A/B seam can sweep it.
 
 // Partial coverage stays weaker: a pixel inside only one band receives only that
 // band's share. Inherent to per-band painting without a union mask, and a mask
 // needs a scratch surface whose per-op blit onto the composited tile is the cost
 // this pipeline exists to avoid (restamp measured 1.76–2.12% on native).
 function perBandGlazeReturn(bands: number) {
-  return bands <= 1 ? PER_OP_GLAZE_RETURN : 1 - (1 - PER_OP_GLAZE_RETURN) ** (1 / bands);
+  const effective = getPerOpGlazeReturn();
+  return bands <= 1 ? effective : 1 - (1 - effective) ** (1 / bands);
 }
 
 function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
@@ -192,6 +194,35 @@ export function configureCrayonDeposition(
   // one — its pending targets belong to the previous configuration's probe.
   pendingShadowRefresh.clear();
   shadowRefreshScheduled = false;
+}
+
+// Dev A/B seam: select the pipeline this build would otherwise pick from
+// __IS_CAPACITOR__, keeping the configured stroke probe. It exists so the native
+// pipeline can be swept for APPEARANCE from a desktop browser instead of a
+// build-and-install cycle per candidate — colour reproduces, since canvas
+// compositing is spec-defined, while frame cost does NOT, which is the whole
+// reason the pipelines differ. Never read performance off it;
+// tools/perf/gen-crayon-glaze-sheet.mjs is the consumer.
+//
+// Gated inside the function, and on __DEV_HARNESS__ alone. Both halves are
+// load-bearing. A module-scope reference to that literal throws during SSR,
+// where the server build does not substitute it. And the sibling `dev` check
+// every other seam pairs with it is absent because importing `$app/environment`
+// here is a MODULE-LOAD dependency on the bundler's aliases, which Playwright
+// resolves in a plain Node context and cannot find — it took every E2E shard
+// down. The dev harness sets PUBLIC_ENABLE_DEV_HARNESS explicitly, so the
+// literal alone is sufficient for every caller this has.
+// Deliberately NARROWER than CrayonDepositionMode. Switching to 'planes' here
+// would not produce a plane topology: setCrayonBufferForTarget registers a
+// tile's paired preview canvases only while the mode is already 'planes' at tile
+// adoption, and the web build adopts as 'restamp' — so a later switch would
+// lazily create an offscreen buffer with no mirror while the real plane canvases
+// stayed hidden and unbacked. The seam would appear to work and render something
+// that is not the plane pipeline. Re-adopting the live surfaces on switch is the
+// alternative, and no caller needs it.
+export function setCrayonDepositionForTuning(mode: 'restamp' | 'glaze-direct') {
+  if (!__DEV_HARNESS__) return;
+  configureCrayonDeposition(mode, strokeActiveProbe);
 }
 
 // Whether crayon ops mutate the normal ink tile directly (restamp) — the
