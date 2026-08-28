@@ -666,6 +666,46 @@ the iPad — nothing on the host can hold an iPad awake, so set **Settings → D
 Auto-Lock → Never** on the device itself. An active XCUITest session keeps it awake during a
 capture; the gaps are the risk.
 
+## A native perf build is one wrong npm script away from being uninstrumented
+
+`npm run perf:build:cap` writes the instrumented native bundle. **Do not install it with
+`npm run ios:run:device`** — that script chains `cap:sync`, which runs plain `build:cap` and
+overwrites the instrumented bundle with a dead-code-eliminated one before deploying. The capture
+still runs, still passes fidelity, and still writes a well-formed artifact; the only tell is
+`report.meta.counts.measures` reading 0 and `__committedBrushMode` being absent, which is the same
+signature as the Playwright-rebuild trap above.
+
+Install the build you just made, without re-syncing:
+
+```sh
+npx cap run ios --target <hardware UDID>
+```
+
+The same applies to `ios:build`, `ios:archive`, and anything else whose npm script begins with
+`cap:sync`.
+
+## A capture that does not record its brush is filed as pen
+
+`brushOf` (`tools/perf/rescore-captures.mjs`) resolves a capture's brush from the artifact's own
+`brush` field, then from a brush name in the path, and **falls back to `pen`** — silently.
+
+That fallback is load-bearing for old artifacts and dangerous for new ones. On 2026-08-27 a campaign
+labelled its cells `d5-glaze-direct-portrait-s1` and similar, carrying no brush token; every crayon
+capture resolved to `pen`, and `perf:evidence:keep` — which retains one capture per target × brush
+(ADR-0138) — collapsed twenty-six crayon captures into a single "pen" slot and discarded them. The
+output said `unknown/pen`, which reads as a fact rather than a guess.
+
+Two habits avoid it, and the second also fixes the target:
+
+* **Put the brush and the target in the capture path**, not just in a descriptive label:
+  `--output=perf-profiles/<campaign>/ipad-device-native/<cell>/crayon-real-screen.json`. `targetOf`
+  resolves the target from a path segment that names a known target, so a campaign-specific
+  directory name alone leaves it `unknown` — and an `unknown` target is scored against the default
+  gate rather than the one that cell is actually held to.
+* **Check what `perf:evidence:keep` says it kept.** It prints `<target>/<brush>` per retained
+  capture. `unknown` on either side means the corpus will be misread by the next rescore, and the
+  fix is to restage the paths and re-promote with `--force`.
+
 ## Keep the evidence before the scratch is gone
 
 **Promote the campaign's representative captures into the tracked corpus** as a closing step:

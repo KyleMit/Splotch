@@ -271,6 +271,21 @@ const LAUNCH_DENIAL_CAUSES = [
     pattern: /Developer Mode/i,
     detail: 'Developer Mode is off — enable it in Settings → Privacy & Security → Developer Mode',
   },
+  {
+    // This check POSTs to Appium and does not start one, so with no server the
+    // fetch is simply refused and node reports the bare string 'fetch failed' —
+    // which names neither Appium nor the port, and reads like a device fault. It
+    // cost a 2026-08-27 campaign two full launch attempts before the log was
+    // read. Unlike the causes above, this one is host-side and fixable here.
+    //
+    // Anchored to the WHOLE message on purpose: a message that carries an errno
+    // and a port (`ECONNREFUSED 4733`) already says what happened, and the test
+    // below pins it to the raw-message path rather than this one.
+    pattern: /^\s*(fetch failed|Failed to fetch)\s*$/i,
+    detail:
+      'nothing answered on the Appium port — this check does not start a server. ' +
+      'Run `appium --port <the port this preflight resolved>` and re-run.',
+  },
 ];
 
 // `ok` means a session started and was torn down. Anything else is reported with

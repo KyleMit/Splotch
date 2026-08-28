@@ -1,0 +1,28 @@
+{
+  "campaign": "crayon-native2-2026-08-27",
+  "capturedFrom": "perf-profiles/native2-keep",
+  "kept": [
+    {
+      "file": "ipad-device-native-crayon.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-s1/crayon-real-screen.json",
+      "candidateCount": 8,
+      "passingCandidateCount": 8,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-native-pen.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/pen-control/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

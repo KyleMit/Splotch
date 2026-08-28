@@ -63,7 +63,18 @@ export function rawReportOf(parsed) {
 
 // The brush decides which gate a capture is held to, so guessing it wrong scores
 // a cell against the wrong exception. The artifact's own field wins; the
-// filename is the fallback for a corpus that predates it.
+// filename is the fallback for a corpus that predates it — and the final
+// `?? 'pen'` is a GUESS, and it is silent. A capture whose artifact
+// records no brush and whose path carries no brush token is filed as pen — which
+// then scores it against pen's gate and, under the one-per-target-x-brush
+// retention, lets it evict or be evicted by a real pen capture. Twenty-six
+// crayon captures were dropped this way on 2026-08-27 with nothing in the output
+// saying a guess had been made.
+//
+// It stays because old artifacts predate the recorded field and pen is the right
+// guess for most of them. The protection is upstream: every capture writer must
+// record the brush the engine COMMITTED, and name capture paths so the brush
+// appears in them.
 export function brushOf(parsed, filename) {
   if (parsed?.brush) return parsed.brush;
   const hit = BRUSHES.find((brush) => filename.includes(brush));

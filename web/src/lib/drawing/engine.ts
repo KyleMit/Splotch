@@ -67,10 +67,14 @@ import { type StrokeOp } from './strokeOps';
 import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer';
 
 // Crayon's deposition pipeline is a per-runtime decision from the same
-// compile-time signal as its op granularity (ADR-0147, ADR-0146). Configured
-// at module evaluation, before any stroke can render; the probe lets the
-// deferred shadow drain yield to an in-flight stroke.
-configureCrayonDeposition(__IS_CAPACITOR__ ? 'planes' : 'restamp', () => activePointers.size > 0);
+// compile-time signal as its op granularity (ADR-0148, ADR-0147, ADR-0146).
+// Configured at module evaluation, before any stroke can render; the probe lets
+// the restamp pipeline's shadow drain yield to an in-flight stroke, and the
+// WKWebView's per-op glaze has no pass state for it to race.
+configureCrayonDeposition(
+  __IS_CAPACITOR__ ? 'glaze-direct' : 'restamp',
+  () => activePointers.size > 0
+);
 import {
   setCrayonOptions,
   crayonColorMix,

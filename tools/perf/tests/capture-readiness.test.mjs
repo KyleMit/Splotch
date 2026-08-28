@@ -340,6 +340,17 @@ describe('classifyLaunchProbe', () => {
     expect(detail).not.toContain('SBMainWorkspace');
   });
 
+  it('names the missing Appium server rather than reporting a bare fetch failure', () => {
+    // What node actually reports when nothing is listening: this check POSTs to
+    // Appium and never starts one, so the bare string names neither the server
+    // nor the port and reads like a device fault (2026-08-27).
+    const { status, detail } = classifyLaunchProbe({ ok: false, message: 'fetch failed' });
+
+    expect(status).toBe('blocked');
+    expect(detail).toContain('Appium');
+    expect(detail).toContain('appium --port');
+  });
+
   it('does not read a code 65 as a signing problem when the cause is unknown', () => {
     const { status, detail } = classifyLaunchProbe({
       ok: false,
