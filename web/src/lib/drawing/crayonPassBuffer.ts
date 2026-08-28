@@ -68,13 +68,40 @@ function paintCrayon(
 // because a slower stroke overlaps a pixel more times — which is how wax
 // actually behaves, and the direction the same session's feedback asked for.
 //
-// Blank paper is unaffected at any value: darken over a transparent backdrop
-// yields the source, and the source over itself is the source.
-const PER_OP_GLAZE_RETURN = 0.16;
+// Over an OPAQUE interior on blank paper the result is the wax exactly: darken
+// over a transparent backdrop yields the source, and the source over itself is
+// the source. That does NOT extend to antialiased edges — a partially covered
+// edge pixel is blended twice, once by each step, so its coverage is not a fixed
+// point and it does not reproduce a single plain paint. Reviewed measurement on
+// this claim: ~232 edge pixels differ over blank paper and ~233 over same-colour
+// overdraw, up to 69 per channel. Interiors match; rims are the crayon's own
+// tooth boundary and were judged on the device, not asserted from algebra.
+//
+// This is the EFFECTIVE return over an op's fully-covered pixels, not the alpha
+// handed to any one paint. `paintCrayon` fills one shape per DENSITY BAND, so
+// both steps below run once per band. That is harmless for darken — min is
+// idempotent, so a pixel in two bands lands on the same value — but the return
+// is a lerp and compounds. Naming the per-paint alpha here would make the real
+// glaze 1 − (1 − B)^bands and silently tie it to `CrayonOptions.passes`; naming
+// the effective value and solving the per-band alpha back out of it keeps the
+// appearance fixed when the band count changes.
+//
+// The device tuning that set this drew with two bands at a per-band 0.16, whose
+// effective full-coverage return is the value below — so this is the appearance
+// that was signed off, restated in the terms that survive a band-count change.
+const PER_OP_GLAZE_RETURN = 0.2944;
+
+// Partial coverage stays weaker: a pixel inside only one band receives only that
+// band's share. Inherent to per-band painting without a union mask, and a mask
+// needs a scratch surface whose per-op blit onto the composited tile is the cost
+// this pipeline exists to avoid (restamp measured 1.76–2.12% on native).
+function perBandGlazeReturn(bands: number) {
+  return bands <= 1 ? PER_OP_GLAZE_RETURN : 1 - (1 - PER_OP_GLAZE_RETURN) ** (1 / bands);
+}
 
 function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   paintCrayon(target, op, 'darken');
-  paintCrayon(target, op, 'source-over', PER_OP_GLAZE_RETURN);
+  paintCrayon(target, op, 'source-over', perBandGlazeReturn(crayonPassCount()));
 }
 
 // --- Crayon pass buffer ------------------------------------------------------

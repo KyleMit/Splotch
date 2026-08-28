@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// TWO density bands, as production ships. Mocking this to 1 is what hid the
+// compounding bug the first version of this suite was blind to: every step below
+// runs once per band, so a one-band mock deletes the condition under test.
 vi.mock('./crayonBrush', () => ({
-  crayonPassCount: () => 1,
+  crayonPassCount: () => 2,
   crayonPassWidthScale: () => 1,
   crayonPatternFor: () => ({}) as CanvasPattern,
   getCrayonMix: () => 0.55,
@@ -97,14 +100,20 @@ describe('the glaze applied per op, directly on the tile', () => {
 
     renderOp(target, crayonDot({ x: 10, y: 10, radius: 5 }));
 
-    // Same two steps as the two-blit stamp. The second step's alpha is the
-    // PER-OP return, not the pass-cadence `1 - mix`: reusing that here compounds
-    // across a stroke's overlapping ops and was measured on the device as a
-    // crossing that kept its green only at the single-op fringe.
+    // Once per band per step, and the return's alpha is SOLVED from the band
+    // count so the effective full-coverage return is the named constant. Handing
+    // each band the constant itself would give a doubly-covered pixel
+    // 1 - (1 - B)^2 and tie the glaze to CrayonOptions.passes.
+    const perBand = 1 - (1 - 0.2944) ** (1 / 2);
     expect(paintsOf(target)).toEqual([
       ['darken', 1],
-      ['source-over', 0.16],
+      ['darken', 1],
+      ['source-over', perBand],
+      ['source-over', perBand],
     ]);
+    // The property that matters, stated as arithmetic: a pixel in every band
+    // receives exactly the named effective return.
+    expect(1 - (1 - perBand) ** 2).toBeCloseTo(0.2944, 6);
   });
 
   it('never blits, so nothing touches the composited tile but the paint', () => {

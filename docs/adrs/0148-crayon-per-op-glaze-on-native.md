@@ -58,11 +58,21 @@ crayon's own colour at `PER_OP_GLAZE_RETURN` — and `crayonFlush` becomes a no-
 state exists to close. Selected from the same compile-time `CAPACITOR=true` signal as ADR-0146's op
 granularity and ADR-0147's deposition fork (`engine.ts`). **Web is untouched and keeps restamp.**
 
-`PER_OP_GLAZE_RETURN = 0.16` is the load-bearing constant. It is **not** the pass-cadence `1 − mix`:
-a pixel covered by k overlapping ops retains `1 − (1−B)^k` of the crayon colour, so reusing 0.45 per
-op reaches 75% after two ops and ~99% at hand speed — measured on the device as a crossing that kept
-its green only at the single-op fringe. Solving `(1−B)^k = mix` for a hand-speed k brackets B near
-0.06, which read as too green on the device.
+`PER_OP_GLAZE_RETURN = 0.2944` is the load-bearing constant, and it names the **effective** return
+over an op's fully-covered pixels rather than the alpha any one paint receives. `paintCrayon` fills
+one shape per DENSITY BAND, so both steps run once per band: harmless for `darken`, since min is
+idempotent, but the return is a lerp and compounds. Naming the per-paint alpha would make the real
+glaze `1 − (1 − B)^bands` and tie it silently to `CrayonOptions.passes`; the per-band alpha is
+instead solved back out of the effective value, so the appearance survives a band-count change. The
+device tuning that set this drew two bands at a per-band 0.16, whose effective full-coverage return
+is this value — the same pixels, restated in terms that do not depend on the band count. A pixel
+inside only one band still receives only that band's share, which is inherent to per-band painting
+without a union mask, and a mask needs a per-op blit onto the composited tile — the cost this
+pipeline exists to avoid. It is **not** the pass-cadence `1 − mix`: a pixel covered by k overlapping
+ops retains `1 − (1−B)^k` of the crayon colour, so reusing 0.45 per op reaches 75% after two ops and
+~99% at hand speed — measured on the device as a crossing that kept its green only at the single-op
+fringe. Solving `(1−B)^k = mix` for a hand-speed k brackets B near 0.06, which read as too green on
+the device.
 
 **0.16 was settled by drawing on the physical iPad**, cross-checked against a sweep that measures
 each candidate's crossing colour against the web pipeline's across colour pairs and redraw depths
@@ -79,13 +89,25 @@ at the end of the session measured 0.47% against its own earlier 0.03%. Per-op w
 every value (two paints, the same pattern-fill count, only a blend coefficient differing), so this
 value can be moved on looks alone without re-capturing.
 
-Two invariants make the per-op form safe where it is not visibly different:
+Two invariants make the per-op form safe where it is not visibly different — **both hold for opaque
+interiors and neither extends to antialiased edges**, which an earlier revision of this record
+claimed and review refuted:
 
-* **Blank paper is unaffected at any return value.** `darken` over a transparent backdrop yields the
-  source, and the source over itself is the source — so wax on blank paper is byte-identical to the
-  buffered pipelines. This is the dominant toddler case.
-* **Same-colour buildup is exact.** `min(S,S) = S`, and coverage still accumulates because each
-  pass's seed re-phases the tooth pattern into different pits.
+* **An opaque interior on blank paper is the wax exactly.** `darken` over a transparent backdrop
+  yields the source, and the source over itself is the source. This is the dominant toddler case.
+* **Same-colour buildup is exact in the interior.** `min(S,S) = S`, and coverage still accumulates
+  because each pass's seed re-phases the tooth pattern into different pits.
+
+**What that does not cover.** A partially covered EDGE pixel is blended once by each step, so its
+coverage is not a fixed point and does not reproduce a single plain paint. Measured in WebKit
+against one `source-over` paint of the same fractional-coordinate line: ~232 differing pixels over
+blank paper (max channel delta 38) and ~233 over same-colour overdraw (max delta 69); Chromium
+differs too. Those pixels are the wax's own tooth rim, they were judged on the device rather than
+derived, and the correct statement is "the interior is exact and the rim is not", not
+"byte-identical".
+
+The distinction matters because the earlier claim was load-bearing here and rested on algebra alone.
+The algebra is right about the composite ops and silent about coverage.
 
 `crayonGlazeDirect.test.ts` pins the op sequence and alpha, pins that the pipeline issues zero
 blits, and — separately from any pipeline — pins the convergence requirement as arithmetic, so a
