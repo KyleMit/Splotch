@@ -96,6 +96,28 @@ exactly why the pointing has to be deliberate.
 
 ## Capture state that survives between runs
 
+**Starting an emulator process does not prove a fresh boot.** Android Emulator Quick Boot restores
+the guest snapshot, so the host process can be new while `adb shell uptime` still reports days. A
+fresh-boot action control must start the AVD with `-no-snapshot-load`, wait for Android to finish
+booting, and record the guest uptime before the first capture:
+
+```sh
+~/Library/Android/sdk/emulator/emulator -avd Pixel_7_Pro_API_33 -no-snapshot-load
+adb -s emulator-5554 wait-for-device
+adb -s emulator-5554 shell getprop sys.boot_completed
+adb -s emulator-5554 shell cat /proc/uptime
+```
+
+Do not use `-wipe-data`; the control requires a cold guest boot, not deletion of the AVD's persisted
+state. The Android browser action runner records the first `/proc/uptime` value as
+`device.uptimeSeconds` in its artifact. If guest uptime did not reset, the run is not a fresh-boot
+control regardless of when its host process started.
+
+**A passing aggregate idle cell does not prove the target actions stayed in one performance
+regime.** A long sweep can keep idle under its gates while target-action repeats change from clean
+to slow. Inspect the per-repeat samples and preserve the raw artifact; an unscoreable follow-up
+whose idle control fails does not invalidate an earlier passing-control action failure.
+
 **The brush is persisted.** A capture that assumes pen is the default draws its "pen" strokes with
 whatever the previous capture selected — captures share an origin, so the tool choice survives the
 navigation. Select every brush explicitly, pen included, and assert `window.__committedBrushMode()`

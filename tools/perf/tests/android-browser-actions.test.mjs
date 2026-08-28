@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   connectedAndroidDevices,
+  deviceUptimeSecondsFrom,
   isOwnedProfilerUrl,
   refreshRateRestoreArgs,
   renderFrameRateFrom,
@@ -28,6 +29,12 @@ describe('Android web action profiling', () => {
     expect(isOwnedProfilerUrl(base, base)).toBe(false);
     expect(isOwnedProfilerUrl(base, 'https://example.com/?perf-android-web=123')).toBe(false);
     expect(isOwnedProfilerUrl(base, 'not a URL')).toBe(false);
+  });
+
+  it('reads guest uptime from procfs output', () => {
+    expect(deviceUptimeSecondsFrom('83.45 310.12')).toBe(83.45);
+    expect(deviceUptimeSecondsFrom('not available')).toBe(null);
+    expect(deviceUptimeSecondsFrom(undefined)).toBe(null);
   });
 });
 

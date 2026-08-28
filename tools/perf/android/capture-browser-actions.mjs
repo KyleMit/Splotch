@@ -65,6 +65,11 @@ export function renderFrameRateFrom(dumpsysOutput) {
   return match ? Math.round(Number.parseFloat(match[1])) : null;
 }
 
+export function deviceUptimeSecondsFrom(procUptimeOutput) {
+  const match = /^\s*([0-9]+(?:\.[0-9]+)?)/.exec(procUptimeOutput ?? '');
+  return match ? Number.parseFloat(match[1]) : null;
+}
+
 function adb(deviceId, args, { allowFailure = false } = {}) {
   const result = spawnSync(ADB, [...(deviceId ? ['-s', deviceId] : []), ...args], {
     encoding: 'utf8',
@@ -254,6 +259,9 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     'accelerometer_rotation',
   ]);
   const originalRotation = adb(deviceId, ['shell', 'settings', 'get', 'system', 'user_rotation']);
+  const deviceUptimeSeconds = deviceUptimeSecondsFrom(
+    adb(deviceId, ['shell', 'cat', '/proc/uptime'])
+  );
   // Reads stay outside the try (the rotation-settings pattern above): a failed
   // read throws before anything was mutated. The WRITES sit inside the try —
   // pinning outside it opened a crash window where one setting was written and
@@ -404,6 +412,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         name: adb(deviceId, ['shell', 'getprop', 'ro.product.model']) || deviceId,
         os: adb(deviceId, ['shell', 'getprop', 'ro.build.version.release']) || 'unknown',
         id: deviceId,
+        uptimeSeconds: deviceUptimeSeconds,
       },
       appUrl: base,
       transport: 'android-chrome-cdp',
