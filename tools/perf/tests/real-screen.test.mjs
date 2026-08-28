@@ -29,6 +29,7 @@ import {
   clearBundledReportMailbox,
   dismissInstallBannerForMeasurement,
   flushNativePreferences,
+  handCaptureSecondsProblem,
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
@@ -258,6 +259,14 @@ describe('bundled Preferences lifecycle', () => {
         body: { script: 'mobile: backgroundApp', args: [{ seconds: 1 }] },
       },
     ]);
+  });
+});
+
+describe('bundled hand-input duration', () => {
+  it('fits inside the probe contact budget', () => {
+    expect(handCaptureSecondsProblem(20)).toBeNull();
+    expect(handCaptureSecondsProblem(60)).toBeNull();
+    expect(handCaptureSecondsProblem(61)).toContain('60-second contact budget');
   });
 });
 

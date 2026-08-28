@@ -75,6 +75,7 @@ const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
 const HAND_COUNTDOWN_SECONDS = 5;
 const HAND_DEFAULT_SECONDS = 20;
+const HAND_MAX_SECONDS = PROBE_CONTACT_BUDGET_MS / 1_000;
 const PREFERENCES_FLUSH_BACKGROUND_SECONDS = 1;
 export const BORROWED_SESSION_CAPABILITIES_ERROR =
   '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance';
@@ -485,6 +486,16 @@ export async function clearBundledReportMailbox({ client, sessionId, executeAsyn
   await flushNativePreferences(client, sessionId);
 }
 
+export function handCaptureSecondsProblem(seconds) {
+  if (!Number.isSafeInteger(seconds) || seconds < 1) {
+    return '--seconds must be a positive integer';
+  }
+  if (seconds > HAND_MAX_SECONDS) {
+    return `--seconds must not exceed the probe's ${HAND_MAX_SECONDS}-second contact budget`;
+  }
+  return null;
+}
+
 export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
@@ -547,9 +558,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   }
   if (handInput && !bundledReport) fail('--hand-input requires --bundled-report');
   const handSeconds = Number.parseInt(flag('seconds', String(HAND_DEFAULT_SECONDS)), 10);
-  if (!Number.isSafeInteger(handSeconds) || handSeconds < 1) {
-    fail('--seconds must be a positive integer');
-  }
+  const handSecondsProblem = handCaptureSecondsProblem(handSeconds);
+  if (handSecondsProblem) fail(handSecondsProblem);
   const requestedOrientation = parseCampaignOrientation(flag('orientation'));
   const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
@@ -1144,7 +1154,18 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       eraserRefills,
       mode: `xcuitest:${label}`,
       handCapture: handInput,
-      ...(handInput ? { runtime, reading: null, drawSeconds: handSeconds } : {}),
+      ...(handInput
+        ? {
+            runtime,
+            reading: null,
+            drawSeconds: handSeconds,
+            handInputControl: {
+              wdaSessionAttached: true,
+              cleanWitness: false,
+              requiredControl: 'repeat-without-wda-session',
+            },
+          }
+        : {}),
       ...(bundledPayload
         ? {
             nativeApp: true,

@@ -32,7 +32,7 @@ Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear w
 | ----------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | **A. Safari on iPad → Mac's `/dev/engine` preview** (recommended) | Real iPad WebKit + GPU + ProMotion (Safari shell, not WKWebView) | High — driven by the same scenario as `perf:web:undo` via the console | You want repeatable engine numbers (undo/commit/draw cost at real op volume) |
 | **Trusted MobileSafari input via XCUITest**                       | Real iPad WebKit + GPU + OS-mediated trusted touch               | High — fixed long + short native gesture                              | You need repeatable felt-lag / presentation-starvation numbers               |
-| **B. Bundled native Capacitor app**                               | Real WKWebView app shell *and* hardware                          | High with trusted XCUITest; hand mode is the coalescing witness       | You specifically need to rule out a WKWebView-vs-Safari difference           |
+| **B. Bundled native Capacitor app**                               | Real WKWebView app shell *and* hardware                          | High with trusted XCUITest; hand mode is an attached-WDA control      | You specifically need to rule out a WKWebView-vs-Safari difference           |
 
 Safari-on-iPad and the native WKWebView run the **same** WebKit engine, so for engine/canvas
 performance Approach A is the right default; Approach B is a sanity check on the app shell. Both are
@@ -334,9 +334,12 @@ bundled origin, WKWebView user agent, table counts, and exact UTF-8 byte size al
 clears the ephemeral key and flushes that removal on success, refusal, timeout, or interruption. The
 artifact records `pageDelivery: "bundled"` and `pageIdentity: "proven-by-container-nonce"`.
 
-For the real-finger coalescing witness, keep the same installed build and add
-`--hand-input --seconds=20`. The command counts down before opening the drawing window. This mode
-uses Appium only to arm and collect the report; it does not synthesize the drawing input.
+For an experimental real-finger control, keep the same installed build and add
+`--hand-input --seconds=20` (maximum 60 seconds). The command counts down before opening the drawing
+window and does not synthesize the drawing input. WebDriverAgent remains attached throughout,
+however, and its effect on touch delivery is unmeasured. The artifact records that condition; do not
+bank its coalescing number as a clean witness until a paired attached-vs-detached run, or a proven
+close-and-reattach workflow, shows WDA does not move it.
 
 ### Discrete action automation — `perf:ios:xcuitest:actions`
 

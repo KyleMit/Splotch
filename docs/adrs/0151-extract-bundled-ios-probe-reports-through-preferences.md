@@ -33,8 +33,10 @@ artifact records `pageDelivery: "bundled"`, a proven container-nonce page identi
 evidence.
 
 Automated XCUITest proves the transport and provides repeatable regression input. The same command's
-`--hand-input` mode remains the decisive witness for real-finger WKWebView coalescing; the report
-channel does not turn synthetic input into human input.
+`--hand-input` mode records real-finger input, but the WebDriverAgent session remains attached while
+the operator draws. Its coalescing result is an experimental control, not a clean witness, until a
+paired attached-vs-detached run or proven close-and-reattach workflow shows WDA does not perturb
+touch delivery.
 
 ## Consequences
 
@@ -49,4 +51,5 @@ channel does not turn synthetic input into human input.
 * − `devicectl` and access to the app data container make this a local physical-device workflow, not
   a hosted-device transport.
 * − XCUITest automation can validate the channel but cannot settle human-finger coalescing; that
-  evidence still requires the operator to touch the device during `--hand-input`.
+  evidence still requires the operator to touch the device and a paired control to clear the live
+  WDA session as a confound.
