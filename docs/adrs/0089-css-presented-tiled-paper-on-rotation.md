@@ -99,6 +99,23 @@ could exercise the blank path. The runner instead uses enabled Screenshot, whose
 tracks whether the canvas has pixels. A corrected Android-web trace confirmed real ink and zero
 canvas backing mutations; `engine.resize` took 0.4–3.0 ms.
 
+The later issue-1197 physical-iPad recapture found that the packaged native branch still bypassed
+the resize-settle debounce. iPadOS delivered an initial resize while the drawing container retained
+its old orientation layout, exposing a transient square 641×641 tile geometry before the screen
+orientation signal settled. The native engine adopted that intermediate paper synchronously and
+performed 64 backing assignments per ink rotation. `engine.resize` took only 3–5 ms, but WebKit
+presented one 148–156 ms interval portrait-to-landscape and one 107–111 ms interval on every
+landscape-to-portrait repeat. The earlier retained “native” pass had native Appium transport but an
+HTTP `appUrl`, so it ran the web build's debounced engine rather than the packaged Capacitor branch.
+
+Native now uses the same 150 ms trailing resize debounce as web. Ten scored physical-iPad repeats
+then recorded zero canvas mutations in both ink directions: portrait-to-landscape measured 20 ms
+first-frame P95 and 18/22 ms post-action P95/max; landscape-to-portrait measured 0 ms first-frame
+P95 and 18/21 ms post-action P95/max. Blank, undo, and clear siblings passed. A fresh ten-repeat
+Safari cross-check measured 19/20 ms and 19/22 ms post-action P95/max in the two ink directions. The
+raw before/after corpus and its provenance are retained under
+`perf-profiles/evidence/2026-08-28-issue-1197-rotation-recapture/`.
+
 That trace also separated canvas work from orientation layout animation. Eight palette swatches
 animated width and height because their interaction rule used `transition: all`, and the action
 drawer animated its axis whenever the media query changed. Limiting palette transitions to visual
@@ -165,6 +182,11 @@ The related invariants are:
   geometry before its Screen Orientation angle settles. The paper is contain-fit and centered in
   minor system-inset drift instead of being rerasterized; a material same-orientation viewport
   resize re-adopts the paper.
+* Every target settles resize events on the shared 150 ms trailing edge before deciding whether to
+  adopt or present the paper. Native rotation can cross an intermediate layout size before iPadOS
+  publishes its settled orientation, so a synchronous native resize would reintroduce the exact
+  backing-store mutation this decision forbids. Pointer rect measurement still refreshes
+  immediately.
 * Hidden crayon-preview canvases carry no committed pixels and are not resized. The first crayon op
   allocates only the intersecting bottom/top preview pairs. A preview that is visible during a
   resize remains eager so an in-progress pass can replay.
@@ -232,7 +254,7 @@ plus ink, a committed crayon stroke, and undo of the only rotated stroke. Also r
 clear→blank rotation→undo clear→undo restored stroke→new stroke→clear→return→new ink→both rotations
 sequence; it exercises the hidden-backing migration, stale undo-patch fallback, and viewport-drift
 return paths that isolated ink rotation misses. The app's own resize starts about 150 ms after the
-event because the web target uses the resize-settle debounce.
+event because every target uses the resize-settle debounce.
 
 Retain the raw frame interval that straddles input delivery, but do not attribute its pre-event
 portion to the app. Gate its action-to-first-frame remainder at 33.5 ms, then gate every fully

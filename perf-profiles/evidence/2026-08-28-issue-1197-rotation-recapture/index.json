@@ -1,0 +1,46 @@
+{
+  "campaign": "2026-08-28-issue-1197-rotation-recapture",
+  "why": "Physical-iPad verification and before/after evidence for issue 1197. The trustworthy capacitor://localhost baseline exposed a native-only synchronous resize against iPadOS's transient square rotation layout. The retained fix routes native through the existing 150 ms resize-settle debounce, restoring ADR-0089's zero-mutation ink-rotation invariant without changing any gate.",
+  "sourceHead": "8594a8f31b0819f1464338071ce70d67ebcfa6e0",
+  "device": {
+    "name": "iPad",
+    "os": "26.5",
+    "id": "00008103-0006202E3CF1001E"
+  },
+  "mode": {
+    "orientation": "PORTRAIT",
+    "theme": "light",
+    "actions": "rotation",
+    "repeats": 11,
+    "warmupRepeats": 1,
+    "scoredRepeats": 10
+  },
+  "kept": [
+    {
+      "file": "ipad-native-before.json",
+      "sha256": "88c91dadab3c579b2c172908be7ff5ed7b500eda7d6457402f844f65b92f5e79",
+      "runtime": "ios-capacitor-webview",
+      "appUrl": "capacitor://localhost",
+      "note": "Pre-fix native control. Every scored ink rotation performs 64 canvas backing assignments. Portrait-to-landscape has first-frame p95 151 ms and post-action p95/max 18/156 ms; landscape-to-portrait has first-frame p95 23 ms and post-action p95/max 23/111 ms. Blank directions remain within the frame gates."
+    },
+    {
+      "file": "ipad-native-after.json",
+      "sha256": "d749d349b266988b2008209c11601d2290db76248d8f2aed1678971bb2d88393",
+      "runtime": "ios-capacitor-webview",
+      "appUrl": "capacitor://localhost",
+      "note": "Post-fix native proof. All ten scored repeats record zero ink-rotation canvas mutations. Portrait-to-landscape first-frame p95 is 20 ms and post-action p95/max is 18/22 ms; landscape-to-portrait first-frame p95 is 0 ms and post-action p95/max is 18/21 ms. Both blank directions and every undo/clear sibling pass."
+    },
+    {
+      "file": "ipad-safari-after.json",
+      "sha256": "ddcb46d256c012babb9dd90b324d0ee8a267af2856d1f604c25c52632f791b6c",
+      "runtime": "ios-safari",
+      "appUrl": "http://192.168.40.53:4173/",
+      "note": "Post-fix Safari sibling proof from the fresh LAN build. Portrait-to-landscape post-action p95/max is 19/20 ms with per-repeat p95 17-20 ms; landscape-to-portrait is 19/22 ms with per-repeat p95 17-22 ms. Both ink directions record zero canvas mutations and both blank directions pass. One unrelated clear-setup control straddles its first-frame/max gates at 36/37 ms; the later clear-restored control and all rotation/undo cells pass."
+    }
+  ],
+  "attribution": {
+    "nativeBaseline": "The first native resize arrives before layout and screen orientation settle. The synchronous Capacitor path adopts a 641x641 transient paper, resizes 16 normal tiles plus 16 detached repaint surfaces, and triggers the 107-156 ms WebKit presentation gaps even though engine.resize itself takes 3-5 ms.",
+    "retainedFix": "The shared trailing resize debounce waits out the transient native layout just as it already does on Safari. Ink keeps its paper-sized tiles through both directions, so no backing assignment or replay reaches the rotation window.",
+    "historicalNativeArtifact": "The 2026-08-25 retained artifact labeled as native used native Appium transport but appUrl http://192.168.40.53:4185/. Navigating the WebView to that web build selected the non-Capacitor debounce branch, so its zero-mutation pass did not exercise the packaged native branch corrected here."
+  }
+}

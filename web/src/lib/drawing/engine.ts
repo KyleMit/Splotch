@@ -418,17 +418,13 @@ function resizeCanvas(
 // reassignment in resizeCanvas() wipes the canvas and forces a repaint. The
 // resize listener refreshes the cached rect immediately (so pointer mapping
 // tracks the moving layout) but defers the wipe + rebuild until the size
-// settles. Native skips the debounce: rotation is a single resize event, and
-// delaying its rebuild would only prolong the stretched frame. Exported so the
-// dev harness's resizeTo() can wait out the settle window.
+// settles. Native rotation also crosses intermediate layout sizes before its
+// orientation signal settles, so it needs the same trailing edge. Exported so
+// the dev harness's resizeTo() can wait out the settle window.
 export const RESIZE_SETTLE_MS = 150;
 let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null;
 
 function handleResize() {
-  if (__IS_CAPACITOR__) {
-    resizeCanvas();
-    return;
-  }
   refreshCanvasRect();
   if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
   resizeSettleTimer = setTimeout(() => {
