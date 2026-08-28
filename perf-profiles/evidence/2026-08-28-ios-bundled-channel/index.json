@@ -1,6 +1,6 @@
 {
   "campaign": "2026-08-28-ios-bundled-channel",
-  "capturedFrom": "perf-profiles/issue-1323",
+  "capturedFrom": "perf-profiles/issue-1323-review",
   "kept": [
     {
       "file": "ipad-device-native-pen.json",
