@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { CAMPAIGN_TARGETS } from '../lib/campaign-plan.mjs';
-import { refreshRegimeVerdict, soleExpectedRegimeForRuntime } from '../lib/refresh-regime.mjs';
+import {
+  refreshRegimeRefusal,
+  refreshRegimeVerdict,
+  soleExpectedRegimeForRuntime,
+} from '../lib/refresh-regime.mjs';
 
 describe('soleExpectedRegimeForRuntime', () => {
   it('resolves a runtime whose targets declare exactly one expectation', () => {
@@ -46,5 +50,40 @@ describe('the beat a capture is charged against', () => {
 
     expect(verdict.observed).toBe('60hz');
     expect(verdict.matched).toBe(true);
+  });
+});
+
+// The guard's first version printed a warning while acceptance still checked
+// fidelity alone, so an off-regime capture wrote its artifact and exited zero.
+// These cover the REFUSAL, not just the verdict that feeds it.
+describe('whether an off-regime capture may be scored', () => {
+  const expected = soleExpectedRegimeForRuntime(CAMPAIGN_TARGETS, 'ios-safari');
+  const offRegime = refreshRegimeVerdict(8, expected);
+  const inRegime = refreshRegimeVerdict(17, expected);
+
+  it('refuses a capture that held a different beat than its cell', () => {
+    const refusal = refreshRegimeRefusal(offRegime, { expected, reportOnly: false });
+
+    expect(refusal).toContain('120hz');
+    expect(refusal).toContain('60hz');
+  });
+
+  it('accepts one that held the expected beat', () => {
+    expect(refreshRegimeRefusal(inRegime, { expected, reportOnly: false })).toBeNull();
+  });
+
+  it('reports rather than refuses under --report-only', () => {
+    // Native cells are comparative rather than gate-scored (ADR-0144), so the
+    // campaign drives them with --report-only and must still get its artifact.
+    expect(refreshRegimeRefusal(offRegime, { expected, reportOnly: true })).toBeNull();
+  });
+
+  it('cannot refuse when no expectation could be resolved', () => {
+    // android-chrome is 60 Hz emulated and 120 Hz on the phone; refusing on a
+    // guess would fail correct captures of whichever one it guessed wrong.
+    const unresolved = soleExpectedRegimeForRuntime(CAMPAIGN_TARGETS, 'android-chrome');
+    const verdict = refreshRegimeVerdict(8, unresolved);
+
+    expect(refreshRegimeRefusal(verdict, { expected: unresolved, reportOnly: false })).toBeNull();
   });
 });

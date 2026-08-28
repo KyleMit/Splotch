@@ -13,6 +13,7 @@ import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { captureRuntime, inputFidelity } from '../lib/input-fidelity.mjs';
 import {
   describeRefreshRegime,
+  refreshRegimeRefusal,
   refreshRegimeVerdict,
   soleExpectedRegimeForRuntime,
 } from '../lib/refresh-regime.mjs';
@@ -464,6 +465,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'undo-count',
         'undo-pause-ms',
         'history-settle-ms',
+        'refresh-regime',
         'rotate-before-undo',
         'label',
         'output',
@@ -1086,6 +1088,21 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'The capture failed the trusted-input fidelity gate; do not use its lag score.'
       );
     }
+    // Ordered AFTER fidelity for the same reason the campaign runner orders it
+    // there: a capture that was barely driven has a meaningless beat as well as
+    // a meaningless number, and naming the regime would send the next session
+    // after the wrong thing.
+    //
+    // This REFUSES rather than warns. lostFrameTimeShare is a share of the beat,
+    // so a capture that held a different regime is not comparable with the cell
+    // it is filling — a 2026-08-27 Safari capture presenting at 120 Hz among
+    // 60 Hz siblings scored 2.25% against their ~0.6%, and warning alone let it
+    // be written, exit zero, and be averaged in by hand.
+    const regimeRefusal = refreshRegimeRefusal(regime, {
+      expected: expectedRegime,
+      reportOnly: has('report-only'),
+    });
+    if (regimeRefusal) throw new Error(regimeRefusal);
     if (!has('report-only') && (!drawing.passed || (undoCount > 0 && !undo.passed))) {
       throw new Error(
         [

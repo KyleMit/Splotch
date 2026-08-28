@@ -72,7 +72,9 @@ import { configureCrayonDeposition, flushCrayonBuffer } from './crayonPassBuffer
 // the restamp pipeline's shadow drain yield to an in-flight stroke, and the
 // WKWebView's per-op glaze has no pass state for it to race.
 configureCrayonDeposition(
-  __IS_CAPACITOR__ ? 'glaze-direct' : 'restamp',
+  // EXPERIMENT BRANCH: the same pipeline on both runtimes, so the native art
+  // direction can be looked at in a desktop or phone browser. Not for merge.
+  'glaze-direct',
   () => activePointers.size > 0
 );
 import {
