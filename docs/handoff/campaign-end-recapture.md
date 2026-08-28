@@ -22,7 +22,7 @@ one fresh idle control passes; do not recapture already-reviewed physical #1197 
 | Branch              | `codex/issue-1215-sim-emulator-recapture` (pushed)                                          |
 | PR                  | none — #1215 is incomplete                                                                  |
 | Base                | `a55bb7aa80fdd1081774455ca885f55f81a9a91d` (ready PR #1485)                                 |
-| Implementation head | `477b36edde8808a00956920bc770b6a8e32b2b33`                                                  |
+| Implementation head | `1c16fbe281af6808ad6cc7a27bb9dc2afb5ebb0e`                                                  |
 | Stack               | #1483: #1481 → #1482 → #1484 → #1485; all ready, review-settled, exact-head green, unmerged |
 | Controller          | `/private/tmp/splotch-issue-stack-controller-1225/.issue-stack/run.json`                    |
 
@@ -31,10 +31,12 @@ one fresh idle control passes; do not recapture already-reviewed physical #1197 
 | SHA                                        | What                                                         |
 | ------------------------------------------ | ------------------------------------------------------------ |
 | `477b36edde8808a00956920bc770b6a8e32b2b33` | Harden split/Appium capture for simulator/emulator recapture |
+| `1c16fbe281af6808ad6cc7a27bb9dc2afb5ebb0e` | Harden native WebView selection and packaged-page provenance |
 
 ### Files touched
 
 * `tools/perf/ios/capture-xcuitest-screen.mjs`
+* `tools/perf/ios/capture-xcuitest-actions.mjs`
 * `tools/perf/lib/campaign-plan.mjs`
 * `tools/perf/split-capture/capture-device-frames.mjs`
 * `tools/perf/split-capture/serve-floor-control.mjs`
@@ -43,7 +45,9 @@ one fresh idle control passes; do not recapture already-reviewed physical #1197 
 * `tools/perf/split-capture/lib/page-bootstrap.mjs`
 * `tools/perf/tests/bootstrap-theme.test.mjs`
 * `tools/perf/tests/campaign-plan.test.mjs`
+* `tools/perf/tests/real-screen.test.mjs`
 * `tools/perf/tests/split-capture.test.mjs`
+* `docs/PROFILING-CAMPAIGNS.md`
 * `docs/handoff/campaign-end-recapture.md`
 
 ### Trusted partial captures — not promoted
@@ -83,6 +87,13 @@ infrastructure and `perf-profiles/evidence/operator/ipad-grant-log.tsv` were unt
   `outerWidth/Height - innerWidth/Height` offset, and the floor verifier uses the same transform.
   Before the fix, landscape gestures produced only 3–9 events; the same cell afterward produced
   3,656 trusted moves and full fidelity.
+* Native Appium runs select the Splotch package context when Chrome or another debuggable WebView is
+  also present, and refuse an ambiguous native context instead of taking the first entry. Browser
+  runs prefer Chrome's browser context.
+* Appium native artifacts that record an `appUrl` must name a packaged origin
+  (`capacitor://localhost` on iOS or `https://localhost` on Android). This prevents a native
+  transport attached to an HTTP preview from being banked as packaged-native evidence; older
+  artifacts without the field remain foldable and require manual provenance review.
 * Every instrument change restarted Android emulator web into a new output root. Only v5 is eligible
   to continue; earlier roots are deliberately mixed/obsolete scratch.
 * Simulator cadence failures remain unscoreable. Valid product reds and passing idle controls are
@@ -97,12 +108,12 @@ infrastructure and `perf-profiles/evidence/operator/ipad-grant-log.tsv` were unt
   the wrap happened before target completion and fold work.
 * The 18/20 iPad simulator web corpus may be foldable with two preserved-with-reason cells; confirm
   current campaign-source rules before promoting it.
-* No reviewed PR exists for #1215. The branch contains only the pushed harness commit and this
-  handoff.
+* No reviewed PR exists for #1215. The branch contains the pushed harness commits and this handoff.
 
 ## Done & verified
 
 * Focused campaign/split/bootstrap/Appium suite: 4 files / 300 tests passed.
+* Focused native context/provenance suite: 4 files / 283 tests passed.
 * `npm run check`: passed with zero errors/warnings.
 * `npm run lint`: passed with zero errors and two base-existing warnings.
 * `npm run format:check`: passed before this handoff edit; rerun after updating the packet.
@@ -111,8 +122,7 @@ infrastructure and `perf-profiles/evidence/operator/ipad-grant-log.tsv` were unt
   * portrait-light eraser smoke: exit 0, fidelity pass, initial fill and nine refills verified.
   * landscape-light pen smoke: 3–9 events before transform fix; 3,656 trusted moves, 1.09
     moves/frame, exit 0, fidelity pass afterward.
-* Branch and remote matched `477b36edde8808a00956920bc770b6a8e32b2b33`; worktree was clean before
-  this handoff edit.
+* Branch and remote verification must be repeated after the self-heal handoff commit.
 
 ## Risks & next 3 steps
 
