@@ -7,9 +7,10 @@ things are the way they are.
 ADR numbers and filenames are **immutable** — records are never renumbered, deleted, or rewritten
 once superseded. The single exception is a number issued twice by mistake: uniqueness is the
 property immutability exists to guarantee, so a collision is repaired by renumbering whichever
-record has fewer inbound references, not left standing. Issue #676 repaired the only two — the
-Dependabot review workflow moved to 0081 and the resident byte budget to 0082, which is why commits
-before it name those records by their original numbers.
+record has fewer inbound references, not left standing. Issue #676 repaired the first two — the
+Dependabot review workflow moved to 0081 and the resident byte budget to 0082 — and a duplicate 0148
+was repaired by moving the durable IP rate-limit key record to 0150; commits before each repair name
+those records by their original numbers.
 
 This index is the curated presentation layer on top of that append-only history: start with the
 load-bearing decisions, then browse your area. Superseded, rejected, and moved records live in the

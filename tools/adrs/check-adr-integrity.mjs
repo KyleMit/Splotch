@@ -161,8 +161,9 @@ export function checkAdrIntegrity() {
   if (duplicates.length > 0 || collisions.length > 0) {
     const free = nextAdrNumber([...head, ...(base ?? [])]);
     console.error(
-      `For a numbering collision, give the later-landed record a free number — ${free} is ` +
-        `the next one — then update its H1, index entry, and every ADR-NNNN reference to it.`
+      `For a numbering collision, give the record with fewer inbound references a free number; ` +
+        `if tied, renumber the later-landed record. ${free} is the next free number. Then update ` +
+        `its H1, index entry, and every ADR-NNNN reference to it.`
     );
   }
   process.exit(1);
