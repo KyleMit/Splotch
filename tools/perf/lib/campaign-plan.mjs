@@ -780,7 +780,10 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
   return plan;
 }
 
-export function planCampaignReferences(targetId, { modeId, outputRoot, host = {}, label } = {}) {
+export function planCampaignReferences(
+  targetId,
+  { modeId, outputRoot, host = {}, label, productCellCount } = {}
+) {
   const target = campaignTarget(targetId);
   if (!target.physicalDevice) return [];
   const base = planCampaign(targetId, {
@@ -791,7 +794,11 @@ export function planCampaignReferences(targetId, { modeId, outputRoot, host = {}
     label,
   })[0];
 
-  return CAMPAIGN_REFERENCE_POSITIONS.map((position) => {
+  const positions =
+    productCellCount === 1
+      ? CAMPAIGN_REFERENCE_POSITIONS.filter((position) => position !== 'middle')
+      : CAMPAIGN_REFERENCE_POSITIONS;
+  return positions.map((position) => {
     const artifact = referenceArtifactPath(outputRoot, targetId, modeId, position);
     const args = base.args.map((arg) => {
       if (arg.startsWith('--output=')) return `--output=${artifact}`;
@@ -812,10 +819,16 @@ export function planCampaignReferences(targetId, { modeId, outputRoot, host = {}
 
 export function campaignQueue(plan, references) {
   if (!references.length) return plan;
-  const [start, middle, end] = CAMPAIGN_REFERENCE_POSITIONS.map((position) =>
-    references.find((cell) => cell.referencePosition === position)
-  );
-  if (!start || !middle || !end || references.length !== CAMPAIGN_REFERENCE_POSITIONS.length) {
+  const start = references.find((cell) => cell.referencePosition === 'start');
+  const middle = references.find((cell) => cell.referencePosition === 'middle');
+  const end = references.find((cell) => cell.referencePosition === 'end');
+  if (!start || !end) {
+    throw new Error('campaign references must contain one start and end cell');
+  }
+  if (plan.length === 1 && !middle && references.length === 2) {
+    return [start, ...plan, end];
+  }
+  if (!middle || references.length !== CAMPAIGN_REFERENCE_POSITIONS.length) {
     throw new Error('campaign references must contain exactly one start, middle, and end cell');
   }
   const midpoint = Math.ceil(plan.length / 2);

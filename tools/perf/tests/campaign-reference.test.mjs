@@ -16,8 +16,8 @@ vi.mock('node:child_process', async () => {
         middle: 0.003,
         end: 0.0064,
       };
-      const position = Object.keys(shareByPosition).find((candidate) =>
-        output.endsWith(`/${candidate}.json`) && output.includes('/references/')
+      const position = Object.keys(shareByPosition).find(
+        (candidate) => output.endsWith(`/${candidate}.json`) && output.includes('/references/')
       );
       const lostFrameTimeShare = position ? shareByPosition[position] : 0.001;
       makeDirectory(directoryName(output), { recursive: true });
@@ -118,6 +118,7 @@ describe('physical-device campaign drift references', () => {
     expect(log.mock.calls.flat().join('\n')).toContain(
       'WARN  reference drift reached 0.61 percentage points, beyond the 0.50-point evidence threshold'
     );
+    expect(log.mock.calls.flat().filter((line) => line.startsWith('WARN  '))).toHaveLength(1);
     expect(readFileSync(join(root, 'instrument.json'), 'utf8')).toContain('fingerprint');
   });
 
@@ -142,6 +143,12 @@ describe('physical-device campaign drift references', () => {
     expect(report.measurements.every(({ artifact }) => artifact.includes('/landscape-dark/'))).toBe(
       true
     );
+
+    capture.calls.length = 0;
+    await runCampaign(campaignArgs(root));
+    const revisited = JSON.parse(readFileSync(join(root, 'references.json'), 'utf8'));
+    expect(capture.calls).toEqual([]);
+    expect(revisited.captureSessions).toEqual({ scope: 'unknown', count: 0 });
   });
 
   it('marks references resumed across capture invocations as mixed-session evidence', async () => {
@@ -152,6 +159,7 @@ describe('physical-device campaign drift references', () => {
     await runCampaign(campaignArgs(root));
     rmSync(`${root}/out/ipad-device-web/references/portrait-light/end.json`);
     capture.calls.length = 0;
+    log.mockClear();
     await runCampaign(campaignArgs(root));
 
     const report = JSON.parse(readFileSync(join(root, 'references.json'), 'utf8'));
@@ -161,6 +169,29 @@ describe('physical-device campaign drift references', () => {
     ]);
     expect(log.mock.calls.flat().join('\n')).toContain(
       'reference captures span 2 campaign sessions; their spread is not within-session drift'
+    );
+    expect(log.mock.calls.flat().filter((line) => line.startsWith('WARN  '))).toHaveLength(1);
+  });
+
+  it('keeps product and reference instruments separate for an action-only campaign', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-instrument-'));
+    roots.push(root);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await runCampaign(
+      campaignArgs(root).map((arg) => (arg === '--items=pen-undo,crayon' ? '--items=actions' : arg))
+    );
+
+    const productInstrument = JSON.parse(readFileSync(join(root, 'instrument.json'), 'utf8'));
+    const referenceInstrument = JSON.parse(
+      readFileSync(join(root, 'references.json'), 'utf8')
+    ).instrument;
+    expect(Object.keys(productInstrument.files)).toContain('tools/perf/probes/action-probe.js');
+    expect(Object.keys(productInstrument.files)).not.toContain(
+      'tools/perf/probes/real-screen-probe.js'
+    );
+    expect(Object.keys(referenceInstrument.files)).toContain(
+      'tools/perf/probes/real-screen-probe.js'
     );
   });
 });

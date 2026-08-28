@@ -41,10 +41,11 @@ complete flag and output descriptions.
   records exhausted ones as P1s while the queue continues. `lib/campaign-plan.mjs` owns which cells
   exist and where each writes; `lib/campaign-ledger.mjs` owns what the ledger rows mean. Host
   identity — device ids, capability files, preview URLs — stays a flag, so nothing device-specific
-  is committed. Physical-device queues also repeat one crayon cell at the start, middle, and end;
-  the raw reference captures live under the target's mode-scoped `references/` directory and
-  `references.json` beside `instrument.json` records their capture times, capture-session scope,
-  lost-frame spread, and warning threshold.
+  is committed. Physical-device queues also repeat one crayon cell at the start, middle, and end; a
+  targeted one-cell queue uses only the meaningful start/end bracket. The raw reference captures
+  live under the target's mode-scoped `references/` directory and `references.json` beside
+  `instrument.json` records their capture times, capture-session scope, lost-frame spread, and
+  warning threshold.
 * `gen:performance-matrix` rebuilds the committed deployment-target report from its source manifest.
 * `perf:build` and `perf:serve` prepare and serve the instrumented production bundle.
 * Platform capture commands live under [`web/`](web/README.md), [`android/`](android/README.md), and

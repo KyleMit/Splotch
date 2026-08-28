@@ -14,7 +14,7 @@ function referenceLostFrameTimeShare(artifact) {
   return Number.isFinite(share) ? share : null;
 }
 
-export function campaignReferenceReport(referenceCells, artifactRecordFor) {
+export function campaignReferenceReport(referenceCells, artifactRecordFor, { instrument } = {}) {
   const measurements = referenceCells.map((cell) => {
     const record = artifactRecordFor(cell);
     const lostFrameTimeShare = referenceLostFrameTimeShare(record?.artifact);
@@ -61,6 +61,7 @@ export function campaignReferenceReport(referenceCells, artifactRecordFor) {
       scope: sessionScope,
       count: knownSessions.size,
     },
+    instrument: instrument ?? null,
     drift: {
       lostFrameTimeShare: spread,
       percentagePoints: spread === null ? null : spread * 100,
@@ -86,7 +87,7 @@ export function campaignReferenceWarning(report) {
     warnings.push(
       `reference drift reached ${report.drift.percentagePoints.toFixed(2)} percentage points, ` +
         `beyond the ${report.warningThreshold.percentagePoints.toFixed(2)}-point evidence ` +
-        "threshold (issue 1458); differences smaller than this run's reference spread are unresolved"
+        "threshold (issue 1458); differences smaller than this reference set's spread are unresolved"
     );
   }
   return warnings.length ? warnings.join('; ') : null;

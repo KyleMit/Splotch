@@ -28,7 +28,7 @@ import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 import { join } from 'node:path';
 import { entryModulePath, servedBuildFingerprintProblem } from '../lib/profile-preview.mjs';
 import { ROOT as ROOT_DIR } from '../../lib/proc.mjs';
-import { campaignProgress } from '../campaign-status.mjs';
+import { campaignProgress, campaignStatus } from '../campaign-status.mjs';
 import { isProbePlan } from '../run-campaign.mjs';
 import {
   ALREADY_VALID,
@@ -105,6 +105,25 @@ describe('campaign plan', () => {
         })
       ).toEqual([]);
     }
+  });
+
+  it('brackets a one-cell targeted run with boundaries and omits a meaningless midpoint', () => {
+    const cells = plan('ipad-device-native', {
+      modes: ['portrait-light'],
+      items: ['crayon'],
+    });
+    const references = planCampaignReferences('ipad-device-native', {
+      modeId: cells[0].mode.id,
+      outputRoot: 'out',
+      host: HOST,
+      productCellCount: cells.length,
+    });
+
+    expect(campaignQueue(cells, references).map((cell) => cell.id)).toEqual([
+      'reference/portrait-light/start',
+      'portrait-light/crayon',
+      'reference/portrait-light/end',
+    ]);
   });
 
   it('keeps undo on pen only, because a non-pen undo probe is not requested', () => {
@@ -799,6 +818,23 @@ describe('campaignProgress', () => {
     expect(progress.outstanding).toContainEqual(
       expect.objectContaining({ cell: 'portrait-light/crayon', ledgerDisagrees: true })
     );
+  });
+
+  it('reports the same physical-device reference queue the runner executes', async () => {
+    const progress = await campaignStatus({
+      targetId: 'ipad-device-web',
+      outputRoot: 'missing-campaign-status-fixture',
+      modes: ['portrait-light'],
+      items: ['crayon'],
+    });
+
+    expect(progress.productCells).toBe(1);
+    expect(progress.referenceCells).toBe(2);
+    expect(progress.outstanding.map(({ cell }) => cell)).toEqual([
+      'reference/portrait-light/start',
+      'portrait-light/crayon',
+      'reference/portrait-light/end',
+    ]);
   });
 });
 
