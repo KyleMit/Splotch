@@ -86,14 +86,25 @@ export function instrumentFingerprint(commands, readFile = defaultRead) {
   };
 }
 
-export function instrumentFingerprintSubset(recorded, commands) {
-  if (!recorded) return null;
-  const files = instrumentFilesFor(commands);
-  if (files.some((file) => !recorded.files?.[file])) return null;
-  const perFile = Object.fromEntries(files.map((file) => [file, recorded.files[file]]));
+function fingerprintSubset(instrument, files) {
+  const perFile = Object.fromEntries(files.map((file) => [file, instrument.files[file]]));
   return {
     fingerprint: sha256(JSON.stringify(perFile)),
     files: perFile,
+  };
+}
+
+export function overlappingInstrumentFingerprints(recorded, current, commands) {
+  if (!recorded) return null;
+  // A widened resume requests files for commands with no banked cells. Only the
+  // shared files can describe whether the already-banked instrument changed.
+  const files = instrumentFilesFor(commands).filter(
+    (file) => recorded.files?.[file] && current.files?.[file]
+  );
+  if (!files.length) return null;
+  return {
+    recorded: fingerprintSubset(recorded, files),
+    current: fingerprintSubset(current, files),
   };
 }
 

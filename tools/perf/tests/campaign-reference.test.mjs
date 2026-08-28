@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -193,5 +194,44 @@ describe('physical-device campaign drift references', () => {
     expect(Object.keys(referenceInstrument.files)).toContain(
       'tools/perf/probes/real-screen-probe.js'
     );
+  });
+});
+
+describe('campaign instrument resume guard', () => {
+  it('refuses a widened no-reference campaign when a shared banked instrument file changed', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-instrument-widened-'));
+    roots.push(root);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const args = [
+      '--target=ipad-simulator-web',
+      '--modes=portrait-light',
+      '--items=crayon',
+      `--output-root=${root}/out`,
+      `--ledger=${root}/ledger.tsv`,
+      '--url=http://127.0.0.1:4173/',
+      '--capabilities-file=/tmp/caps.json',
+      '--max-attempts=1',
+    ];
+
+    await runCampaign(args);
+    const instrumentPath = join(root, 'instrument.json');
+    const bankedInstrument = JSON.parse(readFileSync(instrumentPath, 'utf8'));
+    const screenFile = 'tools/perf/ios/capture-xcuitest-screen.mjs';
+    bankedInstrument.files[screenFile] = 'banked-before-screen-change';
+    bankedInstrument.fingerprint = createHash('sha256')
+      .update(JSON.stringify(bankedInstrument.files))
+      .digest('hex');
+    writeFileSync(instrumentPath, `${JSON.stringify(bankedInstrument, null, 2)}\n`);
+    capture.calls.length = 0;
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('blocked resume');
+    });
+
+    await expect(
+      runCampaign(args.map((arg) => (arg === '--items=crayon' ? '--items=crayon,actions' : arg)))
+    ).rejects.toThrow('blocked resume');
+    expect(error.mock.calls.flat().join('\n')).toContain(screenFile);
+    expect(capture.calls).toEqual([]);
   });
 });

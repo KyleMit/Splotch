@@ -56,7 +56,7 @@ import { rethrowIfBroken } from './lib/error-classification.mjs';
 import {
   instrumentChangeProblem,
   instrumentFingerprint,
-  instrumentFingerprintSubset,
+  overlappingInstrumentFingerprints,
 } from './lib/instrument-fingerprint.mjs';
 import {
   probeHostJson,
@@ -485,9 +485,14 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     spentRows,
     new Map(plan.map((cell) => [cell.id, cellInstrument(cell)]))
   );
-  const instrumentProblem = instrumentChangeProblem(
-    instrumentFingerprintSubset(recordedInstrument, productCommands),
+  const productInstrumentOverlap = overlappingInstrumentFingerprints(
+    recordedInstrument,
     currentInstrument,
+    productCommands
+  );
+  const instrumentProblem = instrumentChangeProblem(
+    productInstrumentOverlap?.recorded,
+    productInstrumentOverlap?.current ?? currentInstrument,
     bankedElsewhere
   );
   if (instrumentProblem && !has('accept-instrument-change')) fail(instrumentProblem);
@@ -521,11 +526,19 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const currentReferenceInstrument = references.length
     ? instrumentFingerprint(referenceCommands)
     : null;
-  const recordedReferenceInstrument =
-    previousReferenceReport?.instrument ??
-    instrumentFingerprintSubset(recordedInstrument, referenceCommands);
-  const referenceInstrumentProblem = currentReferenceInstrument
-    ? instrumentChangeProblem(recordedReferenceInstrument, currentReferenceInstrument)
+  const recordedReferenceInstrument = previousReferenceReport?.instrument ?? recordedInstrument;
+  const referenceInstrumentOverlap = currentReferenceInstrument
+    ? overlappingInstrumentFingerprints(
+        recordedReferenceInstrument,
+        currentReferenceInstrument,
+        referenceCommands
+      )
+    : null;
+  const referenceInstrumentProblem = referenceInstrumentOverlap
+    ? instrumentChangeProblem(
+        referenceInstrumentOverlap.recorded,
+        referenceInstrumentOverlap.current
+      )
     : null;
   if (referenceInstrumentProblem && !has('accept-instrument-change')) {
     fail(`the reference control instrument changed:\n${referenceInstrumentProblem}`);
