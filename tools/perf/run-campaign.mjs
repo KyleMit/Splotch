@@ -55,7 +55,7 @@ import { rethrowIfBroken } from './lib/error-classification.mjs';
 import {
   instrumentChangeProblem,
   instrumentFingerprint,
-  instrumentFingerprintSubset,
+  overlappingInstrumentFingerprints,
 } from './lib/instrument-fingerprint.mjs';
 import {
   ALREADY_VALID,
@@ -452,10 +452,14 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const recordedInstrument = existsSync(fingerprintPath)
     ? JSON.parse(readFileSync(fingerprintPath, 'utf8'))
     : null;
-  const instrumentProblem = instrumentChangeProblem(
-    instrumentFingerprintSubset(recordedInstrument, productCommands),
-    currentInstrument
+  const productInstrumentOverlap = overlappingInstrumentFingerprints(
+    recordedInstrument,
+    currentInstrument,
+    productCommands
   );
+  const instrumentProblem = productInstrumentOverlap
+    ? instrumentChangeProblem(productInstrumentOverlap.recorded, productInstrumentOverlap.current)
+    : null;
   if (instrumentProblem && !has('accept-instrument-change')) fail(instrumentProblem);
   if (instrumentProblem) {
     console.log(
@@ -478,11 +482,19 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const currentReferenceInstrument = references.length
     ? instrumentFingerprint(referenceCommands)
     : null;
-  const recordedReferenceInstrument =
-    previousReferenceReport?.instrument ??
-    instrumentFingerprintSubset(recordedInstrument, referenceCommands);
-  const referenceInstrumentProblem = currentReferenceInstrument
-    ? instrumentChangeProblem(recordedReferenceInstrument, currentReferenceInstrument)
+  const recordedReferenceInstrument = previousReferenceReport?.instrument ?? recordedInstrument;
+  const referenceInstrumentOverlap = currentReferenceInstrument
+    ? overlappingInstrumentFingerprints(
+        recordedReferenceInstrument,
+        currentReferenceInstrument,
+        referenceCommands
+      )
+    : null;
+  const referenceInstrumentProblem = referenceInstrumentOverlap
+    ? instrumentChangeProblem(
+        referenceInstrumentOverlap.recorded,
+        referenceInstrumentOverlap.current
+      )
     : null;
   if (referenceInstrumentProblem && !has('accept-instrument-change')) {
     fail(`the reference control instrument changed:\n${referenceInstrumentProblem}`);
