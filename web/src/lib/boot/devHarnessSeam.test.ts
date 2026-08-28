@@ -11,6 +11,7 @@ const ctrl = vi.hoisted(() => ({
 }));
 const generateAiImage = vi.hoisted(() => vi.fn());
 const replayHarnessStroke = vi.hoisted(() => vi.fn());
+const captureReports = vi.hoisted(() => new Map<string, string>());
 
 vi.mock('$app/environment', () => ({
   get dev() {
@@ -34,6 +35,17 @@ vi.mock('$lib/drawing/perf', () => ({
   },
 }));
 
+vi.mock('$lib/storage', () => ({
+  writeCaptureReportToPreferences: async (nonce: string, value: string) => {
+    captureReports.set(nonce, value);
+    return true;
+  },
+  removeCaptureReportFromPreferences: async (nonce: string) => {
+    captureReports.delete(nonce);
+    return true;
+  },
+}));
+
 beforeEach(() => {
   ctrl.harnessEnabled = true;
   ctrl.perfMarks = false;
@@ -44,6 +56,9 @@ beforeEach(() => {
   delete window.__drawingDebug;
   delete window.__aiGenerate;
   delete window.__replayStroke;
+  delete window.__bundledCaptureReport;
+  delete window.__probe;
+  captureReports.clear();
 });
 
 it('publishes the engine mode while the dev-harness gate is open', () => {
@@ -93,6 +108,54 @@ it('publishes the store drawing replay while the dev-harness gate is open', () =
   });
 });
 
+it('persists a complete nonce-bound probe report through the bundled channel', async () => {
+  const nonce = '7f16d248-63df-4ba2-81d4-fb27ef0a40e2';
+  const frames = [{ at: 1 }, { at: 2 }];
+  const events = [{ type: 'pointerdown' }];
+  const measures = [{ name: 'engine.draw' }];
+  const probeReport = { meta: { counts: { frames: 2, events: 1, measures: 1 } } };
+  window.__probe = {
+    finish: () => probeReport,
+    stop: () => probeReport,
+    frames: () => frames,
+    events: () => events,
+    measures: () => measures,
+  };
+  installDevHarnessSeam();
+
+  await expect(window.__bundledCaptureReport?.arm(nonce)).resolves.toEqual({ nonce });
+  const collected = await window.__bundledCaptureReport?.collect(nonce);
+  const serialized = captureReports.get(nonce);
+  expect(serialized).toBeDefined();
+  expect(collected).toEqual({
+    nonce,
+    bytes: new TextEncoder().encode(serialized).byteLength,
+    counts: { frames: 2, events: 1, measures: 1 },
+  });
+  expect(JSON.parse(serialized ?? '')).toMatchObject({
+    schema: 1,
+    nonce,
+    pageUrl: location.href,
+    userAgent: navigator.userAgent,
+    report: { frames, events, measures },
+  });
+  expect(window.__probe.stop()).toEqual(probeReport);
+  expect(probeReport).not.toHaveProperty('frames');
+  expect(probeReport).not.toHaveProperty('events');
+  expect(probeReport).not.toHaveProperty('measures');
+});
+
+it('rejects a collector that does not carry the armed session nonce', async () => {
+  installDevHarnessSeam();
+  const armed = '7f16d248-63df-4ba2-81d4-fb27ef0a40e2';
+  const stale = '6098e84f-a8e0-4ed2-a5a4-9e8319c9e8f2';
+  await window.__bundledCaptureReport?.arm(armed);
+
+  await expect(window.__bundledCaptureReport?.collect(stale)).rejects.toThrow(
+    'session is not armed'
+  );
+});
+
 it('installs nothing when the gate is closed, so the deploy has no seam', () => {
   ctrl.harnessEnabled = false;
   installDevHarnessSeam();
@@ -100,6 +163,7 @@ it('installs nothing when the gate is closed, so the deploy has no seam', () => 
   expect(window.__drawingDebug).toBeUndefined();
   expect(window.__aiGenerate).toBeUndefined();
   expect(window.__replayStroke).toBeUndefined();
+  expect(window.__bundledCaptureReport).toBeUndefined();
 });
 
 it('publishes the read-only profiling seams in an instrumented physical build', () => {
@@ -110,6 +174,7 @@ it('publishes the read-only profiling seams in an instrumented physical build', 
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
   expect(window.__aiGenerate).toBe(generateAiImage);
   expect(window.__replayStroke).toBeUndefined();
+  expect(window.__bundledCaptureReport).toBeUndefined();
 });
 
 it('removes every seam on teardown', () => {
@@ -118,4 +183,5 @@ it('removes every seam on teardown', () => {
   expect(window.__drawingDebug).toBeUndefined();
   expect(window.__aiGenerate).toBeUndefined();
   expect(window.__replayStroke).toBeUndefined();
+  expect(window.__bundledCaptureReport).toBeUndefined();
 });

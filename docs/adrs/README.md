@@ -7,9 +7,10 @@ things are the way they are.
 ADR numbers and filenames are **immutable** — records are never renumbered, deleted, or rewritten
 once superseded. The single exception is a number issued twice by mistake: uniqueness is the
 property immutability exists to guarantee, so a collision is repaired by renumbering whichever
-record has fewer inbound references, not left standing. Issue #676 repaired the only two — the
-Dependabot review workflow moved to 0081 and the resident byte budget to 0082, which is why commits
-before it name those records by their original numbers.
+record has fewer inbound references, not left standing. Issue #676 repaired the first two — the
+Dependabot review workflow moved to 0081 and the resident byte budget to 0082 — and a duplicate 0148
+was repaired by moving the durable IP rate-limit key record to 0150; commits before each repair name
+those records by their original numbers.
 
 This index is the curated presentation layer on top of that append-only history: start with the
 load-bearing decisions, then browse your area. Superseded, rejected, and moved records live in the
@@ -127,7 +128,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0101](0101-admin-console-is-web-only-and-unlinked.md)        | The Admin Console Is Web-Only and Unlinked                                          | Active                                                                                                                                                                                               |
 | [0104](0104-retain-reported-ai-images-for-thirty-days.md)     | Retain Reported AI Images for Thirty Days                                           | Active                                                                                                                                                                                               |
 | [0105](0105-server-authoritative-free-ai-grants.md)           | Server-Authoritative Free AI Grants per Installation Pseudonym                      | Active (amends [0006](0006-server-side-ai-generation.md), [0007](0007-cors-csrf-for-native-api-calls.md), [0014](0014-in-memory-rate-limiting.md), and [0025](0025-netlify-blobs-server-storage.md)) |
-| [0148](0148-truncate-then-hmac-durable-ip-rate-limit-keys.md) | Truncate, Then HMAC, Durable IP Rate-Limit Keys                                     | Active (constrains issue #1097; complements [0014](0014-in-memory-rate-limiting.md) and [0025](0025-netlify-blobs-server-storage.md))                                                                |
+| [0150](0150-truncate-then-hmac-durable-ip-rate-limit-keys.md) | Truncate, Then HMAC, Durable IP Rate-Limit Keys                                     | Active (constrains issue #1097; complements [0014](0014-in-memory-rate-limiting.md) and [0025](0025-netlify-blobs-server-storage.md))                                                                |
 
 ## Web platform & PWA
 
@@ -177,6 +178,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0144](0144-coalescing-is-a-witness-not-a-check.md)                     | Coalescing Is a Witness, Not a Check                                                                      | Accepted (amends [0139](0139-per-runtime-input-fidelity-expectations.md), [0141](0141-cadence-is-a-floor-and-silent-checks-are-named.md))                                                                                                                                                                                                                                                                                                         |
 | [0145](0145-cadence-gates-on-density-not-rate.md)                       | Cadence Gates on Density, Not Rate                                                                        | Accepted (amends [0139](0139-per-runtime-input-fidelity-expectations.md), [0141](0141-cadence-is-a-floor-and-silent-checks-are-named.md))                                                                                                                                                                                                                                                                                                         |
 | [0149](0149-gate-stable-page-load-metrics.md)                           | Gate Stable Page-Load Metrics and Report the Noisy Ones                                                   | Active                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| [0151](0151-extract-bundled-ios-probe-reports-through-preferences.md)   | Extract Bundled iOS Probe Reports Through Preferences                                                     | Active (amends [0005](0005-dual-layer-storage.md), [0032](0032-performance-profiling-harness.md), and [0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md))                                                                                                                                                                                                                                                                      |
 
 ## Build & tooling
 

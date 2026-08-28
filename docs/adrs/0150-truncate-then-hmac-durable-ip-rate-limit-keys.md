@@ -1,4 +1,4 @@
-# ADR-0148: Truncate, Then HMAC, Durable IP Rate-Limit Keys
+# ADR-0150: Truncate, Then HMAC, Durable IP Rate-Limit Keys
 
 **Status:** Active **Date:** 2026-08
 

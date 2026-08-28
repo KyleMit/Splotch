@@ -38,9 +38,9 @@ validation to the working tree rather than claiming the cross-branch comparison 
 four-digit filename that is not lower-kebab-case also warns because it is excluded from the record
 set and would otherwise disappear silently.
 
-When a number collides, renumber the later-landed record and update its H1, canonical index entry,
-and every reference to that ADR number. Do not hand-edit only the reported link or suppress the base
-comparison.
+When a number collides, renumber the record with fewer inbound references, breaking a tie by
+renumbering the later-landed record. Update its H1, canonical index entry, and every reference to
+that ADR number. Do not hand-edit only the reported link or suppress the base comparison.
 
 ## Maintenance
 

@@ -9,12 +9,73 @@ import {
 import { generateAiImage } from '$lib/drawing/aiImage';
 import { PALETTE_COLORS, type PaletteLabel } from '$lib/palette';
 import { PERF_MARKS } from '$lib/drawing/perf';
+import { removeCaptureReportFromPreferences, writeCaptureReportToPreferences } from '$lib/storage';
 
 type StoreDrawingColor = { kind: 'palette'; label: PaletteLabel } | { kind: 'picker'; hex: string };
 
 type StoreDrawingStrokeReplay = Omit<Parameters<typeof replayHarnessStroke>[0], 'color'> & {
   color: StoreDrawingColor;
 };
+
+const CAPTURE_NONCE_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const CAPTURE_REPORT_SCHEMA = 1;
+
+function validateCaptureNonce(nonce: string): void {
+  if (!CAPTURE_NONCE_PATTERN.test(nonce)) throw new Error('Invalid bundled-capture nonce');
+}
+
+function readCompleteProbeReport(): BundledCaptureProbeReport {
+  const probe = window.__probe;
+  if (!probe) throw new Error('The real-screen probe is not installed');
+  const finished = probe.finish();
+  const counts = finished.meta.counts;
+  return {
+    ...finished,
+    frames: probe.frames(0, counts.frames),
+    events: probe.events(0, counts.events),
+    measures: probe.measures(0, counts.measures),
+  };
+}
+
+function createBundledCaptureReportSeam(): BundledCaptureReportSeam {
+  let armedNonce: string | null = null;
+  return {
+    async arm(nonce) {
+      validateCaptureNonce(nonce);
+      if (!(await removeCaptureReportFromPreferences(nonce))) {
+        throw new Error('The bundled-capture Preferences channel is unavailable');
+      }
+      armedNonce = nonce;
+      return { nonce };
+    },
+    async collect(nonce) {
+      validateCaptureNonce(nonce);
+      if (armedNonce !== nonce) throw new Error('The bundled-capture session is not armed');
+      const report = readCompleteProbeReport();
+      const payload = {
+        schema: CAPTURE_REPORT_SCHEMA,
+        nonce,
+        pageUrl: location.href,
+        userAgent: navigator.userAgent,
+        report,
+      };
+      const serialized = JSON.stringify(payload);
+      const bytes = new TextEncoder().encode(serialized).byteLength;
+      if (!(await writeCaptureReportToPreferences(nonce, serialized))) {
+        throw new Error('The bundled-capture report did not reach Preferences');
+      }
+      return { nonce, bytes, counts: report.meta.counts };
+    },
+    async clear(nonce) {
+      validateCaptureNonce(nonce);
+      if (!(await removeCaptureReportFromPreferences(nonce))) {
+        throw new Error('The bundled-capture Preferences channel is unavailable');
+      }
+      if (armedNonce === nonce) armedNonce = null;
+    },
+  };
+}
 
 /** @public */
 export function replayStoreDrawingStroke({ color, ...stroke }: StoreDrawingStrokeReplay): void {
@@ -67,10 +128,12 @@ export function installDevHarnessSeam(): () => void {
   window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
   window.__aiGenerate = generateAiImage;
   if (dev || __DEV_HARNESS__) window.__replayStroke = replayStoreDrawingStroke;
+  if (dev || __DEV_HARNESS__) window.__bundledCaptureReport = createBundledCaptureReportSeam();
   return () => {
     delete window.__committedBrushMode;
     delete window.__drawingDebug;
     delete window.__aiGenerate;
     delete window.__replayStroke;
+    delete window.__bundledCaptureReport;
   };
 }

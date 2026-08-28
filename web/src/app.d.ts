@@ -96,6 +96,8 @@ declare global {
     __aiGenerate?: typeof import('$lib/drawing/aiImage').generateAiImage;
     // Dev-gated engine-rendered stroke replay for store hero captures (ADR-0122).
     __replayStroke?: typeof import('$lib/boot/devHarnessSeam').replayStoreDrawingStroke;
+    __probe?: BundledCaptureProbe;
+    __bundledCaptureReport?: BundledCaptureReportSeam;
     // Instrumented-build persistence boundary for native screenshot profiling.
     // The release bundle drops both the branch and this property name.
     __screenshotSaveSink?: (blob: Blob, baseName: string) => void | Promise<void>;
@@ -104,6 +106,35 @@ declare global {
     // release bundle drops it with its readers.
     __storeCapture?: boolean;
   }
+
+  type BundledCaptureProbeCounts = {
+    frames: number;
+    events: number;
+    measures: number;
+  };
+
+  type BundledCaptureProbeReport = {
+    meta: { counts: BundledCaptureProbeCounts } & Record<string, unknown>;
+    frames?: unknown[];
+    events?: unknown[];
+    measures?: unknown[];
+  };
+
+  type BundledCaptureProbe = {
+    finish(): BundledCaptureProbeReport;
+    stop(): BundledCaptureProbeReport;
+    frames(offset: number, limit: number): unknown[];
+    events(offset: number, limit: number): unknown[];
+    measures(offset: number, limit: number): unknown[];
+  };
+
+  type BundledCaptureReportSeam = {
+    arm(nonce: string): Promise<{ nonce: string }>;
+    collect(
+      nonce: string
+    ): Promise<{ nonce: string; bytes: number; counts: BundledCaptureProbeCounts }>;
+    clear(nonce: string): Promise<void>;
+  };
 
   interface FileSystemHandle {
     queryPermission(descriptor?: { mode?: FileSystemPermissionMode }): Promise<PermissionState>;

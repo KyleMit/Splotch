@@ -37,6 +37,8 @@ import {
   reconcileStorageValues,
   hydrateDurableStorage,
   onDurableRestore,
+  writeCaptureReportToPreferences,
+  removeCaptureReportFromPreferences,
 } from './storage';
 
 beforeEach(() => {
@@ -202,6 +204,28 @@ describe('mirror to durable storage (native)', () => {
     // mirror() is fire-and-forget: flush the microtask queue (dynamic import +
     // the Preferences.set promise) before asserting.
     await vi.waitFor(() => expect(prefsStore.get(STORAGE_KEYS.brushType)).toBe('v'));
+  });
+});
+
+describe('bundled capture Preferences mailbox', () => {
+  const nonce = '7f16d248-63df-4ba2-81d4-fb27ef0a40e2';
+
+  it('awaits the full Preferences round trip without copying into localStorage', async () => {
+    ctrl.native = true;
+    const report = JSON.stringify({ rows: 'x'.repeat(650_000) });
+
+    await expect(writeCaptureReportToPreferences(nonce, report)).resolves.toBe(true);
+    expect(localStorage.getItem(nonce)).toBeNull();
+    expect(prefsStore.get(nonce)).toBe(report);
+
+    await expect(removeCaptureReportFromPreferences(nonce)).resolves.toBe(true);
+    expect(localStorage.getItem(nonce)).toBeNull();
+    expect(prefsStore.has(nonce)).toBe(false);
+  });
+
+  it('reports that no Preferences channel exists on web', async () => {
+    await expect(writeCaptureReportToPreferences(nonce, '{}')).resolves.toBe(false);
+    await expect(removeCaptureReportFromPreferences(nonce)).resolves.toBe(false);
   });
 });
 

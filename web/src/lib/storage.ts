@@ -100,6 +100,29 @@ function mirror(key: StorageKey, value: string) {
   void runWithDurablePreferences((Preferences) => Preferences.set({ key, value }));
 }
 
+export async function writeCaptureReportToPreferences(
+  nonce: string,
+  value: string
+): Promise<boolean> {
+  if (!browser) return false;
+  return (
+    (await runWithDurablePreferences(async (Preferences) => {
+      await Preferences.set({ key: nonce, value });
+      return true;
+    })) === true
+  );
+}
+
+export async function removeCaptureReportFromPreferences(nonce: string): Promise<boolean> {
+  if (!browser) return false;
+  return (
+    (await runWithDurablePreferences(async (Preferences) => {
+      await Preferences.remove({ key: nonce });
+      return true;
+    })) === true
+  );
+}
+
 export function readBool(key: StorageKey, fallback: boolean): boolean {
   if (!browser) return fallback;
   return safeStorageRead(() => {

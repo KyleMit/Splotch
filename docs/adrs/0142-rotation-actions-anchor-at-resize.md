@@ -60,10 +60,10 @@ What the re-anchored first-frame gate means per runtime — stated plainly, beca
 * **Android Chrome: the gate keeps dynamic range.** Post-`resize` first frames measured 0.1–54 ms on
   the physical phone — the page sometimes takes real frames to paint after geometry lands, and the
   gate can still catch that.
-* **iPad WKWebView: the first `resize` precedes committed layout.** The engine's unmeasured-rect
-  guard rejects it and rebuilds ~160 ms later, so native first-frame readings (0–25 ms observed)
-  describe the pre-layout resize, not a fully laid-out paint. The post-action window again carries
-  the real signal.
+* **iPad WKWebView: the first `resize` precedes committed layout.** The resize handler refreshes its
+  cached rect immediately and queues the backing rebuild on the 150 ms trailing debounce, so native
+  first-frame readings (0–25 ms observed) describe the pre-layout resize, not a fully laid-out
+  paint. The post-action window again carries the real signal.
 
 ## Consequences
 
