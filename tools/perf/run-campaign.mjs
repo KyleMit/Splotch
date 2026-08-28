@@ -34,12 +34,15 @@ import {
   effectiveFidelity,
   eraserRefillShortfall,
   cellServerSource,
+  campaignQueue,
   recordedGesturePlan,
   recordedGestureRepeats,
   resolvedProbeHostProblem,
   planCampaign,
+  planCampaignReferences,
   splitTransportIdentityProblem,
 } from './lib/campaign-plan.mjs';
+import { campaignReferenceReport, campaignReferenceWarning } from './lib/campaign-reference.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument-fingerprint.mjs';
 import {
@@ -76,6 +79,27 @@ function appendLedger(ledgerPath, row) {
 
 function absolute(path) {
   return isAbsolute(path) ? path : join(ROOT, path);
+}
+
+function referenceArtifact(cell) {
+  const path = absolute(cell.artifact);
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch (error) {
+    rethrowIfBroken(error);
+    return null;
+  }
+}
+
+function writeReferenceReport(path, referenceCells, inspection) {
+  const report = campaignReferenceReport(referenceCells, (cell) =>
+    cellInspection(cell, inspection).ok ? referenceArtifact(cell) : null
+  );
+  writeFileSync(path, `${JSON.stringify(report, null, 2)}\n`);
+  const warning = campaignReferenceWarning(report);
+  if (warning) console.log(`WARN  ${warning}`);
+  return report;
 }
 
 // Acceptance is deliberately not the child's exit code, so a valid red gate is kept
@@ -281,21 +305,29 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     fail('--max-attempts must be a positive integer');
   }
 
+  const host = {
+    appiumUrl: flag('appium-url'),
+    capabilitiesFile: flag('capabilities-file'),
+    deviceId: flag('device-id'),
+    cdpPort: flag('cdp-port'),
+    url: flag('url'),
+    probeHost: flag('probe-host'),
+    wdaUrl: flag('wda-url'),
+  };
   const plan = planCampaign(targetId, {
     modes: list(flag('modes')),
     items: list(flag('items')),
     outputRoot,
     label: flag('label'),
-    host: {
-      appiumUrl: flag('appium-url'),
-      capabilitiesFile: flag('capabilities-file'),
-      deviceId: flag('device-id'),
-      cdpPort: flag('cdp-port'),
-      url: flag('url'),
-      probeHost: flag('probe-host'),
-      wdaUrl: flag('wda-url'),
-    },
+    host,
   });
+  const references = planCampaignReferences(targetId, {
+    modeId: plan[0].mode.id,
+    outputRoot,
+    host,
+    label: flag('label'),
+  });
+  const queue = campaignQueue(plan, references);
 
   // Issue 1301, resized by review: a 'guarded-default' child reuses its default
   // preview port only behind the build-freshness guard and otherwise spawns its
@@ -305,7 +337,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // dry runs, which are planning output and must always print the plan. Only a
   // cell whose server source is unknown is refused — nothing is proven about
   // its fallback.
-  const unknownServerCells = plan.filter((cell) => cellServerSource(cell) === null);
+  const unknownServerCells = queue.filter((cell) => cellServerSource(cell) === null);
   if (unknownServerCells.length) {
     // A split drawing cell lands here exactly when --probe-host was omitted, and
     // recommending --url would send the operator to a flag the split child
@@ -322,7 +354,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         advice
     );
   }
-  const guardedDefaultCells = plan.filter((cell) => cellServerSource(cell) === 'guarded-default');
+  const guardedDefaultCells = queue.filter((cell) => cellServerSource(cell) === 'guarded-default');
   if (guardedDefaultCells.length) {
     console.log(
       `WARN  ${guardedDefaultCells.length} cell(s) will reuse-or-serve their child's default ` +
@@ -335,7 +367,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // Asserted rather than started: the probe host outlives any one target's queue,
   // and the repo's rule is to reuse a running listener rather than take over its
   // lifecycle. A dry run is planning only and reaches no device.
-  if (!has('dry-run') && plan.some((cell) => cell.command === SPLIT_SCREEN_COMMAND)) {
+  if (!has('dry-run') && queue.some((cell) => cell.command === SPLIT_SCREEN_COMMAND)) {
     const identityProblem = splitTransportIdentityProblem(campaignTarget(targetId), {
       deviceId: flag('device-id'),
       wdaUrl: flag('wda-url'),
@@ -354,8 +386,9 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   }
 
   if (has('dry-run')) {
-    console.log(`${targetId}: ${plan.length} cells`);
-    for (const cell of plan) {
+    const referenceSuffix = references.length ? ` + ${references.length} drift references` : '';
+    console.log(`${targetId}: ${plan.length} cells${referenceSuffix}`);
+    for (const cell of queue) {
       // The server source is printed because the ABSENCE of a flag is invisible
       // in an argument listing — the dry run is where an operator looks for
       // what a campaign will do, and a guarded default deserves to be seen.
@@ -363,7 +396,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         `  ${cell.id.padEnd(26)} ${cell.command}  [server: ${cellServerSource(cell)}]  -> ${cell.artifact}`
       );
     }
-    return { plan, ran: [] };
+    return { plan, references, ran: [], referenceRuns: [] };
   }
 
   const ledgerPath = absolute(flag('ledger', `${outputRoot}/${targetId}/ledger.tsv`));
@@ -376,7 +409,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // fingerprint is written on acceptance so the decision is made once, not on
   // every subsequent resume.
   const fingerprintPath = join(dirname(ledgerPath), 'instrument.json');
-  const currentInstrument = instrumentFingerprint([...new Set(plan.map((cell) => cell.command))]);
+  const currentInstrument = instrumentFingerprint([...new Set(queue.map((cell) => cell.command))]);
   const recordedInstrument = existsSync(fingerprintPath)
     ? JSON.parse(readFileSync(fingerprintPath, 'utf8'))
     : null;
@@ -389,6 +422,14 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     );
   }
   writeFileSync(fingerprintPath, `${JSON.stringify(currentInstrument, null, 2)}\n`);
+  // `runtime` is the target's SHELL (web or native) and decides artifact matching.
+  // `captureRuntime` names whose input-fidelity expectations apply, and is the one
+  // that can become calibrated — they are different questions and were briefly
+  // conflated here.
+  const { runtime, refreshRegime, captureRuntime: targetCaptureRuntime } = campaignTarget(targetId);
+  const inspection = { runtime, refreshRegime, captureRuntime: targetCaptureRuntime };
+  const referenceReportPath = join(dirname(ledgerPath), 'references.json');
+  if (references.length) writeReferenceReport(referenceReportPath, references, inspection);
   // The attempts a cell has already spent live in the ledger, not in this process.
   // Reading them is what makes --max-attempts a budget for the campaign rather than
   // for one invocation, so an interrupted run resumes instead of restarting at 1.
@@ -396,14 +437,13 @@ export async function runCampaign(argv = process.argv.slice(2)) {
 
   const rebootUdid = flag('reboot-simulator');
   const results = [];
+  const referenceResults = [];
+  const recordResult = (cell, result) => {
+    (cell.referencePosition ? referenceResults : results).push(result);
+    if (cell.referencePosition) writeReferenceReport(referenceReportPath, references, inspection);
+  };
 
-  // `runtime` is the target's SHELL (web or native) and decides artifact matching.
-  // `captureRuntime` names whose input-fidelity expectations apply, and is the one
-  // that can become calibrated — they are different questions and were briefly
-  // conflated here.
-  const { runtime, refreshRegime, captureRuntime: targetCaptureRuntime } = campaignTarget(targetId);
-
-  for (const cell of plan) {
+  for (const cell of queue) {
     const decision = nextAction(spentRows, cell.id, {
       artifactValid: cellInspection(cell, {
         runtime,
@@ -422,7 +462,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         artifact: cell.artifact,
       });
       console.log(`SKIP  ${cell.id}`);
-      results.push({ cell: cell.id, status: ALREADY_VALID });
+      recordResult(cell, { cell: cell.id, status: ALREADY_VALID });
       continue;
     }
 
@@ -434,7 +474,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         artifact: cell.artifact,
       });
       console.log(`P1    ${cell.id} — ${decision.reason} in earlier runs, not retried`);
-      results.push({ cell: cell.id, status: 'p1' });
+      recordResult(cell, { cell: cell.id, status: 'p1' });
       continue;
     }
 
@@ -507,14 +547,22 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     if (!landed && !uncalibratedRuntime) {
       console.log(`P1    ${cell.id} — ${maxAttempts} attempts exhausted, continuing`);
     }
-    results.push({ cell: cell.id, status: landed ? COMPLETE : 'p1' });
+    recordResult(cell, { cell: cell.id, status: landed ? COMPLETE : 'p1' });
   }
 
   const done = results.filter((r) => r.status !== 'p1').length;
   console.log(`\n${targetId}: ${done}/${plan.length} cells complete`);
   for (const r of results.filter((r) => r.status === 'p1')) console.log(`  P1 ${r.cell}`);
+  if (references.length) {
+    const referencesDone = referenceResults.filter((result) => result.status !== 'p1').length;
+    console.log(`Drift references: ${referencesDone}/${references.length} complete`);
+    for (const result of referenceResults.filter((entry) => entry.status === 'p1')) {
+      console.log(`  P1 ${result.cell}`);
+    }
+  }
   console.log(`Ledger: ${ledgerPath}`);
-  return { plan, ran: results };
+  if (references.length) console.log(`References: ${referenceReportPath}`);
+  return { plan, references, ran: results, referenceRuns: referenceResults };
 }
 
 if (isMain(import.meta.url)) runMain(runCampaign);
