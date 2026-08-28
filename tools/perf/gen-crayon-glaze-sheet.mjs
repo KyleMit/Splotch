@@ -36,7 +36,6 @@ const DEFAULT_PASSES = [1, 2, 3, 5, 8];
 
 const CELL_PX = 190;
 const STROKE_WIDTH_PX = 26;
-const SETTLE_MS = 120;
 // Half-width of the square the crossing colour is read from, in canvas px. Wide
 // enough that the median has a population, narrow enough to stay inside both
 // strokes — see the note at the sample site.
@@ -55,12 +54,22 @@ function paletteByLabel() {
   return new Map(entries.map((m) => [m[2], m[1]]));
 }
 
-function parseList(value, fallback) {
+// Validated rather than coerced, because every bad value here produces a
+// PLAUSIBLE sheet rather than an error: `--returns=2` would label a row 2 while
+// getPerOpGlazeReturn clamps it to 1, `--passes=1.5` would run two iterations
+// under a header saying 1.5, and parseFloat happily accepts a partial token like
+// `0.1abc`. A sheet whose labels disagree with what was rendered is worse than
+// no sheet.
+function parseNumberList(value, fallback, { label, check, describe }) {
   if (!value) return fallback;
-  const parsed = value.split(',').map((entry) => Number.parseFloat(entry.trim()));
-  if (parsed.some((entry) => !Number.isFinite(entry)))
-    fail(`could not read a number list: ${value}`);
-  return parsed;
+  return value.split(',').map((raw) => {
+    const token = raw.trim();
+    // Whole-token match: Number.parseFloat stops at the first bad character.
+    if (!/^\d*\.?\d+$/.test(token)) fail(`${label}: "${token}" is not a number`);
+    const parsed = Number(token);
+    if (!check(parsed)) fail(`${label}: ${token} ${describe}`);
+    return parsed;
+  });
 }
 
 // One cell: the under band, then `passes` strokes of the over colour across it,
@@ -134,8 +143,16 @@ async function renderCell(page, { mode, glazeReturn, passes, under, over }) {
 }
 
 export async function generateGlazeSheet() {
-  const returns = parseList(argFlag('returns', null), DEFAULT_RETURNS);
-  const passCounts = parseList(argFlag('passes', null), DEFAULT_PASSES);
+  const returns = parseNumberList(argFlag('returns', null), DEFAULT_RETURNS, {
+    label: '--returns',
+    check: (v) => v >= 0 && v <= 1,
+    describe: 'is outside the 0-1 range a glaze return can take',
+  });
+  const passCounts = parseNumberList(argFlag('passes', null), DEFAULT_PASSES, {
+    label: '--passes',
+    check: (v) => Number.isInteger(v) && v > 0,
+    describe: 'is not a positive whole number of redraws',
+  });
   const outDir = argFlag('out-dir', 'perf-profiles/crayon-glaze-sheet');
   const browserType = argFlag('engine', 'webkit') === 'chromium' ? chromium : webkit;
   const palette = paletteByLabel();
@@ -148,8 +165,14 @@ export async function generateGlazeSheet() {
   const server = spawnViteServer(port, { env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' } });
   // vite binds ::1 by default, so an IPv4 literal never answers here.
   const url = `http://localhost:${port}`;
-  const browser = await browserType.launch();
+  // The protected scope opens BEFORE the launch, not after. spawnViteServer's
+  // process-exit net already covers the CLI path, but this function is exported:
+  // a caller that catches a launch rejection and keeps running would otherwise
+  // hold the port for the life of the process — expensive on a host shared with
+  // other worktrees.
+  let browser = null;
   try {
+    browser = await browserType.launch();
     await waitForUrl(url, SERVER_READY_TIMEOUT_MS);
     // Large enough that the drawing canvas gets a real layout size; the cells are
     // clipped out of it, not sized by it.
@@ -197,7 +220,7 @@ export async function generateGlazeSheet() {
     console.log(`wrote ${outDir}/crayon-glaze-sheet.html`);
     return sheet;
   } finally {
-    await browser.close();
+    await browser?.close();
     server.stop();
   }
 }

@@ -30,5 +30,9 @@ Two limits it cannot escape:
 * **Colour, not cost.** Rendered in desktop WebKit, which reproduces the device's pixels because
   canvas compositing is spec-defined, but says nothing about frame cost.
 
-Regenerate with `npm run gen:crayon-glaze-sheet` (flags: `--returns=`, `--passes=`), and
-`npm run gen:crayon-glaze-match` for the numeric distance-from-web sweep behind it.
+**These are retained one-off artifacts, not regenerable from this branch.** The tools that produced
+them are not here: `gen:crayon-glaze-sheet` arrives with the sibling PR #1449, and
+`gen:crayon-glaze-match` lives only on `exp/crayon-glaze-web-match`. Both were run against the
+2026-08-27 working tree at `perOpGlazeReturn = 0.16` per band over two density bands, drawing
+`Yellow` then `Blue` from the palette through `/dev/engine` in desktop WebKit. Once #1449 lands the
+sheet becomes regenerable; until then treat the committed copies as the record.

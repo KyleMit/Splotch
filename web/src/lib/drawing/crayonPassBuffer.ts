@@ -48,9 +48,62 @@ function paintCrayon(
 // a pass-cadence glaze applied once per stroke has exactly the same property
 // across strokes. What changes is that a slow or scrubbing stroke now also
 // builds up WITHIN itself, where the buffered pipelines hold one stroke flat.
+// How much of the crayon's own colour each op returns over the darkened pixel.
+//
+// The buffered pipelines apply `1 - mix` (0.45) ONCE for a whole pass, because a
+// pass is one accumulated shape. Reusing that figure per op compounds: a pixel
+// covered by k overlapping ops retains 1 - (1-B)^k of the crayon, so at B = 0.45
+// two ops already reach 75% and a hand-speed stroke — which overlaps a pixel
+// roughly 8-12 times — reaches ~99%. Measured on the device 2026-08-27 as a
+// crossing that stayed blue except at the single-op fringe.
+//
+// Solving (1-B)^k = mix for a hand-speed k puts B near 0.06, which lands the
+// ACCUMULATED result where one pass used to. That was the bracket the search
+// started from, not the answer: 0.06 read as too green on the device, and the
+// value was settled at 0.16 in a 2026-08-27 session that drew on a physical
+// iPad and cross-checked against a sweep measuring every candidate's crossing
+// colour against the web pipeline's (tools/perf/find-glaze-web-match.mjs, and
+// the proof sheet beside it). Do not recompute the formula and "correct" this.
+//
+// The trade this makes deliberately: mix depth now varies with stroke speed,
+// because a slower stroke overlaps a pixel more times — which is how wax
+// actually behaves, and the direction the same session's feedback asked for.
+//
+// Over an OPAQUE interior on blank paper the result is the wax exactly: darken
+// over a transparent backdrop yields the source, and the source over itself is
+// the source. That does NOT extend to antialiased edges — a partially covered
+// edge pixel is blended twice, once by each step, so its coverage is not a fixed
+// point and it does not reproduce a single plain paint. Reviewed measurement on
+// this claim: ~232 edge pixels differ over blank paper and ~233 over same-colour
+// overdraw, up to 69 per channel. Interiors match; rims are the crayon's own
+// tooth boundary and were judged on the device, not asserted from algebra.
+//
+// This is the EFFECTIVE return over an op's fully-covered pixels, not the alpha
+// handed to any one paint. `paintCrayon` fills one shape per DENSITY BAND, so
+// both steps below run once per band. That is harmless for darken — min is
+// idempotent, so a pixel in two bands lands on the same value — but the return
+// is a lerp and compounds. Naming the per-paint alpha here would make the real
+// glaze 1 − (1 − B)^bands and silently tie it to `CrayonOptions.passes`; naming
+// the effective value and solving the per-band alpha back out of it keeps the
+// appearance fixed when the band count changes.
+//
+// The device tuning that set this drew with two bands at a per-band 0.16, whose
+// effective full-coverage return is the option's default — so that is the
+// appearance signed off, restated in terms that survive a band-count change.
+// The value itself lives in CrayonOptions so the dev A/B seam can sweep it.
+
+// Partial coverage stays weaker: a pixel inside only one band receives only that
+// band's share. Inherent to per-band painting without a union mask, and a mask
+// needs a scratch surface whose per-op blit onto the composited tile is the cost
+// this pipeline exists to avoid (restamp measured 1.76–2.12% on native).
+function perBandGlazeReturn(bands: number) {
+  const effective = getPerOpGlazeReturn();
+  return bands <= 1 ? effective : 1 - (1 - effective) ** (1 / bands);
+}
+
 function glazeCrayonOpDirect(target: CanvasRenderingContext2D, op: DotOp | PathOp) {
   paintCrayon(target, op, 'darken');
-  paintCrayon(target, op, 'source-over', getPerOpGlazeReturn());
+  paintCrayon(target, op, 'source-over', perBandGlazeReturn(crayonPassCount()));
 }
 
 // --- Crayon pass buffer ------------------------------------------------------
@@ -159,7 +212,15 @@ export function configureCrayonDeposition(
 // resolves in a plain Node context and cannot find — it took every E2E shard
 // down. The dev harness sets PUBLIC_ENABLE_DEV_HARNESS explicitly, so the
 // literal alone is sufficient for every caller this has.
-export function setCrayonDepositionForTuning(mode: CrayonDepositionMode) {
+// Deliberately NARROWER than CrayonDepositionMode. Switching to 'planes' here
+// would not produce a plane topology: setCrayonBufferForTarget registers a
+// tile's paired preview canvases only while the mode is already 'planes' at tile
+// adoption, and the web build adopts as 'restamp' — so a later switch would
+// lazily create an offscreen buffer with no mirror while the real plane canvases
+// stayed hidden and unbacked. The seam would appear to work and render something
+// that is not the plane pipeline. Re-adopting the live surfaces on switch is the
+// alternative, and no caller needs it.
+export function setCrayonDepositionForTuning(mode: 'restamp' | 'glaze-direct') {
   if (!__DEV_HARNESS__) return;
   configureCrayonDeposition(mode, strokeActiveProbe);
 }

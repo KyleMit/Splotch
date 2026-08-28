@@ -6,10 +6,10 @@
 // 2026-08-26 winner was 4x faster and was rejected on sight, so a candidate
 // that changes the mix has to be looked at before it is believed.
 
-import { writeFileSync } from 'node:fs';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isMain, runMain } from '../../lib/proc.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const APPIUM = process.env.APPIUM_URL ?? 'http://127.0.0.1:4723';
@@ -65,71 +65,77 @@ function dragActions(from, to) {
   return [{ type: 'pointer', id: 'finger', parameters: { pointerType: 'touch' }, actions: steps }];
 }
 
-const session = await call('POST', '/session', { capabilities });
-const id = session.sessionId ?? session.value?.sessionId;
-if (!id) throw new Error('no session');
+// Gated behind isMain per the tools convention: at module scope this opened an
+// Appium session on import, so merely importing the module started device I/O.
+export async function captureCrayonAppearance(out = OUT) {
+  const session = await call('POST', '/session', { capabilities });
+  const id = session.sessionId ?? session.value?.sessionId;
+  if (!id) throw new Error('no session');
 
-try {
-  const contexts = await call('GET', `/session/${id}/contexts`);
-  const webview = contexts.find((c) => c !== 'NATIVE_APP');
-  if (!webview) throw new Error(`no webview context in ${JSON.stringify(contexts)}`);
+  try {
+    const contexts = await call('GET', `/session/${id}/contexts`);
+    const webview = contexts.find((c) => c !== 'NATIVE_APP');
+    if (!webview) throw new Error(`no webview context in ${JSON.stringify(contexts)}`);
 
-  const evaluate = async (script) => {
-    await call('POST', `/session/${id}/context`, { name: webview });
-    const value = await call('POST', `/session/${id}/execute/sync`, { script, args: [] });
-    await call('POST', `/session/${id}/context`, { name: 'NATIVE_APP' });
-    return value;
-  };
+    const evaluate = async (script) => {
+      await call('POST', `/session/${id}/context`, { name: webview });
+      const value = await call('POST', `/session/${id}/execute/sync`, { script, args: [] });
+      await call('POST', `/session/${id}/context`, { name: 'NATIVE_APP' });
+      return value;
+    };
 
-  const drag = async (from, to) => {
-    await call('POST', `/session/${id}/actions`, { actions: dragActions(from, to) });
-    await call('DELETE', `/session/${id}/actions`);
-  };
+    const drag = async (from, to) => {
+      await call('POST', `/session/${id}/actions`, { actions: dragActions(from, to) });
+      await call('DELETE', `/session/${id}/actions`);
+    };
 
-  await evaluate(`
-    document.querySelector('#crayonBrushButton')?.click();
-    return true;
-  `);
-  const brush = await evaluate('return window.__committedBrushMode?.() ?? null;');
-  if (brush !== 'crayon') throw new Error(`engine committed ${brush}, not crayon`);
-
-  const size = await call('GET', `/session/${id}/window/rect`);
-  const midY = Math.round(size.height / 2);
-  const midX = Math.round(size.width / 2);
-
-  // By LABEL, never by hex — a duplicated palette hex drifts silently when the
-  // brand palette is re-tinted, which is what tools/tests/palette-source.test.mjs
-  // exists to prevent. The label is also what actually matters here: this needs
-  // "the yellow one" and "the blue one", not two specific values.
-  const pick = async (label) => {
-    const picked = await evaluate(`
-      const swatch = document.querySelector('.color-swatch[aria-label="${label}"]');
-      if (!swatch) return null;
-      swatch.click();
-      return swatch.getAttribute('data-color');
+    await evaluate(`
+      document.querySelector('#crayonBrushButton')?.click();
+      return true;
     `);
-    if (!picked) throw new Error(`no swatch labelled ${label}`);
-    return picked;
-  };
+    const brush = await evaluate('return window.__committedBrushMode?.() ?? null;');
+    if (brush !== 'crayon') throw new Error(`engine committed ${brush}, not crayon`);
 
-  // A horizontal band, then a vertical band across it. The overlap is the only
-  // pixels where the glaze does anything at all.
-  const under = await pick('Yellow');
-  await drag({ x: midX - 260, y: midY }, { x: midX + 260, y: midY });
-  const over = await pick('Blue');
-  await drag({ x: midX, y: midY - 260 }, { x: midX, y: midY + 260 });
-  console.log(`crossing: ${over} over ${under}`);
+    const size = await call('GET', `/session/${id}/window/rect`);
+    const midY = Math.round(size.height / 2);
+    const midX = Math.round(size.width / 2);
 
-  await new Promise((resolve) => setTimeout(resolve, CROSSING_SETTLE_MS));
-  const png = await call('GET', `/session/${id}/screenshot`);
-  mkdirSync(dirname(join(ROOT, OUT)), { recursive: true });
-  writeFileSync(join(ROOT, OUT), Buffer.from(png, 'base64'));
-  console.log(`wrote ${OUT}`);
-} finally {
-  await call('DELETE', `/session/${id}`).catch((error) => {
-    // A teardown failure must not mask the capture's own outcome, but it must
-    // still be visible: a session left open holds WebDriverAgent and the next
-    // run fails somewhere unrelated.
-    console.warn(`session ${id} did not close: ${error.message}`);
-  });
+    // By LABEL, never by hex — a duplicated palette hex drifts silently when the
+    // brand palette is re-tinted, which is what tools/tests/palette-source.test.mjs
+    // exists to prevent. The label is also what actually matters here: this needs
+    // "the yellow one" and "the blue one", not two specific values.
+    const pick = async (label) => {
+      const picked = await evaluate(`
+        const swatch = document.querySelector('.color-swatch[aria-label="${label}"]');
+        if (!swatch) return null;
+        swatch.click();
+        return swatch.getAttribute('data-color');
+      `);
+      if (!picked) throw new Error(`no swatch labelled ${label}`);
+      return picked;
+    };
+
+    // A horizontal band, then a vertical band across it. The overlap is the only
+    // pixels where the glaze does anything at all.
+    const under = await pick('Yellow');
+    await drag({ x: midX - 260, y: midY }, { x: midX + 260, y: midY });
+    const over = await pick('Blue');
+    await drag({ x: midX, y: midY - 260 }, { x: midX, y: midY + 260 });
+    console.log(`crossing: ${over} over ${under}`);
+
+    await new Promise((resolve) => setTimeout(resolve, CROSSING_SETTLE_MS));
+    const png = await call('GET', `/session/${id}/screenshot`);
+    mkdirSync(dirname(join(ROOT, out)), { recursive: true });
+    writeFileSync(join(ROOT, out), Buffer.from(png, 'base64'));
+    console.log(`wrote ${out}`);
+  } finally {
+    await call('DELETE', `/session/${id}`).catch((error) => {
+      // A teardown failure must not mask the capture's own outcome, but it must
+      // still be visible: a session left open holds WebDriverAgent and the next
+      // run fails somewhere unrelated.
+      console.warn(`session ${id} did not close: ${error.message}`);
+    });
+  }
 }
+
+if (isMain(import.meta.url)) runMain(() => captureCrayonAppearance());

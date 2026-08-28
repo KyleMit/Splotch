@@ -146,13 +146,17 @@ export const CRAYON_DEFAULTS: CrayonOptions = {
   // chartreuse (165,185,75). Strength is free here: the darken-mix stamp is
   // exact on same-colour overdraw (min(c,c)=c), so buildup never deepens.
   colorMix: 0.55,
-  // Solving (1-B)^k = colorMix for a hand-speed overlap k brackets this near
-  // 0.06, which read as too green on the physical iPad. 0.16 was settled in the
-  // 2026-08-27 session that drew on the device and cross-checked against a sweep
-  // scoring each candidate's crossing colour against the web pipeline's
-  // (tools/perf/find-glaze-web-match.mjs). The formula found the range; it did
-  // not derive the value — do not recompute it and "correct" it.
-  perOpGlazeReturn: 0.16,
+  // The EFFECTIVE return over an op's fully-covered pixels, not the alpha any one
+  // paint receives: paintCrayon fills one shape per density band, so the per-band
+  // alpha is solved back out of this (crayonPassBuffer). Naming the per-paint
+  // value instead would make the real glaze 1-(1-B)^bands and tie it silently to
+  // `passes` below.
+  //
+  // The 2026-08-27 device session drew two bands at a per-band 0.16, whose
+  // effective full-coverage return is this — the same pixels a human signed off,
+  // restated so a band-count change cannot move them. The (1-B)^k = colorMix
+  // bracket found the range, not the value; do not recompute and "correct" it.
+  perOpGlazeReturn: 0.2944,
   passes: [
     { widthScale: 1.0, coverage: 0.45 },
     { widthScale: 0.68, coverage: 0.63 },
