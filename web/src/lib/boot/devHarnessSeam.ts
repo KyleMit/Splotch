@@ -28,12 +28,14 @@ function validateCaptureNonce(nonce: string): void {
 function readCompleteProbeReport(): BundledCaptureProbeReport {
   const probe = window.__probe;
   if (!probe) throw new Error('The real-screen probe is not installed');
-  const report = probe.finish();
-  const counts = report.meta.counts;
-  report.frames = probe.frames(0, counts.frames);
-  report.events = probe.events(0, counts.events);
-  report.measures = probe.measures(0, counts.measures);
-  return report;
+  const finished = probe.finish();
+  const counts = finished.meta.counts;
+  return {
+    ...finished,
+    frames: probe.frames(0, counts.frames),
+    events: probe.events(0, counts.events),
+    measures: probe.measures(0, counts.measures),
+  };
 }
 
 function createBundledCaptureReportSeam(): BundledCaptureReportSeam {

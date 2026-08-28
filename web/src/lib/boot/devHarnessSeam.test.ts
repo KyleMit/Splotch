@@ -113,8 +113,10 @@ it('persists a complete nonce-bound probe report through the bundled channel', a
   const frames = [{ at: 1 }, { at: 2 }];
   const events = [{ type: 'pointerdown' }];
   const measures = [{ name: 'engine.draw' }];
+  const probeReport = { meta: { counts: { frames: 2, events: 1, measures: 1 } } };
   window.__probe = {
-    finish: () => ({ meta: { counts: { frames: 2, events: 1, measures: 1 } } }),
+    finish: () => probeReport,
+    stop: () => probeReport,
     frames: () => frames,
     events: () => events,
     measures: () => measures,
@@ -137,6 +139,10 @@ it('persists a complete nonce-bound probe report through the bundled channel', a
     userAgent: navigator.userAgent,
     report: { frames, events, measures },
   });
+  expect(window.__probe.stop()).toEqual(probeReport);
+  expect(probeReport).not.toHaveProperty('frames');
+  expect(probeReport).not.toHaveProperty('events');
+  expect(probeReport).not.toHaveProperty('measures');
 });
 
 it('rejects a collector that does not carry the armed session nonce', async () => {

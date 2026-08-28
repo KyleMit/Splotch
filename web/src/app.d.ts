@@ -122,6 +122,7 @@ declare global {
 
   type BundledCaptureProbe = {
     finish(): BundledCaptureProbeReport;
+    stop(): BundledCaptureProbeReport;
     frames(offset: number, limit: number): unknown[];
     events(offset: number, limit: number): unknown[];
     measures(offset: number, limit: number): unknown[];

@@ -1045,7 +1045,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       report.events = await readTable(execute, 'events', counts.events);
       report.measures = await readTable(execute, 'measures', counts.measures);
     }
-    await execute('return window.__probe.stop();');
+    await execute('window.__probe.stop(); return true;');
 
     const summaries = summarizeRun(report);
     const drawing = scoreDrawingRun(summaries.phases);
