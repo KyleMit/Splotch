@@ -327,11 +327,12 @@ npm run perf:ios:bundled:frames -- --device-id=<UDID> --brush=pen
 The app loads only its bundled `capacitor://localhost` assets. The runner arms an ephemeral report
 key with a random session UUID, drives the same trusted native gesture as
 `perf:ios:xcuitest:screen`, asks the page to serialize the complete probe tables, and awaits the
-ADR-0005 localStorage-to-Capacitor-Preferences mirror. The Mac then pulls
-`Library/Preferences/art.splotch.app.plist` from the app data container with `devicectl`. It accepts
-the report only when the nonce, armed URL, bundled origin, WKWebView user agent, table counts, and
-exact UTF-8 byte size all agree, then clears the ephemeral key. The artifact records
-`pageDelivery: "bundled"` and `pageIdentity: "proven-by-container-nonce"`.
+Capacitor Preferences write already used by ADR-0005. The runner backgrounds and foregrounds the app
+so iOS flushes UserDefaults before the Mac pulls `Library/Preferences/art.splotch.app.plist` from
+the app data container with `devicectl`. It accepts the report only when the nonce, armed URL,
+bundled origin, WKWebView user agent, table counts, and exact UTF-8 byte size all agree. Cleanup
+clears the ephemeral key and flushes that removal on success, refusal, timeout, or interruption. The
+artifact records `pageDelivery: "bundled"` and `pageIdentity: "proven-by-container-nonce"`.
 
 For the real-finger coalescing witness, keep the same installed build and add
 `--hand-input --seconds=20`. The command counts down before opening the drawing window. This mode

@@ -75,6 +75,7 @@ const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
 const HAND_COUNTDOWN_SECONDS = 5;
 const HAND_DEFAULT_SECONDS = 20;
+const PREFERENCES_FLUSH_BACKGROUND_SECONDS = 1;
 export const BORROWED_SESSION_CAPABILITIES_ERROR =
   '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance';
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
@@ -466,6 +467,24 @@ async function executePagePromise(executeAsync, expression) {
   return result.value;
 }
 
+export async function flushNativePreferences(client, sessionId) {
+  await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
+  await client.request('POST', `/session/${sessionId}/execute/sync`, {
+    script: 'mobile: backgroundApp',
+    args: [{ seconds: PREFERENCES_FLUSH_BACKGROUND_SECONDS }],
+  });
+  await switchToWebContext(client, sessionId);
+}
+
+export async function clearBundledReportMailbox({ client, sessionId, executeAsync, nonce }) {
+  await switchToWebContext(client, sessionId);
+  await executePagePromise(
+    executeAsync,
+    `window.__bundledCaptureReport.clear(${JSON.stringify(nonce)})`
+  );
+  await flushNativePreferences(client, sessionId);
+}
+
 export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
@@ -576,6 +595,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   let ownsSession = false;
   let originalOrientation;
   let execute;
+  let executeAsync;
   let restoreNativeRotationLock = false;
   // Three-valued on purpose: null means the rotation path was never exercised
   // (the device already sat in the requested orientation), which is not the same
@@ -585,6 +605,16 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   let bundledReportNonce = null;
   const cleanup = () => {
     cleanupPromise ??= (async () => {
+      if (sessionId && executeAsync && bundledReportNonce) {
+        await clearBundledReportMailbox({
+          client,
+          sessionId,
+          executeAsync,
+          nonce: bundledReportNonce,
+        }).catch((error) =>
+          console.warn(`cleanup: bundled-report mailbox clear failed (${error.message})`)
+        );
+      }
       if (sessionId && originalOrientation) {
         await client
           .request('POST', `/session/${sessionId}/orientation`, {
@@ -644,7 +674,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     }
     execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
-    const executeAsync = (script, args = []) =>
+    executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
     if (nativeApp) {
       await switchToWebContext(client, sessionId);
@@ -1014,6 +1044,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         executeAsync,
         `window.__bundledCaptureReport.collect(${JSON.stringify(bundledReportNonce)})`
       );
+      await flushNativePreferences(client, sessionId);
       const pulled = await pullBundledReportFromDevice({
         deviceId,
         bundleId: NATIVE_APP_BUNDLE_ID,
@@ -1033,11 +1064,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         bytes: pulled.bytes,
         source: pulled.source,
         counts: write.counts,
+        preferencesFlush: 'background-foreground',
+        pullAttempts: pulled.attempts,
+        pullElapsedMs: pulled.elapsedMs,
       };
-      await executePagePromise(
-        executeAsync,
-        `window.__bundledCaptureReport.clear(${JSON.stringify(bundledReportNonce)})`
-      );
     } else {
       report = await execute('return window.__probe.finish();');
       const counts = report.meta.counts;

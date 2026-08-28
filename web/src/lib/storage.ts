@@ -100,9 +100,11 @@ function mirror(key: StorageKey, value: string) {
   void runWithDurablePreferences((Preferences) => Preferences.set({ key, value }));
 }
 
-export async function writeDurableCaptureReport(nonce: string, value: string): Promise<boolean> {
+export async function writeCaptureReportToPreferences(
+  nonce: string,
+  value: string
+): Promise<boolean> {
   if (!browser) return false;
-  safeStorageMutation(() => localStorage.setItem(nonce, value));
   return (
     (await runWithDurablePreferences(async (Preferences) => {
       await Preferences.set({ key: nonce, value });
@@ -111,9 +113,8 @@ export async function writeDurableCaptureReport(nonce: string, value: string): P
   );
 }
 
-export async function removeDurableCaptureReport(nonce: string): Promise<boolean> {
+export async function removeCaptureReportFromPreferences(nonce: string): Promise<boolean> {
   if (!browser) return false;
-  safeStorageMutation(() => localStorage.removeItem(nonce));
   return (
     (await runWithDurablePreferences(async (Preferences) => {
       await Preferences.remove({ key: nonce });

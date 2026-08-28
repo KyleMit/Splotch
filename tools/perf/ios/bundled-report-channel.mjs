@@ -74,9 +74,12 @@ export async function pullBundledReportFromDevice({
   const destination = join(scratch, 'preferences.plist');
   const source = `Library/Preferences/${bundleId}.plist`;
   const deadline = Date.now() + timeoutMs;
+  const startedAt = Date.now();
+  let attempts = 0;
   let lastProblem = 'Preferences plist was not available';
   try {
     while (Date.now() < deadline) {
+      attempts += 1;
       rmSync(destination, { force: true });
       const copied = tryCapture('xcrun', [
         'devicectl',
@@ -101,7 +104,13 @@ export async function pullBundledReportFromDevice({
         try {
           const preferences = readPreferencesFile(destination);
           const serialized = reportStringFromPreferences(preferences, nonce);
-          return { payload: JSON.parse(serialized), bytes: Buffer.byteLength(serialized), source };
+          return {
+            payload: JSON.parse(serialized),
+            bytes: Buffer.byteLength(serialized),
+            source,
+            attempts,
+            elapsedMs: Date.now() - startedAt,
+          };
         } catch (error) {
           lastProblem = error.message;
         }

@@ -12,23 +12,25 @@ equivalent reliable unattended report transport on the capture rig.
 
 We considered a local TLS report host and new native bridge code. TLS adds certificate trust and
 host lifecycle to every capture while still moving data over a network the product does not use. A
-native plugin would create a new production-capable surface solely for profiling. The app already
-has the narrower ADR-0005 localStorage-to-Capacitor-Preferences durability boundary and Apple
-provides a host-side, app-container-aware copy command.
+native plugin would create a new production-capable surface solely for profiling. ADR-0005 already
+configures Capacitor Preferences for native durability, and Apple provides a host-side,
+app-container-aware copy command.
 
 ## Decision
 
 Harness-enabled iOS builds use Capacitor Preferences as a one-report mailbox. The dev-harness seam
 in `web/src/lib/boot/devHarnessSeam.ts` is armed with a random UUID, serializes the complete probe
-report under that ephemeral key, and awaits the Preferences mirror in `web/src/lib/storage.ts`.
-Release builds compile the seam out.
+report under that ephemeral key, and awaits a direct Preferences write in `web/src/lib/storage.ts`.
+It deliberately does not duplicate the report in localStorage. Release builds compile the seam out.
 
-`tools/perf/ios/capture-xcuitest-screen.mjs` drives trusted XCUITest input, then
-`tools/perf/ios/bundled-report-channel.mjs` pulls the app's Preferences plist through `devicectl`'s
-app-container copy operation. The host accepts the value only when the per-session nonce, armed page
-URL, exact bundled origin, probe and wrapper user agents, full table counts, and serialized UTF-8
-byte size agree. The artifact records `pageDelivery: "bundled"`, a proven container-nonce page
-identity, and the channel evidence. The page clears the mailbox after a successful pull.
+`tools/perf/ios/capture-xcuitest-screen.mjs` drives trusted XCUITest input, then backgrounds and
+foregrounds the app so iOS flushes UserDefaults before `tools/perf/ios/bundled-report-channel.mjs`
+pulls the Preferences plist through `devicectl`'s app-container copy operation. The host accepts the
+value only when the per-session nonce, armed page URL, exact bundled origin, probe and wrapper user
+agents, full table counts, and serialized UTF-8 byte size agree. Cleanup clears the mailbox and
+flushes its removal on every exit path, including a timeout, validation refusal, or interrupt. The
+artifact records `pageDelivery: "bundled"`, a proven container-nonce page identity, and the channel
+evidence.
 
 Automated XCUITest proves the transport and provides repeatable regression input. The same command's
 `--hand-input` mode remains the decisive witness for real-finger WKWebView coalescing; the report
@@ -41,11 +43,9 @@ channel does not turn synthetic input into human input.
   identity independently checkable by the host.
 * \+ Exact byte and table-count checks exercise the full report size rather than proving only a
   small control message.
-* \+ The implementation adds no native code and reuses the app's established durable-storage
-  boundary.
-* − Harness captures write a potentially large short-lived value to both WebView localStorage and
-  Preferences; successful captures remove it, while an interrupted capture can leave its unguessable
-  key until the app is reinstalled or storage is cleared.
+* \+ The implementation adds no native code and reuses the app's established Preferences plugin.
+* − Each capture backgrounds and foregrounds the app after measurement to flush the mailbox, adding
+  a lifecycle transition to the report-collection phase.
 * − `devicectl` and access to the app data container make this a local physical-device workflow, not
   a hosted-device transport.
 * − XCUITest automation can validate the channel but cannot settle human-finger coalescing; that

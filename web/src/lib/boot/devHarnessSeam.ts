@@ -9,7 +9,7 @@ import {
 import { generateAiImage } from '$lib/drawing/aiImage';
 import { PALETTE_COLORS, type PaletteLabel } from '$lib/palette';
 import { PERF_MARKS } from '$lib/drawing/perf';
-import { removeDurableCaptureReport, writeDurableCaptureReport } from '$lib/storage';
+import { removeCaptureReportFromPreferences, writeCaptureReportToPreferences } from '$lib/storage';
 
 type StoreDrawingColor = { kind: 'palette'; label: PaletteLabel } | { kind: 'picker'; hex: string };
 
@@ -43,7 +43,7 @@ function createBundledCaptureReportSeam(): BundledCaptureReportSeam {
   return {
     async arm(nonce) {
       validateCaptureNonce(nonce);
-      if (!(await removeDurableCaptureReport(nonce))) {
+      if (!(await removeCaptureReportFromPreferences(nonce))) {
         throw new Error('The bundled-capture Preferences channel is unavailable');
       }
       armedNonce = nonce;
@@ -62,14 +62,14 @@ function createBundledCaptureReportSeam(): BundledCaptureReportSeam {
       };
       const serialized = JSON.stringify(payload);
       const bytes = new TextEncoder().encode(serialized).byteLength;
-      if (!(await writeDurableCaptureReport(nonce, serialized))) {
+      if (!(await writeCaptureReportToPreferences(nonce, serialized))) {
         throw new Error('The bundled-capture report did not reach Preferences');
       }
       return { nonce, bytes, counts: report.meta.counts };
     },
     async clear(nonce) {
       validateCaptureNonce(nonce);
-      if (!(await removeDurableCaptureReport(nonce))) {
+      if (!(await removeCaptureReportFromPreferences(nonce))) {
         throw new Error('The bundled-capture Preferences channel is unavailable');
       }
       if (armedNonce === nonce) armedNonce = null;

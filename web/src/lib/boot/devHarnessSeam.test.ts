@@ -36,11 +36,11 @@ vi.mock('$lib/drawing/perf', () => ({
 }));
 
 vi.mock('$lib/storage', () => ({
-  writeDurableCaptureReport: async (nonce: string, value: string) => {
+  writeCaptureReportToPreferences: async (nonce: string, value: string) => {
     captureReports.set(nonce, value);
     return true;
   },
-  removeDurableCaptureReport: async (nonce: string) => {
+  removeCaptureReportFromPreferences: async (nonce: string) => {
     captureReports.delete(nonce);
     return true;
   },

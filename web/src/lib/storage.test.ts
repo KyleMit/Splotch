@@ -37,8 +37,8 @@ import {
   reconcileStorageValues,
   hydrateDurableStorage,
   onDurableRestore,
-  writeDurableCaptureReport,
-  removeDurableCaptureReport,
+  writeCaptureReportToPreferences,
+  removeCaptureReportFromPreferences,
 } from './storage';
 
 beforeEach(() => {
@@ -207,25 +207,25 @@ describe('mirror to durable storage (native)', () => {
   });
 });
 
-describe('bundled capture report mirror', () => {
+describe('bundled capture Preferences mailbox', () => {
   const nonce = '7f16d248-63df-4ba2-81d4-fb27ef0a40e2';
 
-  it('awaits the full localStorage to Preferences round trip', async () => {
+  it('awaits the full Preferences round trip without copying into localStorage', async () => {
     ctrl.native = true;
     const report = JSON.stringify({ rows: 'x'.repeat(650_000) });
 
-    await expect(writeDurableCaptureReport(nonce, report)).resolves.toBe(true);
-    expect(localStorage.getItem(nonce)).toBe(report);
+    await expect(writeCaptureReportToPreferences(nonce, report)).resolves.toBe(true);
+    expect(localStorage.getItem(nonce)).toBeNull();
     expect(prefsStore.get(nonce)).toBe(report);
 
-    await expect(removeDurableCaptureReport(nonce)).resolves.toBe(true);
+    await expect(removeCaptureReportFromPreferences(nonce)).resolves.toBe(true);
     expect(localStorage.getItem(nonce)).toBeNull();
     expect(prefsStore.has(nonce)).toBe(false);
   });
 
   it('reports that no Preferences channel exists on web', async () => {
-    await expect(writeDurableCaptureReport(nonce, '{}')).resolves.toBe(false);
-    await expect(removeDurableCaptureReport(nonce)).resolves.toBe(false);
+    await expect(writeCaptureReportToPreferences(nonce, '{}')).resolves.toBe(false);
+    await expect(removeCaptureReportFromPreferences(nonce)).resolves.toBe(false);
   });
 });
 

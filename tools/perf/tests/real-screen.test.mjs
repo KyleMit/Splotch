@@ -26,7 +26,9 @@ import {
   borrowedSessionDescriptor,
   cacheEvictionAcceptable,
   capturedDeviceId,
+  clearBundledReportMailbox,
   dismissInstallBannerForMeasurement,
+  flushNativePreferences,
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
@@ -192,6 +194,70 @@ describe('capturedDeviceId', () => {
 
   it('falls back to cloud only when no session names a device', () => {
     expect(capturedDeviceId(undefined, { capabilities: { platformName: 'iOS' } })).toBe('cloud');
+  });
+});
+
+describe('bundled Preferences lifecycle', () => {
+  function clientRecording(requests) {
+    return {
+      async request(method, path, body) {
+        requests.push({ method, path, body });
+        if (method === 'GET' && path.endsWith('/contexts')) return ['WEBVIEW_art.splotch.app'];
+        return null;
+      },
+    };
+  }
+
+  it('backgrounds and foregrounds the native app before reading its Preferences plist', async () => {
+    const requests = [];
+    await flushNativePreferences(clientRecording(requests), 'session-1');
+
+    expect(requests).toEqual([
+      {
+        method: 'POST',
+        path: '/session/session-1/context',
+        body: { name: 'NATIVE_APP' },
+      },
+      {
+        method: 'POST',
+        path: '/session/session-1/execute/sync',
+        body: { script: 'mobile: backgroundApp', args: [{ seconds: 1 }] },
+      },
+      { method: 'GET', path: '/session/session-1/contexts', body: undefined },
+      {
+        method: 'POST',
+        path: '/session/session-1/context',
+        body: { name: 'WEBVIEW_art.splotch.app' },
+      },
+    ]);
+  });
+
+  it('clears and flushes the mailbox through the cleanup-safe helper', async () => {
+    const requests = [];
+    const expressions = [];
+    const executeAsync = async (script) => {
+      expressions.push(script);
+      return { ok: true, value: null };
+    };
+
+    await clearBundledReportMailbox({
+      client: clientRecording(requests),
+      sessionId: 'session-1',
+      executeAsync,
+      nonce: '7f16d248-63df-4ba2-81d4-fb27ef0a40e2',
+    });
+
+    expect(expressions).toHaveLength(1);
+    expect(expressions[0]).toContain(
+      'window.__bundledCaptureReport.clear("7f16d248-63df-4ba2-81d4-fb27ef0a40e2")'
+    );
+    expect(requests.filter(({ path }) => path.endsWith('/execute/sync'))).toEqual([
+      {
+        method: 'POST',
+        path: '/session/session-1/execute/sync',
+        body: { script: 'mobile: backgroundApp', args: [{ seconds: 1 }] },
+      },
+    ]);
   });
 });
 
