@@ -65,6 +65,9 @@ export function renderFrameRateFrom(dumpsysOutput) {
   return match ? Math.round(Number.parseFloat(match[1])) : null;
 }
 
+// Quick Boot restores the guest snapshot, so a new emulator host process proves
+// nothing about guest freshness; /proc/uptime's first field is guest uptime,
+// while its second is summed core idle time.
 export function deviceUptimeSecondsFrom(procUptimeOutput) {
   const match = /^\s*([0-9]+(?:\.[0-9]+)?)/.exec(procUptimeOutput ?? '');
   return match ? Number.parseFloat(match[1]) : null;
@@ -262,6 +265,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
   const deviceUptimeSeconds = deviceUptimeSecondsFrom(
     adb(deviceId, ['shell', 'cat', '/proc/uptime'])
   );
+  console.log(`guest uptime at capture start: ${deviceUptimeSeconds ?? 'unknown'} seconds`);
   // Reads stay outside the try (the rotation-settings pattern above): a failed
   // read throws before anything was mutated. The WRITES sit inside the try —
   // pinning outside it opened a crash window where one setting was written and

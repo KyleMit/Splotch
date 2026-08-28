@@ -102,21 +102,29 @@ fresh-boot action control must start the AVD with `-no-snapshot-load`, wait for 
 booting, and record the guest uptime before the first capture:
 
 ```sh
-~/Library/Android/sdk/emulator/emulator -avd Pixel_7_Pro_API_33 -no-snapshot-load
-adb -s emulator-5554 wait-for-device
-adb -s emulator-5554 shell getprop sys.boot_completed
-adb -s emulator-5554 shell cat /proc/uptime
+wait_for_emulator() {
+  boot_timeout_seconds=540
+  boot_deadline=$(( $(date +%s) + boot_timeout_seconds ))
+  until [ "$(adb -s emulator-5554 get-state 2>/dev/null)" = device ] &&
+    [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do
+    if [ "$(date +%s)" -ge "$boot_deadline" ]; then
+      echo "emulator did not finish booting within ${boot_timeout_seconds}s" >&2
+      return 1
+    fi
+    sleep 5
+  done
+}
+
+~/Library/Android/sdk/emulator/emulator -avd Pixel_7_Pro_API_33 -no-snapshot-load &
+wait_for_emulator && adb -s emulator-5554 shell cat /proc/uptime
 ```
 
 Do not use `-wipe-data`; the control requires a cold guest boot, not deletion of the AVD's persisted
 state. The Android browser action runner records the first `/proc/uptime` value as
 `device.uptimeSeconds` in its artifact. If guest uptime did not reset, the run is not a fresh-boot
-control regardless of when its host process started.
-
-**A passing aggregate idle cell does not prove the target actions stayed in one performance
-regime.** A long sweep can keep idle under its gates while target-action repeats change from clean
-to slow. Inspect the per-repeat samples and preserve the raw artifact; an unscoreable follow-up
-whose idle control fails does not invalidate an earlier passing-control action failure.
+control regardless of when its host process started. The bounded loop uses commands available on a
+stock macOS host; neither `adb wait-for-device` nor an unbounded `sys.boot_completed` loop is safe
+because each can hang forever when the emulator dies during its corresponding boot stage.
 
 **The brush is persisted.** A capture that assumes pen is the default draws its "pen" strokes with
 whatever the previous capture selected — captures share an origin, so the tool choice survives the
@@ -262,6 +270,10 @@ check did not pass, and in which of three ways:
 * **A check that is absent was never asked.** The runtime answers it identically for a real finger
   and for synthesized touch, so it carries no information about how the capture was driven. That is
   a measured finding, not a gap.
+
+Apply the same rule to the action sweep's idle control across runs. An unscoreable follow-up whose
+idle control fails cannot invalidate an earlier passing-control action failure; recapture it instead
+of averaging it with, or using it to reinterpret, the scoreable run.
 
 `android-chrome` is the third kind, established on 2026-08-23 by pairing a hand capture with an
 `adb`-driven one through the same probe: pressure 1 against 1, no contact geometry against none, 0
@@ -979,7 +991,7 @@ place. Sequence the work: captures, then builds, then tests.
 
 ## Metric traps
 
-Two are fixed and one is proposed; all three are worth recognizing in a number.
+Each is worth recognizing in a number.
 
 * **The frame beat is estimated, not read from the hardware** (ADR-0134). It used to be a low
   percentile, which on a variable-refresh display lands below the rate the display actually held and
@@ -990,6 +1002,9 @@ Two are fixed and one is proposed; all three are worth recognizing in a number.
   control scores 1.46% under the current charge and 0.02% once the pair is credited.
 * **`lostFrameTimeShare` is a share of in-contact *time*, not of frames.** The frame share is
   roughly double it. Say which you mean.
+* **A passing aggregate idle cell does not prove target-action repeats stayed in one performance
+  regime.** A long sweep can keep aggregate idle under its gates while a target changes from clean
+  to slow. Inspect the per-repeat samples and preserve the raw artifact.
 
 ## A red cell describes the commit it was captured at, not the product
 
