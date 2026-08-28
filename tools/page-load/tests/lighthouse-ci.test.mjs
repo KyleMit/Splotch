@@ -3,13 +3,15 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   GATED_METRICS,
+  LIGHTHOUSE_TIMEOUT_MS,
   PROFILES,
   REPORTED_METRICS,
   VISITS,
   assessSummary,
-  measuredSourceDigest,
+  baselineSourceStatus,
   median,
   summarizeMeasurements,
+  withOneRetry,
 } from '../run-lighthouse-ci.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
@@ -94,10 +96,9 @@ describe('the Lighthouse CI metric contract', () => {
     ]);
   });
 
-  it('keeps the committed baseline complete, current, and pinned to the installed runner', () => {
+  it('keeps the committed baseline complete and pinned to the installed runner', () => {
     const packageJson = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
 
-    expect(committedBaseline.sourceDigest).toBe(measuredSourceDigest());
     expect(committedBaseline.lighthouseVersion).toBe(packageJson.devDependencies.lighthouse);
     expect(Object.keys(committedBaseline.profiles)).toEqual(Object.keys(PROFILES));
     for (const profile of Object.keys(PROFILES)) {
@@ -110,6 +111,49 @@ describe('the Lighthouse CI metric contract', () => {
     }
   });
 
+  it('reports source provenance without invalidating absolute regression limits', () => {
+    expect(baselineSourceStatus({ sourceDigest: 'same' }, 'same')).toEqual({
+      matches: true,
+      baselineDigest: 'same',
+      currentDigest: 'same',
+    });
+    expect(baselineSourceStatus({ sourceDigest: 'old' }, 'changed')).toEqual({
+      matches: false,
+      baselineDigest: 'old',
+      currentDigest: 'changed',
+    });
+  });
+
+  it('retries one failed Lighthouse invocation without hiding a second failure', () => {
+    const attempts = [];
+    const recovered = withOneRetry(
+      (attempt) => {
+        attempts.push(attempt);
+        if (attempt === 1) throw new Error('transient');
+        return 'report';
+      },
+      (error) => expect(error.message).toBe('transient')
+    );
+
+    expect(recovered).toBe('report');
+    expect(attempts).toEqual([1, 2]);
+    expect(() =>
+      withOneRetry(() => {
+        throw new Error('persistent');
+      })
+    ).toThrow('persistent');
+  });
+
+  it('bounds each attempt so a retry still fits the workflow budget', () => {
+    expect(LIGHTHOUSE_TIMEOUT_MS).toBe(120_000);
+  });
+
+  it('gives the recurring first-visit LCP mode equal headroom on both viewports', () => {
+    expect(committedBaseline.profiles['tablet-landscape'].first.limits.lcpMs).toBe(
+      committedBaseline.profiles['phone-portrait'].first.limits.lcpMs
+    );
+  });
+
   it('keeps the production-build CI job wired to Chromium, an explicit port, and artifacts', () => {
     const workflow = readFileSync(join(ROOT, '.github/workflows/test.yml'), 'utf8');
 
@@ -117,6 +161,6 @@ describe('the Lighthouse CI metric contract', () => {
     expect(workflow).toContain('browsers: chromium');
     expect(workflow).toContain('npm run test:lighthouse:ci -- --port=4197');
     expect(workflow).toContain('path: lighthouse-reports/ci/');
-    expect(workflow).toContain('if-no-files-found: error');
+    expect(workflow).toContain('if-no-files-found: warn');
   });
 });

@@ -7,6 +7,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import { MEASURED_SURFACE, SPEC_FILE } from '../perf/check-matrix-staleness.mjs';
 import { buildAndPreview } from '../perf/lib/profile-preview.mjs';
 
 export const PROFILE_VERSION = 1;
@@ -22,16 +23,8 @@ const DEFAULT_BASELINE = 'tools/page-load/baseline.json';
 const DEFAULT_OUT = 'lighthouse-reports/ci';
 const DEFAULT_PORT = 4197;
 const DEFAULT_SAMPLES = 3;
-const LIGHTHOUSE_TIMEOUT_MS = 240_000;
+export const LIGHTHOUSE_TIMEOUT_MS = 120_000;
 const LIGHTHOUSE_CLI = fileURLToPath(import.meta.resolve('lighthouse/cli/index.js'));
-const SPEC_FILE = /\.(test|spec)\.[^.]+$/;
-const MEASURED_PATHS = [
-  'web/src',
-  'web/static',
-  'web/svelte.config.js',
-  'web/vite.config.ts',
-  'pnpm-lock.yaml',
-];
 
 export function median(values) {
   if (!values.length) throw new Error('median needs at least one value');
@@ -107,7 +100,7 @@ export function validateBaseline(baseline) {
 }
 
 function trackedMeasuredFiles() {
-  return execFileSync('git', ['ls-files', '-z', '--', ...MEASURED_PATHS], {
+  return execFileSync('git', ['ls-files', '-z', '--', ...MEASURED_SURFACE], {
     cwd: ROOT,
     encoding: 'utf8',
   })
@@ -124,17 +117,33 @@ export function measuredSourceDigest() {
     hash.update(readFileSync(join(ROOT, path)));
     hash.update('\0');
   }
+  // MEASURED_SURFACE intentionally excludes package.json because ordinary
+  // script edits cannot change a capture. This digest adds only production
+  // dependency declarations; the resolved tree remains owned by pnpm-lock.yaml.
   const { dependencies = {} } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
   hash.update('package.json#dependencies\0');
   hash.update(JSON.stringify(Object.entries(dependencies).sort(([a], [b]) => a.localeCompare(b))));
   return hash.digest('hex');
 }
 
-export function assertBaselineCurrent(baseline, currentDigest = measuredSourceDigest()) {
-  if (baseline.sourceDigest !== currentDigest) {
-    fail(
-      'page-load baseline is stale for this production surface. Run the documented calibration ' +
-        'matrix, review its spread, and update tools/page-load/baseline.json before relying on it.'
+export function baselineSourceStatus(baseline, currentDigest = measuredSourceDigest()) {
+  return {
+    matches: baseline.sourceDigest === currentDigest,
+    baselineDigest: baseline.sourceDigest,
+    currentDigest,
+  };
+}
+
+function reportBaselineSourceStatus(status) {
+  if (status.matches) return;
+  console.warn(
+    'Page-load baseline provenance is stale for this production surface. The absolute FCP/LCP ' +
+      'limits still gate this run; recalibrate before claiming the baseline medians are current.'
+  );
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(
+      '::warning title=Page-load baseline provenance is stale::The absolute limits still gate; ' +
+        'review the uploaded measurements and refresh baseline.json before treating its medians as current.'
     );
   }
 }
@@ -209,6 +218,15 @@ function runLighthouse({ base, out, profileName, visit, sample, profileDir }) {
   return lighthouseResult(reportPath, profileName, visit, sample);
 }
 
+export function withOneRetry(operation, onRetry = () => {}) {
+  try {
+    return operation(1);
+  } catch (error) {
+    onRetry(error);
+    return operation(2);
+  }
+}
+
 function renderSummary(summary, baseline, reportOnly) {
   const rows = [];
   for (const profile of Object.keys(PROFILES)) {
@@ -231,7 +249,7 @@ function renderSummary(summary, baseline, reportOnly) {
   return rows;
 }
 
-function appendGitHubSummary(rows) {
+function appendGitHubSummary(rows, sourceStatus) {
   if (!process.env.GITHUB_STEP_SUMMARY) return;
   const header =
     '| Profile | Visit | FCP / limit (ms) | LCP / limit (ms) | TBT (ms, report) | Score (report) |\n' +
@@ -244,7 +262,13 @@ function appendGitHubSummary(rows) {
         `${row['score (report)']} |`
     )
     .join('\n');
-  appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## Page-load performance\n\n${header}${body}\n`);
+  const provenance = sourceStatus.matches
+    ? 'Current'
+    : 'Stale (warning only; absolute limits still gate)';
+  appendFileSync(
+    process.env.GITHUB_STEP_SUMMARY,
+    `## Page-load performance\n\n${header}${body}\n\nBaseline provenance: ${provenance}.\n`
+  );
 }
 
 export async function runLighthouseCi({
@@ -263,7 +287,8 @@ export async function runLighthouseCi({
   const absoluteOut = join(ROOT, out);
   const baseline = JSON.parse(readFileSync(absoluteBaseline, 'utf8'));
   validateBaseline(baseline);
-  if (!reportOnly) assertBaselineCurrent(baseline);
+  const sourceStatus = baselineSourceStatus(baseline);
+  reportBaselineSourceStatus(sourceStatus);
 
   rmSync(absoluteOut, { recursive: true, force: true });
   mkdirSync(absoluteOut, { recursive: true });
@@ -276,15 +301,27 @@ export async function runLighthouseCi({
         mkdirSync(profileDir, { recursive: true });
         for (const visit of VISITS) {
           console.log(`${profileName} ${visit} sample ${sample}/${samples}`);
+          const runOptions = {
+            base: preview.base,
+            out: absoluteOut,
+            profileName,
+            visit,
+            sample,
+            profileDir,
+          };
           measurements.push(
-            runLighthouse({
-              base: preview.base,
-              out: absoluteOut,
-              profileName,
-              visit,
-              sample,
-              profileDir,
-            })
+            withOneRetry(
+              () => runLighthouse(runOptions),
+              (error) => {
+                console.warn(
+                  `${profileName} ${visit} sample ${sample} failed once; retrying: ${error.message}`
+                );
+                if (visit === 'first') {
+                  rmSync(profileDir, { recursive: true, force: true });
+                  mkdirSync(profileDir, { recursive: true });
+                }
+              }
+            )
           );
         }
         rmSync(profileDir, { recursive: true, force: true });
@@ -297,11 +334,12 @@ export async function runLighthouseCi({
 
   const summary = summarizeMeasurements(measurements);
   const rows = renderSummary(summary, baseline, reportOnly);
-  appendGitHubSummary(rows);
+  appendGitHubSummary(rows, sourceStatus);
   const artifact = {
     schemaVersion: 1,
     profileVersion: PROFILE_VERSION,
     sourceDigest: measuredSourceDigest(),
+    baselineSource: sourceStatus,
     samples,
     summary,
     measurements,

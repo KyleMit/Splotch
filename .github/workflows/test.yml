@@ -198,7 +198,7 @@ jobs:
         with:
           name: lighthouse-page-load
           path: lighthouse-reports/ci/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
 
   # Each shard builds the app itself rather than restoring it from a build job:

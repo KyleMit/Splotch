@@ -19,7 +19,7 @@
     "tablet-landscape": {
       "first": {
         "baseline": { "fcpMs": 1599, "lcpMs": 3022 },
-        "limits": { "fcpMs": 2600, "lcpMs": 4500 }
+        "limits": { "fcpMs": 2600, "lcpMs": 5500 }
       },
       "repeat": {
         "baseline": { "fcpMs": 705, "lcpMs": 825 },

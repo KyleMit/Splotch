@@ -56,7 +56,7 @@ export const MEASURED_SURFACE = [
 // where the hashes already differ: name the differing files and ask whether any
 // of them ships. Any real source change still reads STALE, and a commit touching
 // both a spec and a source file reads STALE on the source file.
-const SPEC_FILE = /\.(test|spec)\.[^.]+$/;
+export const SPEC_FILE = /\.(test|spec)\.[^.]+$/;
 
 export function everyChangeIsASpec(paths) {
   return paths.length > 0 && paths.every((path) => SPEC_FILE.test(path));
