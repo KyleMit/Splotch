@@ -288,6 +288,27 @@ describe('campaign artifact acceptance', () => {
     expect(artifactMatchesRuntime({ transport: 'browser' }, 'native')).toBe(false);
   });
 
+  it('requires a packaged page when Appium records the native app URL', () => {
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'capacitor://localhost/?perf-run=1' },
+        'native'
+      )
+    ).toBe(true);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'https://localhost/?perf-run=1' },
+        'native'
+      )
+    ).toBe(true);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'http://192.168.40.53:4173/' },
+        'native'
+      )
+    ).toBe(false);
+  });
+
   it('rejects a web cell that attached to the installed app instead', () => {
     expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'web')).toBe(false);
   });

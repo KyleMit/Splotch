@@ -331,6 +331,24 @@ export function isWebContext(context) {
   return context === 'CHROMIUM' || context.startsWith('WEBVIEW');
 }
 
+export function selectWebContext(contexts, { nativeApp = false } = {}) {
+  const webContexts = contexts.filter(isWebContext);
+  if (!nativeApp) {
+    return (
+      webContexts.find((context) => context === 'CHROMIUM') ??
+      webContexts.find((context) => context.toLowerCase() === 'webview_chrome') ??
+      webContexts[0] ??
+      null
+    );
+  }
+
+  const appContext = webContexts.find((context) =>
+    context.toLowerCase().includes(NATIVE_APP_BUNDLE_ID.toLowerCase())
+  );
+  if (appContext) return appContext;
+  return webContexts.length === 1 ? webContexts[0] : null;
+}
+
 export function nativeOrientationNeedsUnlock({
   nativeApp,
   rotateBeforeUndo,
@@ -349,12 +367,16 @@ export async function switchToWebContext(client, sessionId) {
     () =>
       client
         .request('GET', `/session/${sessionId}/contexts`)
-        .then((contexts) => contexts.find(isWebContext) ?? null)
+        .then((contexts) => selectWebContext(contexts, { nativeApp: client.nativeApp }))
         .catch(() => null),
     WEBVIEW_READY_TIMEOUT_MS,
     WEBVIEW_READY_POLL_MS
   );
-  if (!webContext) throw new Error('Appium reported no WEBVIEW context');
+  if (!webContext) {
+    throw new Error(
+      `Appium reported no unambiguous ${client.nativeApp ? NATIVE_APP_BUNDLE_ID : 'browser'} WEBVIEW context`
+    );
+  }
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   return webContext;
 }
@@ -937,7 +959,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       "const r = document.querySelector('#drawingCanvas').getBoundingClientRect(); return {canvas:{x:r.x,y:r.y,width:r.width,height:r.height},viewport:{width:innerWidth,height:innerHeight}};"
     );
     const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-    const webContext = contexts.find(isWebContext);
+    const webContext = selectWebContext(contexts, { nativeApp: client.nativeApp });
     if (!webContext) throw new Error(`Appium reported no WEBVIEW context: ${contexts.join(', ')}`);
 
     await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });

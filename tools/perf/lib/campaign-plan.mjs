@@ -197,14 +197,25 @@ export const NATIVE_TRANSPORT = 'native-capacitor-webview';
 // Several debuggable WebViews can satisfy the context search, so a native capture
 // that attached to Chrome — or a web capture that attached to the installed app —
 // produces a well-formed artifact and exits zero. The runbook asks for this to be
-// eyeballed per cell; a queue of 20 is exactly where eyeballing stops happening.
-// Acceptance stays "a parseable artifact" so a red gate survives, but the artifact
-// has to be one of the thing the cell asked for.
+// checked explicitly because a queue of 20 is exactly where eyeballing stops
+// happening. Acceptance stays "a parseable artifact" so a red gate survives, but
+// the artifact has to be one of the thing the cell asked for.
 // The transports whose artifacts legitimately carry `nativeApp: true`: the
 // split runner (issue 1274) and the bundled CDP channel (issue 1323) attach
 // to the installed app while keeping their own transport strings. The Appium
 // native runner marks native-ness in `transport` itself.
 const NATIVE_CAPABLE_TRANSPORTS = new Set(['split-input-measurement', 'cdp-bundled']);
+const PACKAGED_APP_URLS = new Set(['capacitor://localhost', 'https://localhost']);
+
+function isPackagedAppUrl(value) {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return PACKAGED_APP_URLS.has(`${url.protocol}//${url.host}`);
+  } catch {
+    return false;
+  }
+}
 
 export function artifactMatchesRuntime(artifact, runtime) {
   // Contract-specific, fail-closed (the PR 1380 review): a bare
@@ -219,6 +230,13 @@ export function artifactMatchesRuntime(artifact, runtime) {
   const contradictory =
     nativeFlag && transport !== NATIVE_TRANSPORT && !NATIVE_CAPABLE_TRANSPORTS.has(transport);
   if (contradictory) return false;
+  if (
+    transport === NATIVE_TRANSPORT &&
+    artifact?.appUrl !== undefined &&
+    !isPackagedAppUrl(artifact.appUrl)
+  ) {
+    return false;
+  }
   return runtime === 'native' ? isNative : !isNative;
 }
 

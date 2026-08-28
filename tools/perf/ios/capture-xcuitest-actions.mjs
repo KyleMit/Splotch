@@ -22,8 +22,8 @@ import {
   capturedDeviceId,
   clearDeviceWebCache,
   createWebDriverClient,
-  isWebContext,
   nativeCanvasBounds,
+  selectWebContext,
   switchToWebContext,
 } from './capture-xcuitest-screen.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
@@ -88,6 +88,14 @@ const ALL_ACTIONS = new Set([
   'clear',
   'rotation',
 ]);
+
+function webContextForClient(client, contexts) {
+  const webContext = selectWebContext(contexts, { nativeApp: client.nativeApp });
+  if (!webContext) {
+    throw new Error(`Appium reported no unambiguous WEBVIEW context: ${contexts.join(', ')}`);
+  }
+  return webContext;
+}
 
 function positiveInteger(value, name) {
   const parsed = Number.parseInt(value, 10);
@@ -582,7 +590,7 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
     );
   }
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-  const webContext = contexts.find(isWebContext);
+  const webContext = webContextForClient(client, contexts);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   const nativeWindow = await client.request('GET', `/session/${sessionId}/window/rect`);
   const webViews = await client
@@ -614,7 +622,7 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
 
 async function nativeAccessibilityBounds(client, sessionId, name) {
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-  const webContext = contexts.find(isWebContext);
+  const webContext = webContextForClient(client, contexts);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   try {
     const element = await client.request('POST', `/session/${sessionId}/element`, {
@@ -644,7 +652,7 @@ async function clickNativeAccessibilityElement(client, sessionId, execute, selec
   );
   if (!name) throw new Error(`No accessible native click target matches ${selector}`);
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-  const webContext = contexts.find(isWebContext);
+  const webContext = webContextForClient(client, contexts);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   try {
     const element = await client.request('POST', `/session/${sessionId}/element`, {
@@ -824,7 +832,7 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   await client.request('POST', `/session/${sessionId}/orientation`, { orientation: to });
   await sleep(ROTATION_NATIVE_SETTLE_MS);
   const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-  const webContext = contexts.find(isWebContext);
+  const webContext = webContextForClient(client, contexts);
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   const readyAt = await waitForReady(
     execute,

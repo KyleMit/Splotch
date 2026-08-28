@@ -33,6 +33,7 @@ import {
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
+  selectWebContext,
   STROKES_PER_GESTURE_REPEAT,
   summarizeLiveSurfaceTopology,
   trustedGestureActions,
@@ -1232,6 +1233,22 @@ describe('trusted XCUITest input', () => {
     expect(isWebContext('WEBVIEW_art.splotch.app')).toBe(true);
     expect(isWebContext('CHROMIUM')).toBe(true);
     expect(isWebContext('NATIVE_APP')).toBe(false);
+  });
+
+  it('selects the packaged app context when Chrome is also debuggable', () => {
+    const contexts = ['NATIVE_APP', 'WEBVIEW_chrome', 'WEBVIEW_art.splotch.app'];
+
+    expect(selectWebContext(contexts, { nativeApp: true })).toBe('WEBVIEW_art.splotch.app');
+    expect(selectWebContext(contexts)).toBe('WEBVIEW_chrome');
+  });
+
+  it('refuses an ambiguous native context instead of attaching to another app', () => {
+    expect(
+      selectWebContext(['NATIVE_APP', 'WEBVIEW_chrome', 'WEBVIEW_com.example.other'], {
+        nativeApp: true,
+      })
+    ).toBeNull();
+    expect(selectWebContext(['NATIVE_APP', 'WEBVIEW_42'], { nativeApp: true })).toBe('WEBVIEW_42');
   });
 
   it('builds two long and eight short native strokes inside the canvas', () => {

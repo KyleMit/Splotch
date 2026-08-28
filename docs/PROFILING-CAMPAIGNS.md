@@ -718,6 +718,22 @@ npx cap run ios --target <hardware UDID>
 The same applies to `ios:build`, `ios:archive`, and anything else whose npm script begins with
 `cap:sync`.
 
+**A native transport does not prove a native page.** A retained iPad capture used Appium against a
+native session but navigated the WebView to an HTTP preview, so it exercised the web build's resize
+path while being cited as native evidence. For a packaged capture, verify both
+`captureRuntime: "ios-capacitor-webview"` (or `android-capacitor-webview`) and the packaged `appUrl`
+(`capacitor://localhost` on iOS, `https://localhost` on Android). The campaign rejects an artifact
+whose transport contradicts the requested runtime, and rejects an Appium native artifact that
+records a non-packaged `appUrl`. Older artifacts that do not record the URL remain foldable, so
+inspect that provenance before citing them as packaged-native evidence.
+
+**Do not choose the first Appium WebView context.** Chrome, Safari, a floor-control tab, and the
+installed app can all be debuggable at once. The first context may therefore be a healthy page in
+the wrong process, making setup fail late or, worse, measuring the wrong surface. The XCUITest
+capture helpers select `WEBVIEW_art.splotch.app` for native runs and refuse an ambiguous native
+context; browser runs prefer Chrome's browser context. Keep the fail-closed selection if another
+driver changes its context naming, and prove the new name before adding a fallback.
+
 ## A capture that does not record its brush is filed as pen
 
 `brushOf` (`tools/perf/rescore-captures.mjs`) resolves a capture's brush from the artifact's own
