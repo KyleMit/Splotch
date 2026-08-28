@@ -159,6 +159,43 @@ const MIXED_REGIME = 'mixed-regime';
 // Mixture can only DEMOTE an in-regime verdict: an off-regime or unestablished
 // capture already has its answer, and both are worth their existing responses
 // (retry / bank) rather than a third one.
+// The regime a runtime is expected to hold, when its targets declare exactly one.
+//
+// A capture runtime can serve several targets — `ios-safari` is both the physical
+// iPad and the simulator — and only some of them declare an expectation. Where
+// exactly one non-null expectation exists, it IS the expectation for that
+// runtime and a capture can be judged against it. Where a runtime's targets
+// disagree (`android-chrome` is 60 Hz emulated and 120 Hz on the phone), it
+// genuinely cannot be resolved from the runtime alone and stays null rather than
+// guessing, which is what the caller's `--refresh-regime` flag is for.
+// Whether a capture may be scored, given its verdict and whether the caller
+// asked for a report rather than a gate. Extracted so the REJECTION is testable
+// on its own: the first version of this guard only printed a warning while
+// acceptance still checked fidelity alone, so an off-regime capture wrote its
+// artifact and exited zero — the exact path the guard exists to close.
+export function refreshRegimeRefusal(regime, { expected, reportOnly }) {
+  // No `!expected` clause: a verdict with no expectation reports matched=true
+  // (there is nothing to fail against), so it already falls out here. Adding the
+  // check back is dead logic — it was there, and no mutation of it could fail a
+  // test, which is how it was found.
+  if (reportOnly || regime.matched) return null;
+  return (
+    `The capture presented at ${regime.observed ?? 'an unclassifiable beat'} where this ` +
+    `runtime is held to ${expected}; lostFrameTimeShare is charged against the beat, ` +
+    'so this number is not comparable with a capture in the expected regime.'
+  );
+}
+
+export function soleExpectedRegimeForRuntime(targets, runtime) {
+  const declared = new Set(
+    Object.values(targets)
+      .filter((target) => target.captureRuntime === runtime)
+      .map((target) => target.refreshRegime)
+      .filter(Boolean)
+  );
+  return declared.size === 1 ? [...declared][0] : null;
+}
+
 export function refreshRegimeVerdict(intervalMs, expected = null, mixture = null) {
   const observed = classifyRefreshRegime(intervalMs);
   let verdict =

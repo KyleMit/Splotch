@@ -7,11 +7,16 @@ import {
   eraserRefillArming,
   eraserRefillFunctionSource,
 } from '../lib/eraser-fill.mjs';
-import { NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
+import { CAMPAIGN_TARGETS, NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { captureRuntime, inputFidelity } from '../lib/input-fidelity.mjs';
-import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
+import {
+  describeRefreshRegime,
+  refreshRegimeRefusal,
+  refreshRegimeVerdict,
+  soleExpectedRegimeForRuntime,
+} from '../lib/refresh-regime.mjs';
 import { probeConfigScript } from './capture-webkit-frames.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
@@ -460,6 +465,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'undo-count',
         'undo-pause-ms',
         'history-settle-ms',
+        'refresh-regime',
         'rotate-before-undo',
         'label',
         'output',
@@ -958,6 +964,19 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       nativeApp
     );
     const fidelity = inputFidelity(input, runtime);
+    // Only for a locally driven physical device: a simulator declares no
+    // expectation, and imposing the device's on it would fail captures that are
+    // fine. `--refresh-regime=` overrides for anything this cannot resolve.
+    const expectedRegime =
+      flag('refresh-regime', null) ??
+      (deviceId && !capabilitiesFile
+        ? soleExpectedRegimeForRuntime(CAMPAIGN_TARGETS, runtime)
+        : null);
+    const regime = refreshRegimeVerdict(
+      summaries.intervalMs,
+      expectedRegime,
+      summaries.regimeMixture
+    );
     const liveSurfaceTopology = summarizeLiveSurfaceTopology(
       await execute('return window.__drawingDebug.getLiveSurfaceTopology();')
     );
@@ -985,6 +1004,11 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       // shared reader needs no second location (the review caught gesturePlan
       // reproducing the gestureRepeats top-level/automation split).
       gesturePlan: gesturePlanFor(brush),
+      // The frame beat this capture actually presented at, and whether that is
+      // the regime its runtime is held to. Recorded because lostFrameTimeShare
+      // is charged against the beat, so two captures in different regimes are
+      // not comparable — and a reader cannot reconstruct that from the score.
+      refreshRegime: regime,
       // The verified-fill evidence (issue 1302); null for every other brush.
       eraserFill,
       // Per-pass refill evidence (issue 1292), read back from the page.
@@ -1023,11 +1047,22 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
 
     // Classified but not judged: this command is given a device id, not a matrix
     // row, so it cannot know which regime the cell it is filling is scored against
-    // (the same limit ADR-0137's exception table has). Naming the regime is still
-    // what turns a beat into something an operator can compare against the column.
-    console.log(
-      `\nObserved frame beat: ${describeRefreshRegime(refreshRegimeVerdict(summaries.intervalMs))}`
-    );
+    // (the same limit ADR-0137's exception table has) — but where the RUNTIME's
+    // targets declare exactly one expectation, that expectation is unambiguous
+    // and the capture is judged against it rather than merely printing a number.
+    //
+    // Unarmed, this check reported "unestablished" and recorded nothing, and a
+    // 2026-08-27 Safari capture that presented at 120 Hz inside a 60 Hz cell
+    // scored 2.25% against siblings at 0.6% — the beat, not the app. The campaign
+    // runner already refuses that as off-refresh-regime; this path did not.
+    console.log(`\nObserved frame beat: ${describeRefreshRegime(regime)}`);
+    if (expectedRegime && !regime.matched) {
+      console.log(
+        `  ^ NOT the ${expectedRegime} this runtime is expected to hold. ` +
+          'lostFrameTimeShare is charged against the beat, so this number is not ' +
+          'comparable with a capture taken in the expected regime.'
+      );
+    }
     console.log('\nFrame pacing');
     console.table(pacingRows(summaries.phases));
     console.log('\nTrusted input fidelity');
@@ -1053,6 +1088,21 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'The capture failed the trusted-input fidelity gate; do not use its lag score.'
       );
     }
+    // Ordered AFTER fidelity for the same reason the campaign runner orders it
+    // there: a capture that was barely driven has a meaningless beat as well as
+    // a meaningless number, and naming the regime would send the next session
+    // after the wrong thing.
+    //
+    // This REFUSES rather than warns. lostFrameTimeShare is a share of the beat,
+    // so a capture that held a different regime is not comparable with the cell
+    // it is filling — a 2026-08-27 Safari capture presenting at 120 Hz among
+    // 60 Hz siblings scored 2.25% against their ~0.6%, and warning alone let it
+    // be written, exit zero, and be averaged in by hand.
+    const regimeRefusal = refreshRegimeRefusal(regime, {
+      expected: expectedRegime,
+      reportOnly: has('report-only'),
+    });
+    if (regimeRefusal) throw new Error(regimeRefusal);
     if (!has('report-only') && (!drawing.passed || (undoCount > 0 && !undo.passed))) {
       throw new Error(
         [
