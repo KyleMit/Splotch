@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
@@ -29,6 +30,11 @@ import {
 } from '../lib/real-screen-stats.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
+import { runtimeUaProblem } from '../split-capture/capture-hand-input.mjs';
+import {
+  bundledReportPayloadProblem,
+  pullBundledReportFromDevice,
+} from './bundled-report-channel.mjs';
 import {
   EXPAND_CONTROLS_SOURCE,
   UNDO_ACTION_PAUSE_MS,
@@ -67,6 +73,8 @@ const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
+const HAND_COUNTDOWN_SECONDS = 5;
+const HAND_DEFAULT_SECONDS = 20;
 export const BORROWED_SESSION_CAPABILITIES_ERROR =
   '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance';
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
@@ -444,6 +452,20 @@ async function readTable(execute, accessor, total) {
   return rows;
 }
 
+async function executePagePromise(executeAsync, expression) {
+  const result = await executeAsync(`
+    const done = arguments[arguments.length - 1];
+    Promise.resolve()
+      .then(() => (${expression}))
+      .then(
+        (value) => done({ ok: true, value }),
+        (error) => done({ ok: false, error: String(error?.message ?? error) })
+      );
+  `);
+  if (!result?.ok) throw new Error(result?.error ?? 'The page promise returned no result');
+  return result.value;
+}
+
 export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   const { flag, has, port } = parsePerfArgs(
     {
@@ -458,6 +480,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'capabilities-file',
         'session-id',
         'native-app',
+        'bundled-report',
+        'hand-input',
+        'seconds',
         'native-webview-class',
         'brush',
         'gesture-repeats',
@@ -496,6 +521,16 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   }
 
   const nativeApp = has('native-app');
+  const bundledReport = has('bundled-report');
+  const handInput = has('hand-input');
+  if (bundledReport && (!nativeApp || !deviceId || capabilitiesFile || borrowedSessionId)) {
+    fail('--bundled-report requires a local --device-id= capture with --native-app');
+  }
+  if (handInput && !bundledReport) fail('--hand-input requires --bundled-report');
+  const handSeconds = Number.parseInt(flag('seconds', String(HAND_DEFAULT_SECONDS)), 10);
+  if (!Number.isSafeInteger(handSeconds) || handSeconds < 1) {
+    fail('--seconds must be a positive integer');
+  }
   const requestedOrientation = parseCampaignOrientation(flag('orientation'));
   const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
@@ -547,6 +582,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   // claim as the product owning an in-app lock.
   let platformOwnsRotation = null;
   let cleanupPromise;
+  let bundledReportNonce = null;
   const cleanup = () => {
     cleanupPromise ??= (async () => {
       if (sessionId && originalOrientation) {
@@ -713,6 +749,20 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       WEBVIEW_READY_POLL_MS
     );
     if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
+    const armedPageUrl = await execute('return location.href;');
+    if (bundledReport) {
+      const channelReady = await execute('return !!window.__bundledCaptureReport;');
+      if (!channelReady) {
+        throw new Error(
+          'The bundled report seam is absent; install a PUBLIC_ENABLE_DEV_HARNESS native build'
+        );
+      }
+      bundledReportNonce = randomUUID();
+      await executePagePromise(
+        executeAsync,
+        `window.__bundledCaptureReport.arm(${JSON.stringify(bundledReportNonce)})`
+      );
+    }
     await clearDeviceWebCache(executeAsync);
     const serviceWorkerRegistration = await blockServiceWorkerRegistrationForMeasurement(execute);
     await ensureCampaignTheme(execute, requestedTheme);
@@ -873,16 +923,27 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       includeBrowserChrome: !nativeApp,
     });
 
-    await client.request('POST', `/session/${sessionId}/actions`, {
-      actions: [
-        {
-          type: 'pointer',
-          id: 'finger',
-          parameters: { pointerType: 'touch' },
-          actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs),
-        },
-      ],
-    });
+    if (handInput) {
+      console.log(`\nDraw ${brush} strokes on the iPad for ~${handSeconds}s.`);
+      for (let tick = HAND_COUNTDOWN_SECONDS; tick > 0; tick -= 1) {
+        console.log(`  starting in ${tick}…`);
+        await sleep(1_000);
+      }
+      console.log('  GO — drawing window open');
+      await sleep(handSeconds * 1_000);
+      console.log('  window closed');
+    } else {
+      await client.request('POST', `/session/${sessionId}/actions`, {
+        actions: [
+          {
+            type: 'pointer',
+            id: 'finger',
+            parameters: { pointerType: 'touch' },
+            actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs),
+          },
+        ],
+      });
+    }
     await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
     await sleep(AFTER_GESTURE_SETTLE_MS);
     const eraserRefills =
@@ -945,11 +1006,45 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       await sleep(UNDO_ACTION_SETTLE_MS);
     }
 
-    const report = await execute('return window.__probe.finish();');
-    const counts = report.meta.counts;
-    report.frames = await readTable(execute, 'frames', counts.frames);
-    report.events = await readTable(execute, 'events', counts.events);
-    report.measures = await readTable(execute, 'measures', counts.measures);
+    let report;
+    let reportChannel = null;
+    let bundledPayload = null;
+    if (bundledReport) {
+      const write = await executePagePromise(
+        executeAsync,
+        `window.__bundledCaptureReport.collect(${JSON.stringify(bundledReportNonce)})`
+      );
+      const pulled = await pullBundledReportFromDevice({
+        deviceId,
+        bundleId: NATIVE_APP_BUNDLE_ID,
+        nonce: bundledReportNonce,
+      });
+      const payloadProblem = bundledReportPayloadProblem(pulled.payload, {
+        nonce: bundledReportNonce,
+        bytes: write.bytes,
+        pageUrl: armedPageUrl,
+      });
+      if (payloadProblem) throw new Error(`The pulled bundled report is invalid: ${payloadProblem}`);
+      bundledPayload = pulled.payload;
+      report = bundledPayload.report;
+      reportChannel = {
+        transport: 'capacitor-preferences-devicectl',
+        nonce: bundledReportNonce,
+        bytes: pulled.bytes,
+        source: pulled.source,
+        counts: write.counts,
+      };
+      await executePagePromise(
+        executeAsync,
+        `window.__bundledCaptureReport.clear(${JSON.stringify(bundledReportNonce)})`
+      );
+    } else {
+      report = await execute('return window.__probe.finish();');
+      const counts = report.meta.counts;
+      report.frames = await readTable(execute, 'frames', counts.frames);
+      report.events = await readTable(execute, 'events', counts.events);
+      report.measures = await readTable(execute, 'measures', counts.measures);
+    }
     await execute('return window.__probe.stop();');
 
     const summaries = summarizeRun(report);
@@ -963,6 +1058,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       session.capabilities?.platformName ?? session.capabilities?.['appium:platformName'],
       nativeApp
     );
+    if (bundledPayload) {
+      const uaProblem = runtimeUaProblem(runtime, bundledPayload.userAgent);
+      if (uaProblem) throw new Error(uaProblem);
+    }
     const fidelity = inputFidelity(input, runtime);
     // Only for a locally driven physical device: a simulator declares no
     // expectation, and imposing the device's on it would fail captures that are
@@ -1003,7 +1102,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       // Same top-level home the split artifact uses for these fields, so the
       // shared reader needs no second location (the review caught gesturePlan
       // reproducing the gestureRepeats top-level/automation split).
-      gesturePlan: gesturePlanFor(brush),
+      gesturePlan: handInput ? null : gesturePlanFor(brush),
       // The frame beat this capture actually presented at, and whether that is
       // the regime its runtime is held to. Recorded because lostFrameTimeShare
       // is charged against the beat, so two captures in different regimes are
@@ -1014,6 +1113,18 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       // Per-pass refill evidence (issue 1292), read back from the page.
       eraserRefills,
       mode: `xcuitest:${label}`,
+      handCapture: handInput,
+      ...(handInput ? { runtime, reading: null, drawSeconds: handSeconds } : {}),
+      ...(bundledPayload
+        ? {
+            nativeApp: true,
+            pageDelivery: 'bundled',
+            pageIdentity: 'proven-by-container-nonce',
+            pageUrl: bundledPayload.pageUrl,
+            userAgent: bundledPayload.userAgent,
+            reportChannel,
+          }
+        : {}),
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
         orientation,
@@ -1023,7 +1134,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         nativeWindow,
         canvasBounds,
         liveSurfaceTopology,
-        gestureRepeats,
+        gestureRepeats: handInput ? null : gestureRepeats,
         repeatPauseMs,
         undoCount,
         undoPauseMs,

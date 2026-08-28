@@ -8,8 +8,9 @@ ProMotion** display the app actually ships on.
 
 The gates run is automated by **`npm run perf:ios:webkit:gates`**; trusted-touch real-screen capture
 is automated by **`npm run perf:ios:xcuitest:screen`**, and discrete UI-action regression coverage
-by **`npm run perf:ios:xcuitest:actions`**. This file covers their one-time device setup, the
-Timeline recording they deliberately do *not* replace, and the by-hand fallbacks.
+by **`npm run perf:ios:xcuitest:actions`**. The installed app's bundled WKWebView uses
+**`npm run perf:ios:bundled:frames`**. This file covers their one-time device setup, the Timeline
+recording they deliberately do *not* replace, and the by-hand fallbacks.
 
 Where the device sits among the harness targets:
 
@@ -31,7 +32,7 @@ Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear w
 | ----------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | **A. Safari on iPad → Mac's `/dev/engine` preview** (recommended) | Real iPad WebKit + GPU + ProMotion (Safari shell, not WKWebView) | High — driven by the same scenario as `perf:web:undo` via the console | You want repeatable engine numbers (undo/commit/draw cost at real op volume) |
 | **Trusted MobileSafari input via XCUITest**                       | Real iPad WebKit + GPU + OS-mediated trusted touch               | High — fixed long + short native gesture                              | You need repeatable felt-lag / presentation-starvation numbers               |
-| **B. Native Capacitor app, hand-driven**                          | Real WKWebView app shell *and* hardware                          | Low — gestures by hand, no `getUndoDebug`                             | You specifically need to rule out a WKWebView-vs-Safari difference           |
+| **B. Bundled native Capacitor app**                               | Real WKWebView app shell *and* hardware                          | High with trusted XCUITest; hand mode is the coalescing witness       | You specifically need to rule out a WKWebView-vs-Safari difference           |
 
 Safari-on-iPad and the native WKWebView run the **same** WebKit engine, so for engine/canvas
 performance Approach A is the right default; Approach B is a sanity check on the app shell. Both are
@@ -164,6 +165,7 @@ npm run perf:ios:webkit:frames                              # hand-drawn, full p
 npm run perf:ios:webkit:frames -- --drive                    # synthetic input, no human hand
 npm run perf:ios:xcuitest:screen -- --device-id=<UDID>       # trusted native touch, no human hand
 npm run perf:ios:xcuitest:screen -- --device-id=<UDID> --brush=crayon --gesture-repeats=3
+npm run perf:ios:bundled:frames -- --device-id=<UDID> --brush=pen
 npm run perf:ios:xcuitest:actions -- --device-id=<UDID>        # discrete UI-action frame gates
 npm run perf:ios:webkit:frames -- --phases=blank,page --contact-seconds=20
 npm run perf:analyze:frames -- perf-profiles/<dir>/real-screen.json
@@ -310,6 +312,30 @@ artifact during diagnosis.
 Appium's Remote Automation Safari window is not exposed by `ios-webkit-debug-proxy`, so
 `perf:ios:webkit:frames` cannot attach to it. The Appium session must own navigation, probe
 injection, native input, and readback as one operation.
+
+### Bundled WKWebView — `perf:ios:bundled:frames`
+
+Build and install the harness-gated native app before capture; this command deliberately has no
+build pre-hook because a normal web build would overwrite the installed instrumented state:
+
+```sh
+npm run perf:build:cap
+npx cap run ios --target <UDID> --no-sync
+npm run perf:ios:bundled:frames -- --device-id=<UDID> --brush=pen
+```
+
+The app loads only its bundled `capacitor://localhost` assets. The runner arms an ephemeral report
+key with a random session UUID, drives the same trusted native gesture as
+`perf:ios:xcuitest:screen`, asks the page to serialize the complete probe tables, and awaits the
+ADR-0005 localStorage-to-Capacitor-Preferences mirror. The Mac then pulls
+`Library/Preferences/art.splotch.app.plist` from the app data container with `devicectl`. It accepts
+the report only when the nonce, armed URL, bundled origin, WKWebView user agent, table counts, and
+exact UTF-8 byte size all agree, then clears the ephemeral key. The artifact records
+`pageDelivery: "bundled"` and `pageIdentity: "proven-by-container-nonce"`.
+
+For the real-finger coalescing witness, keep the same installed build and add
+`--hand-input --seconds=20`. The command counts down before opening the drawing window. This mode
+uses Appium only to arm and collect the report; it does not synthesize the drawing input.
 
 ### Discrete action automation — `perf:ios:xcuitest:actions`
 
@@ -642,9 +668,10 @@ profile the replay or your live drawing on the iPad via Approach A/B).
 
 ---
 
-## Approach B — Native WKWebView app, hand-driven
+## Approach B — Native WKWebView app
 
-Use only to confirm the app shell behaves like Safari.
+Use `perf:ios:bundled:frames` above for a scored probe artifact. Use the manual Web Inspector path
+below when the question needs Timeline records rather than the probe tables.
 
 1. **⟨Mac⟩** Build + run the native app with marks on: `PERF_MARKS=true npm run ios:run` (see the
    `mobile` skill for the iOS toolchain and Simulator-vs-device specifics).
@@ -658,8 +685,9 @@ Use only to confirm the app shell behaves like Safari.
    Timeline's user-timing track, or export and
    `npm run perf:analyze:web-inspector -- <export>.json`.
 
-There's no `window.__engine` here (the real app doesn't expose the harness), so op counts aren't
-controlled and `getUndoDebug()` is unavailable — you're reading the engine marks off organic input.
+There's no `window.__engine` here, so op counts aren't controlled — you're reading the engine marks
+off organic input. The harness-gated bundled capture does expose its narrower read-only drawing and
+report seams; release builds compile them out.
 
 ---
 
