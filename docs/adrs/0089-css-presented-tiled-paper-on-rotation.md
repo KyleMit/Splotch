@@ -116,6 +116,17 @@ Safari cross-check measured 19/20 ms and 19/22 ms post-action P95/max in the two
 raw before/after corpus and its provenance are retained under
 `perf-profiles/evidence/2026-08-28-issue-1197-rotation-recapture/`.
 
+A same-device physical-Android A/B tested the shared-native blast radius at twenty scored repeats
+per arm. With the debounce, both ink directions again performed zero canvas mutations and measured
+8.4 ms post-action P95 with 25 ms maxima; blank directions measured 8.4 ms P95 and at most 25 ms.
+The synchronous-native control reached 50 ms on an ink rotation and 58.4 ms on clear. Both arms had
+the same marginal landscape-to-portrait first-frame class: 34.3/35.2 ms ink/blank with the debounce
+and 30.7/34.7 ms in the control. Those first frames precede the deferred `engine.resize`, which
+started about 150 ms after the action, took 0.1–3.2 ms, and stayed inside the passing post-action
+distribution. The Android evidence therefore falsifies a debounce regression without adding a gate
+allowance. Its packaged `https://localhost/` captures and the exact per-arm provenance are retained
+in the same corpus.
+
 That trace also separated canvas work from orientation layout animation. Eight palette swatches
 animated width and height because their interaction rule used `transition: all`, and the action
 drawer animated its axis whenever the media query changed. Limiting palette transitions to visual

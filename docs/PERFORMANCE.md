@@ -262,10 +262,11 @@ entry 87. Paths under `web/src/` unless noted.*
 25. **Cached canvas rect** — the hot path maps through a cached rect + scales instead of
     `getBoundingClientRect()` per move (forced reflow); refreshed on resize/scroll/orientation.
     `drawing/canvasMeasure.ts`; also consumed by PointerHalos.
-26. **Debounced resize rebuild (web only)** — backing wipe+repaint waits `RESIZE_SETTLE_MS = 150`
-    during window-edge drags; native skips it. `engine.ts:437-458`. *commit b487d2a3*
+26. **Trailing resize rebuild (web and native)** — `handleResize()` refreshes the cached canvas rect
+    immediately, then restarts the `RESIZE_SETTLE_MS` timer so backing wipe+repaint runs only after
+    layout settles. `drawing/engine.ts`. *ADR-0089*
 27. **Re-entry resync only when geometry moved** — visibility/resume compares viewport+angle before
-    paying the wipe. `engine.ts:460-479`. *ADR-0132*
+    paying the wipe. `resyncOnReentry()` in `drawing/engine.ts`. *ADR-0132*
 28. **No-allocation hot-path accessors** — non-cloning crayon parameter reads (runs 3×/op);
     repo-wide rule: per-pointermove code must not allocate (`.claude/rules/svelte.md`).
     `crayonBrush.ts:286-303`.
