@@ -9,6 +9,7 @@
 // input, so nothing device-specific is committed.
 
 import { inputFidelity } from './input-fidelity.mjs';
+import { CAMPAIGN_REFERENCE_POSITIONS } from './campaign-reference.mjs';
 
 export const CAMPAIGN_MODES = [
   { id: 'portrait-light', orientation: 'PORTRAIT', theme: 'light' },
@@ -19,6 +20,7 @@ export const CAMPAIGN_MODES = [
 
 const DRAWING_ITEMS = ['pen-undo', 'crayon', 'magic', 'eraser'];
 export const ALL_ITEMS = [...DRAWING_ITEMS, 'actions'];
+const CAMPAIGN_REFERENCE_ITEM = 'crayon';
 
 // One warmup plus three scored samples — the action scorer rejects any other split.
 export const ACTION_REPEATS = 4;
@@ -96,6 +98,7 @@ export const CAMPAIGN_TARGETS = {
     transport: 'appium',
     runtime: 'web',
     deviceClass: 'tablet',
+    physicalDevice: true,
   },
   'ipad-device-native': {
     captureRuntime: 'ios-capacitor-webview',
@@ -104,6 +107,7 @@ export const CAMPAIGN_TARGETS = {
     transport: 'appium',
     runtime: 'native',
     deviceClass: 'tablet',
+    physicalDevice: true,
   },
   'android-emulator-web': {
     captureRuntime: 'android-chrome',
@@ -156,6 +160,7 @@ export const CAMPAIGN_TARGETS = {
     runtime: 'web',
     actionsTransport: 'cdp',
     webviewClass: 'android.webkit.WebView',
+    physicalDevice: true,
   },
   'mac-chrome': {
     captureRuntime: 'desktop-playwright',
@@ -206,6 +211,7 @@ export const CAMPAIGN_TARGETS = {
     splitPlatform: 'android',
     runtime: 'native',
     webviewClass: 'android.webkit.WebView',
+    physicalDevice: true,
   },
 };
 
@@ -533,6 +539,10 @@ export function artifactPath(outputRoot, targetId, mode, item) {
   return `${base}/${brush}-real-screen.json`;
 }
 
+export function referenceArtifactPath(outputRoot, targetId, position) {
+  return `${outputRoot}/${targetId}/references/${position}.json`;
+}
+
 // `--host` is the probe host as the DEVICE sees it, so it is a separate input from
 // the preview URL the Appium path passes: a loopback address reaches the host's own
 // browser and never the device, and fails as a page that will not load.
@@ -809,6 +819,48 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
     throw new Error(`Campaign plan would overwrite ${duplicate} — output paths must be unique`);
   }
   return plan;
+}
+
+export function planCampaignReferences(targetId, { modeId, outputRoot, host = {}, label } = {}) {
+  const target = campaignTarget(targetId);
+  if (!target.physicalDevice) return [];
+  const base = planCampaign(targetId, {
+    modes: [modeId],
+    items: [CAMPAIGN_REFERENCE_ITEM],
+    outputRoot,
+    host,
+    label,
+  })[0];
+
+  return CAMPAIGN_REFERENCE_POSITIONS.map((position) => {
+    const artifact = referenceArtifactPath(outputRoot, targetId, position);
+    const args = base.args.map((arg) => {
+      if (arg.startsWith('--output=')) return `--output=${artifact}`;
+      if (arg.startsWith('--label=')) {
+        return `--label=${label ?? targetId}-${modeId}-${CAMPAIGN_REFERENCE_ITEM}-reference-${position}`;
+      }
+      return arg;
+    });
+    return {
+      ...base,
+      id: `reference/${position}`,
+      artifact,
+      args,
+      referencePosition: position,
+    };
+  });
+}
+
+export function campaignQueue(plan, references) {
+  if (!references.length) return plan;
+  const [start, middle, end] = CAMPAIGN_REFERENCE_POSITIONS.map((position) =>
+    references.find((cell) => cell.referencePosition === position)
+  );
+  if (!start || !middle || !end || references.length !== CAMPAIGN_REFERENCE_POSITIONS.length) {
+    throw new Error('campaign references must contain exactly one start, middle, and end cell');
+  }
+  const midpoint = Math.ceil(plan.length / 2);
+  return [start, ...plan.slice(0, midpoint), middle, ...plan.slice(midpoint), end];
 }
 
 // The refill entries that prove an eraser capture's passes 2..N erased real ink

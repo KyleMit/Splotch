@@ -15,7 +15,9 @@ import {
   commandReportsFidelity,
   artifactPath,
   campaignTarget,
+  campaignQueue,
   planCampaign,
+  planCampaignReferences,
   probeHostProblem,
   resolvedProbeHostProblem,
   splitTransportIdentityProblem,
@@ -94,6 +96,41 @@ describe('campaign plan', () => {
       expect(`${result.stdout}${result.stderr}`).not.toContain('Unknown flag');
     }
   );
+
+  it('brackets physical-device cells with one same-mode crayon reference', () => {
+    const cells = plan('ipad-device-native', {
+      modes: ['landscape-dark'],
+      items: ['pen-undo', 'magic'],
+    });
+    const references = planCampaignReferences('ipad-device-native', {
+      modeId: cells[0].mode.id,
+      outputRoot: 'out',
+      host: HOST,
+    });
+
+    expect(references.map((cell) => cell.referencePosition)).toEqual(['start', 'middle', 'end']);
+    expect(references.every((cell) => cell.mode.id === 'landscape-dark')).toBe(true);
+    expect(references.every((cell) => cell.item === 'crayon')).toBe(true);
+    expect(campaignQueue(cells, references).map((cell) => cell.id)).toEqual([
+      'reference/start',
+      'landscape-dark/pen-undo',
+      'reference/middle',
+      'landscape-dark/magic',
+      'reference/end',
+    ]);
+  });
+
+  it('does not add physical-device drift references to simulator or desktop campaigns', () => {
+    for (const targetId of ['ipad-simulator-native', 'android-emulator-web', 'mac-safari']) {
+      expect(
+        planCampaignReferences(targetId, {
+          modeId: 'portrait-light',
+          outputRoot: 'out',
+          host: HOST,
+        })
+      ).toEqual([]);
+    }
+  });
 
   it('keeps undo on pen only, because a non-pen undo probe is not requested', () => {
     const cells = plan('ipad-simulator-native', { modes: ['portrait-light'] });
