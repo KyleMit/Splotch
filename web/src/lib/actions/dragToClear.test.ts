@@ -8,6 +8,7 @@ import {
   updateClearSound,
 } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
+import { releaseAllPointers } from '$lib/drawing/engine';
 import { dragToClear, PAGE_TURN_DURATION_MS, type DragToClearOptions } from './dragToClear';
 import { ACCEPT_RADIUS_FACTOR } from './dragToClearGeometry';
 
@@ -281,6 +282,87 @@ describe('dragToClear pointer identity', () => {
     expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
     expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
     expect(options.acceptZoneEl.style.display).toBe('none');
+  });
+});
+
+describe('dragToClear keyboard activation', () => {
+  let cleanup: (() => void) | null = null;
+  afterEach(() => {
+    cleanup?.();
+    cleanup = null;
+    vi.clearAllMocks();
+  });
+
+  it('commits the clear path for a detail-zero click', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
+
+    expect(releaseAllPointers).toHaveBeenCalledOnce();
+    expect(startClearSound).toHaveBeenCalledOnce();
+    expect(commitClearSound).toHaveBeenCalledOnce();
+    expect(vi.mocked(releaseAllPointers).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(startClearSound).mock.invocationCallOrder[0]
+    );
+    expect(vi.mocked(startClearSound).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(commitClearSound).mock.invocationCallOrder[0]
+    );
+    expect(options.onTutorialDismiss).toHaveBeenCalledOnce();
+    expect(options.onClear).toHaveBeenCalledOnce();
+    expect(node.classList.contains('clearing')).toBe(true);
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(true);
+  });
+
+  it('ignores a real pointer click', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+
+    expect(options.onTutorialDismiss).not.toHaveBeenCalled();
+    expect(options.onClear).not.toHaveBeenCalled();
+    expect(node.classList.contains('clearing')).toBe(false);
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
+  });
+
+  it('ignores a detail-zero click while a pointer owns the gesture', () => {
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
+
+    expect(options.onClear).not.toHaveBeenCalled();
+    expect(node.classList.contains('dragging')).toBe(true);
+  });
+
+  it('ignores repeat activation until the clear exit choreography finishes', () => {
+    vi.useFakeTimers();
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
+    vi.advanceTimersByTime(400);
+    node.dispatchEvent(new MouseEvent('click', { detail: 0 }));
+
+    expect(options.onClear).toHaveBeenCalledOnce();
+    expect(startClearSound).toHaveBeenCalledOnce();
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(true);
+    expect(node.classList.contains('clearing')).toBe(true);
+
+    vi.advanceTimersByTime(PAGE_TURN_DURATION_MS - 400);
+
+    expect(options.pageTurnOverlayEl.classList.contains('animating')).toBe(false);
+    expect(node.classList.contains('clearing')).toBe(true);
+    expect(node.classList.contains('clearing-done')).toBe(true);
+
+    vi.advanceTimersByTime(50);
+
+    expect(node.classList.contains('clearing')).toBe(false);
+    expect(node.classList.contains('clearing-done')).toBe(false);
+    expect(node.classList.contains('clearing-return')).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

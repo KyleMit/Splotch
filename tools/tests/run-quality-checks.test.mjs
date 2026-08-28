@@ -12,6 +12,8 @@ import { QUALITY_COMMANDS, runQualityChecks, summarize } from '../run-quality-ch
 // which is the exact failure it was written to prevent.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const workflow = readFileSync(join(repoRoot, '.github/workflows/test.yml'), 'utf8');
+const pnpmWorkspace = readFileSync(join(repoRoot, 'pnpm-workspace.yaml'), 'utf8');
+const dependencyAuditCommand = 'pnpm audit --audit-level=high';
 
 // The `quality:` job's block, from its key to the next top-level job key.
 function qualityJobBlock(yaml) {
@@ -29,6 +31,14 @@ function commandsIn(block) {
 describe('the quality script mirrors the Quality job', () => {
   it('runs exactly the workflow steps, in the workflow order', () => {
     expect(QUALITY_COMMANDS).toEqual(commandsIn(qualityJobBlock(workflow)));
+  });
+
+  it('blocks high and critical dependency advisories without broad exclusions', () => {
+    expect(QUALITY_COMMANDS).toContain(dependencyAuditCommand);
+    expect(QUALITY_COMMANDS.filter((command) => command.startsWith('pnpm audit'))).toEqual([
+      dependencyAuditCommand,
+    ]);
+    expect(pnpmWorkspace).not.toMatch(/^auditConfig:/m);
   });
 
   it('picks the quality job, not whatever job happens to be first', () => {

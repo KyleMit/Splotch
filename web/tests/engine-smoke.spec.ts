@@ -1,34 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 import { draw, firstOpaquePixel, gotoApp, openSettingsModal, PICKER_GREEN } from './helpers';
-import { WEBKIT_ONLY_TAG } from './tags';
+import { ENGINE_SMOKE_TAG } from './tags';
 
-// WebKit critical-path smoke. The WEBKIT_ONLY_TAG on the describe below is what
-// routes these to the `webkit` project and out of `chromium` — the tag, not the
-// filename, so a spec's engine is declared where the spec is. The rest of the
-// E2E suite is Chromium-only, but Safari/iOS is the floor engine
-// docs/COMPATIBILITY.md worries about most, so this tiny subset proves the core
-// toddler path — boot, draw a stroke, open Settings and Color Picker dialogs —
-// works on the WebKit engine.
+// Cross-engine critical-path smoke. ENGINE_SMOKE_TAG routes this spec to the
+// Firefox and WebKit projects and out of Chromium. The tag, not the filename,
+// declares the routing beside the tests it affects.
 //
-// Keep it small and WebKit-portable: no CDP sessions (the viewport-rotation
+// Keep it small and cross-engine portable: no CDP sessions (the viewport-rotation
 // coverage in flows-coloring-book.spec.ts and flows-magic-brush.spec.ts is
 // Chromium-only), no synthetic-touch cases from flows-palette-brush.spec.ts,
 // no dev-harness routes, no pixel-perfect assertions that depend on Chromium's
-// rasterizer. The shared helpers imported above are held to the same
-// WebKit-portable bar.
-
-// WebKit critical-path smoke — the only spec the `webkit` project runs (see
-// playwright.config.ts). The rest of the E2E suite is Chromium-only, but
-// Safari/iOS is the floor engine docs/COMPATIBILITY.md worries about most, so
-// this tiny subset proves the core toddler path — boot, draw a stroke, open
-// Settings and Color Picker dialogs — works on the WebKit engine.
-//
-// Keep it small and WebKit-portable: no CDP sessions (the viewport-rotation
-// coverage in flows-coloring-book.spec.ts and flows-magic-brush.spec.ts is
-// Chromium-only), no synthetic-touch cases from flows-palette-brush.spec.ts,
-// no dev-harness routes, no pixel-perfect assertions that depend on Chromium's
-// rasterizer. The shared helpers imported above are held to the same
-// WebKit-portable bar.
+// rasterizer. The shared helpers imported above are held to the same bar.
 
 interface PalettePanelGeometry {
   paletteRight: number;
@@ -56,7 +38,7 @@ function palettePanelGeometry(page: Page): Promise<PalettePanelGeometry> {
   });
 }
 
-test.describe('WebKit critical-path smoke', { tag: WEBKIT_ONLY_TAG }, () => {
+test.describe('Cross-engine critical-path smoke', { tag: ENGINE_SMOKE_TAG }, () => {
   test('the app boots: canvas, palette, and Settings Button render', async ({ page }) => {
     await gotoApp(page);
     const settingsButton = page.getByRole('button', { name: 'Settings' });

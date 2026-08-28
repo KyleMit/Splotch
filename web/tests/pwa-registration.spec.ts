@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { draw, gotoApp } from './helpers';
+import { draw, gotoApp, registerServiceWorkerAndControl } from './helpers';
 import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
 
 // Issue #462: service-worker installation does meaningful offline work, so registration no longer
@@ -16,19 +16,6 @@ function hasRegistration(page: Page): Promise<boolean> {
   return page.evaluate(() =>
     navigator.serviceWorker.getRegistration().then((registration) => !!registration)
   );
-}
-
-async function registerAndControl(page: Page) {
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
-    if (navigator.serviceWorker.controller) return;
-    await new Promise<void>((resolve) => {
-      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
-        once: true,
-      });
-    });
-  });
 }
 
 async function selectFarmImages(page: Page) {
@@ -143,7 +130,7 @@ test.describe('responsive coloring offline fallback', () => {
   }) => {
     test.setTimeout(120_000);
     await gotoApp(page);
-    await registerAndControl(page);
+    await registerServiceWorkerAndControl(page);
     await gotoApp(page);
     expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 

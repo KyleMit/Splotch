@@ -23,6 +23,18 @@ export default defineConfig({
   }),
   test: {
     environment: 'happy-dom',
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*TestHarness.ts'],
+      reporter: ['text', 'json-summary'],
+      thresholds: {
+        statements: 83.8,
+        branches: 74.5,
+        functions: 85.6,
+        lines: 86.4,
+      },
+    },
     // Worker threads spawn faster than the default child-process forks and
     // nothing here needs process-level isolation (no native modules in the
     // unit suite). Server-only and pure-logic test files opt out of the

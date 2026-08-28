@@ -3,15 +3,15 @@
 # Splotch — Testing Guide
 
 Splotch's automated suites span three test layers. The app-unit, asset-pipeline, store-drawing,
-repo-script, and E2E suites run on every push/PR, alongside the WebKit smoke job. The two-scenario
-WebKit commit-timing gate runs post-merge, on pushes to `main`, because its verdict is a millisecond
-P95 that needs WebKit and a quiet host; its full seven-scenario form and the real-device launch
-tests run only on tagged releases. ADR-0100's 2026-08-11 amendment records why its obsolete
-pre-merge blob-encoding guard retired.
+repo-script, and E2E suites run on every push/PR, alongside the Firefox and WebKit smoke jobs. The
+two-scenario WebKit commit-timing gate runs post-merge, on pushes to `main`, because its verdict is
+a millisecond P95 that needs WebKit and a quiet host; its full seven-scenario form and the
+real-device launch tests run only on tagged releases. ADR-0100's 2026-08-11 amendment records why
+its obsolete pre-merge blob-encoding guard retired.
 
 | Layer                 | Tool                | Command                             | Runs in CI                                   |
 | --------------------- | ------------------- | ----------------------------------- | -------------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`                 | every push / PR                              |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit:coverage`        | every push / PR                              |
 | Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
 | Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
 | Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer/consumer paths + manual dispatch      |
@@ -19,17 +19,18 @@ pre-merge blob-encoding guard retired.
 | E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
 | Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
 | Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`         | daily production + manual deploy URL         |
+| Smoke (Firefox)       | Playwright Firefox  | `npm run test:firefox:smoke`        | every push / PR (parallel job)               |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only** (API 33 + API 24)   |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
-`npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
+`pnpm audit --audit-level=high`) also runs on every push/PR alongside the tests — see Continuous
 integration below. The hosted deploy smoke runs separately against real deployments; its narrower
 `test:blobs:smoke` diagnostic is manual.
 
-`npm test` runs the first five (`test:unit` + `test:asset-gen` + `test:store-drawings` +
+`npm test` runs the first five (`test:unit:coverage` + `test:asset-gen` + `test:store-drawings` +
 `test:tools` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
 they need an emulator/simulator and the native toolchains.
 
@@ -123,12 +124,26 @@ Three Node smoke entry points guard the server contract:
 
 ```bash
 npm run test:unit          # one-shot
+npm run test:unit:coverage # one-shot with the measured coverage ratchet enforced
 npm run test:unit:watch    # watch mode
 ```
 
 Configured in `web/vitest.config.ts`. Environment is **happy-dom** (not jsdom). Covers the pure
 logic + state modules (`colorRing`, `state/*`, `storage`, including the native dual-layer hydrate
 via a mocked `@capacitor/preferences`).
+
+The coverage command uses V8 over every TypeScript module under `web/src`, including unimported
+files at zero coverage; tests, declarations, and explicit `*TestHarness.ts` seams are excluded. The
+committed baseline floors are 83.8% statements, 74.5% branches, 85.6% functions, and 86.4% lines,
+derived from the measured 83.90% / 74.57% / 85.73% / 86.56% baseline and the 0.00–0.06 percentage
+point variance observed between Node 22 and Node 24. They advance through reviewed configuration
+changes rather than rewriting themselves during a test run.
+
+The TypeScript-only denominator is deliberate: `.svelte` component bodies are outside this report,
+even when a Vitest test imports a component's module script. Moving logic from a `.ts` module into a
+`.svelte` file can therefore raise the ratio without adding coverage; a green gate proves the
+committed floor only across the `.ts` surface. Browser and component coverage remain separate and
+are not merged into this Vitest-only report.
 
 Files that need no DOM at all — `lib/server/**` and pure-logic modules — carry a
 `// @vitest-environment node` first line so they skip the per-file happy-dom setup (the suite's
@@ -433,52 +448,46 @@ specs that can't race in the first place:
   show every ~1-in-5 runs; raise `--repeat-each` until you've seen it both fail on the old code and
   hold on the new.
 
-### WebKit critical-path smoke — `tests/webkit-smoke.spec.ts`
+### Cross-engine critical-path smoke — `tests/engine-smoke.spec.ts`
 
-The full suite is Chromium-only, but Safari/iOS is the engine `docs/COMPATIBILITY.md` worries about
-most, so a tiny critical-path subset (boot, draw a stroke, Settings dialog, Color Picker dialog)
-also runs on **WebKit** as the `webkit` Playwright project:
+The full suite is Chromium-only. A tiny critical-path subset (boot, draw a stroke, Settings dialog,
+Color Picker dialog) also runs in the `firefox` and `webkit` Playwright projects so every declared
+browser engine has an automated push/PR signal:
 
-* The project only joins the run when the WebKit binary is installed
-  (`npx playwright install --with-deps webkit`) — local checkouts and cloud sessions with Chromium
-  only keep working, and **CI installs WebKit explicitly** (`test.yml`), so the subset always gates
-  pushes/PRs there. Run it alone with `npm run test:webkit:smoke`.
-* In CI it is its own `webkit-smoke` job, parallel to Tests, rather than a project inside the Tests
-  run. WebKit's apt dependencies pull the whole GStreamer/ffmpeg media stack — ~110 packages the
-  Chromium suite doesn't need — and installing them lands on every run (the `setup-playwright`
-  action's apt package cache feeds that install from cached `.deb` files, taking the network out of
-  it, not the install itself). Off the critical path it costs nothing; inside Tests it cost ~40s per
-  run for four tests. That's also why Tests passes `browsers: chromium` to the `setup-playwright`
-  action: it *relies* on WebKit being absent so the project drops.
-* Both Ubuntu jobs get their browsers from `.github/actions/setup-playwright` (browser cache +
-  `install-deps` behind an apt `.deb` cache, each keyed per browser set); macOS keeps its own
-  `setup-playwright-webkit`, which needs no apt step and caches elsewhere. On a cache hit the whole
-  setup is offline (`dpkg -i` from the cached debs); the network path runs only when a key rotates,
-  and `warm-playwright-cache.yml` repopulates the default-branch caches daily and on dependency
-  merges so PR runs rarely take it. A setup step dragged out by a network-starved runner is bounded
-  only by the job's `timeout-minutes` — re-run it by hand for a fresh machine.
-* **Routing is by tag, not filename.** `WEBKIT_ONLY_TAG` (`tests/tags.ts`) sits on the spec's
-  `test.describe`; the `webkit` project `grep`s for it and `chromium` `grepInvert`s it, from the one
-  shared constant. The two projects are therefore exact complements — a test runs on exactly one
-  engine. To add WebKit coverage, tag it; a new spec with no tag runs under Chromium wherever it
-  lives.
-* **Import the tag, never type it.** Playwright validates no tag, so a hand-written `@webkti-only`
-  matches neither project and runs under Chromium alone — and the WebKit job stays green, because
-  the correctly tagged specs still populate it. Only editing the shared constant to match nothing
-  fails loudly (`No tests found`). `tools/tests/e2e-engine-tags.test.mjs` covers the gap: it rejects
-  a tag string literal and any tag not exported by `tags.ts`, and asserts at least one spec still
-  carries `WEBKIT_ONLY_TAG`.
-* Keep the spec WebKit-portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and the
-  `touchDriver` in `tests/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes, no
+* Each project joins only when its binary is installed, so Chromium-only local and cloud checkouts
+  keep working. CI explicitly installs the selected browser and sets `REQUIRE_FIREFOX` or
+  `REQUIRE_WEBKIT`, turning a missing binary into a hard failure. Run one project with
+  `npm run test:firefox:smoke` or `npm run test:webkit:smoke`.
+* CI keeps `firefox-smoke` and `webkit-smoke` parallel to the sharded Chromium Tests job. Firefox is
+  the cheaper leg because it needs none of WebKit's GStreamer/ffmpeg stack. WebKit adds ~110 system
+  packages, and installing them lands on every run; the setup action's apt cache removes network
+  fetches, not the install. Keeping both browsers out of every Chromium shard avoids adding either
+  setup cost to the critical path.
+* All three Ubuntu browser jobs get their browsers from `.github/actions/setup-playwright` (browser
+  cache + `install-deps` behind an apt `.deb` cache, each keyed per browser set); macOS keeps its
+  own `setup-playwright-webkit`, which needs no apt step and caches elsewhere. On a cache hit the
+  whole setup is offline (`dpkg -i` from the cached debs); the network path runs only when a key
+  rotates, and `warm-playwright-cache.yml` repopulates the default-branch caches daily and on
+  dependency merges so PR runs rarely take it. A setup step dragged out by a network-starved runner
+  is bounded only by the job's `timeout-minutes` — re-run it by hand for a fresh machine.
+* **Routing is by tag, not filename.** `ENGINE_SMOKE_TAG` (`tests/tags.ts`) sits on the spec's
+  `test.describe`; Firefox and WebKit `grep` for it while Chromium `grepInvert`s it. Add portable
+  cross-engine coverage by tagging it; an untagged spec runs under Chromium.
+* **Import the tag, never type it.** Playwright validates no tag, so a typo can route a spec to
+  Chromium alone while both smoke jobs remain green on the correctly tagged tests.
+  `tools/tests/e2e-engine-tags.test.mjs` rejects literals and unknown tags, requires a tagged spec,
+  and guards agreement among the project, script, and CI-job names.
+* Keep the spec cross-engine portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and
+  the `touchDriver` in `tests/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes, no
   assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
   already in the full suite.
 * `web/playwright.webkit-scratch.config.ts` stays for ad-hoc "run *any* spec under WebKit"
   debugging; it is still not part of `npm test`.
 
-CI runs current WebKit, not the floor's Safari 16.4 — it proves engine-family coverage, not the
-floor version or a native iOS boot. The declared bundle target has separate drift coverage, while
-native iOS 16.4 remains a manual/device concern; see `docs/COMPATIBILITY.md` for the exact boundary
-and hosted-run evidence.
+CI runs current Firefox and WebKit, not Firefox 114 or Safari 16.4 — it proves engine-family
+coverage, not the floor version or a native iOS boot. The declared bundle target has separate drift
+coverage, while native iOS 16.4 remains a manual/device concern; see `docs/COMPATIBILITY.md` for the
+exact boundary and hosted-run evidence.
 
 ### Accessibility tier — axe-core scans (`tests/a11y.spec.ts`)
 
@@ -628,15 +637,15 @@ npm run test:android:device     # re-run as often as you like
 
 ## Continuous integration
 
-| Workflow                               | Trigger                                           | What it runs                                                                                                                                                        |
-| -------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on pushes to `main`; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                        |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                       |
-| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip   |
+| Workflow                               | Trigger                                           | What it runs                                                                                                                                                             |
+| -------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, unit, and sharded e2e jobs on branch/PR events, plus parallel Firefox/WebKit smoke jobs; fast WebKit commit gate on pushes to `main`; full gate on release tags |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                             |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                            |
+| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip        |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
-public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` +
+public repo, wall clock is not. The Vitest suites (`test:unit:coverage` + `test:asset-gen` +
 `test:store-drawings` + `test:tools`) run in a browser-free `unit` job, and the Playwright e2e suite
 runs as a matrix in `Tests` — each shard builds the app itself (a shared build artifact was measured
 slower: it serializes shards behind `needs:`), and each uploads its own `playwright-report-shard-N`

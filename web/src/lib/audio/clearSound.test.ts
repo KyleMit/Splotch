@@ -270,6 +270,20 @@ describe('clear sound', () => {
     expect(pageTurnsIn(sources)).toHaveLength(1);
   });
 
+  it('plays the page turn when an armed activation commits without drag progress', async ({
+    signal,
+  }) => {
+    vi.useFakeTimers();
+    const { drawingSound, sources } = await mountClearSound(signal);
+
+    drawingSound.startClearSound();
+    drawingSound.commitClearSound();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(pageTurnsIn(sources)).toHaveLength(1);
+    expect(pageTurnsIn(sources)[0].start).toHaveBeenCalledOnce();
+  });
+
   // A quick flick can commit before the page turn has finished decoding. The
   // request has to survive that and play when the buffer arrives — one of the
   // lifecycle guarantees ADR-0131 pins.

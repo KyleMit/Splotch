@@ -22,10 +22,9 @@
   ambient credential. Both Playwright configs disable server reuse and use Vite `strictPort`;
   `global-setup.ts` also proves the server that answered the port has the harness credentials as
   defense in depth.
-* `webkit-smoke.spec.ts` is the WebKit critical-path subset. Its `test.describe` carries
-  `WEBKIT_ONLY_TAG` (`tags.ts`), and that tag — not the filename — is what the `webkit` project
-  greps for and the `chromium` project greps out, so a spec declares its own engine. Tag any new
-  WebKit-only spec the same way; an untagged one runs under Chromium. The project joins the run only
-  when the WebKit binary is installed; CI always installs it. Keep it free of CDP sessions,
-  dev-harness routes, and Chromium-rasterizer-specific assertions — and don't add CDP-based helpers
-  to it when refactoring shared test code.
+* `engine-smoke.spec.ts` is the Firefox/WebKit critical-path subset. Its `test.describe` carries
+  `ENGINE_SMOKE_TAG` (`tags.ts`), and that tag — not the filename — is what both engine projects
+  grep for and the `chromium` project greps out. An untagged spec runs under Chromium. Each project
+  joins only when its browser binary is installed; CI installs and requires its selected engine.
+  Keep the smoke free of CDP sessions, dev-harness routes, and rasterizer-specific assertions — and
+  don't add Chromium-only helpers to it when refactoring shared test code.

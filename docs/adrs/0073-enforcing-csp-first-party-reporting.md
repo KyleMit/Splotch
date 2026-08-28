@@ -39,11 +39,13 @@ Non-obvious constraints:
   `/privacy`) get the header; function-served SSR responses (`/admin`) ship with no custom headers
   at all. This predates the flip (the report-only header had the same scope) and is documented
   beside the header block. (Closed since — see the Update below.)
-* **`'unsafe-inline'` stays, deliberately.** Script nonces via SvelteKit's `kit.csp` were assessed
+* **`'unsafe-inline'` stayed at this stage.** Script nonces via SvelteKit's `kit.csp` were assessed
   and split to a follow-up: the home page is prerendered, so SvelteKit would deliver its policy via
   `<meta>` (which cannot carry `frame-ancestors`/reporting directives), splitting the policy across
   two coordinated sources; the hand-authored `app.html` pre-paint stamp sits outside SvelteKit's
-  nonce emission; and `inlineStyleThreshold: Infinity` keeps `style-src 'unsafe-inline'` regardless.
+  nonce emission; and style tightening needed separate analysis. The script and style updates below
+  complete that analysis and correct the original assumption that inlined component CSS itself
+  requires `style-src 'unsafe-inline'`.
 * The SW's NetworkFirst page cache means long-offline repeat visitors can surface violations days
   after a policy change — judge post-deploy reports by content, not recency.
 
@@ -154,3 +156,69 @@ create a second build-output parser to keep aligned.
 As a consequence, production Playwright builds carry the resource policy themselves instead of
 running almost entirely without CSP. The focused `enforceProductionCsp` helper only adds the Netlify
 half locally, reproducing the deployed two-policy composition.
+
+## Update (2026-08): defer a strict style policy until the threat model changes
+
+Issue #1436 confirms that `style-src 'unsafe-inline'` remains a deliberate exception. The current
+app has no untrusted-content surface that renders caller- or provider-authored HTML or CSS. Its
+production `{@html}` sinks are first-party inputs: `Icon.svelte` renders SVGs from the build-time
+icon map, and the `/beta` route emits a module constant whose script hash is guarded by
+`securityPolicy.test.ts`. User and provider content reaches the UI as text or image data, not
+markup. Meanwhile the stricter `script-src` decision above blocks unauthorized inline script and
+foreign script origins. Removing the style exception would therefore add defense in depth against a
+future style-injection path, not close an identified path in the present product.
+
+The constraint is style-attribute text that arrives as markup. SvelteKit serializes production
+components' dynamic `style` values into prerendered and SSR HTML for layout, color, and progress;
+bundled SVG icon markup also contains first-party style attributes. A strict policy blocks those
+parsed attributes. Hydration does not reliably repair one: Svelte's `set_style` skips the CSSOM
+write when the next serialized value equals the existing attribute, so a declaration blocked at
+parse time remains inert until its value changes.
+
+Two nearby mechanisms do not require the exception. `inlineStyleThreshold: Infinity` in
+`web/svelte.config.js` deliberately keeps component CSS in the document to prevent a first-paint
+FOUC, but SvelteKit automatically authorizes that `<style>` block with a hash in prerendered
+documents and a nonce in SSR responses when `'unsafe-inline'` is absent. Svelte 5 transitions use
+the Web Animations API, and Svelte's client-side dynamic `style` updates use CSSOM property writes;
+CSP does not govern either mechanism.
+
+The alternatives considered were:
+
+* **Externalize component CSS.** This is unnecessary: SvelteKit can hash or nonce the existing
+  inline block without lowering the threshold or adding a first-paint stylesheet request. It also
+  does not solve style attributes in rendered markup.
+* **Nonce inline style blocks.** SvelteKit already supports this for SSR and uses hashes for
+  prerendered documents, but neither mechanism authorizes element `style` attributes.
+* **Use `'unsafe-hashes'`.** Attribute hashes authorize exact serialized values. Runtime geometry,
+  colors, and progress do not form a stable finite inventory, and SvelteKit does not collect their
+  emitted values into the policy. Building that inventory would be brittle, and ordinary UI edits
+  would create policy-hash churn.
+* **Rewrite styling around classes and stylesheet-owned custom properties.** Replacing Svelte
+  attributes in rendered markup with predeclared classes and stylesheet values could support a
+  strict policy, as could deferring affected styles to deliberate client CSSOM writes. Either is a
+  cross-cutting SSR and first-paint rewrite; merely moving values into custom properties on an
+  element would still use a blocked style attribute. Svelte transitions need no rewrite.
+
+The decision is to keep `style-src 'unsafe-inline'` and not pursue that rewrite under the current
+threat model. Revisit this decision when any one of these conditions becomes true:
+
+1. A production feature renders user-, server-, or provider-authored HTML or CSS, or lets such data
+   influence raw DOM style values.
+2. `script-src` is loosened to admit inline script, evaluation, or a broader script origin.
+3. SvelteKit or the component architecture stops emitting style attributes into prerendered and SSR
+   markup, or first render can move to CSP-permitted CSSOM writes without losing the first-paint
+   contract.
+4. A concrete style-injection finding demonstrates an exploitable path under the current content
+   model. A CSP report cannot supply that evidence for inline styles: `'unsafe-inline'` reports no
+   violation, so only a blocked foreign-origin stylesheet load would surface one.
+
+Consequences:
+
+* \+ The strict script policy and existing rendering behavior remain intact without a speculative,
+  cross-cutting UI rewrite.
+* \+ The cost of a future strict style policy is recorded against the exact implementation
+  constraints that create it, with objective triggers for reconsideration.
+* − A future style-injection primitive would retain the capabilities granted by `'unsafe-inline'`
+  until one of the revisit triggers is acted on.
+* − The policy cannot claim strict CSP as a whole: script execution is strict, but inline CSS
+  remains allowed by design.

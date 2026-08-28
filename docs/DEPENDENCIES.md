@@ -369,14 +369,15 @@ Non-`keep` rows first.
   since early 2024 while issues accumulate
 * **Concerns:** **entangled** — `pnpm-workspace.yaml`'s `overrides` pins its transitive `sharp` to
   the root `sharp` range (proxy-blocked libvips download in cloud sessions). It also bundles an
-  ancient `@capacitor/cli@5.7.8` and `@trapezedev/project@7.1.4`, which drag in the
-  **high-severity** vuln chain `npm audit` reports (`tar@6`, `minimatch@3/8`, `uuid@7`, `replace`,
-  `xcode`) with **no upstream fix**. Exposure is low: dev-only, run locally by a trusted operator,
-  not in the shipped app or CI runtime.
+  ancient `@capacitor/cli@5.7.8` and `@trapezedev/project@7.1.4`. Their formerly high-severity
+  `tar`/`minimatch` paths are lifted to patched releases by the scoped pnpm overrides and lockfile;
+  the 2026-08-27 audit reports no high or critical advisories. The dormant tool remains dev-only,
+  run locally by a trusted operator rather than in the shipped app or CI runtime.
 * **Alternatives:** hand-authoring the icon/splash set (they change rarely), or
   `@trapezedev/configure` (same org, same staleness). No clearly-better maintained successor exists.
 * **Verdict:** monitor — keep for now (no viable replacement, low real risk), but watch for archival
-  or a security advisory that reaches the runtime; the `sharp` override must survive any bump
+  or a new advisory; the `sharp` override must survive any bump, while the security lifts can leave
+  once the bundled parents resolve patched versions themselves
 
 ### @dprint/json
 
@@ -889,6 +890,20 @@ Non-`keep` rows first.
 
 The lockfile installs **1179 package entries** total (including the root); ~50 are direct, the rest
 transitive. Aggregate view (not per-package):
+
+### Active dependency-audit status and exceptions (checked 2026-08-27)
+
+`pnpm audit --audit-level=high` reports no high or critical advisories. There are no active
+exceptions.
+
+An exception requires an exact GHSA entry in `pnpm-workspace.yaml`'s `auditConfig.ignoreGhsas` and a
+record in this subsection in the same change. Each record must name the affected locked package
+paths, link upstream evidence that no patched resolution exists, explain why those paths are not
+exploitable in this repository, identify the approver and approval date, set a review-by date no
+more than 90 days later, and state the concrete removal trigger. The focused quality-policy test
+must require exact agreement between the configured GHSA set and the unexpired records. Expiry,
+availability of a patched resolution, or a changed reachability analysis removes the exception;
+severity-wide and dependency-class exclusions are never recorded here.
 
 ### Audit summary (checked 2026-07-17)
 

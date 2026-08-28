@@ -1,7 +1,7 @@
 import { rateLimit } from '$lib/server/rateLimit';
 import { cspReportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { contentTypeOf, readBodyWithinLimit, throttled } from '$lib/server/http';
+import { asRecord, contentTypeOf, readBodyWithinLimit, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A single page load under a broken policy can fire dozens of violations, so
@@ -39,18 +39,32 @@ function cappedString(value: unknown): string {
   return typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : '';
 }
 
+function sanitizeReportedUrl(value: unknown): string {
+  const reportedValue = cappedString(value);
+  try {
+    const url = new URL(reportedValue);
+    url.search = '';
+    url.hash = '';
+    url.username = '';
+    url.password = '';
+    return cappedString(url.toString());
+  } catch {
+    return reportedValue.split(/[?#]/, 1)[0] ?? '';
+  }
+}
+
 function finiteNumberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function fromReportUriPayload(report: Record<string, unknown>): CspViolation {
   return {
-    documentURL: cappedString(report['document-uri']),
-    blockedURL: cappedString(report['blocked-uri']),
+    documentURL: sanitizeReportedUrl(report['document-uri']),
+    blockedURL: sanitizeReportedUrl(report['blocked-uri']),
     directive:
       cappedString(report['effective-directive']) || cappedString(report['violated-directive']),
     disposition: cappedString(report['disposition']) || 'enforce',
-    sourceFile: cappedString(report['source-file']),
+    sourceFile: sanitizeReportedUrl(report['source-file']),
     line: finiteNumberOrNull(report['line-number']),
     column: finiteNumberOrNull(report['column-number']),
     sample: cappedString(report['script-sample']),
@@ -59,11 +73,11 @@ function fromReportUriPayload(report: Record<string, unknown>): CspViolation {
 
 function fromReportingApiPayload(body: Record<string, unknown>, url: unknown): CspViolation {
   return {
-    documentURL: cappedString(body.documentURL) || cappedString(url),
-    blockedURL: cappedString(body.blockedURL),
+    documentURL: sanitizeReportedUrl(body.documentURL) || sanitizeReportedUrl(url),
+    blockedURL: sanitizeReportedUrl(body.blockedURL),
     directive: cappedString(body.effectiveDirective),
     disposition: cappedString(body.disposition) || 'enforce',
-    sourceFile: cappedString(body.sourceFile),
+    sourceFile: sanitizeReportedUrl(body.sourceFile),
     line: finiteNumberOrNull(body.lineNumber),
     column: finiteNumberOrNull(body.columnNumber),
     sample: cappedString(body.sample),
@@ -83,13 +97,8 @@ function extractViolations(payload: unknown): CspViolation[] {
       .filter(isReportingApiEntry)
       .map((entry) => fromReportingApiPayload(entry.body, entry.url));
   }
-  if (typeof payload === 'object' && payload !== null) {
-    const report = (payload as Record<string, unknown>)['csp-report'];
-    if (typeof report === 'object' && report !== null) {
-      return [fromReportUriPayload(report as Record<string, unknown>)];
-    }
-  }
-  return [];
+  const report = asRecord(asRecord(payload)?.['csp-report']);
+  return report ? [fromReportUriPayload(report)] : [];
 }
 
 /**

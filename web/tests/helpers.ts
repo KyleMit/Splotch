@@ -8,8 +8,8 @@ import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import type { HistoryDebug } from '../src/lib/drawing/undoHistory';
 
-// Shared E2E helpers used across specs. Keep this module WebKit-portable — no
-// CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
+// Shared E2E helpers used across specs. Keep this module cross-engine portable — no
+// CDP sessions or dev-harness routes — because engine-smoke.spec.ts imports it
 // (see web/tests/CLAUDE.md).
 
 // User agents for the specs that exercise the app's OS detection (isIosDevice /
@@ -170,7 +170,7 @@ export async function seedCompletedSettingsActivitySessions(page: Page, count: n
 const DRAWING_READY_TIMEOUT_MS = 10_000;
 const DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS = 1500;
 
-function readDrawingHistory(page: Page): Promise<HistoryDebug | null> {
+export function readDrawingHistory(page: Page): Promise<HistoryDebug | null> {
   return page.evaluate(() => window.__drawingDebug?.getUndoDebug() ?? null);
 }
 
@@ -223,6 +223,36 @@ export async function gotoApp(
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
   await waitForDrawableRenderedCanvas(page);
+}
+
+export async function registerServiceWorkerAndControl(page: Page) {
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    if (navigator.serviceWorker.controller) return;
+    await new Promise<void>((resolve) => {
+      navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+        once: true,
+      });
+    });
+  });
+}
+
+/** Drive a real SvelteKit client-side navigation. The sentinel survives a SPA
+ *  route change but a full reload erases it, so callers can prove which path ran. */
+export async function spaNavigate(page: Page, href: string) {
+  await page.evaluate(() => ((window as Window & { __spa?: boolean }).__spa = true));
+  await page.evaluate((target) => {
+    const link = document.createElement('a');
+    link.href = target;
+    document.body.appendChild(link);
+    link.click();
+  }, href);
+}
+
+export async function expectNoReload(page: Page) {
+  const noReload = await page.evaluate(() => (window as Window & { __spa?: boolean }).__spa);
+  expect(noReload, 'expected a client-side navigation, not a full reload').toBe(true);
 }
 
 // Open an overlay/flyout/dialog robustly and leave it open. Several of these

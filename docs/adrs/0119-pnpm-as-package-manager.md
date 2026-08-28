@@ -138,4 +138,4 @@ own convention, duplication that cannot be shared gets a drift guard rather than
   audit summary will not line up with a fresh run.
 * The exit is still cheap and is unchanged from ADR-0029's reasoning in reverse: `package.json` is
   untouched by the manager choice. Regenerate `package-lock.json`, revert the config lines, and move
-  `pnpm-workspace.yaml`'s two overrides back.
+  the sharp and tar overrides that came from npm back out of `pnpm-workspace.yaml`.

@@ -197,11 +197,12 @@ non-polyfill choices:
 
 ## How the floor is validated
 
-* **Engine family:** every push/PR runs the Chromium E2E suite plus a WebKit critical-path smoke
-  (`web/tests/webkit-smoke.spec.ts` — boot, stroke, Settings, Color Picker). That covers the
-  *engine*, not the floor *version* — CI runs current desktop WebKit, not Safari 16.4, and does not
-  boot the native app. `web/src/browserFloor.test.ts` separately guards that the emitted bundle's
-  declared Safari/iOS target remains at or below the native deployment target.
+* **Engine family:** every push/PR runs the Chromium E2E suite plus Firefox and WebKit critical-path
+  smoke jobs (`web/tests/engine-smoke.spec.ts` — boot, stroke, Settings, Color Picker). That covers
+  Blink, Gecko, and WebKit, but not their floor *versions*: CI runs current desktop Firefox/WebKit,
+  not Firefox 114 or Safari 16.4, and does not boot the native app. `web/src/browserFloor.test.ts`
+  separately guards that the emitted bundle's declared Safari/iOS target remains at or below the
+  native deployment target.
 * **Floor versions:** the Android API 24 **OS floor** is CI-validated on every release tag. The
   workflow derives that matrix leg from `MIN_ANDROID_API_LEVEL`; the first
   [dispatch experiment](https://github.com/KyleMit/Splotch/actions/runs/32104162028) installed the

@@ -1,7 +1,7 @@
 // cSpell:ignore SLOWMO
 import { existsSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
-import { defineConfig, devices, webkit } from '@playwright/test';
+import { defineConfig, devices, firefox, webkit } from '@playwright/test';
 import {
   allowedTokensList,
   chromiumLaunchOptions,
@@ -13,22 +13,25 @@ import {
   previewOnlyCommand,
   productionPreviewCommand,
 } from './playwright.shared';
-import { WEBKIT_ONLY } from './tests/tags';
+import { ENGINE_SMOKE } from './tests/tags';
 
-// The WebKit smoke project only joins the run when the WebKit binary is
-// actually installed: CI installs it explicitly (test.yml), but local checkouts
-// and cloud sessions often have Chromium only, and `npm test` must not start
-// failing there. REQUIRE_WEBKIT (set on CI's e2e step) turns a missing binary
-// from a silent project drop into a hard failure, so the subset can't quietly
-// stop running there.
-function webkitAvailable(): boolean {
+// An engine-smoke project only joins when its browser binary is installed: CI
+// installs each engine explicitly, while local checkouts often have Chromium
+// only and `npm test` must keep working there. The standalone jobs set the
+// corresponding REQUIRE_* variable so a bad install fails instead of quietly
+// dropping that engine's project.
+function engineAvailable(
+  engineName: 'Firefox' | 'WebKit',
+  executablePath: () => string,
+  requirement: 'REQUIRE_FIREFOX' | 'REQUIRE_WEBKIT'
+): boolean {
   try {
-    if (existsSync(webkit.executablePath())) return true;
+    if (existsSync(executablePath())) return true;
   } catch {
-    // An absent or unreadable browser path means WebKit is unavailable unless required.
+    // An absent or unreadable browser path means the engine is unavailable unless required.
   }
-  if (process.env.REQUIRE_WEBKIT) {
-    throw new Error('REQUIRE_WEBKIT is set but the WebKit binary is not installed');
+  if (process.env[requirement]) {
+    throw new Error(`${requirement} is set but the ${engineName} binary is not installed`);
   }
   return false;
 }
@@ -125,24 +128,33 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   // launchOptions live per-project: the Chromium executable-path fallback must
-  // not leak into the WebKit launch. SLOWMO applies to both (ms), e.g.
+  // not leak into another engine's launch. SLOWMO applies to every engine (ms), e.g.
   // `SLOWMO=500 npm run test:e2e:headed`.
   projects: [
     {
       name: 'chromium',
-      // Everything a WEBKIT_ONLY-tagged spec covers already runs under Chromium
-      // via the full suite, so the two projects partition on that one tag.
-      grepInvert: WEBKIT_ONLY,
+      // The full suite covers this critical behavior elsewhere; tagged smoke
+      // specs are reserved for the non-Blink engine projects.
+      grepInvert: ENGINE_SMOKE,
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: chromiumLaunchOptions(),
       },
     },
-    ...(webkitAvailable()
+    ...(engineAvailable('Firefox', () => firefox.executablePath(), 'REQUIRE_FIREFOX')
+      ? [
+          {
+            name: 'firefox',
+            grep: ENGINE_SMOKE,
+            use: { ...devices['Desktop Firefox'], launchOptions: { slowMo: playwrightSlowMo } },
+          },
+        ]
+      : []),
+    ...(engineAvailable('WebKit', () => webkit.executablePath(), 'REQUIRE_WEBKIT')
       ? [
           {
             name: 'webkit',
-            grep: WEBKIT_ONLY,
+            grep: ENGINE_SMOKE,
             use: { ...devices['Desktop Safari'], launchOptions: { slowMo: playwrightSlowMo } },
           },
         ]
