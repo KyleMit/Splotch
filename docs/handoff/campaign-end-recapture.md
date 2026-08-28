@@ -17,14 +17,14 @@ one fresh idle control passes; do not recapture already-reviewed physical #1197 
 
 ## State
 
-| Item         | Value                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------- |
-| Branch       | `codex/issue-1215-sim-emulator-recapture` (pushed)                                          |
-| PR           | none — #1215 is incomplete                                                                  |
-| Base         | `a55bb7aa80fdd1081774455ca885f55f81a9a91d` (ready PR #1485)                                 |
-| Current head | `477b36edde8808a00956920bc770b6a8e32b2b33`                                                  |
-| Stack        | #1483: #1481 → #1482 → #1484 → #1485; all ready, review-settled, exact-head green, unmerged |
-| Controller   | `/private/tmp/splotch-issue-stack-controller-1225/.issue-stack/run.json`                    |
+| Item                | Value                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Branch              | `codex/issue-1215-sim-emulator-recapture` (pushed)                                          |
+| PR                  | none — #1215 is incomplete                                                                  |
+| Base                | `a55bb7aa80fdd1081774455ca885f55f81a9a91d` (ready PR #1485)                                 |
+| Implementation head | `477b36edde8808a00956920bc770b6a8e32b2b33`                                                  |
+| Stack               | #1483: #1481 → #1482 → #1484 → #1485; all ready, review-settled, exact-head green, unmerged |
+| Controller          | `/private/tmp/splotch-issue-stack-controller-1225/.issue-stack/run.json`                    |
 
 ### Commits
 
