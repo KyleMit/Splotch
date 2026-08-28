@@ -1092,10 +1092,12 @@ assign another cause the evidence did not isolate.
 
 `perf:campaign` repeats one reference cell at the start, middle, and end of every physical-device
 queue. All three use the same build, the first selected mode, and crayon. Their raw captures live in
-the target's `references/` directory, and `references.json` beside `instrument.json` records each
-blank-phase `lostFrameTimeShare` measurement plus the across-run spread. References are ordinary
-resumable cells: an interrupted campaign keeps the reference it banked and fills the later positions
-when it resumes.
+the target's `references/<mode>/` directory, and `references.json` beside `instrument.json` records
+each blank-phase `lostFrameTimeShare` measurement, artifact modification time, capture-session
+identity, and the across-run spread. References are ordinary resumable cells: an interrupted
+campaign keeps the reference it banked and fills the later positions when it resumes. A report whose
+`captureSessions.scope` is `mixed` or `unknown` does not prove within-session drift; the runner warns
+about that limitation rather than assigning a cause.
 
 The warning boundary is **0.5 percentage points**. Its evidence is the issue-1458 control: one
 same-build native crayon cell moved from a 0.03% median at the start to 0.47% at the end, a

@@ -17,7 +17,7 @@ vi.mock('node:child_process', async () => {
         end: 0.0064,
       };
       const position = Object.keys(shareByPosition).find((candidate) =>
-        output.includes(`/references/${candidate}.json`)
+        output.endsWith(`/${candidate}.json`) && output.includes('/references/')
       );
       const lostFrameTimeShare = position ? shareByPosition[position] : 0.001;
       makeDirectory(directoryName(output), { recursive: true });
@@ -66,28 +66,30 @@ afterEach(() => {
 });
 
 describe('physical-device campaign drift references', () => {
+  const campaignArgs = (root, mode = 'portrait-light') => [
+    '--target=ipad-device-web',
+    `--modes=${mode}`,
+    '--items=pen-undo,crayon',
+    `--output-root=${root}/out`,
+    `--ledger=${root}/ledger.tsv`,
+    '--url=http://127.0.0.1:4173/',
+    '--capabilities-file=/tmp/caps.json',
+    '--max-attempts=1',
+  ];
+
   it('captures start, middle, and end references and records a threshold warning beside the instrument', async () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-'));
     roots.push(root);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await runCampaign([
-      '--target=ipad-device-web',
-      '--modes=portrait-light',
-      '--items=pen-undo,crayon',
-      `--output-root=${root}/out`,
-      `--ledger=${root}/ledger.tsv`,
-      '--url=http://127.0.0.1:4173/',
-      '--capabilities-file=/tmp/caps.json',
-      '--max-attempts=1',
-    ]);
+    await runCampaign(campaignArgs(root));
 
     expect(capture.calls.map((path) => path.replace(`${root}/out/ipad-device-web/`, ''))).toEqual([
-      'references/start.json',
+      'references/portrait-light/start.json',
       'portrait-light/pen-real-screen.json',
-      'references/middle.json',
+      'references/portrait-light/middle.json',
       'portrait-light/crayon-real-screen.json',
-      'references/end.json',
+      'references/portrait-light/end.json',
     ]);
     const report = JSON.parse(readFileSync(join(root, 'references.json'), 'utf8'));
     expect(report.referenceCell).toEqual({
@@ -110,9 +112,55 @@ describe('physical-device campaign drift references', () => {
       percentagePoints: 0.61,
       exceedsWarningThreshold: true,
     });
+    expect(report.captureSessions).toEqual({ scope: 'single', count: 1 });
+    expect(report.measurements.every(({ capturedAt }) => capturedAt !== null)).toBe(true);
+    expect(new Set(report.measurements.map(({ captureSession }) => captureSession)).size).toBe(1);
     expect(log.mock.calls.flat().join('\n')).toContain(
       'WARN  reference drift reached 0.61 percentage points, beyond the 0.50-point evidence threshold'
     );
     expect(readFileSync(join(root, 'instrument.json'), 'utf8')).toContain('fingerprint');
+  });
+
+  it('captures fresh mode-scoped references when a campaign root is reused for another mode', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-modes-'));
+    roots.push(root);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await runCampaign(campaignArgs(root));
+    capture.calls.length = 0;
+    await runCampaign(campaignArgs(root, 'landscape-dark'));
+
+    expect(capture.calls.map((path) => path.replace(`${root}/out/ipad-device-web/`, ''))).toEqual([
+      'references/landscape-dark/start.json',
+      'landscape-dark/pen-real-screen.json',
+      'references/landscape-dark/middle.json',
+      'landscape-dark/crayon-real-screen.json',
+      'references/landscape-dark/end.json',
+    ]);
+    const report = JSON.parse(readFileSync(join(root, 'references.json'), 'utf8'));
+    expect(report.referenceCell.mode).toBe('landscape-dark');
+    expect(report.measurements.every(({ artifact }) => artifact.includes('/landscape-dark/'))).toBe(
+      true
+    );
+  });
+
+  it('marks references resumed across capture invocations as mixed-session evidence', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-resume-'));
+    roots.push(root);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await runCampaign(campaignArgs(root));
+    rmSync(`${root}/out/ipad-device-web/references/portrait-light/end.json`);
+    capture.calls.length = 0;
+    await runCampaign(campaignArgs(root));
+
+    const report = JSON.parse(readFileSync(join(root, 'references.json'), 'utf8'));
+    expect(report.captureSessions).toEqual({ scope: 'mixed', count: 2 });
+    expect(capture.calls).toEqual([
+      `${root}/out/ipad-device-web/references/portrait-light/end.json`,
+    ]);
+    expect(log.mock.calls.flat().join('\n')).toContain(
+      'reference captures span 2 campaign sessions; their spread is not within-session drift'
+    );
   });
 });

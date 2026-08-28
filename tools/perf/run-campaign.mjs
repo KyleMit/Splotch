@@ -17,7 +17,15 @@
 // flags, and the ledger lives wherever --ledger points. Nothing device-specific is
 // committed.
 
-import { existsSync, mkdirSync, readFileSync, appendFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  appendFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { dirname, isAbsolute, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ROOT, fail, isMain, runMain, sleep } from '../lib/proc.mjs';
@@ -89,20 +97,34 @@ function absolute(path) {
   return isAbsolute(path) ? path : join(ROOT, path);
 }
 
-function referenceArtifact(cell) {
+function referenceArtifactRecord(cell, previousReport, captureSession) {
   const path = absolute(cell.artifact);
   if (!existsSync(path)) return null;
   try {
-    return JSON.parse(readFileSync(path, 'utf8'));
+    const capturedAt = statSync(path).mtime.toISOString();
+    const previous = previousReport?.measurements?.find(
+      (measurement) =>
+        measurement.position === cell.referencePosition &&
+        measurement.artifact === cell.artifact &&
+        measurement.capturedAt === capturedAt
+    );
+    return {
+      artifact: JSON.parse(readFileSync(path, 'utf8')),
+      capturedAt,
+      captureSession: previous?.captureSession ?? captureSession,
+    };
   } catch (error) {
     rethrowIfBroken(error);
     return null;
   }
 }
 
-function writeReferenceReport(path, referenceCells, inspection) {
+function writeReferenceReport(path, referenceCells, inspection, captureSession) {
+  const previousReport = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
   const report = campaignReferenceReport(referenceCells, (cell) =>
-    cellInspection(cell, inspection).ok ? referenceArtifact(cell) : null
+    cellInspection(cell, inspection).ok
+      ? referenceArtifactRecord(cell, previousReport, captureSession)
+      : null
   );
   writeFileSync(path, `${JSON.stringify(report, null, 2)}\n`);
   const warning = campaignReferenceWarning(report);
@@ -297,6 +319,7 @@ function list(value) {
 }
 
 export async function runCampaign(argv = process.argv.slice(2)) {
+  const captureSession = randomUUID();
   const flag = (name, fallback) => {
     const prefix = `--${name}=`;
     return argv.find((entry) => entry.startsWith(prefix))?.slice(prefix.length) ?? fallback;
@@ -475,14 +498,18 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const { runtime, refreshRegime, captureRuntime: targetCaptureRuntime } = campaignTarget(targetId);
   const inspection = { runtime, refreshRegime, captureRuntime: targetCaptureRuntime };
   const referenceReportPath = join(dirname(ledgerPath), 'references.json');
-  if (references.length) writeReferenceReport(referenceReportPath, references, inspection);
+  if (references.length) {
+    writeReferenceReport(referenceReportPath, references, inspection, captureSession);
+  }
 
   const rebootUdid = flag('reboot-simulator');
   const results = [];
   const referenceResults = [];
   const recordResult = (cell, result) => {
     (cell.referencePosition ? referenceResults : results).push(result);
-    if (cell.referencePosition) writeReferenceReport(referenceReportPath, references, inspection);
+    if (cell.referencePosition) {
+      writeReferenceReport(referenceReportPath, references, inspection, captureSession);
+    }
   };
 
   for (const cell of queue) {

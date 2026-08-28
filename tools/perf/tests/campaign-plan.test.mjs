@@ -112,11 +112,16 @@ describe('campaign plan', () => {
     expect(references.every((cell) => cell.mode.id === 'landscape-dark')).toBe(true);
     expect(references.every((cell) => cell.item === 'crayon')).toBe(true);
     expect(campaignQueue(cells, references).map((cell) => cell.id)).toEqual([
-      'reference/start',
+      'reference/landscape-dark/start',
       'landscape-dark/pen-undo',
-      'reference/middle',
+      'reference/landscape-dark/middle',
       'landscape-dark/magic',
-      'reference/end',
+      'reference/landscape-dark/end',
+    ]);
+    expect(references.map((cell) => cell.artifact)).toEqual([
+      'out/ipad-device-native/references/landscape-dark/start.json',
+      'out/ipad-device-native/references/landscape-dark/middle.json',
+      'out/ipad-device-native/references/landscape-dark/end.json',
     ]);
   });
 

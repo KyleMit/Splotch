@@ -539,8 +539,8 @@ export function artifactPath(outputRoot, targetId, mode, item) {
   return `${base}/${brush}-real-screen.json`;
 }
 
-export function referenceArtifactPath(outputRoot, targetId, position) {
-  return `${outputRoot}/${targetId}/references/${position}.json`;
+export function referenceArtifactPath(outputRoot, targetId, modeId, position) {
+  return `${outputRoot}/${targetId}/references/${modeId}/${position}.json`;
 }
 
 // `--host` is the probe host as the DEVICE sees it, so it is a separate input from
@@ -833,7 +833,7 @@ export function planCampaignReferences(targetId, { modeId, outputRoot, host = {}
   })[0];
 
   return CAMPAIGN_REFERENCE_POSITIONS.map((position) => {
-    const artifact = referenceArtifactPath(outputRoot, targetId, position);
+    const artifact = referenceArtifactPath(outputRoot, targetId, modeId, position);
     const args = base.args.map((arg) => {
       if (arg.startsWith('--output=')) return `--output=${artifact}`;
       if (arg.startsWith('--label=')) {
@@ -843,7 +843,7 @@ export function planCampaignReferences(targetId, { modeId, outputRoot, host = {}
     });
     return {
       ...base,
-      id: `reference/${position}`,
+      id: `reference/${modeId}/${position}`,
       artifact,
       args,
       referencePosition: position,

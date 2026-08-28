@@ -14,12 +14,15 @@ function referenceLostFrameTimeShare(artifact) {
   return Number.isFinite(share) ? share : null;
 }
 
-export function campaignReferenceReport(referenceCells, artifactFor) {
+export function campaignReferenceReport(referenceCells, artifactRecordFor) {
   const measurements = referenceCells.map((cell) => {
-    const lostFrameTimeShare = referenceLostFrameTimeShare(artifactFor(cell));
+    const record = artifactRecordFor(cell);
+    const lostFrameTimeShare = referenceLostFrameTimeShare(record?.artifact);
     return {
       position: cell.referencePosition,
       artifact: cell.artifact,
+      capturedAt: record?.capturedAt ?? null,
+      captureSession: record?.captureSession ?? null,
       lostFrameTimeShare,
       lostFrameTimePercentage: lostFrameTimeShare === null ? null : lostFrameTimeShare * 100,
     };
@@ -28,6 +31,17 @@ export function campaignReferenceReport(referenceCells, artifactFor) {
     .map(({ lostFrameTimeShare }) => lostFrameTimeShare)
     .filter(Number.isFinite);
   const spread = measured.length >= 2 ? Math.max(...measured) - Math.min(...measured) : null;
+  const measuredSessions = measurements
+    .filter(({ lostFrameTimeShare }) => lostFrameTimeShare !== null)
+    .map(({ captureSession }) => captureSession);
+  const knownSessions = new Set(measuredSessions.filter(Boolean));
+  const sessionScope = measuredSessions.some((session) => session === null)
+    ? 'unknown'
+    : knownSessions.size > 1
+      ? 'mixed'
+      : knownSessions.size === 1
+        ? 'single'
+        : null;
 
   return {
     metric: 'lostFrameTimeShare',
@@ -43,6 +57,10 @@ export function campaignReferenceReport(referenceCells, artifactFor) {
         }
       : null,
     measurements,
+    captureSessions: {
+      scope: sessionScope,
+      count: knownSessions.size,
+    },
     drift: {
       lostFrameTimeShare: spread,
       percentagePoints: spread === null ? null : spread * 100,
@@ -52,10 +70,24 @@ export function campaignReferenceReport(referenceCells, artifactFor) {
 }
 
 export function campaignReferenceWarning(report) {
-  if (!report.drift.exceedsWarningThreshold) return null;
-  return (
-    `reference drift reached ${report.drift.percentagePoints.toFixed(2)} percentage points, ` +
-    `beyond the ${report.warningThreshold.percentagePoints.toFixed(2)}-point evidence threshold ` +
-    "(issue 1458); differences smaller than this run's reference spread are unresolved"
-  );
+  const warnings = [];
+  if (report.captureSessions.scope === 'mixed') {
+    warnings.push(
+      `reference captures span ${report.captureSessions.count} campaign sessions; ` +
+        'their spread is not within-session drift'
+    );
+  } else if (report.captureSessions.scope === 'unknown') {
+    warnings.push(
+      'one or more reference capture sessions are unknown; their spread is not proven ' +
+        'within-session drift'
+    );
+  }
+  if (report.drift.exceedsWarningThreshold) {
+    warnings.push(
+      `reference drift reached ${report.drift.percentagePoints.toFixed(2)} percentage points, ` +
+        `beyond the ${report.warningThreshold.percentagePoints.toFixed(2)}-point evidence ` +
+        "threshold (issue 1458); differences smaller than this run's reference spread are unresolved"
+    );
+  }
+  return warnings.length ? warnings.join('; ') : null;
 }
