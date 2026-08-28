@@ -1,8 +1,152 @@
-# Campaign-end recapture (#1322) — remaining phases
+# Handoff — campaign-end recapture
 
-> 2026-08-26 · branch `claude/issue-1323-bundled-channel` · PR
-> [#1385](https://github.com/KyleMit/Splotch/pull/1385) · finish the #1322 recapture (emulator +
-> simulator + fold + matrix regen) after the physical-device halves completed
+> 2026-08-28 · branch `codex/issue-1215-sim-emulator-recapture` · finish #1215, then #1322, on
+> stacked campaign #1483
+
+## Objective & non-goals
+
+Finish issue #1215's four-mode recaptures for `ipad-simulator-web`, `android-emulator-web`,
+`ipad-simulator-native`, and `android-emulator-native`; declare and pin the still-null refresh
+regimes from trusted captures; promote compact hash-bound evidence; fold complete modes; and
+regenerate/rescore the deployment-target matrix. Then process #1322 as the final #1225 campaign
+issue.
+
+Non-goals: do not merge stack #1483; do not force fidelity-invalid cells green; do not promote the
+discarded Android scratch roots; do not erase the #1252 portrait-action attribution caveat because
+one fresh idle control passes; do not recapture already-reviewed physical #1197 evidence.
+
+## State
+
+| Item         | Value                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| Branch       | `codex/issue-1215-sim-emulator-recapture` (pushed)                                          |
+| PR           | none — #1215 is incomplete                                                                  |
+| Base         | `a55bb7aa80fdd1081774455ca885f55f81a9a91d` (ready PR #1485)                                 |
+| Current head | `477b36edde8808a00956920bc770b6a8e32b2b33`                                                  |
+| Stack        | #1483: #1481 → #1482 → #1484 → #1485; all ready, review-settled, exact-head green, unmerged |
+| Controller   | `/private/tmp/splotch-issue-stack-controller-1225/.issue-stack/run.json`                    |
+
+### Commits
+
+| SHA                                        | What                                                         |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `477b36edde8808a00956920bc770b6a8e32b2b33` | Harden split/Appium capture for simulator/emulator recapture |
+
+### Files touched
+
+* `tools/perf/ios/capture-xcuitest-screen.mjs`
+* `tools/perf/lib/campaign-plan.mjs`
+* `tools/perf/split-capture/capture-device-frames.mjs`
+* `tools/perf/split-capture/serve-floor-control.mjs`
+* `tools/perf/split-capture/verify-android-input.mjs`
+* `tools/perf/split-capture/lib/android-input.mjs`
+* `tools/perf/split-capture/lib/page-bootstrap.mjs`
+* `tools/perf/tests/bootstrap-theme.test.mjs`
+* `tools/perf/tests/campaign-plan.test.mjs`
+* `tools/perf/tests/split-capture.test.mjs`
+* `docs/handoff/campaign-end-recapture.md`
+
+### Trusted partial captures — not promoted
+
+* `perf-profiles/campaign-1215/ipad-simulator-web`: 18/20 cells banked.
+  * portrait-light 4/5; eraser exhausted after three cadence-invalid attempts.
+  * portrait-dark 4/5; pen-undo exhausted after three cadence-invalid attempts.
+  * landscape-light 5/5; landscape-dark 5/5.
+  * Accepted drawings observed a 17 ms beat / 60 Hz regime and passed fidelity.
+  * All four action idle controls pass. Landscape-light eraser is an attributable advisory red.
+* `perf-profiles/campaign-1215/android-emulator-web-v5`: portrait-light 5/5 only.
+  * All drawings pass fidelity at 16.7 ms / 60 Hz, about 1.09 moves/frame and 65 moves/s.
+  * Eraser initial fill and all nine refills verify cleanly.
+  * Magic is an attributable advisory red.
+  * The idle control fails at post p95/max 33.3/33.3 ms; retain the #1252 portrait-action caveat.
+  * Portrait-dark was interrupted before an artifact or ledger attempt; its status remains zero
+    attempts.
+
+Discarded scratch remains under `perf-profiles/campaign-1215/android-emulator-web`, `-v2`, `-v3`,
+`-v4`, `-v4-smoke`, and `-v5-smoke`. These roots encode obsolete instruments or isolated smoke
+proofs and must not be folded or promoted.
+
+All session-owned capture processes are stopped. Ports 4198, 4199, 4735, and 9235 were verified
+free; emulator-5554 was stopped; the iPad Simulator was shut down. Shared physical-device rig
+infrastructure and `perf-profiles/evidence/operator/ipad-grant-log.tsv` were untouched.
+
+## Decisions made (and why)
+
+* The Android emulator drawing runner now receives the campaign-owned CDP port. The prior plan sent
+  actions to that port but let split drawing fall back to an occupied default.
+* Each successful page-front activation guard removes its temporary forward in `finally`. Retaining
+  it made the capture's required before-dispatch rebind fail.
+* Split and Appium eraser bootstrap paths retry transient transparent fills within the existing
+  four-second verification budget. Permanent transparency still exhausts and fails. The fix changed
+  Android eraser from repeated readiness failures to a full-repeat trusted capture with all refills.
+* Android CSS-to-screen coordinates include the measured Chrome content/cutout origin using the
+  `outerWidth/Height - innerWidth/Height` offset, and the floor verifier uses the same transform.
+  Before the fix, landscape gestures produced only 3–9 events; the same cell afterward produced
+  3,656 trusted moves and full fidelity.
+* Every instrument change restarted Android emulator web into a new output root. Only v5 is eligible
+  to continue; earlier roots are deliberately mixed/obsolete scratch.
+* Simulator cadence failures remain unscoreable. Valid product reds and passing idle controls are
+  preserved; no gate was weakened.
+
+## Unverified assumptions
+
+* The content-origin transform is proven on `Pixel_7_Pro_API_33` in both rotations and covered by
+  the floor verifier, but physical Android/native were not recaptured after this harness change.
+* The Appium eraser retry is regression-tested but has not yet been exercised on iOS/native.
+* iPad simulator web repeatedly observed 60 Hz, but its regime is still undeclared/unpinned because
+  the wrap happened before target completion and fold work.
+* The 18/20 iPad simulator web corpus may be foldable with two preserved-with-reason cells; confirm
+  current campaign-source rules before promoting it.
+* No reviewed PR exists for #1215. The branch contains only the pushed harness commit and this
+  handoff.
+
+## Done & verified
+
+* Focused campaign/split/bootstrap/Appium suite: 4 files / 300 tests passed.
+* `npm run check`: passed with zero errors/warnings.
+* `npm run lint`: passed with zero errors and two base-existing warnings.
+* `npm run format:check`: passed before this handoff edit; rerun after updating the packet.
+* `git diff --check`: passed before this handoff edit.
+* Empirical Android proofs:
+  * portrait-light eraser smoke: exit 0, fidelity pass, initial fill and nine refills verified.
+  * landscape-light pen smoke: 3–9 events before transform fix; 3,656 trusted moves, 1.09
+    moves/frame, exit 0, fidelity pass afterward.
+* Branch and remote matched `477b36edde8808a00956920bc770b6a8e32b2b33`; worktree was clean before
+  this handoff edit.
+
+## Risks & next 3 steps
+
+1. Resume with the `resume-handoff`, `start-capture-session`, `profiling`, and
+   `run-performance-matrix` skills. Verify this packet against the branch, rerun the focused
+   300-test suite, cold-boot the emulator, re-prove explicit unused ports, and continue only
+   `android-emulator-web-v5` from portrait-dark. Do not reuse discarded roots.
+2. Finish the 57 capture cells: iPad simulator web retry/disposition for 2 missing cells; Android
+   emulator web portrait-dark/landscape-light/landscape-dark (15); iPad simulator native (20);
+   Android emulator native (20). Preserve idle-control and fidelity reasons verbatim.
+3. Declare/pin still-null simulator/native refresh regimes from trusted banked evidence; promote
+   compact hash-bound corpora; fold complete modes; regenerate/rescore the matrix; run evidence,
+   matrix, ADR, format, lint, type, and relevant full test gates. Then open/review/link the #1215 PR
+   atop #1485 before starting final issue #1322.
+
+Risks: web/native builds clobber the same output, so keep web-before-native ordering; iPad Simulator
+session drift requires `--reboot-simulator`; Android web portrait action scores remain
+unattributable under #1252 when idle control fails; scratch is gitignored and is the only copy until
+promotion.
+
+## Reread first
+
+* `docs/PROFILING-CAMPAIGNS.md`
+* `docs/PROFILING.md`, `docs/PROFILING-IPAD.md`, and `docs/PROFILING-ANDROID.md`
+* `tools/perf/lib/campaign-plan.mjs`
+* `tools/perf/split-capture/lib/android-input.mjs`
+* `tools/perf/split-capture/lib/page-bootstrap.mjs`
+* ADR-0134, ADR-0136, and ADR-0145
+* Issues #1215, #1252, #1322, and #1225
+* The `resume-handoff`, `start-capture-session`, `profiling`, `run-performance-matrix`,
+  `implement-issue-stack`, and `create-stacked-prs` skills
+
+<details>
+<summary>Superseded 2026-08-26 packet</summary>
 
 ## Objective & non-goals
 
@@ -113,3 +257,5 @@ raw evidence until promotion.
 * Issue #1322 (scope table + hygiene), #1215 (sim disposition options), #1225's 2026-08-26 interim
   comment (session context)
 * The start-capture-session skill before touching either physical device
+
+</details>
