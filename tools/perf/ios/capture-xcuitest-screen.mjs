@@ -869,24 +869,28 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     let eraserFill = null;
     if (brush === 'eraser') {
       const fillVerified = async () => {
+        let lastFill = null;
         const fill = await pollUntil(
           async () => {
-            const result = await execute(
+            lastFill = await execute(
               `${eraserFillFunctionSource()}\nreturn fillEraserInk();`
             ).catch((error) => {
               throw new Error(`the eraser fill failed in the page: ${error?.message ?? error}`);
             });
-            return result?.pending ? null : result;
+            return lastFill?.pending || lastFill?.transparentTiles?.length ? null : lastFill;
           },
           ERASER_FILL_BACKING_TIMEOUT_MS,
           WEBVIEW_READY_POLL_MS
         );
-        if (!fill) throw new Error('live tile backings never realized for the eraser fill');
-        if (fill.transparentTiles.length) {
+        if (!fill && lastFill?.pending) {
+          throw new Error('live tile backings never realized for the eraser fill');
+        }
+        if (!fill && lastFill?.transparentTiles?.length) {
           throw new Error(
-            `the eraser fill left tiles transparent: ${fill.transparentTiles.join(', ')}`
+            `the eraser fill left tiles transparent: ${lastFill.transparentTiles.join(', ')}`
           );
         }
+        if (!fill) throw new Error('the eraser fill did not produce evidence');
         return fill;
       };
       eraserFill = await fillVerified();

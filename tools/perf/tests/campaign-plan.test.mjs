@@ -109,6 +109,7 @@ describe('campaign plan', () => {
     expect(actions.args).not.toContain('--appium-url=http://127.0.0.1:4723');
     expect(drawing.command).toBe('perf:device:frames');
     expect(drawing.args).toContain('--platform=android');
+    expect(drawing.args).toContain('--cdp-port=9225');
   });
 
   it('attaches a native run to the app WebView and never to a URL', () => {
@@ -392,11 +393,14 @@ describe('split transport', () => {
     }
   });
 
-  it('leaves Android browser actions on direct CDP, which the split path does not carry', () => {
+  it('forwards the owned CDP port to both Android transports', () => {
     const actions = splitCells({ items: ['actions'] })[0];
+    const drawing = splitCells({ items: ['crayon'] })[0];
 
     expect(actions.command).toBe('perf:android:browser:actions');
     expect(actions.args).toContain('--cdp-port=9234');
+    expect(drawing.command).toBe(SPLIT_SCREEN_COMMAND);
+    expect(drawing.args).toContain('--cdp-port=9234');
   });
 
   it('never passes the split runner an Appium flag it would ignore', () => {

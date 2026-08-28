@@ -48,7 +48,12 @@ import {
   starvationRows,
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
-import { androidGestureInstructions, androidOpenSteps, swipeArgs } from './lib/android-input.mjs';
+import {
+  androidContentOffset,
+  androidGestureInstructions,
+  androidOpenSteps,
+  swipeArgs,
+} from './lib/android-input.mjs';
 import { activateChromePage, clearToolingLitter } from './lib/chrome-tabs.mjs';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 
@@ -187,6 +192,8 @@ export function androidDriver({
         `run-page activation unavailable ${moment} (${error?.message ?? error}) — ` +
           'a restored tab may hold the foreground; the zero-input check will catch it'
       );
+    } finally {
+      forward('adb', ['-s', serial, 'forward', '--remove', `tcp:${cdpPort}`]);
     }
   };
   return {
@@ -206,16 +213,11 @@ export function androidDriver({
       return {
         bounds: geometry.canvas,
         densityScale: geometry.dpr,
-        offset: { x: geometry.screenX * geometry.dpr, y: geometry.screenY * geometry.dpr },
+        offset: androidContentOffset(geometry),
       };
     },
     async dispatch({ bounds, densityScale, offset }, repeats) {
       await frontRunPage('before dispatch');
-      if (!nativeApp) {
-        // Nothing may stay attached while input is measured; a forward that was
-        // never established (activation unavailable) has nothing to remove.
-        forward('adb', ['-s', serial, 'forward', '--remove', `tcp:${cdpPort}`]);
-      }
       const instructions = androidGestureInstructions(trustedGestureActions(bounds, repeats, 0), {
         densityScale,
         offset,

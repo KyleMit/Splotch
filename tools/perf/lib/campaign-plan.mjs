@@ -531,6 +531,9 @@ function splitTransportArgs(target, host) {
   if (target.splitPlatform === 'android' && host.deviceId) {
     args.push(`--device-serial=${host.deviceId}`);
   }
+  if (target.splitPlatform === 'android' && host.cdpPort) {
+    args.push(`--cdp-port=${host.cdpPort}`);
+  }
   if (target.splitPlatform === 'ios' && host.wdaUrl) args.push(`--wda-url=${host.wdaUrl}`);
   if (host.probeHost) args.push(`--host=${host.probeHost}`);
   return args;

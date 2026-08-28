@@ -17,7 +17,11 @@ import { lanAddresses } from '../../lib/net.mjs';
 import { trustedGestureActions } from '../ios/capture-xcuitest-screen.mjs';
 import { inputFidelity } from '../lib/input-fidelity.mjs';
 import { summarizeRun } from '../lib/real-screen-stats.mjs';
-import { androidGestureInstructions, swipeArgs } from './lib/android-input.mjs';
+import {
+  androidContentOffset,
+  androidGestureInstructions,
+  swipeArgs,
+} from './lib/android-input.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { classifyInputCadence, describeContactSamples } from './lib/input-verdict.mjs';
 import { closeFloorControlHost, createFloorControlHost } from './serve-floor-control.mjs';
@@ -158,7 +162,7 @@ export async function verifyAndroidInput({
       trustedGestureActions(geometry.canvas, repeats, 0),
       {
         densityScale: geometry.dpr,
-        offset: { x: geometry.screenX * geometry.dpr, y: geometry.screenY * geometry.dpr },
+        offset: androidContentOffset(geometry),
       }
     );
     for (const instruction of instructions) {

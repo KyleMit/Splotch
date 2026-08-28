@@ -233,7 +233,10 @@ export function pageBootstrapSource() {
     if (plan.brush === 'eraser') {
       ${eraserFillFunctionSource()}
       const fillVerified = async () => {
-        await until(() => !(eraserFill = fillEraserInk()).pending, ${ERASER_FILL_BACKING_TIMEOUT_MS});
+        await until(() => {
+          eraserFill = fillEraserInk();
+          return !eraserFill.pending && eraserFill.transparentTiles.length === 0;
+        }, ${ERASER_FILL_BACKING_TIMEOUT_MS});
         if (eraserFill.pending) {
           throw new Error('live tile backings never realized for the eraser fill: ' + eraserFill.pending.join(', '));
         }
@@ -289,6 +292,7 @@ export function pageBootstrapSource() {
       geometry: {
         canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
         viewport: { width: innerWidth, height: innerHeight },
+        outerViewport: { width: outerWidth, height: outerHeight },
         screenX: window.screenX,
         screenY: window.screenY,
         dpr: window.devicePixelRatio,

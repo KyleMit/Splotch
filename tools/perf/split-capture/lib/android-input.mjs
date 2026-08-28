@@ -20,6 +20,20 @@ const DEFAULT_SWIPE_DURATION_MS = 200;
 
 const toDevicePixels = (value, densityScale, origin) => Math.round(origin + value * densityScale);
 
+// Android Chrome keeps screenX/screenY at zero while adb input addresses the
+// physical display. The outer-minus-inner inset is the content origin hidden
+// by browser chrome and a rotated display cutout.
+export function androidContentOffset(geometry) {
+  const viewport = geometry.viewport ?? { width: 0, height: 0 };
+  const outerViewport = geometry.outerViewport ?? viewport;
+  return {
+    x: ((geometry.screenX ?? 0) + Math.max(0, outerViewport.width - viewport.width)) * geometry.dpr,
+    y:
+      ((geometry.screenY ?? 0) + Math.max(0, outerViewport.height - viewport.height)) *
+      geometry.dpr,
+  };
+}
+
 // Returns an ordered instruction list — `swipe` and `pause` — rather than
 // issuing anything, so a test can assert the whole gesture without a device.
 export function androidGestureInstructions(

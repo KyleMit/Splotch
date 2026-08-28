@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { connect } from 'node:net';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  androidContentOffset,
   androidGestureInstructions,
   androidNativeLaunchSteps,
   androidOpenSteps,
@@ -61,6 +62,29 @@ const stroke = [
 ];
 
 describe('androidGestureInstructions', () => {
+  it('includes Android Chrome content insets in the CSS-to-screen origin', () => {
+    expect(
+      androidContentOffset({
+        viewport: { width: 850, height: 327 },
+        outerViewport: { width: 892, height: 412 },
+        screenX: 0,
+        screenY: 0,
+        dpr: 3.5,
+      })
+    ).toEqual({ x: 147, y: 297.5 });
+  });
+
+  it('preserves the legacy screen origin when outer geometry is absent', () => {
+    expect(
+      androidContentOffset({
+        viewport: { width: 411, height: 719 },
+        screenX: 2,
+        screenY: 3,
+        dpr: 2,
+      })
+    ).toEqual({ x: 4, y: 6 });
+  });
+
   it('treats the move before pointerDown as the stroke origin, not a segment', () => {
     const instructions = androidGestureInstructions(stroke);
 
@@ -1002,6 +1026,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     expect(deps.execCalls.some((call) => call.startsWith('forward'))).toBe(false);
     expect(deps.forwardCalls).toEqual([
       'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
+      'adb -s s forward --remove tcp:9224',
       'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
       'adb -s s forward --remove tcp:9224',
     ]);
