@@ -53,7 +53,11 @@ import {
 } from './lib/campaign-plan.mjs';
 import { campaignReferenceReport, campaignReferenceWarning } from './lib/campaign-reference.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
-import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument-fingerprint.mjs';
+import {
+  instrumentChangeProblem,
+  instrumentFingerprint,
+  instrumentFingerprintSubset,
+} from './lib/instrument-fingerprint.mjs';
 import {
   probeHostJson,
   probeHostProtocolProblem,
@@ -97,7 +101,7 @@ function absolute(path) {
   return isAbsolute(path) ? path : join(ROOT, path);
 }
 
-function referenceArtifactRecord(cell, previousReport, captureSession) {
+function referenceArtifactRecord(cell, previousReport, captureSession, capturedArtifacts) {
   const path = absolute(cell.artifact);
   if (!existsSync(path)) return null;
   try {
@@ -111,7 +115,8 @@ function referenceArtifactRecord(cell, previousReport, captureSession) {
     return {
       artifact: JSON.parse(readFileSync(path, 'utf8')),
       capturedAt,
-      captureSession: previous?.captureSession ?? captureSession,
+      captureSession:
+        previous?.captureSession ?? (capturedArtifacts.has(cell.artifact) ? captureSession : null),
     };
   } catch (error) {
     rethrowIfBroken(error);
@@ -119,16 +124,24 @@ function referenceArtifactRecord(cell, previousReport, captureSession) {
   }
 }
 
-function writeReferenceReport(path, referenceCells, inspection, captureSession) {
+function writeReferenceReport(
+  path,
+  referenceCells,
+  inspection,
+  captureSession,
+  capturedArtifacts,
+  instrument
+) {
   const previousReport = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
-  const report = campaignReferenceReport(referenceCells, (cell) =>
-    cellInspection(cell, inspection).ok
-      ? referenceArtifactRecord(cell, previousReport, captureSession)
-      : null
+  const report = campaignReferenceReport(
+    referenceCells,
+    (cell) =>
+      cellInspection(cell, inspection).ok
+        ? referenceArtifactRecord(cell, previousReport, captureSession, capturedArtifacts)
+        : null,
+    { instrument }
   );
   writeFileSync(path, `${JSON.stringify(report, null, 2)}\n`);
-  const warning = campaignReferenceWarning(report);
-  if (warning) console.log(`WARN  ${warning}`);
   return report;
 }
 
@@ -360,6 +373,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     outputRoot,
     host,
     label: flag('label'),
+    productCellCount: plan.length,
   });
   const queue = campaignQueue(plan, references);
 
@@ -450,13 +464,15 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // operator accepts on record; acceptance rows keep the decision made once,
   // not on every subsequent resume.
   const fingerprintPath = join(dirname(ledgerPath), 'instrument.json');
-  const currentInstrument = instrumentFingerprint([...new Set(queue.map((cell) => cell.command))]);
+  const productCommands = [...new Set(plan.map((cell) => cell.command))];
+  const referenceCommands = [...new Set(references.map((cell) => cell.command))];
+  const currentInstrument = instrumentFingerprint(productCommands);
   // Rows carry each cell's OWN command's fingerprint, not the whole plan's
   // union — a resume narrowed with --items shares every included cell's
   // instrument with the full run that banked it, and the union differs there
   // without a single file having moved.
   const fingerprintByCommand = new Map(
-    [...new Set(queue.map((cell) => cell.command))].map((command) => [
+    productCommands.map((command) => [
       command,
       instrumentFingerprint([command]).fingerprint,
     ])
@@ -467,10 +483,10 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     : null;
   const bankedElsewhere = cellsBankedUnderDifferentInstrument(
     spentRows,
-    new Map(queue.map((cell) => [cell.id, cellInstrument(cell)]))
+    new Map(plan.map((cell) => [cell.id, cellInstrument(cell)]))
   );
   const instrumentProblem = instrumentChangeProblem(
-    recordedInstrument,
+    instrumentFingerprintSubset(recordedInstrument, productCommands),
     currentInstrument,
     bankedElsewhere
   );
@@ -498,8 +514,38 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const { runtime, refreshRegime, captureRuntime: targetCaptureRuntime } = campaignTarget(targetId);
   const inspection = { runtime, refreshRegime, captureRuntime: targetCaptureRuntime };
   const referenceReportPath = join(dirname(ledgerPath), 'references.json');
+  const capturedReferenceArtifacts = new Set();
+  const previousReferenceReport = existsSync(referenceReportPath)
+    ? JSON.parse(readFileSync(referenceReportPath, 'utf8'))
+    : null;
+  const currentReferenceInstrument = references.length
+    ? instrumentFingerprint(referenceCommands)
+    : null;
+  const recordedReferenceInstrument =
+    previousReferenceReport?.instrument ??
+    instrumentFingerprintSubset(recordedInstrument, referenceCommands);
+  const referenceInstrumentProblem = currentReferenceInstrument
+    ? instrumentChangeProblem(recordedReferenceInstrument, currentReferenceInstrument)
+    : null;
+  if (referenceInstrumentProblem && !has('accept-instrument-change')) {
+    fail(`the reference control instrument changed:\n${referenceInstrumentProblem}`);
+  }
+  if (referenceInstrumentProblem) {
+    console.log(
+      'WARN  resuming reference controls across an instrument change ' +
+        '(accepted with --accept-instrument-change)'
+    );
+  }
+  let referenceReport = null;
   if (references.length) {
-    writeReferenceReport(referenceReportPath, references, inspection, captureSession);
+    referenceReport = writeReferenceReport(
+      referenceReportPath,
+      references,
+      inspection,
+      captureSession,
+      capturedReferenceArtifacts,
+      currentReferenceInstrument
+    );
   }
 
   const rebootUdid = flag('reboot-simulator');
@@ -508,7 +554,14 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const recordResult = (cell, result) => {
     (cell.referencePosition ? referenceResults : results).push(result);
     if (cell.referencePosition) {
-      writeReferenceReport(referenceReportPath, references, inspection, captureSession);
+      referenceReport = writeReferenceReport(
+        referenceReportPath,
+        references,
+        inspection,
+        captureSession,
+        capturedReferenceArtifacts,
+        currentReferenceInstrument
+      );
     }
   };
 
@@ -571,6 +624,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         captureRuntime: targetCaptureRuntime,
       });
       landed = inspected.ok;
+      if (landed && cell.referencePosition) capturedReferenceArtifacts.add(cell.artifact);
       appendLedger(ledgerPath, {
         cell: cell.id,
         status: `${inspected.status}-exit-${child.status}`,
@@ -629,6 +683,8 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     for (const result of referenceResults.filter((entry) => entry.status === 'p1')) {
       console.log(`  P1 ${result.cell}`);
     }
+    const warning = campaignReferenceWarning(referenceReport);
+    if (warning) console.log(`WARN  ${warning}`);
   }
   console.log(`Ledger: ${ledgerPath}`);
   if (references.length) console.log(`References: ${referenceReportPath}`);

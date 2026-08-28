@@ -7,6 +7,7 @@ import {
   instrumentChangeProblem,
   instrumentFilesFor,
   instrumentFingerprint,
+  instrumentFingerprintSubset,
 } from '../lib/instrument-fingerprint.mjs';
 import { CAMPAIGN_TARGETS, planCampaign } from '../lib/campaign-plan.mjs';
 
@@ -91,6 +92,21 @@ describe('the capture-instrument fingerprint', () => {
     expect(current.fingerprint).toMatch(/^[0-9a-f]{64}$/);
     expect(Object.keys(current.files)).toEqual(
       instrumentFilesFor(['perf:device:frames', 'perf:android:browser:actions'])
+    );
+  });
+
+  it('recovers command-scoped fingerprints from a legacy union fingerprint', () => {
+    const readFile = read({});
+    const union = instrumentFingerprint(
+      ['perf:ios:xcuitest:actions', 'perf:ios:xcuitest:screen'],
+      readFile
+    );
+
+    expect(instrumentFingerprintSubset(union, ['perf:ios:xcuitest:actions'])).toEqual(
+      instrumentFingerprint(['perf:ios:xcuitest:actions'], readFile)
+    );
+    expect(instrumentFingerprintSubset(union, ['perf:ios:xcuitest:screen'])).toEqual(
+      instrumentFingerprint(['perf:ios:xcuitest:screen'], readFile)
     );
   });
 });

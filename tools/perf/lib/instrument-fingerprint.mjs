@@ -86,6 +86,17 @@ export function instrumentFingerprint(commands, readFile = defaultRead) {
   };
 }
 
+export function instrumentFingerprintSubset(recorded, commands) {
+  if (!recorded) return null;
+  const files = instrumentFilesFor(commands);
+  if (files.some((file) => !recorded.files?.[file])) return null;
+  const perFile = Object.fromEntries(files.map((file) => [file, recorded.files[file]]));
+  return {
+    fingerprint: sha256(JSON.stringify(perFile)),
+    files: perFile,
+  };
+}
+
 // Null when resuming is safe; otherwise the refusal, naming exactly which
 // instrument files changed since the campaign's cells were banked — and which
 // CELLS the ledger records as banked under a different fingerprint.
