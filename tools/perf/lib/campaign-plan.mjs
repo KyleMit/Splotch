@@ -539,7 +539,7 @@ export function artifactPath(outputRoot, targetId, mode, item) {
   return `${base}/${brush}-real-screen.json`;
 }
 
-export function referenceArtifactPath(outputRoot, targetId, modeId, position) {
+function referenceArtifactPath(outputRoot, targetId, modeId, position) {
   return `${outputRoot}/${targetId}/references/${modeId}/${position}.json`;
 }
 
