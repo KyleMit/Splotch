@@ -1,0 +1,50 @@
+{
+  "campaign": "2026-08-28-issue-1215-ipad-simulator-native",
+  "capturedFrom": "perf-profiles/campaign-1215/ipad-simulator-native/ipad-simulator-native",
+  "kept": [
+    {
+      "file": "ipad-simulator-native-crayon.json",
+      "target": "ipad-simulator-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-simulator-native-eraser.json",
+      "target": "ipad-simulator-native",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-simulator-native-magic.json",
+      "target": "ipad-simulator-native",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-simulator-native-pen.json",
+      "target": "ipad-simulator-native",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    }
+  ]
+}

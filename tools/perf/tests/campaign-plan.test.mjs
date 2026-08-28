@@ -112,16 +112,29 @@ describe('campaign plan', () => {
     expect(drawing.args).toContain('--cdp-port=9225');
   });
 
-  it('attaches a native run to the app WebView and never to a URL', () => {
-    const cell = plan('android-emulator-native', {
+  it('routes Android emulator native drawing through split input and actions through Appium', () => {
+    const cells = plan('android-emulator-native', {
       modes: ['portrait-light'],
-      items: ['pen-undo'],
-      host: { ...HOST, url: 'http://127.0.0.1:4173/' },
-    })[0];
+      items: ['pen-undo', 'actions'],
+      host: {
+        ...HOST,
+        deviceId: 'emulator-5554',
+        cdpPort: '9225',
+        probeHost: 'http://192.168.0.9:4175',
+      },
+    });
+    const drawing = cells.find((cell) => cell.item === 'pen-undo');
+    const actions = cells.find((cell) => cell.item === 'actions');
 
-    expect(cell.args).toContain('--native-app');
-    expect(cell.args).toContain('--native-webview-class=android.webkit.WebView');
-    expect(cell.args.some((arg) => arg.startsWith('--url='))).toBe(false);
+    expect(drawing.command).toBe(SPLIT_SCREEN_COMMAND);
+    expect(drawing.args).toContain('--platform=android');
+    expect(drawing.args).toContain('--native-app');
+    expect(drawing.args).toContain('--device-serial=emulator-5554');
+    expect(drawing.args).toContain('--cdp-port=9225');
+    expect(actions.command).toBe('perf:ios:xcuitest:actions');
+    expect(actions.args).toContain('--native-app');
+    expect(actions.args).toContain('--native-webview-class=android.webkit.WebView');
+    expect(actions.args.some((arg) => arg.startsWith('--url='))).toBe(false);
   });
 
   // Issue 1297: the repeat count is part of the measurement contract, so the plan

@@ -1,0 +1,50 @@
+{
+  "campaign": "2026-08-28-issue-1215-android-emulator-native",
+  "capturedFrom": "perf-profiles/campaign-1215/android-emulator-native-split/android-emulator-native",
+  "kept": [
+    {
+      "file": "android-emulator-native-crayon.json",
+      "target": "android-emulator-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-emulator-native-eraser.json",
+      "target": "android-emulator-native",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-emulator-native-magic.json",
+      "target": "android-emulator-native",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-emulator-native-pen.json",
+      "target": "android-emulator-native",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    }
+  ]
+}

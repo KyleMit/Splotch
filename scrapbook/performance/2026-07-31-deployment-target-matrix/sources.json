@@ -139,28 +139,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-light/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-light/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-light/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-light/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-light/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-light/actions/actions.json",
-              "productCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -168,28 +149,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-dark/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-dark/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-dark/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-dark/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-dark/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-ipad/ipad-device-web/portrait-dark/actions/actions.json",
-              "productCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -197,28 +159,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-light/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-light/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-light/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-light/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-light/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-light/actions/actions.json",
-              "productCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -226,28 +169,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-dark/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-dark/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-dark/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-dark/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-dark/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-ipad/ipad-device-web/landscape-dark/actions/actions.json",
-              "productCommit": "3cb6a205a287c9ccebef762bdde85abccdeb24f6",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
@@ -318,7 +242,7 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
           "actionSources": "preserved"
@@ -328,7 +252,7 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
           "actionSources": "preserved"
@@ -338,7 +262,7 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
           "actionSources": "preserved"
@@ -348,7 +272,7 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
           "actionSources": "preserved"
@@ -370,7 +294,7 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
           "actionSources": "preserved"
@@ -380,7 +304,7 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
           "actionSources": "preserved"
@@ -390,22 +314,20 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
-          "actionsUnavailableReason": "P1: the landscape action sweep times out at 'undo clear after blank rotation' — undo after a blank landscape rotation never restores the drawing in the Capacitor WebView. Previously attributed to #1192; that is fixed and merged, and the sweep still fails, so it is tracked as #1194. Two attempts failed identically in both themes."
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
           "undoSource": "preserved",
-          "actionsUnavailableReason": "P1: the landscape action sweep times out at 'undo clear after blank rotation' — undo after a blank landscape rotation never restores the drawing in the Capacitor WebView. Previously attributed to #1192; that is fixed and merged, and the sweep still fails, so it is tracked as #1194. Two attempts failed identically in both themes."
+          "actionSources": "preserved"
         }
       ]
     },
@@ -425,27 +347,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-light/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-light/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-light/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-light/eraser-real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-android/android-device-web/portrait-light/actions/actions.json",
-              "productCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-              "kind": "full"
-            }
-          ],
+          "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
           "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
@@ -455,27 +358,8 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-dark/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-dark/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-dark/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-android/android-device-web/portrait-dark/eraser-real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-android/android-device-web/portrait-dark/actions/actions.json",
-              "productCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-              "kind": "full"
-            }
-          ],
+          "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
           "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
@@ -485,27 +369,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-light/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-light/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-light/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-light/eraser-real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-android/android-device-web/landscape-light/actions/actions.json",
-              "productCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-              "kind": "full"
-            }
-          ],
+          "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
           "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
@@ -515,27 +380,8 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-          "drawing": {
-            "pen": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-dark/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-dark/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-dark/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/campaign-1322-android/android-device-web/landscape-dark/eraser-real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/campaign-1322-android/android-device-web/landscape-dark/actions/actions.json",
-              "productCommit": "8b5bb6e1fb03dcdd9658d6cb33bce765ec856bbf",
-              "kind": "full"
-            }
-          ],
+          "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
           "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
@@ -608,40 +454,44 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "portrait-dark",
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
       ]
     },
@@ -660,40 +510,44 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "portrait-dark",
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawingProductCommit": "13643a1f2cc5972cc4c9f996cdf1bf476c76dc77",
           "drawing": "preserved",
+          "actionSources": "preserved",
           "undoSource": "preserved",
-          "actionSources": "preserved"
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
       ]
     },

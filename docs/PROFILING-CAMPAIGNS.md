@@ -525,11 +525,16 @@ Three things about `perf:campaign` that each cost a launch:
   and wrong after a misconfigured launch. Read `ledger.tsv` before clearing it: if every row is
   `missing-or-invalid-json-exit-1` and no artifact was produced, the attempts recorded nothing and
   deleting the ledger costs nothing.
-* **`android-device-web` drawing goes through the split input/measurement transport**, which
-  requires `--probe-host=` — this host's LAN address, as the *device* sees it. A loopback address
-  reaches the capture host's own browser and never the phone; the campaign rejects one up front, and
-  asserts the probe host answers before the queue starts, because getting it wrong otherwise reads
-  as a page that would not load. Start the host with `npm run perf:device:serve` first.
+* **Android split-transport drawing requires `--probe-host=`** — this host's LAN address, as the
+  device sees it. This applies to `android-device-web`, `android-emulator-web`, and both Android
+  native targets. A loopback address reaches the capture host's own browser and never the device;
+  the campaign rejects one up front, and asserts the probe host answers before the queue starts,
+  because getting it wrong otherwise reads as a page that would not load. Start the host with
+  `npm run perf:device:serve` first. Native drawing also needs a machine-local temporary
+  `server.url` plus `cleartext: true` in `capacitor.config.json` before the instrumented build and
+  sync; restore the source config immediately after installing and never commit that address.
+  Reinstall the packaged instrumented build before the Appium action cells so their page-delivery
+  provenance remains the bundled `https://localhost` origin.
 
   The transport it replaced is the one ADR-0135 measured at **46.8 moves/s**, below the 100–170
   fidelity band. Re-probed on 2026-08-22 and it reproduces exactly: 46.8 moves/s, 0.44 moves per

@@ -63,7 +63,9 @@ const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 export const CAMPAIGN_TARGETS = {
   'ipad-simulator-web': {
     captureRuntime: 'ios-safari',
-    refreshRegime: null,
+    // Measured at 17 ms across the issue-1215 simulator-web corpus; the
+    // refresh-regime test binds this declaration to those raw captures.
+    refreshRegime: '60hz',
     label: 'iPad Simulator · web',
     transport: 'appium',
     runtime: 'web',
@@ -71,7 +73,9 @@ export const CAMPAIGN_TARGETS = {
   },
   'ipad-simulator-native': {
     captureRuntime: 'ios-capacitor-webview',
-    refreshRegime: null,
+    // Measured at 17 ms in the installed simulator WebView across the
+    // issue-1215 corpus, independently of the simulator's Safari row.
+    refreshRegime: '60hz',
     label: 'iPad Simulator · native',
     transport: 'appium',
     runtime: 'native',
@@ -117,10 +121,17 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-emulator-native': {
     captureRuntime: 'android-capacitor-webview',
-    refreshRegime: null,
+    // Measured at 16.7 ms across all four modes in the issue-1215 native
+    // emulator corpus; declared from those captures, not from the web sibling.
+    refreshRegime: '60hz',
     deviceClass: 'handset',
     label: 'Android emulator · native',
-    transport: 'appium',
+    // ADR-0145: Appium drives this 60 Hz WebView at 0.82 moves/frame, below
+    // the 0.9 fidelity floor, and perturbs the main thread while doing so.
+    // Drawing therefore uses the split transport; Appium remains valid for
+    // the discrete action sweep.
+    transport: SPLIT_TRANSPORT,
+    splitPlatform: 'android',
     runtime: 'native',
     webviewClass: 'android.webkit.WebView',
   },
@@ -478,7 +489,7 @@ export function campaignTarget(targetId) {
       `Unknown campaign target ${targetId} — expected one of ${Object.keys(CAMPAIGN_TARGETS).join(', ')}`
     );
   }
-  return target;
+  return { id: targetId, ...target };
 }
 
 function resolveModes(modeIds) {
