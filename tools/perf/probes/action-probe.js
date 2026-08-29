@@ -16,6 +16,10 @@
     'animationcancel',
   ];
   const WINDOW_ACTIVITY_EVENTS = ['resize', 'orientationchange'];
+  const MUTATION_DESCRIPTOR_CAP = 8;
+  // Detailed mutation payloads cross WebDriver in one object; timing stays
+  // complete while mutation storms cannot grow that object without bound.
+  const DETAILED_MUTATION_ACTIVITY_CAP = 32;
 
   function canvasKind(canvas) {
     if (canvas.id === 'drawingCanvas') return 'input';
@@ -120,30 +124,50 @@
     }
   }
 
+  function descriptorAccumulator() {
+    return { descriptors: [], seen: new Set(), total: 0 };
+  }
+
+  function addMutationNode(accumulator, node) {
+    accumulator.total++;
+    if (accumulator.descriptors.length >= MUTATION_DESCRIPTOR_CAP) return;
+    const descriptor = nodeDescriptor(node);
+    if (!descriptor || accumulator.seen.has(descriptor)) return;
+    accumulator.seen.add(descriptor);
+    accumulator.descriptors.push(descriptor);
+  }
+
   function mutationDetails(records) {
-    const targets = [...new Set(records.map((record) => nodeDescriptor(record.target)))].filter(
-      Boolean
-    );
-    const added = [
-      ...new Set(
-        records.flatMap((record) => [...record.addedNodes].map((node) => nodeDescriptor(node)))
-      ),
-    ].filter(Boolean);
-    const removed = [
-      ...new Set(
-        records.flatMap((record) => [...record.removedNodes].map((node) => nodeDescriptor(node)))
-      ),
-    ].filter(Boolean);
+    const targets = descriptorAccumulator();
+    const added = descriptorAccumulator();
+    const removed = descriptorAccumulator();
+    for (const record of records) {
+      addMutationNode(targets, record.target);
+      for (const node of record.addedNodes) addMutationNode(added, node);
+      for (const node of record.removedNodes) addMutationNode(removed, node);
+    }
     return {
-      targets: targets.slice(0, 8),
-      ...(added.length ? { added: added.slice(0, 8) } : {}),
-      ...(removed.length ? { removed: removed.slice(0, 8) } : {}),
+      targets: targets.descriptors,
+      ...(targets.total > targets.descriptors.length ? { targetsTotal: targets.total } : {}),
+      ...(added.descriptors.length ? { added: added.descriptors } : {}),
+      ...(added.total > added.descriptors.length ? { addedTotal: added.total } : {}),
+      ...(removed.descriptors.length ? { removed: removed.descriptors } : {}),
+      ...(removed.total > removed.descriptors.length ? { removedTotal: removed.total } : {}),
     };
   }
 
   function recordMutations(action, records) {
     if (!records.length) return;
-    recordActivity(action, 'dom-mutation', mutationDetails(records));
+    const mutationIndex = action.mutationActivityCount++;
+    if (mutationIndex < DETAILED_MUTATION_ACTIVITY_CAP) {
+      recordActivity(action, 'dom-mutation', mutationDetails(records));
+    } else {
+      recordActivity(
+        action,
+        'dom-mutation',
+        mutationIndex === DETAILED_MUTATION_ACTIVITY_CAP ? { detailsOmitted: true } : {}
+      );
+    }
     closeDetachedVisualEffects(action);
   }
 
@@ -213,6 +237,7 @@
       activities: [],
       visualEffectCount: 0,
       visualEffects: new Map(),
+      mutationActivityCount: 0,
       mutationObserver: null,
       listeners: [],
     };
@@ -279,6 +304,7 @@
       activities: [],
       visualEffectCount: 0,
       visualEffects: new Map(),
+      mutationActivityCount: 0,
       mutationObserver: null,
       listeners: [],
     };
