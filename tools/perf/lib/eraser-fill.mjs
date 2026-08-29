@@ -15,6 +15,7 @@ export const ERASER_FILL_COLOR = '#7c4dff';
 // fill gives up. Backing migration runs one tile per frame (16 tiles at 60 Hz is
 // ~270 ms); this budget covers a stalled first frame several times over.
 export const ERASER_FILL_BACKING_TIMEOUT_MS = 4_000;
+export const ERASER_REFILL_IDLE_FRAMES = 2;
 
 // A verified fill returns `{ tiles, backings, transparentTiles }`; a fill that
 // cannot yet run safely returns `{ pending: [...] }` naming the tiles it is
@@ -48,61 +49,15 @@ export const ERASER_FILL_BACKING_TIMEOUT_MS = 4_000;
 // restores full ink between passes and keeps the eraser's geometry identical
 // to every other brush's fixed plan.
 //
-// The refill runs in the pointer-up gap after a pass's last stroke — never in
-// contact, so lostFrameTimeShare (charged over in-contact intervals only) does
-// not price it; the next stroke starts at least a stroke-pause later. The last
-// pass's final pointerup deliberately does not refill: there is nothing left
-// to erase, and painting fresh ink under the closing probe would be work the
-// capture never asked for. Each refill's verification result is kept on
-// `window.__eraserRefills` and travels home in the report, so the artifact can
-// prove every pass had ink — an anomalous refill (pending or transparent) is
-// recorded rather than thrown, because aborting mid-gesture would destroy the
-// capture the evidence exists to judge. The record is CONSUMED downstream
-// (issue 1355): `anomalousEraserRefills` in campaign-plan.mjs is the shared
-// reader, acceptance refuses the artifact (`eraser-fill-failed`), and the
-// matrix refuses the fold — recorded-not-thrown here, read-and-refused there.
-// The one place the arming arithmetic lives (the PR 1368 review changed a
-// writer's totalStrokes expression and the constants-only drift guard stayed
-// green): both writers arm the recorder through this helper, and the guard in
-// eraser-fill.test.mjs drives helper -> recorder -> reader as one chain, so
-// arithmetic drift here - or a writer bypassing it - is one grep and one red
-// test away instead of a hardware campaign rejecting every eraser cell.
-export function eraserRefillArming(gestureRepeats, strokesPerRepeat) {
-  return {
-    everyStrokes: strokesPerRepeat,
-    totalStrokes: gestureRepeats * strokesPerRepeat,
-  };
-}
-
-export function eraserRefillFunctionSource() {
-  return `function armEraserRefill(everyStrokes, totalStrokes, fillEraserInk) {
-    const refills = [];
-    window.__eraserRefills = refills;
-    let strokes = 0;
-    window.addEventListener(
-      'pointerup',
-      (event) => {
-        if (!event.target || !event.target.closest || !event.target.closest('.canvas-stack')) {
-          return;
-        }
-        strokes += 1;
-        if (strokes % everyStrokes !== 0 || strokes >= totalStrokes) return;
-        try {
-          const result = fillEraserInk();
-          refills.push({
-            afterStroke: strokes,
-            pending: !!result.pending,
-            transparentTiles: result.transparentTiles ?? [],
-          });
-        } catch (error) {
-          refills.push({ afterStroke: strokes, error: String((error && error.message) || error) });
-        }
-      },
-      true
-    );
-    return refills;
-  }`;
-}
+// Both automated transports dispatch one authored gesture pass at a time. The
+// Appium runner executes this fill while it owns the page context; the split
+// transport requests it through a nonce-bound host/page handshake. Each path
+// proves the preceding pass delivered a new trusted canvas lift, verifies the
+// fill, waits ERASER_REFILL_IDLE_FRAMES, and only then dispatches the next pass.
+// The last pass deliberately does not refill because there is no later erasing
+// work to feed. An anomalous result stays in `eraserRefills` so
+// `anomalousEraserRefills` refuses the artifact and the matrix fold rather than
+// discarding the capture that explains the failure.
 
 // `fillEraserInk(true)` verifies WITHOUT painting: the post-settle check runs
 // in that mode first, so a fill wiped during the settle window is seen and

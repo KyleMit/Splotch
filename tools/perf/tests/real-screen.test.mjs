@@ -1325,10 +1325,7 @@ describe('trusted XCUITest input', () => {
 
     expect(calls.filter(([kind]) => kind === 'perform')).toHaveLength(10);
     expect(calls.filter(([kind]) => kind === 'refill')).toEqual(
-      Array.from({ length: 9 }, (_, index) => [
-        'refill',
-        (index + 1) * STROKES_PER_GESTURE_REPEAT,
-      ])
+      Array.from({ length: 9 }, (_, index) => ['refill', (index + 1) * STROKES_PER_GESTURE_REPEAT])
     );
     expect(calls.at(-1)).toEqual(['perform', 1]);
     expect(refills).toHaveLength(9);
@@ -1355,7 +1352,7 @@ describe('trusted XCUITest input', () => {
     };
     const execute = async (script) => {
       calls.push(['execute', script]);
-      return { pending: false, transparentTiles: [] };
+      return { pending: false, transparentTiles: [], trustedCanvasPointerUps: 17 };
     };
     const executeAsync = async (script) => {
       calls.push(['executeAsync', script]);
@@ -1369,22 +1366,19 @@ describe('trusted XCUITest input', () => {
       executeAsync,
       webContext: 'WEBVIEW_art.splotch.app',
       afterStroke: 20,
+      previousTrustedCanvasPointerUps: 0,
       repeatPauseMs: 0,
     });
 
-    expect(calls.map(([kind]) => kind)).toEqual([
-      'request',
-      'execute',
-      'executeAsync',
-      'request',
-    ]);
+    expect(calls.map(([kind]) => kind)).toEqual(['request', 'execute', 'executeAsync', 'request']);
     expect(calls[0]).toEqual([
       'request',
       'POST',
       '/session/session-1/context',
       { name: 'WEBVIEW_art.splotch.app' },
     ]);
-    expect(calls[1][1]).toContain('return fillEraserInk();');
+    expect(calls[1][1]).toContain('const fill = fillEraserInk();');
+    expect(calls[1][1]).toContain('trustedCanvasPointerUps');
     expect(calls[2][1]).toContain('requestAnimationFrame(tick)');
     expect(calls[3]).toEqual([
       'request',
@@ -1392,7 +1386,12 @@ describe('trusted XCUITest input', () => {
       '/session/session-1/context',
       { name: 'NATIVE_APP' },
     ]);
-    expect(refill).toEqual({ afterStroke: 20, pending: false, transparentTiles: [] });
+    expect(refill).toEqual({
+      afterStroke: 20,
+      pending: false,
+      transparentTiles: [],
+      trustedCanvasPointerUps: 17,
+    });
   });
 
   it('records a page-fill anomaly and still restores native input context', async () => {
@@ -1411,11 +1410,52 @@ describe('trusted XCUITest input', () => {
       executeAsync: async () => true,
       webContext: 'WEBVIEW_art.splotch.app',
       afterStroke: 30,
+      previousTrustedCanvasPointerUps: 17,
       repeatPauseMs: 0,
     });
 
     expect(contexts).toEqual(['WEBVIEW_art.splotch.app', 'NATIVE_APP']);
     expect(refill).toEqual({ afterStroke: 30, error: 'transparent backing' });
+  });
+
+  it('records an anomaly when a requested pass delivered no new trusted canvas lift', async () => {
+    const refill = await refillEraserBetweenPasses({
+      client: { request: async () => null },
+      sessionId: 'session-1',
+      execute: async () => ({
+        pending: false,
+        transparentTiles: [],
+        trustedCanvasPointerUps: 17,
+      }),
+      executeAsync: async () => true,
+      webContext: 'WEBVIEW_art.splotch.app',
+      afterStroke: 30,
+      previousTrustedCanvasPointerUps: 17,
+      repeatPauseMs: 0,
+    });
+
+    expect(refill.error).toContain('no new trusted canvas pointerup');
+  });
+
+  it('aborts when idle frames cannot prove separation from the next pass', async () => {
+    await expect(
+      refillEraserBetweenPasses({
+        client: { request: async () => null },
+        sessionId: 'session-1',
+        execute: async () => ({
+          pending: false,
+          transparentTiles: [],
+          trustedCanvasPointerUps: 17,
+        }),
+        executeAsync: async () => {
+          throw new Error('rAF timeout');
+        },
+        webContext: 'WEBVIEW_art.splotch.app',
+        afterStroke: 20,
+        previousTrustedCanvasPointerUps: 0,
+        repeatPauseMs: 0,
+      })
+    ).rejects.toThrow('rAF timeout');
   });
 
   it('only permits Apple-account provisioning when explicitly requested', () => {

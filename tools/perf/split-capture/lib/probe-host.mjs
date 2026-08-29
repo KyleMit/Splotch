@@ -55,6 +55,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     report: null,
     progress: null,
     pulse: null,
+    refill: null,
     // The last stale-page stand-down that adopted THIS plan's nonce (reset with
     // the plan). For a manual capture there is exactly one page, so a stale
     // stand-down means the human's URL lacked the run identity — the runner
@@ -94,6 +95,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         ready: state.progress,
         hasReport: !!state.report,
         pulse: state.pulse,
+        refill: state.refill,
         planRequests: state.planRequests,
         stalePage: state.stalePage,
       });
@@ -109,6 +111,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         state.report = null;
         state.progress = null;
         state.pulse = null;
+        state.refill = null;
         state.planRequests = 0;
         state.stalePage = null;
         delete state.plan.reset;
@@ -150,6 +153,15 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
           (!state.pulse || payload.events >= state.pulse.events)
         ) {
           state.pulse = payload;
+        }
+      } else if (pathname === '/__probe/refill') {
+        if (
+          payload.nonce === state.plan.nonce &&
+          payload.request?.sequence === state.plan.eraserRefillRequest?.sequence &&
+          payload.request?.afterStroke === state.plan.eraserRefillRequest?.afterStroke &&
+          (!state.refill || payload.request.sequence >= state.refill.request.sequence)
+        ) {
+          state.refill = payload;
         }
       } else if (pathname === '/__probe/ready') {
         // A suspended tab from an earlier run answers the same plan; only the

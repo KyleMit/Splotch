@@ -23,6 +23,7 @@ import {
 } from './lib/input-fidelity.mjs';
 import {
   CAMPAIGN_TARGETS,
+  GESTURE_REPEATS,
   anomalousEraserRefills,
   eraserRefillShortfall,
   gesturePlanFor,
@@ -383,7 +384,7 @@ function normalizeDrawingRun(
   sourceDirectory,
   mode,
   gateShare,
-  { expectedRefreshRegime, captureRuntime }
+  { expectedRefreshRegime, expectedGestureRepeats, captureRuntime }
 ) {
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
@@ -418,7 +419,7 @@ function normalizeDrawingRun(
     // recorded an anomaly measured erasing blank paper on later passes, so the
     // fold below refuses it rather than publishing an optimistic cell.
     anomalousEraserRefills: anomalousEraserRefills(profile),
-    eraserRefillShortfall: eraserRefillShortfall(profile, recordedGestureRepeats(profile)),
+    eraserRefillShortfall: eraserRefillShortfall(profile, expectedGestureRepeats),
     // One composed answer to "can I trust this number?" — see composeRunTrust.
     trust: composeRunTrust(profile, {
       fidelity,
@@ -509,10 +510,14 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
   return Object.fromEntries(
     BRUSHES.map((brush) => {
       const gateShare = lostFrameTimeShareGateFor(targetId, brush);
+      const target = CAMPAIGN_TARGETS[targetId];
+      const expectedGestureRepeats =
+        target && target.transport !== 'desktop' ? GESTURE_REPEATS : null;
       const runs = (sources[brush] ?? []).map((source) =>
         normalizeDrawingRun(source, productCommit, sourceDirectory, mode, gateShare, {
-          expectedRefreshRegime: CAMPAIGN_TARGETS[targetId]?.refreshRegime ?? null,
-          captureRuntime: CAMPAIGN_TARGETS[targetId]?.captureRuntime ?? DEFAULT_CAPTURE_RUNTIME,
+          expectedRefreshRegime: target?.refreshRegime ?? null,
+          expectedGestureRepeats,
+          captureRuntime: target?.captureRuntime ?? DEFAULT_CAPTURE_RUNTIME,
         })
       );
       // Two recorded counts in one cell means two instruments folded into one
@@ -531,6 +536,19 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
           `${targetId} ${mode.id} ${brush} folds captures with different gesture-repeat counts ` +
             `(${repeatCounts.join(', ')}) — their first-touch-to-repeat mixes are not comparable. ` +
             `Sources: ${sources}`
+        );
+      }
+      const foreignRepeatCount = runs.find(
+        (run) =>
+          Number.isFinite(expectedGestureRepeats) &&
+          Number.isFinite(run.gestureRepeats) &&
+          run.gestureRepeats !== expectedGestureRepeats
+      );
+      if (foreignRepeatCount) {
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds a capture recording ` +
+            `${foreignRepeatCount.gestureRepeats} gesture repeats, not the campaign contract of ` +
+            `${expectedGestureRepeats}. Source: ${foreignRepeatCount.source}`
         );
       }
       // The same refusal for HOW the repeats were fed ink: two recorded plans in
@@ -594,7 +612,6 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
       // retired or foreign plan must still collide with the CONTRACT. Scoped to
       // repeat-driven targets: the desktop transport drives no gesture plan,
       // and an unknown target has no contract to compare against.
-      const target = CAMPAIGN_TARGETS[targetId];
       if (target && target.transport !== 'desktop') {
         const contract = gesturePlanFor(brush);
         const foreign = runs.find(

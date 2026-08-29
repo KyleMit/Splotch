@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
 import {
   ERASER_FILL_BACKING_TIMEOUT_MS,
+  ERASER_REFILL_IDLE_FRAMES,
   eraserFillFunctionSource,
 } from '../lib/eraser-fill.mjs';
 import { CAMPAIGN_TARGETS, NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
@@ -70,7 +71,6 @@ const WDA_LAUNCH_TIMEOUT_MS = 180_000;
 const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
-const ERASER_REFILL_IDLE_FRAMES = 2;
 const TABLE_CHUNK_ROWS = 2_000;
 const HAND_COUNTDOWN_SECONDS = 5;
 const HAND_DEFAULT_SECONDS = 20;
@@ -235,20 +235,39 @@ export async function refillEraserBetweenPasses({
   executeAsync,
   webContext,
   afterStroke,
+  previousTrustedCanvasPointerUps,
   repeatPauseMs,
 }) {
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   let refill;
   try {
-    const result = await execute(`${eraserFillFunctionSource()}\nreturn fillEraserInk();`);
+    const result = await execute(`
+      ${eraserFillFunctionSource()}
+      const fill = fillEraserInk();
+      const counts = window.__probe.counts();
+      const trustedCanvasPointerUps = window.__probe
+        .events(0, counts.events)
+        .filter((row) => row[2] === 2 && row[6] === 1 && row[8] === 1).length;
+      return { ...fill, trustedCanvasPointerUps };
+    `);
     refill = {
       afterStroke,
       pending: !!result.pending,
       transparentTiles: result.transparentTiles ?? [],
+      trustedCanvasPointerUps: result.trustedCanvasPointerUps,
     };
+    if (
+      !Number.isSafeInteger(result.trustedCanvasPointerUps) ||
+      result.trustedCanvasPointerUps <= previousTrustedCanvasPointerUps
+    ) {
+      refill.error =
+        `no new trusted canvas pointerup after planned stroke ${afterStroke}: ` +
+        `${previousTrustedCanvasPointerUps} -> ${String(result.trustedCanvasPointerUps)}`;
+    }
   } catch (error) {
     refill = { afterStroke, error: String(error?.message ?? error) };
   }
+  // Without the idle frames, the refill cannot be proven separate from the next contact window.
   await executeAsync(`
     const done = arguments[0];
     let remaining = ${ERASER_REFILL_IDLE_FRAMES};
@@ -260,7 +279,7 @@ export async function refillEraserBetweenPasses({
     requestAnimationFrame(tick);
   `);
   if (repeatPauseMs > 0) await sleep(repeatPauseMs);
-  // A failed page fill is evidence; a failed context transition makes the measured runtime ambiguous.
+  // A failed page fill is evidence; a failed context transition makes the runtime ambiguous.
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   return refill;
 }
@@ -1084,16 +1103,25 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         });
       const refillBetweenPasses =
         brush === 'eraser'
-          ? (afterStroke) =>
-              refillEraserBetweenPasses({
-                client,
-                sessionId,
-                execute,
-                executeAsync,
-                webContext,
-                afterStroke,
-                repeatPauseMs,
-              })
+          ? (() => {
+              let previousTrustedCanvasPointerUps = 0;
+              return async (afterStroke) => {
+                const refill = await refillEraserBetweenPasses({
+                  client,
+                  sessionId,
+                  execute,
+                  executeAsync,
+                  webContext,
+                  afterStroke,
+                  previousTrustedCanvasPointerUps,
+                  repeatPauseMs,
+                });
+                if (Number.isSafeInteger(refill.trustedCanvasPointerUps)) {
+                  previousTrustedCanvasPointerUps = refill.trustedCanvasPointerUps;
+                }
+                return refill;
+              };
+            })()
           : null;
       eraserRefills = await driveTrustedGesturePasses({
         repeats: gestureRepeats,

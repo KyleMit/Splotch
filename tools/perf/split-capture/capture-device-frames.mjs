@@ -14,7 +14,6 @@
 // contact moves per second against a 100-170 fidelity band, so cells captured
 // through it cannot be scored. This path clears the band.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { eraserRefillArming } from '../lib/eraser-fill.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
@@ -33,6 +32,7 @@ import {
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import {
   STROKES_PER_GESTURE_REPEAT,
+  driveTrustedGesturePasses,
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
@@ -72,6 +72,7 @@ const PROBE_READY_TIMEOUT_MS = 90_000;
 // deciding the launch did not land, not how long a slow page may take.
 const PROBE_READY_OPEN_TIMEOUT_MS = 30_000;
 const REPORT_TIMEOUT_MS = 120_000;
+const ERASER_REFILL_ACK_TIMEOUT_MS = 30_000;
 // After the last pointerUp the engine still has queued raster work; ending the
 // phase immediately would clip it out of the capture.
 const GESTURE_TAIL_MS = 1_200;
@@ -93,6 +94,41 @@ async function control(host, body) {
 }
 
 const probeState = (host) => fetch(`${host}/__probe/state`).then((r) => r.json());
+
+export async function requestPageEraserRefill({
+  host,
+  nonce,
+  afterStroke,
+  controlPage = control,
+  readState = probeState,
+}) {
+  const sequence = afterStroke / STROKES_PER_GESTURE_REPEAT;
+  if (!Number.isSafeInteger(sequence) || sequence < 1) {
+    throw new Error(`invalid eraser refill boundary ${afterStroke}`);
+  }
+  const request = { sequence, afterStroke };
+  await controlPage(host, { eraserRefillRequest: request });
+  const acknowledged = await pollFor(async () => {
+    const refill = (await readState(host)).refill;
+    return refill?.nonce === nonce &&
+      refill.request?.sequence === sequence &&
+      refill.request?.afterStroke === afterStroke
+      ? refill
+      : null;
+  }, ERASER_REFILL_ACK_TIMEOUT_MS);
+  if (!acknowledged) {
+    throw new Error(`the page did not acknowledge eraser refill ${sequence}`);
+  }
+  return acknowledged.entry;
+}
+
+export function driveSplitGesturePasses({ driver, geometry, repeats, refillBetweenPasses = null }) {
+  return driveTrustedGesturePasses({
+    repeats,
+    perform: (count) => driver.dispatch(geometry, count),
+    refillBetweenPasses,
+  });
+}
 
 async function wda(wdaUrl, method, path, body) {
   const response = await fetch(`${wdaUrl}${path}`, {
@@ -451,14 +487,7 @@ export async function captureDeviceFrames({
     nonce,
     requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
-    // The page refills the tiles between gesture passes so every pass erases
-    // real ink (issue 1292) — the plan carries how the host groups strokes.
-    eraserRefill:
-      brush === 'eraser'
-        ? {
-            ...eraserRefillArming(repeats, STROKES_PER_GESTURE_REPEAT),
-          }
-        : null,
+    eraserRefillRequest: null,
     finish: false,
     reset: true,
   });
@@ -505,7 +534,15 @@ export async function captureDeviceFrames({
   const runtimeIdentity = await driver.runtimeIdentity?.();
   console.log(`canvas ${JSON.stringify(geometry.bounds)} scale ${geometry.densityScale}`);
 
-  await driver.dispatch(geometry, repeats);
+  await driveSplitGesturePasses({
+    driver,
+    geometry,
+    repeats,
+    refillBetweenPasses:
+      brush === 'eraser'
+        ? (afterStroke) => requestPageEraserRefill({ host, nonce, afterStroke })
+        : null,
+  });
   await sleep(GESTURE_TAIL_MS);
   const pulsed = await probeState(host).catch((error) => {
     rethrowIfBroken(error);

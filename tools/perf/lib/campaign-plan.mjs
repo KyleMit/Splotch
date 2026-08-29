@@ -845,14 +845,12 @@ function healthyRefillEntry(refill) {
   );
 }
 
-// The refill recorder is armed with (strokesPerRepeat, repeats x
-// strokesPerRepeat) and refills after every repeat's last stroke except the
-// final one, so a complete eraser capture records exactly repeats - 1 entries.
-// Fewer means refills silently never fired — zero recorded anomalies while the
-// later passes erased blank paper, the exact state the record exists to refuse
-// (the review's finding: the record proves recorded anomalies, not that
-// refills happened). Null when there is nothing to hold to a count: an absent
-// field (historical tolerance) or no expected repeat contract.
+// Each transport refills after every authored pass except the final one, so a
+// complete eraser capture records exactly repeats - 1 entries. The count guards
+// against a missing acknowledgement or truncated record; each current entry's
+// trusted-canvas-lift evidence separately proves the preceding pass arrived.
+// Null when there is nothing to hold to a count: an absent field (historical
+// tolerance) or no expected repeat contract.
 export function eraserRefillShortfall(artifact, expectedRepeats) {
   const recorded = artifact?.eraserRefills ?? null;
   if (recorded === null || !Array.isArray(recorded)) return null;

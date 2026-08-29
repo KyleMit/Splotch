@@ -84,6 +84,7 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   const readyPosted = new Promise((resolve) => (readyResolve = resolve));
   let staleResolve;
   const stalePosted = new Promise((resolve) => (staleResolve = resolve));
+  const eventRows = [];
 
   global.fetch = vi.fn(async (path, init) => {
     if (path === '/__probe/plan') return { json: async () => plan };
@@ -100,7 +101,10 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   document.head.append = (element) => {
     if (element.tagName === 'SCRIPT') {
       window.__probe = {
-        counts: () => ({ frames: 0, events: 0, measures: 0 }),
+        counts: () => ({ frames: 0, events: eventRows.length, measures: 0 }),
+        frames: () => [],
+        events: (from, count) => eventRows.slice(from, from + count),
+        measures: () => [],
         finish: () => ({ meta: { counts: {} } }),
         stop: () => {},
       };
@@ -111,7 +115,14 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   };
 
   new Function(pageBootstrapSource())();
-  return { readyPosted, stalePosted, posted };
+  return {
+    readyPosted,
+    stalePosted,
+    posted,
+    recordTrustedCanvasPointerUp() {
+      eventRows.push([0, 0, 2, 1, 0, 0, 1, 0, 1]);
+    },
+  };
 }
 
 beforeEach(() => {
@@ -367,11 +378,9 @@ describe('the bootstrap verifying the eraser fill', () => {
         theme: 'light',
         nonce: 'eraser-fill-run',
         finish: false,
-        // Two strokes per pass, four strokes total: one refill boundary at
-        // stroke 2, and the final stroke must not refill.
-        eraserRefill: { everyStrokes: 2, totalStrokes: 4 },
+        eraserRefillRequest: null,
       };
-      const { readyPosted, posted } = runBootstrap(plan);
+      const { readyPosted, posted, recordTrustedCanvasPointerUp } = runBootstrap(plan);
       const ready = await readyPosted;
 
       expect(ready.eraserFill).toEqual({
@@ -385,10 +394,28 @@ describe('the bootstrap verifying the eraser fill', () => {
       expect(tiles[0].context.fillRects).toEqual([[0, 0, 100, 80]]);
       expect(tiles[1].context.fillStyle).toBe('#7c4dff');
 
-      const stack = document.querySelector('.canvas-stack');
-      for (let strokeIndex = 0; strokeIndex < 4; strokeIndex++) {
-        stack.dispatchEvent(new Event('pointerup', { bubbles: true }));
-      }
+      for (let pointerUp = 0; pointerUp < 16; pointerUp++) recordTrustedCanvasPointerUp();
+      plan.eraserRefillRequest = { sequence: 1, afterStroke: 2 };
+      const refill = await vi.waitFor(
+        () => {
+          const found = posted.find((entry) => entry.path === '/__probe/refill');
+          if (!found) throw new Error('no refill acknowledgement yet');
+          return found;
+        },
+        { timeout: BOOTSTRAP_TIMEOUT_MS }
+      );
+      expect(refill.body).toMatchObject({
+        nonce: 'eraser-fill-run',
+        request: { sequence: 1, afterStroke: 2 },
+        entry: {
+          afterStroke: 2,
+          pending: false,
+          transparentTiles: [],
+          trustedCanvasPointerUps: 16,
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(posted.filter((entry) => entry.path === '/__probe/refill')).toHaveLength(1);
       plan.finish = true;
       const report = await vi.waitFor(
         () => {
@@ -400,7 +427,12 @@ describe('the bootstrap verifying the eraser fill', () => {
       );
 
       expect(report.body.eraserRefills).toEqual([
-        { afterStroke: 2, pending: false, transparentTiles: [] },
+        {
+          afterStroke: 2,
+          pending: false,
+          transparentTiles: [],
+          trustedCanvasPointerUps: 16,
+        },
       ]);
       // The refill is the second paint; the final stroke deliberately adds none.
       expect(tiles[0].context.fillRects).toHaveLength(2);
@@ -424,6 +456,36 @@ describe('the bootstrap verifying the eraser fill', () => {
 
       expect(ready.eraserFill.transparentTiles).toEqual([]);
       expect(tile.context.fillRects.length).toBeGreaterThan(1);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'records a refill anomaly when the requested pass produced no trusted canvas lift',
+    async () => {
+      paintEraserShell([{ backing: '100x80', width: 100, height: 80 }]);
+      const plan = {
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-missing-pass',
+        finish: false,
+        eraserRefillRequest: null,
+      };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+
+      plan.eraserRefillRequest = { sequence: 1, afterStroke: 10 };
+      const refill = await vi.waitFor(
+        () => {
+          const found = posted.find((entry) => entry.path === '/__probe/refill');
+          if (!found) throw new Error('no refill acknowledgement yet');
+          return found;
+        },
+        { timeout: BOOTSTRAP_TIMEOUT_MS }
+      );
+
+      expect(refill.body.entry.error).toContain('no new trusted canvas pointerup');
+      plan.finish = true;
     },
     BOOTSTRAP_TIMEOUT_MS
   );

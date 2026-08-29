@@ -25,8 +25,8 @@ import {
 } from '../../lib/campaign-state.mjs';
 import {
   ERASER_FILL_BACKING_TIMEOUT_MS,
+  ERASER_REFILL_IDLE_FRAMES,
   eraserFillFunctionSource,
-  eraserRefillFunctionSource,
 } from '../../lib/eraser-fill.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
@@ -230,8 +230,10 @@ export function pageBootstrapSource() {
     // The fill is verified rather than trusted (issue 1302), and the evidence
     // travels with readiness so the artifact can prove the eraser had ink.
     let eraserFill = null;
+    let refillEraserInk = null;
     if (plan.brush === 'eraser') {
       ${eraserFillFunctionSource()}
+      refillEraserInk = fillEraserInk;
       const fillVerified = async () => {
         await until(() => {
           eraserFill = fillEraserInk();
@@ -255,12 +257,6 @@ export function pageBootstrapSource() {
         await fillVerified();
         eraserFill = { ...eraserFill, repairedAfterSettle: true, settleWipe: afterSettle };
       }
-      // The plan says how the host groups strokes into passes; the page refills
-      // between passes so every pass erases real ink (issue 1292).
-      if (plan.eraserRefill) {
-        ${eraserRefillFunctionSource()}
-        armEraserRefill(plan.eraserRefill.everyStrokes, plan.eraserRefill.totalStrokes, fillEraserInk);
-      }
     }
 
     window.__probePhases = 'blank';
@@ -274,6 +270,48 @@ export function pageBootstrapSource() {
       document.head.append(element);
     });
     if (!window.__probe) throw new Error('probe did not install');
+
+    const eraserRefills = refillEraserInk ? [] : null;
+    let handledRefillSequence = 0;
+    let previousTrustedCanvasPointerUps = 0;
+    const waitForRefillIdleFrames = () => new Promise((resolve) => {
+      let remaining = ${ERASER_REFILL_IDLE_FRAMES};
+      const tick = () => {
+        remaining -= 1;
+        if (remaining === 0) resolve();
+        else requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    const serviceEraserRefill = async (request) => {
+      if (!refillEraserInk || !request || request.sequence <= handledRefillSequence) return;
+      let entry;
+      try {
+        const result = refillEraserInk();
+        const counts = window.__probe.counts();
+        const trustedCanvasPointerUps = window.__probe
+          .events(0, counts.events)
+          .filter((row) => row[2] === 2 && row[6] === 1 && row[8] === 1).length;
+        entry = {
+          afterStroke: request.afterStroke,
+          pending: !!result.pending,
+          transparentTiles: result.transparentTiles || [],
+          trustedCanvasPointerUps,
+        };
+        if (trustedCanvasPointerUps <= previousTrustedCanvasPointerUps) {
+          entry.error = 'no new trusted canvas pointerup after planned stroke ' +
+            request.afterStroke + ': ' + previousTrustedCanvasPointerUps + ' -> ' +
+            trustedCanvasPointerUps;
+        }
+        previousTrustedCanvasPointerUps = trustedCanvasPointerUps;
+      } catch (error) {
+        entry = { afterStroke: request.afterStroke, error: String(error?.message || error) };
+      }
+      await waitForRefillIdleFrames();
+      eraserRefills.push(entry);
+      handledRefillSequence = request.sequence;
+      await post('/__probe/refill', { nonce, request, entry });
+    };
 
     const rect = document.querySelector('#drawingCanvas').getBoundingClientRect();
     const centre = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
@@ -305,6 +343,7 @@ export function pageBootstrapSource() {
       const current = await fetch('/__probe/plan').then((response) => response.json());
       if (current.nonce !== nonce) return;
       if (current.finish) break;
+      await serviceEraserRefill(current.eraserRefillRequest);
       // The live event count, so the runner can tell "the page is ready but the
       // injected touches are landing on another tab" (issue 1294) from "the
       // report is still on its way". The pulse's only question is whether input
@@ -349,7 +388,7 @@ export function pageBootstrapSource() {
       report,
       topology: window.__drawingDebug?.getLiveSurfaceTopology?.() ?? null,
       // Per-pass refill evidence (issue 1292); null for every non-eraser run.
-      eraserRefills: window.__eraserRefills ?? null,
+      eraserRefills,
     });
   } catch (error) {
     await log({ kind: 'bootstrap', message: String(error?.message ?? error) });
