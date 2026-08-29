@@ -16,6 +16,10 @@ const INPUT_QUIET_MS = 300;
 // Background residency should resume only after a deliberate pause, beyond a
 // tap and the modal transition it launches. Foreground demand never pays this.
 const BACKGROUND_INPUT_QUIET_MS = 750;
+// Even on a silent page, spacing residents prevents a newly quiet main thread
+// from receiving a train of unrelated mounts in consecutive idle callbacks.
+// Foreground demand bypasses the background scheduler entirely.
+const BACKGROUND_SLICE_SPACING_MS = 750;
 // How long a deferred callback waits before re-checking the signals.
 const IDLE_RETRY_MS = 250;
 // Two consecutive animation frames further apart than this mean the main
@@ -49,20 +53,56 @@ if (typeof window !== 'undefined') {
   window.addEventListener('wheel', stampInput, { passive: true, capture: true });
 }
 
-function inputQuiet(quietMs = INPUT_QUIET_MS, scheduledAt = -Infinity): boolean {
-  return activePointers === 0 && performance.now() - Math.max(lastInputMs, scheduledAt) >= quietMs;
+function inputQuiet(quietMs: number): boolean {
+  return activePointers === 0 && performance.now() - lastInputMs >= quietMs;
 }
 
-function scheduleCooperativeFallback(fn: () => void): () => void {
+type CandidateScheduler = (fn: () => void, delayMs: number) => () => void;
+
+const scheduleTimerCandidate: CandidateScheduler = (fn, delayMs) => {
+  const timer = setTimeout(fn, delayMs);
+  return () => clearTimeout(timer);
+};
+
+const scheduleNativeIdleCandidate: CandidateScheduler = (fn, delayMs) => {
+  let idleHandle = 0;
+  const enterIdle = () => {
+    idleHandle = requestIdleCallback(fn);
+  };
+  const timer = delayMs > 0 ? setTimeout(enterIdle, delayMs) : undefined;
+  if (timer === undefined) enterIdle();
+  return () => {
+    if (timer !== undefined) clearTimeout(timer);
+    if (idleHandle) cancelIdleCallback(idleHandle);
+  };
+};
+
+function scheduleQuietWork(
+  fn: () => void,
+  {
+    scheduleCandidate,
+    initialDelayMs,
+    inputQuietMs,
+    minimumSpacingMs = 0,
+  }: {
+    scheduleCandidate: CandidateScheduler;
+    initialDelayMs: number;
+    inputQuietMs: number;
+    minimumSpacingMs?: number;
+  }
+): () => void {
   let cancelled = false;
-  let timer: ReturnType<typeof setTimeout>;
+  let cancelCandidate = () => {};
   let frame = 0;
+  const scheduledAt = performance.now();
+  const signalsAreQuiet = () =>
+    inputQuiet(inputQuietMs) && performance.now() - scheduledAt >= minimumSpacingMs;
   const requeue = () => {
-    timer = setTimeout(attempt, IDLE_RETRY_MS);
+    cancelCandidate = scheduleCandidate(attempt, IDLE_RETRY_MS);
   };
   const attempt = () => {
     if (cancelled) return;
-    if (!inputQuiet()) {
+    if (!signalsAreQuiet()) {
       requeue();
       return;
     }
@@ -75,7 +115,7 @@ function scheduleCooperativeFallback(fn: () => void): () => void {
     frame = requestAnimationFrame((first) => {
       frame = requestAnimationFrame((second) => {
         if (cancelled) return;
-        if (second - first > FRAME_BUSY_GAP_MS || !inputQuiet()) {
+        if (second - first > FRAME_BUSY_GAP_MS || !signalsAreQuiet()) {
           requeue();
           return;
         }
@@ -83,10 +123,10 @@ function scheduleCooperativeFallback(fn: () => void): () => void {
       });
     });
   };
-  timer = setTimeout(attempt, IDLE_FALLBACK_MS);
+  cancelCandidate = scheduleCandidate(attempt, initialDelayMs);
   return () => {
     cancelled = true;
-    clearTimeout(timer);
+    cancelCandidate();
     if (frame) cancelAnimationFrame(frame);
   };
 }
@@ -96,56 +136,18 @@ export function scheduleIdle(fn: () => void): () => void {
     const handle = requestIdleCallback(fn);
     return () => cancelIdleCallback(handle);
   }
-  return scheduleCooperativeFallback(fn);
+  return scheduleQuietWork(fn, {
+    scheduleCandidate: scheduleTimerCandidate,
+    initialDelayMs: IDLE_FALLBACK_MS,
+    inputQuietMs: INPUT_QUIET_MS,
+  });
 }
 
 export function scheduleInteractionIdle(fn: () => void): () => void {
-  let cancelled = false;
-  let cancelCandidate = () => {};
-  let retryTimer: ReturnType<typeof setTimeout>;
-  let frame = 0;
-  const scheduledAt = performance.now();
-
-  const requeue = () => {
-    retryTimer = setTimeout(scheduleCandidate, IDLE_RETRY_MS);
-  };
-  const runAfterFrameProbe = () => {
-    if (typeof requestAnimationFrame !== 'function') {
-      fn();
-      return;
-    }
-    frame = requestAnimationFrame((first) => {
-      frame = requestAnimationFrame((second) => {
-        if (cancelled) return;
-        if (
-          second - first > FRAME_BUSY_GAP_MS ||
-          !inputQuiet(BACKGROUND_INPUT_QUIET_MS, scheduledAt)
-        ) {
-          requeue();
-          return;
-        }
-        fn();
-      });
-    });
-  };
-  const attempt = () => {
-    if (cancelled) return;
-    if (!inputQuiet(BACKGROUND_INPUT_QUIET_MS, scheduledAt)) {
-      requeue();
-      return;
-    }
-    runAfterFrameProbe();
-  };
-  function scheduleCandidate() {
-    if (cancelled) return;
-    cancelCandidate = scheduleIdle(attempt);
-  }
-
-  scheduleCandidate();
-  return () => {
-    cancelled = true;
-    cancelCandidate();
-    clearTimeout(retryTimer);
-    if (frame) cancelAnimationFrame(frame);
-  };
+  return scheduleQuietWork(fn, {
+    scheduleCandidate: hasNativeIdle() ? scheduleNativeIdleCandidate : scheduleTimerCandidate,
+    initialDelayMs: hasNativeIdle() ? 0 : IDLE_FALLBACK_MS,
+    inputQuietMs: BACKGROUND_INPUT_QUIET_MS,
+    minimumSpacingMs: BACKGROUND_SLICE_SPACING_MS,
+  });
 }

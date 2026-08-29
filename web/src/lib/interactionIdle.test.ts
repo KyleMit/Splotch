@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { scheduleInteractionIdle } from './idle';
 
 let idleCallbacks: Array<() => void>;
 let frameCallbacks: Array<(time: number) => void>;
 let frameTime: number;
+let scheduleInteractionIdle: typeof import('./idle').scheduleInteractionIdle;
 
 function flushIdle() {
   const callbacks = idleCallbacks;
@@ -21,7 +21,7 @@ function flushFrames(count: number) {
   }
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.useFakeTimers();
   idleCallbacks = [];
   frameCallbacks = [];
@@ -36,6 +36,8 @@ beforeEach(() => {
     return frameCallbacks.length;
   });
   vi.stubGlobal('cancelAnimationFrame', vi.fn());
+  vi.resetModules();
+  ({ scheduleInteractionIdle } = await import('./idle'));
 });
 
 afterEach(() => {
@@ -73,6 +75,22 @@ it('waits for click, keyboard, wheel, and pointer activity to become quiet', () 
     vi.advanceTimersByTime(250);
     flushIdle();
   }
+  flushFrames(2);
+  expect(fn).toHaveBeenCalledOnce();
+});
+
+it('spaces background slices even when no input occurred', () => {
+  const fn = vi.fn();
+  scheduleInteractionIdle(fn);
+
+  flushIdle();
+  vi.advanceTimersByTime(749);
+  flushIdle();
+  flushFrames(2);
+  expect(fn).not.toHaveBeenCalled();
+
+  vi.advanceTimersByTime(250);
+  flushIdle();
   flushFrames(2);
   expect(fn).toHaveBeenCalledOnce();
 });
