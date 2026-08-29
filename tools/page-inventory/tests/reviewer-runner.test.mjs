@@ -181,6 +181,32 @@ describe('reviewerFailureReason', () => {
     expect(reviewerFailureReason(stdout)).toBe('');
   });
 
+  // Observed on a real run: an API failure reports is_error with subtype
+  // `success` and puts the cause in `result`. Trusting the subtype reported
+  // "exited 1: success" as the reason a review failed.
+  it("prefers the runner's own words over a subtype that names no cause", () => {
+    const stdout = JSON.stringify({
+      is_error: true,
+      subtype: 'success',
+      terminal_reason: 'api_error',
+      result: 'API Error: Unable to connect to API: Self-signed certificate detected',
+    });
+
+    expect(reviewerFailureReason(stdout)).toBe(
+      'API Error: Unable to connect to API: Self-signed certificate detected'
+    );
+  });
+
+  it('falls back to the terminal reason when a failure says nothing else', () => {
+    const stdout = JSON.stringify({
+      is_error: true,
+      subtype: 'success',
+      terminal_reason: 'api_error',
+    });
+
+    expect(reviewerFailureReason(stdout)).toBe('api_error');
+  });
+
   it('is empty when there is no transcript to read', () => {
     expect(reviewerFailureReason('')).toBe('');
     expect(reviewerFailureReason('not json at all')).toBe('');

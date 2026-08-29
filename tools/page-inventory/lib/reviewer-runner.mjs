@@ -21,7 +21,16 @@ export const REVIEWER_RUNNERS = ['claude', 'codex'];
 const CLAUDE_MAX_TURNS = 12;
 
 const REVIEWER_MODELS = { codex: 'gpt-5.6-terra', claude: 'sonnet' };
-const PARSER_SYNTHESIZED_FAILURE = 'no_agent_message';
+// Subtypes that name no cause. `no_agent_message` is the parser's own verdict
+// on output it could not read, and a runner can report a failure whose subtype
+// is still `success` — an API error does exactly that, carrying its real reason
+// in `result` instead. Echoing either as the cause is worse than saying
+// nothing: one labels a crash confidently, the other reports "success" as the
+// reason a run failed.
+const UNINFORMATIVE_FAILURE_SUBTYPES = new Set(['no_agent_message', 'success', 'error']);
+// Enough of the runner's own words to name the cause, without pasting a whole
+// transcript into one line of console output.
+const FAILURE_DETAIL_MAX_CHARS = 200;
 
 export function normalizeReviewerRunner(value) {
   return normalizeAgentRunner(value);
@@ -153,11 +162,15 @@ export function reviewerArgs({
 export function reviewerFailureReason(stdout) {
   if (!stdout?.trim()) return '';
   try {
-    const { error } = parseSavedAgentOutput(stdout);
-    // `no_agent_message` is the parser's own verdict on output it could not
-    // read, not something the runner said. Reporting it would put a confident
-    // label on a crash, which is the failure this is trying to make legible.
-    return !error || error === PARSER_SYNTHESIZED_FAILURE ? '' : error;
+    const { error, envelope } = parseSavedAgentOutput(stdout);
+    if (!error) return '';
+    const subtype = UNINFORMATIVE_FAILURE_SUBTYPES.has(error) ? '' : error;
+    const detail = typeof envelope?.result === 'string' ? envelope.result.trim() : '';
+    return (
+      [subtype, detail.slice(0, FAILURE_DETAIL_MAX_CHARS)].filter(Boolean).join(': ') ||
+      envelope?.terminal_reason ||
+      ''
+    );
   } catch {
     return '';
   }
