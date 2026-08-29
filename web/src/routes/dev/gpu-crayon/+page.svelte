@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { paletteHex } from '$lib/palette';
   import { InkTarget } from '$lib/drawing/gpu/inkTarget';
   import { DETAIL_CROP, REFERENCE_SCENE } from '$lib/drawing/gpu/referenceScene';
   import type { CrayonRenderer } from '$lib/drawing/gpu/renderer';
@@ -24,7 +25,7 @@
   const activeRenderer = $derived(renderers.find((r) => r.id === activeId) ?? null);
   const activeStats = $derived(statsById[activeId] ?? null);
 
-  const FREE_DRAW_COLOR = '#AB71E1';
+  const FREE_DRAW_COLOR = paletteHex('Purple');
   const FREE_DRAW_WIDTH_PX = 46;
 
   onMount(() => {

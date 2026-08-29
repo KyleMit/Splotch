@@ -15,6 +15,8 @@
 // Points are authored at a realistic digitiser cadence so the replay's frame
 // batches match what strokeRasterQueue sees on device.
 
+import { paletteHex } from '../../palette';
+
 export interface ReferenceStroke {
   label: string;
   color: string;
@@ -88,7 +90,7 @@ function buildStrokes(): ReferenceStroke[] {
 
   strokes.push({
     label: 'single pass',
-    color: '#AB71E1',
+    color: paletteHex('Purple'),
     widthPx: STROKE_WIDTH_PX,
     seed: 1,
     points: sampleCurve(
@@ -101,7 +103,7 @@ function buildStrokes(): ReferenceStroke[] {
 
   strokes.push({
     label: 'fast sweep',
-    color: '#F89C45',
+    color: paletteHex('Orange'),
     widthPx: STROKE_WIDTH_PX,
     seed: 2,
     points: sampleCurve(
@@ -122,7 +124,7 @@ function buildStrokes(): ReferenceStroke[] {
     for (let pass = 0; pass <= column; pass++) {
       strokes.push({
         label: `buildup ×${column + 1}`,
-        color: '#5CCC90',
+        color: paletteHex('Mint'),
         widthPx: STROKE_WIDTH_PX,
         seed: 10 + column * 4 + pass,
         points: zigzag(from, to, BAND_Y[2], 34, 5),
@@ -132,14 +134,14 @@ function buildStrokes(): ReferenceStroke[] {
 
   strokes.push({
     label: 'glaze base',
-    color: '#F9D24F',
+    color: paletteHex('Yellow'),
     widthPx: STROKE_WIDTH_PX * 1.6,
     seed: 30,
     points: sampleCurve(LEFT, RIGHT, HAND_STEP_PX, () => BAND_Y[3]),
   });
   strokes.push({
     label: 'glaze over',
-    color: '#62A2E9',
+    color: paletteHex('Blue'),
     widthPx: STROKE_WIDTH_PX,
     seed: 31,
     points: sampleCurve(
