@@ -17,6 +17,7 @@ import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { ROOT, isMain } from '../lib/proc.mjs';
+import { roundCoordinate, transformPathData } from './lib/svg-path-transform.mjs';
 
 const ICON_DIR = join(ROOT, 'web/src/lib/icons');
 const CANONICAL_SIDE = 1000;
@@ -32,63 +33,7 @@ const DIFF_SIZE = 512;
 const MAX_BAD_PIXEL_FRACTION = 0.003;
 const CHANNEL_TOLERANCE = 24;
 
-const round = (v) => {
-  const r = Math.round(v * 100) / 100;
-  return Object.is(r, -0) ? 0 : r;
-};
-const num = (v) => String(round(v));
-
-const TOKEN_RE = /[MmLlHhVvCcSsQqTtAaZz]|[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g;
-const ARITY = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
-
-function transformPath(d, s, tx, ty) {
-  const tokens = d.match(TOKEN_RE);
-  if (!tokens) throw new Error('unparseable path data');
-  if (tokens.join('').replace(/\s/g, '').length !== d.replace(/[\s,]/g, '').length) {
-    throw new Error(`path tokenizer dropped characters: ${d.slice(0, 60)}`);
-  }
-  let out = '';
-  let i = 0;
-  let cmd = null;
-  let firstPair = true;
-  while (i < tokens.length) {
-    if (/^[A-Za-z]$/.test(tokens[i])) {
-      cmd = tokens[i];
-      out += cmd;
-      i++;
-      if (cmd.toUpperCase() === 'Z') continue;
-    }
-    if (!cmd) throw new Error('path data starts without a command');
-    const upper = cmd.toUpperCase();
-    // The first moveto pair of a path is absolute even when written `m`.
-    const abs = cmd === upper || (firstPair && upper === 'M');
-    firstPair = false;
-    const n = ARITY[upper];
-    if (n === 0) continue;
-    const args = tokens.slice(i, i + n).map(Number);
-    if (args.length < n || args.some(Number.isNaN)) {
-      throw new Error(`bad args for ${cmd} at token ${i}`);
-    }
-    i += n;
-    if (upper === 'H') {
-      out += `${num(abs ? s * args[0] + tx : s * args[0])} `;
-    } else if (upper === 'V') {
-      out += `${num(abs ? s * args[0] + ty : s * args[0])} `;
-    } else if (upper === 'A') {
-      const [rx, ry, rot, laf, sf, x, y] = args;
-      out += `${num(s * rx)} ${num(s * ry)} ${num(rot)} ${laf} ${sf} ${num(abs ? s * x + tx : s * x)} ${num(abs ? s * y + ty : s * y)} `;
-    } else {
-      const vals = args.map((v, k) =>
-        k % 2 === 0 ? (abs ? s * v + tx : s * v) : abs ? s * v + ty : s * v
-      );
-      out += vals.map(num).join(' ') + ' ';
-    }
-  }
-  return out
-    .replace(/\s+([MmLlHhVvCcSsQqTtAaZz])/g, '$1')
-    .replace(/([MmLlHhVvCcSsQqTtAaZz])\s+/g, '$1')
-    .trim();
-}
+const num = (v) => String(roundCoordinate(v));
 
 // Anchored on the preceding boundary so `d=` can never match inside `id=`.
 function setAttr(tag, name, value) {
@@ -122,7 +67,7 @@ function mapRotatedCenter(transform, localCx, localCy, s, tx, ty) {
   if (!m) return null;
   const [deg, rcx, rcy] = [Number(m[1]), Number(m[2]), Number(m[3])];
   const [fx, fy] = rotatePoint(localCx, localCy, deg, rcx, rcy);
-  return { deg, px: round(s * fx + tx), py: round(s * fy + ty) };
+  return { deg, px: roundCoordinate(s * fx + tx), py: roundCoordinate(s * fy + ty) };
 }
 
 // Stroke width and dash lengths are user-space values on elements whose
@@ -212,7 +157,11 @@ function transformSvg(svg, s, tx, ty) {
             `translate(${num5(etx + s * ex)} ${num5(ety + s * ey)})scale(${num5(s * k)})`
           );
         }
-        return setAttr(tag, 'd', transformPath(getAttr(tag, 'd'), s, etx, ety));
+        return setAttr(
+          tag,
+          'd',
+          transformPathData(getAttr(tag, 'd'), { scale: s, translateX: etx, translateY: ety })
+        );
       }
       if (el === 'circle') {
         if (transform) {
