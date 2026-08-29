@@ -19,13 +19,23 @@ import {
 } from './lib/page-inventory-data.mjs';
 import { CHECKPOINT_SCHEMA_VERSION } from './finalize-page-critique.mjs';
 import { ROOT, hasCommand, isMain, runMain } from '../lib/proc.mjs';
+import {
+  REVIEWER_RUNNERS,
+  detectReviewerRunner,
+  normalizeReviewerRunner,
+  parseReviewerOutput,
+  reviewerArgs,
+  reviewerBinary,
+  reviewerModelDefault,
+  stageReviewerImage,
+} from './lib/reviewer-runner.mjs';
+
+export { reviewerArgs };
 
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');
 const WORK_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-critique');
-const MODEL_DEFAULT = 'gpt-5.6-terra';
 const CONCURRENCY_DEFAULT = 4;
 const ATTEMPTS = 2;
-const REVIEWER_BINARY = 'codex';
 const REVIEW_TIMEOUT_MS = 120_000;
 const REVIEW_TERMINATION_GRACE_MS = 5_000;
 
@@ -56,7 +66,8 @@ function options(argv) {
     options: {
       manifest: { type: 'string', default: MANIFEST_DEFAULT },
       work: { type: 'string', default: WORK_DEFAULT },
-      model: { type: 'string', default: MODEL_DEFAULT },
+      model: { type: 'string' },
+      runner: { type: 'string' },
       effort: { type: 'string', default: 'low' },
       concurrency: { type: 'string', default: String(CONCURRENCY_DEFAULT) },
       limit: { type: 'string' },
@@ -67,67 +78,22 @@ function options(argv) {
   if (!['low', 'medium', 'high'].includes(values.effort)) {
     throw new Error('--effort must be low, medium, or high');
   }
+  if (values.runner && !REVIEWER_RUNNERS.includes(values.runner)) {
+    throw new Error(`--runner must be one of ${REVIEWER_RUNNERS.join(', ')}`);
+  }
+  // Resolved before the model so an unflagged run picks the model that belongs
+  // to whichever reviewer is actually installed.
+  const runner = values.runner ? normalizeReviewerRunner(values.runner) : detectReviewerRunner();
   return {
     manifest: resolve(ROOT, values.manifest),
     work: resolve(ROOT, values.work),
-    model: values.model,
+    runner,
+    model: values.model ?? reviewerModelDefault(runner),
     effort: values.effort,
     concurrency: positiveInteger(values.concurrency, '--concurrency'),
     limit: values.limit ? positiveInteger(values.limit, '--limit') : Infinity,
     reviewIds: values['review-id'] ?? [],
   };
-}
-
-export function readStructuredOutput(stdout) {
-  const messages = stdout
-    .split('\n')
-    .filter(Boolean)
-    .flatMap((line) => {
-      try {
-        const event = JSON.parse(line);
-        return event.type === 'item.completed' && event.item?.type === 'agent_message'
-          ? [event.item.text]
-          : [];
-      } catch {
-        return [];
-      }
-    });
-  if (!messages.length) throw new Error('reviewer returned no structured message');
-  try {
-    return JSON.parse(messages.at(-1));
-  } catch (error) {
-    throw new Error(`reviewer returned invalid JSON: ${error.message}`, { cause: error });
-  }
-}
-
-export function reviewerArgs({ capture, image, schema, model, effort, reviewerRoot }) {
-  return [
-    'exec',
-    '--json',
-    '--ephemeral',
-    '--ignore-user-config',
-    '--ignore-rules',
-    '--skip-git-repo-check',
-    '--sandbox',
-    'read-only',
-    '--cd',
-    reviewerRoot,
-    '--image',
-    image,
-    '--output-schema',
-    schema,
-    '--model',
-    model,
-    '-c',
-    `model_reasoning_effort="${effort}"`,
-    '-c',
-    'approval_policy="never"',
-    '-c',
-    'features.multi_agent=false',
-    '-c',
-    'features.multi_agent_v2=false',
-    capture.review_description,
-  ];
 }
 
 export function assertReviewerAvailable(binary) {
@@ -186,10 +152,28 @@ export function runReviewerProcess({ binary, args, cwd, timeoutMs, terminationGr
   });
 }
 
-function runReviewer({ capture, image, schema, model, effort, reviewerRoot }) {
-  const args = reviewerArgs({ capture, image, schema, model, effort, reviewerRoot });
+function runReviewer({
+  runner,
+  capture,
+  image,
+  schema,
+  schemaDocument,
+  model,
+  effort,
+  reviewerRoot,
+}) {
+  const args = reviewerArgs({
+    runner,
+    capture,
+    image: stageReviewerImage(runner, image, reviewerRoot, capture.review_id),
+    schema,
+    schemaDocument,
+    model,
+    effort,
+    reviewerRoot,
+  });
   return runReviewerProcess({
-    binary: REVIEWER_BINARY,
+    binary: reviewerBinary(runner),
     args,
     cwd: reviewerRoot,
     timeoutMs: REVIEW_TIMEOUT_MS,
@@ -237,6 +221,8 @@ async function reviewCapture(context, capture) {
   for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
     try {
       const result = await runReviewer({
+        runner: context.runner,
+        schemaDocument: REVIEW_SCHEMA,
         capture,
         image,
         schema: context.schema,
@@ -247,7 +233,7 @@ async function reviewCapture(context, capture) {
       writeFileSync(join(context.logs, `${capture.review_id}.jsonl`), result.stdout);
       if (result.stderr)
         writeFileSync(join(context.logs, `${capture.review_id}.stderr`), result.stderr);
-      const assessment = readStructuredOutput(result.stdout);
+      const assessment = parseReviewerOutput(result.stdout, context.runner);
       const entry = {
         review_id: capture.review_id,
         image: capture.image,
@@ -315,7 +301,7 @@ async function runQueue(queue, concurrency, worker) {
 
 export async function runPageInventoryCritiques(argv = process.argv.slice(2)) {
   const config = options(argv);
-  assertReviewerAvailable(REVIEWER_BINARY);
+  assertReviewerAvailable(reviewerBinary(config.runner));
   const manifest = readCaptureManifest(config.manifest);
   const reviews = join(config.work, 'reviews');
   const logs = join(config.work, 'logs');
@@ -342,13 +328,14 @@ export async function runPageInventoryCritiques(argv = process.argv.slice(2)) {
       return;
     }
     console.log(
-      `Reviewing ${queue.length} capture(s) with ${config.model} at concurrency ${config.concurrency}`
+      `Reviewing ${queue.length} capture(s) with ${reviewerBinary(config.runner)} ${config.model} at concurrency ${config.concurrency}`
     );
     await runQueue(queue, config.concurrency, (capture) =>
       reviewCapture(
         {
           manifest,
           manifestPath: config.manifest,
+          runner: config.runner,
           reviews,
           logs,
           reviewerRoot,

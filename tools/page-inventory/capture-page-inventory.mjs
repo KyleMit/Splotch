@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import {
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -35,6 +36,7 @@ import {
 } from './lib/page-inventory-report.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import {
+  DESIGN_BUNDLE_DIRECTORY,
   DESIGN_FILE_READ_LIMIT_BYTES,
   DESIGN_SNAPSHOT_OUT,
   DESIGN_SNAPSHOT_VIEWPORT_IDS,
@@ -75,6 +77,10 @@ const TABLET_UA =
 
 const STORAGE = {
   'splotch-ai-access-token': 'daycare-club',
+  // isAiImageButtonVisible() requires this toggle as well as a credential, so
+  // without it the AI button stays hidden and every surface reached through it
+  // — the parental gate and the whole ai/ group — is unreachable.
+  'splotch-ai-image-enabled': 'true',
   'splotch-advanced-controls': 'true',
   'splotch-drawer-open': 'false',
   'splotch-lock-rotation': 'false',
@@ -720,8 +726,14 @@ function adminSurfaces() {
         await admin(page);
         const more = page.getByRole('button', { name: /More options for/ }).first();
         if (await more.isVisible()) {
-          await more.click();
-          await page.locator('.row-actions.open').first().waitFor();
+          // The control toggles, so a click that lands while a row is already
+          // expanded closes it instead. retryOpen re-clicks until the expansion
+          // is actually on screen rather than trusting one press.
+          await retryOpen(
+            page.locator('.row-actions.open').first(),
+            () => more.click(),
+            'Admin row actions'
+          );
         } else {
           await page.getByRole('button', { name: 'Copy link' }).first().focus();
         }
@@ -838,6 +850,14 @@ async function capture(page, item, viewport, theme, out, design) {
       cause: failure,
     }
   );
+}
+
+// Written progressively to a scratch directory so a long run's snapshots exist
+// on disk as they are produced, then copied into the staging tree so they land
+// with the rest of the inventory in one atomic swap.
+function publishDesignBundle(design, staging) {
+  if (!design.snapshots.length) return;
+  cpSync(design.out, join(staging, DESIGN_BUNDLE_DIRECTORY), { recursive: true });
 }
 
 async function writeDesignBundle(design) {
@@ -1089,6 +1109,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
         );
       }
       await writeDesignBundle(design);
+      publishDesignBundle(design, staging);
       return {
         snapshots: captures.length,
         bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
@@ -1102,7 +1123,9 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
   console.log(
     `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, wrote))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
   );
-  console.log(`Wrote ${design.snapshots.length} design snapshots to ${relative(ROOT, design.out)}`);
+  console.log(
+    `Wrote ${design.snapshots.length} design snapshots to ${relative(ROOT, join(out, DESIGN_BUNDLE_DIRECTORY))}`
+  );
   if (spotCheck) {
     console.log('Spot check: no capture manifest was written, so the committed inventory stands.');
   }

@@ -6,7 +6,7 @@ import { parseArgs } from 'node:util';
 import sharp from 'sharp';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
-import { DESIGN_SNAPSHOT_OUT, SHARED_STYLESHEET } from './lib/design-snapshot.mjs';
+import { DESIGN_BUNDLE_OUT, SHARED_STYLESHEET } from './lib/design-snapshot.mjs';
 import { PAGE_INVENTORY_THEMES } from './lib/page-inventory-data.mjs';
 import { PAGE_INVENTORY_VIEWPORTS } from './lib/page-inventory-report.mjs';
 
@@ -108,7 +108,7 @@ export function parseVerifyOptions(argv) {
   if (!Number.isFinite(tolerance) || tolerance < 0) {
     throw new Error(`--tolerance must be a non-negative number, got ${values.tolerance}`);
   }
-  const bundle = values.bundle ? join(ROOT, values.bundle) : DESIGN_SNAPSHOT_OUT;
+  const bundle = values.bundle ? join(ROOT, values.bundle) : DESIGN_BUNDLE_OUT;
   const reference = values.reference
     ? join(ROOT, values.reference)
     : existsSync(join(REFERENCE_DEFAULT, 'assets'))

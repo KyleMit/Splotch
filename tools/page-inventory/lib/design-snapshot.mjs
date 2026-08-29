@@ -5,9 +5,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 
-// Regenerated on every capture and consumed only by Claude Design, so it stays
-// out of the committed scrapbook.
+// Snapshots are built here first so they exist on disk while a long capture is
+// still running, then copied into the inventory's atomic output.
 export const DESIGN_SNAPSHOT_OUT = join(ROOT, '.scrapbook-scratch/design-snapshots');
+// Where they come to rest, committed beside the captures they were taken from.
+export const DESIGN_BUNDLE_DIRECTORY = 'design';
+export const DESIGN_BUNDLE_OUT = join(ROOT, 'scrapbook/page-inventory', DESIGN_BUNDLE_DIRECTORY);
 
 // Svelte only attaches __svelte_meta under `dev`, which is the whole reason the
 // inventory captures against the dev server. Every element that carries one is

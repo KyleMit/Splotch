@@ -12,6 +12,7 @@ import { join, resolve } from 'node:path';
 import { Window } from 'happy-dom';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { parseReviewerOutput } from '../lib/reviewer-runner.mjs';
 import { writePageInventoryFeedback } from '../attach-page-feedback.mjs';
 import { finalizePageInventoryCritique } from '../finalize-page-critique.mjs';
 import {
@@ -26,7 +27,6 @@ import {
 } from '../capture-page-inventory.mjs';
 import {
   assertReviewerAvailable,
-  readStructuredOutput,
   reviewerArgs,
   runReviewerProcess,
 } from '../run-inventory-critiques.mjs';
@@ -674,7 +674,7 @@ describe('page inventory output', () => {
         item: { type: 'agent_message', text: JSON.stringify(response) },
       }),
     ].join('\n');
-    expect(readStructuredOutput(stdout)).toEqual(response);
+    expect(parseReviewerOutput(stdout)).toEqual(response);
   });
 
   it('preserves the complete baseline and removes staging when generation fails', async () => {

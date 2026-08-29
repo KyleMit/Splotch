@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import {
   BASELINE_STYLESHEET,
-  DESIGN_SNAPSHOT_OUT,
+  DESIGN_BUNDLE_OUT,
   SHARED_STYLESHEET,
 } from './lib/design-snapshot.mjs';
 import { describeChange, diffStylesheets, indexScopeOwners } from './lib/design-port-back.mjs';
@@ -15,7 +15,7 @@ export function parsePortBackOptions(argv) {
     options: { bundle: { type: 'string' }, json: { type: 'boolean', default: false } },
   });
   return {
-    bundle: values.bundle ? join(ROOT, values.bundle) : DESIGN_SNAPSHOT_OUT,
+    bundle: values.bundle ? join(ROOT, values.bundle) : DESIGN_BUNDLE_OUT,
     json: values.json,
   };
 }

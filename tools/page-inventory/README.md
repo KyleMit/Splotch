@@ -71,11 +71,13 @@ behind it is sharper than the app. `modalBackdropCss` carries the reasoning.
 
 ## Review and finalize
 
-The review command requires a current capture manifest, the `codex` executable on `PATH`, an
-authenticated Codex installation, and network access. It starts one fresh image-only process per
-capture and writes resumable checkpoints under
-`.scrapbook-scratch/page-inventory-critique/reviews/`. Existing checkpoints whose image and review
-description hashes still match are skipped.
+The review command requires a current capture manifest, network access, and an authenticated
+`claude` or `codex` installation on `PATH` — `lib/reviewer-runner.mjs` owns that seam and picks
+whichever is present, or takes `--runner`. Both get the same isolated-image contract; only delivery
+differs, since codex takes `--image` while Claude Code reads a per-review copy staged into the
+otherwise empty reviewer root. It starts one fresh image-only process per capture and writes
+resumable checkpoints under `.scrapbook-scratch/page-inventory-critique/reviews/`. Existing
+checkpoints whose image and review description hashes still match are skipped.
 
 ```sh
 npm run review:page-inventory -- --limit 4
@@ -110,13 +112,13 @@ incomplete review data produce diagnostics and a nonzero exit. Capture output is
 destination and swapped only on success, so a failed capture keeps the previous inventory intact.
 Review failures keep completed checkpoints and logs so the same command can resume them.
 
-`lib/design-snapshot.mjs` owns snapshot serialization and the design bundle,
-`lib/design-port-back.mjs` owns the stylesheet diff and scope-to-source resolution,
-`lib/page-inventory-capture.mjs` owns image validation, `lib/page-inventory-data.mjs` owns
-manifest/checkpoint contracts, `lib/page-inventory-design-notes.mjs` owns reviewer-visible design
-intent, and `lib/page-inventory-report.mjs` owns viewport metadata and HTML rendering. Keep public
-flags, output paths, review IDs, hashes, and checkpoint schemas stable when maintaining the entry
-points.
+`lib/reviewer-runner.mjs` owns the reviewer runner seam, `lib/design-snapshot.mjs` owns snapshot
+serialization and the design bundle, `lib/design-port-back.mjs` owns the stylesheet diff and
+scope-to-source resolution, `lib/page-inventory-capture.mjs` owns image validation,
+`lib/page-inventory-data.mjs` owns manifest/checkpoint contracts,
+`lib/page-inventory-design-notes.mjs` owns reviewer-visible design intent, and
+`lib/page-inventory-report.mjs` owns viewport metadata and HTML rendering. Keep public flags, output
+paths, review IDs, hashes, and checkpoint schemas stable when maintaining the entry points.
 
 Run focused verification with:
 
