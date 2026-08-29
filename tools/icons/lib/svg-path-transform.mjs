@@ -58,7 +58,11 @@ export function transformPathData(d, { scale, translateX, translateY }) {
     const abs = cmd === upper || (firstPair && upper === 'M');
     firstPair = false;
     const n = ARITY[upper];
-    if (n === 0) continue;
+    // Only a closepath has zero arity, and a command letter would have been
+    // consumed above — so reaching here means `Z` is followed by a number.
+    // Nothing would consume that token, and `continue` would spin on it
+    // forever, so reject it like any other malformed data.
+    if (n === 0) throw new Error(`closepath takes no arguments, got "${tokens[i]}"`);
     const args = tokens.slice(i, i + n).map(Number);
     if (args.length < n || args.some(Number.isNaN)) {
       throw new Error(`bad args for ${cmd} at token ${i}`);

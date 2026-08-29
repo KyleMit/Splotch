@@ -65,4 +65,14 @@ describe('transformPathData', () => {
     expect(() => transform('1 2 L 3 4')).toThrow(/starts without a command/);
     expect(() => transform('M 1 2 Q 3 4')).toThrow(/bad args for Q/);
   });
+
+  // A closepath consumes no tokens, so a number after one used to re-enter the
+  // loop without advancing and spin forever — a malformed imported icon could
+  // hang the rebase command with no output. Rejecting is the fail-loudly
+  // contract the rest of this module already keeps.
+  it('rejects arguments after a closepath rather than looping on them', () => {
+    expect(() => transform('M0 0Z1 2')).toThrow(/closepath takes no arguments/);
+    expect(() => transform('M0 0z1 2')).toThrow(/closepath takes no arguments/);
+    expect(transform('M0 0ZM1 1Z')).toBe('M10 20ZM12 22Z');
+  });
 });
