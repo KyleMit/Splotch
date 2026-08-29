@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { nativeUnusedLineArt } from '../../lib/coloring-book-assets.mjs';
+import { nativeUnusedCoverLineArt } from '../../lib/coloring-book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from '../lib/static-export.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -51,8 +51,8 @@ describe('stripWebOnlyHeadTags', () => {
   });
 });
 
-describe('nativeUnusedLineArt', () => {
-  it('strips opaque sources only for books shipped on mobile', () => {
+describe('nativeUnusedCoverLineArt', () => {
+  it('strips only cover masters for books shipped on mobile', () => {
     const mobile = {
       cover: '/coloring/mobile/cover.overlay.svg',
       darkCover: '/coloring/mobile/cover.dark.overlay.svg',
@@ -74,12 +74,9 @@ describe('nativeUnusedLineArt', () => {
       platforms: ['web'],
     };
 
-    expect(nativeUnusedLineArt([mobile, web])).toEqual([
+    expect(nativeUnusedCoverLineArt([mobile, web])).toEqual([
       '/coloring/mobile/cover.overlay.svg',
       '/coloring/mobile/cover.dark.overlay.svg',
-      '/coloring/mobile/page-tall.overlay.svg',
-      '/coloring/mobile/page-wide.overlay.svg',
-      '/coloring/mobile/page-tall.dark.overlay.svg',
     ]);
   });
 });

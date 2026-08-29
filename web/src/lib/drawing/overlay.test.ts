@@ -40,7 +40,7 @@ describe('getActiveOverlayExportSource', () => {
     expect(getActiveOverlayExportSource()).toBeNull();
   });
 
-  it('reuses a visible overlay when its decoded candidate is canonical', () => {
+  it('reuses the decoded canonical image used by native presentation', () => {
     const overlay = appendLoadedOverlay();
     overlay.src = '/coloring/farm/cat-tall.overlay.webp';
     overlay.dataset.canonicalUrl = '/coloring/farm/cat-tall.overlay.webp';

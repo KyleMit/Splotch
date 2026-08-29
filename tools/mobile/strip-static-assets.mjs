@@ -13,10 +13,10 @@
 //   3. The web-only static files listed in lib/static-export.mjs (social card,
 //      favicons, webmanifest, crawler files, generator inputs) — together with
 //      the head tags that reference them, so the strip can't leave a 404 behind.
-//   4. Full-resolution opaque line-art sources. Runtime presentation uses the
-//      generated alpha overlays and picker thumbnails; the opaque files remain
-//      committed beside them only as asset-pipeline inputs.
-//   5. Hosted responsive tiers. Native downloads its selected pack tier after install.
+//   4. Cover SVG masters. Runtime cover presentation uses their raster thumbnails;
+//      page SVGs remain because native presentation and export both use them.
+//   5. Web canvas-presentation rasters. Native uses the canonical SVG directly.
+//   6. Hosted responsive tiers. Native downloads its selected pack tier after install.
 //
 // books.ts is TypeScript, so this script is launched with Node's
 // --experimental-strip-types (see the build:cap npm script) to import it directly.
@@ -25,7 +25,7 @@ import { globSync, readFileSync, rmSync, existsSync, statSync, writeFileSync } f
 import { join, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import {
   downloadableMobileBooks,
-  nativeUnusedLineArt,
+  nativeUnusedCoverLineArt,
   webOnlyBooks,
 } from '../lib/coloring-book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/static-export.mjs';
@@ -35,6 +35,7 @@ import {
   RESPONSIVE_COLORING_TIER_DIRECTORIES,
   STARTER_COLORING_BOOK_ID,
   bookAssetPaths,
+  presentationColoringAssets,
 } from '../../web/src/lib/state/books.ts';
 
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
@@ -140,10 +141,10 @@ function stripDownloadableBooks(buildDir, books) {
   );
 }
 
-function stripUnusedLineArt(buildDir, books) {
+function stripUnusedCoverLineArt(buildDir, books) {
   let freedBytes = 0;
   let removed = 0;
-  for (const file of nativeUnusedLineArt(books)) {
+  for (const file of nativeUnusedCoverLineArt(books)) {
     const target = join(buildDir, file);
     if (!existsSync(target)) {
       console.warn(`[strip-static-assets] expected but not found: ${file}`);
@@ -154,7 +155,26 @@ function stripUnusedLineArt(buildDir, books) {
     removed++;
   }
   console.log(
-    `[strip-static-assets] stripped ${removed} asset-pipeline line-art source(s), ` +
+    `[strip-static-assets] stripped ${removed} asset-pipeline cover source(s), ` +
+      `${(freedBytes / 1048576).toFixed(2)} MB freed.`
+  );
+}
+
+function stripWebPresentationRasters(buildDir, books) {
+  let freedBytes = 0;
+  let removed = 0;
+  for (const file of books.flatMap(presentationColoringAssets).map((asset) => asset.target)) {
+    const target = join(buildDir, file);
+    if (!existsSync(target)) {
+      console.warn(`[strip-static-assets] expected but not found: ${file}`);
+      continue;
+    }
+    freedBytes += statSync(target).size;
+    rmSync(target);
+    removed++;
+  }
+  console.log(
+    `[strip-static-assets] stripped ${removed} web canvas-presentation raster(s), ` +
       `${(freedBytes / 1048576).toFixed(2)} MB freed.`
   );
 }
@@ -184,10 +204,9 @@ export function stripStaticAssets(buildDir, books) {
   stripWebOnlyBooks(buildDir, books);
   stripDownloadableBooks(buildDir, books);
   stripWebOnlyFiles(buildDir);
-  stripUnusedLineArt(
-    buildDir,
-    books.filter((book) => book.id === STARTER_COLORING_BOOK_ID)
-  );
+  const starterBooks = books.filter((book) => book.id === STARTER_COLORING_BOOK_ID);
+  stripUnusedCoverLineArt(buildDir, starterBooks);
+  stripWebPresentationRasters(buildDir, starterBooks);
   stripResponsiveColoringTiers(buildDir);
 }
 

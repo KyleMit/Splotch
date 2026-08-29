@@ -7,7 +7,7 @@
   import {
     coloringBookGridLayout,
     coverThumbImageSource,
-    pagePresentationImage,
+    pageDisplayImage,
     pageSelectorImage,
     type Book,
     type ColoringPage,
@@ -75,12 +75,12 @@
   });
 
   // Pressing/hovering a book tile warms that book's screen-sized selectors before
-  // the sub-grid renders. Hovering a page warms its lossless canvas presentation.
+  // the sub-grid renders. Hovering a page warms the runtime's canvas presentation.
   function prefetchBookPages(book: Book) {
     prefetchImages(book.pages.map((page) => pageSelectorImage(page, orientation, resolvedTheme())));
   }
   function prefetchPagePresentation(page: ColoringPage) {
-    prefetchImages([pagePresentationImage(page, orientation, resolvedTheme())]);
+    prefetchImages([pageDisplayImage(page, orientation, resolvedTheme())]);
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the
@@ -93,7 +93,7 @@
   function pickPage(page: ColoringPage) {
     const selectedOrientation = orientation;
     const selectedTheme = resolvedTheme();
-    const selectedPresentationUrl = pagePresentationImage(page, selectedOrientation, selectedTheme);
+    const selectedPresentationUrl = pageDisplayImage(page, selectedOrientation, selectedTheme);
     cancelImagePrefetchesExcept(selectedPresentationUrl);
     for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
       cancelImageRequest(img);

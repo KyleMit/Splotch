@@ -5,7 +5,7 @@ import {
   setOverlayOrientation,
   overlayUrl,
   themedOverlayUrl,
-  themedPresentationUrl,
+  themedDisplayUrl,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
@@ -80,11 +80,9 @@ describe('coloring book state', () => {
     expect(themedOverlayUrl('dark')).toBe(
       spacePage.images.landscape.replace('.overlay.svg', '.dark.overlay.svg')
     );
-    expect(themedPresentationUrl('light')).toBe(
-      spacePage.images.landscape.replace('.overlay.svg', '.presentation.webp')
-    );
-    expect(themedPresentationUrl('dark')).toBe(
-      spacePage.images.landscape.replace('.overlay.svg', '.dark.presentation.webp')
+    expect(themedDisplayUrl('light')).toBe(spacePage.images.landscape);
+    expect(themedDisplayUrl('dark')).toBe(
+      spacePage.images.landscape.replace('.overlay.svg', '.dark.overlay.svg')
     );
   });
 
@@ -93,8 +91,8 @@ describe('coloring book state', () => {
     expect(themedOverlayUrl('dark', 'portrait')).toBe(
       spacePage.images.portrait.replace('.overlay.svg', '.dark.overlay.svg')
     );
-    expect(themedPresentationUrl('dark', 'portrait')).toBe(
-      spacePage.images.portrait.replace('.overlay.svg', '.dark.presentation.webp')
+    expect(themedDisplayUrl('dark', 'portrait')).toBe(
+      spacePage.images.portrait.replace('.overlay.svg', '.dark.overlay.svg')
     );
     expect(coloringBookState.orientation).toBe('landscape');
   });

@@ -323,6 +323,16 @@ export function pagePresentationImage(
   return resolveColoringAssetUrl(pagePresentationAssetPath(page, orientation, theme));
 }
 
+export function pageDisplayImage(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  return __IS_CAPACITOR__
+    ? pageOverlayImage(page, orientation, theme)
+    : pagePresentationImage(page, orientation, theme);
+}
+
 function coverThumbnailPath(src: string, theme: ResolvedTheme): string {
   const sourceSuffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
   if (

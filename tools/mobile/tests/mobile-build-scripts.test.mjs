@@ -67,6 +67,11 @@ vi.mock('../../../web/src/lib/state/books.ts', () => ({
     `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
     `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,
   ],
+  presentationColoringAssets: (book) => [
+    {
+      target: `/coloring/${book.id}/page-tall.presentation.webp`,
+    },
+  ],
 }));
 
 const fixtureHtml = `<!doctype html>
@@ -246,7 +251,8 @@ describe('mobile build script entry points', () => {
       'export const BOOKS = [];\n' +
         'export const STARTER_COLORING_BOOK_ID = "farm";\n' +
         'export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [];\n' +
-        'export const bookAssetPaths = () => [];\n'
+        'export const bookAssetPaths = () => [];\n' +
+        'export const presentationColoringAssets = () => [];\n'
     );
     const favicon = join(fixtureRoot, 'web', 'build', 'favicon.ico');
     writeFixture(favicon);
@@ -281,6 +287,7 @@ describe('mobile build script entry points', () => {
     writeFixture(join(mobileDir, 'cover.dark.overlay.svg'));
     writeFixture(join(mobileDir, 'page-tall.overlay.svg'));
     writeFixture(join(mobileDir, 'page-tall.dark.overlay.svg'));
+    writeFixture(join(mobileDir, 'page-tall.presentation.webp'));
     writeFixture(join(downloadableDir, 'cover.overlay.svg'));
     writeFixture(join(buildDir, 'coloring', 'max-1152px', 'mobile', 'page-tall.overlay.webp'));
     writeFixture(join(buildDir, 'coloring', 'max-240px', 'mobile', 'page-tall.thumb.webp'));
@@ -297,8 +304,9 @@ describe('mobile build script entry points', () => {
     expect(existsSync(join(buildDir, 'favicon.ico'))).toBe(false);
     expect(existsSync(join(mobileDir, 'cover.overlay.svg'))).toBe(false);
     expect(existsSync(join(mobileDir, 'cover.dark.overlay.svg'))).toBe(false);
-    expect(existsSync(join(mobileDir, 'page-tall.overlay.svg'))).toBe(false);
-    expect(existsSync(join(mobileDir, 'page-tall.dark.overlay.svg'))).toBe(false);
+    expect(existsSync(join(mobileDir, 'page-tall.overlay.svg'))).toBe(true);
+    expect(existsSync(join(mobileDir, 'page-tall.dark.overlay.svg'))).toBe(true);
+    expect(existsSync(join(mobileDir, 'page-tall.presentation.webp'))).toBe(false);
     expect(existsSync(downloadableDir)).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-1152px'))).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-240px'))).toBe(false);
@@ -307,9 +315,6 @@ describe('mobile build script entry points', () => {
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).toContain('name="viewport"');
     expect(warn).toHaveBeenCalledWith(
       '[strip-static-assets] expected but not found: large-image.png'
-    );
-    expect(warn).toHaveBeenCalledWith(
-      '[strip-static-assets] expected but not found: /coloring/mobile/page-wide.overlay.svg'
     );
     expect(log).toHaveBeenCalledWith('[strip-static-assets] removed /coloring/web-only');
     expect(log).toHaveBeenCalledWith(
