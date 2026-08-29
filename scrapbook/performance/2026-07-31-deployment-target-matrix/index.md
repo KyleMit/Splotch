@@ -46,13 +46,17 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 * The 2026-08-29 campaign measured product commit e4877a1065dc3441df0c023141fbf3ef66787dff. Later
   capture-time commits add only representative performance evidence, so their product staleness
   digest is equivalent.
-* Physical iPad web/native, physical Android web, physical Android native drawing, and all three Mac
-  engines were recaptured in the 2026-08-29 campaign. The four simulator/emulator targets remain
-  current from commit 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 because the matrix staleness digest
-  finds no intervening product change.
-* Android physical native undo and actions remain preserved at
-  6961e50b685d441e88b37d20d3f38a27136572fb. The native action runner rejects the physical Android
-  UDID through its iOS XCUITest path before capture; #1387 tracks teaching that sweep the compact
+* All four orientation/theme modes were recaptured for physical iPad web/native, physical Android
+  web, and all three Mac engines in the 2026-08-29 campaign. Android physical native refreshed
+  drawing in all four modes, but not undo or actions. The four simulator/emulator targets remain
+  product-surface current from commit 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 because the matrix
+  staleness digest finds no intervening product change; that verdict does not claim their
+  instruments were revalidated after the 2026-08-28 capture.
+* Android physical native undo remains preserved at 6961e50b685d441e88b37d20d3f38a27136572fb, while
+  actions retain their prior per-mode provenance (6961e50b685d441e88b37d20d3f38a27136572fb in
+  portrait and ce88c8e587ac45847c419e05ef7a79d282bc747a in landscape). This is blocked historical
+  evidence, not current-equivalent carryover: the native action runner rejects the physical Android
+  UDID through its iOS XCUITest path before capture. #1387 tracks teaching that sweep the compact
   Android shell and transport contract.
 * Android physical web and native drawing use the ADR-0135 split input/measurement transport. Fresh
   artifacts record the driving cadence, input fidelity, page identity, and native foreground-package
@@ -155,7 +159,7 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 | P1       | Rotation state matrix                    | Add Settings-open, picker-open, active coloring with ink, AI waiting, and slider-active rotations.                                                                    | Rotatable mobile targets                           | Partial: blank and generic-ink rotations captured where platform setup allowed.                                         |
 | P2       | True custom-color drag                   | Measure drag-across/explore/lift selection, gap snapping, and cancellation instead of a single click.                                                                 | Touch and pointer targets                          | Not captured.                                                                                                           |
 | P2       | Settings pinch text zoom                 | Exercise CSS zoom over the fully mounted Settings surface and reset on section change/close.                                                                          | Physical touch targets                             | Not captured.                                                                                                           |
-| P2       | Apple Pencil gestures                    | Measure Pencil double-tap brush/eraser switching and Pencil/Scribble Clear guards.                                                                                    | Physical iPad                                      | Not captured; physical iPad unavailable.                                                                                |
+| P2       | Apple Pencil gestures                    | Measure Pencil double-tap brush/eraser switching and Pencil/Scribble Clear guards.                                                                                    | Physical iPad                                      | Not captured by this campaign.                                                                                          |
 | P2       | Platform-only shell gestures             | Cover Android web fullscreen/install-banner paths and desktop Ctrl+Z undo.                                                                                            | Android web and desktop web                        | Not captured.                                                                                                           |
 | P2       | Lifecycle recovery                       | Background/foreground during dense drawing, AI generation, and coloring-pack work to validate recovery and context restoration.                                       | Physical and emulated mobile targets               | Not captured.                                                                                                           |
 
