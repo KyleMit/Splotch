@@ -17,7 +17,7 @@ function staticAssetPath(staticDir, url) {
   return join(staticDir, url);
 }
 
-export async function renderDeterministicColoringSvg(sourcePath, asset) {
+async function renderDeterministicColoringSvg(sourcePath, asset) {
   const fitTo =
     asset.widthPx < asset.maxEdgePx
       ? { mode: 'height', value: asset.maxEdgePx }
