@@ -58,3 +58,14 @@ source of truth). `web/src/lib/icons/iconViewBox.test.ts` enforces the grid, so 
 icon on a foreign grid (Material exports arrive on `0 -960 960 960`) fails the unit tier until
 rebased — run `npm run gen:icon-viewbox && npm run optimize:svg-assets`. The tool is idempotent and
 prints nothing but a summary when everything is already canonical.
+
+`lib/svg-path-transform.mjs` owns the path-data half of that rebase: `transformPathData` maps every
+coordinate in a `d` attribute under a uniform scale + translate, preserving command letters,
+relative/absolute case, and arc flags. It is sized to that one operation — no rotation, no general
+matrix, no arc-to-cubic — and rejects path data it cannot fully account for (a dropped token, a
+command without arguments, arguments after a closepath) rather than silently emitting a plausible
+wrong path. It also owns `roundCoordinate`, the 2dp emission precision **shared with the geometry
+attributes** the entry point rewrites; the pixel gate above is calibrated to that rounding, so it
+has one owner and `rebase-icon-viewbox.mjs` imports it rather than keeping a copy.
+`tests/svg-path-transform.test.mjs` covers the transform directly, which the whole-file pixel gate
+cannot do — it reports that more than antialiasing differs, not which command was mapped wrong.
