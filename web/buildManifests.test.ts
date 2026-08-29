@@ -1,40 +1,62 @@
 // @vitest-environment node
-import type { Plugin } from 'vite';
 import { describe, expect, it } from 'vitest';
 import config from './vite.config';
 
 type EmittedAsset = { fileName: string; source: string };
+type PluginLike = { name?: unknown; generateBundle?: unknown; configureServer?: unknown };
+type Handler = (this: unknown, ...args: unknown[]) => unknown;
 
-function emitBuildManifestsPlugin(): Plugin {
-  const plugins = (config.plugins ?? []).flat(Infinity) as Plugin[];
-  const plugin = plugins.find((candidate) => candidate?.name === 'emit-build-manifests');
-  if (!plugin) throw new Error('vite.config.ts no longer declares an emit-build-manifests plugin');
+// Vite's own plugin and hook types are recursive enough that flattening them
+// with their real types makes tsc give up ("type instantiation is excessively
+// deep"), so this walks the tree structurally and narrows only what it uses.
+function flatten(values: readonly unknown[]): unknown[] {
+  return values.flatMap((value) => (Array.isArray(value) ? flatten(value) : [value]));
+}
+
+function isPlugin(value: unknown): value is PluginLike {
+  return typeof value === 'object' && value !== null;
+}
+
+function emitBuildManifestsPlugin(): PluginLike {
+  const plugin = flatten(config.plugins ?? []).find(
+    (candidate) => isPlugin(candidate) && candidate.name === 'emit-build-manifests'
+  );
+  if (!isPlugin(plugin)) {
+    throw new Error('vite.config.ts no longer declares an emit-build-manifests plugin');
+  }
   return plugin;
+}
+
+// A hook is either the function itself or an object wrapping it under `handler`.
+function hookHandler(hook: unknown): Handler | undefined {
+  if (typeof hook === 'function') return hook as Handler;
+  if (isPlugin(hook) && typeof (hook as { handler?: unknown }).handler === 'function') {
+    return (hook as { handler: Handler }).handler;
+  }
+  return undefined;
 }
 
 function assetsEmittedIntoTheBuild(): EmittedAsset[] {
   const emitted: EmittedAsset[] = [];
-  const { generateBundle } = emitBuildManifestsPlugin();
-  const hook = typeof generateBundle === 'function' ? generateBundle : generateBundle?.handler;
-  hook?.call(
+  const handler = hookHandler(emitBuildManifestsPlugin().generateBundle);
+  handler?.call(
     { emitFile: (asset: EmittedAsset) => emitted.push(asset) },
     // generateBundle ignores both, and the plugin emits unconditionally.
-    {} as never,
-    {} as never,
+    {},
+    {},
     { write: true }
   );
   return emitted;
 }
 
 async function assetServedInDev(pathname: string): Promise<{ status: number; body: string }> {
-  const { configureServer } = emitBuildManifestsPlugin();
-  const hook = typeof configureServer === 'function' ? configureServer : configureServer?.handler;
+  const handler = hookHandler(emitBuildManifestsPlugin().configureServer);
   let middleware: ((request: unknown, response: unknown, next: () => void) => void) | undefined;
-  await hook?.call(
-    {} as never,
+  await handler?.call(
+    {},
     {
       middlewares: { use: (fn: typeof middleware) => (middleware = fn) },
-    } as never
+    }
   );
   if (!middleware) throw new Error('emit-build-manifests registered no dev middleware');
 

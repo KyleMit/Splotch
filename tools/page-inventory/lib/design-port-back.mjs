@@ -58,7 +58,7 @@ export function parseDeclarations(body) {
   return declarations;
 }
 
-export function indexRules(css) {
+function indexRules(css) {
   const rules = new Map();
   for (const { context, selector, body } of splitCssBlocks(css)) {
     // Later rules win in the cascade, so a repeated selector keeps the last body.

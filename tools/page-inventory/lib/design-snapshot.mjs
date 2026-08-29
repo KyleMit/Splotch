@@ -38,8 +38,6 @@ const DISCARDED_SELECTORS = [
   'noscript',
 ];
 
-const URL_IN_CSS = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g;
-
 function extractInPage({ sourceAttribute, canvasAttribute, discarded }) {
   const rootUrl = document.baseURI;
   const isInlinable = (value) =>
@@ -144,7 +142,7 @@ export function assetFileName(bytes, extension) {
   return `${ASSET_DIRECTORY}/${digest}.${extension}`;
 }
 
-export async function downloadReferences(references, cache, fetchImpl = fetch) {
+async function downloadReferences(references, cache, fetchImpl = fetch) {
   const downloaded = new Map();
   for (const reference of references) {
     if (cache.has(reference)) {
@@ -213,7 +211,7 @@ export function designCardMarker(group) {
   return `<!-- @dsCard group="${escapeAttribute(group)}" -->`;
 }
 
-export function renderSnapshotDocument({
+function renderSnapshotDocument({
   cardGroup,
   title,
   sourceComment,
@@ -391,4 +389,4 @@ ${rows}
 `;
 }
 
-export { BASELINE_STYLESHEET, CANVAS_ATTRIBUTE, SHARED_STYLESHEET, SOURCE_ATTRIBUTE, URL_IN_CSS };
+export { BASELINE_STYLESHEET, SHARED_STYLESHEET };
