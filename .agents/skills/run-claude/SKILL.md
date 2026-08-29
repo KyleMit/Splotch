@@ -146,10 +146,15 @@ under `/private/tmp` holding every raw event for later inspection. stdout stays 
 carries only the final result JSON.
 
 Treat an `exec_command` yield during a run as a checkpoint, not a failure: read the new progress
-lines and decide whether to keep waiting. For a long run such as a PR review, prefer launching the
-wrapper once through the host-execution boundary with output redirected to a file, then polling that
-file with plain sandboxed reads (`tail -n 20 <file>`) so observation never re-crosses the approval
-boundary.
+lines and decide whether to keep waiting. On Codex, retain the complete `exec_command` result when
+it yields. Printing only `result.output` discards `result.session_id`: Claude keeps running, but the
+session can no longer poll it and may launch a duplicate review. Poll the returned handle with
+`write_stdin` until it exits, or use the redirected-log pattern below. A progress log without the
+terminal `result` event is not a completed review.
+
+For a long run such as a PR review, prefer launching the wrapper once through the host-execution
+boundary with output redirected to a file, then polling that file with plain sandboxed reads
+(`tail -n 20 <file>`) so observation never re-crosses the approval boundary.
 
 If the stream stays silent past the stall timeout declared in `splotch-claude-stream.mjs` (the PR
 publisher uses its own longer bound for silent build/test gaps), the wrapper terminates Claude and

@@ -7,10 +7,10 @@
 // The campaign already knows where every cell writes, so deriving the manifest
 // entries from `artifactPath` rather than retyping them is what keeps a path or a
 // product commit from being transcribed wrong into a cell that then reads as
-// measured. A mode is rewritten only when all five of its artifacts are present
-// and captured through the right transport; anything short of that is reported and
-// its existing entry — usually an `unavailable` reason — is left alone, because a
-// partially captured mode is not a captured one.
+// measured. A mode is normally rewritten only when all five of its artifacts are
+// present and captured through the right transport. The explicit action-only
+// exceptions either record why actions are unavailable or preserve the published
+// action section while replacing a complete four-brush drawing capture.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
@@ -44,7 +44,7 @@ function usableCell(relativePath, runtime) {
 
 export function campaignModeSources(
   targetId,
-  { outputRoot, productCommit, modes, actionsUnavailableReason }
+  { outputRoot, productCommit, modes, actionsUnavailableReason, preserveActions = false }
 ) {
   const target = campaignTarget(targetId);
   const capturesUndo = target.transport !== SPLIT_TRANSPORT;
@@ -60,12 +60,16 @@ export function campaignModeSources(
       ])
     );
     const actions = artifactPath(outputRoot, targetId, mode, 'actions');
-    const missing = [
-      ...Object.entries(paths)
-        .filter(([, path]) => !usableCell(path, target.runtime))
-        .map(([brush]) => brush),
-      ...(usableCell(actions, target.runtime) ? [] : ['actions']),
-    ];
+    const hasUsableActions = usableCell(actions, target.runtime);
+    if (preserveActions && hasUsableActions) {
+      fail(
+        `Cannot preserve actions for ${targetId}/${mode.id}: a usable action artifact exists at ${actions}`
+      );
+    }
+    const missing = Object.entries(paths)
+      .filter(([, path]) => !usableCell(path, target.runtime))
+      .map(([brush]) => brush);
+    if (!preserveActions && !hasUsableActions) missing.push('actions');
     // A mode whose only gap is the action sweep still carries four scored brushes and an
     // undo probe. The manifest already has a shape for that — `actionsUnavailableReason`,
     // which the report renders as no action data — so it is filed as the partial
@@ -77,7 +81,11 @@ export function campaignModeSources(
 
     return {
       id: mode.id,
-      ...(actionsOnly ? { partial: 'actions' } : {}),
+      ...(preserveActions
+        ? { partial: 'actions-preserved' }
+        : actionsOnly
+          ? { partial: 'actions-unavailable' }
+          : {}),
       mode: {
         id: mode.id,
         orientation: mode.orientation,
@@ -90,9 +98,11 @@ export function campaignModeSources(
         // drops the mode's undo row. Omitting it lets applyCampaignModes carry the
         // existing measurement forward instead.
         ...(capturesUndo ? { undoSource: paths.pen } : {}),
-        ...(actionsOnly
-          ? { actionsUnavailableReason }
-          : { actionSources: [{ source: actions, productCommit, kind: 'full' }] }),
+        ...(preserveActions
+          ? {}
+          : actionsOnly
+            ? { actionsUnavailableReason }
+            : { actionSources: [{ source: actions, productCommit, kind: 'full' }] }),
       },
     };
   });
@@ -109,13 +119,34 @@ export function applyCampaignModes(manifest, targetId, entries) {
     // mode keeps whatever it already published. Replacing the object wholesale
     // would discard that measurement without saying so.
     //
-    // The commit has to be resolved here rather than copied, because undo
-    // provenance is usually implicit: a mode carrying `undoSource` alone lets the
-    // report fall back to its `drawingProductCommit`, and this merge is about to
-    // replace that with the commit the DRAWING was recaptured at. Copying the
-    // absent field would silently re-date the preserved undo rows to a commit
-    // they were never measured at, and the provenance table prints that date.
+    // The commits have to be resolved here rather than copied, because undo and
+    // captured-untracked action provenance can be implicit: both fall back to the
+    // drawingProductCommit this merge is about to replace. Carrying either section
+    // without its own commit would silently re-date it to the drawing recapture.
     const existing = target.modes[index];
+    if (
+      entry.partial === 'actions-preserved' &&
+      existing.actionSources === undefined &&
+      existing.actionsUnavailableReason === undefined
+    ) {
+      fail(`Cannot preserve actions for ${targetId}/${entry.id}: no published action section`);
+    }
+    const preservedActions =
+      entry.partial === 'actions-preserved'
+        ? existing.actionSources !== undefined
+          ? {
+              actionSources: existing.actionSources,
+              ...(existing.actionSources === 'captured-untracked'
+                ? {
+                    actionProductCommit:
+                      existing.actionProductCommit ?? existing.drawingProductCommit,
+                  }
+                : {}),
+            }
+          : existing.actionsUnavailableReason !== undefined
+            ? { actionsUnavailableReason: existing.actionsUnavailableReason }
+            : {}
+        : {};
     target.modes[index] = {
       ...entry.mode,
       ...(entry.mode.undoSource === undefined && existing.undoSource !== undefined
@@ -124,6 +155,7 @@ export function applyCampaignModes(manifest, targetId, entries) {
             undoProductCommit: existing.undoProductCommit ?? existing.drawingProductCommit,
           }
         : {}),
+      ...preservedActions,
     };
   }
   return manifest;
@@ -138,8 +170,12 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   const outputRoot = flag('output-root');
   const productCommit = flag('product-commit');
   const manifestPath = flag('manifest');
+  const preserveActions = argv.includes('--preserve-actions');
   if (!targetId || !outputRoot || !productCommit) {
     fail('--target, --output-root, and --product-commit are all required');
+  }
+  if (preserveActions && flag('actions-unavailable')) {
+    fail('--preserve-actions and --actions-unavailable cannot be combined');
   }
 
   const modes = flag('modes')
@@ -151,6 +187,7 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
     productCommit,
     modes,
     actionsUnavailableReason: flag('actions-unavailable'),
+    preserveActions,
   });
 
   for (const entry of entries.filter((candidate) => candidate.missing)) {
@@ -158,9 +195,11 @@ export async function runCampaignSources(argv = process.argv.slice(2)) {
   }
   const ready = entries.filter((entry) => entry.mode);
   for (const entry of ready.filter((candidate) => candidate.partial)) {
-    console.log(
-      `PARTIAL ${entry.id} — drawing and undo only; ${entry.partial} recorded unavailable`
-    );
+    const detail =
+      entry.partial === 'actions-preserved'
+        ? 'drawing folded; prior actions preserved'
+        : 'drawing folded; actions recorded unavailable';
+    console.log(`PARTIAL ${entry.id} — ${detail}`);
   }
   console.log(`${targetId}: ${ready.length}/${entries.length} modes ready`);
 

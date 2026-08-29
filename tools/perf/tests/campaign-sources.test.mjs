@@ -2,8 +2,13 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
-import { applyCampaignModes, campaignModeSources } from '../campaign-sources.mjs';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  applyCampaignModes,
+  campaignModeSources,
+  runCampaignSources,
+} from '../campaign-sources.mjs';
+import { modeProvenance } from '../check-matrix-staleness.mjs';
 import { artifactPath } from '../lib/campaign-plan.mjs';
 import { ROOT } from '../../lib/proc.mjs';
 
@@ -12,6 +17,8 @@ const temporaryDirectories = [];
 afterAll(() => {
   for (const directory of temporaryDirectories) rmSync(directory, { recursive: true, force: true });
 });
+
+afterEach(() => vi.restoreAllMocks());
 
 const PRODUCT_COMMIT = 'ce88c8e587ac45847c419e05ef7a79d282bc747a';
 const MODE = { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' };
@@ -87,11 +94,67 @@ describe('campaign sources', () => {
       actionsUnavailableReason: 'P1: blocked by #1194.',
     });
 
-    expect(entry.partial).toBe('actions');
+    expect(entry.partial).toBe('actions-unavailable');
     expect(entry.mode.status).toBe('captured');
     expect(entry.mode.actionsUnavailableReason).toBe('P1: blocked by #1194.');
     expect(entry.mode).not.toHaveProperty('actionSources');
     expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
+  });
+
+  it('accepts four complete brushes without an action artifact when preserving actions', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['actions'],
+    });
+    const [entry] = campaignModeSources('android-device-web', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      preserveActions: true,
+    });
+
+    expect(entry.partial).toBe('actions-preserved');
+    expect(entry.mode.status).toBe('captured');
+    expect(entry.mode).not.toHaveProperty('actionSources');
+    expect(entry.mode).not.toHaveProperty('actionsUnavailableReason');
+    expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
+  });
+
+  it('refuses to preserve actions over a usable action artifact', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    expect(() =>
+      campaignModeSources('android-device-web', {
+        outputRoot,
+        productCommit: PRODUCT_COMMIT,
+        modes: [MODE.id],
+        preserveActions: true,
+      })
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('a usable action artifact exists'));
+  });
+
+  it('refuses mutually exclusive action-preservation flags', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    await expect(
+      runCampaignSources([
+        '--target=android-device-web',
+        '--output-root=unused',
+        `--product-commit=${PRODUCT_COMMIT}`,
+        '--preserve-actions',
+        '--actions-unavailable=blocked',
+      ])
+    ).rejects.toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(
+      '--preserve-actions and --actions-unavailable cannot be combined'
+    );
   });
 
   it('still refuses a mode missing a brush, reason or not', () => {
@@ -228,6 +291,140 @@ describe('campaign sources', () => {
     expect(manifest.targets[0].modes[0].undoSource).toBe('preserved');
     expect(manifest.targets[0].modes[0].undoProductCommit).toBe('abc');
     expect(manifest.targets[0].modes[0].drawing.pen).toHaveLength(1);
+  });
+
+  it('carries the published action section forward when requested', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['actions'],
+    });
+    const entries = campaignModeSources('android-device-web', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      preserveActions: true,
+    });
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              actionSources: 'preserved',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
+    expect(merged.actionSources).toBe('preserved');
+    expect(merged).not.toHaveProperty('actionsUnavailableReason');
+  });
+
+  it('pins implicit action provenance before the drawing commit moves under it', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['actions'],
+    });
+    const entries = campaignModeSources('android-device-web', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      preserveActions: true,
+    });
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              actionSources: 'captured-untracked',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
+    expect(merged.actionProductCommit).toBe('aaaaaaaaaaaa');
+    expect(modeProvenance(merged)).toEqual([PRODUCT_COMMIT, 'aaaaaaaaaaaa']);
+  });
+
+  it('carries a published action-unavailable reason forward when requested', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['actions'],
+    });
+    const entries = campaignModeSources('android-device-web', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      preserveActions: true,
+    });
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              actionsUnavailableReason: 'P1: transport blocked.',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.actionsUnavailableReason).toBe('P1: transport blocked.');
+    expect(merged).not.toHaveProperty('actionSources');
+  });
+
+  it('refuses to preserve a missing published action section', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [{ id: MODE.id, status: 'captured', drawingProductCommit: 'aaaaaaaaaaaa' }],
+        },
+      ],
+    };
+
+    expect(() =>
+      applyCampaignModes(manifest, 'android-device-web', [
+        {
+          id: MODE.id,
+          partial: 'actions-preserved',
+          mode: {
+            id: MODE.id,
+            status: 'captured',
+            drawingProductCommit: PRODUCT_COMMIT,
+            drawing: {},
+          },
+        },
+      ])
+    ).toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(
+      `Cannot preserve actions for android-device-web/${MODE.id}: no published action section`
+    );
   });
 
   it('pins implicit undo provenance before the drawing commit moves under it', () => {

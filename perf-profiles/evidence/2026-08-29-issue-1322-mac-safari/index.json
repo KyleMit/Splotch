@@ -1,0 +1,50 @@
+{
+  "campaign": "2026-08-29-issue-1322-mac-safari",
+  "capturedFrom": "perf-profiles/campaign-1322-20260828-current",
+  "kept": [
+    {
+      "file": "mac-safari-crayon.json",
+      "target": "mac-safari",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-safari-eraser.json",
+      "target": "mac-safari",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-safari-magic.json",
+      "target": "mac-safari",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-safari-pen.json",
+      "target": "mac-safari",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}
