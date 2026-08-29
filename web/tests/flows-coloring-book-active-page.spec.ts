@@ -39,6 +39,31 @@ async function tileGeometry(grid: Locator) {
   );
 }
 
+test('paper presentation residency starts on picker demand and survives clear', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  const paper = page.locator('.paper-view');
+  await expect(paper).not.toHaveClass(/paper-presentation-resident/);
+  await expect(paper).not.toHaveAttribute('data-paper-active');
+
+  await openColoringDialog(page);
+  await expect(paper).toHaveClass(/paper-presentation-resident/);
+  await expect(paper).not.toHaveAttribute('data-paper-active');
+
+  await (await openFarmPageGrid(page)).first().click();
+  await expect(paper).toHaveAttribute('data-paper-active', '');
+
+  await openColoringDialog(page);
+  await page
+    .locator('#coloring-book-dialog')
+    .getByRole('button', { name: 'Clear active coloring page: Cat' })
+    .click();
+  await expect(paper).not.toHaveAttribute('data-paper-active');
+  await expect(paper).toHaveClass(/paper-presentation-resident/);
+});
+
 test('an active page leaves the book grid geometry unchanged', async ({ page }) => {
   await page.setViewportSize({
     width: BOOK_GRID_VIEWPORTS[0].width,

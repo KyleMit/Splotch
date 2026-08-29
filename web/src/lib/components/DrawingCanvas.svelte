@@ -16,6 +16,7 @@
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
+  import { coloringBookModal } from '$lib/state/ui.svelte';
   import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
   import {
     overlayUrl,
@@ -50,6 +51,13 @@
   // wrapper below is positioned with the exact same transform the canvas paints
   // through, so page art and strokes stay aligned.
   let paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
+  let paperPresentationResident = $state(!!overlayUrl());
+
+  $effect(() => {
+    if (coloringBookModal.open || overlayUrl()) {
+      paperPresentationResident = true;
+    }
+  });
 
   const paperTransform = $derived(
     `matrix(${viewMatrix({
@@ -262,9 +270,11 @@
        page + strokes move as one sheet across rotations. -->
   <div
     class="paper-view"
+    class:paper-presentation-resident={paperPresentationResident}
+    data-paper-active={overlayUrl() ? '' : undefined}
     style:width={paperCssWidth}
     style:height={paperCssHeight}
-    style:transform={paperTransform}
+    style:transform={paperPresentationResident ? paperTransform : undefined}
   >
     <img
       class="coloring-overlay"
@@ -325,6 +335,9 @@
     pointer-events: none;
     z-index: 2;
     mix-blend-mode: normal;
+  }
+
+  .paper-view.paper-presentation-resident {
     will-change: transform;
   }
 

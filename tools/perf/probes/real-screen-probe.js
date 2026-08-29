@@ -322,7 +322,7 @@
     styleEl.textContent = rules.join('\n');
   };
 
-  const paperActive = () => !paperView.hasAttribute('hidden');
+  const paperActive = () => paperView.hasAttribute('data-paper-active');
   // For a page phase the ART has to be showing, not merely selected:
   // DrawingCanvas hides the <img> until the new file decodes, and the blend cost
   // being measured does not exist until it paints. Gating on the wrapper alone

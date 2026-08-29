@@ -1555,10 +1555,12 @@ describe('probe selectors still match the app', () => {
     expect(PROBE).toContain(`COLORING_OVERLAY_ID = '${declared}'`);
   });
 
-  // The probe's whole read of "is the coloring page showing" rests on this
-  // attribute being how DrawingCanvas hides the overlay wrapper.
-  it('still learns paper state from the wrapper’s hidden attribute', () => {
-    expect(component('DrawingCanvas.svelte')).toContain('hidden={!overlayUrl()}');
+  it('reads paper state from the wrapper’s explicit logical marker', () => {
+    const source = component('DrawingCanvas.svelte');
+    const wrapperTag = source.match(/<div\s+class="paper-view"[\s\S]*?>/)?.[0];
+
+    expect(wrapperTag).toContain("data-paper-active={overlayUrl() ? '' : undefined}");
+    expect(PROBE).toContain("paperView.hasAttribute('data-paper-active')");
   });
 
   it('waits for progressive coloring controls and decoded art before drawing', () => {
