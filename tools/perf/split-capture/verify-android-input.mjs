@@ -158,11 +158,15 @@ export async function verifyAndroidInput({
     }
 
     const geometry = ready.geometry;
+    const userRotation = Number.parseInt(
+      adb(serial, ['shell', 'settings', 'get', 'system', 'user_rotation']).trim(),
+      10
+    );
     const instructions = androidGestureInstructions(
       trustedGestureActions(geometry.canvas, repeats, 0),
       {
         densityScale: geometry.dpr,
-        offset: androidContentOffset(geometry),
+        offset: androidContentOffset(geometry, { userRotation }),
       }
     );
     for (const instruction of instructions) {

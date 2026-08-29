@@ -278,17 +278,38 @@ describe('campaign device class', () => {
 
 describe('campaign artifact acceptance', () => {
   it('accepts a native cell only when the capture attached to the app WebView', () => {
-    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(true);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'capacitor://localhost' },
+        'native'
+      )
+    ).toBe(true);
     // The split runner's native artifact (issue 1274): the nativeApp fact
     // counts only on the transports that legitimately carry it.
     expect(
-      artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'native')
+      artifactMatchesRuntime(
+        {
+          transport: 'split-input-measurement',
+          nativeApp: true,
+          platform: 'android',
+          nativePackage: 'art.splotch.app',
+        },
+        'native'
+      )
     ).toBe(true);
     expect(
       artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: false }, 'web')
     ).toBe(true);
     expect(
-      artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'web')
+      artifactMatchesRuntime(
+        {
+          transport: 'split-input-measurement',
+          nativeApp: true,
+          platform: 'android',
+          nativePackage: 'art.splotch.app',
+        },
+        'web'
+      )
     ).toBe(false);
     // Fail closed on contradiction (PR 1380 review): a browser artifact
     // wearing a stray nativeApp flag matches NEITHER runtime — accepting it
@@ -302,6 +323,7 @@ describe('campaign artifact acceptance', () => {
   });
 
   it('requires a packaged page when Appium records the native app URL', () => {
+    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(false);
     expect(
       artifactMatchesRuntime(
         { transport: 'native-capacitor-webview', appUrl: 'capacitor://localhost/?perf-run=1' },
@@ -322,8 +344,29 @@ describe('campaign artifact acceptance', () => {
     ).toBe(false);
   });
 
+  it('requires Android split captures to measure the foreground package', () => {
+    const capture = {
+      transport: 'split-input-measurement',
+      nativeApp: true,
+      platform: 'android',
+    };
+
+    expect(artifactMatchesRuntime(capture, 'native')).toBe(false);
+    expect(
+      artifactMatchesRuntime({ ...capture, nativePackage: 'com.android.chrome' }, 'native')
+    ).toBe(false);
+    expect(artifactMatchesRuntime({ ...capture, nativePackage: 'art.splotch.app' }, 'native')).toBe(
+      true
+    );
+  });
+
   it('rejects a web cell that attached to the installed app instead', () => {
-    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'web')).toBe(false);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'capacitor://localhost' },
+        'web'
+      )
+    ).toBe(false);
   });
 
   it('accepts both web transports, so a CDP action sweep is not mistaken for a miss', () => {

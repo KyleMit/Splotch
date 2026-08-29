@@ -1249,6 +1249,12 @@ describe('trusted XCUITest input', () => {
       })
     ).toBeNull();
     expect(selectWebContext(['NATIVE_APP', 'WEBVIEW_42'], { nativeApp: true })).toBe('WEBVIEW_42');
+    expect(
+      selectWebContext(['NATIVE_APP', 'WEBVIEW_chrome'], {
+        nativeApp: true,
+        platformName: 'Android',
+      })
+    ).toBeNull();
   });
 
   it('builds two long and eight short native strokes inside the canvas', () => {

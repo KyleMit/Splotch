@@ -41,6 +41,11 @@ const scoreable = {
   fidelity: { passed: true },
   summaries: { intervalMs: 17 },
 };
+const scoreableNative = {
+  ...scoreable,
+  transport: NATIVE_TRANSPORT,
+  appUrl: 'capacitor://localhost',
+};
 
 describe('inspectArtifact', () => {
   it('accepts a capture that parses, matches the runtime, and is in regime', () => {
@@ -66,7 +71,7 @@ describe('inspectArtifact', () => {
   // A native capture that attached to Chrome, or a web capture that attached to the
   // installed app, produces a well-formed artifact and exits zero.
   it('rejects an artifact from the wrong runtime', () => {
-    const native = artifactAt({ ...scoreable, transport: NATIVE_TRANSPORT });
+    const native = artifactAt(scoreableNative);
 
     expect(inspectArtifact(native, 'web')).toMatchObject({ ok: false, status: FAILED });
     expect(inspectArtifact(native, 'native')).toMatchObject({ ok: true, status: COMPLETE });
@@ -602,7 +607,7 @@ describe('acceptance re-derives fidelity when it can', () => {
 
   it('accepts a banked capture whose stored verdict predates a table correction', () => {
     const staleStored = artifactAt({
-      transport: NATIVE_TRANSPORT,
+      ...scoreableNative,
       fidelity: { passed: false, checks: { coalescing: null }, uncalibrated: ['coalescing'] },
       summaries: { intervalMs: 17, phases: [{ input: healthyInput }] },
     });
@@ -618,7 +623,7 @@ describe('acceptance re-derives fidelity when it can', () => {
 
   it('still refuses a bad capture whatever its stored verdict claims', () => {
     const flattering = artifactAt({
-      transport: NATIVE_TRANSPORT,
+      ...scoreableNative,
       fidelity: { passed: true },
       summaries: {
         intervalMs: 17,
@@ -641,7 +646,8 @@ describe('acceptance re-derives fidelity when it can', () => {
   // rederiveFidelity — pinned here from both sides.
   it('refuses a fidelity-reporting artifact whose verdict block is missing, input or not', () => {
     const noVerdict = artifactAt({
-      transport: NATIVE_TRANSPORT,
+      ...scoreableNative,
+      fidelity: undefined,
       summaries: { intervalMs: 17, phases: [{ input: healthyInput }] },
     });
 
@@ -659,7 +665,7 @@ describe('acceptance re-derives fidelity when it can', () => {
 
   it('re-derives a failed verdict from missing phase input, never the stored claim', () => {
     const flatteringNoInput = artifactAt({
-      transport: NATIVE_TRANSPORT,
+      ...scoreableNative,
       fidelity: { passed: true },
       summaries: { intervalMs: 17 },
     });
@@ -675,7 +681,7 @@ describe('acceptance re-derives fidelity when it can', () => {
 
   it('re-derives a stored failing verdict the same way', () => {
     const storedOnly = artifactAt({
-      transport: NATIVE_TRANSPORT,
+      ...scoreableNative,
       fidelity: { passed: false, checks: { cadence: false }, uncalibrated: [] },
       summaries: { intervalMs: 17 },
     });

@@ -287,6 +287,20 @@ export function coloringSelectionSteps(hasBookChoice) {
   return steps;
 }
 
+async function showColoringBookChoices(execute) {
+  const drilledIntoBook = await execute(
+    `return document.querySelector('#coloring-book-dialog .coloring-back-button') !== null;`
+  );
+  if (!drilledIntoBook) return;
+  await clickSetupElement(execute, '#coloring-book-dialog .coloring-back-button');
+  await waitForReady(
+    execute,
+    `document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null`,
+    'coloring book choices'
+  );
+  await sleep(ANIMATED_ACTION_SETTLE_MS);
+}
+
 export function coloringClearActivation() {
   return 'native-accessibility';
 }
@@ -1375,6 +1389,7 @@ export async function runActionSweep({
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
+    await showColoringBookChoices(execute);
     const hasBookChoice = await execute(
       `return document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null;`
     );
@@ -1672,6 +1687,11 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       sessionId = session.sessionId;
       ownsSession = true;
     }
+    client.platformName =
+      session.capabilities?.platformName ??
+      session.capabilities?.['appium:platformName'] ??
+      capabilities?.platformName ??
+      'iOS';
     execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
     const executeAsync = (script, args = []) =>

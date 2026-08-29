@@ -97,10 +97,10 @@ describe('the regime each target is scored against', () => {
     ['2026-08-23-desktop-main'],
     ['2026-08-24-hand-native', 'android-device-native'],
     ['2026-08-26-emulator-regime-bootstrap', 'android-emulator-web'],
-    ['2026-08-28-issue-1215-ipad-simulator-web'],
-    ['2026-08-28-issue-1215-ipad-simulator-native'],
-    ['2026-08-28-issue-1215-android-emulator-web'],
-    ['2026-08-28-issue-1215-android-emulator-native'],
+    ['2026-08-28-issue-1215-ipad-simulator-web', 'ipad-simulator-web'],
+    ['2026-08-28-issue-1215-ipad-simulator-native', 'ipad-simulator-native'],
+    ['2026-08-28-issue-1215-android-emulator-web', 'android-emulator-web'],
+    ['2026-08-28-issue-1215-android-emulator-native', 'android-emulator-native'],
   ])('matches every capture in %s', (campaign, campaignTarget) => {
     const beats = corpusBeats(campaign, campaignTarget);
     expect(beats.length).toBeGreaterThan(0);

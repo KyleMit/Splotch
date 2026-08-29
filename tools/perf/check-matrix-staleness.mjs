@@ -12,8 +12,8 @@
 // nobody was running. It took a physical-device A/B to notice.
 //
 // A PRESERVED cell is exempt by construction: it is already labelled historical
-// evidence carried forward. What this checks is the other kind — a cell folded in
-// from a real capture, which is making a claim about the product as it stands.
+// evidence carried forward. A CAPTURED-UNTRACKED cell is different: its raw source
+// is absent from git, but it still claims currency and therefore remains checked.
 
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -66,13 +66,16 @@ export function everyChangeIsASpec(paths) {
 // the same standard as drawing rather than going unchecked.
 export function modeProvenance(mode) {
   const commits = new Set();
-  if (typeof mode.drawing !== 'string' && mode.drawing && mode.drawingProductCommit) {
+  if (mode.drawing !== 'preserved' && mode.drawing && mode.drawingProductCommit) {
     commits.add(mode.drawingProductCommit);
   }
-  if (typeof mode.undoSource !== 'string' || mode.undoSource !== 'preserved') {
+  if (mode.undoSource !== 'preserved') {
     if (mode.undoProductCommit) commits.add(mode.undoProductCommit);
   }
-  if (Array.isArray(mode.actionSources)) {
+  if (mode.actionSources === 'captured-untracked') {
+    const actionCommit = mode.actionProductCommit ?? mode.drawingProductCommit;
+    if (actionCommit) commits.add(actionCommit);
+  } else if (Array.isArray(mode.actionSources)) {
     for (const source of mode.actionSources) {
       if (source?.productCommit) commits.add(source.productCommit);
     }
@@ -196,7 +199,7 @@ export async function checkMatrixStaleness({
     changedFilesSince: changedFileReader(base),
   });
   if (!rows.length) {
-    console.log('No captured cells in the manifest — every target is preserved evidence.');
+    console.log('No current captured cells in the manifest — every target is preserved evidence.');
     return { rows, stale: [] };
   }
   console.table(rows);

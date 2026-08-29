@@ -24,7 +24,13 @@ function writeCampaign(targetId, transport, { omit = [] } = {}) {
     if (omit.includes(item)) continue;
     const file = join(root, artifactPath('out', targetId, MODE, item));
     mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, JSON.stringify({ transport }));
+    writeFileSync(
+      file,
+      JSON.stringify({
+        transport,
+        ...(transport === 'native-capacitor-webview' ? { appUrl: 'capacitor://localhost' } : {}),
+      })
+    );
   }
   return join(root, 'out');
 }

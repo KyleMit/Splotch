@@ -7,3 +7,5 @@ timestamp	udid	outcome	detail
 2026-08-27T13:53:38.321Z	00008103-0006202E3CF1001E	blocked	fetch failed
 2026-08-27T13:56:37.932Z	00008103-0006202E3CF1001E	blocked	the iPad is asking to enable UI automation. Look at the device: XCTest has put an "Enter iPad Passcode for XCTest / Enable UI Automation" prompt on screen. Enter the passcode there, then re-run. No host-side change will clear this.
 2026-08-28T12:00:11.586Z	00008103-0006202E3CF1001E	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-08-29T01:17:43.838Z	00008103-0006202E3CF1001E	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-08-29T01:19:46.114Z	00008103-0006202E3CF1001E	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly

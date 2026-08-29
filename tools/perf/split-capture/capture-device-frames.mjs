@@ -37,7 +37,7 @@ import {
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
-import { GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
+import { ANDROID_NATIVE_PACKAGE, GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
@@ -50,6 +50,7 @@ import {
 } from '../lib/real-screen-stats.mjs';
 import {
   androidContentOffset,
+  androidForegroundPackage,
   androidGestureInstructions,
   androidOpenSteps,
   swipeArgs,
@@ -76,7 +77,7 @@ const REPORT_TIMEOUT_MS = 120_000;
 const GESTURE_TAIL_MS = 1_200;
 const WDA_SESSION_ATTEMPTS = 3;
 const SAFARI_BUNDLE_ID = 'com.apple.mobilesafari';
-export const APP_BUNDLE_ID = 'art.splotch.app';
+export const APP_BUNDLE_ID = ANDROID_NATIVE_PACKAGE;
 const WDA_SESSION_SETTLE_MS = 2_500;
 const CONTACT_BANK_MS = 600_000;
 
@@ -210,11 +211,27 @@ export function androidDriver({
       await frontRunPage('after launch');
     },
     boundsFrom(geometry) {
+      const userRotation = Number.parseInt(
+        exec(serial, ['shell', 'settings', 'get', 'system', 'user_rotation']).trim(),
+        10
+      );
       return {
         bounds: geometry.canvas,
         densityScale: geometry.dpr,
-        offset: androidContentOffset(geometry),
+        offset: androidContentOffset(geometry, { userRotation }),
       };
+    },
+    runtimeIdentity() {
+      if (!nativeApp) return null;
+      const nativePackage = androidForegroundPackage(
+        exec(serial, ['shell', 'dumpsys', 'activity', 'activities'])
+      );
+      if (nativePackage !== APP_BUNDLE_ID) {
+        throw new Error(
+          `the foreground Android package is ${nativePackage ?? 'unknown'}, not ${APP_BUNDLE_ID}`
+        );
+      }
+      return { nativePackage };
     },
     async dispatch({ bounds, densityScale, offset }, repeats) {
       await frontRunPage('before dispatch');
@@ -323,6 +340,7 @@ export function drivenCaptureArtifact({
   gesturePlan,
   ready,
   nativeApp,
+  nativePackage = null,
   requirePageIdentity = true,
   fidelity,
   drawing,
@@ -357,6 +375,7 @@ export function drivenCaptureArtifact({
     // has to be able to prove which theme it measured without re-deriving it.
     observedTheme: ready?.resolvedTheme ?? null,
     nativeApp,
+    nativePackage,
     // A native run reaches the instrumented page over the LAN through the app's
     // `server.url`, so its assets are not the bundled ones. Recorded because the
     // difference is invisible in the numbers and material to what the cell means.
@@ -483,6 +502,7 @@ export async function captureDeviceFrames({
   }
 
   const geometry = await driver.boundsFrom(ready.geometry);
+  const runtimeIdentity = await driver.runtimeIdentity?.();
   console.log(`canvas ${JSON.stringify(geometry.bounds)} scale ${geometry.densityScale}`);
 
   await driver.dispatch(geometry, repeats);
@@ -561,6 +581,7 @@ export async function captureDeviceFrames({
     gesturePlan: gesturePlanFor(brush),
     ready,
     nativeApp,
+    nativePackage: runtimeIdentity?.nativePackage ?? null,
     requirePageIdentity,
     fidelity,
     drawing,

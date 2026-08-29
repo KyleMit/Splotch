@@ -67,11 +67,12 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
-// A cell whose raw capture is gone still has published, normalized evidence in
-// the last data.json. Copying that forward is how a rerun of the generator keeps
-// a first valid result — including a red gate — instead of silently dropping the
-// cell or recapturing it into a different number.
+// A cell whose raw capture is not committed still has published, normalized
+// evidence in the last data.json. Copying that forward is how a rerun of the
+// generator keeps a first valid result — including a red gate — instead of
+// silently dropping the cell or recapturing it into a different number.
 const PRESERVED = 'preserved';
+const CAPTURED_UNTRACKED = 'captured-untracked';
 
 function loadPreservedEvidence(manifest, manifestDirectory) {
   const spec = manifest.preservedEvidence;
@@ -150,16 +151,16 @@ export function withPreservedScoreability(section, preserved = true) {
   return rescored;
 }
 
-function preservedSection(preserved, targetId, mode, section) {
+function publishedSection(preserved, targetId, mode, section, evidenceState) {
   if (!preserved) {
     throw new Error(
-      `Target ${targetId} mode ${mode.id} marks ${section} preserved, but the manifest declares no preservedEvidence source`
+      `Target ${targetId} mode ${mode.id} marks ${section} ${evidenceState}, but the manifest declares no preservedEvidence source`
     );
   }
   const publishedMode = preserved.byTarget.get(targetId)?.get(mode.id);
   if (!publishedMode) {
     throw new Error(
-      `${preserved.from} has no ${targetId} mode ${mode.id} to preserve ${section} from`
+      `${preserved.from} has no ${targetId} mode ${mode.id} to carry ${section} from`
     );
   }
   if (publishedMode[section] === undefined) {
@@ -797,10 +798,17 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
     return { ...shared, reason: normalizedMode.reason };
   }
   const preservedSections = [];
+  const untrackedSections = [];
   const resolveSection = (declared, section, compute) => {
-    if (declared !== PRESERVED) return compute();
-    preservedSections.push(section);
-    return preservedSection(preserved, target.id, normalizedMode, section);
+    if (declared === PRESERVED) {
+      preservedSections.push(section);
+      return publishedSection(preserved, target.id, normalizedMode, section, PRESERVED);
+    }
+    if (declared === CAPTURED_UNTRACKED) {
+      untrackedSections.push(section);
+      return publishedSection(preserved, target.id, normalizedMode, section, CAPTURED_UNTRACKED);
+    }
+    return compute();
   };
   return {
     ...shared,
@@ -842,6 +850,7 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
       )
     ),
     ...(preservedSections.length ? { preservedSections } : {}),
+    ...(untrackedSections.length ? { untrackedSections } : {}),
   };
 }
 
@@ -989,15 +998,28 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
 // rather than leaving a copied-forward cell looking freshly captured.
 function preservedEvidenceNotes(matrix) {
   if (!matrix.preservedEvidence) return [];
-  const cells = matrix.targets.flatMap((target) =>
+  const preservedCells = matrix.targets.flatMap((target) =>
     target.modes
       .filter((mode) => mode.preservedSections?.length)
       .map((mode) => `${target.label} · ${mode.id} (${mode.preservedSections.join(', ')})`)
   );
-  if (!cells.length) return [];
-  return [
-    `${cells.length} cell${cells.length === 1 ? '' : 's'} carry results preserved from ${matrix.preservedEvidence.from} rather than re-read raw captures: ${matrix.preservedEvidence.reason} Preserved cells: ${cells.join('; ')}.`,
-  ];
+  const untrackedCells = matrix.targets.flatMap((target) =>
+    target.modes
+      .filter((mode) => mode.untrackedSections?.length)
+      .map((mode) => `${target.label} · ${mode.id} (${mode.untrackedSections.join(', ')})`)
+  );
+  const notes = [];
+  if (preservedCells.length) {
+    notes.push(
+      `${preservedCells.length} cell${preservedCells.length === 1 ? '' : 's'} carry historical results preserved from ${matrix.preservedEvidence.from} rather than re-read raw captures: ${matrix.preservedEvidence.reason} Preserved cells: ${preservedCells.join('; ')}.`
+    );
+  }
+  if (untrackedCells.length) {
+    notes.push(
+      `${untrackedCells.length} cell${untrackedCells.length === 1 ? '' : 's'} were captured for this campaign but their per-mode raw inputs remain untracked under ADR-0138; regeneration carries their normalized sections from ${matrix.preservedEvidence.from}, while check:matrix-staleness still verifies their capture commits. Representative whole captures remain tracked under perf-profiles/evidence/. Untracked-source cells: ${untrackedCells.join('; ')}.`
+    );
+  }
+  return notes;
 }
 
 function fmt(value) {
@@ -1418,8 +1440,8 @@ function renderMarkdown(matrix) {
 
 This deployment-target snapshot combines the campaign evidence declared in \`sources.json\`.
 \`${matrix.productCommit}\` is the measured product commit. Every normalized result retains its
-target, mode, commit, and raw artifact; focused action captures, when present, replace only their
-declared scenarios within that mode.
+target, mode, commit, and declared evidence state; focused action captures, when present, replace
+only their declared scenarios within that mode.
 
 The [interactive matrix](./index.html) is the quickest comparison. [\`data.json\`](./data.json)
 contains every normalized drawing run and grouped action result, and

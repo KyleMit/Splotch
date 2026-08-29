@@ -204,6 +204,7 @@ export const CAMPAIGN_TARGETS = {
 // A native capture writes this; the two web transports (`browser` over Appium,
 // `android-chrome-cdp`) write their own.
 export const NATIVE_TRANSPORT = 'native-capacitor-webview';
+export const ANDROID_NATIVE_PACKAGE = 'art.splotch.app';
 
 // Several debuggable WebViews can satisfy the context search, so a native capture
 // that attached to Chrome — or a web capture that attached to the installed app —
@@ -219,13 +220,9 @@ const NATIVE_CAPABLE_TRANSPORTS = new Set(['split-input-measurement', 'cdp-bundl
 const PACKAGED_APP_URLS = new Set(['capacitor://localhost', 'https://localhost']);
 
 function isPackagedAppUrl(value) {
-  if (typeof value !== 'string') return false;
-  try {
-    const url = new URL(value);
-    return PACKAGED_APP_URLS.has(`${url.protocol}//${url.host}`);
-  } catch {
-    return false;
-  }
+  if (typeof value !== 'string' || !URL.canParse(value)) return false;
+  const url = new URL(value);
+  return PACKAGED_APP_URLS.has(`${url.protocol}//${url.host}`);
 }
 
 export function artifactMatchesRuntime(artifact, runtime) {
@@ -241,10 +238,14 @@ export function artifactMatchesRuntime(artifact, runtime) {
   const contradictory =
     nativeFlag && transport !== NATIVE_TRANSPORT && !NATIVE_CAPABLE_TRANSPORTS.has(transport);
   if (contradictory) return false;
+  if (transport === NATIVE_TRANSPORT && !isPackagedAppUrl(artifact?.appUrl)) {
+    return false;
+  }
   if (
-    transport === NATIVE_TRANSPORT &&
-    artifact?.appUrl !== undefined &&
-    !isPackagedAppUrl(artifact.appUrl)
+    transport === 'split-input-measurement' &&
+    nativeFlag &&
+    artifact?.platform === 'android' &&
+    artifact?.nativePackage !== ANDROID_NATIVE_PACKAGE
   ) {
     return false;
   }

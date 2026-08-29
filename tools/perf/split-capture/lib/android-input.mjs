@@ -9,6 +9,7 @@
 // (dropped first point, coordinates left in CSS pixels, a zero duration that
 // makes `input swipe` fling instead of draw), so it is separated from the `adb`
 // calls that execute it.
+import { ANDROID_NATIVE_PACKAGE } from '../../lib/campaign-plan.mjs';
 
 // `input swipe` interpolates over the duration it is given, and below roughly a
 // frame it emits a down/up pair with no intermediate motion — a tap, not a
@@ -23,11 +24,17 @@ const toDevicePixels = (value, densityScale, origin) => Math.round(origin + valu
 // Android Chrome keeps screenX/screenY at zero while adb input addresses the
 // physical display. The outer-minus-inner inset is the content origin hidden
 // by browser chrome and a rotated display cutout.
-export function androidContentOffset(geometry) {
+export function androidContentOffset(geometry, { userRotation } = {}) {
   const viewport = geometry.viewport ?? { width: 0, height: 0 };
   const outerViewport = geometry.outerViewport ?? viewport;
+  const horizontalInset = Math.max(0, outerViewport.width - viewport.width);
+  if (horizontalInset > 0 && userRotation !== 1) {
+    throw new Error(
+      `Android content-offset geometry is only calibrated for user_rotation=1; received ${userRotation ?? 'unknown'}`
+    );
+  }
   return {
-    x: ((geometry.screenX ?? 0) + Math.max(0, outerViewport.width - viewport.width)) * geometry.dpr,
+    x: ((geometry.screenX ?? 0) + horizontalInset) * geometry.dpr,
     y:
       ((geometry.screenY ?? 0) + Math.max(0, outerViewport.height - viewport.height)) *
       geometry.dpr,
@@ -152,8 +159,7 @@ export function androidPageLaunchSteps(orientation, pageUrl) {
   ];
 }
 
-const APP_PACKAGE = 'art.splotch.app';
-const APP_ACTIVITY = `${APP_PACKAGE}/.MainActivity`;
+const APP_ACTIVITY = `${ANDROID_NATIVE_PACKAGE}/.MainActivity`;
 
 // The native counterpart: the app reaches the instrumented page through its own
 // Capacitor `server.url`, so there is no URL to pass — launching it IS opening the
@@ -166,11 +172,19 @@ const APP_ACTIVITY = `${APP_PACKAGE}/.MainActivity`;
 export function androidNativeLaunchSteps(orientation) {
   const [disableAutoRotate, setRotation] = androidRotationCommands(orientation);
   return [
-    { args: ['shell', 'am', 'force-stop', APP_PACKAGE], settle: 'appStop' },
+    { args: ['shell', 'am', 'force-stop', ANDROID_NATIVE_PACKAGE], settle: 'appStop' },
     { args: disableAutoRotate, settle: null },
     { args: setRotation, settle: 'rotation' },
     { args: ['shell', 'am', 'start', '-n', APP_ACTIVITY], settle: 'page' },
   ];
+}
+
+export function androidForegroundPackage(dumpsys) {
+  return (
+    dumpsys.match(/mResumedActivity:.*?\s([A-Za-z0-9._]+)\//)?.[1] ??
+    dumpsys.match(/topResumedActivity=.*?\s([A-Za-z0-9._]+)\//)?.[1] ??
+    null
+  );
 }
 
 // Which launch a capture takes, as a value rather than as a branch inside a
