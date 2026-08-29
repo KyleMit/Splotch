@@ -44,11 +44,8 @@ describe('buildColoringPackManifest', () => {
           .filter((file) => file.path.endsWith('.selector.webp'))
           .every((file) => file.downloadPath === undefined)
       ).toBe(true);
-      expect(
-        compact.files
-          .filter((file) => file.path.endsWith('.presentation.webp'))
-          .every((file) => file.downloadPath === undefined)
-      ).toBe(true);
+      expect(compact.files.some((file) => file.path.endsWith('.presentation.webp'))).toBe(false);
+      expect(full.files.some((file) => file.path.endsWith('.presentation.webp'))).toBe(false);
       expect(
         compact.files
           .filter((file) => file.path.endsWith('.svg'))
@@ -71,6 +68,20 @@ describe('buildColoringPackManifest', () => {
       manifestFileCount * MAX_COLORING_PACK_MANIFEST_BYTES_PER_FILE
     );
     expect(() => parseColoringPackManifest(manifest, '1.2.3-test')).not.toThrow();
+  });
+
+  it('keeps web presentation rasters in both web pack variants', () => {
+    const { manifest } = buildColoringPackManifest('1.2.3-test', 'web');
+
+    for (const book of manifest.books) {
+      for (const variant of Object.values(book.variants)) {
+        const presentations = variant.files.filter((file) =>
+          file.path.endsWith('.presentation.webp')
+        );
+        expect(presentations).toHaveLength(24);
+        expect(presentations.every((file) => file.downloadPath === undefined)).toBe(true);
+      }
+    }
   });
 
   it('ships every landscape vector overlay through both incremental variants', () => {
