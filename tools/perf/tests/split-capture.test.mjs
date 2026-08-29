@@ -19,6 +19,7 @@ import {
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
+import { fetchAcceptedProbeReport } from '../split-capture/lib/probe-host-protocol.mjs';
 import {
   activateChromePage,
   clearToolingLitter,
@@ -755,6 +756,31 @@ describe('the probe host refusing a stale run over HTTP', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+
+  it('serves only the current accepted report and clears it on reset', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+    const control = (nonce) =>
+      fetch(`${base}/__probe/control`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ label: 'same-label', nonce, reset: true }),
+      });
+
+    await control('run-1');
+    await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
+
+    await postReport(base, { nonce: 'stale-run', report: { events: [1] } });
+    await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
+
+    const accepted = { nonce: 'run-1', report: { events: [1, 2, 3] } };
+    await postReport(base, accepted);
+    await expect(fetchAcceptedProbeReport(base)).resolves.toEqual(accepted);
+
+    await control('run-2');
+    await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
+  });
 
   // Issue 1316: a locked iPad and an installed clean bundled build both look
   // like a successful devicectl launch followed by silence. The counter is the

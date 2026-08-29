@@ -5,10 +5,7 @@
 // run against a real in-test probe host with `--native-app` parsed from argv,
 // and asserts the flag reaches the launch steps, the identity contract, and
 // the artifact.
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const captureCalls = [];
@@ -80,10 +77,11 @@ function probeReport({ url, ua }) {
 }
 
 // A real HTTP probe host, minimal: answers the control PUT, reports a ready
-// state, and writes the run's report file the moment the run announces its
+// state, and exposes the accepted report the moment the run announces its
 // label — with the page identity this test case wants the report to carry.
-function startProbeHost({ reportDir, ua, reportProbeParam }) {
+function startProbeHost({ ua, reportProbeParam }) {
   const controls = [];
+  let reportPayload = null;
   const server = createServer((request, response) => {
     let body = '';
     request.on('data', (chunk) => (body += chunk));
@@ -98,10 +96,7 @@ function startProbeHost({ reportDir, ua, reportProbeParam }) {
             reportProbeParam === 'nonce'
               ? `${base}?probe=${encodeURIComponent(control.nonce)}`
               : base;
-          writeFileSync(
-            join(reportDir, `${control.label}.json`),
-            JSON.stringify({ report: probeReport({ url, ua }) })
-          );
+          reportPayload = { report: probeReport({ url, ua }) };
         }
         response.end('{}');
         return;
@@ -121,6 +116,11 @@ function startProbeHost({ reportDir, ua, reportProbeParam }) {
         );
         return;
       }
+      if (request.url === '/__probe/report') {
+        if (!reportPayload) response.statusCode = 404;
+        response.end(JSON.stringify(reportPayload ?? { error: 'no accepted report' }));
+        return;
+      }
       response.end('{}');
     });
   });
@@ -132,24 +132,18 @@ function startProbeHost({ reportDir, ua, reportProbeParam }) {
 }
 
 const servers = [];
-const reportDirs = [];
 const argvBaseline = [...process.argv];
 
 afterEach(async () => {
   for (const { server } of servers.splice(0)) {
     await new Promise((resolve) => server.close(resolve));
   }
-  for (const directory of reportDirs.splice(0)) {
-    rmSync(directory, { recursive: true, force: true });
-  }
   process.argv = [...argvBaseline];
   captureCalls.length = 0;
 });
 
 async function runCapture({ nativeApp, ua, reportProbeParam }) {
-  const reportDir = mkdtempSync(join(tmpdir(), 'splotch-hand-reports-'));
-  reportDirs.push(reportDir);
-  const probe = await startProbeHost({ reportDir, ua, reportProbeParam });
+  const probe = await startProbeHost({ ua, reportProbeParam });
   servers.push(probe);
   if (nativeApp) process.argv = [...argvBaseline, '--native-app'];
   const artifact = await captureHandInput({
@@ -161,7 +155,6 @@ async function runCapture({ nativeApp, ua, reportProbeParam }) {
     host: probe.host,
     serial: 'FAKESERIAL',
     opener: 'adb',
-    reportDir,
   });
   return { artifact, controls: probe.controls };
 }

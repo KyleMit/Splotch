@@ -13,7 +13,7 @@
 // Why this exists at all: the Appium Android browser transport delivers 46.8
 // contact moves per second against a 100-170 fidelity band, so cells captured
 // through it cannot be scored. This path clears the band.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
@@ -37,6 +37,7 @@ import {
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { fetchAcceptedProbeReport } from './lib/probe-host-protocol.mjs';
 import { ANDROID_NATIVE_PACKAGE, GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -445,11 +446,9 @@ export async function captureDeviceFrames({
   wdaUrl = argFlag('wda-url', 'http://127.0.0.1:8100'),
   label = argFlag('label'),
   // Without --output the composed artifact (fidelity, summaries, provenance) is
-  // printed and DISCARDED — only the raw page report lands in --report-dir. A
-  // capture meant to be banked or promoted to evidence must pass --output; a
-  // session lost a clean emulator capture to this before noticing.
+  // printed and DISCARDED. The probe host may archive its accepted raw report,
+  // but a capture meant to be banked or promoted must pass --output.
   output = argFlag('output'),
-  reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
   allowForeignBuild = process.argv.includes('--allow-foreign-build'),
   // `argFlag` only matches `--name=value`, so a BARE flag is invisible to it and
   // reads as absent. A capture that silently ran against Safari while reporting a
@@ -562,7 +561,10 @@ export async function captureDeviceFrames({
     fail(`no report was uploaded${seen}`);
   }
 
-  const payload = JSON.parse(readFileSync(join(reportDir, `${runLabel}.json`), 'utf8'));
+  // Read the same nonce-gated in-memory payload whose `hasReport` flag ended the
+  // poll. A caller-local report directory can contain a same-label artifact from
+  // another host or run, while the live host has already accepted the right one.
+  const payload = await fetchAcceptedProbeReport(host);
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the gesture never reached the canvas');

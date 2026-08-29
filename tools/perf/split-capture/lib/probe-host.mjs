@@ -9,7 +9,7 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { ROOT } from '../../../lib/proc.mjs';
 import { pageBootstrapSource } from './page-bootstrap.mjs';
-import { PROBE_HOST_PROTOCOL } from './probe-host-protocol.mjs';
+import { PROBE_HOST_PROTOCOL, PROBE_REPORT_PATH } from './probe-host-protocol.mjs';
 import { keepIncomingReport, reportRejectionReason } from './report-store.mjs';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './chrome-tabs.mjs';
 
@@ -22,8 +22,8 @@ const UPSTREAM_ATTEMPTS = 3;
 // ends, so this is deliberately far longer than any gesture.
 const DEFAULT_CONTACT_MS = 600_000;
 
-const json = (res, body) => {
-  res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+const json = (res, body, status = 200) => {
+  res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
   res.end(JSON.stringify(body));
 };
 
@@ -100,6 +100,11 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         stalePage: state.stalePage,
       });
     }
+    if (req.method === 'GET' && pathname === PROBE_REPORT_PATH) {
+      return state.report
+        ? json(res, state.report)
+        : json(res, { error: 'no accepted report for the current plan' }, 404);
+    }
     if (pathname === '/__probe/bootstrap.js') return script(res, pageBootstrapSource());
     if (pathname === '/__probe/probe.js') {
       return script(res, readFileSync(PROBE_SOURCE, 'utf8'));
@@ -120,7 +125,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
     }
     if (req.method === 'POST' && pathname.startsWith('/__probe/')) {
       const payload = await readBody(req);
-      if (pathname === '/__probe/report') {
+      if (pathname === PROBE_REPORT_PATH) {
         const rejection = reportRejectionReason(state.report, payload, state.plan.nonce);
         if (rejection) {
           log(`ignored ${rejection} for ${state.plan.label}`);
