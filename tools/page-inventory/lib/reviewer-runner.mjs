@@ -20,7 +20,10 @@ export const REVIEWER_RUNNERS = ['claude', 'codex'];
 // 672-capture run; the retry hid most of it and a few surfaces failed outright.
 const CLAUDE_MAX_TURNS = 12;
 
-const REVIEWER_MODELS = { codex: 'gpt-5.6-terra', claude: 'sonnet' };
+// Exact ids rather than aliases: the model a review came from is recorded in
+// the critique's scope.reviewer as provenance, and an alias would let that
+// record point somewhere else the next time it is read.
+const REVIEWER_MODELS = { codex: 'gpt-5.6-terra', claude: 'claude-opus-5' };
 // Subtypes that name no cause. `no_agent_message` is the parser's own verdict
 // on output it could not read, and a runner can report a failure whose subtype
 // is still `success` — an API error does exactly that, carrying its real reason
