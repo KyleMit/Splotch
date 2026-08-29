@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import {
   ACTION_REPEATS,
@@ -45,6 +46,11 @@ const HOST = { appiumUrl: 'http://127.0.0.1:4723', capabilitiesFile: '/tmp/caps.
 const plan = (targetId, options = {}) =>
   planCampaign(targetId, { outputRoot: 'out', host: HOST, ...options });
 
+const DESKTOP_ENTRY_BY_COMMAND = {
+  'perf:web:frames': 'tools/perf/web/capture-local-frames.mjs',
+  'perf:web:actions': 'tools/perf/web/capture-desktop-actions.mjs',
+};
+
 describe('campaign plan', () => {
   it('expands every mode against every item', () => {
     const cells = plan('ipad-simulator-native');
@@ -64,6 +70,25 @@ describe('campaign plan', () => {
 
     expect(new Set(paths).size).toBe(paths.length);
   });
+
+  it.each(Object.entries(DESKTOP_ENTRY_BY_COMMAND))(
+    '%s accepts every flag its campaign cell emits',
+    (command, entry) => {
+      const cell = plan('mac-chrome', { modes: ['portrait-light'] }).find(
+        (candidate) => candidate.command === command
+      );
+      const args = cell.args.map((arg) =>
+        arg.startsWith('--engine=') ? '--engine=not-a-browser' : arg
+      );
+      const result = spawnSync(process.execPath, [join(ROOT_DIR, entry), ...args], {
+        cwd: ROOT_DIR,
+        encoding: 'utf8',
+      });
+
+      expect(result.status).toBe(1);
+      expect(`${result.stdout}${result.stderr}`).not.toContain('Unknown flag');
+    }
+  );
 
   it('keeps undo on pen only, because a non-pen undo probe is not requested', () => {
     const cells = plan('ipad-simulator-native', { modes: ['portrait-light'] });
