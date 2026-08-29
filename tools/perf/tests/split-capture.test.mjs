@@ -782,6 +782,17 @@ describe('the probe host refusing a stale run over HTTP', () => {
     await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
   });
 
+  it('names a non-JSON response as a mismatched probe host', async () => {
+    const fetchHtml = async () =>
+      new Response('<!doctype html>', {
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      });
+
+    await expect(fetchAcceptedProbeReport('http://probe.test', fetchHtml)).rejects.toThrow(
+      'did not answer with probe-host JSON'
+    );
+  });
+
   // Issue 1316: a locked iPad and an installed clean bundled build both look
   // like a successful devicectl launch followed by silence. The counter is the
   // signal the runner separates them with, so it has to count and to reset.

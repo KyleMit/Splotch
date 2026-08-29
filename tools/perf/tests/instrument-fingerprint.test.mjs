@@ -52,6 +52,7 @@ describe('the per-command instrument file lists', () => {
 
     expect(files).toEqual([...new Set(files)].sort());
     expect(files).toContain('tools/perf/split-capture/lib/android-input.mjs');
+    expect(files).toContain('tools/perf/split-capture/lib/probe-host-protocol.mjs');
     expect(files).toContain('tools/perf/android/capture-browser-actions.mjs');
   });
 });
