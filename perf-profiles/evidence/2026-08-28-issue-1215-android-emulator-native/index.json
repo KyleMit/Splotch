@@ -1,6 +1,7 @@
 {
   "campaign": "2026-08-28-issue-1215-android-emulator-native",
   "capturedFrom": "perf-profiles/campaign-1215/android-emulator-native-split/android-emulator-native",
+  "supersededForCampaignFold": "SUPERSEDED for raw-to-manifest folding. These captures predate foreground-package attestation and record nativePackage as null, so current fail-closed campaign acceptance deliberately rejects them rather than inventing provenance or tolerating an absent identity. Their capture-time frame, input-fidelity, and refresh-regime evidence remains genuine and is retained for re-analysis; published normalized matrix sections carry the result without re-admitting these files as current campaign input.",
   "kept": [
     {
       "file": "android-emulator-native-crayon.json",

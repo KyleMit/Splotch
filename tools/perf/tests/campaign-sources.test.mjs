@@ -17,7 +17,11 @@ const PRODUCT_COMMIT = 'ce88c8e587ac45847c419e05ef7a79d282bc747a';
 const MODE = { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' };
 const ITEMS = ['pen-undo', 'crayon', 'magic', 'eraser', 'actions'];
 
-function writeCampaign(targetId, transport, { omit = [] } = {}) {
+function writeCampaign(
+  targetId,
+  transport,
+  { omit = [], artifact = {}, artifactForItem = {} } = {}
+) {
   const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-'));
   temporaryDirectories.push(root);
   for (const item of ITEMS) {
@@ -29,6 +33,8 @@ function writeCampaign(targetId, transport, { omit = [] } = {}) {
       JSON.stringify({
         transport,
         ...(transport === 'native-capacitor-webview' ? { appUrl: 'capacitor://localhost' } : {}),
+        ...artifact,
+        ...artifactForItem[item],
       })
     );
   }
@@ -167,6 +173,35 @@ describe('campaign sources', () => {
     // and drops the row rather than measuring it.
     expect(entry.mode.undoSource).toBeUndefined();
     expect(entry.mode.drawing.pen).toHaveLength(1);
+  });
+
+  it('requires measured package identity before folding split-native drawing', () => {
+    const actionArtifact = {
+      transport: 'native-capacitor-webview',
+      appUrl: 'https://localhost',
+    };
+    const retainedShape = writeCampaign('android-emulator-native', 'split-input-measurement', {
+      artifact: { nativeApp: true, platform: 'android' },
+      artifactForItem: { actions: actionArtifact },
+    });
+    const [rejected] = sourcesFor('android-emulator-native', retainedShape);
+
+    expect(rejected.mode).toBeUndefined();
+    expect(rejected.missing).toEqual(['pen', 'crayon', 'magic', 'eraser']);
+
+    const attested = writeCampaign('android-emulator-native', 'split-input-measurement', {
+      artifact: {
+        nativeApp: true,
+        platform: 'android',
+        nativePackage: 'art.splotch.app',
+      },
+      artifactForItem: { actions: actionArtifact },
+    });
+    const [accepted] = sourcesFor('android-emulator-native', attested);
+
+    expect(accepted.missing).toBeUndefined();
+    expect(accepted.mode.status).toBe('captured');
+    expect(Object.keys(accepted.mode.drawing)).toEqual(['pen', 'crayon', 'magic', 'eraser']);
   });
 
   it('carries a published undo measurement forward when the entry names none', () => {
