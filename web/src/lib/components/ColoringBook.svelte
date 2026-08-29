@@ -22,7 +22,6 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { availableColoringBooks } from '$lib/state/coloringPacks.svelte';
   import {
-    cancelImageRequest,
     cancelImagePrefetchesExcept,
     prefetchImages,
     type ResponsiveImageRequest,
@@ -95,9 +94,6 @@
     const selectedTheme = resolvedTheme();
     const selectedPresentationUrl = pagePresentationImage(page, selectedOrientation, selectedTheme);
     cancelImagePrefetchesExcept(selectedPresentationUrl);
-    for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
-      cancelImageRequest(img);
-    }
     applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
     coloringBookModal.hide();
   }
