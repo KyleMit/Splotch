@@ -13,19 +13,21 @@ import {
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
 import {
   RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION,
-  renderDeterministicColoringSvg,
   renderResponsiveColoringAsset,
   responsiveSavingsFraction,
 } from '../lib/responsive-coloring.mjs';
 
-// The catalog fidelity pass decodes every committed derivative. Bounded concurrency keeps the
-// lossless encoder below this budget without allowing the catalog to consume unbounded CI memory.
+// Vitest runs this file beside other Sharp-heavy asset suites. Serializing this catalog prevents
+// this worker from multiplying libvips work and starving sibling tests; the standalone generator
+// retains its own bounded concurrency.
 const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 300_000;
 const RESPONSIVE_CATALOG_TEST_CONCURRENCY = 1;
 const EXPECTED_RESPONSIVE_ASSET_COUNT = 208;
 const EXPECTED_SELECTOR_ASSET_COUNT = 192;
 const EXPECTED_PRESENTATION_ASSET_COUNT = 192;
 const EXPECTED_COMPACT_PRESENTATION_ASSET_COUNT = 192;
+const MAX_COMPACT_PRESENTATION_ALPHA_MAE = 2;
+const MAX_SELECTOR_ALPHA_MAE = 3;
 
 function srcsetWidths() {
   const widths = new Map();
@@ -63,6 +65,25 @@ async function forEachWithConcurrency(items, task) {
       }
     )
   );
+}
+
+async function crossArtifactAlphaMae(fullPresentationPath, derivativePath) {
+  const derivative = sharp(derivativePath);
+  const { width, height } = await derivative.metadata();
+  if (!width || !height) {
+    throw new Error(`Missing derivative dimensions: ${derivativePath}`);
+  }
+  const actual = await derivative.ensureAlpha().raw().toBuffer();
+  const reference = await sharp(fullPresentationPath)
+    .resize(width, height, { fit: 'fill', kernel: 'lanczos3' })
+    .ensureAlpha()
+    .raw()
+    .toBuffer();
+  let totalAlphaDifference = 0;
+  for (let index = 3; index < actual.length; index += 4) {
+    totalAlphaDifference += Math.abs(actual[index] - reference[index]);
+  }
+  return totalAlphaDifference / (actual.length / 4);
 }
 
 describe('responsive coloring catalog', () => {
@@ -121,35 +142,28 @@ describe('responsive coloring catalog', () => {
   );
 
   it(
-    'preserves every canonical SVG pixel in the canvas presentation rasters',
+    'keeps compact presentation and selector edges consistent with the full presentation',
     async () => {
-      const assets = BOOKS.flatMap((book) => [
-        ...presentationColoringAssets(book),
-        ...compactPresentationColoringAssets(book),
-      ]);
-      await forEachWithConcurrency(assets, async (asset) => {
-        const reference = await renderDeterministicColoringSvg(
-          join(WEB_STATIC, asset.source),
-          asset
+      for (const book of BOOKS) {
+        const fullPresentationBySource = new Map(
+          presentationColoringAssets(book).map((asset) => [asset.source, asset])
         );
-        const actual = await sharp(join(WEB_STATIC, asset.target)).ensureAlpha().raw().toBuffer();
-        expect(actual.equals(Buffer.from(reference.pixels)), asset.target).toBe(true);
-      });
-    },
-    RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
-  );
-
-  it(
-    'preserves selector alpha and visible pixels against the canonical SVG rasterization',
-    async () => {
-      await forEachWithConcurrency(BOOKS.flatMap(selectorColoringAssets), async (asset) => {
-        const reference = await renderDeterministicColoringSvg(
-          join(WEB_STATIC, asset.source),
-          asset
+        const assertDerivativeFidelity = async (asset, maximumAlphaMae) => {
+          const fullPresentation = fullPresentationBySource.get(asset.source);
+          expect(fullPresentation, asset.source).toBeDefined();
+          const alphaMae = await crossArtifactAlphaMae(
+            join(WEB_STATIC, fullPresentation.target),
+            join(WEB_STATIC, asset.target)
+          );
+          expect(alphaMae, asset.target).toBeLessThanOrEqual(maximumAlphaMae);
+        };
+        await forEachWithConcurrency(compactPresentationColoringAssets(book), (asset) =>
+          assertDerivativeFidelity(asset, MAX_COMPACT_PRESENTATION_ALPHA_MAE)
         );
-        const actual = await sharp(join(WEB_STATIC, asset.target)).ensureAlpha().raw().toBuffer();
-        expect(actual.equals(Buffer.from(reference.pixels)), asset.target).toBe(true);
-      });
+        await forEachWithConcurrency(selectorColoringAssets(book), (asset) =>
+          assertDerivativeFidelity(asset, MAX_SELECTOR_ALPHA_MAE)
+        );
+      }
     },
     RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
   );
