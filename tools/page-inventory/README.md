@@ -62,10 +62,14 @@ npm run finalize:page-inventory-critique
 ```
 
 Use `--review-id`, `--concurrency`, `--model`, and `--effort` to bound or tune review work. Reviewer
-logs remain under the adjacent `logs/` directory. The finalizer rejects missing, duplicate, unknown,
-malformed, or stale checkpoints and writes `scrapbook/page-inventory/design-critique.json`.
-`--allow-partial` is limited to an explicit scratch `--out`; a partial critique cannot become the
-published keeper.
+logs remain under the adjacent `logs/` directory. Each checkpoint records the runner and model that
+produced it, and the finalizer lifts that into the critique's `scope.reviewer` — the review contract
+names a process, not the thing that ran it, and two runners' severity distributions are not known to
+be comparable. It refuses a set whose checkpoints name more than one, since checkpoints outlive a
+run and a resume on a different machine would otherwise merge two instruments silently. The
+finalizer also rejects missing, duplicate, unknown, malformed, or stale checkpoints and writes
+`scrapbook/page-inventory/design-critique.json`. `--allow-partial` is limited to an explicit scratch
+`--out`; a partial critique cannot become the published keeper.
 
 ## Attach feedback
 

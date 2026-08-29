@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { GENERAL_DESIGN_NOTES, surfaceDesignNote } from './page-inventory-design-notes.mjs';
 
 const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 3;
-const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 4;
+export const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 5;
 export const PAGE_INVENTORY_REVIEW_CONTRACT = 'isolated-image-description-v1';
 export const PAGE_INVENTORY_SEVERITIES = ['pass', 'low', 'medium', 'high'];
 export const PAGE_INVENTORY_THEMES = [
@@ -395,7 +395,11 @@ export function expectedCritiqueReviews(manifest) {
   return new Map(manifest.captures.map((capture) => [capture.review_id, capture]));
 }
 
-export function finalizeDesignCritique(manifest, entries, { allowPartial = false } = {}) {
+// The review contract names a process, not the thing that ran it: two runners
+// satisfy it with different models, and their severity distributions are not
+// known to be comparable. Recording who reviewed is what lets a later reader
+// tell a real change in the app from a change of instrument.
+export function finalizeDesignCritique(manifest, entries, { allowPartial = false, reviewer } = {}) {
   const validated = validateCritiqueEntries(entries, manifest, { allowPartial });
   const orderedEntries = manifest.captures
     .filter((capture) => validated.has(capture.review_id))
@@ -421,6 +425,7 @@ export function finalizeDesignCritique(manifest, entries, { allowPartial = false
     report_type: 'light-dark-responsive-page-inventory-design-critique',
     scope: {
       review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
+      reviewer,
       surfaces_reviewed: new Set(orderedEntries.map((entry) => entry.surface_id)).size,
       screenshots_reviewed: orderedEntries.length,
       expected_screenshots: manifest.captures.length,

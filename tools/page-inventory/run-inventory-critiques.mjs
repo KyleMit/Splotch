@@ -257,6 +257,7 @@ async function reviewCapture(context, capture) {
       writeJsonAtomically(checkpoint, {
         schema_version: CHECKPOINT_SCHEMA_VERSION,
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
+        reviewer: { runner: context.runner, model: context.model },
         review_id: capture.review_id,
         review_description_sha256: reviewDescriptionDigest(capture.review_description),
         entry,

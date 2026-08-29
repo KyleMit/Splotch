@@ -1,4 +1,5 @@
 import { chromium } from '@playwright/test';
+import { spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   existsSync,
@@ -982,17 +983,25 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
   const themes = selectSpotCheckItems(PAGE_INVENTORY_THEMES, filters.themes, '--theme', (theme) => [
     theme.id,
   ]);
+  // The inventory is evidence about what ships, so it is captured against a
+  // production preview. `vite dev` is not the same app: hydration arrives late
+  // enough that a shot can catch pre-hydration state — /design renders its
+  // whole swatch table in light-mode token values under night mode, because
+  // routes/design/+page.svelte adopts the applied theme in onMount — and 26 of
+  // 42 surfaces differed between the two servers at one viewport and theme.
+  // The build this costs was measured at 19 seconds against an ~80-minute run.
+  const build = spawnSync('npm', ['run', 'build'], {
+    cwd: ROOT,
+    env: { ...process.env, ...SERVER_ENV },
+    stdio: 'inherit',
+  });
+  if (build.error) throw build.error;
+  if (build.status !== 0) throw new Error(`Production build exited ${build.status}`);
   const { snapshots, bytes } = await generateOutputAtomically(out, async (staging) => {
     const assets = join(staging, 'assets');
     mkdirSync(assets, { recursive: true });
-    // Captured against `vite dev` rather than a production preview, which drops
-    // a full production build from every run. The app renders the same either
-    // way — the only dev/prod branches are the PWA update polls in
-    // lib/pwa/updates.ts, which draw nothing — and the one real divergence,
-    // build-only manifests missing in dev, is fixed and held by
-    // web/buildManifests.test.ts.
     const server = spawnViteServer(port, {
-      command: 'dev',
+      command: 'preview',
       env: SERVER_ENV,
     });
     let browser;

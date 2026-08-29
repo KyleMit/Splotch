@@ -21,7 +21,7 @@ import {
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
-export const CHECKPOINT_SCHEMA_VERSION = 3;
+export const CHECKPOINT_SCHEMA_VERSION = 4;
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');
 const CHECKPOINTS_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-critique/reviews');
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory/design-critique.json');
@@ -74,7 +74,26 @@ function readCheckpoint(path) {
   if (!document.entry || typeof document.entry !== 'object') {
     throw new Error('entry must be an object');
   }
+  if (!document.reviewer?.runner || !document.reviewer?.model) {
+    throw new Error('reviewer must name a runner and a model');
+  }
   return document;
+}
+
+// A critique assembled from two runners would average instruments that have
+// never been shown to agree, and the merged severity counts would hide it. The
+// resume path makes that reachable without anyone noticing: checkpoints survive
+// between runs, so a second run on a machine with the other reviewer installed
+// would quietly finish someone else's review set.
+function singleReviewer(reviewers) {
+  const distinct = [...new Map(reviewers.map((r) => [`${r.runner}/${r.model}`, r])).values()];
+  if (distinct.length > 1) {
+    const named = distinct.map((r) => `${r.runner} ${r.model}`).join(', ');
+    throw new Error(
+      `Critique checkpoints mix reviewers (${named}); re-review the set with one runner`
+    );
+  }
+  return distinct[0];
 }
 
 function validateCheckpoint(document, manifest, expectedReviews) {
@@ -124,6 +143,7 @@ function loadCheckpointEntries(
   const seenReviews = new Set();
   const staleReviews = new Set();
   const entries = [];
+  const reviewers = [];
   for (const file of files) {
     let document;
     try {
@@ -138,6 +158,7 @@ function loadCheckpointEntries(
       const entry = validateCheckpoint(document, manifest, expectedReviews);
       seenReviews.add(document.review_id);
       entries.push(entry);
+      reviewers.push(document.reviewer);
     } catch (error) {
       if (reportStatus && document && error instanceof StaleCritiqueHashError) {
         try {
@@ -169,6 +190,7 @@ function loadCheckpointEntries(
   }
   return {
     entries,
+    reviewer: reviewers.length ? singleReviewer(reviewers) : undefined,
     completedReviewIds: seenReviews,
     staleReviewIds: staleReviews,
     completedReviews: seenReviews.size,
@@ -232,7 +254,10 @@ export async function finalizePageInventoryCritique(argv = process.argv.slice(2)
     );
     return;
   }
-  const critique = finalizeDesignCritique(manifest, loaded.entries, { allowPartial });
+  const critique = finalizeDesignCritique(manifest, loaded.entries, {
+    allowPartial,
+    reviewer: loaded.reviewer,
+  });
   writeJsonAtomically(out, critique);
   console.log(
     `Finalized ${loaded.completedReviews} of ${loaded.expectedReviews} independent reviews to ${relative(ROOT, out)}`

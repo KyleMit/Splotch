@@ -14,7 +14,10 @@ import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseReviewerOutput } from '../lib/reviewer-runner.mjs';
 import { writePageInventoryFeedback } from '../attach-page-feedback.mjs';
-import { finalizePageInventoryCritique } from '../finalize-page-critique.mjs';
+import {
+  CHECKPOINT_SCHEMA_VERSION,
+  finalizePageInventoryCritique,
+} from '../finalize-page-critique.mjs';
 import {
   allSurfaces,
   discoverPageRoutes,
@@ -42,6 +45,7 @@ import {
   captureReviewId,
   createCaptureManifest,
   finalizeDesignCritique,
+  PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION as CRITIQUE_SCHEMA_VERSION,
   PAGE_INVENTORY_REVIEW_CONTRACT,
   readDesignCritique,
   reviewDescriptionDigest,
@@ -214,17 +218,20 @@ function critiqueEntries(manifest) {
   });
 }
 
-function writeCheckpoints(checkpoints, manifest, entries) {
+const FIXTURE_REVIEWER = { runner: 'codex', model: 'test-model' };
+
+function writeCheckpoints(checkpoints, manifest, entries, reviewer) {
   mkdirSync(checkpoints);
   for (const capture of manifest.captures) {
     const entry = entries.find(({ review_id: reviewId }) => reviewId === capture.review_id);
     writeFileSync(
       join(checkpoints, `${capture.review_id}.json`),
       JSON.stringify({
-        schema_version: 3,
+        schema_version: CHECKPOINT_SCHEMA_VERSION,
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
         review_id: capture.review_id,
         review_description_sha256: reviewDescriptionDigest(capture.review_description),
+        reviewer: reviewer ?? FIXTURE_REVIEWER,
         entry,
       })
     );
@@ -719,7 +726,7 @@ describe('page inventory output', () => {
     const manifest = writeCaptures(out, item);
     const entries = critiqueEntries(manifest);
     const critique = join(root, 'design-critique.json');
-    writeFileSync(critique, JSON.stringify({ schema_version: 4, entries }));
+    writeFileSync(critique, JSON.stringify({ schema_version: CRITIQUE_SCHEMA_VERSION, entries }));
     const firstImage = join(out, entries[0].image);
     const originalImage = readFileSync(firstImage, 'utf8');
 
@@ -754,13 +761,16 @@ describe('page inventory output', () => {
     const entries = critiqueEntries(manifest);
     const critique = join(root, 'design-critique.json');
 
-    writeFileSync(critique, JSON.stringify({ schema_version: 4, entries: entries.slice(1) }));
+    writeFileSync(
+      critique,
+      JSON.stringify({ schema_version: CRITIQUE_SCHEMA_VERSION, entries: entries.slice(1) })
+    );
     expect(() => readDesignCritique(critique, manifest)).toThrow('15 of 16 required entries');
 
     writeFileSync(
       critique,
       JSON.stringify({
-        schema_version: 4,
+        schema_version: CRITIQUE_SCHEMA_VERSION,
         entries: [{ ...entries[0], review_id: 'routes--unknown' }, ...entries.slice(1)],
       })
     );
@@ -769,7 +779,7 @@ describe('page inventory output', () => {
     writeFileSync(
       critique,
       JSON.stringify({
-        schema_version: 4,
+        schema_version: CRITIQUE_SCHEMA_VERSION,
         entries: [{ ...entries[0], sha256: '0'.repeat(64) }, ...entries.slice(1)],
       })
     );
@@ -796,9 +806,10 @@ describe('page inventory output', () => {
 
     const document = JSON.parse(readFileSync(critique, 'utf8'));
     expect(document).toMatchObject({
-      schema_version: 4,
+      schema_version: CRITIQUE_SCHEMA_VERSION,
       scope: {
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
+        reviewer: FIXTURE_REVIEWER,
         surfaces_reviewed: 1,
         screenshots_reviewed: 16,
         expected_screenshots: 16,
@@ -812,6 +823,60 @@ describe('page inventory output', () => {
       pixel_identical_groups: [],
     });
     expect(document.entries).toHaveLength(16);
+  });
+
+  // Checkpoints outlive a run, so a resumed critique on a machine with the
+  // other reviewer installed would otherwise merge two instruments into one
+  // set of severity counts with nothing in the report to say so.
+  it('refuses checkpoints reviewed by more than one runner', async () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const manifest = writeCaptures(out, inventoryItem());
+    const entries = critiqueEntries(manifest);
+    const checkpoints = join(root, 'checkpoints');
+    writeCheckpoints(checkpoints, manifest, entries);
+    const [first] = manifest.captures;
+    const document = JSON.parse(readFileSync(join(checkpoints, `${first.review_id}.json`), 'utf8'));
+    writeFileSync(
+      join(checkpoints, `${first.review_id}.json`),
+      JSON.stringify({ ...document, reviewer: { runner: 'claude', model: 'sonnet' } })
+    );
+
+    await expect(
+      finalizePageInventoryCritique([
+        '--manifest',
+        join(out, 'capture-manifest.json'),
+        '--checkpoints',
+        checkpoints,
+        '--out',
+        join(root, 'final.json'),
+      ])
+    ).rejects.toThrow(/mix reviewers/);
+  });
+
+  it('refuses a checkpoint that does not say who reviewed it', async () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const manifest = writeCaptures(out, inventoryItem());
+    const entries = critiqueEntries(manifest);
+    const checkpoints = join(root, 'checkpoints');
+    writeCheckpoints(checkpoints, manifest, entries);
+    const [first] = manifest.captures;
+    const { reviewer: _dropped, ...withoutReviewer } = JSON.parse(
+      readFileSync(join(checkpoints, `${first.review_id}.json`), 'utf8')
+    );
+    writeFileSync(join(checkpoints, `${first.review_id}.json`), JSON.stringify(withoutReviewer));
+
+    await expect(
+      finalizePageInventoryCritique([
+        '--manifest',
+        join(out, 'capture-manifest.json'),
+        '--checkpoints',
+        checkpoints,
+        '--out',
+        join(root, 'final.json'),
+      ])
+    ).rejects.toThrow(/reviewer must name a runner and a model/);
   });
 
   it('reports a stale review with its standalone next-review input', async () => {
@@ -954,10 +1019,15 @@ describe('page inventory output', () => {
     const critique = join(root, 'design-critique.json');
     writeFileSync(
       critique,
-      JSON.stringify({ schema_version: 3, entries: critiqueEntries(manifest) })
+      JSON.stringify({
+        schema_version: CRITIQUE_SCHEMA_VERSION - 1,
+        entries: critiqueEntries(manifest),
+      })
     );
 
-    expect(() => readDesignCritique(critique, manifest)).toThrow('schema_version must be 4');
+    expect(() => readDesignCritique(critique, manifest)).toThrow(
+      `schema_version must be ${CRITIQUE_SCHEMA_VERSION}`
+    );
   });
 
   it('marks the shots of a shared shell as pixel-identical in the report', () => {
