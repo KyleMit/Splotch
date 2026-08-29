@@ -21,12 +21,17 @@ The three GPU options share one wax model and differ only in how a fragment's co
 | `ciallo` | closed-form integral of a quadratic tip along the polyline (Ciallo, SIGGRAPH 2024) |
 | `sdf`    | one instanced capsule quad per segment, distance measured in the fragment          |
 
-## Entry point
+## Entry points
 
 ```
 npm run dev            # or any server with PUBLIC_ENABLE_DEV_HARNESS=true
 node tools/gpu-crayon/capture.mjs --url=http://localhost:5231
+node tools/gpu-crayon/gen-contact-sheet.mjs
 ```
+
+`capture.mjs` produces the evidence; `gen-contact-sheet.mjs` turns the latest capture into a single
+self-contained `contact-sheet.html` with every image inlined as base64, so it opens from disk and
+travels without its directory.
 
 `--url` defaults to `http://localhost:5231` and must point at a **dev-harness-enabled** build;
 `/dev/*` is gated by `requireDevHarness()` and the route 404s otherwise.
