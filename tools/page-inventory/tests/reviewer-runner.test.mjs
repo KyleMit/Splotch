@@ -8,7 +8,9 @@ import {
   detectReviewerRunner,
   parseReviewerOutput,
   reviewerArgs,
+  reviewerFailureReason,
   reviewerBinary,
+  discardStagedImage,
   reviewerModelDefault,
   stageReviewerImage,
 } from '../lib/reviewer-runner.mjs';
@@ -119,8 +121,69 @@ describe('reviewerArgs', () => {
     expect(args[args.indexOf('-p') + 1]).toContain(capture.review_description);
   });
 
+  // A temp cwd is not a boundary: --allowedTools Read pre-approves absolute
+  // paths too, and without these the reviewer can read the repo it is judging.
+  it('confines the claude reviewer to its working directory', () => {
+    const args = reviewerArgs({
+      runner: 'claude',
+      capture,
+      image: '/tmp/reviewer/capture.webp',
+      schemaDocument,
+      model: 'sonnet',
+      effort: 'low',
+    });
+
+    expect(args).toContain('--restricted');
+    expect(args).toContain('--strict-mcp-config');
+  });
+
   it('keeps the reviewer to the image in front of it', () => {
     expect(claudeReviewerPrompt(capture, '/tmp/x.webp')).toMatch(/only evidence/i);
+  });
+});
+
+describe('discardStagedImage', () => {
+  it('removes the claude copy so the next reviewer cannot read it', () => {
+    const root = reviewerRoot();
+    const source = join(root, 'source.webp');
+    writeFileSync(source, 'pixels');
+    const staged = stageReviewerImage('claude', source, root, 'review-one');
+
+    discardStagedImage('claude', staged);
+
+    expect(existsSync(staged)).toBe(false);
+  });
+
+  it('never touches the original a codex reviewer was pointed at', () => {
+    const root = reviewerRoot();
+    const source = join(root, 'source.webp');
+    writeFileSync(source, 'pixels');
+
+    discardStagedImage('codex', stageReviewerImage('codex', source, root, 'review-one'));
+
+    expect(existsSync(source)).toBe(true);
+  });
+});
+
+// The runner exits non-zero when it gives up, so the caller rejects on the exit
+// code before any transcript is parsed — leaving "exited 1: no stderr", which
+// reads like a crash rather than a budget that needs raising.
+describe('reviewerFailureReason', () => {
+  it('names the runner-reported failure from a claude envelope', () => {
+    const stdout = JSON.stringify({ is_error: true, subtype: 'error_max_turns' });
+
+    expect(reviewerFailureReason(stdout)).toBe('error_max_turns');
+  });
+
+  it('is empty for a run that produced a review', () => {
+    const stdout = JSON.stringify({ structured_output: { severity: 'pass' }, is_error: false });
+
+    expect(reviewerFailureReason(stdout)).toBe('');
+  });
+
+  it('is empty when there is no transcript to read', () => {
+    expect(reviewerFailureReason('')).toBe('');
+    expect(reviewerFailureReason('not json at all')).toBe('');
   });
 });
 

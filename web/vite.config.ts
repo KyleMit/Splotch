@@ -99,9 +99,9 @@ export default defineConfig({
       },
       // generateBundle is a build-only hook, so without this middleware both
       // URLs 404 under `vite dev`: the coloring-pack manager's very first fetch
-      // fails and no book ever installs. Serving the identical bytes off the
-      // one BUILD_MANIFEST_ASSETS list keeps dev and prod from drifting, which
-      // tools/page-inventory captures against dev and depends on.
+      // fails and no book ever installs for anyone developing the app. Serving
+      // the identical bytes off the one BUILD_MANIFEST_ASSETS list keeps dev
+      // and prod from drifting.
       configureServer(server) {
         server.middlewares.use((request, response, next) => {
           const { pathname } = new URL(request.url ?? '/', 'http://localhost');

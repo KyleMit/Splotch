@@ -1,4 +1,4 @@
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, rmSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import {
   agentRunnerDefaults,
@@ -21,6 +21,7 @@ export const REVIEWER_RUNNERS = ['claude', 'codex'];
 const CLAUDE_MAX_TURNS = 12;
 
 const REVIEWER_MODELS = { codex: 'gpt-5.6-terra', claude: 'sonnet' };
+const PARSER_SYNTHESIZED_FAILURE = 'no_agent_message';
 
 export function normalizeReviewerRunner(value) {
   return normalizeAgentRunner(value);
@@ -46,8 +47,11 @@ export function detectReviewerRunner(available = hasCommand) {
   return found;
 }
 
-// Copied rather than referenced in place: the working root is an empty
-// directory, so a reviewer that can read files still cannot reach the repo.
+// Copied rather than referenced in place so the image sits inside the working
+// directory --restricted confines the reviewer to. The root is not empty — it
+// also holds the output schema and, as a run proceeds, every previously staged
+// capture; the staged copy is removed after each review so one reviewer cannot
+// read another surface's evidence.
 export function stageReviewerImage(runner, image, reviewerRoot, reviewId) {
   if (normalizeReviewerRunner(runner) === 'codex') return image;
   // Reviews run concurrently against one root, so the staged name carries the
@@ -56,6 +60,11 @@ export function stageReviewerImage(runner, image, reviewerRoot, reviewId) {
   const staged = join(reviewerRoot, `${reviewId}${extname(image)}`);
   copyFileSync(image, staged);
   return staged;
+}
+
+export function discardStagedImage(runner, staged) {
+  if (normalizeReviewerRunner(runner) === 'codex') return;
+  rmSync(staged, { force: true });
 }
 
 export function claudeReviewerPrompt(capture, image) {
@@ -100,6 +109,14 @@ function claudeArgs({ capture, image, schemaDocument, model, effort }) {
     model,
     '--effort',
     effort,
+    // The isolation half of what codex gets from `--sandbox read-only --cd`.
+    // A temp cwd is not a boundary: `--allowedTools Read` pre-approves every
+    // Read, absolute paths included, and without these a reviewer reads the
+    // repo it is supposed to be judging blind — verified, with no denial
+    // recorded. --restricted also ignores user and project settings, which is
+    // codex's --ignore-user-config/--ignore-rules.
+    '--restricted',
+    '--strict-mcp-config',
     '--allowedTools',
     'Read',
     '--permission-mode',
@@ -126,6 +143,24 @@ export function reviewerArgs({
   return normalizeReviewerRunner(runner) === 'codex'
     ? codexArgs({ capture, image, schema, model, effort, reviewerRoot })
     : claudeArgs({ capture, image, schemaDocument, model, effort });
+}
+
+// A runner that gives up says why in its own transcript — `error_max_turns`,
+// say — but it also exits non-zero, and the caller rejects on the exit code
+// before any of this is parsed. Without this the operator sees "exited 1: no
+// stderr", which reads like a crash and gives no hint that the fix is a larger
+// turn budget.
+export function reviewerFailureReason(stdout) {
+  if (!stdout?.trim()) return '';
+  try {
+    const { error } = parseSavedAgentOutput(stdout);
+    // `no_agent_message` is the parser's own verdict on output it could not
+    // read, not something the runner said. Reporting it would put a confident
+    // label on a crash, which is the failure this is trying to make legible.
+    return !error || error === PARSER_SYNTHESIZED_FAILURE ? '' : error;
+  } catch {
+    return '';
+  }
 }
 
 // parseSavedAgentOutput normalizes both runners but reports an empty review as

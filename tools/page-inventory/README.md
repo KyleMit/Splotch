@@ -50,9 +50,10 @@ The review command requires a current capture manifest, network access, and an a
 `claude` or `codex` installation on `PATH` — `lib/reviewer-runner.mjs` owns that seam and picks
 whichever is present, or takes `--runner`. Both get the same isolated-image contract; only delivery
 differs, since codex takes `--image` while Claude Code reads a per-review copy staged into the
-otherwise empty reviewer root. It starts one fresh image-only process per capture and writes
-resumable checkpoints under `.scrapbook-scratch/page-inventory-critique/reviews/`. Existing
-checkpoints whose image and review description hashes still match are skipped.
+reviewer root it is confined to, and removed again once that review ends. It starts one fresh
+image-only process per capture and writes resumable checkpoints under
+`.scrapbook-scratch/page-inventory-critique/reviews/`. Existing checkpoints whose image and review
+description hashes still match are skipped.
 
 ```sh
 npm run review:page-inventory -- --limit 4

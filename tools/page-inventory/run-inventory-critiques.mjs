@@ -27,6 +27,8 @@ import {
   reviewerArgs,
   reviewerBinary,
   reviewerModelDefault,
+  discardStagedImage,
+  reviewerFailureReason,
   stageReviewerImage,
 } from './lib/reviewer-runner.mjs';
 
@@ -140,9 +142,10 @@ export function runReviewerProcess({ binary, args, cwd, timeoutMs, terminationGr
       } else if (code === 0) {
         resolvePromise({ stdout, stderr });
       } else {
+        const reported = reviewerFailureReason(stdout);
         rejectPromise(
           reviewerProcessError(
-            `Reviewer exited ${code ?? signal}: ${stderr.trim() || 'no stderr'}`,
+            `Reviewer exited ${code ?? signal}: ${reported || stderr.trim() || 'no stderr'}`,
             stdout,
             stderr
           )
@@ -152,7 +155,7 @@ export function runReviewerProcess({ binary, args, cwd, timeoutMs, terminationGr
   });
 }
 
-function runReviewer({
+async function runReviewer({
   runner,
   capture,
   image,
@@ -162,23 +165,30 @@ function runReviewer({
   effort,
   reviewerRoot,
 }) {
-  const args = reviewerArgs({
-    runner,
-    capture,
-    image: stageReviewerImage(runner, image, reviewerRoot, capture.review_id),
-    schema,
-    schemaDocument,
-    model,
-    effort,
-    reviewerRoot,
-  });
-  return runReviewerProcess({
-    binary: reviewerBinary(runner),
-    args,
-    cwd: reviewerRoot,
-    timeoutMs: REVIEW_TIMEOUT_MS,
-    terminationGraceMs: REVIEW_TERMINATION_GRACE_MS,
-  });
+  const staged = stageReviewerImage(runner, image, reviewerRoot, capture.review_id);
+  try {
+    return await runReviewerProcess({
+      binary: reviewerBinary(runner),
+      args: reviewerArgs({
+        runner,
+        capture,
+        image: staged,
+        schema,
+        schemaDocument,
+        model,
+        effort,
+        reviewerRoot,
+      }),
+      cwd: reviewerRoot,
+      timeoutMs: REVIEW_TIMEOUT_MS,
+      terminationGraceMs: REVIEW_TERMINATION_GRACE_MS,
+    });
+  } finally {
+    // One reviewer must not be able to list the root and read another
+    // surface's capture, and a 672-capture run would otherwise leave the whole
+    // inventory sitting in the temp directory.
+    discardStagedImage(runner, staged);
+  }
 }
 
 function writeJsonAtomically(path, document) {

@@ -714,9 +714,11 @@ function adminSurfaces() {
         await admin(page);
         const more = page.getByRole('button', { name: /More options for/ }).first();
         if (await more.isVisible()) {
-          // The control toggles, so a click that lands while a row is already
-          // expanded closes it instead. retryOpen re-clicks until the expansion
-          // is actually on screen rather than trusting one press.
+          // A single click was not reliably opening the row; the cause was
+          // never isolated, and it cannot be a row left open by an earlier
+          // surface because admin() navigates first. Hydration is the likely
+          // candidate — the SSR'd button takes a press before its handler
+          // attaches — so this retries the open rather than waiting longer.
           await retryOpen(
             page.locator('.row-actions.open').first(),
             () => more.click(),
