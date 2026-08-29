@@ -37,7 +37,7 @@ import {
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
-import { fetchAcceptedProbeReport } from './lib/probe-host-protocol.mjs';
+import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
 import { ANDROID_NATIVE_PACKAGE, GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -94,7 +94,7 @@ async function control(host, body) {
   return response.json();
 }
 
-const probeState = (host) => fetch(`${host}/__probe/state`).then((r) => r.json());
+const probeState = (host) => probeHostJson(host, '/__probe/state');
 
 export async function requestPageEraserRefill({
   host,

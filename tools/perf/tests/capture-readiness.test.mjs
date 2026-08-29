@@ -316,7 +316,7 @@ describe('probe reuse', () => {
 
     expect(verdict).toEqual({
       reuse: false,
-      reason: 'the listener did not answer the probe-host protocol',
+      reason: 'it speaks splotch-perf-probe-v1, not splotch-perf-probe-v2 — restart the probe host',
     });
   });
 });

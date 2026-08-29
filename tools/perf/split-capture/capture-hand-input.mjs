@@ -23,12 +23,12 @@ import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
 import { APP_BUNDLE_ID } from './capture-device-frames.mjs';
-import { fetchAcceptedProbeReport } from './lib/probe-host-protocol.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -78,7 +78,7 @@ const control = (host, body) =>
     body: JSON.stringify(body),
   }).then((response) => response.json());
 
-const probeState = (host) => fetch(`${host}/__probe/state`).then((response) => response.json());
+const probeState = (host) => probeHostJson(host, '/__probe/state');
 
 // The runtime is the one mode dimension the page can answer for itself, and the
 // one this tool used to copy from the request: a hand capture labelled

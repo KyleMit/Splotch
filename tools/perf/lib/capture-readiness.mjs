@@ -3,7 +3,10 @@
 // Every rule here was earned by a campaign that produced numbers before anyone
 // noticed the setup was wrong. `prepare-capture.mjs` supplies the shell; this
 // module decides, so the decisions are unit-testable without a device.
-import { PROBE_HOST_PROTOCOL } from '../split-capture/lib/probe-host-protocol.mjs';
+import {
+  probeHostProtocolProblem,
+  PROBE_HOST_PROTOCOL,
+} from '../split-capture/lib/probe-host-protocol.mjs';
 
 // The two identifiers an iPad answers to are not interchangeable, and mixing
 // them is the single most expensive mistake this file exists to prevent.
@@ -113,9 +116,11 @@ export function probeHostReuse({
   hasReport,
   stalePage,
 } = {}) {
-  if (!responds || protocol !== PROBE_HOST_PROTOCOL) {
+  if (!responds) {
     return { reuse: false, reason: 'the listener did not answer the probe-host protocol' };
   }
+  const protocolProblem = probeHostProtocolProblem(protocol);
+  if (protocolProblem) return { reuse: false, reason: protocolProblem };
   if (upstream !== intendedUpstream) {
     return {
       reuse: false,
