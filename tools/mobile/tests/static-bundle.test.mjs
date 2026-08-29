@@ -12,6 +12,7 @@ import {
   nativeOnlyMarkerBundleProblems,
   nativeOnlyMarkerSourceProblems,
   nativeBundleProblems,
+  nativeColoringPresentationProblems,
   nativeContentSecurityPolicyProblems,
   nativePrivacyFeedbackProblems,
   REQUIRED_NATIVE_PAGES,
@@ -107,6 +108,50 @@ describe('native bundle scan', () => {
       }
     }
   );
+});
+
+describe('native coloring presentation inventory', () => {
+  const book = {
+    id: 'fixture',
+    pages: [
+      {
+        images: {
+          portrait: '/coloring/fixture/page-tall.overlay.svg',
+          landscape: '/coloring/fixture/page-wide.overlay.svg',
+        },
+        darkImages: {
+          portrait: '/coloring/fixture/page-tall.dark.overlay.svg',
+          landscape: '/coloring/fixture/page-wide.dark.overlay.svg',
+        },
+      },
+    ],
+  };
+
+  it('requires canonical page SVGs and rejects web presentation rasters', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-coloring-'));
+    try {
+      const coloringDir = join(root, 'coloring', book.id);
+      mkdirSync(coloringDir, { recursive: true });
+      for (const path of [
+        book.pages[0].images.portrait,
+        book.pages[0].images.landscape,
+        book.pages[0].darkImages.portrait,
+        book.pages[0].darkImages.landscape,
+      ]) {
+        writeFileSync(join(root, path.replace(/^\//, '')), 'svg');
+      }
+      expect(nativeColoringPresentationProblems(root, book.id, [book])).toEqual([]);
+
+      rmSync(join(coloringDir, 'page-wide.dark.overlay.svg'));
+      writeFileSync(join(coloringDir, 'page-tall.presentation.webp'), 'webp');
+      expect(nativeColoringPresentationProblems(root, book.id, [book])).toEqual([
+        'Native canonical coloring page is missing: /coloring/fixture/page-wide.dark.overlay.svg',
+        'Web-only coloring presentation remains native: /coloring/fixture/page-tall.presentation.webp',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('native-only bundle boundaries', () => {

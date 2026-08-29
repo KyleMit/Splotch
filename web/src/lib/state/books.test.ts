@@ -327,6 +327,13 @@ describe('downloadable coloring packs', () => {
     expect(paths.some((path) => path.includes('/max-'))).toBe(false);
   });
 
+  it('omits web-only presentation rasters from native packs', () => {
+    const paths = bookPackAssetPaths(farm, 'mobile');
+    expect(paths).toHaveLength(74);
+    expect(paths.some((path) => path.endsWith('.presentation.webp'))).toBe(false);
+    expect(paths.filter((path) => path.endsWith('.overlay.svg'))).toHaveLength(24);
+  });
+
   it('redirects every runtime URL to a native book root after installation', () => {
     setLocalColoringBookRoot('dinosaur', 'https://localhost/_capacitor_file_/packs/dinosaur/');
     try {

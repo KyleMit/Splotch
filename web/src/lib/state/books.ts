@@ -453,7 +453,7 @@ export function bookAssetPaths(book: Book): string[] {
   ];
 }
 
-export function bookPackAssetPaths(book: Book): string[] {
+export function bookPackAssetPaths(book: Book, platform: BookPlatform = 'web'): string[] {
   const coverThumbs = [coverThumb(book, 'light'), coverThumb(book, 'dark')];
   const fills = book.pages.flatMap((page) => [
     ...ALL_ORIENTATIONS.map((orientation) => page.colorImages[orientation]),
@@ -468,6 +468,7 @@ export function bookPackAssetPaths(book: Book): string[] {
     ])
   );
   const selectors = selectorColoringAssets(book).map((asset) => asset.target);
-  const presentations = presentationColoringAssets(book).map((asset) => asset.target);
+  const presentations =
+    platform === 'web' ? presentationColoringAssets(book).map((asset) => asset.target) : [];
   return [...coverThumbs, ...fills, ...overlays, ...selectors, ...presentations];
 }

@@ -3,7 +3,7 @@
 // against the freshly produced `build/` output — it never touches the source
 // `static/` tree.
 //
-// Five independent prunes:
+// Six independent prunes:
 //
 //   1. Coloring books whose `platforms` field omits 'mobile' (e.g. licensed IP
 //      like Bluey / Frozen). Source of truth is src/lib/state/books.ts, matching

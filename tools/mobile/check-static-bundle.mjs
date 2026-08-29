@@ -11,7 +11,11 @@ import {
   TESTFLIGHT_APP_URL,
   TESTFLIGHT_INVITE_URL,
 } from '../../web/src/lib/components/beta/iosBeta.ts';
-import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
+import {
+  BOOKS,
+  STARTER_COLORING_BOOK_ID,
+  presentationColoringAssets,
+} from '../../web/src/lib/state/books.ts';
 import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 import { storePage } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
@@ -206,6 +210,33 @@ export function nativeBundleProblems(
   return problems;
 }
 
+export function nativeColoringPresentationProblems(
+  dir,
+  starterBookId = STARTER_COLORING_BOOK_ID,
+  books = BOOKS
+) {
+  const starterBook = books.find((book) => book.id === starterBookId);
+  if (!starterBook)
+    return [`Native starter coloring book is missing from the catalog: ${starterBookId}`];
+
+  const canonicalPagePaths = starterBook.pages.flatMap((page) => [
+    page.images.portrait,
+    page.images.landscape,
+    page.darkImages.portrait,
+    page.darkImages.landscape,
+  ]);
+  const webPresentationPaths = presentationColoringAssets(starterBook).map((asset) => asset.target);
+  const buildPath = (assetPath) => join(dir, assetPath.replace(/^\//, ''));
+  return [
+    ...canonicalPagePaths.flatMap((path) =>
+      existsSync(buildPath(path)) ? [] : [`Native canonical coloring page is missing: ${path}`]
+    ),
+    ...webPresentationPaths.flatMap((path) =>
+      existsSync(buildPath(path)) ? [`Web-only coloring presentation remains native: ${path}`] : []
+    ),
+  ];
+}
+
 export function requiredNativePageProblems(dir) {
   return REQUIRED_NATIVE_PAGES.flatMap((page) =>
     existsSync(join(dir, page)) ? [] : [`Required native page is missing: ${page}`]
@@ -311,6 +342,7 @@ export async function checkStaticBundle({
     ...webOnlyMarkerSourceProblems(),
     ...boundaryProblems,
     ...nativeBundleProblems(dir, sentinels),
+    ...nativeColoringPresentationProblems(dir),
     ...requiredNativePageProblems(dir),
     ...nativeContentSecurityPolicyProblems(dir),
     ...requiredNativePageLinkProblems(dir),
@@ -327,7 +359,8 @@ export async function checkStaticBundle({
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present and linked; ` +
       `every HTML document carries one native CSP; ` +
       `privacy links to the hosted feedback form; ` +
-      `only ${STARTER_COLORING_BOOK_ID} is bundled`
+      `only ${STARTER_COLORING_BOOK_ID} is bundled; ` +
+      `canonical page SVGs are present and web presentation rasters are absent`
   );
 }
 

@@ -34,10 +34,10 @@ export function buildColoringPackManifest(
   source: string;
 } {
   const books = booksForPlatform(platform).map((book) => {
-    const canonicalPaths = bookPackAssetPaths(book);
+    const canonicalPaths = bookPackAssetPaths(book, platform);
     const responsiveAssets = responsiveColoringAssets(book);
     const selectorAssets = selectorColoringAssets(book);
-    const presentationAssets = presentationColoringAssets(book);
+    const presentationAssets = platform === 'web' ? presentationColoringAssets(book) : [];
     const compactPaths = new Map(
       responsiveAssets
         .filter((asset) => asset.encoding !== 'thumbnail')
