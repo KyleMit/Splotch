@@ -77,10 +77,10 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
     .poll(() =>
       pageImages.evaluateAll((images) => ({
         count: images.length,
-        allResident: images.every((image) => image.getAttribute('src')?.endsWith('.selector.webp')),
+        allDetached: images.every((image) => !image.hasAttribute('src')),
       }))
     )
-    .toEqual({ count: 6, allResident: true });
+    .toEqual({ count: 6, allDetached: true });
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
