@@ -37,6 +37,7 @@ import {
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import {
   DESIGN_BUNDLE_DIRECTORY,
+  DESIGN_BUNDLE_OUT,
   DESIGN_FILE_READ_LIMIT_BYTES,
   DESIGN_SNAPSHOT_OUT,
   DESIGN_SNAPSHOT_VIEWPORT_IDS,
@@ -855,9 +856,9 @@ async function capture(page, item, viewport, theme, out, design) {
 // Written progressively to a scratch directory so a long run's snapshots exist
 // on disk as they are produced, then copied into the staging tree so they land
 // with the rest of the inventory in one atomic swap.
-function publishDesignBundle(design, staging) {
+function publishDesignBundle(design, destination) {
   if (!design.snapshots.length) return;
-  cpSync(design.out, join(staging, DESIGN_BUNDLE_DIRECTORY), { recursive: true });
+  cpSync(design.out, destination, { recursive: true });
 }
 
 async function writeDesignBundle(design) {
@@ -923,6 +924,7 @@ export function parsePageInventoryOptions(argv) {
       surface: { type: 'string', multiple: true },
       viewport: { type: 'string', multiple: true },
       theme: { type: 'string', multiple: true },
+      'design-only': { type: 'boolean', default: false },
     },
     strict: true,
   }).values;
@@ -930,7 +932,16 @@ export function parsePageInventoryOptions(argv) {
   if (!Number.isInteger(port) || port < 1 || port > 65_535)
     throw new Error(`Invalid --port: ${parsed.port}`);
   const surfaces = parsed.surface ?? [];
-  const viewports = parsed.viewport ?? [];
+  const designOnly = parsed['design-only'];
+  if (designOnly && parsed.viewport?.length) {
+    throw new Error(
+      '--design-only already selects the design viewports and cannot take --viewport'
+    );
+  }
+  // The WebP captures are hash-bound to their reviews, so refreshing the
+  // snapshots must not rewrite them. --design-only shoots the design viewports
+  // into a throwaway capture directory and republishes only the bundle.
+  const viewports = designOnly ? [...DESIGN_SNAPSHOT_VIEWPORT_IDS] : (parsed.viewport ?? []);
   const themes = parsed.theme ?? [];
   const spotCheck = Boolean(surfaces.length || viewports.length || themes.length);
   const out = resolve(ROOT, parsed.out ?? (spotCheck ? SPOT_CHECK_OUT_DEFAULT : OUT_DEFAULT));
@@ -947,6 +958,7 @@ export function parsePageInventoryOptions(argv) {
     out,
     port,
     spotCheck,
+    designOnly,
     surfaces,
     viewports,
     themes,
@@ -1012,6 +1024,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
     out,
     port,
     spotCheck,
+    designOnly,
     critique: critiquePath,
     ...filters
   } = parsePageInventoryOptions(argv);
@@ -1109,7 +1122,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
         );
       }
       await writeDesignBundle(design);
-      publishDesignBundle(design, staging);
+      publishDesignBundle(design, join(staging, DESIGN_BUNDLE_DIRECTORY));
       return {
         snapshots: captures.length,
         bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
@@ -1119,6 +1132,15 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       server.stop();
     }
   });
+  if (designOnly) {
+    await generateOutputAtomically(DESIGN_BUNDLE_OUT, async (staging) => {
+      cpSync(DESIGN_SNAPSHOT_OUT, staging, { recursive: true });
+    });
+    console.log(
+      `Republished ${relative(ROOT, DESIGN_BUNDLE_OUT)} from ${design.snapshots.length} snapshots; the captures and their reviews are untouched.`
+    );
+    return;
+  }
   const wrote = spotCheck ? SPOT_CHECK_RECORDS_NAME : 'index.html';
   console.log(
     `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, wrote))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`

@@ -18,7 +18,6 @@ export const DESIGN_BUNDLE_OUT = join(ROOT, 'scrapbook/page-inventory', DESIGN_B
 // its own source and design changes port back without matching CSS by eye.
 const SOURCE_ATTRIBUTE = 'data-src';
 const CANVAS_ATTRIBUTE = 'data-snapshot-canvas';
-const MODAL_ATTRIBUTE = 'data-snapshot-modal';
 const SHARED_STYLESHEET = 'surfaces.css';
 const BASELINE_STYLESHEET = 'surfaces.baseline.css';
 const STYLESHEET_ASSET_PREFIX = '';
@@ -41,7 +40,7 @@ const DISCARDED_SELECTORS = [
 
 const URL_IN_CSS = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g;
 
-function extractInPage({ sourceAttribute, canvasAttribute, modalAttribute, discarded }) {
+function extractInPage({ sourceAttribute, canvasAttribute, discarded }) {
   const rootUrl = document.baseURI;
   const isInlinable = (value) =>
     Boolean(value) && !value.startsWith('data:') && !value.startsWith('blob:');
@@ -78,27 +77,6 @@ function extractInPage({ sourceAttribute, canvasAttribute, modalAttribute, disca
       // A tainted canvas cannot be read; the element still serializes blank.
     }
   });
-
-  // ::backdrop — the dim and blur behind every modal — renders only for an
-  // element in the top layer. Reopening the dialog to get back there restarts
-  // its entry animation, which the capture froze at frame zero, so the backdrop
-  // is rebuilt instead: a fixed sibling carrying the computed ::backdrop paint,
-  // stacked directly beneath the dialog.
-  const backdrops = [];
-  for (const dialog of document.querySelectorAll('dialog')) {
-    if (!dialog.matches(':modal')) continue;
-    const id = `b${backdrops.length}`;
-    const backdrop = getComputedStyle(dialog, '::backdrop');
-    dialog.setAttribute(modalAttribute, id);
-    const element = document.createElement('div');
-    element.setAttribute(`${modalAttribute}-layer`, id);
-    dialog.parentElement?.insertBefore(element, dialog);
-    backdrops.push({
-      id,
-      background: backdrop.backgroundColor,
-      backgroundImage: backdrop.backgroundImage,
-    });
-  }
 
   const css = [...document.querySelectorAll('style')]
     .map((style) => style.textContent ?? '')
@@ -138,7 +116,6 @@ function extractInPage({ sourceAttribute, canvasAttribute, modalAttribute, disca
   return {
     css,
     canvases,
-    backdrops,
     references: [...references],
     rootAttributes: Object.fromEntries(
       [...html.attributes].map((attribute) => [attribute.name, attribute.value])
@@ -236,38 +213,6 @@ export function designCardMarker(group) {
   return `<!-- @dsCard group="${escapeAttribute(group)}" -->`;
 }
 
-// The top layer put both of these above every stacking context on the page, so
-// reproducing it needs explicit z-indexes: document order alone leaves an
-// auto-stacked backdrop behind every positioned element that follows it. The
-// dialog's rule is !important because the app styles it by class and would
-// otherwise out-specify an attribute selector and end up under its own backdrop.
-const MODAL_LAYER_Z = 2147483646;
-
-export function modalBackdropCss(backdrops) {
-  return backdrops
-    .flatMap(({ id, background, backgroundImage }) => {
-      const declarations = [
-        'position:fixed',
-        'inset:0',
-        `background-color:${background}`,
-        `z-index:${MODAL_LAYER_Z}`,
-      ];
-      if (backgroundImage && backgroundImage !== 'none') {
-        declarations.push(`background-image:${backgroundImage}`);
-      }
-      // The captured ::backdrop filter is deliberately dropped. Chromium folds
-      // the dialog into the filtered layer even when it paints above on a
-      // higher z-index and on its own compositing layer, so carrying the blur
-      // over blurs the modal itself — a far larger deviation than losing the
-      // blur behind it. The dim is reproduced; a blurred backdrop is not.
-      return [
-        `      [${MODAL_ATTRIBUTE}-layer="${id}"]{${declarations.join(';')}}`,
-        `      [${MODAL_ATTRIBUTE}="${id}"]{z-index:${MODAL_LAYER_Z + 1}!important}`,
-      ];
-    })
-    .join('\n');
-}
-
 export function renderSnapshotDocument({
   cardGroup,
   title,
@@ -339,7 +284,6 @@ export async function captureDesignSnapshot(page, context) {
   const extracted = await page.evaluate(extractInPage, {
     sourceAttribute: SOURCE_ATTRIBUTE,
     canvasAttribute: CANVAS_ATTRIBUTE,
-    modalAttribute: MODAL_ATTRIBUTE,
     discarded: DISCARDED_SELECTORS,
   });
 
@@ -379,9 +323,7 @@ export async function captureDesignSnapshot(page, context) {
     rootAttributes: extracted.rootAttributes,
     bodyAttributes: extracted.bodyAttributes,
     bodyHtml: rewriteReferences(extracted.bodyHtml, assets, prefix),
-    canvasCss: [canvasBackgroundCss(canvasAssets), modalBackdropCss(extracted.backdrops)]
-      .filter(Boolean)
-      .join('\n'),
+    canvasCss: canvasBackgroundCss(canvasAssets),
     stylesheetHref: `${prefix}${SHARED_STYLESHEET}`,
   });
 

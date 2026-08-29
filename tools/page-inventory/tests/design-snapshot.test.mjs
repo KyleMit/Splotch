@@ -8,7 +8,6 @@ import {
   designSnapshotPath,
   extensionFor,
   isFullyTransparent,
-  modalBackdropCss,
   oversizedSnapshots,
   rewriteReferences,
 } from '../lib/design-snapshot.mjs';
@@ -139,48 +138,6 @@ describe('canvasBackgroundCss', () => {
 
   it('renders nothing when a surface has no canvas', () => {
     expect(canvasBackgroundCss([])).toBe('');
-  });
-});
-
-describe('modalBackdropCss', () => {
-  it('emits nothing when the surface had no modal', () => {
-    expect(modalBackdropCss([])).toBe('');
-  });
-
-  it('lifts the dialog above its own backdrop, and both above the page', () => {
-    const css = modalBackdropCss([
-      { id: 'b0', background: 'rgba(0, 0, 0, 0.6)', backgroundImage: 'none' },
-    ]);
-
-    const backdropZ = Number(css.match(/-layer="b0"\]\{[^}]*z-index:(\d+)/)[1]);
-    const dialogZ = Number(css.match(/\[data-snapshot-modal="b0"\]\{z-index:(\d+)/)[1]);
-
-    expect(dialogZ).toBe(backdropZ + 1);
-    expect(backdropZ).toBeGreaterThan(1000);
-    // The app styles the dialog by class, which outranks an attribute selector.
-    expect(css).toContain(`z-index:${dialogZ}!important`);
-    expect(css).toContain('background-color:rgba(0, 0, 0, 0.6)');
-  });
-
-  // Chromium folds the dialog into a backdrop-filtered layer even when it
-  // paints above, so carrying the blur over blurs the modal itself.
-  it('never carries a backdrop filter over', () => {
-    const css = modalBackdropCss([
-      { id: 'b0', background: 'rgba(0, 0, 0, 0.6)', backgroundImage: 'none' },
-    ]);
-
-    expect(css).not.toContain('backdrop-filter');
-  });
-
-  it('pairs each dialog with its own backdrop', () => {
-    const css = modalBackdropCss([
-      { id: 'b0', background: 'rgb(0, 0, 0)', backgroundImage: 'none' },
-      { id: 'b1', background: 'rgb(1, 1, 1)', backgroundImage: 'none' },
-    ]);
-
-    expect(css).toContain('[data-snapshot-modal-layer="b1"]');
-    expect(css).toContain('[data-snapshot-modal="b1"]');
-    expect(css).not.toContain('background-image');
   });
 });
 
