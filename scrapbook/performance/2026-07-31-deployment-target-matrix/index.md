@@ -56,11 +56,14 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   actions retain their prior per-mode provenance (6961e50b685d441e88b37d20d3f38a27136572fb in
   portrait and ce88c8e587ac45847c419e05ef7a79d282bc747a in landscape). This is blocked historical
   evidence, not current-equivalent carryover: the native action runner rejects the physical Android
-  UDID through its iOS XCUITest path before capture. #1387 tracks teaching that sweep the compact
-  Android shell and transport contract.
+  UDID through its iOS XCUITest path before capture. Those action sweeps predate ADR-0142's resize
+  anchor, so their rotation first-frame numbers are not comparable with any other rotation row in
+  this matrix. #1387 tracks teaching that sweep the compact Android shell and transport contract.
 * Android physical web and native drawing use the ADR-0135 split input/measurement transport. Fresh
-  artifacts record the driving cadence, input fidelity, page identity, and native foreground-package
-  attestation used to decide whether a result is scoreable.
+  artifacts record the driving cadence, input fidelity, and page identity used to decide whether a
+  result is scoreable. Browser page identity is proven by URL; split-native page identity is
+  unprovable because the installed app loads the remote probe-host URL, so those captures instead
+  require native foreground-package attestation.
 * The campaign accepted every faithful red drawing gate and did not rerun a valid result to turn it
   green. Capture retries were reserved for transport or harness failures; the completed 2026-08-29
   target ledgers record no such retries for the iPad, Android web, or desktop runs.
@@ -72,9 +75,9 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   regression.
 * Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a
   parent might open splotch.art in, never as evidence about WebKit or Blink.
-* Desktop captures used exact 1512×982 or 982×1512 CSS viewports at DPR 2. The headed landscape
-  browser window exceeded the physical display height at 100% browser zoom, but Playwright retained
-  the requested page viewport.
+* Desktop captures used exact 1366×915 or 915×1366 CSS viewports at DPR 2 — iPad Pro 12.9 geometry,
+  so the canvas area matches the physical-iPad rows. Playwright retains the requested page viewport
+  regardless of the browser window size.
 * Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is
   the only Safari-calibrated release-gate transport.
 * Raw perf-profiles are local scratch and are mostly untracked. ADR-0138 tracks one representative
