@@ -8,7 +8,6 @@ afterEach(() => {
 function appendLoadedOverlay() {
   const overlay = document.createElement('img');
   overlay.id = COLORING_OVERLAY_ID;
-  overlay.dataset.active = 'true';
   Object.defineProperty(overlay, 'naturalWidth', { value: 100 });
   document.body.append(overlay);
   return overlay;
@@ -19,8 +18,8 @@ describe('getActiveOverlayExportSource', () => {
     expect(getActiveOverlayExportSource()).toBeNull();
   });
 
-  it('returns null when the resident overlay is inactive', () => {
-    appendLoadedOverlay().dataset.active = 'false';
+  it('returns null when the overlay is hidden', () => {
+    appendLoadedOverlay().hidden = true;
 
     expect(getActiveOverlayExportSource()).toBeNull();
   });

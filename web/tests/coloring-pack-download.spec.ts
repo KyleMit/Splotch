@@ -76,8 +76,7 @@ test('a fresh install opens the Farm pages directly before packs arrive', async 
   await expect(dialog.getByRole('button', { name: 'Clear Page' })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Clear active coloring page: Cat' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator('#coloringOverlay')).toHaveAttribute('data-active', 'false');
-  await expect(page.locator('#coloringOverlay')).toHaveCSS('opacity', '0');
+  await expect(page.locator('#coloringOverlay')).toBeHidden();
 });
 
 test('removing downloaded books restores single-book page previews', async ({ page }) => {
@@ -155,8 +154,7 @@ test('the Coloring section toggle clears the page but keeps downloaded books', a
   await toggle.click();
 
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
-  await expect(page.locator('#coloringOverlay')).toHaveAttribute('data-active', 'false');
-  await expect(page.locator('#coloringOverlay')).toHaveCSS('opacity', '0');
+  await expect(page.locator('#coloringOverlay')).toBeHidden();
   await expect(page.locator('#coloringBookButton')).toBeHidden();
   await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeEnabled();
 });
