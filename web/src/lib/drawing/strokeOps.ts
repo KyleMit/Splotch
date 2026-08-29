@@ -12,7 +12,7 @@ import {
 import type { RecordedPaperState } from './undoHistory';
 
 // One rendered curve segment: a quadratic with control cx/cy and endpoint x/y.
-interface PathSeg {
+export interface PathSeg {
   cx: number;
   cy: number;
   x: number;

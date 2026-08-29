@@ -105,6 +105,16 @@ declare global {
     // lib/storeCapture.ts — the one seam the app takes an input on, and the
     // release bundle drops it with its readers.
     __storeCapture?: boolean;
+    // Installed by routes/dev/gpu-crayon only, so the capture script can drive
+    // each renderer's scripted replay and read its numbers back. The whole
+    // route is behind the dev-harness gate; nothing in production sees this.
+    __gpuCrayon?: {
+      renderers: { id: string; label: string; blurb: string }[];
+      run: (id: string) => Promise<import('$lib/drawing/gpu/sceneReplay').ReplayStats>;
+      clear: () => void;
+      scene: { width: number; height: number };
+      detailCrop: typeof import('$lib/drawing/gpu/referenceScene').DETAIL_CROP;
+    };
   }
 
   type BundledCaptureProbeCounts = {

@@ -235,7 +235,7 @@ function normalizeInPlace(a: Float32Array) {
 // `dither` is a fixed per-texel value in [0,1) that jitters the pit threshold so
 // a rim texel resolves to a stippled 0/1 instead of a grey ramp — the tooth stays
 // BINARY (undo-stable, see the binary-alpha invariant above) while the rims read as grain, not hard dots.
-interface CrayonFields {
+export interface CrayonFields {
   tile: number;
   height: Float32Array;
   body: Float32Array;
@@ -267,7 +267,10 @@ function buildFields(): CrayonFields {
 // that cost for the common case where the crayon does get picked.
 let fields: CrayonFields | null = null;
 
-function crayonFields(): CrayonFields {
+// The GPU crayon spike (lib/drawing/gpu) bakes these same three fields into a
+// texture so its shader thresholds the identical paper tooth. Shared through
+// this accessor rather than re-derived, so the two renderers cannot drift.
+export function crayonFields(): CrayonFields {
   if (!fields) fields = buildFields();
   return fields;
 }
