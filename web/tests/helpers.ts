@@ -354,9 +354,9 @@ export async function settleSettingsPane(pane: Locator) {
   );
 }
 
-// Open Settings robustly and return its modal locator. It idle-mounts
-// on first open (ADR-0049), so the first click can be lost before its handler is
-// wired — retryOpen rides that out and skips the click when it's already open.
+// Open Settings robustly and return its modal locator. Demand mounts it when a
+// tap beats background residency (ADR-0049); retryOpen still absorbs animation
+// and loaded-worker variance while skipping the click when it is already open.
 export async function openSettingsModal(page: Page) {
   const modal = page.locator('#settingsModal');
   await retryOpen(modal, () =>

@@ -20,15 +20,11 @@ test.use({
 // that the failure it predicts), against ~20x for every assertion around it.
 const PARTING_EXIT_TIMEOUT_MS = 20_000;
 
-// The banner is the LAST of five overlays the idle pump mounts, one per
-// requestIdleCallback with no timeout option (boot/bootHiddenOverlays.ts,
-// lib/idle.ts), so its mount waits for a genuinely idle frame however long that
-// takes. And the third stroke — the one that makes the banner eligible — is also
-// what releases the deferred service-worker registration in the same flush
-// (routes/+page.svelte), whose offline precache work is exactly what keeps the page
-// from going idle. So this wait is thin by construction, not by inflation: under
-// full-suite load it exceeded the default 5s, while the same test passes 20/20
-// in isolation at 4 workers.
+// The banner prewarms near the end of the interaction-quiet overlay pump. If
+// three strokes beat it, the earned state demands it in the same flush that
+// releases deferred service-worker registration (routes/+page.svelte). The
+// demand path keeps that network work from delaying the visible banner, while
+// this timeout still covers a loaded worker's component import and rendering.
 const BANNER_MOUNT_TIMEOUT_MS = 20_000;
 
 test('the install banner parts after five additional strokes', async ({ page }) => {

@@ -22,6 +22,29 @@ const PENDING_FILL_SETTLE_MS = 500;
 
 // ── coloring book overlay ───────────────────────────────────────────────────
 
+test('an early coloring request mounts before unrelated idle overlays', async ({ page }) => {
+  await page.addInitScript(() => {
+    let nextIdleHandle = 1;
+    const idleCallbacks = new Map<number, IdleRequestCallback>();
+    window.requestIdleCallback = (callback) => {
+      const handle = nextIdleHandle;
+      nextIdleHandle += 1;
+      idleCallbacks.set(handle, callback);
+      return handle;
+    };
+    window.cancelIdleCallback = (handle) => idleCallbacks.delete(handle);
+  });
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await page.getByRole('button', { name: 'Coloring books' }).click();
+
+  await expect(page.locator('#coloring-book-dialog')).toBeVisible();
+  await expect(page.locator('#parentalGate')).toHaveCount(0);
+  await expect(page.locator('#color-picker')).toHaveCount(0);
+  await expect(page.locator('#settingsModal')).toHaveCount(0);
+});
+
 test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await openDrawer(page);

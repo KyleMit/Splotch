@@ -31,7 +31,7 @@ const SLOW_4G = {
 
 // Let idle-deferred boot work (overlay mount, sound preload, texture warm)
 // fire inside the trace so a fix that merely shifts cost later is visible.
-const POST_LOAD_SETTLE_MS = 5000;
+const POST_LOAD_SETTLE_MS = 10_000;
 
 const { deviceName, device, throttle, port, build } = parsePerfArgs({
   throttleDefault: 4,
@@ -79,7 +79,10 @@ export async function runMountProfile() {
     await cdp.send('Network.emulateNetworkConditions', SLOW_4G);
 
     const events = await startTrace(cdp);
-    await page.goto(base, { waitUntil: 'networkidle' });
+    // Background overlays may start image prefetches several idle slices apart.
+    // Waiting for global network-idle here makes those measured jobs a hidden
+    // precondition and can time out before the explicit settle window starts.
+    await page.goto(base, { waitUntil: 'load' });
     await page.waitForSelector('#drawingCanvas');
     await page.waitForTimeout(POST_LOAD_SETTLE_MS);
     await stopTrace(cdp);

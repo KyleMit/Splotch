@@ -1,62 +1,127 @@
 import type { Component } from 'svelte';
-import { scheduleIdle } from '$lib/idle';
+import { scheduleIdle, scheduleInteractionIdle } from '$lib/idle';
 
-// The boot-hidden overlays (see components/overlayChunk.ts) load and mount
-// at idle so the ~470 ms first-load hydration long task doesn't pay for subtrees
-// that are invisible until a tap or a few strokes later. One overlay per idle
-// callback: mounting them all at once just relocates a long task to idle, where
-// it would jank a stroke already in progress. SettingsModal is handed back
-// separately: its component arrives with the chunk so a tap that beats the
-// idle queue can still mount it at once, and `onSettingsPrewarm` fires as the
-// queue's own final slice — the heaviest overlay mounts last, after every
-// cheap one is in, and its wide pane then keeps prewarming a section per idle
-// slice of its own (WideShell; ADR-0049).
+const BACKGROUND_ORDER = [
+  'parentalGate',
+  'colorPicker',
+  'coloringBook',
+  'aiPrompt',
+  // Before the modal it rescues: a run minimized into a gap where the
+  // polaroid has not mounted yet has no way back.
+  'aiWaiting',
+  'aiResult',
+  'installBanner',
+  'settings',
+] as const;
+
+export type BootHiddenOverlayKey = (typeof BACKGROUND_ORDER)[number];
+
+type OverlayCatalog = typeof import('$lib/components/overlayChunk');
+
+const COMPONENT_EXPORTS = {
+  parentalGate: 'ParentalGate',
+  colorPicker: 'ColorPicker',
+  coloringBook: 'ColoringBook',
+  aiPrompt: 'AiImagePrompt',
+  aiWaiting: 'AiWaitingPolaroid',
+  aiResult: 'AiImageResult',
+  installBanner: 'InstallBanner',
+  settings: 'SettingsModal',
+} as const satisfies Record<BootHiddenOverlayKey, keyof OverlayCatalog>;
+
+export interface BootHiddenOverlays {
+  demand(key: BootHiddenOverlayKey): void;
+  stop(): void;
+}
+
+// The boot-hidden overlays (see components/overlayChunk.ts) stay in one lazy
+// chunk so startup never evaluates their component graph (ADR-0049). Demand
+// mounts a requested resident as soon as that catalog is available; unrelated
+// residents mount one at a time only after interaction has gone quiet.
 export function mountBootHiddenOverlays(
-  onSettingsModal: (overlay: Component) => void,
-  onOverlay: (overlay: Component) => void,
-  onSettingsPrewarm: () => void
-): () => void {
-  // The cancel handle scheduleIdle returns covers the not-yet-fired idle
-  // callback; it can't reach an already-in-flight import().then continuation,
-  // so a `stopped` flag also guards the mount work from running after unmount.
+  onOverlay: (key: BootHiddenOverlayKey, overlay: Component) => void
+): BootHiddenOverlays {
   let stopped = false;
-  const cancelIdle = scheduleIdle(() => {
-    import('$lib/components/overlayChunk')
+  let catalog: OverlayCatalog | null = null;
+  let catalogPromise: Promise<OverlayCatalog> | null = null;
+  let cancelBootIdle = () => {};
+  let cancelBackgroundIdle = () => {};
+  let backgroundGeneration = 0;
+  const requested = new Set<BootHiddenOverlayKey>();
+  const mounted = new Set<BootHiddenOverlayKey>();
+
+  function component(key: BootHiddenOverlayKey): Component {
+    return catalog![COMPONENT_EXPORTS[key]];
+  }
+
+  function mountOnce(key: BootHiddenOverlayKey) {
+    if (stopped || !catalog || mounted.has(key)) return;
+    onOverlay(key, component(key));
+    mounted.add(key);
+  }
+
+  function mountRequested() {
+    for (const key of requested) mountOnce(key);
+  }
+
+  function nextBackgroundKey(): BootHiddenOverlayKey | null {
+    return BACKGROUND_ORDER.find((key) => !mounted.has(key)) ?? null;
+  }
+
+  function scheduleBackground() {
+    cancelBackgroundIdle();
+    const generation = ++backgroundGeneration;
+    if (stopped || !catalog) return;
+    const key = nextBackgroundKey();
+    if (!key) return;
+    cancelBackgroundIdle = scheduleInteractionIdle(() => {
+      if (generation !== backgroundGeneration) return;
+      mountOnce(key);
+      scheduleBackground();
+    });
+  }
+
+  function loadCatalog(): Promise<OverlayCatalog> {
+    catalogPromise ??= import('$lib/components/overlayChunk')
       .then((module) => {
-        if (stopped) return;
-        onSettingsModal(module.SettingsModal);
-        const queue = [
-          module.ParentalGate,
-          module.ColorPicker,
-          module.ColoringBook,
-          module.AiImagePrompt,
-          // Before the modal it rescues: a run minimized into a gap where the
-          // polaroid has not mounted yet has no way back.
-          module.AiWaitingPolaroid,
-          module.AiImageResult,
-          module.InstallBanner,
-        ];
-        let mounted = 0;
-        const mountNext = () => {
-          if (stopped) return;
-          if (mounted === queue.length) {
-            onSettingsPrewarm();
-            return;
-          }
-          onOverlay(queue[mounted]);
-          mounted += 1;
-          scheduleIdle(mountNext);
-        };
-        mountNext();
+        if (stopped) return module;
+        catalog = module;
+        mountRequested();
+        scheduleBackground();
+        return module;
       })
       .catch((err) => {
-        // A failed chunk load leaves the overlays unmounted for this session;
-        // surface it rather than silently losing Settings et al.
+        catalogPromise = null;
         console.error('Boot-hidden overlay chunk failed to load:', err);
+        throw err;
       });
+    return catalogPromise;
+  }
+
+  cancelBootIdle = scheduleIdle(() => {
+    void loadCatalog().catch(() => {});
   });
-  return () => {
-    stopped = true;
-    cancelIdle();
+
+  return {
+    demand(key) {
+      if (stopped) return;
+      if (key === 'aiResult') requested.add('aiWaiting');
+      requested.add(key);
+      cancelBackgroundIdle();
+      backgroundGeneration += 1;
+      if (catalog) {
+        mountRequested();
+        scheduleBackground();
+        return;
+      }
+      cancelBootIdle();
+      void loadCatalog().catch(() => {});
+    },
+    stop() {
+      stopped = true;
+      backgroundGeneration += 1;
+      cancelBootIdle();
+      cancelBackgroundIdle();
+    },
   };
 }
