@@ -728,9 +728,12 @@ native session but navigated the WebView to an HTTP preview, so it exercised the
 path while being cited as native evidence. For a packaged capture, verify both
 `captureRuntime: "ios-capacitor-webview"` (or `android-capacitor-webview`) and the packaged `appUrl`
 (`capacitor://localhost` on iOS, `https://localhost` on Android). The campaign rejects an artifact
-whose transport contradicts the requested runtime, and rejects an Appium native artifact that
-records a non-packaged `appUrl`. Older artifacts that do not record the URL remain foldable, so
-inspect that provenance before citing them as packaged-native evidence.
+whose transport contradicts the requested runtime, and rejects an Appium native artifact that does
+not record a packaged `appUrl`. An Android native split capture must also record
+`nativePackage: "art.splotch.app"`, proving that the measurement came from the foreground packaged
+app rather than Chrome. Artifacts that predate either provenance field are not foldable by current
+campaign acceptance. Retain them only as explicitly labelled historical or advisory evidence and
+recapture them; do not backfill provenance or weaken the fail-closed checks.
 
 **Do not choose the first Appium WebView context.** Chrome, Safari, a floor-control tab, and the
 installed app can all be debuggable at once. The first context may therefore be a healthy page in
