@@ -152,17 +152,16 @@ describe('campaign resume', () => {
   });
 
   // The becomes-capturable branch, end to end, with the real expectations
-  // table: this row was seeded while the Android WebView had no measured
-  // pressure/contact expectations, and the runtime has since been calibrated
-  // (android-webview-fidelity.test.mjs) — so the recorded conclusion must not
-  // outlive the calibration, and the resume RE-CAPTURES instead of holding the
-  // cell terminal. (The one-attempt-while-uncalibrated behavior itself stays
-  // pinned runtime-independently by the nextAction cases below.)
+  // table: this row was seeded while its verdict-writing runtime had no measured
+  // expectations, and the runtime has since been calibrated — so the recorded
+  // conclusion must not outlive the calibration, and the resume RE-CAPTURES
+  // instead of holding the cell terminal. The Appium iPad target keeps this test
+  // independent of the Android targets' required split-transport probe host.
   it('recaptures a cell whose runtime gained calibration after the row was written', async () => {
     const root = scratch();
     seedLedgerRow(`${root}/ledger.tsv`, `${UNCALIBRATED_RUNTIME}-exit-1`);
 
-    const { ran } = await run('android-emulator-native', root);
+    const { ran } = await run('ipad-simulator-native', root);
 
     expect(ran).toEqual([{ cell: CELL, status: 'p1' }]);
     const ledger = readFileSync(`${root}/ledger.tsv`, 'utf8');

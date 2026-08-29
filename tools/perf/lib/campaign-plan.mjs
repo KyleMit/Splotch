@@ -63,7 +63,9 @@ const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 export const CAMPAIGN_TARGETS = {
   'ipad-simulator-web': {
     captureRuntime: 'ios-safari',
-    refreshRegime: null,
+    // Measured at 17 ms across the issue-1215 simulator-web corpus; the
+    // refresh-regime test binds this declaration to those raw captures.
+    refreshRegime: '60hz',
     label: 'iPad Simulator · web',
     transport: 'appium',
     runtime: 'web',
@@ -71,7 +73,9 @@ export const CAMPAIGN_TARGETS = {
   },
   'ipad-simulator-native': {
     captureRuntime: 'ios-capacitor-webview',
-    refreshRegime: null,
+    // Measured at 17 ms in the installed simulator WebView across the
+    // issue-1215 corpus, independently of the simulator's Safari row.
+    refreshRegime: '60hz',
     label: 'iPad Simulator · native',
     transport: 'appium',
     runtime: 'native',
@@ -117,10 +121,17 @@ export const CAMPAIGN_TARGETS = {
   },
   'android-emulator-native': {
     captureRuntime: 'android-capacitor-webview',
-    refreshRegime: null,
+    // Measured at 16.7 ms across all four modes in the issue-1215 native
+    // emulator corpus; declared from those captures, not from the web sibling.
+    refreshRegime: '60hz',
     deviceClass: 'handset',
     label: 'Android emulator · native',
-    transport: 'appium',
+    // ADR-0145: Appium drives this 60 Hz WebView at 0.82 moves/frame, below
+    // the 0.9 fidelity floor, and perturbs the main thread while doing so.
+    // Drawing therefore uses the split transport; Appium remains valid for
+    // the discrete action sweep.
+    transport: SPLIT_TRANSPORT,
+    splitPlatform: 'android',
     runtime: 'native',
     webviewClass: 'android.webkit.WebView',
   },
@@ -193,18 +204,26 @@ export const CAMPAIGN_TARGETS = {
 // A native capture writes this; the two web transports (`browser` over Appium,
 // `android-chrome-cdp`) write their own.
 export const NATIVE_TRANSPORT = 'native-capacitor-webview';
+export const ANDROID_NATIVE_PACKAGE = 'art.splotch.app';
 
 // Several debuggable WebViews can satisfy the context search, so a native capture
 // that attached to Chrome — or a web capture that attached to the installed app —
 // produces a well-formed artifact and exits zero. The runbook asks for this to be
-// eyeballed per cell; a queue of 20 is exactly where eyeballing stops happening.
-// Acceptance stays "a parseable artifact" so a red gate survives, but the artifact
-// has to be one of the thing the cell asked for.
+// checked explicitly because a queue of 20 is exactly where eyeballing stops
+// happening. Acceptance stays "a parseable artifact" so a red gate survives, but
+// the artifact has to be one of the thing the cell asked for.
 // The transports whose artifacts legitimately carry `nativeApp: true`: the
 // split runner (issue 1274) and the bundled CDP channel (issue 1323) attach
 // to the installed app while keeping their own transport strings. The Appium
 // native runner marks native-ness in `transport` itself.
 const NATIVE_CAPABLE_TRANSPORTS = new Set(['split-input-measurement', 'cdp-bundled']);
+const PACKAGED_APP_URLS = new Set(['capacitor://localhost', 'https://localhost']);
+
+function isPackagedAppUrl(value) {
+  if (typeof value !== 'string' || !URL.canParse(value)) return false;
+  const url = new URL(value);
+  return PACKAGED_APP_URLS.has(`${url.protocol}//${url.host}`);
+}
 
 export function artifactMatchesRuntime(artifact, runtime) {
   // Contract-specific, fail-closed (the PR 1380 review): a bare
@@ -219,6 +238,17 @@ export function artifactMatchesRuntime(artifact, runtime) {
   const contradictory =
     nativeFlag && transport !== NATIVE_TRANSPORT && !NATIVE_CAPABLE_TRANSPORTS.has(transport);
   if (contradictory) return false;
+  if (transport === NATIVE_TRANSPORT && !isPackagedAppUrl(artifact?.appUrl)) {
+    return false;
+  }
+  if (
+    transport === 'split-input-measurement' &&
+    nativeFlag &&
+    artifact?.platform === 'android' &&
+    artifact?.nativePackage !== ANDROID_NATIVE_PACKAGE
+  ) {
+    return false;
+  }
   return runtime === 'native' ? isNative : !isNative;
 }
 
@@ -460,7 +490,7 @@ export function campaignTarget(targetId) {
       `Unknown campaign target ${targetId} — expected one of ${Object.keys(CAMPAIGN_TARGETS).join(', ')}`
     );
   }
-  return target;
+  return { id: targetId, ...target };
 }
 
 function resolveModes(modeIds) {
@@ -530,6 +560,9 @@ function splitTransportArgs(target, host) {
   if (target.runtime === 'native') args.push('--native-app');
   if (target.splitPlatform === 'android' && host.deviceId) {
     args.push(`--device-serial=${host.deviceId}`);
+  }
+  if (target.splitPlatform === 'android' && host.cdpPort) {
+    args.push(`--cdp-port=${host.cdpPort}`);
   }
   if (target.splitPlatform === 'ios' && host.wdaUrl) args.push(`--wda-url=${host.wdaUrl}`);
   if (host.probeHost) args.push(`--host=${host.probeHost}`);

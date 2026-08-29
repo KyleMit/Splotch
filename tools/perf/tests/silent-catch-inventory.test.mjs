@@ -62,7 +62,6 @@ const AUDITED_SWALLOWS = {
   ],
   'ios/capture-xcuitest-screen.mjs': [
     'bare-catch@406e6568d91f',
-    'benign-catch@1b1405c485db',
     'benign-catch@7a5ac8eb2037',
     'benign-catch@d56f8881e947',
     'benign-catch@e33924a296fa',

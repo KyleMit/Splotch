@@ -132,6 +132,7 @@ export const FLOOR_BOOTSTRAP_SOURCE = `
     geometry: {
       canvas: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
       viewport: { width: innerWidth, height: innerHeight },
+      outerViewport: { width: outerWidth, height: outerHeight },
       screenX: window.screenX,
       screenY: window.screenY,
       dpr: window.devicePixelRatio,

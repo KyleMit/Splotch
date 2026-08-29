@@ -525,11 +525,16 @@ Three things about `perf:campaign` that each cost a launch:
   and wrong after a misconfigured launch. Read `ledger.tsv` before clearing it: if every row is
   `missing-or-invalid-json-exit-1` and no artifact was produced, the attempts recorded nothing and
   deleting the ledger costs nothing.
-* **`android-device-web` drawing goes through the split input/measurement transport**, which
-  requires `--probe-host=` — this host's LAN address, as the *device* sees it. A loopback address
-  reaches the capture host's own browser and never the phone; the campaign rejects one up front, and
-  asserts the probe host answers before the queue starts, because getting it wrong otherwise reads
-  as a page that would not load. Start the host with `npm run perf:device:serve` first.
+* **Android split-transport drawing requires `--probe-host=`** — this host's LAN address, as the
+  device sees it. This applies to `android-device-web`, `android-emulator-web`, and both Android
+  native targets. A loopback address reaches the capture host's own browser and never the device;
+  the campaign rejects one up front, and asserts the probe host answers before the queue starts,
+  because getting it wrong otherwise reads as a page that would not load. Start the host with
+  `npm run perf:device:serve` first. Native drawing also needs a machine-local temporary
+  `server.url` plus `cleartext: true` in `capacitor.config.json` before the instrumented build and
+  sync; restore the source config immediately after installing and never commit that address.
+  Reinstall the packaged instrumented build before the Appium action cells so their page-delivery
+  provenance remains the bundled `https://localhost` origin.
 
   The transport it replaced is the one ADR-0135 measured at **46.8 moves/s**, below the 100–170
   fidelity band. Re-probed on 2026-08-22 and it reproduces exactly: 46.8 moves/s, 0.44 moves per
@@ -717,6 +722,22 @@ npx cap run ios --target <hardware UDID>
 
 The same applies to `ios:build`, `ios:archive`, and anything else whose npm script begins with
 `cap:sync`.
+
+**A native transport does not prove a native page.** A retained iPad capture used Appium against a
+native session but navigated the WebView to an HTTP preview, so it exercised the web build's resize
+path while being cited as native evidence. For a packaged capture, verify both
+`captureRuntime: "ios-capacitor-webview"` (or `android-capacitor-webview`) and the packaged `appUrl`
+(`capacitor://localhost` on iOS, `https://localhost` on Android). The campaign rejects an artifact
+whose transport contradicts the requested runtime, and rejects an Appium native artifact that
+records a non-packaged `appUrl`. Older artifacts that do not record the URL remain foldable, so
+inspect that provenance before citing them as packaged-native evidence.
+
+**Do not choose the first Appium WebView context.** Chrome, Safari, a floor-control tab, and the
+installed app can all be debuggable at once. The first context may therefore be a healthy page in
+the wrong process, making setup fail late or, worse, measuring the wrong surface. The XCUITest
+capture helpers select `WEBVIEW_art.splotch.app` for native runs and refuse an ambiguous native
+context; browser runs prefer Chrome's browser context. Keep the fail-closed selection if another
+driver changes its context naming, and prove the new name before adding a fallback.
 
 ## A capture that does not record its brush is filed as pen
 

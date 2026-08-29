@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { connect } from 'node:net';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  androidContentOffset,
+  androidForegroundPackage,
   androidGestureInstructions,
   androidNativeLaunchSteps,
   androidOpenSteps,
@@ -61,6 +63,45 @@ const stroke = [
 ];
 
 describe('androidGestureInstructions', () => {
+  it('includes Android Chrome content insets in the CSS-to-screen origin', () => {
+    expect(
+      androidContentOffset(
+        {
+          viewport: { width: 850, height: 327 },
+          outerViewport: { width: 892, height: 412 },
+          screenX: 0,
+          screenY: 0,
+          dpr: 3.5,
+        },
+        { userRotation: 1 }
+      )
+    ).toEqual({ x: 147, y: 297.5 });
+  });
+
+  it('refuses the mirrored landscape rotation whose inset is on the other edge', () => {
+    expect(() =>
+      androidContentOffset(
+        {
+          viewport: { width: 850, height: 327 },
+          outerViewport: { width: 892, height: 412 },
+          dpr: 3.5,
+        },
+        { userRotation: 3 }
+      )
+    ).toThrow('only calibrated for user_rotation=1');
+  });
+
+  it('preserves the legacy screen origin when outer geometry is absent', () => {
+    expect(
+      androidContentOffset({
+        viewport: { width: 411, height: 719 },
+        screenX: 2,
+        screenY: 3,
+        dpr: 2,
+      })
+    ).toEqual({ x: 4, y: 6 });
+  });
+
   it('treats the move before pointerDown as the stroke origin, not a segment', () => {
     const instructions = androidGestureInstructions(stroke);
 
@@ -473,6 +514,17 @@ describe('launching the native app instead of the browser', () => {
   });
 });
 
+describe('Android native foreground provenance', () => {
+  it('reads the resumed package from dumpsys activity output', () => {
+    expect(
+      androidForegroundPackage(
+        'mResumedActivity: ActivityRecord{abc u0 art.splotch.app/.MainActivity t88}'
+      )
+    ).toBe('art.splotch.app');
+    expect(androidForegroundPackage('mResumedActivity: null')).toBeNull();
+  });
+});
+
 // The theme behaviour is covered by tools/perf/tests/bootstrap-theme.test.mjs,
 // which EXECUTES the generated bootstrap in a DOM fixture. Source-substring
 // assertions lived here and survived disabling the whole theme branch, so they
@@ -514,6 +566,12 @@ describe('what a saved artifact can prove about its own theme', () => {
   // compares it against the plan's contract, so the artifact has to carry it.
   it('records the gesture-repeat count the run was driven at', () => {
     expect(drivenCaptureArtifact({ ...common, ready, gestureRepeats: 10 }).gestureRepeats).toBe(10);
+  });
+
+  it('records the measured native package rather than trusting the launch flag', () => {
+    expect(
+      drivenCaptureArtifact({ ...common, ready, nativeApp: true, nativePackage: 'art.splotch.app' })
+    ).toMatchObject({ nativeApp: true, nativePackage: 'art.splotch.app' });
   });
 
   // Issue 1292: eraser passes get real ink from between-pass refills, which
@@ -1002,6 +1060,7 @@ describe('the wiring that fronts the page and judges the input', () => {
     expect(deps.execCalls.some((call) => call.startsWith('forward'))).toBe(false);
     expect(deps.forwardCalls).toEqual([
       'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
+      'adb -s s forward --remove tcp:9224',
       'adb -s s forward --no-rebind tcp:9224 localabstract:chrome_devtools_remote',
       'adb -s s forward --remove tcp:9224',
     ]);
@@ -1036,6 +1095,37 @@ describe('the wiring that fronts the page and judges the input', () => {
     expect(deps.activateCalls).toEqual([]);
     expect(deps.litterCalls).toEqual([]);
     expect(deps.forwardCalls).toEqual([]);
+  });
+
+  it('attests the resumed package on the native path', () => {
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      orientation: 'PORTRAIT',
+      nativeApp: true,
+      cdpPort: 9224,
+      exec: (_serial, args) => {
+        expect(args).toEqual(['shell', 'dumpsys', 'activity', 'activities']);
+        return 'mResumedActivity: ActivityRecord{abc u0 art.splotch.app/.MainActivity t88}';
+      },
+    });
+
+    expect(driver.runtimeIdentity()).toEqual({ nativePackage: 'art.splotch.app' });
+  });
+
+  it('rejects a different resumed package on the native path', () => {
+    const driver = androidDriver({
+      serial: 's',
+      pageUrl: 'http://host:4175/?probe=run-7',
+      orientation: 'PORTRAIT',
+      nativeApp: true,
+      cdpPort: 9224,
+      exec: () => 'mResumedActivity: ActivityRecord{abc u0 com.android.chrome/.Main t88}',
+    });
+
+    expect(() => driver.runtimeIdentity()).toThrow(
+      'the foreground Android package is com.android.chrome, not art.splotch.app'
+    );
   });
 
   it('fails a zero-event dispatch and lets everything else decide downstream', () => {

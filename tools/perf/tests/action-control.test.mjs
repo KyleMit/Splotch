@@ -72,15 +72,15 @@ describe('withActionControlScoreability', () => {
 describe('the published android-emulator-web rows', () => {
   const modes = modesOf('android-emulator-web');
 
-  it('marks exactly the two portrait modes unscoreable', () => {
-    const byId = Object.fromEntries(modes.map((mode) => [mode.id, mode.actions?.scoreable]));
+  it('marks exactly the modes whose recorded idle control failed unscoreable', () => {
+    const unscoreable = modes.filter((mode) => mode.actions?.scoreable === false);
 
-    expect(byId).toEqual({
-      'portrait-light': false,
-      'portrait-dark': false,
-      'landscape-light': true,
-      'landscape-dark': true,
-    });
+    expect(unscoreable).toHaveLength(2);
+    for (const mode of unscoreable) {
+      expect(
+        mode.actions.results.find((result) => result.label === mode.actions.controlLabel)?.passed
+      ).toBe(false);
+    }
   });
 
   // Those two modes report the worst action coverage in the matrix, and it is not a
@@ -105,12 +105,16 @@ describe('the rendered report', () => {
   // The denominator is the tell. Counting a mode whose control failed is how "the
   // worst cases cluster on the Android emulator" became a reading of the product.
   it('leaves unscoreable modes out of the cross-mode failure ranking', () => {
+    const actionModes = published.targets.flatMap((target) =>
+      target.modes.filter((mode) => mode.actions)
+    );
+    const scoreableModes = actionModes.filter((mode) => mode.actions.scoreable === true);
     const denominators = [...report.matchAll(/(\d+) of (\d+) modes failed/g)].map((match) =>
       Number(match[2])
     );
 
     expect(denominators.length).toBeGreaterThan(0);
-    expect(denominators).not.toContain(40);
-    expect(denominators).toContain(38);
+    expect(denominators).not.toContain(actionModes.length);
+    expect(denominators).toContain(scoreableModes.length);
   });
 });

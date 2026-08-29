@@ -10,6 +10,12 @@ import {
 const target = (id, modes) => ({ id, modes });
 const captured = (commit) => ({ drawing: { pen: ['a.json'] }, drawingProductCommit: commit });
 const preserved = (commit) => ({ drawing: 'preserved', drawingProductCommit: commit });
+const capturedUntracked = (commit) => ({
+  drawing: 'captured-untracked',
+  drawingProductCommit: commit,
+  undoSource: 'captured-untracked',
+  actionSources: 'captured-untracked',
+});
 
 // Surface fingerprint per commit; 'HEAD' is the branch's current surface.
 const trees = (byCommit) => (commit) => byCommit[commit] ?? null;
@@ -32,6 +38,10 @@ describe('modeProvenance', () => {
     };
 
     expect(modeProvenance(mode).sort()).toEqual(['aaa', 'bbb', 'ccc']);
+  });
+
+  it('checks captured-untracked sections because they still claim currency', () => {
+    expect(modeProvenance(capturedUntracked('current'))).toEqual(['current']);
   });
 });
 

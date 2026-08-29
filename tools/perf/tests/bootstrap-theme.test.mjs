@@ -343,6 +343,7 @@ describe('the bootstrap verifying the eraser fill', () => {
       canvas.getContext = () => context;
       canvas.alphaAt = (x, y) => {
         if (tile.alpha === 0) return 0;
+        if (context.fillRects.length <= (tile.transparentPaints ?? 0)) return 0;
         const covered = context.fillRects.some(
           ([rx, ry, rw, rh]) => x >= rx && y >= ry && x < rx + rw && y < ry + rh
         );
@@ -389,17 +390,40 @@ describe('the bootstrap verifying the eraser fill', () => {
         stack.dispatchEvent(new Event('pointerup', { bubbles: true }));
       }
       plan.finish = true;
-      const report = await vi.waitFor(() => {
-        const found = posted.find((entry) => entry.path === '/__probe/report');
-        if (!found) throw new Error('no report yet');
-        return found;
-      });
+      const report = await vi.waitFor(
+        () => {
+          const found = posted.find((entry) => entry.path === '/__probe/report');
+          if (!found) throw new Error('no report yet');
+          return found;
+        },
+        { timeout: BOOTSTRAP_TIMEOUT_MS }
+      );
 
       expect(report.body.eraserRefills).toEqual([
         { afterStroke: 2, pending: false, transparentTiles: [] },
       ]);
       // The refill is the second paint; the final stroke deliberately adds none.
       expect(tiles[0].context.fillRects).toHaveLength(2);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'retries a transient transparent fill before reporting readiness',
+    async () => {
+      const [tile] = paintEraserShell([
+        { backing: '100x80', width: 100, height: 80, transparentPaints: 1 },
+      ]);
+
+      const { readyPosted } = runBootstrap({
+        brush: 'eraser',
+        theme: 'light',
+        nonce: 'eraser-transient-fill',
+      });
+      const ready = await readyPosted;
+
+      expect(ready.eraserFill.transparentTiles).toEqual([]);
+      expect(tile.context.fillRects.length).toBeGreaterThan(1);
     },
     BOOTSTRAP_TIMEOUT_MS
   );
@@ -415,11 +439,14 @@ describe('the bootstrap verifying the eraser fill', () => {
         nonce: 'eraser-bad-fill',
       });
 
-      const report = await vi.waitFor(() => {
-        const found = posted.find((entry) => entry.path === '/__probe/report');
-        if (!found) throw new Error('no report yet');
-        return found;
-      });
+      const report = await vi.waitFor(
+        () => {
+          const found = posted.find((entry) => entry.path === '/__probe/report');
+          if (!found) throw new Error('no report yet');
+          return found;
+        },
+        { timeout: BOOTSTRAP_TIMEOUT_MS }
+      );
       expect(report.body.nonce).toBe('eraser-bad-fill');
       expect(report.body.error).toContain('transparent');
       expect(posted.some((call) => call.path === '/__probe/ready')).toBe(false);

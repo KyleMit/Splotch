@@ -109,18 +109,32 @@ describe('campaign plan', () => {
     expect(actions.args).not.toContain('--appium-url=http://127.0.0.1:4723');
     expect(drawing.command).toBe('perf:device:frames');
     expect(drawing.args).toContain('--platform=android');
+    expect(drawing.args).toContain('--cdp-port=9225');
   });
 
-  it('attaches a native run to the app WebView and never to a URL', () => {
-    const cell = plan('android-emulator-native', {
+  it('routes Android emulator native drawing through split input and actions through Appium', () => {
+    const cells = plan('android-emulator-native', {
       modes: ['portrait-light'],
-      items: ['pen-undo'],
-      host: { ...HOST, url: 'http://127.0.0.1:4173/' },
-    })[0];
+      items: ['pen-undo', 'actions'],
+      host: {
+        ...HOST,
+        deviceId: 'emulator-5554',
+        cdpPort: '9225',
+        probeHost: 'http://192.168.0.9:4175',
+      },
+    });
+    const drawing = cells.find((cell) => cell.item === 'pen-undo');
+    const actions = cells.find((cell) => cell.item === 'actions');
 
-    expect(cell.args).toContain('--native-app');
-    expect(cell.args).toContain('--native-webview-class=android.webkit.WebView');
-    expect(cell.args.some((arg) => arg.startsWith('--url='))).toBe(false);
+    expect(drawing.command).toBe(SPLIT_SCREEN_COMMAND);
+    expect(drawing.args).toContain('--platform=android');
+    expect(drawing.args).toContain('--native-app');
+    expect(drawing.args).toContain('--device-serial=emulator-5554');
+    expect(drawing.args).toContain('--cdp-port=9225');
+    expect(actions.command).toBe('perf:ios:xcuitest:actions');
+    expect(actions.args).toContain('--native-app');
+    expect(actions.args).toContain('--native-webview-class=android.webkit.WebView');
+    expect(actions.args.some((arg) => arg.startsWith('--url='))).toBe(false);
   });
 
   // Issue 1297: the repeat count is part of the measurement contract, so the plan
@@ -264,17 +278,38 @@ describe('campaign device class', () => {
 
 describe('campaign artifact acceptance', () => {
   it('accepts a native cell only when the capture attached to the app WebView', () => {
-    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(true);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'capacitor://localhost' },
+        'native'
+      )
+    ).toBe(true);
     // The split runner's native artifact (issue 1274): the nativeApp fact
     // counts only on the transports that legitimately carry it.
     expect(
-      artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'native')
+      artifactMatchesRuntime(
+        {
+          transport: 'split-input-measurement',
+          nativeApp: true,
+          platform: 'android',
+          nativePackage: 'art.splotch.app',
+        },
+        'native'
+      )
     ).toBe(true);
     expect(
       artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: false }, 'web')
     ).toBe(true);
     expect(
-      artifactMatchesRuntime({ transport: 'split-input-measurement', nativeApp: true }, 'web')
+      artifactMatchesRuntime(
+        {
+          transport: 'split-input-measurement',
+          nativeApp: true,
+          platform: 'android',
+          nativePackage: 'art.splotch.app',
+        },
+        'web'
+      )
     ).toBe(false);
     // Fail closed on contradiction (PR 1380 review): a browser artifact
     // wearing a stray nativeApp flag matches NEITHER runtime — accepting it
@@ -287,8 +322,51 @@ describe('campaign artifact acceptance', () => {
     expect(artifactMatchesRuntime({ transport: 'browser' }, 'native')).toBe(false);
   });
 
+  it('requires a packaged page when Appium records the native app URL', () => {
+    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(false);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'capacitor://localhost/?perf-run=1' },
+        'native'
+      )
+    ).toBe(true);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'https://localhost/?perf-run=1' },
+        'native'
+      )
+    ).toBe(true);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'http://192.168.40.53:4173/' },
+        'native'
+      )
+    ).toBe(false);
+  });
+
+  it('requires Android split captures to measure the foreground package', () => {
+    const capture = {
+      transport: 'split-input-measurement',
+      nativeApp: true,
+      platform: 'android',
+    };
+
+    expect(artifactMatchesRuntime(capture, 'native')).toBe(false);
+    expect(
+      artifactMatchesRuntime({ ...capture, nativePackage: 'com.android.chrome' }, 'native')
+    ).toBe(false);
+    expect(artifactMatchesRuntime({ ...capture, nativePackage: 'art.splotch.app' }, 'native')).toBe(
+      true
+    );
+  });
+
   it('rejects a web cell that attached to the installed app instead', () => {
-    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'web')).toBe(false);
+    expect(
+      artifactMatchesRuntime(
+        { transport: 'native-capacitor-webview', appUrl: 'capacitor://localhost' },
+        'web'
+      )
+    ).toBe(false);
   });
 
   it('accepts both web transports, so a CDP action sweep is not mistaken for a miss', () => {
@@ -392,11 +470,14 @@ describe('split transport', () => {
     }
   });
 
-  it('leaves Android browser actions on direct CDP, which the split path does not carry', () => {
+  it('forwards the owned CDP port to both Android transports', () => {
     const actions = splitCells({ items: ['actions'] })[0];
+    const drawing = splitCells({ items: ['crayon'] })[0];
 
     expect(actions.command).toBe('perf:android:browser:actions');
     expect(actions.args).toContain('--cdp-port=9234');
+    expect(drawing.command).toBe(SPLIT_SCREEN_COMMAND);
+    expect(drawing.args).toContain('--cdp-port=9234');
   });
 
   it('never passes the split runner an Appium flag it would ignore', () => {

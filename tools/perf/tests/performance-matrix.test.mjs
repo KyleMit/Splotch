@@ -840,6 +840,31 @@ describe('deployment matrix report', () => {
       });
     });
 
+    it('keeps a freshly captured untracked section scoreable and labels its provenance', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      publishReport(manifestDirectory);
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: 'captured-untracked' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = {
+        from: 'data.json',
+        reason: 'Per-mode raw captures remain local scratch under ADR-0138.',
+      };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+      const mode = matrix.targets[0].modes[0];
+
+      expect(mode.drawing).toEqual(publishedDrawing);
+      expect(mode.preservedSections).toBeUndefined();
+      expect(mode.untrackedSections).toEqual(['drawing']);
+      for (const rendered of [renderMarkdown(matrix), renderReport(matrix)]) {
+        expect(rendered).toContain('captured for this campaign');
+        expect(rendered).toContain('Fixture · portrait-light (drawing)');
+      }
+    });
+
     // The hazard this guards is structural and it already bit once: the committed
     // matrix sets `preservedEvidence.from` to `data.json`, so the generator
     // preserves from ITS OWN previous output. Anything a regeneration drops from a
@@ -892,7 +917,7 @@ describe('deployment matrix report', () => {
       const matrix = normalizeMatrix(preservingManifest(manifestDirectory), manifestDirectory);
 
       for (const rendered of [renderMarkdown(matrix), renderReport(matrix)]) {
-        expect(rendered).toContain('1 cell carry results preserved from data.json');
+        expect(rendered).toContain('1 cell carry historical results preserved from data.json');
         expect(rendered).toContain('Fixture · portrait-light (drawing)');
       }
     });

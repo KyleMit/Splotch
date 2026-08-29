@@ -331,6 +331,28 @@ export function isWebContext(context) {
   return context === 'CHROMIUM' || context.startsWith('WEBVIEW');
 }
 
+export function selectWebContext(
+  contexts,
+  { nativeApp = false, platformName = 'iOS' } = {}
+) {
+  const webContexts = contexts.filter(isWebContext);
+  if (!nativeApp) {
+    return (
+      webContexts.find((context) => context === 'CHROMIUM') ??
+      webContexts.find((context) => context.toLowerCase() === 'webview_chrome') ??
+      webContexts[0] ??
+      null
+    );
+  }
+
+  const appContext = webContexts.find((context) =>
+    context.toLowerCase().includes(NATIVE_APP_BUNDLE_ID.toLowerCase())
+  );
+  if (appContext) return appContext;
+  if (platformName.toLowerCase() === 'android') return null;
+  return webContexts.length === 1 ? webContexts[0] : null;
+}
+
 export function nativeOrientationNeedsUnlock({
   nativeApp,
   rotateBeforeUndo,
@@ -349,12 +371,24 @@ export async function switchToWebContext(client, sessionId) {
     () =>
       client
         .request('GET', `/session/${sessionId}/contexts`)
-        .then((contexts) => contexts.find(isWebContext) ?? null)
-        .catch(() => null),
+        .then((contexts) =>
+          selectWebContext(contexts, {
+            nativeApp: client.nativeApp,
+            platformName: client.platformName,
+          })
+        )
+        .catch((error) => {
+          rethrowIfBroken(error);
+          return null;
+        }),
     WEBVIEW_READY_TIMEOUT_MS,
     WEBVIEW_READY_POLL_MS
   );
-  if (!webContext) throw new Error('Appium reported no WEBVIEW context');
+  if (!webContext) {
+    throw new Error(
+      `Appium reported no unambiguous ${client.nativeApp ? NATIVE_APP_BUNDLE_ID : 'browser'} WEBVIEW context`
+    );
+  }
   await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   return webContext;
 }
@@ -589,6 +623,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     fail(`--brush must be one of ${Object.keys(BRUSH_BUTTON_BY_MODE).join(', ')}`);
   }
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
+  client.nativeApp = nativeApp;
   const requestedCapabilities = capabilitiesFile
     ? capabilitiesFromFile(capabilitiesFile)
     : borrowedSessionId
@@ -682,6 +717,11 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       sessionId = session.sessionId;
       ownsSession = true;
     }
+    client.platformName =
+      session.capabilities?.platformName ??
+      session.capabilities?.['appium:platformName'] ??
+      requestedCapabilities?.platformName ??
+      'iOS';
     execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
     executeAsync = (script, args = []) =>
@@ -869,24 +909,28 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     let eraserFill = null;
     if (brush === 'eraser') {
       const fillVerified = async () => {
+        let lastFill = null;
         const fill = await pollUntil(
           async () => {
-            const result = await execute(
+            lastFill = await execute(
               `${eraserFillFunctionSource()}\nreturn fillEraserInk();`
             ).catch((error) => {
               throw new Error(`the eraser fill failed in the page: ${error?.message ?? error}`);
             });
-            return result?.pending ? null : result;
+            return lastFill?.pending || lastFill.transparentTiles.length ? null : lastFill;
           },
           ERASER_FILL_BACKING_TIMEOUT_MS,
           WEBVIEW_READY_POLL_MS
         );
-        if (!fill) throw new Error('live tile backings never realized for the eraser fill');
-        if (fill.transparentTiles.length) {
+        if (!fill && lastFill?.pending) {
+          throw new Error('live tile backings never realized for the eraser fill');
+        }
+        if (!fill && lastFill?.transparentTiles?.length) {
           throw new Error(
-            `the eraser fill left tiles transparent: ${fill.transparentTiles.join(', ')}`
+            `the eraser fill left tiles transparent: ${lastFill.transparentTiles.join(', ')}`
           );
         }
+        if (!fill) throw new Error('the eraser fill did not produce evidence');
         return fill;
       };
       eraserFill = await fillVerified();
@@ -933,7 +977,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       "const r = document.querySelector('#drawingCanvas').getBoundingClientRect(); return {canvas:{x:r.x,y:r.y,width:r.width,height:r.height},viewport:{width:innerWidth,height:innerHeight}};"
     );
     const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
-    const webContext = contexts.find(isWebContext);
+    const webContext = selectWebContext(contexts, {
+      nativeApp: client.nativeApp,
+      platformName: client.platformName,
+    });
     if (!webContext) throw new Error(`Appium reported no WEBVIEW context: ${contexts.join(', ')}`);
 
     await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
