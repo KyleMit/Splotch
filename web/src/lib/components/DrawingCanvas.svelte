@@ -264,7 +264,6 @@
     style:width={paperCssWidth}
     style:height={paperCssHeight}
     style:transform={paperTransform}
-    hidden={!overlayUrl()}
   >
     <img
       class="coloring-overlay"
@@ -326,10 +325,6 @@
     z-index: 2;
     mix-blend-mode: normal;
     will-change: transform;
-  }
-
-  .paper-view[hidden] {
-    display: none;
   }
 
   /* Hidden while the next art variant decodes, then shown once it's ready —
