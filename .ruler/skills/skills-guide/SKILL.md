@@ -122,6 +122,7 @@ that ran is its in-file special case.
 | `run-splotch`             | Launch, drive, and screenshot the web app locally to verify a change works      |
 | `cloud-preview`           | Cloud sessions only: dev server + reverse tunnel for a public phone-preview URL |
 | `critique-page-inventory` | Independently review every light/night portrait/landscape inventory capture     |
+| `sync-design-snapshots`   | Put every screen into Claude Design as editable pixel-accurate HTML, and back   |
 
 ## Shipping
 

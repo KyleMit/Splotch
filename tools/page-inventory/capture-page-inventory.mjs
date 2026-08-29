@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import {
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -34,6 +35,18 @@ import {
   renderPageInventoryReport,
 } from './lib/page-inventory-report.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
+import {
+  DESIGN_BUNDLE_DIRECTORY,
+  DESIGN_BUNDLE_OUT,
+  DESIGN_FILE_READ_LIMIT_BYTES,
+  DESIGN_SNAPSHOT_OUT,
+  DESIGN_SNAPSHOT_VIEWPORT_IDS,
+  captureDesignSnapshot,
+  designSnapshotPath,
+  oversizedSnapshots,
+  renderDesignIndex,
+  writeSharedStylesheet,
+} from './lib/design-snapshot.mjs';
 // TypeScript, so both entry points that reach it run under
 // --experimental-strip-types (capture:page-inventory, attach:page-inventory-feedback).
 import { aiOutputFor } from '../../web/tests/artifacts/ai-output-fixtures.ts';
@@ -785,7 +798,7 @@ async function assertSurfaceReady(page) {
   if (!hasVisibleContent) throw new Error('reached no visible ready content');
 }
 
-async function captureOnce(page, item, viewport, theme, out) {
+async function captureOnce(page, item, viewport, theme, out, design) {
   try {
     await item.prepare(page, viewport);
     await settle(page);
@@ -796,18 +809,37 @@ async function captureOnce(page, item, viewport, theme, out) {
     const png = await page.screenshot({ type: 'png' });
     await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
     await assertCaptureRendered(target, viewport);
-    return captureRecord(item, viewport, theme, path, sha256File(target));
+    const record = captureRecord(item, viewport, theme, path, sha256File(target));
+    // The screenshot is already on disk, so serializing now cannot alter what
+    // the inventory reviewed even though it stamps attributes into the DOM.
+    await recordDesignSnapshot(page, item, viewport, theme, design);
+    return record;
   } finally {
     await item.cleanup?.(page);
   }
 }
 
-async function capture(page, item, viewport, theme, out) {
+async function recordDesignSnapshot(page, item, viewport, theme, design) {
+  if (!design?.viewportIds.has(viewport.id)) return;
+  const snapshotPath = designSnapshotPath(item, viewport, theme);
+  const { bytes } = await captureDesignSnapshot(page, {
+    item,
+    viewport,
+    theme,
+    out: design.out,
+    snapshotPath,
+    cache: design.cache,
+    sharedStyles: design.sharedStyles,
+  });
+  design.snapshots.push({ path: snapshotPath, title: item.title, group: item.group, bytes });
+}
+
+async function capture(page, item, viewport, theme, out, design) {
   const label = `${item.group}/${item.id} at ${viewport.id} in ${theme.id}`;
   let failure;
   for (let attempt = 1; attempt <= CAPTURE_ATTEMPTS; attempt += 1) {
     try {
-      return await captureOnce(page, item, viewport, theme, out);
+      return await captureOnce(page, item, viewport, theme, out, design);
     } catch (error) {
       failure = error;
       console.warn(`${label} attempt ${attempt}/${CAPTURE_ATTEMPTS} failed: ${error.message}`);
@@ -819,6 +851,25 @@ async function capture(page, item, viewport, theme, out) {
       cause: failure,
     }
   );
+}
+
+// Written progressively to a scratch directory so a long run's snapshots exist
+// on disk as they are produced, then copied into the staging tree so they land
+// with the rest of the inventory in one atomic swap.
+function publishDesignBundle(design, destination) {
+  if (!design.snapshots.length) return;
+  cpSync(design.out, destination, { recursive: true });
+}
+
+async function writeDesignBundle(design) {
+  if (!design.snapshots.length) return;
+  const stylesheet = await writeSharedStylesheet(design.out, design.sharedStyles);
+  writeFileSync(join(design.out, 'index.html'), renderDesignIndex(design.snapshots));
+  for (const { path, bytes } of oversizedSnapshots([...design.snapshots, stylesheet])) {
+    console.warn(
+      `${path} is ${(bytes / 1024).toFixed(0)} KiB, over the ${DESIGN_FILE_READ_LIMIT_BYTES / 1024} KiB a design project can read back`
+    );
+  }
 }
 
 export function selectSpotCheckItems(candidates, requested, flag, describe) {
@@ -873,6 +924,7 @@ export function parsePageInventoryOptions(argv) {
       surface: { type: 'string', multiple: true },
       viewport: { type: 'string', multiple: true },
       theme: { type: 'string', multiple: true },
+      'design-only': { type: 'boolean', default: false },
     },
     strict: true,
   }).values;
@@ -880,7 +932,16 @@ export function parsePageInventoryOptions(argv) {
   if (!Number.isInteger(port) || port < 1 || port > 65_535)
     throw new Error(`Invalid --port: ${parsed.port}`);
   const surfaces = parsed.surface ?? [];
-  const viewports = parsed.viewport ?? [];
+  const designOnly = parsed['design-only'];
+  if (designOnly && parsed.viewport?.length) {
+    throw new Error(
+      '--design-only already selects the design viewports and cannot take --viewport'
+    );
+  }
+  // The WebP captures are hash-bound to their reviews, so refreshing the
+  // snapshots must not rewrite them. --design-only shoots the design viewports
+  // into a throwaway capture directory and republishes only the bundle.
+  const viewports = designOnly ? [...DESIGN_SNAPSHOT_VIEWPORT_IDS] : (parsed.viewport ?? []);
   const themes = parsed.theme ?? [];
   const spotCheck = Boolean(surfaces.length || viewports.length || themes.length);
   const out = resolve(ROOT, parsed.out ?? (spotCheck ? SPOT_CHECK_OUT_DEFAULT : OUT_DEFAULT));
@@ -897,6 +958,7 @@ export function parsePageInventoryOptions(argv) {
     out,
     port,
     spotCheck,
+    designOnly,
     surfaces,
     viewports,
     themes,
@@ -962,6 +1024,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
     out,
     port,
     spotCheck,
+    designOnly,
     critique: critiquePath,
     ...filters
   } = parsePageInventoryOptions(argv);
@@ -980,15 +1043,23 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
   const themes = selectSpotCheckItems(PAGE_INVENTORY_THEMES, filters.themes, '--theme', (theme) => [
     theme.id,
   ]);
+  const design = {
+    out: DESIGN_SNAPSHOT_OUT,
+    viewportIds: new Set(
+      views.filter((view) => DESIGN_SNAPSHOT_VIEWPORT_IDS.includes(view.id)).map((view) => view.id)
+    ),
+    cache: new Map(),
+    sharedStyles: [],
+    snapshots: [],
+  };
+  rmSync(design.out, { recursive: true, force: true });
   const { snapshots, bytes } = await generateOutputAtomically(out, async (staging) => {
     const assets = join(staging, 'assets');
     mkdirSync(assets, { recursive: true });
-    // Captured against `vite dev` rather than a production preview, which drops
-    // a full production build from every run. The app renders the same either
-    // way — the only dev/prod branches are the PWA update polls in
-    // lib/pwa/updates.ts, which draw nothing — and the one real divergence,
-    // build-only manifests missing in dev, is fixed and held by
-    // web/buildManifests.test.ts.
+    // Captured against `vite dev`, not the production preview: Svelte attaches
+    // __svelte_meta source locations only under dev, and the design snapshots
+    // written beside each screenshot carry them. web/buildManifests.test.ts
+    // holds dev to serving the same generated manifests the build emits.
     const server = spawnViteServer(port, {
       command: 'dev',
       env: SERVER_ENV,
@@ -1012,7 +1083,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
             const themeCaptures = [];
             for (const { theme, page } of themedPages) {
               console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
-              themeCaptures.push(await capture(page, item, view, theme, staging));
+              themeCaptures.push(await capture(page, item, view, theme, staging, design));
             }
             validateThemeCaptureDifferences(themeCaptures, [item]);
             captures.push(...themeCaptures);
@@ -1050,6 +1121,8 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
           )
         );
       }
+      await writeDesignBundle(design);
+      publishDesignBundle(design, join(staging, DESIGN_BUNDLE_DIRECTORY));
       return {
         snapshots: captures.length,
         bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
@@ -1059,9 +1132,21 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       server.stop();
     }
   });
+  if (designOnly) {
+    await generateOutputAtomically(DESIGN_BUNDLE_OUT, async (staging) => {
+      cpSync(DESIGN_SNAPSHOT_OUT, staging, { recursive: true });
+    });
+    console.log(
+      `Republished ${relative(ROOT, DESIGN_BUNDLE_OUT)} from ${design.snapshots.length} snapshots; the captures and their reviews are untouched.`
+    );
+    return;
+  }
   const wrote = spotCheck ? SPOT_CHECK_RECORDS_NAME : 'index.html';
   console.log(
     `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, wrote))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
+  );
+  console.log(
+    `Wrote ${design.snapshots.length} design snapshots to ${relative(ROOT, join(out, DESIGN_BUNDLE_DIRECTORY))}`
   );
   if (spotCheck) {
     console.log('Spot check: no capture manifest was written, so the committed inventory stands.');
