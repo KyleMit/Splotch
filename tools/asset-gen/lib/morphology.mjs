@@ -7,6 +7,14 @@
 // erode-then-dilate (opening) removes structures thinner than ~2r while
 // preserving solid blobs — the trick both callers use to tell thin strokes
 // from deliberate solid regions.
+//
+// An independent set of the same operators lives in
+// tools/model-eval/lib/composition-score.mjs. The divergence is deliberate, not
+// drift: dilate and erode here are separable box kernels and chamferDistance is
+// weighted 1/1.414, while that module derives dilate and erode from a 3-4
+// integer chamfer. Each scorer's thresholds are calibrated to its own numerics,
+// so sharing one implementation would change the scoring output and require
+// both scorers to be recalibrated independently.
 function morph(mask, w, h, r, dilate, outOfBounds) {
   const hit = dilate ? 1 : 0; // dilate stops on the first set; erode stops on first unset
   const tmp = new Uint8Array(w * h);

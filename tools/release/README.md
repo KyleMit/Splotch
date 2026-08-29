@@ -70,9 +70,15 @@ after every selected artifact passes its embedded-version check.
 ## Libraries and failure behavior
 
 `lib/release-frontmatter.mjs` owns frontmatter, semver ordering, and deep writes;
-`lib/native-version.mjs` owns Android/iOS project version edits; and `lib/artifact-version.mjs` owns
-embedded native-artifact inspection. Keep version parsing and validation in these owned modules
+`lib/native-version.mjs` owns Android/iOS project version edits; `lib/artifact-version.mjs` owns
+embedded native-artifact inspection (the aapt2 protobuf scan, the `plutil` plist read, and the
+`.aab`/`.ipa` version semantics); and `lib/zip.mjs` owns ZIP container parsing beneath it, exposing
+read-only `listEntries` and `readEntry`. Keep version parsing and validation in these owned modules
 rather than duplicating it in entry points.
+
+`lib/zip.mjs` is deliberately bounded to reading a trusted build artifact: no writing, no streaming,
+and no zip64 (an archive using the zip64 sentinel is rejected rather than misread). Widening that
+scope is the point at which a dependency would start to earn its place.
 
 Malformed release Markdown, invalid flags, missing files, dirty unrelated paths, failed Git/GitHub
 commands, missing artifacts, and version mismatches produce diagnostics and nonzero exits. Release
