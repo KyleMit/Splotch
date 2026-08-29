@@ -6,12 +6,14 @@ report. The capture manifest is the coverage authority; critique totals never su
 
 ## Entry points
 
-| Entry point                   | Public command                             | Purpose                                   |
-| ----------------------------- | ------------------------------------------ | ----------------------------------------- |
-| `capture-page-inventory.mjs`  | `npm run capture:page-inventory`           | Capture the complete inventory or a slice |
-| `run-inventory-critiques.mjs` | `npm run review:page-inventory`            | Run isolated image-only Codex reviews     |
-| `finalize-page-critique.mjs`  | `npm run finalize:page-inventory-critique` | Validate and merge review checkpoints     |
-| `attach-page-feedback.mjs`    | `npm run attach:page-inventory-feedback`   | Rebuild the report with current feedback  |
+| Entry point                   | Public command                             | Purpose                                          |
+| ----------------------------- | ------------------------------------------ | ------------------------------------------------ |
+| `capture-page-inventory.mjs`  | `npm run capture:page-inventory`           | Capture the complete inventory or a slice        |
+| `run-inventory-critiques.mjs` | `npm run review:page-inventory`            | Run isolated image-only Codex reviews            |
+| `finalize-page-critique.mjs`  | `npm run finalize:page-inventory-critique` | Validate and merge review checkpoints            |
+| `attach-page-feedback.mjs`    | `npm run attach:page-inventory-feedback`   | Rebuild the report with current feedback         |
+| `verify-design-snapshots.mjs` | `npm run verify:design-snapshots`          | Prove each design snapshot matches its capture   |
+| `port-design-edits.mjs`       | `npm run port:design-edits`                | Turn an edited snapshot back into source changes |
 
 The verb-first command names intentionally spread this workflow across `capture:`, `review:`,
 `finalize:`, and `attach:` namespaces so each command states the action it performs. Run them in the
@@ -43,6 +45,29 @@ under `.scrapbook-scratch/page-inventory-spot-check/`, records `spot-check-captu
 rewrites the keeper manifest or report. `--out` is deliberately restricted to the capability-owned
 full or spot-check tree because the selected output directory is replaced wholesale. Use `--port`
 when the default host port is occupied; `--critique FILE` applies only to a full capture.
+
+## Design snapshots
+
+Every capture also serializes the live page into a standalone HTML snapshot under
+`.scrapbook-scratch/design-snapshots/`, for Claude Design to edit directly instead of rebuilding a
+screen from scratch. This is why capture runs against `vite dev` rather than the production preview:
+Svelte attaches `__svelte_meta` source locations only under `dev`, and each snapshot stamps every
+element with the file and line that rendered it. `web/buildManifests.test.ts` holds the dev server
+to serving the same generated manifests the build emits, so the two render the same app.
+
+Snapshots are written only for the viewports in `DESIGN_SNAPSHOT_VIEWPORT_IDS`, not the full review
+matrix. The bundle is regenerated wholesale on every run and never committed. The workflow around it
+— generating, pushing to a design-system project, and porting edits back — is the
+`sync-design-snapshots` skill.
+
+`npm run verify:design-snapshots` re-renders each snapshot and reports the share of pixels it
+differs from the WebP it came from. Treat a failure as a serialization bug rather than a tolerance
+to raise: each one found so far was a screen that rendered wrong (asset URLs rewritten relative to
+the document instead of the stylesheet, canvas pixels read back blank).
+
+One deviation is known and expected: a surface showing a modal reports 25-45%, because the rebuilt
+backdrop reproduces the dim but not `backdrop-filter`. The dialog itself is accurate; the page
+behind it is sharper than the app. `modalBackdropCss` carries the reasoning.
 
 ## Review and finalize
 
@@ -85,6 +110,8 @@ incomplete review data produce diagnostics and a nonzero exit. Capture output is
 destination and swapped only on success, so a failed capture keeps the previous inventory intact.
 Review failures keep completed checkpoints and logs so the same command can resume them.
 
+`lib/design-snapshot.mjs` owns snapshot serialization and the design bundle,
+`lib/design-port-back.mjs` owns the stylesheet diff and scope-to-source resolution,
 `lib/page-inventory-capture.mjs` owns image validation, `lib/page-inventory-data.mjs` owns
 manifest/checkpoint contracts, `lib/page-inventory-design-notes.mjs` owns reviewer-visible design
 intent, and `lib/page-inventory-report.mjs` owns viewport metadata and HTML rendering. Keep public
@@ -94,5 +121,5 @@ points.
 Run focused verification with:
 
 ```sh
-npm run test:tools -- tools/page-inventory/tests/page-inventory.test.mjs tools/perf/tests/xcuitest-actions.test.mjs
+npm run test:tools -- tools/page-inventory/tests/page-inventory.test.mjs tools/page-inventory/tests/design-snapshot.test.mjs tools/perf/tests/xcuitest-actions.test.mjs
 ```
