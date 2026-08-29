@@ -65,9 +65,13 @@ differs from the WebP it came from. Treat a failure as a serialization bug rathe
 to raise: each one found so far was a screen that rendered wrong (asset URLs rewritten relative to
 the document instead of the stylesheet, canvas pixels read back blank).
 
-One deviation is known and expected: a surface showing a modal reports 25-45%, because the rebuilt
-backdrop reproduces the dim but not `backdrop-filter`. The dialog itself is accurate; the page
-behind it is sharper than the app. `modalBackdropCss` carries the reasoning.
+Expected bands: 0.1-1% for a non-modal surface, 5-11% for one showing a modal, and the two themes
+should agree. A theme-asymmetric result is the signal that something translucent is being composited
+wrong — that is exactly how the rebuilt-`::backdrop` defect showed itself, at 4% in dark and 68% in
+light.
+
+Rebuild the bundle with `npm run gen:design-snapshots` rather than a full capture: the full run
+rewrites the WebP images, and each stored review is bound to the digest of the image it saw.
 
 ## Review and finalize
 

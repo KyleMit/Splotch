@@ -37,9 +37,15 @@ Two things make a snapshot editable rather than merely viewable:
 ## Generate
 
 ```sh
-npm run capture:page-inventory                     # all 42 surfaces
-npm run capture:page-inventory -- --surface brush-menu --theme dark   # one slice, fast
+npm run gen:design-snapshots                       # the bundle only — the usual command
+npm run capture:page-inventory                     # the whole inventory: images, reviews, bundle
+npm run gen:design-snapshots -- --surface brush-menu --theme dark     # one slice, fast
 ```
+
+Reach for `gen:design-snapshots` by default. A full `capture:page-inventory` rewrites the WebP
+captures, and every stored review is bound to the digest of the image its reviewer saw — so
+refreshing a snapshot through the full run silently invalidates the entire critique. `--design-only`
+drives the design viewports into a throwaway capture directory and republishes only the bundle.
 
 Snapshots are written for a phone-portrait and a tablet-landscape viewport only
 (`DESIGN_SNAPSHOT_VIEWPORT_IDS`), not the full eight-viewport review matrix — those two are the
@@ -59,17 +65,17 @@ past failures were real serialization bugs (asset URLs rewritten relative to the
 the stylesheet, canvas pixels read back blank), each of which looked like a small percentage and was
 a broken screen.
 
-**One known deviation, and it is expected.** A surface showing a modal reports 25–45% rather than
-passing. `::backdrop` renders only for an element in the top layer, which static markup cannot
-enter, so the snapshot rebuilds it as a fixed layer beneath the dialog. The dim is reproduced; the
-`backdrop-filter: blur(4px)` is not — Chromium folds the dialog into a backdrop-filtered layer even
-when it paints above on a higher z-index and its own compositing layer, which blurs the modal
-itself. Carrying the blur scores the same as dropping it (25.6% vs 25.7% on the appearance panel)
-and renders the dialog wrong, so it is dropped.
+**What the numbers look like across the whole bundle.** Non-modal surfaces land at 0.1–1%. Surfaces
+showing a modal sit at 5–11%, evenly across both themes — the residual is the dimmed page behind the
+dialog, not the dialog itself. Anything materially outside those bands is a bug.
 
-What that means in practice: the **modal is accurate and safe to design on**; only the dimmed page
-behind it is sharper than the app. Reproducing the blur faithfully would mean rasterizing the
-backdrop, which nothing needs yet.
+That band was earned. An earlier version of this pipeline rebuilt `::backdrop` as a fixed layer
+beneath each dialog, on the assumption that the top-layer pseudo-element was the only thing dimming
+the page. It is not — the app renders its own dim as an ordinary element, which serializes like any
+other markup — so the extra layer dimmed twice and changed what the dialog's own `backdrop-filter`
+samples, turning a frosted white card grey. Dark mode hid it almost entirely; light mode measured a
+68% median. **When you check fidelity, check both themes**: a defect in a translucent surface can be
+invisible against a dark background and obvious against a light one.
 
 ## Push to Claude Design
 
