@@ -249,6 +249,10 @@ ios/local.xcconfig
 # Scratch output for the icon-gallery generator (gen:icon-sheet) and other
 # scrapbook-page dry runs; promote a keeper into scrapbook/ with scrapbook:publish.
 .scrapbook-scratch/
+# generateOutputAtomically stages beside its destination and swaps on success,
+# so a run in flight — or one that died mid-capture — leaves these behind.
+scrapbook/.*-staging-*/
+scrapbook/.*-staging-*-previous/
 
 # Checkouts created by worktree-isolated agents (Agent tool `isolation: 'worktree'`).
 # They are full copies of the tree, so every file ignored only at its real path reappears at
