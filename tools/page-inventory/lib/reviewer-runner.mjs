@@ -13,7 +13,12 @@ import { hasCommand } from '../../lib/proc.mjs';
 // root and named in the prompt.
 export const REVIEWER_RUNNERS = ['claude', 'codex'];
 
-const CLAUDE_MAX_TURNS = 4;
+// A review is read-the-image then answer, but a reviewer that looks twice or
+// thinks first needs more room, and running out shows up as an exhausted turn
+// budget with no structured output — indistinguishable from a crash in the exit
+// code. Four turns failed roughly a quarter of first attempts across a
+// 672-capture run; the retry hid most of it and a few surfaces failed outright.
+const CLAUDE_MAX_TURNS = 12;
 
 const REVIEWER_MODELS = { codex: 'gpt-5.6-terra', claude: 'sonnet' };
 
