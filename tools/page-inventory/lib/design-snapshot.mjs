@@ -26,6 +26,7 @@ const ASSET_HASH_LENGTH = 16;
 // The element is already known to be on screen, so this only has to outlast a
 // compositor frame rather than Playwright's default visibility wait.
 const CANVAS_SCREENSHOT_MS = 5_000;
+const CANVAS_WEBP_QUALITY = 90;
 
 // A snapshot is a still. Anything that would run, refetch, or re-render on open
 // is dropped rather than carried over dead.
@@ -272,6 +273,15 @@ async function canvasPixels(page, { id, visible }, readback) {
   return composited ?? readback;
 }
 
+// A canvas reads back as PNG, and a full-viewport one costs about a megabyte
+// of it. These are painted back as background images at their original size,
+// so they are re-encoded like every other capture in the inventory — a little
+// above the screenshots' own quality, because a snapshot is compared against
+// one and two lossy passes should not stack visibly.
+export async function encodeCanvasPixels(png) {
+  return sharp(png).webp({ quality: CANVAS_WEBP_QUALITY, effort: 5 }).toBuffer();
+}
+
 /**
  * Serialize the page as it stands into a standalone snapshot, reusing `cache`
  * and `sharedStyles` across a run so every surface shares one asset store and
@@ -297,9 +307,10 @@ export async function captureDesignSnapshot(page, context) {
   const canvasAssets = [];
   for (const canvas of extracted.canvases) {
     const { id, dataUrl } = canvas;
-    const bytes = await canvasPixels(page, canvas, Buffer.from(dataUrl.split(',')[1], 'base64'));
-    if (!bytes) continue;
-    const fileName = assetFileName(bytes, 'png');
+    const captured = await canvasPixels(page, canvas, Buffer.from(dataUrl.split(',')[1], 'base64'));
+    if (!captured) continue;
+    const bytes = await encodeCanvasPixels(captured);
+    const fileName = assetFileName(bytes, 'webp');
     const target = join(out, fileName);
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, bytes);

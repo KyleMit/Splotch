@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import {
   DESIGN_FILE_READ_LIMIT_BYTES,
@@ -6,6 +7,7 @@ import {
   collectStyleBlocks,
   designCardMarker,
   designSnapshotPath,
+  encodeCanvasPixels,
   extensionFor,
   isFullyTransparent,
   oversizedSnapshots,
@@ -138,6 +140,38 @@ describe('canvasBackgroundCss', () => {
 
   it('renders nothing when a surface has no canvas', () => {
     expect(canvasBackgroundCss([])).toBe('');
+  });
+});
+
+describe('encodeCanvasPixels', () => {
+  // A full-viewport canvas reads back as about a megabyte of PNG, and the
+  // bundle carries one per surface.
+  it('re-encodes a canvas readback to WebP, smaller than the PNG it came from', async () => {
+    const png = await sharp({
+      create: {
+        width: 320,
+        height: 240,
+        channels: 4,
+        background: { r: 40, g: 80, b: 160, alpha: 1 },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    const encoded = await encodeCanvasPixels(png);
+
+    expect((await sharp(encoded).metadata()).format).toBe('webp');
+    expect(encoded.byteLength).toBeLessThan(png.byteLength);
+  });
+
+  it('keeps transparency, which the paper tiles depend on', async () => {
+    const png = await sharp({
+      create: { width: 64, height: 64, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .png()
+      .toBuffer();
+
+    expect((await sharp(await encodeCanvasPixels(png)).stats()).isOpaque).toBe(false);
   });
 });
 
