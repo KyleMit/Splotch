@@ -60,10 +60,16 @@ export function campaignModeSources(
       ])
     );
     const actions = artifactPath(outputRoot, targetId, mode, 'actions');
+    const hasUsableActions = usableCell(actions, target.runtime);
+    if (preserveActions && hasUsableActions) {
+      fail(
+        `Cannot preserve actions for ${targetId}/${mode.id}: a usable action artifact exists at ${actions}`
+      );
+    }
     const missing = Object.entries(paths)
       .filter(([, path]) => !usableCell(path, target.runtime))
       .map(([brush]) => brush);
-    if (!preserveActions && !usableCell(actions, target.runtime)) missing.push('actions');
+    if (!preserveActions && !hasUsableActions) missing.push('actions');
     // A mode whose only gap is the action sweep still carries four scored brushes and an
     // undo probe. The manifest already has a shape for that — `actionsUnavailableReason`,
     // which the report renders as no action data — so it is filed as the partial
@@ -113,12 +119,10 @@ export function applyCampaignModes(manifest, targetId, entries) {
     // mode keeps whatever it already published. Replacing the object wholesale
     // would discard that measurement without saying so.
     //
-    // The commit has to be resolved here rather than copied, because undo
-    // provenance is usually implicit: a mode carrying `undoSource` alone lets the
-    // report fall back to its `drawingProductCommit`, and this merge is about to
-    // replace that with the commit the DRAWING was recaptured at. Copying the
-    // absent field would silently re-date the preserved undo rows to a commit
-    // they were never measured at, and the provenance table prints that date.
+    // The commits have to be resolved here rather than copied, because undo and
+    // captured-untracked action provenance can be implicit: both fall back to the
+    // drawingProductCommit this merge is about to replace. Carrying either section
+    // without its own commit would silently re-date it to the drawing recapture.
     const existing = target.modes[index];
     if (
       entry.partial === 'actions-preserved' &&
@@ -130,7 +134,15 @@ export function applyCampaignModes(manifest, targetId, entries) {
     const preservedActions =
       entry.partial === 'actions-preserved'
         ? existing.actionSources !== undefined
-          ? { actionSources: existing.actionSources }
+          ? {
+              actionSources: existing.actionSources,
+              ...(existing.actionSources === 'captured-untracked'
+                ? {
+                    actionProductCommit:
+                      existing.actionProductCommit ?? existing.drawingProductCommit,
+                  }
+                : {}),
+            }
           : existing.actionsUnavailableReason !== undefined
             ? { actionsUnavailableReason: existing.actionsUnavailableReason }
             : {}

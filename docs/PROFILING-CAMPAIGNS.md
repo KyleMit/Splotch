@@ -508,7 +508,9 @@ Two properties of step 2 decide how small an increment can be:
   section with that reason, while `--preserve-actions` folds the four brushes and carries the mode's
   published action section forward unchanged. Use the latter when the current action transport is
   blocked before capture; preserving the old section keeps its original per-mode provenance instead
-  of re-dating it to the drawing recapture.
+  of re-dating it to the drawing recapture. The fold refuses `--preserve-actions` when that mode
+  already has a usable action artifact in the output root, so a stale runbook flag cannot discard a
+  successful fresh sweep.
 * **It is keyed off the artifacts on disk, not the ledger.** A cell that failed and wrote nothing is
   simply absent, so a partial run degrades to "that mode was not folded" rather than to a mode
   half-rewritten.
