@@ -317,6 +317,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
     const overlay = page.locator('#coloringOverlay');
     await expect(overlay).toHaveAttribute('src', '');
     await expect(overlay).not.toHaveClass(/overlay-ready/);
+    await expect(overlay).toHaveCSS('opacity', '0');
     const [overlayBox, canvasBox] = await Promise.all([
       overlay.boundingBox(),
       page.locator('#drawingCanvas').boundingBox(),
@@ -326,6 +327,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
     releaseFullImage();
     await expect(overlay).toHaveAttribute('src', /\/cat-wide\.presentation\.webp$/);
     await expect(overlay).toHaveClass(/overlay-ready/);
+    await expect(overlay).toHaveCSS('opacity', '1');
     await expect(overlay).toHaveCSS('transition-duration', '0s');
 
     await openColoringBookGrid(page);
