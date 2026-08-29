@@ -31,7 +31,7 @@ infer completion from counts in a critique file.
 
 ## Independent review boundary
 
-Run `npm run review:page-inventory`. The runner creates one fresh, ephemeral Codex process per
+Run `npm run review:page-inventory`. The runner creates one fresh, ephemeral reviewer process per
 capture, disables inherited user and repository context, and gives that reviewer exactly two
 semantic inputs: the manifest's `review_description` and its one image. Never combine captures in a
 prompt, ask a reviewer to compare with another viewport/theme, or seed a review from prior findings.

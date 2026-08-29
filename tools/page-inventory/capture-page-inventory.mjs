@@ -1,5 +1,4 @@
 import { chromium } from '@playwright/test';
-import { spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   existsSync,
@@ -66,6 +65,10 @@ const TABLET_UA =
 
 const STORAGE = {
   'splotch-ai-access-token': 'daycare-club',
+  // isAiImageButtonVisible() requires this toggle as well as a credential, so
+  // without it the AI button stays hidden and every surface reached through it
+  // — the parental gate and the whole ai/ group — is unreachable.
+  'splotch-ai-image-enabled': 'true',
   'splotch-advanced-controls': 'true',
   'splotch-drawer-open': 'false',
   'splotch-lock-rotation': 'false',
@@ -711,8 +714,14 @@ function adminSurfaces() {
         await admin(page);
         const more = page.getByRole('button', { name: /More options for/ }).first();
         if (await more.isVisible()) {
-          await more.click();
-          await page.locator('.row-actions.open').first().waitFor();
+          // The control toggles, so a click that lands while a row is already
+          // expanded closes it instead. retryOpen re-clicks until the expansion
+          // is actually on screen rather than trusting one press.
+          await retryOpen(
+            page.locator('.row-actions.open').first(),
+            () => more.click(),
+            'Admin row actions'
+          );
         } else {
           await page.getByRole('button', { name: 'Copy link' }).first().focus();
         }
@@ -971,18 +980,17 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
   const themes = selectSpotCheckItems(PAGE_INVENTORY_THEMES, filters.themes, '--theme', (theme) => [
     theme.id,
   ]);
-  const build = spawnSync('npm', ['run', 'build'], {
-    cwd: ROOT,
-    env: { ...process.env, ...SERVER_ENV },
-    stdio: 'inherit',
-  });
-  if (build.error) throw build.error;
-  if (build.status !== 0) throw new Error(`Production build exited ${build.status}`);
   const { snapshots, bytes } = await generateOutputAtomically(out, async (staging) => {
     const assets = join(staging, 'assets');
     mkdirSync(assets, { recursive: true });
+    // Captured against `vite dev` rather than a production preview, which drops
+    // a full production build from every run. The app renders the same either
+    // way — the only dev/prod branches are the PWA update polls in
+    // lib/pwa/updates.ts, which draw nothing — and the one real divergence,
+    // build-only manifests missing in dev, is fixed and held by
+    // web/buildManifests.test.ts.
     const server = spawnViteServer(port, {
-      command: 'preview',
+      command: 'dev',
       env: SERVER_ENV,
     });
     let browser;
