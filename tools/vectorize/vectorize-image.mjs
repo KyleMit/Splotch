@@ -21,6 +21,7 @@
 
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, resolve } from 'node:path';
+import { parseArgs as parseNodeArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const BASE_URL = 'https://api.vectorizer.ai/api/v1';
@@ -60,6 +61,21 @@ const RESERVED_PARAMS = new Map([
   ['policy.retention_days', '--retain'],
   ['receipt', '--receipt'],
 ]);
+
+const CLI_OPTIONS = {
+  help: { type: 'boolean', short: 'h' },
+  production: { type: 'boolean' },
+  account: { type: 'boolean' },
+  json: { type: 'boolean' },
+  param: { type: 'string', multiple: true },
+  out: { type: 'string' },
+  format: { type: 'string' },
+  mode: { type: 'string' },
+  retain: { type: 'string' },
+  download: { type: 'string' },
+  delete: { type: 'string' },
+  receipt: { type: 'string' },
+};
 
 const EXTENSION_MIME = {
   '.png': 'image/png',
@@ -322,53 +338,29 @@ function loadEnvFile(path) {
   }
 }
 
-export function parseArgs(argv) {
-  const parsed = { _: [], params: [] };
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-    switch (arg) {
-      case '--help':
-      case '-h':
-        parsed.help = true;
-        break;
-      case '--production':
-        parsed.production = true;
-        break;
-      case '--account':
-        parsed.account = true;
-        break;
-      case '--json':
-        parsed.json = true;
-        break;
-      case '--param': {
-        const pair = argv[++i] ?? '';
-        const eq = pair.indexOf('=');
-        if (eq < 1) throw new Error(`--param expects name=value, got "${pair}"`);
-        const name = pair.slice(0, eq).trim();
-        const owner = RESERVED_PARAMS.get(name);
-        if (owner) {
-          throw new Error(
-            `--param ${name} is not allowed; the driver reports this field, so use ${owner} instead.`
-          );
-        }
-        parsed.params.push([name, pair.slice(eq + 1)]);
-        break;
-      }
-      case '--out':
-      case '--format':
-      case '--mode':
-      case '--retain':
-      case '--download':
-      case '--delete':
-      case '--receipt':
-        parsed[arg.slice(2)] = argv[++i];
-        break;
-      default:
-        if (arg.startsWith('-')) throw new Error(`Unknown flag ${arg}`);
-        parsed._.push(arg);
-    }
+// Split on the FIRST `=` so a value may contain more of them (a palette like
+// `processing.palette=#FFF;#000` is one param, not a parse error).
+function parseParam(pair) {
+  const eq = pair.indexOf('=');
+  if (eq < 1) throw new Error(`--param expects name=value, got "${pair}"`);
+  const name = pair.slice(0, eq).trim();
+  const owner = RESERVED_PARAMS.get(name);
+  if (owner) {
+    throw new Error(
+      `--param ${name} is not allowed; the driver reports this field, so use ${owner} instead.`
+    );
   }
-  return parsed;
+  return [name, pair.slice(eq + 1)];
+}
+
+export function parseArgs(argv) {
+  const { values, positionals } = parseNodeArgs({
+    args: argv,
+    options: CLI_OPTIONS,
+    allowPositionals: true,
+  });
+  const { param, ...flags } = values;
+  return { ...flags, _: positionals, params: (param ?? []).map(parseParam) };
 }
 
 function printUsage() {

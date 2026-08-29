@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -101,5 +102,16 @@ describe('vectorize image entry point', () => {
     // an actively-streaming slow response the service explicitly asks us to wait for.
     const deadline = /const REQUEST_DEADLINE_MS = ([\d_]+);/.exec(source)?.[1];
     expect(Number(deadline.replaceAll('_', ''))).toBeGreaterThan(180_000);
+  });
+  // Every other case here reaches parseArgs through import(), which evaluates the
+  // whole module before the first call. The direct-run guard instead calls it
+  // *during* evaluation, so a parser dependency declared below that guard is in
+  // its temporal dead zone and throws for real users while every import-based
+  // test passes. Spawning the entry point is the only shape that can see it.
+  it('parses its own argv when run as an entry point', () => {
+    const help = execFileSync(process.execPath, [join(repoRoot, path), '--help'], {
+      encoding: 'utf8',
+    });
+    expect(help).toMatch(/Vectorize a bitmap/);
   });
 });
