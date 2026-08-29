@@ -124,6 +124,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
         'allow-foreign-build',
         'no-forensics',
         'output',
+        'label',
         'theme',
         'undo-count',
         'undo-pause-ms',
@@ -165,6 +166,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     '--undo-pause-ms'
   );
   const requestedTheme = parseCampaignTheme(flag('theme'));
+  const label = flag('label');
   const probeConfig = probeConfigScript({
     phases: flag('phases'),
     contactMs: contactSeconds * 1000,
@@ -266,6 +268,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     await page.evaluate(() => window.__probe.stop());
 
     const capture = {
+      ...(label ? { label } : {}),
       device: { name: `${engineName} (local)`, os: process.platform },
       appUrl: url,
       mode: `synthetic:${drive}${driveHz ? `@${driveHz}hz` : ''}:${brush}`,

@@ -87,10 +87,28 @@ describe('campaign sources', () => {
       actionsUnavailableReason: 'P1: blocked by #1194.',
     });
 
-    expect(entry.partial).toBe('actions');
+    expect(entry.partial).toBe('actions-unavailable');
     expect(entry.mode.status).toBe('captured');
     expect(entry.mode.actionsUnavailableReason).toBe('P1: blocked by #1194.');
     expect(entry.mode).not.toHaveProperty('actionSources');
+    expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
+  });
+
+  it('accepts four complete brushes without an action artifact when preserving actions', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['actions'],
+    });
+    const [entry] = campaignModeSources('android-device-web', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      preserveActions: true,
+    });
+
+    expect(entry.partial).toBe('actions-preserved');
+    expect(entry.mode.status).toBe('captured');
+    expect(entry.mode).not.toHaveProperty('actionSources');
+    expect(entry.mode).not.toHaveProperty('actionsUnavailableReason');
     expect(Object.keys(entry.mode.drawing)).toHaveLength(4);
   });
 
@@ -228,6 +246,40 @@ describe('campaign sources', () => {
     expect(manifest.targets[0].modes[0].undoSource).toBe('preserved');
     expect(manifest.targets[0].modes[0].undoProductCommit).toBe('abc');
     expect(manifest.targets[0].modes[0].drawing.pen).toHaveLength(1);
+  });
+
+  it('carries the published action section forward when requested', () => {
+    const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+      omit: ['actions'],
+    });
+    const entries = campaignModeSources('android-device-web', {
+      outputRoot,
+      productCommit: PRODUCT_COMMIT,
+      modes: [MODE.id],
+      preserveActions: true,
+    });
+    const manifest = {
+      targets: [
+        {
+          id: 'android-device-web',
+          modes: [
+            {
+              id: MODE.id,
+              status: 'captured',
+              drawingProductCommit: 'aaaaaaaaaaaa',
+              actionSources: 'preserved',
+            },
+          ],
+        },
+      ],
+    };
+
+    applyCampaignModes(manifest, 'android-device-web', entries);
+
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
+    expect(merged.actionSources).toBe('preserved');
+    expect(merged).not.toHaveProperty('actionsUnavailableReason');
   });
 
   it('pins implicit undo provenance before the drawing commit moves under it', () => {
