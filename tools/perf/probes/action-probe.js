@@ -17,8 +17,9 @@
   ];
   const WINDOW_ACTIVITY_EVENTS = ['resize', 'orientationchange'];
   const MUTATION_DESCRIPTOR_CAP = 8;
-  // Detailed mutation payloads cross WebDriver in one object; timing stays
-  // complete while mutation storms cannot grow that object without bound.
+  const MUTATION_NODE_SCAN_CAP = 64;
+  // Detailed mutation payloads cross WebDriver in one object. Every batch
+  // keeps a timestamp for action scoring, but only this many keep descriptors.
   const DETAILED_MUTATION_ACTIVITY_CAP = 32;
 
   function canvasKind(canvas) {
@@ -125,12 +126,19 @@
   }
 
   function descriptorAccumulator() {
-    return { descriptors: [], seen: new Set(), total: 0 };
+    return { descriptors: [], seen: new Set(), total: 0, inspected: 0, truncated: false };
   }
 
   function addMutationNode(accumulator, node) {
     accumulator.total++;
-    if (accumulator.descriptors.length >= MUTATION_DESCRIPTOR_CAP) return;
+    if (
+      accumulator.descriptors.length >= MUTATION_DESCRIPTOR_CAP ||
+      accumulator.inspected >= MUTATION_NODE_SCAN_CAP
+    ) {
+      accumulator.truncated = true;
+      return;
+    }
+    accumulator.inspected++;
     const descriptor = nodeDescriptor(node);
     if (!descriptor || accumulator.seen.has(descriptor)) return;
     accumulator.seen.add(descriptor);
@@ -149,10 +157,13 @@
     return {
       targets: targets.descriptors,
       ...(targets.total > targets.descriptors.length ? { targetsTotal: targets.total } : {}),
+      ...(targets.truncated ? { targetsTruncated: true } : {}),
       ...(added.descriptors.length ? { added: added.descriptors } : {}),
       ...(added.total > added.descriptors.length ? { addedTotal: added.total } : {}),
+      ...(added.truncated ? { addedTruncated: true } : {}),
       ...(removed.descriptors.length ? { removed: removed.descriptors } : {}),
       ...(removed.total > removed.descriptors.length ? { removedTotal: removed.total } : {}),
+      ...(removed.truncated ? { removedTruncated: true } : {}),
     };
   }
 
@@ -222,11 +233,8 @@
     action.listeners.length = 0;
   }
 
-  function begin(label, selector, eventTypes = ['pointerup', 'click']) {
-    if (active) throw new Error(`Action ${active.label} is still active`);
-    const target = document.querySelector(selector);
-    if (!target) throw new Error(`No action target matches ${selector}`);
-    const action = {
+  function newAction(label) {
+    return {
       label,
       traceName: `action:${label}:${++actionSequence}`,
       armedAt: performance.now(),
@@ -241,6 +249,13 @@
       mutationObserver: null,
       listeners: [],
     };
+  }
+
+  function begin(label, selector, eventTypes = ['pointerup', 'click']) {
+    if (active) throw new Error(`Action ${active.label} is still active`);
+    const target = document.querySelector(selector);
+    if (!target) throw new Error(`No action target matches ${selector}`);
+    const action = newAction(label);
     const listener = (event) => {
       // The timestamp is captured before the diagnostic recording so the
       // recording's forced hit-test cannot shift the action's measured origin
@@ -293,21 +308,7 @@
 
   function beginExternal(label, eventTypes) {
     if (active) throw new Error(`Action ${active.label} is still active`);
-    const action = {
-      label,
-      traceName: `action:${label}:${++actionSequence}`,
-      armedAt: performance.now(),
-      actionAt: null,
-      eventType: null,
-      measureCount: performance.getEntriesByType('measure').length,
-      canvasMutations: [],
-      activities: [],
-      visualEffectCount: 0,
-      visualEffects: new Map(),
-      mutationActivityCount: 0,
-      mutationObserver: null,
-      listeners: [],
-    };
+    const action = newAction(label);
     const listener = (event) => {
       if (action.actionAt !== null) return;
       action.actionAt = performance.now();

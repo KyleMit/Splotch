@@ -118,6 +118,7 @@ describe('action probe mutation attribution', () => {
         type: 'dom-mutation',
         added: noise.slice(0, 8).map((node) => `div.${node.className}`),
         addedTotal: 21,
+        addedTruncated: true,
       })
     );
     expect(mutation.added).not.toContain('dialog#coloring-book-dialog');
@@ -147,8 +148,46 @@ describe('action probe mutation attribution', () => {
     expect(mutations[32]).toEqual(
       expect.objectContaining({ type: 'dom-mutation', detailsOmitted: true })
     );
-    expect(mutations[33]).toEqual(
-      expect.not.objectContaining({ targets: expect.anything(), detailsOmitted: expect.anything() })
+    expect(Object.keys(mutations[33]).sort()).toEqual(['atFromActionMs', 'type']);
+  });
+
+  it('bounds homogeneous-node inspection and distinguishes deduplication from truncation', async () => {
+    vi.stubGlobal('requestAnimationFrame', vi.fn());
+    Function(ACTION_PROBE)();
+
+    const target = document.createElement('button');
+    target.id = 'open-coloring-books';
+    document.body.append(target);
+    window.__actionProbe.begin('open coloring books', '#open-coloring-books', ['click']);
+    target.click();
+
+    for (let index = 0; index < 50; index++) target.setAttribute('data-index', String(index));
+    await Promise.resolve();
+
+    let classNameInspections = 0;
+    const tiles = Array.from({ length: 100 }, () => {
+      const node = document.createElement('div');
+      Object.defineProperty(node, 'className', {
+        get() {
+          classNameInspections++;
+          return 'tile';
+        },
+      });
+      return node;
+    });
+    document.body.append(...tiles);
+    await Promise.resolve();
+
+    const sample = window.__actionProbe.finish();
+    const deduplicated = sample.activities.find((activity) => activity.targetsTotal === 50);
+    expect(deduplicated).toEqual(
+      expect.objectContaining({ targets: ['button#open-coloring-books'], targetsTotal: 50 })
     );
+    expect(deduplicated).not.toHaveProperty('targetsTruncated');
+    const truncated = sample.activities.find((activity) => activity.addedTotal === 100);
+    expect(truncated).toEqual(
+      expect.objectContaining({ added: ['div.tile'], addedTotal: 100, addedTruncated: true })
+    );
+    expect(classNameInspections).toBe(128);
   });
 });
