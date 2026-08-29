@@ -4,6 +4,7 @@ import {
   pageColorImage,
   pageNightImage,
   pageOverlayImage,
+  pagePresentationImage,
   type BookOrientation,
   type ColoringPage,
 } from './books';
@@ -39,6 +40,14 @@ export function themedOverlayUrl(
 ): string | null {
   const page = coloringBookState.overlayPage;
   return page ? pageOverlayImage(page, orientation, theme) : null;
+}
+
+export function themedPresentationUrl(
+  theme: ResolvedTheme,
+  orientation = coloringBookState.orientation
+): string | null {
+  const page = coloringBookState.overlayPage;
+  return page ? pagePresentationImage(page, orientation, theme) : null;
 }
 
 export function colorSheetUrl(): string | null {

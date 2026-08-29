@@ -5,6 +5,7 @@ import {
   setOverlayOrientation,
   overlayUrl,
   themedOverlayUrl,
+  themedPresentationUrl,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
@@ -79,12 +80,21 @@ describe('coloring book state', () => {
     expect(themedOverlayUrl('dark')).toBe(
       spacePage.images.landscape.replace('.overlay.svg', '.dark.overlay.svg')
     );
+    expect(themedPresentationUrl('light')).toBe(
+      spacePage.images.landscape.replace('.overlay.svg', '.presentation.webp')
+    );
+    expect(themedPresentationUrl('dark')).toBe(
+      spacePage.images.landscape.replace('.overlay.svg', '.dark.presentation.webp')
+    );
   });
 
   it('can derive another orientation without changing the active orientation', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('dark', 'portrait')).toBe(
       spacePage.images.portrait.replace('.overlay.svg', '.dark.overlay.svg')
+    );
+    expect(themedPresentationUrl('dark', 'portrait')).toBe(
+      spacePage.images.portrait.replace('.overlay.svg', '.dark.presentation.webp')
     );
     expect(coloringBookState.orientation).toBe('landscape');
   });

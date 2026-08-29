@@ -4,21 +4,29 @@ import { buildColoringPackManifest } from '../../../coloringPackManifest';
 import { booksForPlatform } from '../state/books';
 import { parseColoringPackManifest } from './manifest';
 
-// Bounds verification-metadata overhead while retaining one-document cross-tier validation.
-const MAX_COLORING_PACK_MANIFEST_BYTES = 200_000;
-const MAX_COMPACT_TO_FULL_RASTER_BYTES_RATIO = 0.7;
+// Bounds verification-metadata overhead per recorded file while retaining one-document
+// cross-tier validation as the catalog grows. This is slightly tighter than the former
+// 200 KB ceiling at the inventory size that ceiling guarded.
+const MAX_COLORING_PACK_MANIFEST_BYTES_PER_FILE = 168;
+const MAX_COMPACT_TO_FULL_TIERED_RASTER_BYTES_RATIO = 0.7;
+
+function isTieredRaster(path: string): boolean {
+  return path.endsWith('.webp') && !/\.(?:thumb|selector|presentation)\.webp$/.test(path);
+}
 
 describe('buildColoringPackManifest', () => {
   it('offers every logical runtime file at compact and full resolutions', () => {
     const { manifest, source } = buildColoringPackManifest('1.2.3-test', 'mobile');
     let compactRasterBytes = 0;
     let fullRasterBytes = 0;
+    let manifestFileCount = 0;
 
     for (const book of manifest.books) {
       const compact = book.variants.compact;
       const full = book.variants.full;
       expect(compact.files.length).toBeGreaterThan(0);
       expect(compact.files.length).toBe(full.files.length);
+      manifestFileCount += compact.files.length + full.files.length;
       expect(compact.files.map((file) => file.path)).toEqual(full.files.map((file) => file.path));
       expect(compact.files.some((file) => file.downloadPath?.includes('/max-'))).toBe(true);
       expect(
@@ -28,8 +36,18 @@ describe('buildColoringPackManifest', () => {
       ).toBe(true);
       expect(
         compact.files
-          .filter((file) => file.path.endsWith('.webp') && !file.path.includes('.thumb.webp'))
+          .filter((file) => isTieredRaster(file.path))
           .every((file) => file.downloadPath?.includes('/max-'))
+      ).toBe(true);
+      expect(
+        compact.files
+          .filter((file) => file.path.endsWith('.selector.webp'))
+          .every((file) => file.downloadPath === undefined)
+      ).toBe(true);
+      expect(
+        compact.files
+          .filter((file) => file.path.endsWith('.presentation.webp'))
+          .every((file) => file.downloadPath === undefined)
       ).toBe(true);
       expect(
         compact.files
@@ -39,17 +57,19 @@ describe('buildColoringPackManifest', () => {
       expect(full.files.every((file) => file.downloadPath === undefined)).toBe(true);
       expect(compact.bytes).toBeLessThan(full.bytes);
       compactRasterBytes += compact.files
-        .filter((file) => file.path.endsWith('.webp'))
+        .filter((file) => isTieredRaster(file.path))
         .reduce((sum, file) => sum + file.bytes, 0);
       fullRasterBytes += full.files
-        .filter((file) => file.path.endsWith('.webp'))
+        .filter((file) => isTieredRaster(file.path))
         .reduce((sum, file) => sum + file.bytes, 0);
     }
 
     expect(compactRasterBytes).toBeLessThan(
-      fullRasterBytes * MAX_COMPACT_TO_FULL_RASTER_BYTES_RATIO
+      fullRasterBytes * MAX_COMPACT_TO_FULL_TIERED_RASTER_BYTES_RATIO
     );
-    expect(Buffer.byteLength(source)).toBeLessThan(MAX_COLORING_PACK_MANIFEST_BYTES);
+    expect(Buffer.byteLength(source)).toBeLessThan(
+      manifestFileCount * MAX_COLORING_PACK_MANIFEST_BYTES_PER_FILE
+    );
     expect(() => parseColoringPackManifest(manifest, '1.2.3-test')).not.toThrow();
   });
 

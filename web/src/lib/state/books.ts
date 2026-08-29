@@ -18,12 +18,12 @@ export interface ResponsiveColoringImage {
   srcset: string;
 }
 
-export interface ResponsiveColoringAsset {
+export interface ColoringDerivativeAsset {
   source: string;
   target: string;
   maxEdgePx: number;
   widthPx: number;
-  encoding: 'fill' | 'thumbnail';
+  encoding: 'fill' | 'thumbnail' | 'selector' | 'presentation';
 }
 
 interface ColoringBookGridLayout {
@@ -79,6 +79,16 @@ export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COL
   (tier) => `${COLORING_ROOT}/${tier.directory}`
 );
 const BOOK_GRID_DEFAULT_COLUMNS = 4;
+const PAGE_SELECTOR_MAX_EDGE_PX = 400;
+const PAGE_SELECTOR_WIDTHS: Record<BookOrientation, number> = {
+  portrait: 267,
+  landscape: 400,
+};
+const PAGE_PRESENTATION_MAX_EDGE_PX = 1536;
+const PAGE_PRESENTATION_WIDTHS: Record<BookOrientation, number> = {
+  portrait: 1024,
+  landscape: 1536,
+};
 /**
  * A tall viewport drops the cover grid to two columns and caps its width by the
  * dialog's height, so the width-only clauses below all under-report the tile
@@ -121,6 +131,10 @@ const ASSET_SUFFIXES = {
   chalkThumb: '.chalk.thumb.webp',
   overlay: '.overlay.svg',
   darkOverlay: '.dark.overlay.svg',
+  selector: '.selector.webp',
+  darkSelector: '.dark.selector.webp',
+  presentation: '.presentation.webp',
+  darkPresentation: '.dark.presentation.webp',
 } as const;
 
 const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
@@ -132,7 +146,15 @@ const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
 
 const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
 
-type PageAssetVariant = 'overlay' | 'light' | 'night' | 'darkOverlay';
+type PageAssetVariant =
+  | 'overlay'
+  | 'light'
+  | 'night'
+  | 'darkOverlay'
+  | 'selector'
+  | 'darkSelector'
+  | 'presentation'
+  | 'darkPresentation';
 
 function pageAssetPath(
   bookId: string,
@@ -262,6 +284,45 @@ export function pageOverlayImage(
   return resolveColoringAssetUrl(pageOverlayAssetPath(page, orientation, theme));
 }
 
+function pageSelectorAssetPath(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  const overlay = pageOverlayAssetPath(page, orientation, theme);
+  const sourceSuffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
+  const targetSuffix = theme === 'dark' ? ASSET_SUFFIXES.darkSelector : ASSET_SUFFIXES.selector;
+  return `${overlay.slice(0, -sourceSuffix.length)}${targetSuffix}`;
+}
+
+export function pageSelectorImage(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  return resolveColoringAssetUrl(pageSelectorAssetPath(page, orientation, theme));
+}
+
+function pagePresentationAssetPath(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  const overlay = pageOverlayAssetPath(page, orientation, theme);
+  const sourceSuffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
+  const targetSuffix =
+    theme === 'dark' ? ASSET_SUFFIXES.darkPresentation : ASSET_SUFFIXES.presentation;
+  return `${overlay.slice(0, -sourceSuffix.length)}${targetSuffix}`;
+}
+
+export function pagePresentationImage(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  return resolveColoringAssetUrl(pagePresentationAssetPath(page, orientation, theme));
+}
+
 function coverThumbnailPath(src: string, theme: ResolvedTheme): string {
   const sourceSuffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
   if (
@@ -286,7 +347,7 @@ export function coverThumbImageSource(book: Book, theme: ResolvedTheme): Respons
   return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
-export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] {
+export function responsiveColoringAssets(book: Book): ColoringDerivativeAsset[] {
   const overlayTier = RESPONSIVE_COLORING_TIERS.overlay;
   const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
   const thumbnailAssets = [coverThumb(book, 'light'), coverThumb(book, 'dark')].map((source) => {
@@ -316,6 +377,42 @@ export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] 
   return [...thumbnailAssets, ...fillAssets];
 }
 
+export function selectorColoringAssets(book: Book): ColoringDerivativeAsset[] {
+  return book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) =>
+      (['light', 'dark'] as const).map((theme) => ({
+        source: pageOverlayAssetPath(page, orientation, theme),
+        target: pageSelectorAssetPath(page, orientation, theme),
+        maxEdgePx: PAGE_SELECTOR_MAX_EDGE_PX,
+        widthPx: PAGE_SELECTOR_WIDTHS[orientation],
+        encoding: 'selector' as const,
+      }))
+    )
+  );
+}
+
+export function presentationColoringAssets(book: Book): ColoringDerivativeAsset[] {
+  return book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) =>
+      (['light', 'dark'] as const).map((theme) => ({
+        source: pageOverlayAssetPath(page, orientation, theme),
+        target: pagePresentationAssetPath(page, orientation, theme),
+        maxEdgePx: PAGE_PRESENTATION_MAX_EDGE_PX,
+        widthPx: PAGE_PRESENTATION_WIDTHS[orientation],
+        encoding: 'presentation' as const,
+      }))
+    )
+  );
+}
+
+export function coloringDerivativeAssets(book: Book): ColoringDerivativeAsset[] {
+  return [
+    ...responsiveColoringAssets(book),
+    ...selectorColoringAssets(book),
+    ...presentationColoringAssets(book),
+  ];
+}
+
 export function bookAssetPaths(book: Book): string[] {
   const lightLineArt = book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]);
   // Colored fills are revealed by the magic brush, never shown in the grid, so
@@ -342,7 +439,7 @@ export function bookAssetPaths(book: Book): string[] {
     ...darkLineArt,
     coverThumb(book, 'light'),
     coverThumb(book, 'dark'),
-    ...responsiveColoringAssets(book).map((asset) => asset.target),
+    ...coloringDerivativeAssets(book).map((asset) => asset.target),
   ];
 }
 
@@ -360,5 +457,7 @@ export function bookPackAssetPaths(book: Book): string[] {
       pageOverlayAssetPath(page, orientation, 'dark'),
     ])
   );
-  return [...coverThumbs, ...fills, ...overlays];
+  const selectors = selectorColoringAssets(book).map((asset) => asset.target);
+  const presentations = presentationColoringAssets(book).map((asset) => asset.target);
+  return [...coverThumbs, ...fills, ...overlays, ...selectors, ...presentations];
 }

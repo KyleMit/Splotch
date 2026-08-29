@@ -13,7 +13,11 @@ import {
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
+  pagePresentationImage,
+  pageSelectorImage,
   responsiveColoringAssets,
+  selectorColoringAssets,
+  presentationColoringAssets,
 } from './books';
 import {
   clearLocalColoringBookRoots,
@@ -64,6 +68,43 @@ describe('pageOverlayImage', () => {
     expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.svg');
     expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe(
       '/coloring/farm/cat-tall.dark.overlay.svg'
+    );
+  });
+});
+
+describe('pageSelectorImage', () => {
+  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
+
+  it('uses theme-specific raster presentation derivatives', () => {
+    expect(pageSelectorImage(cat, 'portrait', 'light')).toBe(
+      '/coloring/farm/cat-tall.selector.webp'
+    );
+    expect(pageSelectorImage(cat, 'portrait', 'dark')).toBe(
+      '/coloring/farm/cat-tall.dark.selector.webp'
+    );
+  });
+
+  it('resolves through an installed native book root', () => {
+    setLocalColoringBookRoot('farm', 'https://localhost/_capacitor_file_/packs/farm/');
+    try {
+      expect(pageSelectorImage(cat, 'landscape', 'dark')).toBe(
+        'https://localhost/_capacitor_file_/packs/farm/cat-wide.dark.selector.webp'
+      );
+    } finally {
+      clearLocalColoringBookRoots();
+    }
+  });
+});
+
+describe('pagePresentationImage', () => {
+  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
+
+  it('uses theme-specific lossless canvas presentation derivatives', () => {
+    expect(pagePresentationImage(cat, 'portrait', 'light')).toBe(
+      '/coloring/farm/cat-tall.presentation.webp'
+    );
+    expect(pagePresentationImage(cat, 'portrait', 'dark')).toBe(
+      '/coloring/farm/cat-tall.dark.presentation.webp'
     );
   });
 });
@@ -131,7 +172,9 @@ describe('responsive image sources', () => {
     });
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
-    expect(coloringBookComponent).toContain('pageOverlayImage(page, orientation, resolvedTheme())');
+    expect(coloringBookComponent).toContain(
+      'pageSelectorImage(page, orientation, resolvedTheme())'
+    );
     expect(activePageChipComponent).not.toContain('srcset=');
     expect(activePageChipComponent).not.toContain('sizes=');
   });
@@ -163,6 +206,10 @@ describe('pageCompositionKey', () => {
       '/coloring/farm/cat-tall.night.webp',
       '/coloring/farm/cat-tall.overlay.svg',
       '/coloring/farm/cat-tall.dark.overlay.svg?version=1',
+      '/coloring/farm/cat-tall.selector.webp',
+      '/coloring/farm/cat-tall.dark.selector.webp',
+      '/coloring/farm/cat-tall.presentation.webp',
+      '/coloring/farm/cat-tall.dark.presentation.webp',
     ];
 
     expect(new Set(siblings.map(pageCompositionKey))).toEqual(new Set(['/coloring/farm/cat-tall']));
@@ -208,6 +255,10 @@ describe('bookAssetPaths', () => {
       for (const orientation of ['portrait', 'landscape'] as const) {
         expect(paths).toContain(pageOverlayImage(page, orientation, 'light'));
         expect(paths).toContain(pageOverlayImage(page, orientation, 'dark'));
+        expect(paths).toContain(pageSelectorImage(page, orientation, 'light'));
+        expect(paths).toContain(pageSelectorImage(page, orientation, 'dark'));
+        expect(paths).toContain(pagePresentationImage(page, orientation, 'light'));
+        expect(paths).toContain(pagePresentationImage(page, orientation, 'dark'));
       }
     }
   });
@@ -227,12 +278,32 @@ describe('bookAssetPaths', () => {
     expect(responsive).toHaveLength(26);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
     for (const canonical of bookPackAssetPaths(farm)) {
-      if (canonical.endsWith('.svg')) continue;
+      if (
+        canonical.endsWith('.svg') ||
+        canonical.endsWith('.selector.webp') ||
+        canonical.endsWith('.presentation.webp')
+      ) {
+        continue;
+      }
       expect(
         responsive.some((asset) => asset.source === canonical),
         canonical
       ).toBe(true);
     }
+  });
+
+  it('lists every generated page selector derivative', () => {
+    const paths = new Set(bookAssetPaths(farm));
+    const selectors = selectorColoringAssets(farm);
+    expect(selectors).toHaveLength(24);
+    for (const asset of selectors) expect(paths.has(asset.target), asset.target).toBe(true);
+  });
+
+  it('lists every generated canvas presentation derivative', () => {
+    const paths = new Set(bookAssetPaths(farm));
+    const presentations = presentationColoringAssets(farm);
+    expect(presentations).toHaveLength(24);
+    for (const asset of presentations) expect(paths.has(asset.target), asset.target).toBe(true);
   });
 });
 
@@ -242,7 +313,7 @@ describe('downloadable coloring packs', () => {
 
   it('contains exactly the canonical runtime files for one complete book', () => {
     const paths = bookPackAssetPaths(farm);
-    expect(paths).toHaveLength(50);
+    expect(paths).toHaveLength(98);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);
     expect(paths.some((path) => /\.(?:outline|chalk)\.webp$/.test(path))).toBe(false);
@@ -258,6 +329,12 @@ describe('downloadable coloring packs', () => {
       );
       expect(coverThumbImageSource(dinosaur, 'light').src).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/cover.thumb.webp'
+      );
+      expect(pageSelectorImage(page, 'portrait', 'dark')).toBe(
+        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.dark.selector.webp'
+      );
+      expect(pagePresentationImage(page, 'portrait', 'dark')).toBe(
+        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.dark.presentation.webp'
       );
     } finally {
       clearLocalColoringBookRoots();

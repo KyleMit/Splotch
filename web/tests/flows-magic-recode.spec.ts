@@ -65,7 +65,7 @@ test('changing the coloring page recodes magic ink and undo restores the page an
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\/cow-(?:wide|tall)\.overlay\.svg$/
+    /\/cow-(?:wide|tall)\.presentation\.webp$/
   );
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
@@ -74,7 +74,7 @@ test('changing the coloring page recodes magic ink and undo restores the page an
   await page.locator('#undoButton').click();
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\/cat-(?:wide|tall)\.overlay\.svg$/
+    /\/cat-(?:wide|tall)\.presentation\.webp$/
   );
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
@@ -99,7 +99,7 @@ test('removing the coloring page recodes magic ink and undo restores the page an
   await page.locator('#undoButton').click();
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\/cat-(?:wide|tall)\.overlay\.svg$/
+    /\/cat-(?:wide|tall)\.presentation\.webp$/
   );
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
@@ -113,7 +113,10 @@ test('changing theme recodes existing magic ink to the themed fill', async ({ pa
   const settings = await openSettingsModal(page);
   await settings.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.dark\.overlay\.svg$/);
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute(
+    'src',
+    /\.dark\.presentation\.webp$/
+  );
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
     .not.toEqual(lightDigest);

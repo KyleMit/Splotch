@@ -21,6 +21,7 @@
     overlayUrl,
     coloringBookState,
     themedOverlayUrl as currentThemedOverlayUrl,
+    themedPresentationUrl as currentThemedPresentationUrl,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
@@ -178,10 +179,12 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // The overlay's line art is theme-aware: light mode uses transparent black ink,
-  // while dark mode uses its transparent white-ink SVG sibling (ADR-0129).
-  // Reading resolvedTheme() re-picks the art on a live theme switch.
+  // The canonical SVG remains the export/Magic authority. The live compositor
+  // presents its lossless raster sibling so selecting or clearing a page does
+  // not synchronously rasterize a full-screen SVG on constrained WebKit GPUs.
+  // Reading resolvedTheme() re-picks both siblings on a live theme switch.
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
+  const themedPresentationUrl = $derived(currentThemedPresentationUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide composition. Hide art when
@@ -191,7 +194,7 @@
   let displayedOverlayUrl = $state<string | null>(null);
 
   $effect(() => {
-    const url = themedOverlayUrl;
+    const url = themedPresentationUrl;
     if (!url) {
       displayedOverlayUrl = null;
       return;
@@ -217,11 +220,11 @@
     };
   });
 
-  // The line art is the only asset needed to make a selected page visible.
+  // The presentation line art is the only asset needed to make a selected page visible.
   // Start the magic fill and rotation warm-up after it decodes so those
   // other art transfers cannot delay the page the child just picked.
   $effect(() => {
-    const url = themedOverlayUrl;
+    const url = themedPresentationUrl;
     const displayed = displayedOverlayUrl;
     if (!url) {
       setColorSheet(null);
@@ -234,7 +237,7 @@
     const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());
     const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
-    const otherUrl = currentThemedOverlayUrl(theme, other);
+    const otherUrl = currentThemedPresentationUrl(theme, other);
     if (!otherUrl) return;
     return scheduleIdle(() => prefetchImages([otherUrl]));
   });
@@ -268,6 +271,7 @@
       class:overlay-ready={!!displayedOverlayUrl}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
+      data-canonical-url={themedOverlayUrl ?? undefined}
       alt=""
       hidden={!overlayUrl()}
     />

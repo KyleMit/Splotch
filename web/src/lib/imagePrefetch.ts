@@ -1,8 +1,8 @@
 // Warms the browser HTTP cache for a set of image URLs so they're already
 // decoded (or in flight) by the time an <img> asks for them. Used by the Coloring
 // Book Picker: cover thumbs are warmed on idle so the first open paints instantly,
-// a book's SVG page previews are warmed when its tile is pressed, and the selected preview
-// stays warm on hover/press so applying it to the canvas is immediate.
+// a book's page selectors are warmed when its tile is pressed, and the selected canonical
+// overlay stays warm on hover/press so applying it to the canvas is immediate.
 //
 // Each logical image is keyed by its canonical src and requested once per
 // session via a detached Image(); srcset may select a responsive candidate. The
@@ -18,7 +18,7 @@ export interface ResponsiveImageRequest {
   sizes: string;
 }
 
-function cancelImageRequest(img: HTMLImageElement): void {
+export function cancelImageRequest(img: HTMLImageElement): void {
   if (img.srcset) img.removeAttribute('srcset');
   img.removeAttribute('src');
 }

@@ -5,6 +5,7 @@ import sharp from 'sharp';
 const WEBP_EFFORT = 6;
 const FILL_QUALITY = 85;
 const THUMBNAIL_QUALITY = 80;
+const RESPONSIVE_GENERATION_CONCURRENCY = 4;
 export const RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION = 0.2;
 
 function staticAssetPath(staticDir, url) {
@@ -12,16 +13,20 @@ function staticAssetPath(staticDir, url) {
 }
 
 export async function renderResponsiveColoringAsset(sourcePath, asset) {
-  return sharp(sourcePath)
-    .resize(asset.maxEdgePx, asset.maxEdgePx, {
-      fit: 'inside',
-      kernel: 'lanczos3',
-      withoutEnlargement: true,
-    })
-    .webp({
-      quality: asset.encoding === 'fill' ? FILL_QUALITY : THUMBNAIL_QUALITY,
-      effort: WEBP_EFFORT,
-    })
+  const pipeline = sharp(sourcePath).resize(asset.maxEdgePx, asset.maxEdgePx, {
+    fit: 'inside',
+    kernel: 'lanczos3',
+    withoutEnlargement: true,
+  });
+  return pipeline
+    .webp(
+      asset.encoding === 'presentation'
+        ? { lossless: true, nearLossless: true, quality: 100, effort: WEBP_EFFORT }
+        : {
+            quality: asset.encoding === 'fill' ? FILL_QUALITY : THUMBNAIL_QUALITY,
+            effort: WEBP_EFFORT,
+          }
+    )
     .toBuffer();
 }
 
@@ -45,28 +50,57 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
   }
   const sourceBytes = (await stat(sourcePath)).size;
   const outputBytes = (await stat(targetPath)).size;
-  if (outputBytes >= sourceBytes) {
+  if (asset.encoding !== 'presentation' && outputBytes >= sourceBytes) {
     throw new Error(
       `${asset.target} is ${outputBytes} bytes, not smaller than its ${sourceBytes}-byte source.`
     );
   }
-  return { sourceBytes, outputBytes };
+  return {
+    sourceBytes,
+    outputBytes,
+    compressionSourceBytes: asset.encoding === 'presentation' ? 0 : sourceBytes,
+    compressionOutputBytes: asset.encoding === 'presentation' ? 0 : outputBytes,
+  };
 }
 
 export async function generateResponsiveColoringAssets(staticDir, assets) {
   let sourceBytes = 0;
   let outputBytes = 0;
-  for (const asset of assets) {
-    const generated = await generateResponsiveColoringAsset(staticDir, asset);
+  let compressionSourceBytes = 0;
+  let compressionOutputBytes = 0;
+  const generatedAssets = new Array(assets.length);
+  let nextAssetIndex = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(RESPONSIVE_GENERATION_CONCURRENCY, assets.length) }, async () => {
+      while (nextAssetIndex < assets.length) {
+        const assetIndex = nextAssetIndex;
+        nextAssetIndex += 1;
+        generatedAssets[assetIndex] = await generateResponsiveColoringAsset(
+          staticDir,
+          assets[assetIndex]
+        );
+      }
+    })
+  );
+  for (const generated of generatedAssets) {
     sourceBytes += generated.sourceBytes;
     outputBytes += generated.outputBytes;
+    compressionSourceBytes += generated.compressionSourceBytes;
+    compressionOutputBytes += generated.compressionOutputBytes;
   }
-  const savingsFraction = (sourceBytes - outputBytes) / sourceBytes;
+  const savingsFraction =
+    (compressionSourceBytes - compressionOutputBytes) / compressionSourceBytes;
   if (savingsFraction < RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION) {
     throw new Error(
       `Responsive tier saved only ${(savingsFraction * 100).toFixed(1)}%; ` +
         `minimum is ${RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION * 100}%.`
     );
   }
-  return { count: assets.length, sourceBytes, outputBytes };
+  return {
+    count: assets.length,
+    sourceBytes,
+    outputBytes,
+    compressionSourceBytes,
+    compressionOutputBytes,
+  };
 }
