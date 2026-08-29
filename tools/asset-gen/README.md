@@ -119,7 +119,10 @@ invalidates its chalk, light/night fills, and punch; a chalk SVG change invalida
 and punch. Cover SVGs stop after regenerating their picker thumbnails and responsive derivative.
 `npm run build` emits the incremental coloring-pack manifest from `bookPackAssetPaths()`—page pen
 and chalk SVGs, including every landscape `-wide` pair, are invariant pack files; cover SVGs remain
-authoring masters because packs render the raster cover thumbnails.
+authoring masters because packs render the raster cover thumbnails. Web packs also carry lossless
+selector and canvas-presentation WebPs derived from those canonical SVGs; compact web packs map
+presentation paths to 1,152 px derivatives. Native packs keep selector rasters but use the canonical
+SVG for canvas presentation and export, so they omit presentation WebPs.
 
 ### The per-page notes registry
 

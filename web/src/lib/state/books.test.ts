@@ -6,6 +6,7 @@ import {
   COLORING_IMAGE_SIZES,
   bookAssetPaths,
   bookPackAssetPaths,
+  compactPresentationColoringAssets,
   coloringBookGridLayout,
   coverThumb,
   coverThumbImageSource,
@@ -284,7 +285,7 @@ describe('bookAssetPaths', () => {
     const responsive = responsiveColoringAssets(farm);
     expect(responsive).toHaveLength(26);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
-    for (const canonical of bookPackAssetPaths(farm)) {
+    for (const canonical of bookPackAssetPaths(farm, 'web')) {
       if (
         canonical.endsWith('.svg') ||
         canonical.endsWith('.selector.webp') ||
@@ -312,6 +313,18 @@ describe('bookAssetPaths', () => {
     expect(presentations).toHaveLength(24);
     for (const asset of presentations) expect(paths.has(asset.target), asset.target).toBe(true);
   });
+
+  it('lists a physical compact derivative for every web presentation path', () => {
+    const paths = new Set(bookAssetPaths(farm));
+    const presentations = compactPresentationColoringAssets(farm);
+    expect(presentations).toHaveLength(24);
+    expect(new Set(presentations.map((asset) => asset.runtimePath)).size).toBe(24);
+    for (const asset of presentations) {
+      expect(paths.has(asset.target), asset.target).toBe(true);
+      expect(asset.target).toContain('/coloring/max-1152px/');
+      expect(asset.target).not.toBe(asset.runtimePath);
+    }
+  });
 });
 
 describe('downloadable coloring packs', () => {
@@ -319,7 +332,7 @@ describe('downloadable coloring packs', () => {
   const dinosaur = BOOKS.find((book) => book.id === 'dinosaur')!;
 
   it('contains exactly the canonical runtime files for one complete book', () => {
-    const paths = bookPackAssetPaths(farm);
+    const paths = bookPackAssetPaths(farm, 'web');
     expect(paths).toHaveLength(98);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);

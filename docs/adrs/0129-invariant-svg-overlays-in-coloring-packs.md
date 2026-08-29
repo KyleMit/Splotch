@@ -149,3 +149,22 @@ restart-tree `.source.webp` files rather than assuming a committed raster master
 always binds every canonical SVG to its recorded output digest and also verifies recorded source
 digests when that recovery scratch is locally present; after it is removed, those source fields are
 retained provenance rather than independently verifiable inputs.
+
+## Amendment (2026-08): Separate Canonical Authority from Runtime Presentation
+
+The SVG remains the only canonical line-art source and the authority for drawing state, Magic
+registration, and screenshot export. Runtime presentation may use a deterministic derivative when
+that avoids repeatedly rasterizing full-page SVG inside a constrained WebKit frame.
+
+Web page grids and the active-page chip use lossless 400 px selector WebPs. The web canvas uses a
+lossless full-size presentation WebP, and compact downloadable packs map that same logical path to a
+lossless 1,152 px presentation derivative. Native page grids retain the selector WebPs, while the
+Capacitor canvas and export path display the canonical SVG and omit presentation WebPs from native
+packs and the static export. Thus pack-resolution invariance still applies to canonical SVGs; it no
+longer claims that every UI surface presents those SVG bytes directly.
+
+Selector and presentation derivatives rasterize SVGs with the pinned `@resvg/resvg-js` renderer
+before Sharp performs only the lossless WebP encoding. The generator disables system-font loading,
+pins the target geometry, and the catalog gate requires every decoded derivative pixel to equal the
+deterministic Resvg RGBA buffer. This removes the macOS/Linux librsvg variance without weakening the
+canonical SVG fidelity contract.

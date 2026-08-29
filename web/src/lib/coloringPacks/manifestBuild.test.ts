@@ -9,6 +9,7 @@ import { parseColoringPackManifest } from './manifest';
 // 200 KB ceiling at the inventory size that ceiling guarded.
 const MAX_COLORING_PACK_MANIFEST_BYTES_PER_FILE = 168;
 const MAX_COMPACT_TO_FULL_TIERED_RASTER_BYTES_RATIO = 0.7;
+const MAX_COMPACT_TO_FULL_PRESENTATION_BYTES_RATIO = 0.8;
 
 function isTieredRaster(path: string): boolean {
   return path.endsWith('.webp') && !/\.(?:thumb|selector|presentation)\.webp$/.test(path);
@@ -72,16 +73,29 @@ describe('buildColoringPackManifest', () => {
 
   it('keeps web presentation rasters in both web pack variants', () => {
     const { manifest } = buildColoringPackManifest('1.2.3-test', 'web');
+    let compactPresentationBytes = 0;
+    let fullPresentationBytes = 0;
 
     for (const book of manifest.books) {
-      for (const variant of Object.values(book.variants)) {
-        const presentations = variant.files.filter((file) =>
-          file.path.endsWith('.presentation.webp')
-        );
-        expect(presentations).toHaveLength(24);
-        expect(presentations.every((file) => file.downloadPath === undefined)).toBe(true);
-      }
+      const compactPresentations = book.variants.compact.files.filter((file) =>
+        file.path.endsWith('.presentation.webp')
+      );
+      const fullPresentations = book.variants.full.files.filter((file) =>
+        file.path.endsWith('.presentation.webp')
+      );
+      expect(compactPresentations).toHaveLength(24);
+      expect(fullPresentations).toHaveLength(24);
+      expect(
+        compactPresentations.every((file) => file.downloadPath?.includes('/max-1152px/'))
+      ).toBe(true);
+      expect(fullPresentations.every((file) => file.downloadPath === undefined)).toBe(true);
+      compactPresentationBytes += compactPresentations.reduce((sum, file) => sum + file.bytes, 0);
+      fullPresentationBytes += fullPresentations.reduce((sum, file) => sum + file.bytes, 0);
     }
+
+    expect(compactPresentationBytes).toBeLessThan(
+      fullPresentationBytes * MAX_COMPACT_TO_FULL_PRESENTATION_BYTES_RATIO
+    );
   });
 
   it('ships every landscape vector overlay through both incremental variants', () => {

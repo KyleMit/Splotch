@@ -1,5 +1,6 @@
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { Resvg } from '@resvg/resvg-js';
 import sharp from 'sharp';
 
 const WEBP_EFFORT = 6;
@@ -8,25 +9,56 @@ const THUMBNAIL_QUALITY = 80;
 const RESPONSIVE_GENERATION_CONCURRENCY = 4;
 export const RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION = 0.2;
 
+function isSvgRaster(asset) {
+  return asset.encoding === 'selector' || asset.encoding === 'presentation';
+}
+
 function staticAssetPath(staticDir, url) {
   return join(staticDir, url);
 }
 
+export async function renderDeterministicColoringSvg(sourcePath, asset) {
+  const fitTo =
+    asset.widthPx < asset.maxEdgePx
+      ? { mode: 'height', value: asset.maxEdgePx }
+      : { mode: 'width', value: asset.maxEdgePx };
+  const rendered = new Resvg(await readFile(sourcePath), {
+    fitTo,
+    shapeRendering: 2,
+    imageRendering: 1,
+    font: { loadSystemFonts: false },
+  }).render();
+  if (
+    rendered.width !== asset.widthPx ||
+    Math.max(rendered.width, rendered.height) !== asset.maxEdgePx
+  ) {
+    throw new Error(
+      `${asset.source} rendered at ${rendered.width}x${rendered.height}; ` +
+        `expected width ${asset.widthPx}px and max edge ${asset.maxEdgePx}px.`
+    );
+  }
+  return rendered;
+}
+
 export async function renderResponsiveColoringAsset(sourcePath, asset) {
+  if (isSvgRaster(asset)) {
+    const rendered = await renderDeterministicColoringSvg(sourcePath, asset);
+    return sharp(Buffer.from(rendered.pixels), {
+      raw: { width: rendered.width, height: rendered.height, channels: 4 },
+    })
+      .webp({ lossless: true, exact: true, effort: WEBP_EFFORT })
+      .toBuffer();
+  }
   const pipeline = sharp(sourcePath).resize(asset.maxEdgePx, asset.maxEdgePx, {
     fit: 'inside',
     kernel: 'lanczos3',
     withoutEnlargement: true,
   });
   return pipeline
-    .webp(
-      asset.encoding === 'presentation'
-        ? { lossless: true, nearLossless: true, quality: 100, effort: WEBP_EFFORT }
-        : {
-            quality: asset.encoding === 'fill' ? FILL_QUALITY : THUMBNAIL_QUALITY,
-            effort: WEBP_EFFORT,
-          }
-    )
+    .webp({
+      quality: asset.encoding === 'fill' ? FILL_QUALITY : THUMBNAIL_QUALITY,
+      effort: WEBP_EFFORT,
+    })
     .toBuffer();
 }
 
@@ -56,6 +88,7 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
     );
   }
   return {
+    encoding: asset.encoding,
     sourceBytes,
     outputBytes,
     compressionSourceBytes: asset.encoding === 'presentation' ? 0 : sourceBytes,
@@ -63,11 +96,19 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
   };
 }
 
+export function responsiveSavingsFraction(sourceBytes, outputBytes) {
+  if (sourceBytes <= 0) {
+    throw new Error('Responsive compression accounting has no source bytes.');
+  }
+  return (sourceBytes - outputBytes) / sourceBytes;
+}
+
 export async function generateResponsiveColoringAssets(staticDir, assets) {
   let sourceBytes = 0;
   let outputBytes = 0;
   let compressionSourceBytes = 0;
   let compressionOutputBytes = 0;
+  const byEncoding = {};
   const generatedAssets = new Array(assets.length);
   let nextAssetIndex = 0;
   await Promise.all(
@@ -87,9 +128,16 @@ export async function generateResponsiveColoringAssets(staticDir, assets) {
     outputBytes += generated.outputBytes;
     compressionSourceBytes += generated.compressionSourceBytes;
     compressionOutputBytes += generated.compressionOutputBytes;
+    const totals = (byEncoding[generated.encoding] ??= {
+      count: 0,
+      sourceBytes: 0,
+      outputBytes: 0,
+    });
+    totals.count += 1;
+    totals.sourceBytes += generated.sourceBytes;
+    totals.outputBytes += generated.outputBytes;
   }
-  const savingsFraction =
-    (compressionSourceBytes - compressionOutputBytes) / compressionSourceBytes;
+  const savingsFraction = responsiveSavingsFraction(compressionSourceBytes, compressionOutputBytes);
   if (savingsFraction < RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION) {
     throw new Error(
       `Responsive tier saved only ${(savingsFraction * 100).toFixed(1)}%; ` +
@@ -102,5 +150,6 @@ export async function generateResponsiveColoringAssets(staticDir, assets) {
     outputBytes,
     compressionSourceBytes,
     compressionOutputBytes,
+    byEncoding,
   };
 }

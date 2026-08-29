@@ -26,6 +26,10 @@ export interface ColoringDerivativeAsset {
   encoding: 'fill' | 'thumbnail' | 'selector' | 'presentation';
 }
 
+export interface CompactPresentationColoringAsset extends ColoringDerivativeAsset {
+  runtimePath: string;
+}
+
 interface ColoringBookGridLayout {
   hasOrphan: boolean;
   imageSizes: string;
@@ -415,11 +419,31 @@ export function presentationColoringAssets(book: Book): ColoringDerivativeAsset[
   );
 }
 
+export function compactPresentationColoringAssets(book: Book): CompactPresentationColoringAsset[] {
+  const tier = RESPONSIVE_COLORING_TIERS.overlay;
+  return book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) =>
+      (['light', 'dark'] as const).map((theme) => {
+        const runtimePath = pagePresentationAssetPath(page, orientation, theme);
+        return {
+          source: pageOverlayAssetPath(page, orientation, theme),
+          target: responsiveTierPath(runtimePath, tier.directory),
+          runtimePath,
+          maxEdgePx: tier.maxEdgePx,
+          widthPx: tier.widths[orientation].candidate,
+          encoding: 'presentation' as const,
+        };
+      })
+    )
+  );
+}
+
 export function coloringDerivativeAssets(book: Book): ColoringDerivativeAsset[] {
   return [
     ...responsiveColoringAssets(book),
     ...selectorColoringAssets(book),
     ...presentationColoringAssets(book),
+    ...compactPresentationColoringAssets(book),
   ];
 }
 
@@ -453,7 +477,7 @@ export function bookAssetPaths(book: Book): string[] {
   ];
 }
 
-export function bookPackAssetPaths(book: Book, platform: BookPlatform = 'web'): string[] {
+export function bookPackAssetPaths(book: Book, platform: BookPlatform): string[] {
   const coverThumbs = [coverThumb(book, 'light'), coverThumb(book, 'dark')];
   const fills = book.pages.flatMap((page) => [
     ...ALL_ORIENTATIONS.map((orientation) => page.colorImages[orientation]),

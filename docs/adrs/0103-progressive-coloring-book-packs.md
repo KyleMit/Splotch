@@ -125,3 +125,24 @@ Magic-fill consumers unchanged.
   model. Web, Android, and iOS builds plus bundle guards cover their shared contract.
 * **-** DPR-3 phones generally select the full tier. The bandwidth win is deliberately limited to
   screens where 1,152 px line art needs no presentation upscale.
+
+## Amendment (2026-08): Platform-Specific Presentation Inventories
+
+Canonical page SVGs remain the cross-target drawing-state and export authority, but the two runtime
+targets no longer carry identical presentation inventories. Web packs contain 98 logical files per
+book: cover thumbnails, Magic fills, canonical SVGs, selector rasters, and full presentation
+rasters. Their compact variant maps each presentation path to a lossless 1,152 px derivative as well
+as mapping the fills to their existing compact derivatives. The logical path stays unchanged, so
+Cache Storage and installed-book consumers keep one URL contract.
+
+Native packs contain 74 logical files per book. They retain selector rasters for picker performance,
+but omit both full and compact presentation rasters because the Capacitor canvas and export path use
+the canonical SVG directly. The starter native export follows that same inventory. Platform is a
+required input to `bookPackAssetPaths()` so a native caller cannot silently inherit the web-only
+presentation bytes.
+
+The presentation tiers are generated directly from the canonical SVG with the repository's pinned
+Resvg renderer, then encoded losslessly. Compact-to-full presentation bytes have their own ratio
+gate in addition to the existing fill-tier gate; manifest tests require every compact web
+presentation to resolve through `/coloring/max-1152px/` and require native packs to contain no
+presentation files.

@@ -41,13 +41,15 @@ established scoring and Gemini contracts independent of runtime ink color. (Why 
 outline couldn't serve both themes—the white-blob problem and two earlier generations of fixes—is
 chronicled in [`legacy/README.md`](../legacy/README.md).)
 
-| Asset                           | Lives in                                | Shipped?                                                                                                                               | Produced by                                          |
-| ------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `{page}.overlay.svg`            | `web/static/coloring/{book}/`           | yes — canonical transparent black pen, light canvas presentation, light punch and generation source                                    | reviewed trace via `vectorize-coloring-overlays.mjs` |
-| `{page}.dark.overlay.svg`       | `web/static/coloring/{book}/`           | yes — canonical transparent white chalk, dark canvas presentation, night punch and generation source                                   | reviewed trace via `vectorize-coloring-overlays.mjs` |
-| `{page}.source.webp`            | `vectorized/coloring-{,dark-}overlays/` | no — uncommitted raster trace source created when a pen or chalk candidate is applied                                                  | fresh/normalize/chalk generator                      |
-| `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/`      | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-light-fills.mjs` / `gen-night-fills.mjs`        |
-| `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`           | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw               |
+| Asset                             | Lives in                                | Shipped?                                                                                                                               | Produced by                                          |
+| --------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `{page}.overlay.svg`              | `web/static/coloring/{book}/`           | yes — canonical transparent black pen; native presentation/export plus light punch and generation source                               | reviewed trace via `vectorize-coloring-overlays.mjs` |
+| `{page}.dark.overlay.svg`         | `web/static/coloring/{book}/`           | yes — canonical transparent white chalk; native presentation/export plus night punch and generation source                             | reviewed trace via `vectorize-coloring-overlays.mjs` |
+| `{page}.{dark.}selector.webp`     | `web/static/coloring/{book}/`           | yes — deterministic lossless 400 px picker derivative                                                                                  | `gen-responsive-assets.mjs` from canonical SVG       |
+| `{page}.{dark.}presentation.webp` | `web/static/coloring/{book}/`           | web only — deterministic lossless full/1,152 px canvas presentation derivatives                                                        | `gen-responsive-assets.mjs` from canonical SVG       |
+| `{page}.source.webp`              | `vectorized/coloring-{,dark-}overlays/` | no — uncommitted raster trace source created when a pen or chalk candidate is applied                                                  | fresh/normalize/chalk generator                      |
+| `{page}.{light,night}.raw.webp`   | `tools/asset-gen/fill-src/{book}/`      | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-light-fills.mjs` / `gen-night-fills.mjs`        |
+| `{page}.{light,night}.webp`       | `web/static/coloring/{book}/`           | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw               |
 
 Everything shipped is a **static, committed artifact** — no generation at build or run time, no
 server dependency, trivially cacheable. The renderer is deliberately dumb: vectorized transparent
@@ -422,7 +424,9 @@ generation.
    `run-splotch` skill (dark mode → apply page → magic-brush reveal), commit. The build regenerates
    the versioned incremental-download manifest from `bookPackAssetPaths()`; its compact and full
    variants both carry every portrait/landscape pen and chalk SVG unchanged, while cover SVG masters
-   stay out in favor of their picker thumbnails.
+   stay out in favor of their picker thumbnails. Web compact packs map full presentation paths to
+   1,152 px derivatives; native packs keep selector rasters but omit presentation WebPs because the
+   canvas and export path use the canonical SVG.
 
 Light mode must stay byte-identical throughout a night-fill pass — enforced by
 `golden/asset-manifest.sha256`: the manifest diff for a night pass must contain only

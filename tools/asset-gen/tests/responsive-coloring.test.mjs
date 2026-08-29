@@ -5,26 +5,27 @@ import sharp from 'sharp';
 import {
   BOOKS,
   coloringDerivativeAssets,
+  compactPresentationColoringAssets,
   coverThumbImageSource,
-  responsiveColoringAssets,
   selectorColoringAssets,
   presentationColoringAssets,
 } from '../../../web/src/lib/state/books.ts';
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
 import {
   RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION,
+  renderDeterministicColoringSvg,
   renderResponsiveColoringAsset,
+  responsiveSavingsFraction,
 } from '../lib/responsive-coloring.mjs';
 
 // The catalog fidelity pass decodes every committed derivative. Bounded concurrency keeps the
 // lossless encoder below this budget without allowing the catalog to consume unbounded CI memory.
 const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 300_000;
-const RESPONSIVE_CATALOG_TEST_CONCURRENCY = 4;
+const RESPONSIVE_CATALOG_TEST_CONCURRENCY = 1;
 const EXPECTED_RESPONSIVE_ASSET_COUNT = 208;
 const EXPECTED_SELECTOR_ASSET_COUNT = 192;
 const EXPECTED_PRESENTATION_ASSET_COUNT = 192;
-const SELECTOR_INK_ALPHA_THRESHOLD = 105;
-const SELECTOR_MAX_PREMULTIPLIED_MAE = 0.1;
+const EXPECTED_COMPACT_PRESENTATION_ASSET_COUNT = 192;
 
 function srcsetWidths() {
   const widths = new Map();
@@ -79,8 +80,11 @@ describe('responsive coloring catalog', () => {
       expect(assets.filter((asset) => asset.encoding === 'selector')).toHaveLength(
         EXPECTED_SELECTOR_ASSET_COUNT
       );
-      expect(assets.filter((asset) => asset.encoding === 'presentation')).toHaveLength(
+      expect(BOOKS.flatMap(presentationColoringAssets)).toHaveLength(
         EXPECTED_PRESENTATION_ASSET_COUNT
+      );
+      expect(BOOKS.flatMap(compactPresentationColoringAssets)).toHaveLength(
+        EXPECTED_COMPACT_PRESENTATION_ASSET_COUNT
       );
       await forEachWithConcurrency(assets, async (asset) => {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
@@ -98,16 +102,16 @@ describe('responsive coloring catalog', () => {
         expect(targetMetadata.hasAlpha, asset.target).toBe(sourceMetadata.hasAlpha);
         const sourcePath = join(WEB_STATIC, asset.source);
         const targetPath = join(WEB_STATIC, asset.target);
-        const sourceSize = (await stat(sourcePath)).size;
-        const targetSize = (await stat(targetPath)).size;
-        if (asset.encoding !== 'presentation') {
-          expect(targetSize, asset.target).toBeLessThan(sourceSize);
-          sourceBytes += sourceSize;
-          targetBytes += targetSize;
-        }
-
         const regenerated = await renderResponsiveColoringAsset(sourcePath, asset);
         expect(regenerated.equals(await readFile(targetPath)), asset.target).toBe(true);
+      });
+      const compressibleAssets = assets.filter((asset) => asset.encoding !== 'presentation');
+      await forEachWithConcurrency(compressibleAssets, async (asset) => {
+        const sourceSize = (await stat(join(WEB_STATIC, asset.source))).size;
+        const targetSize = (await stat(join(WEB_STATIC, asset.target))).size;
+        expect(targetSize, asset.target).toBeLessThan(sourceSize);
+        sourceBytes += sourceSize;
+        targetBytes += targetSize;
       });
       expect((sourceBytes - targetBytes) / sourceBytes).toBeGreaterThanOrEqual(
         RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION
@@ -119,13 +123,17 @@ describe('responsive coloring catalog', () => {
   it(
     'preserves every canonical SVG pixel in the canvas presentation rasters',
     async () => {
-      await forEachWithConcurrency(BOOKS.flatMap(presentationColoringAssets), async (asset) => {
-        const reference = await sharp(join(WEB_STATIC, asset.source))
-          .ensureAlpha()
-          .raw()
-          .toBuffer();
+      const assets = BOOKS.flatMap((book) => [
+        ...presentationColoringAssets(book),
+        ...compactPresentationColoringAssets(book),
+      ]);
+      await forEachWithConcurrency(assets, async (asset) => {
+        const reference = await renderDeterministicColoringSvg(
+          join(WEB_STATIC, asset.source),
+          asset
+        );
         const actual = await sharp(join(WEB_STATIC, asset.target)).ensureAlpha().raw().toBuffer();
-        expect(actual.equals(reference), asset.target).toBe(true);
+        expect(actual.equals(Buffer.from(reference.pixels)), asset.target).toBe(true);
       });
     },
     RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
@@ -135,40 +143,18 @@ describe('responsive coloring catalog', () => {
     'preserves selector alpha and visible pixels against the canonical SVG rasterization',
     async () => {
       await forEachWithConcurrency(BOOKS.flatMap(selectorColoringAssets), async (asset) => {
-        const reference = await sharp(join(WEB_STATIC, asset.source))
-          .resize(asset.maxEdgePx, asset.maxEdgePx, {
-            fit: 'inside',
-            kernel: 'lanczos3',
-            withoutEnlargement: true,
-          })
-          .ensureAlpha()
-          .raw()
-          .toBuffer();
+        const reference = await renderDeterministicColoringSvg(
+          join(WEB_STATIC, asset.source),
+          asset
+        );
         const actual = await sharp(join(WEB_STATIC, asset.target)).ensureAlpha().raw().toBuffer();
-        let premultipliedError = 0;
-        let intersection = 0;
-        let union = 0;
-        for (let offset = 0; offset < reference.length; offset += 4) {
-          const referenceAlpha = reference[offset + 3];
-          const actualAlpha = actual[offset + 3];
-          expect(actualAlpha, `${asset.target} alpha at pixel ${offset / 4}`).toBe(referenceAlpha);
-          const referenceInk = referenceAlpha > SELECTOR_INK_ALPHA_THRESHOLD;
-          const actualInk = actualAlpha > SELECTOR_INK_ALPHA_THRESHOLD;
-          if (referenceInk && actualInk) intersection += 1;
-          if (referenceInk || actualInk) union += 1;
-          for (let channel = 0; channel < 4; channel += 1) {
-            const referenceValue =
-              channel === 3 ? referenceAlpha : (reference[offset + channel] * referenceAlpha) / 255;
-            const actualValue =
-              channel === 3 ? actualAlpha : (actual[offset + channel] * actualAlpha) / 255;
-            premultipliedError += Math.abs(referenceValue - actualValue);
-          }
-        }
-        const premultipliedMae = premultipliedError / reference.length;
-        expect(premultipliedMae, asset.target).toBeLessThanOrEqual(SELECTOR_MAX_PREMULTIPLIED_MAE);
-        expect(intersection / union, asset.target).toBe(1);
+        expect(actual.equals(Buffer.from(reference.pixels)), asset.target).toBe(true);
       });
     },
     RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
   );
+
+  it('fails closed when no compressible source bytes were measured', () => {
+    expect(() => responsiveSavingsFraction(0, 0)).toThrow('no source bytes');
+  });
 });

@@ -5,9 +5,9 @@ import {
   STARTER_COLORING_BOOK_ID,
   bookPackAssetPaths,
   booksForPlatform,
+  compactPresentationColoringAssets,
   responsiveColoringAssets,
   selectorColoringAssets,
-  presentationColoringAssets,
   type BookPlatform,
 } from './src/lib/state/books.ts';
 import {
@@ -37,25 +37,25 @@ export function buildColoringPackManifest(
     const canonicalPaths = bookPackAssetPaths(book, platform);
     const responsiveAssets = responsiveColoringAssets(book);
     const selectorAssets = selectorColoringAssets(book);
-    const presentationAssets = platform === 'web' ? presentationColoringAssets(book) : [];
-    const compactPaths = new Map(
-      responsiveAssets
+    const compactPresentationAssets =
+      platform === 'web' ? compactPresentationColoringAssets(book) : [];
+    const compactPaths = new Map([
+      ...responsiveAssets
         .filter((asset) => asset.encoding !== 'thumbnail')
-        .map((asset) => [asset.source, asset.target])
-    );
+        .map((asset) => [asset.source, asset.target] as const),
+      ...compactPresentationAssets.map((asset) => [asset.runtimePath, asset.target] as const),
+    ]);
     const canonicalThumbnailPaths = new Set(
       responsiveAssets
         .filter((asset) => asset.encoding === 'thumbnail')
         .map((asset) => asset.source)
     );
     const canonicalSelectorPaths = new Set(selectorAssets.map((asset) => asset.target));
-    const canonicalPresentationPaths = new Set(presentationAssets.map((asset) => asset.target));
     const invariantPaths = new Set(canonicalPaths.filter(isInvariantColoringPackAssetPath));
     if (
       compactPaths.size +
         canonicalThumbnailPaths.size +
         canonicalSelectorPaths.size +
-        canonicalPresentationPaths.size +
         invariantPaths.size !==
       canonicalPaths.length
     ) {
@@ -67,7 +67,6 @@ export function buildColoringPackManifest(
           resolution === 'compact' &&
           !canonicalThumbnailPaths.has(path) &&
           !canonicalSelectorPaths.has(path) &&
-          !canonicalPresentationPaths.has(path) &&
           !invariantPaths.has(path)
             ? compactPaths.get(path)
             : path;
