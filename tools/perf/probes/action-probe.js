@@ -52,13 +52,104 @@
     requestAnimationFrame(frame);
   }
 
-  function recordActivity(action, type) {
-    action.activities.push({ at: performance.now(), type });
+  function nodeDescriptor(node) {
+    if (!node) return null;
+    const name = node.localName ?? node.nodeName?.toLowerCase() ?? 'unknown';
+    const id = node.id ? `#${node.id}` : '';
+    const classes =
+      typeof node.className === 'string'
+        ? node.className
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((className) => `.${className}`)
+            .join('')
+        : '';
+    return `${name}${id}${classes}`;
+  }
+
+  function recordActivity(action, type, details = {}) {
+    action.activities.push({ at: performance.now(), type, ...details });
+  }
+
+  function visualEffectDetails(event) {
+    return {
+      target: nodeDescriptor(event.target),
+      ...(event.propertyName ? { property: event.propertyName } : {}),
+      ...(event.animationName ? { animation: event.animationName } : {}),
+      ...(event.pseudoElement ? { pseudoElement: event.pseudoElement } : {}),
+    };
+  }
+
+  function visualEffectKey(event) {
+    const kind = event.type.startsWith('transition') ? 'transition' : 'animation';
+    return `${kind}:${event.propertyName ?? event.animationName ?? ''}:${event.pseudoElement ?? ''}`;
+  }
+
+  function startVisualEffect(action, event) {
+    const effects = action.visualEffects.get(event.target) ?? new Set();
+    const key = visualEffectKey(event);
+    if (!effects.has(key)) {
+      effects.add(key);
+      action.visualEffects.set(event.target, effects);
+      action.visualEffectCount++;
+    }
+    recordActivity(action, event.type, visualEffectDetails(event));
+  }
+
+  function endVisualEffect(action, event) {
+    const effects = action.visualEffects.get(event.target);
+    const key = visualEffectKey(event);
+    if (effects?.delete(key)) {
+      action.visualEffectCount = Math.max(0, action.visualEffectCount - 1);
+      if (effects.size === 0) action.visualEffects.delete(event.target);
+    }
+    recordActivity(action, event.type, visualEffectDetails(event));
+  }
+
+  function closeDetachedVisualEffects(action) {
+    for (const [target, effects] of action.visualEffects) {
+      if (target?.isConnected !== false) continue;
+      action.visualEffectCount = Math.max(0, action.visualEffectCount - effects.size);
+      action.visualEffects.delete(target);
+      recordActivity(action, 'visual-effect-detached', {
+        target: nodeDescriptor(target),
+        effects: [...effects],
+      });
+    }
+  }
+
+  function mutationDetails(records) {
+    const targets = [...new Set(records.map((record) => nodeDescriptor(record.target)))].filter(
+      Boolean
+    );
+    const added = [
+      ...new Set(
+        records.flatMap((record) => [...record.addedNodes].map((node) => nodeDescriptor(node)))
+      ),
+    ].filter(Boolean);
+    const removed = [
+      ...new Set(
+        records.flatMap((record) => [...record.removedNodes].map((node) => nodeDescriptor(node)))
+      ),
+    ].filter(Boolean);
+    return {
+      targets: targets.slice(0, 8),
+      ...(added.length ? { added: added.slice(0, 8) } : {}),
+      ...(removed.length ? { removed: removed.slice(0, 8) } : {}),
+    };
+  }
+
+  function recordMutations(action, records) {
+    if (!records.length) return;
+    recordActivity(action, 'dom-mutation', mutationDetails(records));
+    closeDetachedVisualEffects(action);
   }
 
   function trackActivity(action) {
     action.mutationObserver = new MutationObserver((records) => {
-      if (records.length) recordActivity(action, 'dom-mutation');
+      recordMutations(action, records);
     });
     action.mutationObserver.observe(document.documentElement, {
       attributes: true,
@@ -67,14 +158,8 @@
       subtree: true,
     });
 
-    const visualEffectStarted = (event) => {
-      action.visualEffectCount++;
-      recordActivity(action, event.type);
-    };
-    const visualEffectEnded = (event) => {
-      action.visualEffectCount = Math.max(0, action.visualEffectCount - 1);
-      recordActivity(action, event.type);
-    };
+    const visualEffectStarted = (event) => startVisualEffect(action, event);
+    const visualEffectEnded = (event) => endVisualEffect(action, event);
     const windowActivity = (event) => recordActivity(action, event.type);
     for (const type of VISUAL_EFFECT_START_EVENTS) {
       document.addEventListener(type, visualEffectStarted, true);
@@ -101,7 +186,7 @@
   }
 
   function stopActivityTracking(action) {
-    if (action.mutationObserver.takeRecords().length) recordActivity(action, 'dom-mutation');
+    recordMutations(action, action.mutationObserver.takeRecords());
     action.mutationObserver.disconnect();
     removeListeners(action);
   }
@@ -127,6 +212,7 @@
       canvasMutations: [],
       activities: [],
       visualEffectCount: 0,
+      visualEffects: new Map(),
       mutationObserver: null,
       listeners: [],
     };
@@ -192,6 +278,7 @@
       canvasMutations: [],
       activities: [],
       visualEffectCount: 0,
+      visualEffects: new Map(),
       mutationObserver: null,
       listeners: [],
     };
@@ -266,8 +353,8 @@
           visualEffectsActive,
         })),
       topFrameGaps,
-      activities: action.activities.map(({ at, type }) => ({
-        type,
+      activities: action.activities.map(({ at, ...activity }) => ({
+        ...activity,
         atFromActionMs: at - actionAt,
       })),
       canvasMutations: action.canvasMutations.map(({ at, ...mutation }) => ({
