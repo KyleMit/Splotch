@@ -305,6 +305,11 @@ export function sobelEdgeMap({ data, width, height }) {
   return edges;
 }
 
+// tools/asset-gen/lib/morphology.mjs carries an independent set of the same
+// operators for the asset pipeline. The divergence is deliberate, not drift:
+// dilateMask and erodeMask below are derived from this integer chamfer, while
+// that module uses separable box kernels and weights its chamfer 1/1.414. Each
+// scorer's committed thresholds are calibrated to its own numerics.
 // Two-pass 3-4 chamfer distance transform, in grid pixels.
 export function distanceTransform(edges, width, height) {
   const INF = 1e9;
