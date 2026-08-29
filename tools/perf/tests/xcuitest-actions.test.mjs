@@ -15,6 +15,7 @@ import {
   actionGateAllowances,
   canvasHasInk,
   coloringClearActivation,
+  coloringClearReadyExpression,
   coloringScrollTransport,
   coloringSelectionSteps,
   createActionSession,
@@ -443,7 +444,12 @@ describe('action state planning', () => {
     const clearBlock = IPAD_ACTIONS.slice(clearStart, clearEnd);
 
     expect(coloringClearActivation()).toBe('native-accessibility');
+    const clearReady = coloringClearReadyExpression();
+    expect(clearReady).toContain("dataset.active === 'false'");
+    expect(clearReady).toContain("!overlay.classList.contains('overlay-ready')");
+    expect(clearReady).toContain("getComputedStyle(overlay).opacity === '0'");
     expect(clearBlock).toContain('activation: coloringClearActivation()');
+    expect(clearBlock).toContain('ready: coloringClearReadyExpression()');
     expect(coloringBlock).toMatch(
       /coloring books to reopen'[\s\S]*?await sleep\(ANIMATED_ACTION_SETTLE_MS\)[\s\S]*?label: 'clear coloring page'/
     );

@@ -305,6 +305,10 @@ export function coloringClearActivation() {
   return 'native-accessibility';
 }
 
+export function coloringClearReadyExpression() {
+  return `(() => { const overlay = document.querySelector('#coloringOverlay'); return document.querySelector('#coloring-book-dialog')?.open !== true && overlay?.dataset.active === 'false' && !overlay.classList.contains('overlay-ready') && getComputedStyle(overlay).opacity === '0'; })()`;
+}
+
 export function coloringScrollTransport(client) {
   return client.useWheelForScroll === true
     ? { eventTypes: ['wheel'], activation: 'trusted-wheel' }
@@ -475,7 +479,11 @@ async function measureClick({
         overlay: {
           hidden: document.querySelector('#coloringOverlay')?.hidden,
           src: document.querySelector('#coloringOverlay')?.getAttribute('src'),
-          ready: document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready')
+          ready: document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready'),
+          active: document.querySelector('#coloringOverlay')?.dataset.active,
+          opacity: document.querySelector('#coloringOverlay')
+            ? getComputedStyle(document.querySelector('#coloringOverlay')).opacity
+            : null
         }
       };
     `);
@@ -1414,7 +1422,7 @@ export async function runActionSweep({
         execute,
         label: 'clear coloring page',
         selector: '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]',
-        ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.hidden === true`,
+        ready: coloringClearReadyExpression(),
         settleMs: ANIMATED_ACTION_SETTLE_MS,
         activation: coloringClearActivation(),
       })
