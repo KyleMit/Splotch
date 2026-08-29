@@ -18,7 +18,6 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
   import {
-    overlayUrl,
     coloringBookState,
     themedOverlayUrl as currentThemedOverlayUrl,
     themedPresentationUrl as currentThemedPresentationUrl,
@@ -196,7 +195,6 @@
   $effect(() => {
     const url = themedPresentationUrl;
     if (!url) {
-      displayedOverlayUrl = null;
       return;
     }
     const displayed = untrack(() => displayedOverlayUrl);
@@ -264,16 +262,15 @@
     style:width={paperCssWidth}
     style:height={paperCssHeight}
     style:transform={paperTransform}
-    hidden={!overlayUrl()}
   >
     <img
       class="coloring-overlay"
-      class:overlay-ready={!!displayedOverlayUrl}
+      class:overlay-ready={!!themedPresentationUrl && !!displayedOverlayUrl}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
       data-canonical-url={themedOverlayUrl ?? undefined}
+      data-active={themedOverlayUrl ? 'true' : 'false'}
       alt=""
-      hidden={!overlayUrl()}
     />
   </div>
   <LiveSurface bind:canvasEl {paperView} erasing={toolState.brush === 'eraser'} />
@@ -328,26 +325,20 @@
     will-change: transform;
   }
 
-  .paper-view[hidden] {
-    display: none;
-  }
-
   /* Hidden while the next art variant decodes, then shown once it's ready —
-     see displayedOverlayUrl. */
+     see displayedOverlayUrl. Retaining the decoded layer at opacity zero lets
+     clear avoid reconstructing the full-paper compositing surface. */
   .coloring-overlay {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
     opacity: 0;
+    will-change: opacity;
   }
 
   .coloring-overlay.overlay-ready {
     opacity: 1;
-  }
-
-  .coloring-overlay[hidden] {
-    display: none;
   }
 
   @media (orientation: portrait) {

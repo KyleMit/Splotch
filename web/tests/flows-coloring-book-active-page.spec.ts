@@ -164,6 +164,7 @@ test.describe('active-page chip on a small viewport', () => {
     await page.keyboard.press('Enter');
 
     await expect(dialog).toBeHidden();
-    await expect(page.locator('#coloringOverlay')).toBeHidden();
+    await expect(page.locator('#coloringOverlay')).toHaveAttribute('data-active', 'false');
+    await expect(page.locator('#coloringOverlay')).toHaveCSS('opacity', '0');
   });
 });

@@ -91,7 +91,8 @@ test('removing the coloring page recodes magic ink and undo restores the page an
   const dialog = page.locator('#coloring-book-dialog');
   await dialog.locator('.active-page-chip').click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator('#coloringOverlay')).toBeHidden();
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute('data-active', 'false');
+  await expect(page.locator('#coloringOverlay')).toHaveCSS('opacity', '0');
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
     .not.toEqual(catDigest);
