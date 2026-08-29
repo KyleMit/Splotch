@@ -28,11 +28,13 @@ import {
   capturedDeviceId,
   clearBundledReportMailbox,
   dismissInstallBannerForMeasurement,
+  driveTrustedGesturePasses,
   flushNativePreferences,
   handCaptureSecondsProblem,
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
+  refillEraserBetweenPasses,
   selectWebContext,
   STROKES_PER_GESTURE_REPEAT,
   summarizeLiveSurfaceTopology,
@@ -1307,6 +1309,113 @@ describe('trusted XCUITest input', () => {
     expect(actions.filter((action) => action.type === 'pointerDown')).toHaveLength(
       repeats * STROKES_PER_GESTURE_REPEAT
     );
+  });
+
+  it('refills eraser ink between separately dispatched gesture passes', async () => {
+    const calls = [];
+
+    const refills = await driveTrustedGesturePasses({
+      repeats: 10,
+      perform: async (repeats) => calls.push(['perform', repeats]),
+      refillBetweenPasses: async (afterStroke) => {
+        calls.push(['refill', afterStroke]);
+        return { afterStroke, pending: false, transparentTiles: [] };
+      },
+    });
+
+    expect(calls.filter(([kind]) => kind === 'perform')).toHaveLength(10);
+    expect(calls.filter(([kind]) => kind === 'refill')).toEqual(
+      Array.from({ length: 9 }, (_, index) => [
+        'refill',
+        (index + 1) * STROKES_PER_GESTURE_REPEAT,
+      ])
+    );
+    expect(calls.at(-1)).toEqual(['perform', 1]);
+    expect(refills).toHaveLength(9);
+  });
+
+  it('keeps non-eraser repeats in one native action dispatch', async () => {
+    const performed = [];
+
+    const refills = await driveTrustedGesturePasses({
+      repeats: 3,
+      perform: async (repeats) => performed.push(repeats),
+    });
+
+    expect(performed).toEqual([3]);
+    expect(refills).toBeNull();
+  });
+
+  it('refills in web context and waits for idle frames before resuming native input', async () => {
+    const calls = [];
+    const client = {
+      async request(method, path, body) {
+        calls.push(['request', method, path, body]);
+      },
+    };
+    const execute = async (script) => {
+      calls.push(['execute', script]);
+      return { pending: false, transparentTiles: [] };
+    };
+    const executeAsync = async (script) => {
+      calls.push(['executeAsync', script]);
+      return true;
+    };
+
+    const refill = await refillEraserBetweenPasses({
+      client,
+      sessionId: 'session-1',
+      execute,
+      executeAsync,
+      webContext: 'WEBVIEW_art.splotch.app',
+      afterStroke: 20,
+      repeatPauseMs: 0,
+    });
+
+    expect(calls.map(([kind]) => kind)).toEqual([
+      'request',
+      'execute',
+      'executeAsync',
+      'request',
+    ]);
+    expect(calls[0]).toEqual([
+      'request',
+      'POST',
+      '/session/session-1/context',
+      { name: 'WEBVIEW_art.splotch.app' },
+    ]);
+    expect(calls[1][1]).toContain('return fillEraserInk();');
+    expect(calls[2][1]).toContain('requestAnimationFrame(tick)');
+    expect(calls[3]).toEqual([
+      'request',
+      'POST',
+      '/session/session-1/context',
+      { name: 'NATIVE_APP' },
+    ]);
+    expect(refill).toEqual({ afterStroke: 20, pending: false, transparentTiles: [] });
+  });
+
+  it('records a page-fill anomaly and still restores native input context', async () => {
+    const contexts = [];
+
+    const refill = await refillEraserBetweenPasses({
+      client: {
+        async request(_method, _path, body) {
+          contexts.push(body.name);
+        },
+      },
+      sessionId: 'session-1',
+      execute: async () => {
+        throw new Error('transparent backing');
+      },
+      executeAsync: async () => true,
+      webContext: 'WEBVIEW_art.splotch.app',
+      afterStroke: 30,
+      repeatPauseMs: 0,
+    });
+
+    expect(contexts).toEqual(['WEBVIEW_art.splotch.app', 'NATIVE_APP']);
+    expect(refill).toEqual({ afterStroke: 30, error: 'transparent backing' });
   });
 
   it('only permits Apple-account provisioning when explicitly requested', () => {

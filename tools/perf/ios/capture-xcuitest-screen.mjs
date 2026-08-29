@@ -5,8 +5,6 @@ import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mj
 import {
   ERASER_FILL_BACKING_TIMEOUT_MS,
   eraserFillFunctionSource,
-  eraserRefillArming,
-  eraserRefillFunctionSource,
 } from '../lib/eraser-fill.mjs';
 import { CAMPAIGN_TARGETS, NATIVE_TRANSPORT, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
@@ -72,6 +70,7 @@ const WDA_LAUNCH_TIMEOUT_MS = 180_000;
 const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
+const ERASER_REFILL_IDLE_FRAMES = 2;
 const TABLE_CHUNK_ROWS = 2_000;
 const HAND_COUNTDOWN_SECONDS = 5;
 const HAND_DEFAULT_SECONDS = 20;
@@ -205,6 +204,65 @@ export function trustedGestureActions(bounds, repeats = 1, repeatPauseMs = 0) {
     for (const origin of SHORT_STROKE_ORIGINS) addShortStroke(actions, bounds, origin);
   }
   return actions;
+}
+
+export async function driveTrustedGesturePasses({
+  repeats,
+  perform,
+  refillBetweenPasses = null,
+}) {
+  if (!refillBetweenPasses) {
+    await perform(repeats);
+    return null;
+  }
+
+  const refills = [];
+  for (let index = 0; index < repeats; index += 1) {
+    await perform(1);
+    if (index < repeats - 1) {
+      refills.push(
+        await refillBetweenPasses((index + 1) * STROKES_PER_GESTURE_REPEAT)
+      );
+    }
+  }
+  return refills;
+}
+
+export async function refillEraserBetweenPasses({
+  client,
+  sessionId,
+  execute,
+  executeAsync,
+  webContext,
+  afterStroke,
+  repeatPauseMs,
+}) {
+  await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
+  let refill;
+  try {
+    const result = await execute(`${eraserFillFunctionSource()}\nreturn fillEraserInk();`);
+    refill = {
+      afterStroke,
+      pending: !!result.pending,
+      transparentTiles: result.transparentTiles ?? [],
+    };
+  } catch (error) {
+    refill = { afterStroke, error: String(error?.message ?? error) };
+  }
+  await executeAsync(`
+    const done = arguments[0];
+    let remaining = ${ERASER_REFILL_IDLE_FRAMES};
+    const tick = () => {
+      remaining -= 1;
+      if (remaining === 0) done(true);
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  `);
+  if (repeatPauseMs > 0) await sleep(repeatPauseMs);
+  // A failed page fill is evidence; a failed context transition makes the measured runtime ambiguous.
+  await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
+  return refill;
 }
 
 export function appiumCapabilities({
@@ -947,14 +1005,6 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
           settleWipe: afterSettle,
         };
       }
-      // The page refills between gesture passes so every pass erases real ink
-      // (issue 1292); the refill log is read back after the sweep.
-      const arming = eraserRefillArming(gestureRepeats, STROKES_PER_GESTURE_REPEAT);
-      await execute(
-        `${eraserFillFunctionSource()}\n${eraserRefillFunctionSource()}\n` +
-          `armEraserRefill(${arming.everyStrokes}, ` +
-          `${arming.totalStrokes}, fillEraserInk); return true;`
-      );
     }
 
     await execute(
@@ -1010,6 +1060,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       includeBrowserChrome: !nativeApp,
     });
 
+    let eraserRefills = brush === 'eraser' ? [] : null;
     if (handInput) {
       console.log(`\nDraw ${brush} strokes on the iPad for ~${handSeconds}s.`);
       for (let tick = HAND_COUNTDOWN_SECONDS; tick > 0; tick -= 1) {
@@ -1020,21 +1071,38 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       await sleep(handSeconds * 1_000);
       console.log('  window closed');
     } else {
-      await client.request('POST', `/session/${sessionId}/actions`, {
-        actions: [
-          {
-            type: 'pointer',
-            id: 'finger',
-            parameters: { pointerType: 'touch' },
-            actions: trustedGestureActions(canvasBounds, gestureRepeats, repeatPauseMs),
-          },
-        ],
+      const perform = (repeats) =>
+        client.request('POST', `/session/${sessionId}/actions`, {
+          actions: [
+            {
+              type: 'pointer',
+              id: 'finger',
+              parameters: { pointerType: 'touch' },
+              actions: trustedGestureActions(canvasBounds, repeats, repeatPauseMs),
+            },
+          ],
+        });
+      const refillBetweenPasses =
+        brush === 'eraser'
+          ? (afterStroke) =>
+              refillEraserBetweenPasses({
+                client,
+                sessionId,
+                execute,
+                executeAsync,
+                webContext,
+                afterStroke,
+                repeatPauseMs,
+              })
+          : null;
+      eraserRefills = await driveTrustedGesturePasses({
+        repeats: gestureRepeats,
+        perform,
+        refillBetweenPasses,
       });
     }
     await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
     await sleep(AFTER_GESTURE_SETTLE_MS);
-    const eraserRefills =
-      brush === 'eraser' ? await execute('return window.__eraserRefills ?? null;') : null;
     if (historySettleMs > 0) await sleep(historySettleMs);
     let rotation = null;
     if (has('rotate-before-undo')) {
