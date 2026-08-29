@@ -166,4 +166,24 @@ test.describe('active-page chip on a small viewport', () => {
     await expect(dialog).toBeHidden();
     await expect(page.locator('#coloringOverlay')).toBeHidden();
   });
+
+  test('compresses while pressed and clears immediately on release', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await applyFarmPage(page);
+    await openColoringDialog(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await settleFlyIn(dialog);
+    const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
+    const box = await chip.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await expect(chip).not.toHaveCSS('transform', 'none');
+    await page.mouse.up();
+
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#coloringOverlay')).toBeHidden();
+  });
 });

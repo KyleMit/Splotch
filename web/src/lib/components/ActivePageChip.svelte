@@ -46,8 +46,7 @@
     touch-action: manipulation;
     transition:
       border-color var(--duration-base) ease,
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
+      background var(--duration-base) ease;
   }
 
   .active-page-chip:active {

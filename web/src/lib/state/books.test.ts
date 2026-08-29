@@ -179,6 +179,13 @@ describe('responsive image sources', () => {
     expect(activePageChipComponent).not.toContain('sizes=');
   });
 
+  it('keeps active-page press feedback without animating the removed chip on release', () => {
+    const transition = activePageChipComponent.match(/transition:\s*([\s\S]*?);/)?.[1];
+    expect(transition).not.toContain('transform');
+    expect(activePageChipComponent).toContain('.active-page-chip:active');
+    expect(activePageChipComponent).toContain('transform: scale(0.92)');
+  });
+
   // The `sizes` hint's leading clause and the CSS that changes the grid under it
   // are one decision written twice — a media query can't read the constant — and
   // a hint that disagrees with the layout hands the browser the wrong candidate
