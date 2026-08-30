@@ -66,7 +66,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(pagePreview).toHaveAttribute('src', /\/coloring\/farm\/.+\.selector\.webp/);
   await expect(pagePreview).toHaveAttribute(
     'srcset',
-    /\/coloring\/max-96px\/farm\/.+\.selector\.webp 96w, .*max-240px.* 240w, .* 400w/
+    /\/coloring\/max-240px\/farm\/.+\.selector\.webp 240w, .* 400w/
   );
   await expect(pagePreview).toHaveAttribute('sizes', /min\(calc\(\(90vw - 92px\) \/ 2\), 414px\)/);
   await expect(pagePreview).toHaveCSS('mix-blend-mode', 'normal');
@@ -97,7 +97,10 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   const activePagePreview = dialog
     .getByRole('button', { name: /Clear active coloring page:/ })
     .locator('img');
-  await expect(activePagePreview).toHaveAttribute('srcset', /max-96px.* 96w, .*max-240px.* 240w/);
+  await expect(activePagePreview).toHaveAttribute(
+    'srcset',
+    /\/coloring\/max-240px\/farm\/.+\.selector\.webp 240w, .* 400w/
+  );
   await expect(activePagePreview).toHaveAttribute('sizes', '36px');
   const remountedPageTiles = await openFarmPageGrid(page);
   await expect(remountedPageTiles.first().locator('img')).toHaveAttribute(

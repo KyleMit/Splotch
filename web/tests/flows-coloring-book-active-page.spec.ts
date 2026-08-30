@@ -129,7 +129,7 @@ test('the active-page chip identifies the page in both picker views', async ({ p
   await expect(chipImage).toHaveAttribute('src', /\/farm\/cat-wide\.selector\.webp$/);
   await expect(chipImage).toHaveAttribute(
     'srcset',
-    /\/max-96px\/farm\/cat-wide\.selector\.webp 96w, \/coloring\/max-240px\/farm\/cat-wide\.selector\.webp 240w, \/coloring\/farm\/cat-wide\.selector\.webp 400w$/
+    /\/coloring\/max-240px\/farm\/cat-wide\.selector\.webp 240w, \/coloring\/farm\/cat-wide\.selector\.webp 400w$/
   );
   await expect(chipImage).toHaveAttribute('sizes', '36px');
   await expect(chipImage).toHaveCSS('mix-blend-mode', 'normal');
