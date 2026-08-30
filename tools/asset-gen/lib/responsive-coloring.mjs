@@ -10,7 +10,7 @@ const RESPONSIVE_GENERATION_CONCURRENCY = 4;
 export const RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION = 0.2;
 
 function isSvgRaster(asset) {
-  return asset.encoding === 'selector' || asset.encoding === 'presentation';
+  return asset.encoding === 'selector';
 }
 
 function staticAssetPath(staticDir, url) {
@@ -82,7 +82,7 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
   }
   const sourceBytes = (await stat(sourcePath)).size;
   const outputBytes = (await stat(targetPath)).size;
-  if (asset.encoding !== 'presentation' && outputBytes >= sourceBytes) {
+  if (outputBytes >= sourceBytes) {
     throw new Error(
       `${asset.target} is ${outputBytes} bytes, not smaller than its ${sourceBytes}-byte source.`
     );
@@ -91,8 +91,8 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
     encoding: asset.encoding,
     sourceBytes,
     outputBytes,
-    compressionSourceBytes: asset.encoding === 'presentation' ? 0 : sourceBytes,
-    compressionOutputBytes: asset.encoding === 'presentation' ? 0 : outputBytes,
+    compressionSourceBytes: sourceBytes,
+    compressionOutputBytes: outputBytes,
   };
 }
 

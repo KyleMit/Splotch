@@ -6,9 +6,10 @@
   import { isNative } from '$lib/platform';
   import {
     coloringBookGridLayout,
+    COLORING_IMAGE_SIZES,
     coverThumbImageSource,
-    pageDisplayImage,
-    pageSelectorImage,
+    pageOverlayImage,
+    pageSelectorImageSource,
     type Book,
     type ColoringPage,
     type ResponsiveColoringImage,
@@ -49,7 +50,7 @@
   const activePage = $derived(coloringBookState.overlayPage);
   const activePagePreview = $derived(
     activePage
-      ? pageSelectorImage(activePage, coloringBookState.orientation, resolvedTheme())
+      ? pageSelectorImageSource(activePage, coloringBookState.orientation, resolvedTheme())
       : null
   );
   const bookGridLayout = $derived(coloringBookGridLayout(books.length));
@@ -75,12 +76,19 @@
   });
 
   // Pressing/hovering a book tile warms that book's screen-sized selectors before
-  // the sub-grid renders. Hovering a page warms the runtime's canvas presentation.
+  // the sub-grid renders. Hovering a page warms its canonical canvas SVG.
   function prefetchBookPages(book: Book) {
-    prefetchImages(book.pages.map((page) => pageSelectorImage(page, orientation, resolvedTheme())));
+    prefetchImages(
+      book.pages.map((page) =>
+        imageRequest(
+          pageSelectorImageSource(page, orientation, resolvedTheme()),
+          COLORING_IMAGE_SIZES.pageSelector[orientation]
+        )
+      )
+    );
   }
-  function prefetchPagePresentation(page: ColoringPage) {
-    prefetchImages([pageDisplayImage(page, orientation, resolvedTheme())]);
+  function prefetchPageOverlay(page: ColoringPage) {
+    prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the
@@ -93,8 +101,8 @@
   function pickPage(page: ColoringPage) {
     const selectedOrientation = orientation;
     const selectedTheme = resolvedTheme();
-    const selectedPresentationUrl = pageDisplayImage(page, selectedOrientation, selectedTheme);
-    cancelImagePrefetchesExcept(selectedPresentationUrl);
+    const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
+    cancelImagePrefetchesExcept(selectedOverlayUrl);
     for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
       cancelImageRequest(img);
     }
@@ -247,16 +255,24 @@
             use:cutTrailingRow
           >
             {#each activeBook.pages as page (page.id)}
-              {@const pageImage = pageSelectorImage(page, orientation, resolvedTheme())}
+              {@const pageImage = pageSelectorImageSource(page, orientation, resolvedTheme())}
               <button
                 class="coloring-tile"
                 type="button"
                 aria-label="{page.name} coloring page"
                 onclick={() => pickPage(page)}
-                onpointerenter={() => prefetchPagePresentation(page)}
-                onpointerdown={() => prefetchPagePresentation(page)}
+                onpointerenter={() => prefetchPageOverlay(page)}
+                onpointerdown={() => prefetchPageOverlay(page)}
               >
-                <img src={pageImage} alt="" loading="lazy" />
+                <img
+                  src={pageImage.src}
+                  srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
+                  sizes={__IS_CAPACITOR__
+                    ? undefined
+                    : COLORING_IMAGE_SIZES.pageSelector[orientation]}
+                  alt=""
+                  loading="lazy"
+                />
               </button>
             {/each}
           </div>

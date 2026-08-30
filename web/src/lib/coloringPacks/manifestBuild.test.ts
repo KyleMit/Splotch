@@ -9,10 +9,9 @@ import { parseColoringPackManifest } from './manifest';
 // 200 KB ceiling at the inventory size that ceiling guarded.
 const MAX_COLORING_PACK_MANIFEST_BYTES_PER_FILE = 168;
 const MAX_COMPACT_TO_FULL_TIERED_RASTER_BYTES_RATIO = 0.7;
-const MAX_COMPACT_TO_FULL_PRESENTATION_BYTES_RATIO = 0.8;
 
 function isTieredRaster(path: string): boolean {
-  return path.endsWith('.webp') && !/\.(?:thumb|selector|presentation)\.webp$/.test(path);
+  return path.endsWith('.webp') && !/\.(?:thumb|selector)\.webp$/.test(path);
 }
 
 describe('buildColoringPackManifest', () => {
@@ -71,31 +70,20 @@ describe('buildColoringPackManifest', () => {
     expect(() => parseColoringPackManifest(manifest, '1.2.3-test')).not.toThrow();
   });
 
-  it('keeps web presentation rasters in both web pack variants', () => {
+  it('keeps full-page art canonical SVG in both web pack variants', () => {
     const { manifest } = buildColoringPackManifest('1.2.3-test', 'web');
-    let compactPresentationBytes = 0;
-    let fullPresentationBytes = 0;
 
     for (const book of manifest.books) {
-      const compactPresentations = book.variants.compact.files.filter((file) =>
-        file.path.endsWith('.presentation.webp')
-      );
-      const fullPresentations = book.variants.full.files.filter((file) =>
-        file.path.endsWith('.presentation.webp')
-      );
-      expect(compactPresentations).toHaveLength(24);
-      expect(fullPresentations).toHaveLength(24);
-      expect(
-        compactPresentations.every((file) => file.downloadPath?.includes('/max-1152px/'))
-      ).toBe(true);
-      expect(fullPresentations.every((file) => file.downloadPath === undefined)).toBe(true);
-      compactPresentationBytes += compactPresentations.reduce((sum, file) => sum + file.bytes, 0);
-      fullPresentationBytes += fullPresentations.reduce((sum, file) => sum + file.bytes, 0);
+      for (const variant of Object.values(book.variants)) {
+        expect(variant.files.some((file) => file.path.endsWith('.presentation.webp'))).toBe(false);
+        expect(variant.files.filter((file) => file.path.endsWith('.overlay.svg'))).toHaveLength(24);
+        expect(
+          variant.files
+            .filter((file) => file.path.endsWith('.overlay.svg'))
+            .every((file) => file.downloadPath === undefined)
+        ).toBe(true);
+      }
     }
-
-    expect(compactPresentationBytes).toBeLessThan(
-      fullPresentationBytes * MAX_COMPACT_TO_FULL_PRESENTATION_BYTES_RATIO
-    );
   });
 
   it('ships every landscape vector overlay through both incremental variants', () => {

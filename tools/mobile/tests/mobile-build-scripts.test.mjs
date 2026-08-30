@@ -54,7 +54,11 @@ vi.mock('../../lib/proc.mjs', async (importOriginal) => {
 vi.mock('../../../web/src/lib/state/books.ts', () => ({
   BOOKS: state.books,
   STARTER_COLORING_BOOK_ID: 'mobile',
-  RESPONSIVE_COLORING_TIER_DIRECTORIES: ['/coloring/max-1152px', '/coloring/max-240px'],
+  RESPONSIVE_COLORING_TIER_DIRECTORIES: [
+    '/coloring/max-1152px',
+    '/coloring/max-240px',
+    '/coloring/max-96px',
+  ],
   booksForPlatform: () => state.mobileEligibleBooks,
   bookAssetPaths: (book) => [
     book.cover,
@@ -66,11 +70,6 @@ vi.mock('../../../web/src/lib/state/books.ts', () => ({
     ]),
     `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
     `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,
-  ],
-  presentationColoringAssets: (book) => [
-    {
-      target: `/coloring/${book.id}/page-tall.presentation.webp`,
-    },
   ],
 }));
 
@@ -251,8 +250,7 @@ describe('mobile build script entry points', () => {
       'export const BOOKS = [];\n' +
         'export const STARTER_COLORING_BOOK_ID = "farm";\n' +
         'export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [];\n' +
-        'export const bookAssetPaths = () => [];\n' +
-        'export const presentationColoringAssets = () => [];\n'
+        'export const bookAssetPaths = () => [];\n'
     );
     const favicon = join(fixtureRoot, 'web', 'build', 'favicon.ico');
     writeFixture(favicon);
@@ -287,10 +285,10 @@ describe('mobile build script entry points', () => {
     writeFixture(join(mobileDir, 'cover.dark.overlay.svg'));
     writeFixture(join(mobileDir, 'page-tall.overlay.svg'));
     writeFixture(join(mobileDir, 'page-tall.dark.overlay.svg'));
-    writeFixture(join(mobileDir, 'page-tall.presentation.webp'));
     writeFixture(join(downloadableDir, 'cover.overlay.svg'));
     writeFixture(join(buildDir, 'coloring', 'max-1152px', 'mobile', 'page-tall.overlay.webp'));
     writeFixture(join(buildDir, 'coloring', 'max-240px', 'mobile', 'page-tall.thumb.webp'));
+    writeFixture(join(buildDir, 'coloring', 'max-96px', 'mobile', 'page-tall.selector.webp'));
     writeFixture(join(buildDir, 'index.html'), fixtureHtml);
     writeFixture(join(buildDir, 'about', 'index.html'), fixtureHtml);
     exit.mockClear();
@@ -306,10 +304,10 @@ describe('mobile build script entry points', () => {
     expect(existsSync(join(mobileDir, 'cover.dark.overlay.svg'))).toBe(false);
     expect(existsSync(join(mobileDir, 'page-tall.overlay.svg'))).toBe(true);
     expect(existsSync(join(mobileDir, 'page-tall.dark.overlay.svg'))).toBe(true);
-    expect(existsSync(join(mobileDir, 'page-tall.presentation.webp'))).toBe(false);
     expect(existsSync(downloadableDir)).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-1152px'))).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-240px'))).toBe(false);
+    expect(existsSync(join(buildDir, 'coloring', 'max-96px'))).toBe(false);
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).not.toContain('favicon.ico');
     expect(readFileSync(join(buildDir, 'about', 'index.html'), 'utf8')).not.toContain('og:title');
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).toContain('name="viewport"');
@@ -324,7 +322,7 @@ describe('mobile build script entry points', () => {
       '[strip-static-assets] stripped 1/1 canonical folder(s) for 1 web-only book(s): web-only'
     );
     expect(log).toHaveBeenCalledWith(
-      '[strip-static-assets] stripped 2/2 web-responsive coloring tier root(s).'
+      '[strip-static-assets] stripped 3/3 web-responsive coloring tier root(s).'
     );
   });
 

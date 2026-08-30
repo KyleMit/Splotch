@@ -1,14 +1,13 @@
 import { join } from 'node:path';
 import { readFile, stat } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
+import { Resvg } from '@resvg/resvg-js';
 import sharp from 'sharp';
 import {
   BOOKS,
   coloringDerivativeAssets,
-  compactPresentationColoringAssets,
   coverThumbImageSource,
-  selectorColoringAssets,
-  presentationColoringAssets,
+  pageSelectorImageSource,
 } from '../../../web/src/lib/state/books.ts';
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
 import {
@@ -23,11 +22,7 @@ import {
 const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 300_000;
 const RESPONSIVE_CATALOG_TEST_CONCURRENCY = 1;
 const EXPECTED_RESPONSIVE_ASSET_COUNT = 208;
-const EXPECTED_SELECTOR_ASSET_COUNT = 192;
-const EXPECTED_PRESENTATION_ASSET_COUNT = 192;
-const EXPECTED_COMPACT_PRESENTATION_ASSET_COUNT = 192;
-const MAX_COMPACT_PRESENTATION_ALPHA_MAE = 2;
-const MAX_SELECTOR_ALPHA_MAE = 3;
+const EXPECTED_SELECTOR_ASSET_COUNT = 576;
 
 function srcsetWidths() {
   const widths = new Map();
@@ -41,6 +36,12 @@ function srcsetWidths() {
   for (const book of BOOKS) {
     record(coverThumbImageSource(book, 'light'));
     record(coverThumbImageSource(book, 'dark'));
+    for (const page of book.pages) {
+      for (const orientation of ['portrait', 'landscape']) {
+        record(pageSelectorImageSource(page, orientation, 'light'));
+        record(pageSelectorImageSource(page, orientation, 'dark'));
+      }
+    }
   }
   return widths;
 }
@@ -48,8 +49,10 @@ function srcsetWidths() {
 // A fill is painted into the canvas rather than laid out from a srcset, so it carries no width
 // descriptor at all. Deriving the expected descriptor from the encoding keeps that a checked
 // fact for every asset — a fill that started shipping a descriptor now fails.
-const expectedDescriptor = (asset, intrinsicWidth) =>
+const expectedSourceDescriptor = (asset, intrinsicWidth) =>
   asset.encoding === 'thumbnail' ? intrinsicWidth : undefined;
+const expectedTargetDescriptor = (asset, intrinsicWidth) =>
+  asset.encoding === 'thumbnail' || asset.encoding === 'selector' ? intrinsicWidth : undefined;
 
 async function forEachWithConcurrency(items, task) {
   let nextItemIndex = 0;
@@ -67,23 +70,20 @@ async function forEachWithConcurrency(items, task) {
   );
 }
 
-async function crossArtifactAlphaMae(fullPresentationPath, derivativePath) {
-  const derivative = sharp(derivativePath);
-  const { width, height } = await derivative.metadata();
-  if (!width || !height) {
-    throw new Error(`Missing derivative dimensions: ${derivativePath}`);
-  }
-  const actual = await derivative.ensureAlpha().raw().toBuffer();
-  const reference = await sharp(fullPresentationPath)
-    .resize(width, height, { fit: 'fill', kernel: 'lanczos3' })
-    .ensureAlpha()
-    .raw()
-    .toBuffer();
-  let totalAlphaDifference = 0;
-  for (let index = 3; index < actual.length; index += 4) {
-    totalAlphaDifference += Math.abs(actual[index] - reference[index]);
-  }
-  return totalAlphaDifference / (actual.length / 4);
+async function deterministicSvgPixels(sourcePath, asset) {
+  const fitTo =
+    asset.widthPx < asset.maxEdgePx
+      ? { mode: 'height', value: asset.maxEdgePx }
+      : { mode: 'width', value: asset.maxEdgePx };
+  const rendered = new Resvg(await readFile(sourcePath), {
+    fitTo,
+    shapeRendering: 2,
+    imageRendering: 1,
+    font: { loadSystemFonts: false },
+  }).render();
+  expect(rendered.width, asset.target).toBe(asset.widthPx);
+  expect(Math.max(rendered.width, rendered.height), asset.target).toBe(asset.maxEdgePx);
+  return Buffer.from(rendered.pixels);
 }
 
 describe('responsive coloring catalog', () => {
@@ -95,26 +95,20 @@ describe('responsive coloring catalog', () => {
       let sourceBytes = 0;
       let targetBytes = 0;
 
-      expect(
-        assets.filter((asset) => !['selector', 'presentation'].includes(asset.encoding))
-      ).toHaveLength(EXPECTED_RESPONSIVE_ASSET_COUNT);
+      expect(assets.filter((asset) => asset.encoding !== 'selector')).toHaveLength(
+        EXPECTED_RESPONSIVE_ASSET_COUNT
+      );
       expect(assets.filter((asset) => asset.encoding === 'selector')).toHaveLength(
         EXPECTED_SELECTOR_ASSET_COUNT
-      );
-      expect(BOOKS.flatMap(presentationColoringAssets)).toHaveLength(
-        EXPECTED_PRESENTATION_ASSET_COUNT
-      );
-      expect(BOOKS.flatMap(compactPresentationColoringAssets)).toHaveLength(
-        EXPECTED_COMPACT_PRESENTATION_ASSET_COUNT
       );
       await forEachWithConcurrency(assets, async (asset) => {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
         const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();
         expect(widths.get(asset.source), asset.source).toBe(
-          expectedDescriptor(asset, sourceMetadata.width)
+          expectedSourceDescriptor(asset, sourceMetadata.width)
         );
         expect(widths.get(asset.target), asset.target).toBe(
-          expectedDescriptor(asset, targetMetadata.width)
+          expectedTargetDescriptor(asset, targetMetadata.width)
         );
         expect(targetMetadata.width, asset.target).toBe(asset.widthPx);
         expect(Math.max(targetMetadata.width ?? 0, targetMetadata.height ?? 0), asset.target).toBe(
@@ -126,8 +120,7 @@ describe('responsive coloring catalog', () => {
         const regenerated = await renderResponsiveColoringAsset(sourcePath, asset);
         expect(regenerated.equals(await readFile(targetPath)), asset.target).toBe(true);
       });
-      const compressibleAssets = assets.filter((asset) => asset.encoding !== 'presentation');
-      await forEachWithConcurrency(compressibleAssets, async (asset) => {
+      await forEachWithConcurrency(assets, async (asset) => {
         const sourceSize = (await stat(join(WEB_STATIC, asset.source))).size;
         const targetSize = (await stat(join(WEB_STATIC, asset.target))).size;
         expect(targetSize, asset.target).toBeLessThan(sourceSize);
@@ -142,28 +135,20 @@ describe('responsive coloring catalog', () => {
   );
 
   it(
-    'keeps compact presentation and selector edges consistent with the full presentation',
+    'keeps every selector tier pixel-exact to its canonical SVG render',
     async () => {
-      for (const book of BOOKS) {
-        const fullPresentationBySource = new Map(
-          presentationColoringAssets(book).map((asset) => [asset.source, asset])
+      const selectors = BOOKS.flatMap(coloringDerivativeAssets).filter(
+        (asset) => asset.encoding === 'selector'
+      );
+      expect(selectors).toHaveLength(EXPECTED_SELECTOR_ASSET_COUNT);
+      await forEachWithConcurrency(selectors, async (asset) => {
+        const sourcePath = join(WEB_STATIC, asset.source);
+        const targetPath = join(WEB_STATIC, asset.target);
+        const actual = await sharp(targetPath).ensureAlpha().raw().toBuffer();
+        expect(actual.equals(await deterministicSvgPixels(sourcePath, asset)), asset.target).toBe(
+          true
         );
-        const assertDerivativeFidelity = async (asset, maximumAlphaMae) => {
-          const fullPresentation = fullPresentationBySource.get(asset.source);
-          expect(fullPresentation, asset.source).toBeDefined();
-          const alphaMae = await crossArtifactAlphaMae(
-            join(WEB_STATIC, fullPresentation.target),
-            join(WEB_STATIC, asset.target)
-          );
-          expect(alphaMae, asset.target).toBeLessThanOrEqual(maximumAlphaMae);
-        };
-        await forEachWithConcurrency(compactPresentationColoringAssets(book), (asset) =>
-          assertDerivativeFidelity(asset, MAX_COMPACT_PRESENTATION_ALPHA_MAE)
-        );
-        await forEachWithConcurrency(selectorColoringAssets(book), (asset) =>
-          assertDerivativeFidelity(asset, MAX_SELECTOR_ALPHA_MAE)
-        );
-      }
+      });
     },
     RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
   );

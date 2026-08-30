@@ -3,7 +3,7 @@
 // against the freshly produced `build/` output — it never touches the source
 // `static/` tree.
 //
-// Six independent prunes:
+// Five independent prunes:
 //
 //   1. Coloring books whose `platforms` field omits 'mobile' (e.g. licensed IP
 //      like Bluey / Frozen). Source of truth is src/lib/state/books.ts, matching
@@ -14,9 +14,8 @@
 //      favicons, webmanifest, crawler files, generator inputs) — together with
 //      the head tags that reference them, so the strip can't leave a 404 behind.
 //   4. Cover SVG masters. Runtime cover presentation uses their raster thumbnails;
-//      page SVGs remain because native presentation and export both use them.
-//   5. Web canvas-presentation rasters. Native uses the canonical SVG directly.
-//   6. Hosted responsive tiers. Native downloads its selected pack tier after install.
+//      page SVGs remain because presentation and export both use them.
+//   5. Hosted responsive tiers. Native downloads its selected pack tier after install.
 //
 // books.ts is TypeScript, so this script is launched with Node's
 // --experimental-strip-types (see the build:cap npm script) to import it directly.
@@ -35,7 +34,6 @@ import {
   RESPONSIVE_COLORING_TIER_DIRECTORIES,
   STARTER_COLORING_BOOK_ID,
   bookAssetPaths,
-  presentationColoringAssets,
 } from '../../web/src/lib/state/books.ts';
 
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
@@ -160,25 +158,6 @@ function stripUnusedCoverLineArt(buildDir, books) {
   );
 }
 
-function stripWebPresentationRasters(buildDir, books) {
-  let freedBytes = 0;
-  let removed = 0;
-  for (const file of books.flatMap(presentationColoringAssets).map((asset) => asset.target)) {
-    const target = join(buildDir, file);
-    if (!existsSync(target)) {
-      console.warn(`[strip-static-assets] expected but not found: ${file}`);
-      continue;
-    }
-    freedBytes += statSync(target).size;
-    rmSync(target);
-    removed++;
-  }
-  console.log(
-    `[strip-static-assets] stripped ${removed} web canvas-presentation raster(s), ` +
-      `${(freedBytes / 1048576).toFixed(2)} MB freed.`
-  );
-}
-
 function stripResponsiveColoringTiers(buildDir) {
   let removed = 0;
   for (const directory of RESPONSIVE_COLORING_TIER_DIRECTORIES) {
@@ -206,7 +185,6 @@ export function stripStaticAssets(buildDir, books) {
   stripWebOnlyFiles(buildDir);
   const starterBooks = books.filter((book) => book.id === STARTER_COLORING_BOOK_ID);
   stripUnusedCoverLineArt(buildDir, starterBooks);
-  stripWebPresentationRasters(buildDir, starterBooks);
   stripResponsiveColoringTiers(buildDir);
 }
 

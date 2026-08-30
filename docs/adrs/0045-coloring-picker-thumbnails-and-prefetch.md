@@ -3,7 +3,8 @@
 **Status:** Active — the 2026-07-31 thumbnail decode bridge is superseded by the 2026-08-01
 amendment, the 2026-08-02 issue #621 amendment adds responsive web presentation, the 2026-08-08
 amendment reuses derivatives for screen-sized web/native packs, and the 2026-08-20 amendment retires
-raster page thumbnails after vector overlays shipped. **Date:** 2026-07
+raster page thumbnails after vector overlays shipped; ADR-0152 restores responsive raster selectors
+after physical-device performance evidence while keeping full-page art vector. **Date:** 2026-07
 
 ## Context
 
@@ -220,6 +221,8 @@ sets transferred 38,788 and 40,026 bytes respectively. Reusing the selected SVG 
 overlay transfer, but opening a book and backing out costs 65,821–77,604 additional bytes, and the
 eager warm front-loads the five pages the child does not select. If physical-device picker traces
 regress, narrow the warm set to near-viewport tiles rather than restoring a second page-art format.
+ADR-0152 supersedes that remedy: measured picker rendering showed the selector surface itself needed
+small raster derivatives, while the full-page canvas retained the canonical SVG.
 
 Book covers remain raster thumbnails even though their canonical line-art masters are SVG.
 `gen:coloring-thumbs` rasterizes `cover.overlay.svg` and `cover.dark.overlay.svg` into

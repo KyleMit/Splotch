@@ -127,7 +127,7 @@ describe('native coloring presentation inventory', () => {
     ],
   };
 
-  it('requires canonical page SVGs and rejects web presentation rasters', () => {
+  it('requires canonical page SVGs and rejects retired presentation rasters', () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-native-coloring-'));
     try {
       const coloringDir = join(root, 'coloring', book.id);
@@ -146,7 +146,7 @@ describe('native coloring presentation inventory', () => {
       writeFileSync(join(coloringDir, 'page-tall.presentation.webp'), 'webp');
       expect(nativeColoringPresentationProblems(root, book.id, [book])).toEqual([
         'Native canonical coloring page is missing: /coloring/fixture/page-wide.dark.overlay.svg',
-        'Web-only coloring presentation remains native: /coloring/fixture/page-tall.presentation.webp',
+        'Retired coloring presentation remains: /coloring/fixture/page-tall.presentation.webp',
       ]);
     } finally {
       rmSync(root, { recursive: true, force: true });

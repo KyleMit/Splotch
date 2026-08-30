@@ -187,11 +187,10 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // The canonical SVG remains the export/Magic authority. Web presents its
-  // lossless raster sibling so selecting or clearing a page does not synchronously
-  // rasterize a full-screen SVG on constrained Safari; native reuses the bundled
-  // SVG for both presentation and export instead of carrying a second full-size tier.
-  // Reading resolvedTheme() re-picks both siblings on a live theme switch.
+  // The canonical SVG is the presentation, export, and Magic authority. Selector
+  // surfaces use responsive raster previews, but the paper never substitutes a
+  // derivative whose registration or scale could diverge from the SVG.
+  // Reading resolvedTheme() re-picks the theme sibling on a live switch.
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
   const themedDisplayUrl = $derived(currentThemedDisplayUrl(resolvedTheme()));
 
@@ -229,7 +228,7 @@
     };
   });
 
-  // The presentation line art is the only asset needed to make a selected page visible.
+  // The canonical line art is the only asset needed to make a selected page visible.
   // Start the magic fill and rotation warm-up after it decodes so those
   // other art transfers cannot delay the page the child just picked.
   $effect(() => {

@@ -13,13 +13,11 @@ const { count, outputBytes, compressionSourceBytes, compressionOutputBytes, byEn
   await generateResponsiveColoringAssets(WEB_STATIC, assets);
 const savedBytes = compressionSourceBytes - compressionOutputBytes;
 const selectorBytes = byEncoding.selector?.outputBytes ?? 0;
-const presentationBytes = byEncoding.presentation?.outputBytes ?? 0;
 
 console.log(
   `[gen:coloring-responsive] wrote ${count} image(s) across ${books.length} book(s), ` +
     `${(outputBytes / 1048576).toFixed(2)} MB total; saved ` +
     `${(savedBytes / 1048576).toFixed(2)} MB ` +
     `(${((savedBytes / compressionSourceBytes) * 100).toFixed(1)}%) across compression tiers; ` +
-    `${(selectorBytes / 1048576).toFixed(2)} MB selectors and ` +
-    `${(presentationBytes / 1048576).toFixed(2)} MB presentations.`
+    `${(selectorBytes / 1048576).toFixed(2)} MB selectors.`
 );

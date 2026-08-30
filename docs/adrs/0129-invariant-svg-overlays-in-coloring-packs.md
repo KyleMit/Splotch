@@ -3,7 +3,8 @@
 **Status:** Active — amends [ADR-0044](0044-svg-optimization-audit.md),
 [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md),
 [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md), and
-[ADR-0103](0103-progressive-coloring-book-packs.md)
+[ADR-0103](0103-progressive-coloring-book-packs.md); amended by
+[ADR-0152](0152-responsive-raster-coloring-selectors.md)
 
 **Date:** 2026-08
 
@@ -151,6 +152,9 @@ digests when that recovery scratch is locally present; after it is removed, thos
 retained provenance rather than independently verifiable inputs.
 
 ## Amendment (2026-08): Separate Canonical Authority from Runtime Presentation
+
+ADR-0152 supersedes this amendment's full-page presentation WebPs and single-size selector. The
+canonical SVG again presents the full paper; selectors use a responsive 96/240/400 px raster set.
 
 The SVG remains the only canonical line-art source and the authority for drawing state, Magic
 registration, and screenshot export. Runtime presentation may use a deterministic derivative when

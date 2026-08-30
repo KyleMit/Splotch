@@ -6,7 +6,6 @@ import {
   COLORING_IMAGE_SIZES,
   bookAssetPaths,
   bookPackAssetPaths,
-  compactPresentationColoringAssets,
   coloringBookGridLayout,
   coverThumb,
   coverThumbImageSource,
@@ -14,11 +13,11 @@ import {
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
-  pagePresentationImage,
   pageSelectorImage,
+  pageSelectorImageSource,
   responsiveColoringAssets,
+  responsiveSelectorColoringAssets,
   selectorColoringAssets,
-  presentationColoringAssets,
 } from './books';
 import {
   clearLocalColoringBookRoots,
@@ -97,19 +96,6 @@ describe('pageSelectorImage', () => {
   });
 });
 
-describe('pagePresentationImage', () => {
-  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
-
-  it('uses theme-specific lossless canvas presentation derivatives', () => {
-    expect(pagePresentationImage(cat, 'portrait', 'light')).toBe(
-      '/coloring/farm/cat-tall.presentation.webp'
-    );
-    expect(pagePresentationImage(cat, 'portrait', 'dark')).toBe(
-      '/coloring/farm/cat-tall.dark.presentation.webp'
-    );
-  });
-});
-
 describe('vector overlays', () => {
   it('maps every catalog page, orientation, and theme to its canonical SVG', () => {
     for (const book of BOOKS) {
@@ -154,6 +140,20 @@ describe('responsive image sources', () => {
     });
   });
 
+  it('gives page selectors 96, 240, and 400 pixel responsive candidates', () => {
+    const cat = farm.pages.find((page) => page.id === 'cat')!;
+    expect(pageSelectorImageSource(cat, 'portrait', 'light')).toEqual({
+      src: '/coloring/farm/cat-tall.selector.webp',
+      srcset:
+        '/coloring/max-96px/farm/cat-tall.selector.webp 64w, /coloring/max-240px/farm/cat-tall.selector.webp 160w, /coloring/farm/cat-tall.selector.webp 267w',
+    });
+    expect(pageSelectorImageSource(cat, 'landscape', 'dark')).toEqual({
+      src: '/coloring/farm/cat-wide.dark.selector.webp',
+      srcset:
+        '/coloring/max-96px/farm/cat-wide.dark.selector.webp 96w, /coloring/max-240px/farm/cat-wide.dark.selector.webp 240w, /coloring/farm/cat-wide.dark.selector.webp 400w',
+    });
+  });
+
   it('keeps picker sizes aligned with the modal grid geometry', () => {
     for (const ownedCssValue of [
       'max-width: min(920px, calc(100vw - 32px))',
@@ -174,10 +174,11 @@ describe('responsive image sources', () => {
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
     expect(coloringBookComponent).toContain(
-      'pageSelectorImage(page, orientation, resolvedTheme())'
+      'pageSelectorImageSource(page, orientation, resolvedTheme())'
     );
-    expect(activePageChipComponent).not.toContain('srcset=');
-    expect(activePageChipComponent).not.toContain('sizes=');
+    expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
+    expect(activePageChipComponent).toContain('srcset=');
+    expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
   });
 
   it('keeps active-page press feedback without animating the removed chip on release', () => {
@@ -216,8 +217,6 @@ describe('pageCompositionKey', () => {
       '/coloring/farm/cat-tall.dark.overlay.svg?version=1',
       '/coloring/farm/cat-tall.selector.webp',
       '/coloring/farm/cat-tall.dark.selector.webp',
-      '/coloring/farm/cat-tall.presentation.webp',
-      '/coloring/farm/cat-tall.dark.presentation.webp',
     ];
 
     expect(new Set(siblings.map(pageCompositionKey))).toEqual(new Set(['/coloring/farm/cat-tall']));
@@ -230,7 +229,7 @@ describe('bookAssetPaths', () => {
   it('keeps every catalog asset inside its enclosing book directory', () => {
     for (const book of BOOKS) {
       for (const path of bookAssetPaths(book)) {
-        expect(path).toMatch(new RegExp(`^/coloring/(?:max-(?:1152|240)px/)?${book.id}/`));
+        expect(path).toMatch(new RegExp(`^/coloring/(?:max-(?:1152|240|96)px/)?${book.id}/`));
       }
     }
   });
@@ -265,8 +264,6 @@ describe('bookAssetPaths', () => {
         expect(paths).toContain(pageOverlayImage(page, orientation, 'dark'));
         expect(paths).toContain(pageSelectorImage(page, orientation, 'light'));
         expect(paths).toContain(pageSelectorImage(page, orientation, 'dark'));
-        expect(paths).toContain(pagePresentationImage(page, orientation, 'light'));
-        expect(paths).toContain(pagePresentationImage(page, orientation, 'dark'));
       }
     }
   });
@@ -286,11 +283,7 @@ describe('bookAssetPaths', () => {
     expect(responsive).toHaveLength(26);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
     for (const canonical of bookPackAssetPaths(farm, 'web')) {
-      if (
-        canonical.endsWith('.svg') ||
-        canonical.endsWith('.selector.webp') ||
-        canonical.endsWith('.presentation.webp')
-      ) {
+      if (canonical.endsWith('.svg') || canonical.endsWith('.selector.webp')) {
         continue;
       }
       expect(
@@ -307,22 +300,13 @@ describe('bookAssetPaths', () => {
     for (const asset of selectors) expect(paths.has(asset.target), asset.target).toBe(true);
   });
 
-  it('lists every generated canvas presentation derivative', () => {
+  it('lists every generated responsive page selector derivative', () => {
     const paths = new Set(bookAssetPaths(farm));
-    const presentations = presentationColoringAssets(farm);
-    expect(presentations).toHaveLength(24);
-    for (const asset of presentations) expect(paths.has(asset.target), asset.target).toBe(true);
-  });
-
-  it('lists a physical compact derivative for every web presentation path', () => {
-    const paths = new Set(bookAssetPaths(farm));
-    const presentations = compactPresentationColoringAssets(farm);
-    expect(presentations).toHaveLength(24);
-    expect(new Set(presentations.map((asset) => asset.runtimePath)).size).toBe(24);
-    for (const asset of presentations) {
+    const selectors = responsiveSelectorColoringAssets(farm);
+    expect(selectors).toHaveLength(48);
+    for (const asset of selectors) {
       expect(paths.has(asset.target), asset.target).toBe(true);
-      expect(asset.target).toContain('/coloring/max-1152px/');
-      expect(asset.target).not.toBe(asset.runtimePath);
+      expect(asset.target).toMatch(/\/coloring\/max-(?:96|240)px\//);
     }
   });
 });
@@ -333,14 +317,14 @@ describe('downloadable coloring packs', () => {
 
   it('contains exactly the canonical runtime files for one complete book', () => {
     const paths = bookPackAssetPaths(farm, 'web');
-    expect(paths).toHaveLength(98);
+    expect(paths).toHaveLength(74);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);
     expect(paths.some((path) => /\.(?:outline|chalk)\.webp$/.test(path))).toBe(false);
     expect(paths.some((path) => path.includes('/max-'))).toBe(false);
   });
 
-  it('omits web-only presentation rasters from native packs', () => {
+  it('uses the same canonical SVG and selector inventory in native packs', () => {
     const paths = bookPackAssetPaths(farm, 'mobile');
     expect(paths).toHaveLength(74);
     expect(paths.some((path) => path.endsWith('.presentation.webp'))).toBe(false);
@@ -359,9 +343,6 @@ describe('downloadable coloring packs', () => {
       );
       expect(pageSelectorImage(page, 'portrait', 'dark')).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.dark.selector.webp'
-      );
-      expect(pagePresentationImage(page, 'portrait', 'dark')).toBe(
-        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.dark.presentation.webp'
       );
     } finally {
       clearLocalColoringBookRoots();

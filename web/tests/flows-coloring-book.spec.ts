@@ -336,7 +336,7 @@ test('a newly applied page cannot paint the previous page fill while its art dec
   const nextOverlayHeld = new Promise<void>((resolve) => {
     releaseNextOverlay = resolve;
   });
-  await page.route(/\/coloring\/farm\/cow-wide\.presentation\.webp$/, async (route) => {
+  await page.route(/\/coloring\/farm\/cow-wide\.overlay\.svg$/, async (route) => {
     await nextOverlayHeld;
     await route.continue();
   });
@@ -371,7 +371,7 @@ test('a newly applied page cannot paint the previous page fill while its art dec
     releaseNextOverlay();
     await expect(page.locator('#coloringOverlay')).toHaveAttribute(
       'src',
-      /\/cow-wide\.presentation\.webp$/
+      /\/cow-wide\.overlay\.svg$/
     );
     await expect.poll(() => opaqueCanvasPixelCount(page), { timeout: 15_000 }).toBeGreaterThan(0);
   } finally {
@@ -395,7 +395,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   const pixelsBeforeTheme = await opaqueCanvasPixelCount(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.presentation\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.svg$/);
   await page.evaluate(() => {
     const originalDecode = HTMLImageElement.prototype.decode;
     let release!: () => void;
@@ -405,7 +405,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
     const controlledWindow = window as Window & { __releaseChalkDecode?: () => void };
     controlledWindow.__releaseChalkDecode = release;
     HTMLImageElement.prototype.decode = function () {
-      if (this.src.endsWith('.dark.presentation.webp')) {
+      if (this.src.endsWith('.dark.overlay.svg')) {
         return pendingChalk.then(() => originalDecode.call(this));
       }
       return originalDecode.call(this);
@@ -415,14 +415,14 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await openSettingsModal(page);
   await page.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.presentation\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.svg$/);
   await expect(overlay).toHaveClass(/overlay-ready/);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThanOrEqual(pixelsBeforeTheme);
 
   await page.evaluate(() => {
     (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();
   });
-  await expect(overlay).toHaveAttribute('src', /\.dark\.presentation\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /\.dark\.overlay\.svg$/);
 });
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide

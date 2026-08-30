@@ -149,7 +149,6 @@ test.describe('responsive coloring offline fallback', () => {
         '/coloring/farm/cover.thumb.webp',
         '/coloring/farm/cat-tall.overlay.svg',
         '/coloring/farm/cat-tall.selector.webp',
-        '/coloring/farm/cat-tall.presentation.webp',
       ])
     );
 
@@ -166,7 +165,7 @@ test.describe('responsive coloring offline fallback', () => {
       decodedWidth: 267,
     });
     expect(dprOne.overlay).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.presentation.webp',
+      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
       decodedWidth: 1024,
     });
 
@@ -183,7 +182,7 @@ test.describe('responsive coloring offline fallback', () => {
       decodedWidth: 267,
     });
     expect(dprThree.overlay).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.presentation.webp',
+      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
       decodedWidth: 1024,
     });
   });

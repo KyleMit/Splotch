@@ -23,11 +23,7 @@ export interface ColoringDerivativeAsset {
   target: string;
   maxEdgePx: number;
   widthPx: number;
-  encoding: 'fill' | 'thumbnail' | 'selector' | 'presentation';
-}
-
-export interface CompactPresentationColoringAsset extends ColoringDerivativeAsset {
-  runtimePath: string;
+  encoding: 'fill' | 'thumbnail' | 'selector';
 }
 
 interface ColoringBookGridLayout {
@@ -73,25 +69,32 @@ const RESPONSIVE_COLORING_TIERS = {
     maxEdgePx: 240,
     widths: {
       cover: { candidate: 240, source: 400 },
+      portraitSelector: 160,
+      landscapeSelector: 240,
+    },
+  },
+  selectorPreview: {
+    directory: 'max-96px',
+    maxEdgePx: 96,
+    widths: {
+      portrait: 64,
+      landscape: 96,
     },
   },
 } as const;
 export const COMPACT_COLORING_PACK_MAX_EDGE_PX = RESPONSIVE_COLORING_TIERS.overlay.maxEdgePx;
 export const COMPACT_COLORING_PACK_SHORT_EDGE_PX =
   RESPONSIVE_COLORING_TIERS.overlay.widths.portrait.candidate;
-export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COLORING_TIERS).map(
-  (tier) => `${COLORING_ROOT}/${tier.directory}`
-);
+export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [
+  ...new Set(
+    Object.values(RESPONSIVE_COLORING_TIERS).map((tier) => `${COLORING_ROOT}/${tier.directory}`)
+  ),
+];
 const BOOK_GRID_DEFAULT_COLUMNS = 4;
 const PAGE_SELECTOR_MAX_EDGE_PX = 400;
 const PAGE_SELECTOR_WIDTHS: Record<BookOrientation, number> = {
   portrait: 267,
   landscape: 400,
-};
-const PAGE_PRESENTATION_MAX_EDGE_PX = 1536;
-const PAGE_PRESENTATION_WIDTHS: Record<BookOrientation, number> = {
-  portrait: 1024,
-  landscape: 1536,
 };
 /**
  * A tall viewport drops the cover grid to two columns and caps its width by the
@@ -114,6 +117,11 @@ export const COLORING_IMAGE_SIZES = {
     standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px`,
     orphan: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px`,
   },
+  pageSelector: {
+    portrait: '(max-width: 520px) calc((90vw - 40px) / 2), min(calc((90vw - 104px) / 3), 272px)',
+    landscape: '(max-width: 520px) calc((90vw - 40px) / 2), min(calc((90vw - 92px) / 2), 414px)',
+  },
+  activePageChip: '36px',
 } as const;
 
 export function coloringBookGridLayout(visibleTileCount: number): ColoringBookGridLayout {
@@ -137,8 +145,6 @@ const ASSET_SUFFIXES = {
   darkOverlay: '.dark.overlay.svg',
   selector: '.selector.webp',
   darkSelector: '.dark.selector.webp',
-  presentation: '.presentation.webp',
-  darkPresentation: '.dark.presentation.webp',
 } as const;
 
 const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
@@ -150,15 +156,7 @@ const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
 
 const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
 
-type PageAssetVariant =
-  | 'overlay'
-  | 'light'
-  | 'night'
-  | 'darkOverlay'
-  | 'selector'
-  | 'darkSelector'
-  | 'presentation'
-  | 'darkPresentation';
+type PageAssetVariant = 'overlay' | 'light' | 'night' | 'darkOverlay' | 'selector' | 'darkSelector';
 
 function pageAssetPath(
   bookId: string,
@@ -197,13 +195,17 @@ function responsiveTierPath(src: string, directory: string): string {
 
 function responsiveImage(
   src: string,
-  directory: string,
-  candidateWidthPx: number,
+  candidates: { directory: string; widthPx: number }[],
   sourceWidthPx: number
 ): ResponsiveColoringImage {
   return {
     src,
-    srcset: `${responsiveTierPath(src, directory)} ${candidateWidthPx}w, ${src} ${sourceWidthPx}w`,
+    srcset: [
+      ...candidates.map(
+        ({ directory, widthPx }) => `${responsiveTierPath(src, directory)} ${widthPx}w`
+      ),
+      `${src} ${sourceWidthPx}w`,
+    ].join(', '),
   };
 }
 
@@ -307,34 +309,27 @@ export function pageSelectorImage(
   return resolveColoringAssetUrl(pageSelectorAssetPath(page, orientation, theme));
 }
 
-function pagePresentationAssetPath(
+export function pageSelectorImageSource(
   page: ColoringPage,
   orientation: BookOrientation,
   theme: ResolvedTheme
-): string {
-  const overlay = pageOverlayAssetPath(page, orientation, theme);
-  const sourceSuffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
-  const targetSuffix =
-    theme === 'dark' ? ASSET_SUFFIXES.darkPresentation : ASSET_SUFFIXES.presentation;
-  return `${overlay.slice(0, -sourceSuffix.length)}${targetSuffix}`;
-}
-
-export function pagePresentationImage(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme
-): string {
-  return resolveColoringAssetUrl(pagePresentationAssetPath(page, orientation, theme));
-}
-
-export function pageDisplayImage(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme
-): string {
-  return __IS_CAPACITOR__
-    ? pageOverlayImage(page, orientation, theme)
-    : pagePresentationImage(page, orientation, theme);
+): ResponsiveColoringImage {
+  const source = pageSelectorAssetPath(page, orientation, theme);
+  const previewTier = RESPONSIVE_COLORING_TIERS.selectorPreview;
+  const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
+  const mediumWidth =
+    orientation === 'portrait'
+      ? thumbnailTier.widths.portraitSelector
+      : thumbnailTier.widths.landscapeSelector;
+  const image = responsiveImage(
+    source,
+    [
+      { directory: previewTier.directory, widthPx: previewTier.widths[orientation] },
+      { directory: thumbnailTier.directory, widthPx: mediumWidth },
+    ],
+    PAGE_SELECTOR_WIDTHS[orientation]
+  );
+  return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
 function coverThumbnailPath(src: string, theme: ResolvedTheme): string {
@@ -357,7 +352,11 @@ export function coverThumbImageSource(book: Book, theme: ResolvedTheme): Respons
   const source = coverThumb(book, theme);
   const tier = RESPONSIVE_COLORING_TIERS.thumbnail;
   const widths = tier.widths.cover;
-  const image = responsiveImage(source, tier.directory, widths.candidate, widths.source);
+  const image = responsiveImage(
+    source,
+    [{ directory: tier.directory, widthPx: widths.candidate }],
+    widths.source
+  );
   return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
@@ -405,34 +404,34 @@ export function selectorColoringAssets(book: Book): ColoringDerivativeAsset[] {
   );
 }
 
-export function presentationColoringAssets(book: Book): ColoringDerivativeAsset[] {
+export function responsiveSelectorColoringAssets(book: Book): ColoringDerivativeAsset[] {
+  const previewTier = RESPONSIVE_COLORING_TIERS.selectorPreview;
+  const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
   return book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.flatMap((orientation) =>
-      (['light', 'dark'] as const).map((theme) => ({
-        source: pageOverlayAssetPath(page, orientation, theme),
-        target: pagePresentationAssetPath(page, orientation, theme),
-        maxEdgePx: PAGE_PRESENTATION_MAX_EDGE_PX,
-        widthPx: PAGE_PRESENTATION_WIDTHS[orientation],
-        encoding: 'presentation' as const,
-      }))
-    )
-  );
-}
-
-export function compactPresentationColoringAssets(book: Book): CompactPresentationColoringAsset[] {
-  const tier = RESPONSIVE_COLORING_TIERS.overlay;
-  return book.pages.flatMap((page) =>
-    ALL_ORIENTATIONS.flatMap((orientation) =>
-      (['light', 'dark'] as const).map((theme) => {
-        const runtimePath = pagePresentationAssetPath(page, orientation, theme);
-        return {
-          source: pageOverlayAssetPath(page, orientation, theme),
-          target: responsiveTierPath(runtimePath, tier.directory),
-          runtimePath,
-          maxEdgePx: tier.maxEdgePx,
-          widthPx: tier.widths[orientation].candidate,
-          encoding: 'presentation' as const,
-        };
+      (['light', 'dark'] as const).flatMap((theme) => {
+        const source = pageOverlayAssetPath(page, orientation, theme);
+        const selector = pageSelectorAssetPath(page, orientation, theme);
+        const mediumWidth =
+          orientation === 'portrait'
+            ? thumbnailTier.widths.portraitSelector
+            : thumbnailTier.widths.landscapeSelector;
+        return [
+          {
+            source,
+            target: responsiveTierPath(selector, previewTier.directory),
+            maxEdgePx: previewTier.maxEdgePx,
+            widthPx: previewTier.widths[orientation],
+            encoding: 'selector' as const,
+          },
+          {
+            source,
+            target: responsiveTierPath(selector, thumbnailTier.directory),
+            maxEdgePx: thumbnailTier.maxEdgePx,
+            widthPx: mediumWidth,
+            encoding: 'selector' as const,
+          },
+        ];
       })
     )
   );
@@ -442,8 +441,7 @@ export function coloringDerivativeAssets(book: Book): ColoringDerivativeAsset[] 
   return [
     ...responsiveColoringAssets(book),
     ...selectorColoringAssets(book),
-    ...presentationColoringAssets(book),
-    ...compactPresentationColoringAssets(book),
+    ...responsiveSelectorColoringAssets(book),
   ];
 }
 
@@ -477,7 +475,7 @@ export function bookAssetPaths(book: Book): string[] {
   ];
 }
 
-export function bookPackAssetPaths(book: Book, platform: BookPlatform): string[] {
+export function bookPackAssetPaths(book: Book, _platform: BookPlatform): string[] {
   const coverThumbs = [coverThumb(book, 'light'), coverThumb(book, 'dark')];
   const fills = book.pages.flatMap((page) => [
     ...ALL_ORIENTATIONS.map((orientation) => page.colorImages[orientation]),
@@ -492,7 +490,5 @@ export function bookPackAssetPaths(book: Book, platform: BookPlatform): string[]
     ])
   );
   const selectors = selectorColoringAssets(book).map((asset) => asset.target);
-  const presentations =
-    platform === 'web' ? presentationColoringAssets(book).map((asset) => asset.target) : [];
-  return [...coverThumbs, ...fills, ...overlays, ...selectors, ...presentations];
+  return [...coverThumbs, ...fills, ...overlays, ...selectors];
 }

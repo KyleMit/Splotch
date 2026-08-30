@@ -5,7 +5,6 @@ import {
   STARTER_COLORING_BOOK_ID,
   bookPackAssetPaths,
   booksForPlatform,
-  compactPresentationColoringAssets,
   responsiveColoringAssets,
   selectorColoringAssets,
   type BookPlatform,
@@ -37,14 +36,11 @@ export function buildColoringPackManifest(
     const canonicalPaths = bookPackAssetPaths(book, platform);
     const responsiveAssets = responsiveColoringAssets(book);
     const selectorAssets = selectorColoringAssets(book);
-    const compactPresentationAssets =
-      platform === 'web' ? compactPresentationColoringAssets(book) : [];
-    const compactPaths = new Map([
-      ...responsiveAssets
+    const compactPaths = new Map(
+      responsiveAssets
         .filter((asset) => asset.encoding !== 'thumbnail')
-        .map((asset) => [asset.source, asset.target] as const),
-      ...compactPresentationAssets.map((asset) => [asset.runtimePath, asset.target] as const),
-    ]);
+        .map((asset) => [asset.source, asset.target] as const)
+    );
     const canonicalThumbnailPaths = new Set(
       responsiveAssets
         .filter((asset) => asset.encoding === 'thumbnail')
