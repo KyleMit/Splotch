@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { draw, gotoApp, openSettingsModal, renderedCanvasHandle } from './helpers';
+import { draw, gotoApp, openSettingsModal, renderedCanvasHandle, settleFlyIn } from './helpers';
 import {
   applyFarmPage,
   openColoringDialog,
@@ -65,7 +65,7 @@ test('changing the coloring page recodes magic ink and undo restores the page an
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\/cow-(?:wide|tall)\.presentation\.webp$/
+    /\/cow-(?:wide|tall)\.overlay\.svg$/
   );
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
@@ -74,7 +74,7 @@ test('changing the coloring page recodes magic ink and undo restores the page an
   await page.locator('#undoButton').click();
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\/cat-(?:wide|tall)\.presentation\.webp$/
+    /\/cat-(?:wide|tall)\.overlay\.svg$/
   );
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
@@ -89,6 +89,7 @@ test('removing the coloring page recodes magic ink and undo restores the page an
 
   await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
+  await settleFlyIn(dialog);
   await dialog.locator('.active-page-chip').click();
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toBeHidden();
@@ -99,7 +100,7 @@ test('removing the coloring page recodes magic ink and undo restores the page an
   await page.locator('#undoButton').click();
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\/cat-(?:wide|tall)\.presentation\.webp$/
+    /\/cat-(?:wide|tall)\.overlay\.svg$/
   );
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
@@ -113,10 +114,7 @@ test('changing theme recodes existing magic ink to the themed fill', async ({ pa
   const settings = await openSettingsModal(page);
   await settings.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('#coloringOverlay')).toHaveAttribute(
-    'src',
-    /\.dark\.presentation\.webp$/
-  );
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.dark\.overlay\.svg$/);
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
     .not.toEqual(lightDigest);

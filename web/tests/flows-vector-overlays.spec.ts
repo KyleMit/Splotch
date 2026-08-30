@@ -45,9 +45,7 @@ async function distinctOpaqueCanvasColors(page: Page): Promise<number> {
   }
 }
 
-test('a catalog presentation raster reveals with Magic while retaining its canonical SVG', async ({
-  page,
-}) => {
+test('a canonical catalog SVG reveals with Magic across themes', async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 820 });
   await page.emulateMedia({ colorScheme: 'light' });
   await gotoAppWithAllColoringBooksInstalled(page);
@@ -55,17 +53,14 @@ test('a catalog presentation raster reveals with Magic while retaining its canon
   await selectPageFromBook(page, 'Space', 'Station');
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute(
-    'src',
-    /\/coloring\/space\/station-wide\.presentation\.webp$/
-  );
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/space\/station-wide\.overlay\.svg$/);
   await expect(overlay).toHaveAttribute(
     'data-canonical-url',
     /\/coloring\/space\/station-wide\.overlay\.svg$/
   );
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/space\/station-wide\.presentation\.webp$/);
+    .toMatch(/\/coloring\/space\/station-wide\.overlay\.svg$/);
   await expect
     .poll(() =>
       overlay.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])
@@ -85,14 +80,16 @@ test('a catalog presentation raster reveals with Magic while retaining its canon
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(overlay).toHaveAttribute(
     'src',
-    /\/coloring\/space\/station-wide\.dark\.presentation\.webp$/
+    /\/coloring\/space\/station-wide\.dark\.overlay\.svg$/
+  );
+  await expect(overlay).toHaveAttribute(
+    'data-canonical-url',
+    /\/coloring\/space\/station-wide\.dark\.overlay\.svg$/
   );
   await expect(overlay).not.toHaveAttribute('srcset');
 });
 
-test('a dark presentation raster decodes and exports its canonical SVG through the live app', async ({
-  page,
-}) => {
+test('a dark canonical SVG decodes and exports through the live app', async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 820 });
   await page.emulateMedia({ colorScheme: 'dark' });
   await gotoAppWithAllColoringBooksInstalled(page);
@@ -102,11 +99,15 @@ test('a dark presentation raster decodes and exports its canonical SVG through t
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toHaveAttribute(
     'src',
-    /\/coloring\/vehicles\/train-wide\.dark\.presentation\.webp$/
+    /\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/
+  );
+  await expect(overlay).toHaveAttribute(
+    'data-canonical-url',
+    /\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/
   );
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/vehicles\/train-wide\.dark\.presentation\.webp$/);
+    .toMatch(/\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/);
 
   await draw(page, [
     { x: 180, y: 260 },
