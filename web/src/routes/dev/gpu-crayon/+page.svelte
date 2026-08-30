@@ -2,11 +2,7 @@
   import { onMount } from 'svelte';
   import { paletteHex } from '$lib/palette';
   import { InkTarget } from '$lib/drawing/gpu/inkTarget';
-  import {
-    buildReferenceScene,
-    DETAIL_CROP,
-    IPAD_SCALE,
-  } from '$lib/drawing/gpu/referenceScene';
+  import { buildReferenceScene, DETAIL_CROP, IPAD_SCALE } from '$lib/drawing/gpu/referenceScene';
   import type { CrayonRenderer } from '$lib/drawing/gpu/renderer';
   import { createCialloRenderer } from '$lib/drawing/gpu/renderers/cialloRenderer';
   import { createCpuRenderer } from '$lib/drawing/gpu/renderers/cpuRenderer';
