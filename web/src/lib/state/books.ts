@@ -456,7 +456,7 @@ export function bookAssetPaths(book: Book): string[] {
   ];
 }
 
-export function bookPackAssetPaths(book: Book, _platform: BookPlatform): string[] {
+export function bookPackAssetPaths(book: Book): string[] {
   const coverThumbs = [coverThumb(book, 'light'), coverThumb(book, 'dark')];
   const fills = book.pages.flatMap((page) => [
     ...ALL_ORIENTATIONS.map((orientation) => page.colorImages[orientation]),

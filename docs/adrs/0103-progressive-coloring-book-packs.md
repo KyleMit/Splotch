@@ -146,3 +146,16 @@ Resvg renderer, then encoded losslessly. Compact-to-full presentation bytes have
 gate in addition to the existing fill-tier gate; manifest tests require every compact web
 presentation to resolve through `/coloring/max-1152px/` and require native packs to contain no
 presentation files.
+
+## Amendment (2026-08): Return to One Cross-Target Pack Inventory
+
+ADR-0152 supersedes the platform-specific presentation inventory above. Full-page presentation
+rasters are retired on web and native; both targets again use the canonical SVG for presentation and
+export, while selector rasters remain the shared picker representation. Every book therefore has the
+same 74 logical files on both targets.
+
+`bookPackAssetPaths()` no longer accepts a platform because the per-book inventory has no
+platform-specific branch. Platform eligibility remains explicit at the manifest boundary through
+`booksForPlatform(platform)`, which still prevents a target from advertising an unavailable book.
+Compact variants map only the raster assets that retain screen-sized derivatives; canonical SVGs,
+selector rasters, and cover thumbnails keep their logical bytes.

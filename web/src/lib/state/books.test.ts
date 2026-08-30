@@ -313,7 +313,7 @@ describe('bookAssetPaths', () => {
     const responsive = responsiveColoringAssets(farm);
     expect(responsive).toHaveLength(26);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
-    for (const canonical of bookPackAssetPaths(farm, 'web')) {
+    for (const canonical of bookPackAssetPaths(farm)) {
       if (canonical.endsWith('.svg') || canonical.endsWith('.selector.webp')) {
         continue;
       }
@@ -347,17 +347,12 @@ describe('downloadable coloring packs', () => {
   const dinosaur = BOOKS.find((book) => book.id === 'dinosaur')!;
 
   it('contains exactly the canonical runtime files for one complete book', () => {
-    const paths = bookPackAssetPaths(farm, 'web');
+    const paths = bookPackAssetPaths(farm);
     expect(paths).toHaveLength(74);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);
     expect(paths.some((path) => /\.(?:outline|chalk)\.webp$/.test(path))).toBe(false);
     expect(paths.some((path) => path.includes('/max-'))).toBe(false);
-  });
-
-  it('uses the same canonical SVG and selector inventory in native packs', () => {
-    const paths = bookPackAssetPaths(farm, 'mobile');
-    expect(paths).toHaveLength(74);
     expect(paths.some((path) => path.endsWith('.presentation.webp'))).toBe(false);
     expect(paths.filter((path) => path.endsWith('.overlay.svg'))).toHaveLength(24);
   });

@@ -33,7 +33,7 @@ export function buildColoringPackManifest(
   source: string;
 } {
   const books = booksForPlatform(platform).map((book) => {
-    const canonicalPaths = bookPackAssetPaths(book, platform);
+    const canonicalPaths = bookPackAssetPaths(book);
     const responsiveAssets = responsiveColoringAssets(book);
     const selectorAssets = selectorColoringAssets(book);
     const compactPaths = new Map(
