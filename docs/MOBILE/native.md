@@ -46,9 +46,9 @@ seven non-starter books download automatically, one complete verified book at a 
 Turning it off cancels active background work without deleting completed packs. Compact screens
 receive 1,152 px fills; larger or denser screens receive the canonical tier. Both native pack
 variants retain canonical 400 px cover thumbnails, canonical SVG overlays, and 400 px selector
-rasters. Web-only 96/240 px selector candidates are omitted. Android WorkManager stores the selected
-bytes under `noBackupFilesDir`; iOS background `URLSession` stores them in Application Support with
-backup exclusion. The picker exposes a book only after its install marker is written.
+rasters. The web-only 240 px selector candidates are omitted. Android WorkManager stores the
+selected bytes under `noBackupFilesDir`; iOS background `URLSession` stores them in Application
+Support with backup exclusion. The picker exposes a book only after its install marker is written.
 
 ### Storage
 
