@@ -181,9 +181,9 @@ describe('responsive image sources', () => {
     expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
   });
 
-  it('keeps active-page press feedback without animating the removed chip on release', () => {
+  it('eases the active-page chip out of its pressed state', () => {
     const transition = activePageChipComponent.match(/transition:\s*([\s\S]*?);/)?.[1];
-    expect(transition).not.toContain('transform');
+    expect(transition).toContain('transform var(--duration-fast) ease');
     expect(activePageChipComponent).toContain('.active-page-chip:active');
     expect(activePageChipComponent).toContain('transform: scale(0.92)');
   });
