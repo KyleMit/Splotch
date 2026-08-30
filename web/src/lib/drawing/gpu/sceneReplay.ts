@@ -28,6 +28,8 @@ export interface ReplayStats {
   intervalMs: Percentiles;
   gpuMs: Percentiles | null;
   presentMs: Percentiles | null;
+  // Only present when timer queries were unavailable — see the fallback above.
+  syncPaintMs: Percentiles | null;
 }
 
 export interface Percentiles {
@@ -88,6 +90,7 @@ export class SceneReplay {
   private intervalSamples: number[] = [];
   private gpuSamples: number[] = [];
   private presentSamples: number[] = [];
+  private syncSamples: number[] = [];
   private lastFrameAt = 0;
   private drawCalls = 0;
   private primitives = 0;
@@ -151,6 +154,20 @@ export class SceneReplay {
     this.cpuSamples.push(performance.now() - startedAt);
     this.endTimer(paintQuery, this.gpuSamples);
 
+    // Without timer queries there is no way to see the paint at all, and the
+    // environment that lacks them is the one the question is about: a
+    // software rasteriser (SwiftShader) reports no
+    // EXT_disjoint_timer_query_webgl2. Fall back to draining the pipeline and
+    // timing it on the wall clock. That serialises what a GPU would overlap,
+    // so it is an UPPER bound rather than the same number — which is the right
+    // direction for a floor, and is why the two are reported under different
+    // names rather than pooled.
+    if (!this.timerExt) {
+      const drainedAt = performance.now();
+      this.gl.finish();
+      this.syncSamples.push(performance.now() - drainedAt + (performance.now() - startedAt));
+    }
+
     const presentQuery = this.beginTimer();
     this.renderer.endFrame();
     this.endTimer(presentQuery, this.presentSamples);
@@ -205,6 +222,7 @@ export class SceneReplay {
       intervalMs: percentiles(this.intervalSamples),
       gpuMs: this.gpuSamples.length > 0 ? percentiles(this.gpuSamples) : null,
       presentMs: this.presentSamples.length > 0 ? percentiles(this.presentSamples) : null,
+      syncPaintMs: this.syncSamples.length > 0 ? percentiles(this.syncSamples) : null,
     };
   }
 }

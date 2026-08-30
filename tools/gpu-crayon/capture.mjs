@@ -38,11 +38,17 @@ function parseArgs(argv) {
   const repeats = argv.find((a) => a.startsWith('--repeats='))?.slice('--repeats='.length);
   const label = argv.find((a) => a.startsWith('--label='))?.slice('--label='.length);
   const scale = argv.find((a) => a.startsWith('--scale='))?.slice('--scale='.length);
+  // Headless Chromium has no GPU and falls back to SwiftShader, which is the
+  // only way to measure what this costs on a device whose GPU is blocklisted,
+  // unavailable, or software-emulated. The numbers are meaningless as a ranking
+  // and are the whole point as a floor.
+  const headless = argv.includes('--headless');
   return {
     baseUrl: url ?? 'http://localhost:5231',
     repeats: repeats ? Math.max(1, Number(repeats)) : DEFAULT_REPEATS,
     label: label ?? null,
     scale: scale ?? null,
+    headless,
   };
 }
 
@@ -72,6 +78,7 @@ function summarise(runs) {
     runs: runs.length,
     gpuMs: band('gpuMs'),
     presentMs: band('presentMs'),
+    syncPaintMs: band('syncPaintMs'),
     cpuMs: band('cpuMs'),
     intervalMs: band('intervalMs'),
     frames: runs[0].frames,
@@ -81,9 +88,9 @@ function summarise(runs) {
   };
 }
 
-async function capture({ baseUrl, repeats, label, scale }) {
+async function capture({ baseUrl, repeats, label, scale, headless }) {
   await mkdir(OUTPUT_DIR, { recursive: true });
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless });
   const page = await browser.newPage({
     viewport: { width: 1260, height: 1040 },
     deviceScaleFactor: 1,
@@ -148,10 +155,13 @@ async function capture({ baseUrl, repeats, label, scale }) {
 
     results.push({ ...renderer, stats, runs });
     const gpu = stats.gpuMs;
+    const sync = stats.syncPaintMs;
     process.stdout.write(
-      gpu
+      gpu && gpu.p50 > 0
         ? ` GPU p50 ${gpu.p50.toFixed(3)} ms (spread ${gpu.p50Spread.toFixed(3)}), p95 ${gpu.p95.toFixed(3)}, max ${gpu.max.toFixed(3)}\n`
-        : ` no GL work\n`
+        : sync
+          ? ` sync-drained paint p50 ${sync.p50.toFixed(3)} ms, p95 ${sync.p95.toFixed(3)}, max ${sync.max.toFixed(3)} (upper bound)\n`
+          : ` no GL work\n`
     );
   }
 
@@ -177,6 +187,7 @@ async function capture({ baseUrl, repeats, label, scale }) {
     }).trim(),
     repeats,
     sceneScale: meta.scene.scale,
+    softwareRendered: headless,
     userAgent,
     gpu,
     scene: meta.scene,
