@@ -50,6 +50,13 @@ const downloadableColoringGlobIgnores = BOOKS.filter(
   (book) => book.id !== STARTER_COLORING_BOOK_ID
 ).map((book) => `coloring/${book.id}/**/*`);
 
+// Generated rather than committed, so every consumer reads this one list: the
+// build emits them as assets and the dev server serves them from memory.
+const BUILD_MANIFEST_ASSETS = [
+  { fileName: VERSION_JSON_FILENAME, source: JSON.stringify({ version: APP_VERSION }) },
+  { fileName: coloringPackManifest.fileName, source: coloringPackManifest.source },
+];
+
 export default defineConfig({
   server: {
     // Every executable consumer of this port — netlify.toml, dev:stop,
@@ -86,15 +93,23 @@ export default defineConfig({
     {
       name: 'emit-build-manifests',
       generateBundle() {
-        this.emitFile({
-          type: 'asset',
-          fileName: VERSION_JSON_FILENAME,
-          source: JSON.stringify({ version: APP_VERSION }),
-        });
-        this.emitFile({
-          type: 'asset',
-          fileName: coloringPackManifest.fileName,
-          source: coloringPackManifest.source,
+        for (const { fileName, source } of BUILD_MANIFEST_ASSETS) {
+          this.emitFile({ type: 'asset', fileName, source });
+        }
+      },
+      // generateBundle is a build-only hook, so without this middleware both
+      // URLs 404 under `vite dev`: the coloring-pack manager's very first fetch
+      // fails and no book ever installs for anyone developing the app. Serving
+      // the identical bytes off the one BUILD_MANIFEST_ASSETS list keeps dev
+      // and prod from drifting.
+      configureServer(server) {
+        server.middlewares.use((request, response, next) => {
+          const { pathname } = new URL(request.url ?? '/', 'http://localhost');
+          const asset = BUILD_MANIFEST_ASSETS.find(({ fileName }) => pathname === `/${fileName}`);
+          if (!asset) return next();
+          response.setHeader('Content-Type', 'application/json');
+          response.setHeader('Cache-Control', 'no-store');
+          response.end(asset.source);
         });
       },
     },

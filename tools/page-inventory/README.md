@@ -46,9 +46,12 @@ when the default host port is occupied; `--critique FILE` applies only to a full
 
 ## Review and finalize
 
-The review command requires a current capture manifest, the `codex` executable on `PATH`, an
-authenticated Codex installation, and network access. It starts one fresh image-only process per
-capture and writes resumable checkpoints under
+The review command requires a current capture manifest, network access, and an authenticated
+`claude` or `codex` installation on `PATH` — `lib/reviewer-runner.mjs` owns that seam and picks
+whichever is present, or takes `--runner`. Both get the same isolated-image contract; only delivery
+differs, since codex takes `--image` while Claude Code reads a per-review copy staged into the
+reviewer root it is confined to, and removed again once that review ends. It starts one fresh
+image-only process per capture and writes resumable checkpoints under
 `.scrapbook-scratch/page-inventory-critique/reviews/`. Existing checkpoints whose image and review
 description hashes still match are skipped.
 
@@ -59,10 +62,14 @@ npm run finalize:page-inventory-critique
 ```
 
 Use `--review-id`, `--concurrency`, `--model`, and `--effort` to bound or tune review work. Reviewer
-logs remain under the adjacent `logs/` directory. The finalizer rejects missing, duplicate, unknown,
-malformed, or stale checkpoints and writes `scrapbook/page-inventory/design-critique.json`.
-`--allow-partial` is limited to an explicit scratch `--out`; a partial critique cannot become the
-published keeper.
+logs remain under the adjacent `logs/` directory. Each checkpoint records the runner and model that
+produced it, and the finalizer lifts that into the critique's `scope.reviewer` — the review contract
+names a process, not the thing that ran it, and two runners' severity distributions are not known to
+be comparable. It refuses a set whose checkpoints name more than one, since checkpoints outlive a
+run and a resume on a different machine would otherwise merge two instruments silently. The
+finalizer also rejects missing, duplicate, unknown, malformed, or stale checkpoints and writes
+`scrapbook/page-inventory/design-critique.json`. `--allow-partial` is limited to an explicit scratch
+`--out`; a partial critique cannot become the published keeper.
 
 ## Attach feedback
 
@@ -85,11 +92,11 @@ incomplete review data produce diagnostics and a nonzero exit. Capture output is
 destination and swapped only on success, so a failed capture keeps the previous inventory intact.
 Review failures keep completed checkpoints and logs so the same command can resume them.
 
-`lib/page-inventory-capture.mjs` owns image validation, `lib/page-inventory-data.mjs` owns
-manifest/checkpoint contracts, `lib/page-inventory-design-notes.mjs` owns reviewer-visible design
-intent, and `lib/page-inventory-report.mjs` owns viewport metadata and HTML rendering. Keep public
-flags, output paths, review IDs, hashes, and checkpoint schemas stable when maintaining the entry
-points.
+`lib/reviewer-runner.mjs` owns the reviewer runner seam, `lib/page-inventory-capture.mjs` owns image
+validation, `lib/page-inventory-data.mjs` owns manifest/checkpoint contracts,
+`lib/page-inventory-design-notes.mjs` owns reviewer-visible design intent, and
+`lib/page-inventory-report.mjs` owns viewport metadata and HTML rendering. Keep public flags, output
+paths, review IDs, hashes, and checkpoint schemas stable when maintaining the entry points.
 
 Run focused verification with:
 

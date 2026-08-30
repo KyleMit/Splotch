@@ -66,6 +66,10 @@ const TABLET_UA =
 
 const STORAGE = {
   'splotch-ai-access-token': 'daycare-club',
+  // isAiImageButtonVisible() requires this toggle as well as a credential, so
+  // without it the AI button stays hidden and every surface reached through it
+  // — the parental gate and the whole ai/ group — is unreachable.
+  'splotch-ai-image-enabled': 'true',
   'splotch-advanced-controls': 'true',
   'splotch-drawer-open': 'false',
   'splotch-lock-rotation': 'false',
@@ -711,8 +715,16 @@ function adminSurfaces() {
         await admin(page);
         const more = page.getByRole('button', { name: /More options for/ }).first();
         if (await more.isVisible()) {
-          await more.click();
-          await page.locator('.row-actions.open').first().waitFor();
+          // A single click was not reliably opening the row; the cause was
+          // never isolated, and it cannot be a row left open by an earlier
+          // surface because admin() navigates first. Hydration is the likely
+          // candidate — the SSR'd button takes a press before its handler
+          // attaches — so this retries the open rather than waiting longer.
+          await retryOpen(
+            page.locator('.row-actions.open').first(),
+            () => more.click(),
+            'Admin row actions'
+          );
         } else {
           await page.getByRole('button', { name: 'Copy link' }).first().focus();
         }
@@ -971,6 +983,13 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
   const themes = selectSpotCheckItems(PAGE_INVENTORY_THEMES, filters.themes, '--theme', (theme) => [
     theme.id,
   ]);
+  // The inventory is evidence about what ships, so it is captured against a
+  // production preview. `vite dev` is not the same app: hydration arrives late
+  // enough that a shot can catch pre-hydration state — /design renders its
+  // whole swatch table in light-mode token values under night mode, because
+  // routes/design/+page.svelte adopts the applied theme in onMount — and 26 of
+  // 42 surfaces differed between the two servers at one viewport and theme.
+  // The build this costs was measured at 19 seconds against an ~80-minute run.
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: ROOT,
     env: { ...process.env, ...SERVER_ENV },
