@@ -12,6 +12,7 @@
 //
 // Usage: node tools/gpu-crayon/capture.mjs --url=http://localhost:5231
 
+import { execFileSync } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,12 +27,58 @@ const OUTPUT_DIR = path.join(HERE, 'output');
 // them — the grain IS the thing being judged.
 const DETAIL_ZOOM = 3;
 
+// Three samples per renderer, because a single capture cannot support a claim
+// about an improvement. Two runs of the untouched stamp renderer already moved
+// its worst frame from 3.76 ms to 1.61 ms, which is larger than most of the
+// differences an iteration is trying to produce.
+const DEFAULT_REPEATS = 3;
+
 function parseArgs(argv) {
   const url = argv.find((a) => a.startsWith('--url='))?.slice('--url='.length);
-  return { baseUrl: url ?? 'http://localhost:5231' };
+  const repeats = argv.find((a) => a.startsWith('--repeats='))?.slice('--repeats='.length);
+  const label = argv.find((a) => a.startsWith('--label='))?.slice('--label='.length);
+  return {
+    baseUrl: url ?? 'http://localhost:5231',
+    repeats: repeats ? Math.max(1, Number(repeats)) : DEFAULT_REPEATS,
+    label: label ?? null,
+  };
 }
 
-async function capture({ baseUrl }) {
+const median = (values) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+// Median of each percentile across runs, plus the observed spread of the
+// headline figure — an iteration whose median moves less than the spread has
+// not been shown to do anything.
+function summarise(runs) {
+  const pick = (metric, q) => runs.map((r) => r[metric]?.[q]).filter((v) => typeof v === 'number');
+  const band = (metric) => {
+    const p50 = pick(metric, 'p50');
+    if (p50.length === 0) return null;
+    return {
+      p50: median(p50),
+      p95: median(pick(metric, 'p95')),
+      max: median(pick(metric, 'max')),
+      p50Spread: Math.max(...p50) - Math.min(...p50),
+      samples: p50.length,
+    };
+  };
+  return {
+    runs: runs.length,
+    gpuMs: band('gpuMs'),
+    cpuMs: band('cpuMs'),
+    intervalMs: band('intervalMs'),
+    frames: runs[0].frames,
+    drawCalls: runs[0].drawCalls,
+    primitives: runs[0].primitives,
+    primitiveNoun: runs[0].primitiveNoun,
+  };
+}
+
+async function capture({ baseUrl, repeats, label }) {
   await mkdir(OUTPUT_DIR, { recursive: true });
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage({
@@ -64,8 +111,15 @@ async function capture({ baseUrl }) {
 
   for (const renderer of meta.renderers) {
     process.stdout.write(`capturing ${renderer.id}… `);
-    const stats = await page.evaluate((id) => window.__gpuCrayon.run(id), renderer.id);
+    const runs = [];
+    for (let sample = 0; sample < repeats; sample++) {
+      runs.push(await page.evaluate((id) => window.__gpuCrayon.run(id), renderer.id));
+      process.stdout.write('.');
+    }
+    const stats = summarise(runs);
 
+    // Screenshots come from the LAST run, so the image and the final scene
+    // state agree; every run draws the same scene from the same cleared paper.
     const fullPath = path.join(OUTPUT_DIR, `${renderer.id}.png`);
     // Whichever surface the active option owns — the GPU options share one
     // WebGL canvas, the CPU baseline has its own 2D one.
@@ -88,8 +142,13 @@ async function capture({ baseUrl }) {
       .webp({ quality: 90 })
       .toFile(path.join(OUTPUT_DIR, `${renderer.id}-detail.webp`));
 
-    results.push({ ...renderer, stats });
-    process.stdout.write(`${stats.frames} frames, JS p95 ${stats.cpuMs.p95.toFixed(2)} ms\n`);
+    results.push({ ...renderer, stats, runs });
+    const gpu = stats.gpuMs;
+    process.stdout.write(
+      gpu
+        ? ` GPU p50 ${gpu.p50.toFixed(3)} ms (spread ${gpu.p50Spread.toFixed(3)}), p95 ${gpu.p95.toFixed(3)}, max ${gpu.max.toFixed(3)}\n`
+        : ` no GL work\n`
+    );
   }
 
   const userAgent = await page.evaluate(() => navigator.userAgent);
@@ -103,6 +162,16 @@ async function capture({ baseUrl }) {
 
   const report = {
     capturedAt: new Date().toISOString(),
+    label,
+    branch: execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+      cwd: path.join(HERE, '..', '..'),
+      encoding: 'utf8',
+    }).trim(),
+    commit: execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: path.join(HERE, '..', '..'),
+      encoding: 'utf8',
+    }).trim(),
+    repeats,
     userAgent,
     gpu,
     scene: meta.scene,
