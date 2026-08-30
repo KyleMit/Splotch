@@ -53,13 +53,17 @@ Canvas-presentation WebPs and their compact siblings are retired.
 The page picker and Active-page chip use deterministic, alpha-preserving lossless WebP selectors.
 Each selector publishes a width-descriptor `srcset` with two maximum-edge tiers:
 
-* 240 px — 160w portrait / 240w landscape, intended for ordinary picker tiles; and
+* 240 px — 160w portrait / 240w landscape, used by narrow DPR-1 picker tiles and covers; and
 * 400 px — 267w portrait / 400w landscape, the canonical fallback for large/high-density tiles and
   native packs.
 
+Measured Chromium selection is intentionally narrower than the tier name suggests: a roughly 152 CSS
+px phone tile selects 240 px at DPR 1, while the same tile at DPR 2/3, a roughly 217 CSS px tablet
+tile at DPR 2, and a roughly 418 CSS px desktop tile select 400 px.
+
 The page grid publishes orientation-specific `sizes` derived from its two/three-column portrait and
 two-column landscape layouts. The Active-page chip publishes `36px`. Web browsers choose among the
-three candidates. Capacitor omits `srcset` and uses the installed 400 px selector because hosted
+two candidates. Capacitor omits `srcset` and uses the installed 400 px selector because hosted
 responsive URLs are not valid inside an installed pack.
 
 The 240 px candidate is a web-responsive distribution file, not an additional logical pack member

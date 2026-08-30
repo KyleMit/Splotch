@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, globSync, readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import {
   BETA_OPT_IN_URL,
@@ -190,8 +190,16 @@ export function nativeBundleProblems(
   const problems = [];
   const coloringDirectory = join(dir, 'coloring');
   if (existsSync(coloringDirectory)) {
+    const responsiveTierDirectoryNames = new Set(
+      RESPONSIVE_COLORING_TIER_DIRECTORIES.map((path) => basename(path))
+    );
     const extraBookDirectories = readdirSync(coloringDirectory, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && entry.name !== starterBookId)
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          entry.name !== starterBookId &&
+          !responsiveTierDirectoryNames.has(entry.name)
+      )
       .map((entry) => entry.name);
     if (extraBookDirectories.length) {
       problems.push(

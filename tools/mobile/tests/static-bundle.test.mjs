@@ -68,6 +68,7 @@ describe('native bundle scan', () => {
     try {
       mkdirSync(join(root, 'coloring', 'farm'), { recursive: true });
       mkdirSync(join(root, 'coloring', 'dinosaur'), { recursive: true });
+      mkdirSync(join(root, 'coloring', 'max-240px'), { recursive: true });
       expect(nativeBundleProblems(root, [], 'farm')).toEqual([
         'Downloadable coloring books remain in the native bundle: dinosaur',
       ]);
