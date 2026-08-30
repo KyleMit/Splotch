@@ -109,6 +109,9 @@ export const COLORING_IMAGE_SIZES = {
     standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px`,
     orphan: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px`,
   },
+  // The wide clauses reserve 16px for the vertical scrollbar inside the
+  // overflow-y dialog; books.test.ts binds that reserve and every other term
+  // to the component's columns, gaps, padding, breakpoint, and width cap.
   pageSelector: {
     portrait: '(max-width: 520px) calc((90vw - 40px) / 2), min(calc((90vw - 104px) / 3), 272px)',
     landscape: '(max-width: 520px) calc((90vw - 40px) / 2), min(calc((90vw - 92px) / 2), 414px)',

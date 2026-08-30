@@ -32,6 +32,13 @@ const activePageChipComponent = readFileSync(
   new URL('../components/ActivePageChip.svelte', import.meta.url),
   'utf8'
 );
+const tokensCss = readFileSync(new URL('../../tokens.css', import.meta.url), 'utf8');
+
+function spacingTokenPx(token: string): number {
+  const value = new RegExp(`--${token}: (\\d+)px`).exec(tokensCss)?.[1];
+  expect(value, token).toBeDefined();
+  return Number(value);
+}
 
 describe('page defaults', () => {
   it('every page ships night fills and dark overlays for both orientations', () => {
@@ -173,6 +180,30 @@ describe('responsive image sources', () => {
     });
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
+    for (const ownedCssValue of [
+      '.coloring-pages-grid {',
+      '--page-cols: 2',
+      '.coloring-pages-grid.portrait-pages {',
+      '--page-cols: 3',
+      'gap: var(--space-3)',
+      'padding: var(--space-7)',
+      'gap: var(--space-2)',
+      'padding: var(--space-6) var(--space-4)',
+    ]) {
+      expect(coloringBookComponent).toContain(ownedCssValue);
+    }
+    const narrowChromePx = 2 * spacingTokenPx('space-4') + spacingTokenPx('space-2');
+    const scrollbarReservePx = spacingTokenPx('space-4');
+    const widePortraitChromePx =
+      2 * spacingTokenPx('space-7') + 2 * spacingTokenPx('space-3') + scrollbarReservePx;
+    const wideLandscapeChromePx =
+      2 * spacingTokenPx('space-7') + spacingTokenPx('space-3') + scrollbarReservePx;
+    expect(COLORING_IMAGE_SIZES.pageSelector.portrait).toBe(
+      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${widePortraitChromePx}px) / 3), 272px)`
+    );
+    expect(COLORING_IMAGE_SIZES.pageSelector.landscape).toBe(
+      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${wideLandscapeChromePx}px) / 2), 414px)`
+    );
     expect(coloringBookComponent).toContain(
       'pageSelectorImageSource(page, orientation, resolvedTheme())'
     );
