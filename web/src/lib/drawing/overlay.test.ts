@@ -54,7 +54,7 @@ describe('getActiveOverlayExportSource', () => {
 
   it('requests the canonical SVG when a visible candidate is not canonical', () => {
     const overlay = appendLoadedOverlay();
-    overlay.src = '/coloring/farm/cat-tall.preview.webp';
+    overlay.src = '/coloring/farm/cat-tall.selector.webp';
     overlay.dataset.canonicalUrl = '/coloring/farm/cat-tall.overlay.svg';
     Object.defineProperty(overlay, 'currentSrc', {
       value: overlay.src,
@@ -68,7 +68,7 @@ describe('getActiveOverlayExportSource', () => {
 
   it('fails closed when a visible candidate has no canonical source', () => {
     const overlay = appendLoadedOverlay();
-    overlay.src = '/coloring/farm/cat-tall.preview.webp';
+    overlay.src = '/coloring/farm/cat-tall.selector.webp';
 
     expect(getActiveOverlayExportSource()).toBeNull();
   });

@@ -22,7 +22,6 @@
     overlayUrl,
     coloringBookState,
     themedOverlayUrl as currentThemedOverlayUrl,
-    themedDisplayUrl as currentThemedDisplayUrl,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
@@ -192,7 +191,6 @@
   // derivative whose registration or scale could diverge from the SVG.
   // Reading resolvedTheme() re-picks the theme sibling on a live switch.
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
-  const themedDisplayUrl = $derived(currentThemedDisplayUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide composition. Hide art when
@@ -202,7 +200,7 @@
   let displayedOverlayUrl = $state<string | null>(null);
 
   $effect(() => {
-    const url = themedDisplayUrl;
+    const url = themedOverlayUrl;
     if (!url) {
       displayedOverlayUrl = null;
       return;
@@ -232,7 +230,7 @@
   // Start the magic fill and rotation warm-up after it decodes so those
   // other art transfers cannot delay the page the child just picked.
   $effect(() => {
-    const url = themedDisplayUrl;
+    const url = themedOverlayUrl;
     const displayed = displayedOverlayUrl;
     if (!url) {
       setColorSheet(null);
@@ -245,7 +243,7 @@
     const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());
     const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
-    const otherUrl = currentThemedDisplayUrl(theme, other);
+    const otherUrl = currentThemedOverlayUrl(theme, other);
     if (!otherUrl) return;
     return scheduleIdle(() => prefetchImages([otherUrl]));
   });

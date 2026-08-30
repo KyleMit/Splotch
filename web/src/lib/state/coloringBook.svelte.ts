@@ -41,14 +41,6 @@ export function themedOverlayUrl(
   return page ? pageOverlayImage(page, orientation, theme) : null;
 }
 
-export function themedDisplayUrl(
-  theme: ResolvedTheme,
-  orientation = coloringBookState.orientation
-): string | null {
-  const page = coloringBookState.overlayPage;
-  return page ? pageOverlayImage(page, orientation, theme) : null;
-}
-
 export function colorSheetUrl(): string | null {
   const page = coloringBookState.overlayPage;
   return page ? pageColorImage(page, coloringBookState.orientation) : null;
