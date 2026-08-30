@@ -28,8 +28,10 @@ no generated drawing reads an SVG at runtime.
 
 Color selection considers both the main palette and the hex-grid colors in OKLab space. Candidates
 are limited to swatches visible on both store targets for the drawing's orientation. Width selection
-maps each source path to one of the five real app levels after scaling against the measured portrait
-or landscape store canvases.
+scales against the measured portrait or landscape store canvases, then maps to one of the five real
+app levels per *chain* of joined same-color paths rather than per path — a chain holds one level
+while every member stays within one level of it, and splits where the traced width genuinely crosses
+a whole step.
 
 `tools/store-drawings/lib/drawing-instructions.mjs` fits the static coordinates within the canvas
 and owns two delivery paths. The default delegates every stroke to
@@ -69,3 +71,7 @@ workflow and overlay interpretation are documented in `tools/store-drawings/READ
   unsupported surface is preferable to silently producing a different drawing.
 * − Splotch has fixed widths and no pressure input, so continuously varying source widths can only
   be approximated by the nearest available level.
+* \+ Choosing that level per chain rather than per path keeps a line whose traced width hovers on a
+  bucket boundary from shattering into a burst of one-dab strokes. It costs a little width accuracy
+  against the traced art and removes the bulges that chatter rendered, since each dab drew its own
+  round cap.

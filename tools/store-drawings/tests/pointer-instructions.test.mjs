@@ -68,6 +68,20 @@ describe('store drawing conversion', () => {
     expect(drawing.strokes[0].size).not.toBe(drawing.strokes[1].size);
   });
 
+  it('keeps one pen across widths that only drift over a rounding boundary', () => {
+    const source =
+      '<svg viewBox="0 0 100 100">' +
+      '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M0,0C10,0 20,0 30,0" stroke-width="1.15"/>' +
+      '<path d="M30,0C40,0 50,0 60,0" stroke-width="1.38"/>' +
+      '</g></svg>';
+
+    const drawing = convertSvg(source, 'drift-wide.svg');
+
+    expect(drawing.strokes).toHaveLength(1);
+    expect(drawing.strokes[0].points.at(-2)).toBe(60);
+  });
+
   it('generates all seven named drawings as finite static instructions', () => {
     const drawings = generateStoreDrawings(drawingsRoot);
 
