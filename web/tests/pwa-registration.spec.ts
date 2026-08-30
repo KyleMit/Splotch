@@ -161,7 +161,7 @@ test.describe('responsive coloring offline fallback', () => {
 
     const dprOne = await selectFarmImages(page);
     expect(dprOne.pagePreview).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.selector.webp',
+      currentSrc: '/coloring/max-240px/farm/cat-tall.selector.webp',
       decodedWidth: 267,
     });
     expect(dprOne.overlay).toEqual({

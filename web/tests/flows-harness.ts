@@ -308,7 +308,7 @@ export async function openFarmPageGrid(page: Page) {
   return pages;
 }
 
-// Apply the first Farm page and wait for its ready-gated full-resolution
+// Apply the first Farm page and wait for its ready-gated canonical SVG
 // overlay; that decoded line art enables the deferred fill.
 export async function applyFarmPage(page: Page) {
   await openColoringDialog(page);
@@ -320,7 +320,7 @@ export async function applyFarmPage(page: Page) {
   }).toPass({ timeout: COLORING_DIALOG_CLOSE_TIMEOUT_MS });
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\.(?:dark\.)?presentation\.webp$/,
+    /\.(?:dark\.)?overlay\.svg$/,
     { timeout: COLORING_OVERLAY_DECODE_TIMEOUT_MS }
   );
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
