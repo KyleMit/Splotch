@@ -37,16 +37,31 @@ export interface SceneLabel {
 export interface ReferenceScene {
   width: number;
   height: number;
+  // What the authored 1120x780 layout was multiplied by. Labels stay in
+  // authored coordinates and are positioned by CSS against the presented size.
+  scale: number;
   paper: readonly [number, number, number];
   strokes: ReferenceStroke[];
   labels: SceneLabel[];
 }
 
-const WIDTH = 1120;
-const HEIGHT = 780;
-const STROKE_WIDTH_PX = 46;
-const LEFT = 96;
-const RIGHT = WIDTH - 96;
+// The scene is authored at this size and scaled up whole. Scale exists because
+// at 1x on an Apple M5 the three architectures were indistinguishable for a
+// reason that had nothing to do with them: a probe that removed the draw call
+// entirely took GPU time to zero, while cutting the stamped option's instance
+// count fivefold moved it 8%. At that workload every option is bound by
+// per-draw-call overhead, and a benchmark that cannot separate 5x less work
+// from the same work cannot judge an optimisation either.
+//
+// IPAD_SCALE puts the surface at the 12.9-inch iPad Pro's real backing store
+// (2732x1830 at the capped DPR of 2, ADR-0015) — 5.7x the pixels, which is the
+// load the architectures actually have to survive.
+const BASE_WIDTH = 1120;
+const BASE_HEIGHT = 780;
+const BASE_STROKE_WIDTH_PX = 46;
+const MARGIN = 96;
+
+export const IPAD_SCALE = 2732 / BASE_WIDTH;
 
 // #fcfbf8, the light-theme --paper token, as the ink target's clear colour.
 const PAPER: readonly [number, number, number] = [0xfc / 255, 0xfb / 255, 0xf8 / 255];
@@ -79,13 +94,27 @@ function zigzag(from: number, to: number, centreY: number, amplitude: number, te
 
 // A hand at drawing speed puts roughly one point every 4 px; a flick puts one
 // every 30-plus, which is where a fixed stamp spacing starts to show.
-const HAND_STEP_PX = 4;
-const FLICK_STEP_PX = 32;
+const BASE_HAND_STEP_PX = 4;
+const BASE_FLICK_STEP_PX = 32;
 
-const BAND_Y = [140, 320, 500, 670];
-const SWELL = 52;
+const BASE_BAND_Y = [140, 320, 500, 670];
+const BASE_SWELL = 52;
 
-function buildStrokes(): ReferenceStroke[] {
+function buildStrokes(scale: number): ReferenceStroke[] {
+  const WIDTH = Math.round(BASE_WIDTH * scale);
+  const HEIGHT = Math.round(BASE_HEIGHT * scale);
+  const STROKE_WIDTH_PX = BASE_STROKE_WIDTH_PX * scale;
+  const LEFT = MARGIN * scale;
+  const RIGHT = WIDTH - MARGIN * scale;
+  const BAND_Y = BASE_BAND_Y.map((y) => y * scale);
+  const SWELL = BASE_SWELL * scale;
+  // Point spacing is a property of the HAND, not of the surface: a finger puts
+  // down the same number of samples per second whichever device it is on, so a
+  // bigger paper gets longer segments rather than more of them. Scaling this
+  // too would quietly hold segments-per-brush-width constant and hide exactly
+  // the regime the scale-up exists to reach.
+  const HAND_STEP_PX = BASE_HAND_STEP_PX * scale;
+  const FLICK_STEP_PX = BASE_FLICK_STEP_PX * scale;
   const strokes: ReferenceStroke[] = [];
 
   strokes.push({
@@ -155,18 +184,23 @@ function buildStrokes(): ReferenceStroke[] {
   return strokes;
 }
 
-export const REFERENCE_SCENE: ReferenceScene = {
-  width: WIDTH,
-  height: HEIGHT,
-  paper: PAPER,
-  strokes: buildStrokes(),
-  labels: [
-    { text: '1 · single pass', x: LEFT, y: BAND_Y[0] - 92 },
-    { text: '2 · fast sweep (flick point spacing)', x: LEFT, y: BAND_Y[1] - 92 },
-    { text: '3 · wax buildup — one, two, three passes', x: LEFT, y: BAND_Y[2] - 78 },
-    { text: '4 · subtractive glaze — blue over yellow', x: LEFT, y: BAND_Y[3] - 74 },
-  ],
-};
+export function buildReferenceScene(scale = 1): ReferenceScene {
+  return {
+    width: Math.round(BASE_WIDTH * scale),
+    height: Math.round(BASE_HEIGHT * scale),
+    scale,
+    paper: PAPER,
+    strokes: buildStrokes(scale),
+    labels: [
+      { text: '1 · single pass', x: MARGIN, y: BASE_BAND_Y[0] - 92 },
+      { text: '2 · fast sweep (flick point spacing)', x: MARGIN, y: BASE_BAND_Y[1] - 92 },
+      { text: '3 · wax buildup — one, two, three passes', x: MARGIN, y: BASE_BAND_Y[2] - 78 },
+      { text: '4 · subtractive glaze — blue over yellow', x: MARGIN, y: BASE_BAND_Y[3] - 74 },
+    ],
+  };
+}
+
+export const REFERENCE_SCENE: ReferenceScene = buildReferenceScene();
 
 // Where the contact sheet crops its detail tile from: the crest of the first
 // band, where the tooth, the rim feather and the shade mottling are all in one

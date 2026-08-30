@@ -37,10 +37,12 @@ function parseArgs(argv) {
   const url = argv.find((a) => a.startsWith('--url='))?.slice('--url='.length);
   const repeats = argv.find((a) => a.startsWith('--repeats='))?.slice('--repeats='.length);
   const label = argv.find((a) => a.startsWith('--label='))?.slice('--label='.length);
+  const scale = argv.find((a) => a.startsWith('--scale='))?.slice('--scale='.length);
   return {
     baseUrl: url ?? 'http://localhost:5231',
     repeats: repeats ? Math.max(1, Number(repeats)) : DEFAULT_REPEATS,
     label: label ?? null,
+    scale: scale ?? null,
   };
 }
 
@@ -69,6 +71,7 @@ function summarise(runs) {
   return {
     runs: runs.length,
     gpuMs: band('gpuMs'),
+    presentMs: band('presentMs'),
     cpuMs: band('cpuMs'),
     intervalMs: band('intervalMs'),
     frames: runs[0].frames,
@@ -78,7 +81,7 @@ function summarise(runs) {
   };
 }
 
-async function capture({ baseUrl, repeats, label }) {
+async function capture({ baseUrl, repeats, label, scale }) {
   await mkdir(OUTPUT_DIR, { recursive: true });
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage({
@@ -92,7 +95,8 @@ async function capture({ baseUrl, repeats, label }) {
   });
   page.on('pageerror', (error) => consoleErrors.push(String(error)));
 
-  await page.goto(`${baseUrl}/dev/gpu-crayon`, { waitUntil: 'load' });
+  const target = `${baseUrl}/dev/gpu-crayon${scale ? `?scale=${encodeURIComponent(scale)}` : ''}`;
+  await page.goto(target, { waitUntil: 'load' });
 
   const harnessError = await page
     .locator('[data-testid="gpu-crayon-error"]')
@@ -172,6 +176,7 @@ async function capture({ baseUrl, repeats, label }) {
       encoding: 'utf8',
     }).trim(),
     repeats,
+    sceneScale: meta.scene.scale,
     userAgent,
     gpu,
     scene: meta.scene,

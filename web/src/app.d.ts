@@ -112,7 +112,7 @@ declare global {
       renderers: { id: string; label: string; blurb: string }[];
       run: (id: string) => Promise<import('$lib/drawing/gpu/sceneReplay').ReplayStats>;
       clear: () => void;
-      scene: { width: number; height: number };
+      scene: { width: number; height: number; scale: number };
       detailCrop: typeof import('$lib/drawing/gpu/referenceScene').DETAIL_CROP;
     };
   }

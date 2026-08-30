@@ -27,6 +27,7 @@ export interface ReplayStats {
   cpuMs: Percentiles;
   intervalMs: Percentiles;
   gpuMs: Percentiles | null;
+  presentMs: Percentiles | null;
 }
 
 export interface Percentiles {
@@ -86,10 +87,11 @@ export class SceneReplay {
   private cpuSamples: number[] = [];
   private intervalSamples: number[] = [];
   private gpuSamples: number[] = [];
+  private presentSamples: number[] = [];
   private lastFrameAt = 0;
   private drawCalls = 0;
   private primitives = 0;
-  private pendingQueries: WebGLQuery[] = [];
+  private pendingQueries: { query: WebGLQuery; sink: number[] }[] = [];
   private timerExt: TimerQuerySupport['ext'] | null;
 
   constructor(
@@ -121,10 +123,21 @@ export class SceneReplay {
     if (this.lastFrameAt > 0) this.intervalSamples.push(now - this.lastFrameAt);
     this.lastFrameAt = now;
 
-    const query = this.beginTimer();
-    const startedAt = performance.now();
-
+    // PAINT and PRESENT are timed separately, because presenting dwarfs
+    // painting and timing them together measures neither. The present pass
+    // shades the whole 1120x780 surface every frame; a frame's stroke work is
+    // a few thousand fragments. Wrapped in one query, every renderer reported
+    // ~0.28 ms and the number barely moved when the stamped option's instance
+    // count was cut fivefold — because what was being compared was the blit
+    // all three of them share.
+    //
+    // Present is still recorded rather than discarded: it is a real cost that
+    // any integration pays once a frame, and reporting it is what stops the
+    // paint figures from being read as whole-frame budgets.
     if (batch.startsStroke) this.renderer.beginStroke();
+
+    const paintQuery = this.beginTimer();
+    const startedAt = performance.now();
     this.renderer.beginFrame();
     const stats = this.renderer.paint(batch.points, batch.pointCount, {
       color: stroke.color,
@@ -135,12 +148,15 @@ export class SceneReplay {
     // A stroke's last batch closes its deposition pass inside the same frame
     // it painted, which is where the CPU pipeline's buffered glaze lands.
     if (batch.endsStroke) this.renderer.endStroke();
-    this.renderer.endFrame();
-
     this.cpuSamples.push(performance.now() - startedAt);
+    this.endTimer(paintQuery, this.gpuSamples);
+
+    const presentQuery = this.beginTimer();
+    this.renderer.endFrame();
+    this.endTimer(presentQuery, this.presentSamples);
+
     this.drawCalls += stats.drawCalls;
     this.primitives += stats.primitives;
-    this.endTimer(query);
     this.collectTimers();
   }
 
@@ -152,10 +168,10 @@ export class SceneReplay {
     return query;
   }
 
-  private endTimer(query: WebGLQuery | null) {
+  private endTimer(query: WebGLQuery | null, sink: number[]) {
     if (!this.timerExt || !query) return;
     this.gl.endQuery(this.timerExt.TIME_ELAPSED_EXT);
-    this.pendingQueries.push(query);
+    this.pendingQueries.push({ query, sink });
   }
 
   // Results land some frames later; drain whatever is ready without ever
@@ -164,14 +180,15 @@ export class SceneReplay {
   private collectTimers() {
     if (!this.timerExt) return;
     const { gl } = this;
-    const stillPending: WebGLQuery[] = [];
-    for (const query of this.pendingQueries) {
+    const stillPending: { query: WebGLQuery; sink: number[] }[] = [];
+    for (const pending of this.pendingQueries) {
+      const { query, sink } = pending;
       if (!gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)) {
-        stillPending.push(query);
+        stillPending.push(pending);
         continue;
       }
       if (!gl.getParameter(this.timerExt.GPU_DISJOINT_EXT)) {
-        this.gpuSamples.push(gl.getQueryParameter(query, gl.QUERY_RESULT) / 1e6);
+        sink.push(gl.getQueryParameter(query, gl.QUERY_RESULT) / 1e6);
       }
       gl.deleteQuery(query);
     }
@@ -187,6 +204,7 @@ export class SceneReplay {
       cpuMs: percentiles(this.cpuSamples),
       intervalMs: percentiles(this.intervalSamples),
       gpuMs: this.gpuSamples.length > 0 ? percentiles(this.gpuSamples) : null,
+      presentMs: this.presentSamples.length > 0 ? percentiles(this.presentSamples) : null,
     };
   }
 }

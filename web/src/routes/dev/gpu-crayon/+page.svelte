@@ -2,7 +2,11 @@
   import { onMount } from 'svelte';
   import { paletteHex } from '$lib/palette';
   import { InkTarget } from '$lib/drawing/gpu/inkTarget';
-  import { DETAIL_CROP, REFERENCE_SCENE } from '$lib/drawing/gpu/referenceScene';
+  import {
+    buildReferenceScene,
+    DETAIL_CROP,
+    IPAD_SCALE,
+  } from '$lib/drawing/gpu/referenceScene';
   import type { CrayonRenderer } from '$lib/drawing/gpu/renderer';
   import { createCialloRenderer } from '$lib/drawing/gpu/renderers/cialloRenderer';
   import { createCpuRenderer } from '$lib/drawing/gpu/renderers/cpuRenderer';
@@ -11,7 +15,21 @@
   import { SceneReplay, phaseForSeed, type ReplayStats } from '$lib/drawing/gpu/sceneReplay';
   import { createToothTexture } from '$lib/drawing/gpu/toothTexture';
 
-  const scene = REFERENCE_SCENE;
+  // ?scale=2.44 (or ?scale=ipad) renders into an iPad-sized backing store while
+  // still presenting at the authored size, so screenshots stay comparable
+  // across scales and only the fragment load changes.
+  function requestedScale(): number {
+    if (typeof window === 'undefined') return 1;
+    const raw = new URLSearchParams(window.location.search).get('scale');
+    if (!raw) return 1;
+    if (raw === 'ipad') return IPAD_SCALE;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }
+
+  const scene = buildReferenceScene(requestedScale());
+  const presentedWidth = Math.round(scene.width / scene.scale);
+  const presentedHeight = Math.round(scene.height / scene.scale);
   const paperCss = `rgb(${scene.paper.map((c) => Math.round(c * 255)).join(' ')})`;
 
   let glCanvasEl: HTMLCanvasElement;
@@ -158,7 +176,7 @@
       renderers: built.map((r) => ({ id: r.id, label: r.label, blurb: r.blurb })),
       run,
       clear: () => rendererFor(activeId)?.clear(),
-      scene: { width: scene.width, height: scene.height },
+      scene: { width: scene.width, height: scene.height, scale: scene.scale },
       detailCrop: DETAIL_CROP,
     };
 
@@ -215,13 +233,15 @@
     {/each}
   </div>
 
-  <div class="stage" style:width="{scene.width}px" style:height="{scene.height}px">
+  <div class="stage" style:width="{presentedWidth}px" style:height="{presentedHeight}px">
     <!-- The GPU options paint the paper into their own texture; the CPU one is
          transparent over a paper background, which is production's stack. -->
     <canvas
       bind:this={glCanvasEl}
       width={scene.width}
       height={scene.height}
+      style:width="{presentedWidth}px"
+      style:height="{presentedHeight}px"
       hidden={activeId === 'cpu'}
       data-active-canvas={activeId === 'cpu' ? undefined : ''}
     ></canvas>
@@ -229,6 +249,8 @@
       bind:this={cpuCanvasEl}
       width={scene.width}
       height={scene.height}
+      style:width="{presentedWidth}px"
+      style:height="{presentedHeight}px"
       style:background={paperCss}
       hidden={activeId !== 'cpu'}
       data-active-canvas={activeId === 'cpu' ? '' : undefined}
