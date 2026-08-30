@@ -73,14 +73,6 @@ const RESPONSIVE_COLORING_TIERS = {
       landscapeSelector: 240,
     },
   },
-  selectorPreview: {
-    directory: 'max-96px',
-    maxEdgePx: 96,
-    widths: {
-      portrait: 64,
-      landscape: 96,
-    },
-  },
 } as const;
 export const COMPACT_COLORING_PACK_MAX_EDGE_PX = RESPONSIVE_COLORING_TIERS.overlay.maxEdgePx;
 export const COMPACT_COLORING_PACK_SHORT_EDGE_PX =
@@ -315,7 +307,6 @@ export function pageSelectorImageSource(
   theme: ResolvedTheme
 ): ResponsiveColoringImage {
   const source = pageSelectorAssetPath(page, orientation, theme);
-  const previewTier = RESPONSIVE_COLORING_TIERS.selectorPreview;
   const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
   const mediumWidth =
     orientation === 'portrait'
@@ -323,10 +314,7 @@ export function pageSelectorImageSource(
       : thumbnailTier.widths.landscapeSelector;
   const image = responsiveImage(
     source,
-    [
-      { directory: previewTier.directory, widthPx: previewTier.widths[orientation] },
-      { directory: thumbnailTier.directory, widthPx: mediumWidth },
-    ],
+    [{ directory: thumbnailTier.directory, widthPx: mediumWidth }],
     PAGE_SELECTOR_WIDTHS[orientation]
   );
   return { ...image, src: resolveColoringAssetUrl(source) };
@@ -405,33 +393,23 @@ export function selectorColoringAssets(book: Book): ColoringDerivativeAsset[] {
 }
 
 export function responsiveSelectorColoringAssets(book: Book): ColoringDerivativeAsset[] {
-  const previewTier = RESPONSIVE_COLORING_TIERS.selectorPreview;
   const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
   return book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.flatMap((orientation) =>
-      (['light', 'dark'] as const).flatMap((theme) => {
+      (['light', 'dark'] as const).map((theme) => {
         const source = pageOverlayAssetPath(page, orientation, theme);
         const selector = pageSelectorAssetPath(page, orientation, theme);
         const mediumWidth =
           orientation === 'portrait'
             ? thumbnailTier.widths.portraitSelector
             : thumbnailTier.widths.landscapeSelector;
-        return [
-          {
-            source,
-            target: responsiveTierPath(selector, previewTier.directory),
-            maxEdgePx: previewTier.maxEdgePx,
-            widthPx: previewTier.widths[orientation],
-            encoding: 'selector' as const,
-          },
-          {
-            source,
-            target: responsiveTierPath(selector, thumbnailTier.directory),
-            maxEdgePx: thumbnailTier.maxEdgePx,
-            widthPx: mediumWidth,
-            encoding: 'selector' as const,
-          },
-        ];
+        return {
+          source,
+          target: responsiveTierPath(selector, thumbnailTier.directory),
+          maxEdgePx: thumbnailTier.maxEdgePx,
+          widthPx: mediumWidth,
+          encoding: 'selector' as const,
+        };
       })
     )
   );

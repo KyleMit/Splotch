@@ -140,17 +140,17 @@ describe('responsive image sources', () => {
     });
   });
 
-  it('gives page selectors 96, 240, and 400 pixel responsive candidates', () => {
+  it('gives page selectors 240 and 400 pixel responsive candidates', () => {
     const cat = farm.pages.find((page) => page.id === 'cat')!;
     expect(pageSelectorImageSource(cat, 'portrait', 'light')).toEqual({
       src: '/coloring/farm/cat-tall.selector.webp',
       srcset:
-        '/coloring/max-96px/farm/cat-tall.selector.webp 64w, /coloring/max-240px/farm/cat-tall.selector.webp 160w, /coloring/farm/cat-tall.selector.webp 267w',
+        '/coloring/max-240px/farm/cat-tall.selector.webp 160w, /coloring/farm/cat-tall.selector.webp 267w',
     });
     expect(pageSelectorImageSource(cat, 'landscape', 'dark')).toEqual({
       src: '/coloring/farm/cat-wide.dark.selector.webp',
       srcset:
-        '/coloring/max-96px/farm/cat-wide.dark.selector.webp 96w, /coloring/max-240px/farm/cat-wide.dark.selector.webp 240w, /coloring/farm/cat-wide.dark.selector.webp 400w',
+        '/coloring/max-240px/farm/cat-wide.dark.selector.webp 240w, /coloring/farm/cat-wide.dark.selector.webp 400w',
     });
   });
 
@@ -303,10 +303,10 @@ describe('bookAssetPaths', () => {
   it('lists every generated responsive page selector derivative', () => {
     const paths = new Set(bookAssetPaths(farm));
     const selectors = responsiveSelectorColoringAssets(farm);
-    expect(selectors).toHaveLength(48);
+    expect(selectors).toHaveLength(24);
     for (const asset of selectors) {
       expect(paths.has(asset.target), asset.target).toBe(true);
-      expect(asset.target).toMatch(/\/coloring\/max-(?:96|240)px\//);
+      expect(asset.target).toContain('/coloring/max-240px/');
     }
   });
 });

@@ -57,7 +57,6 @@ web/static/coloring/{book}/{name}.{variant}.webp                 canonical raste
 web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant line-art overlay
 web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web fill candidate
 web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker candidate
-web/static/coloring/max-96px/{book}/{name}.selector.webp         web chip/small-tile candidate
 ```
 
 `max-{edge}px` names the longest-edge bound, not the HTML `srcset` width descriptor. A portrait
@@ -75,12 +74,13 @@ derivative was smaller than its source while retaining the overlay pipeline's st
 quantization and maximum 4/255 composite-channel error. That result remains sizing evidence for the
 temporary comparison format; runtime overlays no longer live in the tier.
 
-Page selectors use a `max-96px` candidate for the 36 px Active-page chip and small tiles, a
-`max-240px` candidate for ordinary picker tiles, and the canonical 400 px selector for large or
-high-density tiles. Cover thumbnails use the 240/400 px pair. All page selector candidates are
-lossless/exact WebPs rendered directly from the canonical SVG: catalog-wide measurement found that
-lossy WebP and AVIF were larger for this sparse transparent line art, while indexed PNG saved only
-1.7% across the three tiers and damaged thin alpha edges (ADR-0152).
+Page selectors use a `max-240px` candidate for ordinary picker tiles and the Active-page chip, plus
+the canonical 400 px selector for large or high-density tiles. A measured 96 px tier was removed
+because the page grid always selected a larger candidate before the chip mounted, making the tier
+unreachable in real sessions. Cover thumbnails use the 240/400 px pair. All page selector candidates
+are lossless/exact WebPs rendered directly from the canonical SVG: catalog-wide measurement found
+that lossy WebP and AVIF were larger for this sparse transparent line art, while indexed PNG damaged
+thin alpha edges (ADR-0152).
 
 Key implementation points:
 
@@ -88,7 +88,7 @@ Key implementation points:
   and selector siblings. Page tiles and the Active-page chip publish responsive selector sources;
   the canvas uses `pageOverlayImage()` directly.
 * `responsiveColoringAssets()` derives web-only tier paths for raster fills and cover thumbnails;
-  `responsiveSelectorColoringAssets()` derives the two smaller selector tiers. Invariant SVG page
+  `responsiveSelectorColoringAssets()` derives the smaller selector tier. Invariant SVG page
   overlays have no responsive candidate. `bookAssetPaths()` includes every runtime path so
   `check:coloring-assets` rejects a partial inventory.
 * `lib/line-art-targets.mjs` positively selects canonical `*-{tall,wide}.overlay.svg` pages and adds

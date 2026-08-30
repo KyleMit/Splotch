@@ -54,11 +54,7 @@ vi.mock('../../lib/proc.mjs', async (importOriginal) => {
 vi.mock('../../../web/src/lib/state/books.ts', () => ({
   BOOKS: state.books,
   STARTER_COLORING_BOOK_ID: 'mobile',
-  RESPONSIVE_COLORING_TIER_DIRECTORIES: [
-    '/coloring/max-1152px',
-    '/coloring/max-240px',
-    '/coloring/max-96px',
-  ],
+  RESPONSIVE_COLORING_TIER_DIRECTORIES: ['/coloring/max-1152px', '/coloring/max-240px'],
   booksForPlatform: () => state.mobileEligibleBooks,
   bookAssetPaths: (book) => [
     book.cover,
@@ -288,7 +284,6 @@ describe('mobile build script entry points', () => {
     writeFixture(join(downloadableDir, 'cover.overlay.svg'));
     writeFixture(join(buildDir, 'coloring', 'max-1152px', 'mobile', 'page-tall.overlay.webp'));
     writeFixture(join(buildDir, 'coloring', 'max-240px', 'mobile', 'page-tall.thumb.webp'));
-    writeFixture(join(buildDir, 'coloring', 'max-96px', 'mobile', 'page-tall.selector.webp'));
     writeFixture(join(buildDir, 'index.html'), fixtureHtml);
     writeFixture(join(buildDir, 'about', 'index.html'), fixtureHtml);
     exit.mockClear();
@@ -307,7 +302,6 @@ describe('mobile build script entry points', () => {
     expect(existsSync(downloadableDir)).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-1152px'))).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-240px'))).toBe(false);
-    expect(existsSync(join(buildDir, 'coloring', 'max-96px'))).toBe(false);
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).not.toContain('favicon.ico');
     expect(readFileSync(join(buildDir, 'about', 'index.html'), 'utf8')).not.toContain('og:title');
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).toContain('name="viewport"');
@@ -322,7 +316,7 @@ describe('mobile build script entry points', () => {
       '[strip-static-assets] stripped 1/1 canonical folder(s) for 1 web-only book(s): web-only'
     );
     expect(log).toHaveBeenCalledWith(
-      '[strip-static-assets] stripped 3/3 web-responsive coloring tier root(s).'
+      '[strip-static-assets] stripped 2/2 web-responsive coloring tier root(s).'
     );
   });
 

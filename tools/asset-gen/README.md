@@ -121,8 +121,8 @@ and punch. Cover SVGs stop after regenerating their picker thumbnails and respon
 and chalk SVGs, including every landscape `-wide` pair, are invariant pack files; cover SVGs remain
 authoring masters because packs render the raster cover thumbnails. Web and native packs carry one
 400 px lossless selector per page/theme/orientation while the canonical SVG presents the canvas and
-drives export. Web distribution adds 96 and 240 px selector candidates for `srcset`; those hosted
-tiers are not logical pack files (ADR-0152).
+drives export. Web distribution adds a 240 px selector candidate for `srcset`; that hosted tier is
+not a logical pack file (ADR-0152).
 
 ### The per-page notes registry
 

@@ -51,9 +51,8 @@ It remains the presentation source, Magic registration authority, and screenshot
 Canvas-presentation WebPs and their compact siblings are retired.
 
 The page picker and Active-page chip use deterministic, alpha-preserving lossless WebP selectors.
-Each selector publishes a width-descriptor `srcset` with three maximum-edge tiers:
+Each selector publishes a width-descriptor `srcset` with two maximum-edge tiers:
 
-* 96 px — 64w portrait / 96w landscape, intended for the 36 px Active-page chip and small tiles;
 * 240 px — 160w portrait / 240w landscape, intended for ordinary picker tiles; and
 * 400 px — 267w portrait / 400w landscape, the canonical fallback for large/high-density tiles and
   native packs.
@@ -63,11 +62,13 @@ two-column landscape layouts. The Active-page chip publishes `36px`. Web browser
 three candidates. Capacitor omits `srcset` and uses the installed 400 px selector because hosted
 responsive URLs are not valid inside an installed pack.
 
-The 96 and 240 px candidates are web-responsive distribution files, not additional logical pack
-members and not separately precached. The 400 px selector remains the single pack path in compact
-and full variants. Every selector is rendered directly from the canonical SVG with pinned Resvg
-settings and encoded as lossless/exact WebP; the catalog gate decodes every generated file and
-requires pixel equality with a fresh canonical render at the same dimensions.
+The 240 px candidate is a web-responsive distribution file, not an additional logical pack member
+and not separately precached. The measured 96 px candidate is not shipped: the picker always selects
+at least the 240 px candidate before the Active-page chip can mount, and browsers may reuse that
+cached response instead of fetching a smaller candidate. The 400 px selector remains the single pack
+path in compact and full variants. Every selector is rendered directly from the canonical SVG with
+pinned Resvg settings and encoded as lossless/exact WebP; the catalog gate decodes every generated
+file and requires pixel equality with a fresh canonical render at the same dimensions.
 
 ## Consequences
 
@@ -75,12 +76,12 @@ requires pixel equality with a fresh canonical render at the same dimensions.
   drawing-registration, export, and integrity authority.
 * \+ The picker and Active-page chip avoid repeatedly rasterizing full vector trees and transfer
   only the candidate appropriate to their rendered size.
-* \+ Removing 15,086,982 bytes of canvas derivatives and adding about 1.18 MB of responsive selector
-  candidates reduces the committed runtime catalog by about 13.9 MB.
+* \+ Removing 15,086,982 bytes of canvas derivatives and adding 938,440 bytes of responsive selector
+  candidates reduces the committed runtime catalog by 14,148,542 bytes.
 * \+ Web and native packs return to the same 74-file logical inventory per book.
 * − The web paper again pays the browser's full-page SVG rasterization cost when a page is selected,
   rotated, or theme-swapped. Those actions remain physical-device performance gates; a future
   optimization must preserve the canonical SVG contract rather than reintroduce unbounded canvas
   raster tiers.
-* − Web distribution carries three selector files per theme/orientation instead of one, and the PWA
-  fallback must understand both responsive tier roots.
+* − Web distribution carries two selector files per theme/orientation instead of one, and the PWA
+  fallback must understand the responsive tier root.
