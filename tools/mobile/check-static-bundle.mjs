@@ -11,7 +11,11 @@ import {
   TESTFLIGHT_APP_URL,
   TESTFLIGHT_INVITE_URL,
 } from '../../web/src/lib/components/beta/iosBeta.ts';
-import { BOOKS, STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
+import {
+  BOOKS,
+  RESPONSIVE_COLORING_TIER_DIRECTORIES,
+  STARTER_COLORING_BOOK_ID,
+} from '../../web/src/lib/state/books.ts';
 import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 import { storePage } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
@@ -221,15 +225,21 @@ export function nativeColoringPresentationProblems(
     page.darkImages.portrait,
     page.darkImages.landscape,
   ]);
-  const retiredPresentationPaths = globSync('coloring/**/*.presentation.webp', { cwd: dir }).map(
-    (path) => `/${path}`
-  );
+  const retiredPresentationPaths = globSync('coloring/**/*.presentation.webp', { cwd: dir })
+    .sort()
+    .map((path) => `/${path}`);
   const buildPath = (assetPath) => join(dir, assetPath.replace(/^\//, ''));
+  const responsiveTierPaths = RESPONSIVE_COLORING_TIER_DIRECTORIES.filter((path) =>
+    existsSync(buildPath(path))
+  ).sort();
   return [
     ...canonicalPagePaths.flatMap((path) =>
       existsSync(buildPath(path)) ? [] : [`Native canonical coloring page is missing: ${path}`]
     ),
     ...retiredPresentationPaths.map((path) => `Retired coloring presentation remains: ${path}`),
+    ...responsiveTierPaths.map(
+      (path) => `Web-only responsive coloring tier remains native: ${path}`
+    ),
   ];
 }
 
@@ -356,7 +366,7 @@ export async function checkStaticBundle({
       `every HTML document carries one native CSP; ` +
       `privacy links to the hosted feedback form; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled; ` +
-      `canonical page SVGs are present and retired presentation rasters are absent`
+      `canonical page SVGs are present and web-only coloring rasters are absent`
   );
 }
 

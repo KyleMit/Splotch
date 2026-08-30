@@ -143,10 +143,16 @@ describe('native coloring presentation inventory', () => {
       expect(nativeColoringPresentationProblems(root, book.id, [book])).toEqual([]);
 
       rmSync(join(coloringDir, 'page-wide.dark.overlay.svg'));
+      writeFileSync(join(coloringDir, 'page-wide.presentation.webp'), 'webp');
       writeFileSync(join(coloringDir, 'page-tall.presentation.webp'), 'webp');
+      mkdirSync(join(root, 'coloring', 'max-1152px'), { recursive: true });
+      mkdirSync(join(root, 'coloring', 'max-240px'), { recursive: true });
       expect(nativeColoringPresentationProblems(root, book.id, [book])).toEqual([
         'Native canonical coloring page is missing: /coloring/fixture/page-wide.dark.overlay.svg',
         'Retired coloring presentation remains: /coloring/fixture/page-tall.presentation.webp',
+        'Retired coloring presentation remains: /coloring/fixture/page-wide.presentation.webp',
+        'Web-only responsive coloring tier remains native: /coloring/max-1152px',
+        'Web-only responsive coloring tier remains native: /coloring/max-240px',
       ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
