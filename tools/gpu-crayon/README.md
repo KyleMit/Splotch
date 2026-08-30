@@ -27,11 +27,17 @@ The three GPU options share one wax model and differ only in how a fragment's co
 npm run dev            # or any server with PUBLIC_ENABLE_DEV_HARNESS=true
 node tools/gpu-crayon/capture.mjs --url=http://localhost:5231
 node tools/gpu-crayon/gen-contact-sheet.mjs
+node tools/gpu-crayon/serve-output.mjs --port 5232
 ```
 
 `capture.mjs` produces the evidence; `gen-contact-sheet.mjs` turns the latest capture into a single
 self-contained `contact-sheet.html` with every image inlined as base64, so it opens from disk and
 travels without its directory.
+
+`serve-output.mjs` puts that output on the LAN, because the crayon is judged on a phone or an iPad
+and neither can open a `file://` path on the capture machine. It binds every interface by default
+and therefore refuses any path that resolves outside `output/`. Serve the harness itself the same
+way with `npm run dev -- --host`; vite's root does not include this directory.
 
 `--url` defaults to `http://localhost:5231` and must point at a **dev-harness-enabled** build;
 `/dev/*` is gated by `requireDevHarness()` and the route 404s otherwise.
