@@ -250,7 +250,7 @@ describe('the Settings selectors both transports share', () => {
     expect(settingsModal).toContain('id="settingsModal"');
     expect(SETTINGS_CLOSE_BUTTON).toContain('aria-label="Close"');
     expect(settingsModal).toContain('<PressFeedbackCloseButton');
-    expect(pressFeedbackCloseButton).toContain('aria-label="Close"');
+    expect(pressFeedbackCloseButton).toMatch(/<button[^>]*aria-label="Close"/);
   });
 
   it('finds the button that opens it', () => {
