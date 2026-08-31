@@ -31,12 +31,17 @@ Standalone lookups; none depend on another skill.
 
 ## Performance — interaction matrices and page load
 
-| Skill                    | Measures                                                                                             |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `start-capture-session`  | **Start here for physical-device work** — takes the iPad/Android rig over and proves it will capture |
-| `profiling`              | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)             |
-| `run-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets             |
-| `lighthouse-audit`       | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer            |
+| Skill                        | Measures or drives                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `start-capture-session`      | **Start here for physical-device work** — takes the iPad/Android rig over and proves it will capture           |
+| `profiling`                  | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)                       |
+| `capture-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets                       |
+| `improve-performance-matrix` | Freshly inventory the matrix, improve current scoreable reds, and ship causal clusters as reviewed stacked PRs |
+| `lighthouse-audit`           | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer                      |
+
+`capture-performance-matrix` is the capture and refresh workflow. `improve-performance-matrix`
+consumes that evidence and owns the sustained improvement campaign through zero current, scoreable
+reds or a user-requested merge-ready wrap-up.
 
 ## Audit lifecycle — produce → vet → fix
 

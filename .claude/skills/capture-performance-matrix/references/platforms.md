@@ -1,4 +1,4 @@
-# Platform recipes
+# Performance-matrix capture platform recipes
 
 These recipes assume the repository root and a fresh read of the `perf:*` rows from `npm run info`.
 Replace placeholders such as `<serial>`, `<url>`, and `<capabilities.json>` with locally verified

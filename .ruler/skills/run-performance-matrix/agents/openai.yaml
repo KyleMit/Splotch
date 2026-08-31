@@ -1,4 +1,0 @@
-interface:
-  display_name: 'Run Performance Matrix'
-  short_description: 'Profile Splotch across web and native targets'
-  default_prompt: 'Use $run-performance-matrix to capture and compare Splotch performance across the available deployment targets.'
