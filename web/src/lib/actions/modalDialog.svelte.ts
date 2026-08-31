@@ -53,6 +53,7 @@ function dismissAllowed(o: ModalOptions) {
 export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> {
   if (!node.open) return Promise.resolve();
   return new Promise((resolve) => {
+    let frame = 0;
     let timer: number | undefined;
     const settle = () => {
       node.removeEventListener('close', settle);
@@ -60,10 +61,22 @@ export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> 
       if (timer !== undefined) clearTimeout(timer);
       resolve();
     };
+    const scheduleFallback = () => {
+      frame = requestAnimationFrame(() => {
+        timer = window.setTimeout(() => {
+          const contentRetirementPending = [...node.children].some(
+            (child) => child instanceof HTMLElement && child.style.visibility === 'hidden'
+          );
+          if (node.open && contentRetirementPending) {
+            scheduleFallback();
+            return;
+          }
+          settle();
+        });
+      });
+    };
     node.addEventListener('close', settle, { once: true });
-    const frame = requestAnimationFrame(() => {
-      timer = window.setTimeout(settle);
-    });
+    scheduleFallback();
   });
 }
 

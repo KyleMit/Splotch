@@ -70,6 +70,27 @@ describe('modalDialog', () => {
     }
   });
 
+  it('keeps waiting while retired content remains in an open dialog', async () => {
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const content = dialog.appendChild(document.createElement('div'));
+    try {
+      dialog.showModal();
+      content.style.visibility = 'hidden';
+
+      let settled = false;
+      const retired = waitForDialogRetirement(dialog).then(() => (settled = true));
+      await afterContentRetirementPaint();
+      expect(settled).toBe(false);
+
+      dialog.close();
+      await retired;
+      expect(settled).toBe(true);
+    } finally {
+      if (dialog.open) dialog.close();
+      dialog.remove();
+    }
+  });
+
   it('clears an anchored origin when the same dialog reopens without one', async () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));
