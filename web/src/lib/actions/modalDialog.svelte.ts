@@ -50,10 +50,7 @@ function dismissAllowed(o: ModalOptions) {
   return o.allowDismiss?.() !== false;
 }
 
-function closeAfterContentRetirementPaint(
-  node: HTMLDialogElement,
-  getOptions: () => ModalOptions
-) {
+function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: () => ModalOptions) {
   const contentRoots = [...node.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
