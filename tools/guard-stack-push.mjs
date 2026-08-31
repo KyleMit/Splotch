@@ -1,10 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { isMain } from './lib/proc.mjs';
 
 const BRANCH_REF_PREFIX = 'refs/heads/';
 const DELETE_SHA = /^0+$/;
+const FAILURE_DETAIL_CHAR_LIMIT = 800;
 const SNAPSHOT_ENV = 'SPLOTCH_STACK_REBASE_SNAPSHOT';
 
 function runProcess(command, args, options = {}) {
@@ -14,7 +17,8 @@ function runProcess(command, args, options = {}) {
 function requireProcess(runCommand, command, args, options, failureMessage) {
   const result = runCommand(command, args, options);
   if (result.status !== 0) {
-    const detail = result.stderr?.trim() || result.stdout?.trim() || `exit ${result.status}`;
+    const output = result.stderr?.trim() || result.error?.message || result.stdout?.trim();
+    const detail = output ? output.slice(-FAILURE_DETAIL_CHAR_LIMIT) : `exit ${result.status}`;
     throw new Error(`${failureMessage}: ${detail}`);
   }
   return result.stdout?.trim() ?? '';
@@ -36,16 +40,17 @@ export function parsePushUpdates(input) {
 
 export function lowerStackUpdates(updates, pullRequests) {
   const childPrsByBase = Map.groupBy(pullRequests, ({ baseRefName }) => baseRefName);
+  const prHeadBranches = new Set(pullRequests.map(({ headRefName }) => headRefName));
   return updates
     .filter(
-      ({ localRef, localSha }) =>
-        localRef.startsWith(BRANCH_REF_PREFIX) && !DELETE_SHA.test(localSha)
+      ({ remoteRef, localSha }) =>
+        remoteRef.startsWith(BRANCH_REF_PREFIX) && !DELETE_SHA.test(localSha)
     )
     .map((update) => ({
       ...update,
-      branch: update.localRef.slice(BRANCH_REF_PREFIX.length),
+      branch: update.remoteRef.slice(BRANCH_REF_PREFIX.length),
     }))
-    .filter(({ branch }) => childPrsByBase.has(branch))
+    .filter(({ branch }) => childPrsByBase.has(branch) && prHeadBranches.has(branch))
     .map((update) => ({ ...update, childPrs: childPrsByBase.get(update.branch) }));
 }
 
@@ -64,7 +69,8 @@ function listOpenPullRequests(runCommand) {
       'number,headRefName,headRefOid,baseRefName,baseRefOid,url',
     ],
     {},
-    'Could not inspect live open pull requests; refusing an unguarded push'
+    'Could not inspect live open pull requests; refusing an unguarded GitHub push. ' +
+      'Restore gh authentication and network access; this safety gate has no offline bypass'
   );
   return JSON.parse(output);
 }
@@ -93,20 +99,40 @@ function resolveProposedBase(runCommand, remoteName, baseBranch, updates) {
 }
 
 function patchId(runCommand, baseSha, headSha) {
-  const diff = requireProcess(
-    runCommand,
-    'git',
-    ['diff', '--no-ext-diff', '--binary', baseSha, headSha, '--'],
-    {},
-    `Could not compare ${baseSha}..${headSha}`
-  );
-  if (!diff) return 'empty';
-  const result = runCommand('git', ['patch-id', '--stable'], { input: diff });
-  if (result.status !== 0) {
-    const detail = result.stderr?.trim() || result.stdout?.trim() || `exit ${result.status}`;
-    throw new Error(`Could not identify the branch patch: ${detail}`);
+  const directory = mkdtempSync(join(tmpdir(), 'splotch-stack-patch-'));
+  const diffPath = join(directory, 'branch.diff');
+  try {
+    requireProcess(
+      runCommand,
+      'git',
+      [
+        'diff',
+        '--no-ext-diff',
+        '--binary',
+        `--output=${diffPath}`,
+        `${baseSha}...${headSha}`,
+        '--',
+      ],
+      {},
+      `Could not compare ${baseSha}...${headSha}`
+    );
+    if (statSync(diffPath).size === 0) return 'empty';
+
+    const diffFile = openSync(diffPath, 'r');
+    try {
+      return requireProcess(
+        runCommand,
+        'git',
+        ['patch-id', '--stable'],
+        { stdio: [diffFile, 'pipe', 'pipe'] },
+        'Could not identify the branch patch'
+      ).split(/\s+/)[0];
+    } finally {
+      closeSync(diffFile);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
   }
-  return result.stdout.trim().split(/\s+/)[0];
 }
 
 function assertRebaseOnlyUpdate({ runCommand, remoteName, updates, update, snapshotPrs }) {
@@ -143,7 +169,7 @@ export function guardStackPush({
   runCommand = runProcess,
 } = {}) {
   const updates = parsePushUpdates(input);
-  if (!updates.some(({ localRef }) => localRef.startsWith(BRANCH_REF_PREFIX))) return;
+  if (!updates.some(({ remoteRef }) => remoteRef.startsWith(BRANCH_REF_PREFIX))) return;
   if (remoteUrl && !remoteUrl.includes('github.com')) return;
 
   const pullRequests = listOpenPullRequests(runCommand);

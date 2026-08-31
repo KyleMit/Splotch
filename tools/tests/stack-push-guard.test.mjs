@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -39,6 +40,10 @@ function pushLine(branch, localSha = SHA.lowerNew, remoteSha = SHA.lowerOld) {
   return `refs/heads/${branch} ${localSha} refs/heads/${branch} ${remoteSha}\n`;
 }
 
+function pushRefLine(localRef, remoteBranch, localSha = SHA.lowerNew, remoteSha = SHA.lowerOld) {
+  return `${localRef} ${localSha} refs/heads/${remoteBranch} ${remoteSha}\n`;
+}
+
 function result(status, stdout = '', stderr = '') {
   return { status, stdout, stderr };
 }
@@ -48,11 +53,14 @@ function createGuardRunner({ proposedPatchId = 'same-patch' } = {}) {
     if (command === 'gh') return result(0, JSON.stringify(pullRequests));
     if (command === 'git' && args[0] === 'rev-parse') return result(0, SHA.lowerBase);
     if (command === 'git' && args[0] === 'diff') {
-      const isOriginal = args[4] === SHA.lowerOld;
-      return result(0, isOriginal ? 'original diff' : 'proposed diff');
+      const diffPath = args.find((arg) => arg.startsWith('--output=')).slice('--output='.length);
+      const isOriginal = args.includes(`${SHA.lowerBase}...${SHA.lowerOld}`);
+      writeFileSync(diffPath, isOriginal ? 'original diff' : 'proposed diff');
+      return result(0);
     }
     if (command === 'git' && args[0] === 'patch-id') {
-      return result(0, `${options.input === 'original diff' ? 'same-patch' : proposedPatchId} 0\n`);
+      const diff = readFileSync(options.stdio[0], 'utf8');
+      return result(0, `${diff === 'original diff' ? 'same-patch' : proposedPatchId} 0\n`);
     }
     return result(1, '', `Unexpected command: ${command} ${args.join(' ')}`);
   };
@@ -92,6 +100,18 @@ describe('stacked PR push guard', () => {
     ).toThrow(/Blocked push to a non-tip stacked PR.*campaign\/child/);
   });
 
+  it('keys enforcement to the destination of an asymmetric refspec', () => {
+    expect(() =>
+      guardStackPush({
+        input: pushRefLine('HEAD', 'campaign/lower'),
+        remoteName: 'origin',
+        remoteUrl: 'git@github.com:KyleMit/Splotch.git',
+        env: {},
+        runCommand: createGuardRunner(),
+      })
+    ).toThrow(/Blocked push to a non-tip stacked PR/);
+  });
+
   it('allows ordinary pushes to the stack tip', () => {
     expect(() =>
       guardStackPush({
@@ -102,6 +122,19 @@ describe('stacked PR push guard', () => {
         runCommand: createGuardRunner(),
       })
     ).not.toThrow();
+  });
+
+  it('does not classify a long-lived base branch as a stack member', () => {
+    const directPullRequest = [
+      {
+        ...pullRequests[0],
+        headRefName: 'feature/direct',
+        baseRefName: 'main',
+      },
+    ];
+    expect(
+      lowerStackUpdates(parsePushUpdates(pushLine('main', SHA.main)), directPullRequest)
+    ).toEqual([]);
   });
 
   it('allows an intentional rebase publication when the lower PR patch is unchanged', () => {
@@ -116,6 +149,82 @@ describe('stacked PR push guard', () => {
         })
       ).not.toThrow();
     });
+  });
+
+  it('allows the same lower-PR patch after its base branch advances', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'stack-push-real-git-'));
+    const git = (...args) => {
+      const command = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
+      if (command.status !== 0) throw new Error(command.stderr);
+      return command.stdout.trim();
+    };
+    try {
+      git('init', '--quiet', '--initial-branch=campaign/base');
+      git('config', 'user.email', 'stack-guard@example.test');
+      git('config', 'user.name', 'Stack Guard Test');
+      writeFileSync(join(directory, 'base.txt'), 'base\n');
+      git('add', 'base.txt');
+      git('commit', '--quiet', '-m', 'base');
+      const originalBase = git('rev-parse', 'HEAD');
+
+      git('checkout', '--quiet', '-b', 'campaign/lower');
+      writeFileSync(join(directory, 'feature.txt'), 'feature\n');
+      git('add', 'feature.txt');
+      git('commit', '--quiet', '-m', 'feature');
+      const originalHead = git('rev-parse', 'HEAD');
+
+      git('checkout', '--quiet', 'campaign/base');
+      writeFileSync(join(directory, 'base.txt'), 'base\nadvanced\n');
+      git('commit', '--quiet', '-am', 'advance base');
+      const advancedBase = git('rev-parse', 'HEAD');
+
+      git('checkout', '--quiet', '-b', 'campaign/rebased-lower', advancedBase);
+      git('cherry-pick', '--quiet', originalHead);
+      const rebasedHead = git('rev-parse', 'HEAD');
+      git('update-ref', 'refs/remotes/origin/campaign/base', advancedBase);
+
+      const livePullRequests = [
+        {
+          number: 1512,
+          headRefName: 'campaign/lower',
+          headRefOid: originalHead,
+          baseRefName: 'campaign/base',
+          baseRefOid: advancedBase,
+        },
+        {
+          number: 1513,
+          headRefName: 'campaign/child',
+          headRefOid: SHA.child,
+          baseRefName: 'campaign/lower',
+          baseRefOid: originalHead,
+        },
+      ];
+
+      withSnapshot((snapshotPath) => {
+        writeFileSync(
+          snapshotPath,
+          JSON.stringify({ schemaVersion: 1, pullRequests: livePullRequests })
+        );
+        const runCommand = (command, args, options = {}) => {
+          if (command === 'gh') return result(0, JSON.stringify(livePullRequests));
+          return spawnSync(command, args, { cwd: directory, encoding: 'utf8', ...options });
+        };
+        expect(() =>
+          guardStackPush({
+            input: pushLine('campaign/lower', rebasedHead, originalHead),
+            remoteName: 'origin',
+            remoteUrl: 'git@github.com:KyleMit/Splotch.git',
+            env: { SPLOTCH_STACK_REBASE_SNAPSHOT: snapshotPath },
+            runCommand,
+          })
+        ).not.toThrow();
+      });
+
+      expect(git('merge-base', advancedBase, rebasedHead)).toBe(advancedBase);
+      expect(git('merge-base', advancedBase, originalHead)).toBe(originalBase);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('blocks a lower-PR content change even through the intentional rebase wrapper', () => {
@@ -139,7 +248,7 @@ describe('stacked PR push guard', () => {
         remoteUrl: 'git@github.com:KyleMit/Splotch.git',
         runCommand: () => result(1, '', 'offline'),
       })
-    ).toThrow(/refusing an unguarded push: offline/);
+    ).toThrow(/safety gate has no offline bypass: offline/);
   });
 });
 
