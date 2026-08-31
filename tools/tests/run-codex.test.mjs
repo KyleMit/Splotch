@@ -116,7 +116,7 @@ describe('run-codex command construction', () => {
   });
 
   it('passes a scope flag only when no custom instructions are present', () => {
-    expect(buildCodexArgs(options)).toEqual(expect.arrayContaining(['--base', 'main']));
+    expect(buildCodexArgs(options)).toContain('--base=main');
     expect(buildCodexArgs({ ...options, scope: 'uncommitted' })).toContain('--uncommitted');
 
     // `codex exec review` refuses a scope flag alongside a PROMPT, so instructions swap the flag
@@ -127,6 +127,14 @@ describe('run-codex command construction', () => {
     expect(buildReviewPrompt({ ...options, hasInstructions: true }, 'focus here')).toContain(
       describeScope(options)
     );
+  });
+
+  // A flag-shaped ref must stay attached to its own flag rather than reaching Codex as an option.
+  it('keeps a flag-shaped scope value from becoming a second flag', () => {
+    const flagShaped = parseRunArgs(['--base=--uncommitted']);
+
+    expect(buildCodexArgs(flagShaped)).toContain('--base=--uncommitted');
+    expect(buildCodexArgs(flagShaped)).not.toContain('--uncommitted');
   });
 
   it('never passes prompt text as a command-line argument', () => {

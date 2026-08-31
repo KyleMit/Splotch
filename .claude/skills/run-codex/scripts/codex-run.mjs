@@ -126,10 +126,12 @@ export function buildCodexArgs(options) {
   // and a built-in scope are alternatives: with instructions the scope moves into the prompt text
   // (see describeScope), without them the flag drives Codex's own review harness.
   if (options.hasInstructions) return ['exec', 'review', ...shared, '-'];
+  // `--flag=value` rather than two arguments: a flag-shaped ref such as `--base=--uncommitted`
+  // would otherwise reach Codex as a separate option and silently change the scope.
   const scopeFlags = {
-    base: ['--base', options.base],
+    base: [`--base=${options.base}`],
     uncommitted: ['--uncommitted'],
-    commit: ['--commit', options.commit],
+    commit: [`--commit=${options.commit}`],
   }[options.scope];
   return ['exec', 'review', ...shared, ...scopeFlags];
 }
