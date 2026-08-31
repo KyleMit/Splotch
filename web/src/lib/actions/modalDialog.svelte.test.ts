@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { createModal } from '$lib/state/modal.svelte';
-import { modalDialog } from './modalDialog.svelte';
+import { modalDialog, waitForDialogClose } from './modalDialog.svelte';
 
 describe('modalDialog', () => {
   function afterContentRetirementPaint() {
     return new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
   }
+
+  it('waits for an open dialog to leave the top layer', async () => {
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    dialog.showModal();
+    const closed = waitForDialogClose(dialog);
+
+    dialog.close();
+
+    await expect(closed).resolves.toBeUndefined();
+    dialog.remove();
+  });
 
   it('clears an anchored origin when the same dialog reopens without one', async () => {
     const modal = createModal();

@@ -50,6 +50,11 @@ function dismissAllowed(o: ModalOptions) {
   return o.allowDismiss?.() !== false;
 }
 
+export function waitForDialogClose(node: HTMLDialogElement): Promise<void> {
+  if (!node.open) return Promise.resolve();
+  return new Promise((resolve) => node.addEventListener('close', () => resolve(), { once: true }));
+}
+
 function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: () => ModalOptions) {
   const contentRoots = [...node.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
