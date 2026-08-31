@@ -12,7 +12,7 @@ import {
   SUBSCRIPTION_CREDENTIALS_STORE,
   SUBSCRIPTION_MODEL_PROVIDER,
 } from './codex-subscription-auth.mjs';
-import { runCodexStreaming } from './codex-stream.mjs';
+import { runCodexStreaming, STREAM_FAILURE } from './codex-stream.mjs';
 import {
   readSessionRecord,
   removeSessionRecord,
@@ -61,7 +61,7 @@ export function parseRunArgs(argv) {
     },
   });
   if (positionals.length > 0) throw new Error(USAGE);
-  if (values['end-session']) return { endSession: true };
+  if (values['end-session']) return { endSession: true, cwd: values.cwd ?? process.cwd() };
   const profile = values.profile ?? 'review';
   if (!PROFILES.has(profile)) throw new Error(`unsupported profile: ${profile}`);
   const effort = values.effort ?? 'high';
@@ -123,9 +123,11 @@ function defaultRunGit(cwd) {
   return result.status === 0 ? result.stdout.trim() : undefined;
 }
 
+// undefined for a failed command, '' for a command that succeeded with no output. Collapsing the
+// two would let an unreachable recorded head read as "nothing changed since your last round".
 function git(cwd, args) {
   const result = spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
-  return result.status === 0 ? result.stdout.trim() : '';
+  return result.status === 0 ? result.stdout.trim() : undefined;
 }
 
 export function buildCodexArgs(options) {
@@ -196,11 +198,17 @@ export function buildReviewPrompt(options, extraInstructions) {
   return extraInstructions ? `${preamble}\n\n${extraInstructions}` : preamble;
 }
 
+// `landedCommits` is undefined when the range could not be computed at all, which is not the same
+// as an empty range: a rebased or amended branch must not be described to the reviewer as unchanged.
 export function buildRoundPrompt(options, record, landedCommits, extraInstructions) {
   const round = record.rounds + 1;
+  const landed =
+    landedCommits === undefined
+      ? `Could not list what landed since your last round: the recorded head ${record.head} is no longer reachable, so the branch was probably rebased or amended. Treat the whole scope below as unreviewed rather than assuming nothing changed.`
+      : `Since your last round, these commits landed:\n${landedCommits || '(no new commits)'}`;
   const sections = [
     `This is round ${round} of your review of this branch; rounds 1 through ${record.rounds} are above in this conversation.`,
-    `Since your last round, these commits landed:\n${landedCommits || '(no new commits)'}`,
+    landed,
     `${describeScope(options)} Two jobs, in order: first check whether the findings you already reported were actually addressed, and say so for each — a fix that misses the point is worth more than a new finding. Then review what changed since your last round.`,
     `Do not re-report findings you already raised and that were fixed, and do not re-litigate ones you withdrew. ${NO_DEFECTS_IS_AN_ANSWER}`,
   ];
@@ -223,6 +231,12 @@ function reviewPrompt(options, session, cwd, extraInstructions) {
   if (!session?.record) return buildReviewPrompt(options, extraInstructions);
   const landed = git(cwd, ['log', '--oneline', `${session.record.head}..HEAD`]);
   return buildRoundPrompt(options, session.record, landed, extraInstructions);
+}
+
+// Only Codex refusing the run is worth a second attempt; every other failure is either the user's
+// decision or a condition a retry would repeat.
+export function isRetryableResumeFailure(error) {
+  return error?.code === STREAM_FAILURE.exited;
 }
 
 async function runRound(options, session, { cwd, env, extraInstructions, logPath }) {
@@ -269,20 +283,24 @@ async function main() {
   }
 
   let result;
+  let resultLogPath = logPath;
   try {
     result = await runRound(options, session, { cwd, env, extraInstructions, logPath });
   } catch (error) {
-    // Codex prunes its own session store, so a recorded thread can simply be gone. That is a
-    // reason to start a fresh reviewer once, not to fail the round.
-    if (!session?.record) throw error;
+    // Codex prunes its own session store, so a recorded thread can simply be gone — that is worth
+    // one fresh attempt. A run the user cancelled, a stalled run the watchdog killed, and a lost
+    // audit log are not: retrying those would spend plan usage the caller just tried to stop.
+    if (!session?.record || !isRetryableResumeFailure(error)) throw error;
     process.stderr.write(`resume failed (${error.message.split('\n')[0]}); starting fresh\n`);
     removeSessionRecord(session.path);
     session = { ...session, record: undefined };
+    resultLogPath = join(tmpdir(), `codex-run-${randomUUID()}.jsonl`);
+    process.stderr.write(`stream log: ${resultLogPath}\n`);
     result = await runRound(options, session, {
       cwd,
       env,
       extraInstructions,
-      logPath: join(tmpdir(), `codex-run-${randomUUID()}.jsonl`),
+      logPath: resultLogPath,
     });
   }
 
@@ -292,7 +310,7 @@ async function main() {
       threadId: session.record?.threadId ?? result.threadId,
       branch: session.branch,
       rounds: round,
-      head: git(cwd, ['rev-parse', 'HEAD']),
+      head: git(cwd, ['rev-parse', 'HEAD']) ?? '',
     });
   }
 
@@ -308,7 +326,7 @@ async function main() {
         resumed: Boolean(session?.record),
         threadId: result.threadId,
         usage: result.usage,
-        logPath,
+        logPath: resultLogPath,
         message: result.message,
       },
       null,

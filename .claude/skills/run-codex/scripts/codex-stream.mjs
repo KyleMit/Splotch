@@ -12,6 +12,18 @@ const GROUP_LIVENESS_POLL_MS = 100;
 // terminal or shell session closes the wrapper is hung up, and the detached Codex group would
 // otherwise survive it and keep spending plan usage.
 export const CANCELLATION_SIGNALS = Object.freeze(['SIGINT', 'SIGTERM', 'SIGHUP']);
+// Callers have to tell a Codex that refused the run from a run the user stopped: only the former
+// may be retried. Without a code they would have to match on message text.
+export const STREAM_FAILURE = Object.freeze({
+  cancelled: 'cancelled',
+  stalled: 'stalled',
+  logFailed: 'log-failed',
+  exited: 'exited',
+});
+
+function streamError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
 const PROGRESS_TEXT_MAX_CHARS = 160;
 const STDERR_TAIL_MAX_CHARS = 4096;
 // The raw log embeds whole command outputs and lives in a listable shared temp directory, so it is
@@ -184,24 +196,36 @@ export function runCodexStreaming(
 
     const settle = (code, signal) => {
       if (cancelled) {
-        rejectPromise(new Error(`cancelled by ${cancelled}; Codex terminated. Log: ${logPath}`));
+        rejectPromise(
+          streamError(
+            STREAM_FAILURE.cancelled,
+            `cancelled by ${cancelled}; Codex terminated. Log: ${logPath}`
+          )
+        );
         return;
       }
       if (stalled) {
         rejectPromise(
-          new Error(
+          streamError(
+            STREAM_FAILURE.stalled,
             `Codex produced no stream event for ${Math.round(stallTimeoutMs / 1000)}s after "${lastEvent}"; terminated. Full log: ${logPath}`
           )
         );
         return;
       }
       if (logFailure) {
-        rejectPromise(new Error(`stream log ${logPath} failed: ${logFailure.message}`));
+        rejectPromise(
+          streamError(
+            STREAM_FAILURE.logFailed,
+            `stream log ${logPath} failed: ${logFailure.message}`
+          )
+        );
         return;
       }
       if (code !== 0) {
         rejectPromise(
-          new Error(
+          streamError(
+            STREAM_FAILURE.exited,
             `codex exited ${code ?? signal} after "${lastEvent}". Log: ${logPath}\n${stderrTail.trim()}`
           )
         );

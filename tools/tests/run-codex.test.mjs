@@ -10,6 +10,7 @@ import {
   buildReviewPrompt,
   describeScope,
   ISOLATION_FEATURES,
+  isRetryableResumeFailure,
   parseRunArgs,
   readPromptFile,
   resolveWorktree,
@@ -36,6 +37,7 @@ import {
   CANCELLATION_SIGNALS,
   renderProgressEvent,
   runCodexStreaming,
+  STREAM_FAILURE,
 } from '../../.claude/skills/run-codex/scripts/codex-stream.mjs';
 
 const PLAN_AUTH = { auth_mode: 'chatgpt', tokens: { access_token: 'token' } };
@@ -270,6 +272,20 @@ describe('run-codex streaming lifecycle', () => {
 
   // Output alone is not progress: a stuck Codex writing retry diagnostics must still trip the
   // watchdog, or the documented ten-minute guarantee is unenforceable.
+  it('labels each failure so a caller can tell a refusal from a cancellation', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'run-codex-stream-'));
+    try {
+      await expect(streamingRun('process.exit(3)', directory)).rejects.toMatchObject({
+        code: STREAM_FAILURE.exited,
+      });
+      await expect(streamingRun('setInterval(() => {}, 1000)', directory)).rejects.toMatchObject({
+        code: STREAM_FAILURE.stalled,
+      });
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('terminates a child that only writes to stderr', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'run-codex-stream-'));
     try {
@@ -358,9 +374,35 @@ describe('run-codex streaming lifecycle', () => {
 describe('run-codex review rounds', () => {
   const options = { profile: 'review', scope: 'base', base: 'main', effort: 'high' };
 
+  // --end-session still needs a working directory: main resolves the worktree before it can find
+  // the record, so dropping cwd here crashed the documented command instead of ending the session.
   it('opts into a fresh reviewer and into ending the session', () => {
     expect(parseRunArgs(['--fresh'])).toMatchObject({ fresh: true });
-    expect(parseRunArgs(['--end-session'])).toEqual({ endSession: true });
+    expect(parseRunArgs(['--end-session'])).toEqual({ endSession: true, cwd: process.cwd() });
+    expect(parseRunArgs(['--end-session', '--cwd', '/repo'])).toEqual({
+      endSession: true,
+      cwd: '/repo',
+    });
+  });
+
+  // Retrying a run the user stopped would spend plan usage they just tried to stop, and would make
+  // a second Ctrl-C necessary. Only Codex refusing the run earns a fresh attempt.
+  it('retries only when Codex itself refused the run', () => {
+    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.exited })).toBe(true);
+    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.cancelled })).toBe(false);
+    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.stalled })).toBe(false);
+    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.logFailed })).toBe(false);
+    expect(isRetryableResumeFailure(new Error('something else'))).toBe(false);
+  });
+
+  // An unreachable recorded head means the range is unknown, not empty: telling the reviewer
+  // nothing landed would make it skip changes that did.
+  it('distinguishes an uncomputable commit range from an empty one', () => {
+    const prompt = buildRoundPrompt(options, { rounds: 1, head: 'deadbeef' }, undefined, undefined);
+
+    expect(prompt).toContain('no longer reachable');
+    expect(prompt).toContain('deadbeef');
+    expect(prompt).not.toContain('(no new commits)');
   });
 
   // The point of resuming: the reviewer must check its own earlier findings rather than treat the
