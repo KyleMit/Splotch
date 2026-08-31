@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { IDENTITY_PAPER_VIEW } from './paperView';
-import { LIVE_TILE_COUNT } from './liveTiles';
+import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
 import type { StrokeOp } from './strokeOps';
 import {
   adoptTiledRenderer,
@@ -29,6 +29,10 @@ vi.mock('./crayonBrush', async (importOriginal) => ({
 
 installTiledRendererTestHarness();
 
+const TEST_PAPER_PX = 400;
+const TEST_TILE_WIDTH_PX = TEST_PAPER_PX / LIVE_TILE_COLUMNS;
+const TEST_TILE_HEIGHT_PX = TEST_PAPER_PX / LIVE_TILE_ROWS;
+
 describe('idle tiled canvas visibility', () => {
   it('composites only painted tiles and restores visibility through clear and undo', () => {
     const { host, canvas } = rendererElements();
@@ -40,14 +44,17 @@ describe('idle tiled canvas visibility', () => {
     canvas.height = 1;
     resizeTiledRenderer(400, 400, 1);
     expect(tiledSurfaceTopologyDebug()).toEqual(
-      Array.from({ length: LIVE_TILE_COUNT }, () => ({ width: 100, height: 100 }))
+      Array.from({ length: LIVE_TILE_COUNT }, () => ({
+        width: TEST_TILE_WIDTH_PX,
+        height: TEST_TILE_HEIGHT_PX,
+      }))
     );
     expect(tiledWorkDebug()).toMatchObject({
       backingMigrationPending: false,
-      liveSurfaceElements: 48,
+      liveSurfaceElements: 60,
       realizedNormalBackings: LIVE_TILE_COUNT,
       realizedCrayonBackings: 0,
-      maxLiveBackingBytes: 40_000,
+      maxLiveBackingBytes: 32_000,
       totalLiveBackingBytes: 640_000,
       lastCommand: null,
     });
@@ -102,7 +109,9 @@ describe('idle tiled canvas visibility', () => {
     expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(0);
     expect(clearCallsAfter - clearCallsBefore).toBe(0);
     deferredFrames.shift()?.(0);
-    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(100 * 100 * 4);
+    expect(tiledHistoryDebug().patchBytes - patchBytesBeforeClear).toBe(
+      TEST_TILE_WIDTH_PX * TEST_TILE_HEIGHT_PX * 4
+    );
 
     undoTiledCommand(1);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
@@ -143,7 +152,7 @@ describe('idle tiled canvas visibility', () => {
     const crayonDot: StrokeOp = {
       kind: 'dot',
       x: 100,
-      y: 100,
+      y: 80,
       radius: 5,
       color: '#ff0000',
       erase: false,
@@ -228,7 +237,7 @@ describe('idle tiled canvas visibility', () => {
 
     expect(recoverTiledRendererIfNeeded()).toBe(true);
     expect(tiles[0].hidden).toBe(false);
-    expect(tiles[5].getContext('2d')!.getTransform()).toMatchObject({ e: -100, f: -100 });
+    expect(tiles[5].getContext('2d')!.getTransform()).toMatchObject({ e: -100, f: -80 });
     expect(tiles.every((tile) => tile.getContext('2d')!.lineCap === 'round')).toBe(true);
     expect(crayonBottom.getContext('2d')!.lineCap).toBe('round');
     expect(recoverTiledRendererIfNeeded()).toBe(false);
@@ -335,7 +344,7 @@ describe('idle tiled canvas visibility', () => {
       bitmaps.slice(0, 2)
     );
     expect(snapshot?.tiles[0]).toMatchObject({ x: 0, y: 0 });
-    expect(snapshot?.tiles[1]).toMatchObject({ x: 100, y: 100 });
+    expect(snapshot?.tiles[1]).toMatchObject({ x: 100, y: 80 });
   });
 
   it('spreads clear snapshots across separate animation frames', () => {
@@ -354,7 +363,7 @@ describe('idle tiled canvas visibility', () => {
     });
 
     clearTiledRenderer(false);
-    const tileBytes = 100 * 100 * 4;
+    const tileBytes = TEST_TILE_WIDTH_PX * TEST_TILE_HEIGHT_PX * 4;
     let previousBytes = 0;
     let captureFrames = 0;
     while (tiledHistoryDebug().patchBytes < tileBytes * 4) {
@@ -463,10 +472,10 @@ describe('idle tiled canvas visibility', () => {
     resizeTiledRenderer(800, 400, 1, true);
     const patchBytesAfterResize = tiledHistoryDebug().patchBytes;
     applyTiledView(IDENTITY_PAPER_VIEW);
-    expect(tiles.some((tile) => tile.width !== 200 || tile.height !== 100)).toBe(true);
+    expect(tiles.some((tile) => tile.width !== 200 || tile.height !== 80)).toBe(true);
     while (deferredFrames.length) deferredFrames.shift()!(0);
 
-    expect(tiles.every((tile) => tile.width === 200 && tile.height === 100)).toBe(true);
+    expect(tiles.every((tile) => tile.width === 200 && tile.height === 80)).toBe(true);
     expect(patchBytesAfterResize).toBeGreaterThan(patchBytesBeforeResize);
     expect(tiledHistoryDebug().patchBytes).toBe(patchBytesAfterResize);
     expect(undoTiledCommand(1)).toMatchObject({ empty: false, canUndo: true });
