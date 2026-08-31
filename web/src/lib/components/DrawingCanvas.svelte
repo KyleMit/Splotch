@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import {
     adoptDrawingCanvas,
     setColor,
@@ -193,36 +193,51 @@
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
-  // and swaps the page art to the other tall/wide composition. Hide art when
-  // the composition changes, decode the browser-selected file off-DOM, and show
-  // it only once ready. A theme sibling has identical registration, so it
-  // keeps the current art visible until the sibling is ready.
+  // and swaps the page art to the other tall/wide composition. The inactive
+  // final-geometry slot decodes the canonical file before one opacity handoff;
+  // a theme sibling keeps the current art visible until its replacement is ready.
   let displayedOverlayUrl = $state<string | null>(null);
+  let visibleOverlaySlot = $state<0 | 1>(0);
+  let overlaySlotUrls = $state<[string | null, string | null]>([null, null]);
+  let overlaySlotZero: HTMLImageElement;
+  let overlaySlotOne: HTMLImageElement;
+
+  function overlaySlotElement(slot: 0 | 1) {
+    return slot === 0 ? overlaySlotZero : overlaySlotOne;
+  }
 
   $effect(() => {
     const url = themedOverlayUrl;
     if (!url) {
       displayedOverlayUrl = null;
+      overlaySlotUrls[0] = null;
+      overlaySlotUrls[1] = null;
       return;
     }
     const displayed = untrack(() => displayedOverlayUrl);
+    const currentSlot = untrack(() => visibleOverlaySlot);
     if (!displayed || pageCompositionKey(displayed) !== pageCompositionKey(url)) {
       displayedOverlayUrl = null;
+      overlaySlotUrls[currentSlot] = null;
     }
+    const nextSlot: 0 | 1 = currentSlot === 0 ? 1 : 0;
+    overlaySlotUrls[nextSlot] = url;
     let stale = false;
-    const img = new Image();
-    img.fetchPriority = 'high';
-    img.src = url;
-    // Show on decode failure too — the <img> then surfaces the same broken
-    // state a direct src assignment would have.
-    const show = () => {
-      if (!stale) {
-        displayedOverlayUrl = url;
-      }
-    };
-    img.decode().then(show, show);
+    let releaseFrame = 0;
+    void tick().then(async () => {
+      const img = overlaySlotElement(nextSlot);
+      await img.decode().catch(() => {});
+      if (stale) return;
+      const previousSlot = visibleOverlaySlot;
+      displayedOverlayUrl = url;
+      visibleOverlaySlot = nextSlot;
+      releaseFrame = requestAnimationFrame(() => {
+        if (visibleOverlaySlot === nextSlot) overlaySlotUrls[previousSlot] = null;
+      });
+    });
     return () => {
       stale = true;
+      cancelAnimationFrame(releaseFrame);
     };
   });
 
@@ -274,11 +289,22 @@
     style:transform={paperPresentationResident ? paperTransform : undefined}
   >
     <img
+      bind:this={overlaySlotZero}
       class="coloring-overlay"
-      class:overlay-ready={!!displayedOverlayUrl}
-      id={COLORING_OVERLAY_ID}
-      src={displayedOverlayUrl ?? ''}
-      data-canonical-url={themedOverlayUrl ?? undefined}
+      class:overlay-ready={visibleOverlaySlot === 0 && !!displayedOverlayUrl}
+      id={visibleOverlaySlot === 0 ? COLORING_OVERLAY_ID : undefined}
+      src={overlaySlotUrls[0] ?? ''}
+      data-canonical-url={visibleOverlaySlot === 0 ? (themedOverlayUrl ?? undefined) : undefined}
+      alt=""
+      hidden={!overlayUrl()}
+    />
+    <img
+      bind:this={overlaySlotOne}
+      class="coloring-overlay"
+      class:overlay-ready={visibleOverlaySlot === 1 && !!displayedOverlayUrl}
+      id={visibleOverlaySlot === 1 ? COLORING_OVERLAY_ID : undefined}
+      src={overlaySlotUrls[1] ?? ''}
+      data-canonical-url={visibleOverlaySlot === 1 ? (themedOverlayUrl ?? undefined) : undefined}
       alt=""
       hidden={!overlayUrl()}
     />
@@ -341,6 +367,8 @@
   /* Hidden while the next art variant decodes, then shown once it's ready —
      see displayedOverlayUrl. */
   .coloring-overlay {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 100%;
     height: 100%;
