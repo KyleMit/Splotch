@@ -56,6 +56,10 @@
   const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
 
+  function nextFrame() {
+    return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
   // Warm the resolved theme's cover thumbnails at idle so the first picker open
   // and a later theme change both paint without fetching every cover on demand.
   function imageRequest(
@@ -98,7 +102,7 @@
     setOverlayOrientation(orientation);
   });
 
-  function pickPage(page: ColoringPage) {
+  async function pickPage(page: ColoringPage) {
     const selectedOrientation = orientation;
     const selectedTheme = resolvedTheme();
     const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
@@ -106,13 +110,16 @@
     for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
       cancelImageRequest(img);
     }
+    await nextFrame();
     applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
+    await nextFrame();
     coloringBookModal.hide();
   }
 
-  function clearAndClose() {
-    clearColoringPageWithMagicUndo();
+  async function clearAndClose() {
     coloringBookModal.hide();
+    await nextFrame();
+    clearColoringPageWithMagicUndo();
   }
 
   // A tile that merely *appears* under a stationary pointer/finger — on open, or

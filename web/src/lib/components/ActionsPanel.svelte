@@ -40,7 +40,6 @@
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
-  import { waitForPressFeedbackToSettle } from '$lib/actions/pressFeedback';
   import { storeCaptureMode } from '$lib/storeCapture';
 
   // Intentionally untracked: the store-asset generator sets the flag before the
@@ -350,11 +349,9 @@
     closeFlyout({ restoreFocus: true });
   }
 
-  async function handleColoringBookClick() {
+  function handleColoringBookClick() {
     if (!coloringBtnEl) return;
-    const origin = buttonCenter(coloringBtnEl);
-    await waitForPressFeedbackToSettle(coloringBtnEl);
-    coloringBookModal.show(origin);
+    coloringBookModal.show(buttonCenter(coloringBtnEl));
   }
 
   // The AI flow is a grown-ups area (it sends the drawing off-device), so the
