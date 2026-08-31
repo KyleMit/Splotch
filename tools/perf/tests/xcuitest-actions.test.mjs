@@ -101,9 +101,7 @@ describe('loaded page identity', () => {
 
   it('accepts the entry module from the preview build', () => {
     expect(
-      loadedPageEntryProblem(expected, [
-        `import { start } from ${JSON.stringify(expected)};`,
-      ])
+      loadedPageEntryProblem(expected, [`import { start } from ${JSON.stringify(expected)};`])
     ).toBeNull();
   });
 
@@ -113,7 +111,8 @@ describe('loaded page identity', () => {
         'import { start } from "/_app/immutable/entry/start.stale.js";',
       ])
     ).toBe(
-      'the loaded page uses /_app/immutable/entry/start.stale.js, but the preview serves ' + expected
+      'the loaded page uses /_app/immutable/entry/start.stale.js, but the preview serves ' +
+        expected
     );
   });
 
