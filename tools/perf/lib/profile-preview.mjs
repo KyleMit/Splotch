@@ -31,6 +31,13 @@ export function entryModulePath(html) {
   return /\/_app\/immutable\/entry\/start\.[^"']+\.js/.exec(html ?? '')?.[0] ?? null;
 }
 
+export function loadedPageEntryProblem(expectedEntry, scriptSources) {
+  const loadedEntry = entryModulePath(scriptSources.join('\n'));
+  if (!loadedEntry) return 'the loaded page exposes no SvelteKit entry module';
+  if (loadedEntry === expectedEntry) return null;
+  return `the loaded page uses ${loadedEntry}, but the preview serves ${expectedEntry}`;
+}
+
 // Resolving the entry proves the server is internally consistent. It does NOT
 // prove the build is THIS checkout's — a preview server another worktree left on
 // the port serves its own perfectly coherent build, and every check above passes
