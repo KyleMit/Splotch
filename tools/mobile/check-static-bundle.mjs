@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync, globSync, readFileSync, readdirSync } from 'node:fs';
+import { basename, join, relative } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import {
   BETA_OPT_IN_URL,
@@ -11,7 +11,11 @@ import {
   TESTFLIGHT_APP_URL,
   TESTFLIGHT_INVITE_URL,
 } from '../../web/src/lib/components/beta/iosBeta.ts';
-import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
+import {
+  BOOKS,
+  RESPONSIVE_COLORING_TIER_DIRECTORIES,
+  STARTER_COLORING_BOOK_ID,
+} from '../../web/src/lib/state/books.ts';
 import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 import { storePage } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
@@ -186,8 +190,16 @@ export function nativeBundleProblems(
   const problems = [];
   const coloringDirectory = join(dir, 'coloring');
   if (existsSync(coloringDirectory)) {
+    const responsiveTierDirectoryNames = new Set(
+      RESPONSIVE_COLORING_TIER_DIRECTORIES.map((path) => basename(path))
+    );
     const extraBookDirectories = readdirSync(coloringDirectory, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && entry.name !== starterBookId)
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          entry.name !== starterBookId &&
+          !responsiveTierDirectoryNames.has(entry.name)
+      )
       .map((entry) => entry.name);
     if (extraBookDirectories.length) {
       problems.push(
@@ -204,6 +216,39 @@ export function nativeBundleProblems(
     }
   }
   return problems;
+}
+
+export function nativeColoringPresentationProblems(
+  dir,
+  starterBookId = STARTER_COLORING_BOOK_ID,
+  books = BOOKS
+) {
+  const starterBook = books.find((book) => book.id === starterBookId);
+  if (!starterBook)
+    return [`Native starter coloring book is missing from the catalog: ${starterBookId}`];
+
+  const canonicalPagePaths = starterBook.pages.flatMap((page) => [
+    page.images.portrait,
+    page.images.landscape,
+    page.darkImages.portrait,
+    page.darkImages.landscape,
+  ]);
+  const retiredPresentationPaths = globSync('coloring/**/*.presentation.webp', { cwd: dir })
+    .sort()
+    .map((path) => `/${path}`);
+  const buildPath = (assetPath) => join(dir, assetPath.replace(/^\//, ''));
+  const responsiveTierPaths = RESPONSIVE_COLORING_TIER_DIRECTORIES.filter((path) =>
+    existsSync(buildPath(path))
+  ).sort();
+  return [
+    ...canonicalPagePaths.flatMap((path) =>
+      existsSync(buildPath(path)) ? [] : [`Native canonical coloring page is missing: ${path}`]
+    ),
+    ...retiredPresentationPaths.map((path) => `Retired coloring presentation remains: ${path}`),
+    ...responsiveTierPaths.map(
+      (path) => `Web-only responsive coloring tier remains native: ${path}`
+    ),
+  ];
 }
 
 export function requiredNativePageProblems(dir) {
@@ -311,6 +356,7 @@ export async function checkStaticBundle({
     ...webOnlyMarkerSourceProblems(),
     ...boundaryProblems,
     ...nativeBundleProblems(dir, sentinels),
+    ...nativeColoringPresentationProblems(dir),
     ...requiredNativePageProblems(dir),
     ...nativeContentSecurityPolicyProblems(dir),
     ...requiredNativePageLinkProblems(dir),
@@ -327,7 +373,8 @@ export async function checkStaticBundle({
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present and linked; ` +
       `every HTML document carries one native CSP; ` +
       `privacy links to the hosted feedback form; ` +
-      `only ${STARTER_COLORING_BOOK_ID} is bundled`
+      `only ${STARTER_COLORING_BOOK_ID} is bundled; ` +
+      `canonical page SVGs are present and web-only coloring rasters are absent`
   );
 }
 

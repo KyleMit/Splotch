@@ -28,7 +28,8 @@ import { join } from 'node:path';
 import { entryModulePath, servedBuildFingerprintProblem } from '../lib/profile-preview.mjs';
 import { ROOT as ROOT_DIR } from '../../lib/proc.mjs';
 import { campaignProgress } from '../campaign-status.mjs';
-import { isProbePlan } from '../run-campaign.mjs';
+import { probeHostAvailabilityProblem } from '../run-campaign.mjs';
+import { PROBE_HOST_PROTOCOL } from '../split-capture/lib/probe-host-protocol.mjs';
 import {
   ALREADY_VALID,
   COMPLETE,
@@ -987,29 +988,33 @@ describe('completedCells', () => {
   });
 });
 
-describe('isProbePlan', () => {
-  // The regression this covers: a plain-text server answering `not a probe` with
-  // status 200 on the requested port satisfied the old check, and the campaign ran
-  // on — recreating the page-timeout failure the guard exists to eliminate.
-  it('rejects a 200 that is not the probe protocol', () => {
-    expect(isProbePlan('not a probe')).toBe(false);
-    expect(isProbePlan(null)).toBe(false);
-    expect(isProbePlan({})).toBe(false);
-    expect(isProbePlan({ ok: true })).toBe(false);
-    expect(isProbePlan([{ label: 'run', finish: false, contactMs: 1 }])).toBe(false);
+describe('the campaign probe-host protocol gate', () => {
+  const jsonResponse = (payload) =>
+    new Response(JSON.stringify(payload), {
+      headers: { 'content-type': 'application/json' },
+    });
+
+  it('accepts only the exact protocol the runner requires', async () => {
+    await expect(
+      probeHostAvailabilityProblem('http://probe.test', async () =>
+        jsonResponse({ protocol: PROBE_HOST_PROTOCOL })
+      )
+    ).resolves.toBeNull();
+
+    await expect(
+      probeHostAvailabilityProblem('http://probe.test', async () =>
+        jsonResponse({ protocol: 'splotch-perf-probe-v1' })
+      )
+    ).resolves.toContain('it speaks splotch-perf-probe-v1');
   });
 
-  // The shape a running `perf:device:serve` actually answers with, taken from one.
-  it('accepts the plan the probe host serves', () => {
-    expect(isProbePlan({ brush: 'pen', contactMs: 600000, finish: false, label: 'run' })).toBe(
-      true
-    );
-  });
-
-  it('rejects a plan missing any required field', () => {
-    expect(isProbePlan({ contactMs: 1, finish: false })).toBe(false);
-    expect(isProbePlan({ label: 'run', contactMs: 1 })).toBe(false);
-    expect(isProbePlan({ label: 'run', finish: false })).toBe(false);
+  it('names a 200 response that is not probe-host JSON', async () => {
+    await expect(
+      probeHostAvailabilityProblem(
+        'http://probe.test',
+        async () => new Response('<!doctype html>', { headers: { 'content-type': 'text/html' } })
+      )
+    ).resolves.toContain('did not answer with probe-host JSON');
   });
 });
 

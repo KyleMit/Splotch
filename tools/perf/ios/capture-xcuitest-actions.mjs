@@ -280,7 +280,7 @@ export function coloringSelectionSteps(hasBookChoice) {
   steps.push({
     label: 'select coloring page',
     selector: '#coloring-book-dialog button[aria-label$="coloring page"]',
-    ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready')`,
+    ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready') && document.querySelector('#coloringOverlay')?.naturalWidth > 0`,
     settleMs: ANIMATED_ACTION_SETTLE_MS,
     activation: 'webdriver',
   });

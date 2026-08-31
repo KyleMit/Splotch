@@ -14,6 +14,7 @@ const VECTOR_MAGIC_MIN_COLORS = 5;
 async function selectPageFromBook(page: Page, bookName: string, pageName: string) {
   await openColoringBookGrid(page);
   const dialog = page.locator('#coloring-book-dialog');
+  await settleTapGuard(page);
   await dialog.getByRole('button', { name: `${bookName} coloring book`, exact: true }).click();
   await expect(dialog.getByRole('heading', { name: bookName, exact: true })).toBeVisible();
   await settleTapGuard(page);
@@ -44,9 +45,7 @@ async function distinctOpaqueCanvasColors(page: Page): Promise<number> {
   }
 }
 
-test('a catalog vector overlay reveals with Magic and switches to its dark SVG', async ({
-  page,
-}) => {
+test('a canonical catalog SVG reveals with Magic across themes', async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 820 });
   await page.emulateMedia({ colorScheme: 'light' });
   await gotoAppWithAllColoringBooksInstalled(page);
@@ -55,6 +54,10 @@ test('a catalog vector overlay reveals with Magic and switches to its dark SVG',
 
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toHaveAttribute('src', /\/coloring\/space\/station-wide\.overlay\.svg$/);
+  await expect(overlay).toHaveAttribute(
+    'data-canonical-url',
+    /\/coloring\/space\/station-wide\.overlay\.svg$/
+  );
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
     .toMatch(/\/coloring\/space\/station-wide\.overlay\.svg$/);
@@ -79,10 +82,14 @@ test('a catalog vector overlay reveals with Magic and switches to its dark SVG',
     'src',
     /\/coloring\/space\/station-wide\.dark\.overlay\.svg$/
   );
+  await expect(overlay).toHaveAttribute(
+    'data-canonical-url',
+    /\/coloring\/space\/station-wide\.dark\.overlay\.svg$/
+  );
   await expect(overlay).not.toHaveAttribute('srcset');
 });
 
-test('a dark vector overlay decodes and exports through the live app', async ({ page }) => {
+test('a dark canonical SVG decodes and exports through the live app', async ({ page }) => {
   await page.setViewportSize({ width: 1180, height: 820 });
   await page.emulateMedia({ colorScheme: 'dark' });
   await gotoAppWithAllColoringBooksInstalled(page);
@@ -92,6 +99,10 @@ test('a dark vector overlay decodes and exports through the live app', async ({ 
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toHaveAttribute(
     'src',
+    /\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/
+  );
+  await expect(overlay).toHaveAttribute(
+    'data-canonical-url',
     /\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/
   );
   await expect

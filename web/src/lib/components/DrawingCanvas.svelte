@@ -16,6 +16,7 @@
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
+  import { coloringBookModal } from '$lib/state/ui.svelte';
   import { strokeState, getStrokeWidthPx, getEraserWidthPx } from '$lib/state/strokeWidth.svelte';
   import {
     overlayUrl,
@@ -49,6 +50,13 @@
   // wrapper below is positioned with the exact same transform the canvas paints
   // through, so page art and strokes stay aligned.
   let paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
+  let paperPresentationResident = $state(!!overlayUrl());
+
+  $effect(() => {
+    if (coloringBookModal.open || overlayUrl()) {
+      paperPresentationResident = true;
+    }
+  });
 
   const paperTransform = $derived(
     `matrix(${viewMatrix({
@@ -178,9 +186,10 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // The overlay's line art is theme-aware: light mode uses transparent black ink,
-  // while dark mode uses its transparent white-ink SVG sibling (ADR-0129).
-  // Reading resolvedTheme() re-picks the art on a live theme switch.
+  // The canonical SVG is the presentation, export, and Magic authority. Selector
+  // surfaces use responsive raster previews, but the paper never substitutes a
+  // derivative whose registration or scale could diverge from the SVG.
+  // Reading resolvedTheme() re-picks the theme sibling on a live switch.
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
@@ -217,7 +226,7 @@
     };
   });
 
-  // The line art is the only asset needed to make a selected page visible.
+  // The canonical line art is the only asset needed to make a selected page visible.
   // Start the magic fill and rotation warm-up after it decodes so those
   // other art transfers cannot delay the page the child just picked.
   $effect(() => {
@@ -258,16 +267,18 @@
        page + strokes move as one sheet across rotations. -->
   <div
     class="paper-view"
+    class:paper-presentation-resident={paperPresentationResident}
+    data-paper-active={overlayUrl() ? '' : undefined}
     style:width={paperCssWidth}
     style:height={paperCssHeight}
-    style:transform={paperTransform}
-    hidden={!overlayUrl()}
+    style:transform={paperPresentationResident ? paperTransform : undefined}
   >
     <img
       class="coloring-overlay"
       class:overlay-ready={!!displayedOverlayUrl}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
+      data-canonical-url={themedOverlayUrl ?? undefined}
       alt=""
       hidden={!overlayUrl()}
     />
@@ -321,11 +332,10 @@
     pointer-events: none;
     z-index: 2;
     mix-blend-mode: normal;
-    will-change: transform;
   }
 
-  .paper-view[hidden] {
-    display: none;
+  .paper-view.paper-presentation-resident {
+    will-change: transform;
   }
 
   /* Hidden while the next art variant decodes, then shown once it's ready —

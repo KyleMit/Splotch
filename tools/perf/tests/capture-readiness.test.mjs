@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import { diagnoseLaunchFailure } from '../prepare-capture.mjs';
+import { PROBE_HOST_PROTOCOL } from '../split-capture/lib/probe-host-protocol.mjs';
 import { describe, expect, it } from 'vitest';
 import {
   androidWakeActions,
@@ -145,7 +146,7 @@ describe('port resolution', () => {
         ours: true,
         probe: {
           responds: true,
-          protocol: 'splotch-perf-probe-v1',
+          protocol: PROBE_HOST_PROTOCOL,
           upstream: 'http://127.0.0.1:4173',
           intendedUpstream: 'http://127.0.0.1:4203',
           buildProblem: null,
@@ -168,7 +169,7 @@ describe('port resolution', () => {
           ours: true,
           probe: {
             responds: true,
-            protocol: 'splotch-perf-probe-v1',
+            protocol: PROBE_HOST_PROTOCOL,
             upstream: 'http://127.0.0.1:4173',
             intendedUpstream: 'http://127.0.0.1:4173',
             buildProblem: null,
@@ -203,7 +204,7 @@ describe('port resolution', () => {
   it('reuses a compatible owned alternate probe before consuming another free shift port', () => {
     const compatibleProbe = {
       responds: true,
-      protocol: 'splotch-perf-probe-v1',
+      protocol: PROBE_HOST_PROTOCOL,
       upstream: 'http://127.0.0.1:4183',
       intendedUpstream: 'http://127.0.0.1:4183',
       buildProblem: null,
@@ -226,7 +227,7 @@ describe('port resolution', () => {
 describe('explicit probe port', () => {
   const compatibleProbe = {
     responds: true,
-    protocol: 'splotch-perf-probe-v1',
+    protocol: PROBE_HOST_PROTOCOL,
     upstream: 'http://127.0.0.1:4183',
     intendedUpstream: 'http://127.0.0.1:4183',
     buildProblem: null,
@@ -291,7 +292,7 @@ describe('probe reuse', () => {
   it('rejects a finished plan even when its upstream and build are compatible', () => {
     const verdict = probeHostReuse({
       responds: true,
-      protocol: 'splotch-perf-probe-v1',
+      protocol: PROBE_HOST_PROTOCOL,
       upstream: 'http://127.0.0.1:4173',
       intendedUpstream: 'http://127.0.0.1:4173',
       buildProblem: null,
@@ -300,6 +301,23 @@ describe('probe reuse', () => {
 
     expect(verdict.reuse).toBe(false);
     expect(verdict.reason).toContain('finished plan old-run');
+  });
+
+  it('rejects a host from the protocol version before live report retrieval existed', () => {
+    const verdict = probeHostReuse({
+      responds: true,
+      protocol: 'splotch-perf-probe-v1',
+      upstream: 'http://127.0.0.1:4173',
+      intendedUpstream: 'http://127.0.0.1:4173',
+      buildProblem: null,
+      plan: { label: 'idle-run', finish: false },
+      hasReport: true,
+    });
+
+    expect(verdict).toEqual({
+      reuse: false,
+      reason: 'it speaks splotch-perf-probe-v1, not splotch-perf-probe-v2 — restart the probe host',
+    });
   });
 });
 

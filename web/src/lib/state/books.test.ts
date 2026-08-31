@@ -13,7 +13,11 @@ import {
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
+  pageSelectorImage,
+  pageSelectorImageSource,
   responsiveColoringAssets,
+  responsiveSelectorColoringAssets,
+  selectorColoringAssets,
 } from './books';
 import {
   clearLocalColoringBookRoots,
@@ -28,6 +32,13 @@ const activePageChipComponent = readFileSync(
   new URL('../components/ActivePageChip.svelte', import.meta.url),
   'utf8'
 );
+const tokensCss = readFileSync(new URL('../../tokens.css', import.meta.url), 'utf8');
+
+function spacingTokenPx(token: string): number {
+  const value = new RegExp(`--${token}: (\\d+)px`).exec(tokensCss)?.[1];
+  expect(value, token).toBeDefined();
+  return Number(value);
+}
 
 describe('page defaults', () => {
   it('every page ships night fills and dark overlays for both orientations', () => {
@@ -65,6 +76,30 @@ describe('pageOverlayImage', () => {
     expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe(
       '/coloring/farm/cat-tall.dark.overlay.svg'
     );
+  });
+});
+
+describe('pageSelectorImage', () => {
+  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
+
+  it('uses theme-specific raster presentation derivatives', () => {
+    expect(pageSelectorImage(cat, 'portrait', 'light')).toBe(
+      '/coloring/farm/cat-tall.selector.webp'
+    );
+    expect(pageSelectorImage(cat, 'portrait', 'dark')).toBe(
+      '/coloring/farm/cat-tall.dark.selector.webp'
+    );
+  });
+
+  it('resolves through an installed native book root', () => {
+    setLocalColoringBookRoot('farm', 'https://localhost/_capacitor_file_/packs/farm/');
+    try {
+      expect(pageSelectorImage(cat, 'landscape', 'dark')).toBe(
+        'https://localhost/_capacitor_file_/packs/farm/cat-wide.dark.selector.webp'
+      );
+    } finally {
+      clearLocalColoringBookRoots();
+    }
   });
 });
 
@@ -112,6 +147,20 @@ describe('responsive image sources', () => {
     });
   });
 
+  it('gives page selectors 240 and 400 pixel responsive candidates', () => {
+    const cat = farm.pages.find((page) => page.id === 'cat')!;
+    expect(pageSelectorImageSource(cat, 'portrait', 'light')).toEqual({
+      src: '/coloring/farm/cat-tall.selector.webp',
+      srcset:
+        '/coloring/max-240px/farm/cat-tall.selector.webp 160w, /coloring/farm/cat-tall.selector.webp 267w',
+    });
+    expect(pageSelectorImageSource(cat, 'landscape', 'dark')).toEqual({
+      src: '/coloring/farm/cat-wide.dark.selector.webp',
+      srcset:
+        '/coloring/max-240px/farm/cat-wide.dark.selector.webp 240w, /coloring/farm/cat-wide.dark.selector.webp 400w',
+    });
+  });
+
   it('keeps picker sizes aligned with the modal grid geometry', () => {
     for (const ownedCssValue of [
       'max-width: min(920px, calc(100vw - 32px))',
@@ -131,9 +180,43 @@ describe('responsive image sources', () => {
     });
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
-    expect(coloringBookComponent).toContain('pageOverlayImage(page, orientation, resolvedTheme())');
-    expect(activePageChipComponent).not.toContain('srcset=');
-    expect(activePageChipComponent).not.toContain('sizes=');
+    for (const ownedCssValue of [
+      '.coloring-pages-grid {',
+      '--page-cols: 2',
+      '.coloring-pages-grid.portrait-pages {',
+      '--page-cols: 3',
+      'gap: var(--space-3)',
+      'padding: var(--space-7)',
+      'gap: var(--space-2)',
+      'padding: var(--space-6) var(--space-4)',
+    ]) {
+      expect(coloringBookComponent).toContain(ownedCssValue);
+    }
+    const narrowChromePx = 2 * spacingTokenPx('space-4') + spacingTokenPx('space-2');
+    const scrollbarReservePx = spacingTokenPx('space-4');
+    const widePortraitChromePx =
+      2 * spacingTokenPx('space-7') + 2 * spacingTokenPx('space-3') + scrollbarReservePx;
+    const wideLandscapeChromePx =
+      2 * spacingTokenPx('space-7') + spacingTokenPx('space-3') + scrollbarReservePx;
+    expect(COLORING_IMAGE_SIZES.pageSelector.portrait).toBe(
+      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${widePortraitChromePx}px) / 3), 272px)`
+    );
+    expect(COLORING_IMAGE_SIZES.pageSelector.landscape).toBe(
+      `(max-width: 520px) calc((90vw - ${narrowChromePx}px) / 2), min(calc((90vw - ${wideLandscapeChromePx}px) / 2), 414px)`
+    );
+    expect(coloringBookComponent).toContain(
+      'pageSelectorImageSource(page, orientation, resolvedTheme())'
+    );
+    expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
+    expect(activePageChipComponent).toContain('srcset=');
+    expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
+  });
+
+  it('eases the active-page chip out of its pressed state', () => {
+    const transition = activePageChipComponent.match(/transition:\s*([\s\S]*?);/)?.[1];
+    expect(transition).toContain('transform var(--duration-fast) ease');
+    expect(activePageChipComponent).toContain('.active-page-chip:active');
+    expect(activePageChipComponent).toContain('transform: scale(0.92)');
   });
 
   // The `sizes` hint's leading clause and the CSS that changes the grid under it
@@ -163,6 +246,8 @@ describe('pageCompositionKey', () => {
       '/coloring/farm/cat-tall.night.webp',
       '/coloring/farm/cat-tall.overlay.svg',
       '/coloring/farm/cat-tall.dark.overlay.svg?version=1',
+      '/coloring/farm/cat-tall.selector.webp',
+      '/coloring/farm/cat-tall.dark.selector.webp',
     ];
 
     expect(new Set(siblings.map(pageCompositionKey))).toEqual(new Set(['/coloring/farm/cat-tall']));
@@ -175,7 +260,7 @@ describe('bookAssetPaths', () => {
   it('keeps every catalog asset inside its enclosing book directory', () => {
     for (const book of BOOKS) {
       for (const path of bookAssetPaths(book)) {
-        expect(path).toMatch(new RegExp(`^/coloring/(?:max-(?:1152|240)px/)?${book.id}/`));
+        expect(path).toMatch(new RegExp(`^/coloring/(?:max-(?:1152|240|96)px/)?${book.id}/`));
       }
     }
   });
@@ -208,6 +293,8 @@ describe('bookAssetPaths', () => {
       for (const orientation of ['portrait', 'landscape'] as const) {
         expect(paths).toContain(pageOverlayImage(page, orientation, 'light'));
         expect(paths).toContain(pageOverlayImage(page, orientation, 'dark'));
+        expect(paths).toContain(pageSelectorImage(page, orientation, 'light'));
+        expect(paths).toContain(pageSelectorImage(page, orientation, 'dark'));
       }
     }
   });
@@ -227,11 +314,30 @@ describe('bookAssetPaths', () => {
     expect(responsive).toHaveLength(26);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
     for (const canonical of bookPackAssetPaths(farm)) {
-      if (canonical.endsWith('.svg')) continue;
+      if (canonical.endsWith('.svg') || canonical.endsWith('.selector.webp')) {
+        continue;
+      }
       expect(
         responsive.some((asset) => asset.source === canonical),
         canonical
       ).toBe(true);
+    }
+  });
+
+  it('lists every generated page selector derivative', () => {
+    const paths = new Set(bookAssetPaths(farm));
+    const selectors = selectorColoringAssets(farm);
+    expect(selectors).toHaveLength(24);
+    for (const asset of selectors) expect(paths.has(asset.target), asset.target).toBe(true);
+  });
+
+  it('lists every generated responsive page selector derivative', () => {
+    const paths = new Set(bookAssetPaths(farm));
+    const selectors = responsiveSelectorColoringAssets(farm);
+    expect(selectors).toHaveLength(24);
+    for (const asset of selectors) {
+      expect(paths.has(asset.target), asset.target).toBe(true);
+      expect(asset.target).toContain('/coloring/max-240px/');
     }
   });
 });
@@ -242,11 +348,13 @@ describe('downloadable coloring packs', () => {
 
   it('contains exactly the canonical runtime files for one complete book', () => {
     const paths = bookPackAssetPaths(farm);
-    expect(paths).toHaveLength(50);
+    expect(paths).toHaveLength(74);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);
     expect(paths.some((path) => /\.(?:outline|chalk)\.webp$/.test(path))).toBe(false);
     expect(paths.some((path) => path.includes('/max-'))).toBe(false);
+    expect(paths.some((path) => path.endsWith('.presentation.webp'))).toBe(false);
+    expect(paths.filter((path) => path.endsWith('.overlay.svg'))).toHaveLength(24);
   });
 
   it('redirects every runtime URL to a native book root after installation', () => {
@@ -258,6 +366,9 @@ describe('downloadable coloring packs', () => {
       );
       expect(coverThumbImageSource(dinosaur, 'light').src).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/cover.thumb.webp'
+      );
+      expect(pageSelectorImage(page, 'portrait', 'dark')).toBe(
+        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.dark.selector.webp'
       );
     } finally {
       clearLocalColoringBookRoots();

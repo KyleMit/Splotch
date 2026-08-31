@@ -19,13 +19,23 @@ import {
   createFloorControlHost,
 } from '../split-capture/serve-floor-control.mjs';
 import { createProbeHost } from '../split-capture/lib/probe-host.mjs';
+import { fetchAcceptedProbeReport } from '../split-capture/lib/probe-host-protocol.mjs';
 import {
   activateChromePage,
   clearToolingLitter,
   runChromePage,
   toolingLitter,
 } from '../split-capture/lib/chrome-tabs.mjs';
-import { androidDriver, zeroInputProblem } from '../split-capture/capture-device-frames.mjs';
+import {
+  androidDriver,
+  driveSplitGesturePasses,
+  requestPageEraserRefill,
+  zeroInputProblem,
+} from '../split-capture/capture-device-frames.mjs';
+import {
+  STROKES_PER_GESTURE_REPEAT,
+  trustedGestureActions,
+} from '../ios/capture-xcuitest-screen.mjs';
 import { guardVerifyForeground } from '../split-capture/verify-android-input.mjs';
 import { STAND_DOWN_PATH } from '../split-capture/lib/chrome-tabs.mjs';
 import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
@@ -63,6 +73,16 @@ const stroke = [
 ];
 
 describe('androidGestureInstructions', () => {
+  it('does not confuse authored strokes with Android swipe touch streams', () => {
+    const actions = trustedGestureActions({ x: 0, y: 0, width: 1_000, height: 700 }, 1, 0);
+    const instructions = androidGestureInstructions(actions);
+
+    expect(actions.filter((action) => action.type === 'pointerDown')).toHaveLength(
+      STROKES_PER_GESTURE_REPEAT
+    );
+    expect(instructions.filter((instruction) => instruction.kind === 'swipe')).toHaveLength(16);
+  });
+
   it('includes Android Chrome content insets in the CSS-to-screen origin', () => {
     expect(
       androidContentOffset(
@@ -161,6 +181,63 @@ describe('androidGestureInstructions', () => {
       '4',
       '60',
     ]);
+  });
+});
+
+describe('split-capture eraser pass orchestration', () => {
+  it('waits for a refill acknowledgement between authored passes and skips the final refill', async () => {
+    const calls = [];
+    const driver = {
+      async dispatch(_geometry, repeats) {
+        calls.push(['dispatch', repeats]);
+      },
+    };
+
+    const refills = await driveSplitGesturePasses({
+      driver,
+      geometry: { bounds: {} },
+      repeats: 3,
+      refillBetweenPasses: async (afterStroke) => {
+        calls.push(['refill', afterStroke]);
+        return { afterStroke, pending: false, transparentTiles: [] };
+      },
+    });
+
+    expect(calls).toEqual([
+      ['dispatch', 1],
+      ['refill', 10],
+      ['dispatch', 1],
+      ['refill', 20],
+      ['dispatch', 1],
+    ]);
+    expect(refills).toHaveLength(2);
+  });
+
+  it('accepts only the nonce-bound acknowledgement for the requested refill token', async () => {
+    const controls = [];
+    const entry = {
+      afterStroke: 10,
+      pending: false,
+      transparentTiles: [],
+      trustedCanvasPointerUps: 16,
+    };
+
+    const result = await requestPageEraserRefill({
+      host: 'http://probe.test',
+      nonce: 'run-1',
+      afterStroke: 10,
+      controlPage: async (_host, body) => controls.push(body),
+      readState: async () => ({
+        refill: {
+          nonce: 'run-1',
+          request: { sequence: 1, afterStroke: 10 },
+          entry,
+        },
+      }),
+    });
+
+    expect(controls).toEqual([{ eraserRefillRequest: { sequence: 1, afterStroke: 10 } }]);
+    expect(result).toEqual(entry);
   });
 });
 
@@ -680,6 +757,42 @@ describe('the probe host refusing a stale run over HTTP', () => {
       body: JSON.stringify(body),
     });
 
+  it('serves only the current accepted report and clears it on reset', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+    const control = (nonce) =>
+      fetch(`${base}/__probe/control`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ label: 'same-label', nonce, reset: true }),
+      });
+
+    await control('run-1');
+    await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
+
+    await postReport(base, { nonce: 'stale-run', report: { events: [1] } });
+    await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
+
+    const accepted = { nonce: 'run-1', report: { events: [1, 2, 3] } };
+    await postReport(base, accepted);
+    await expect(fetchAcceptedProbeReport(base)).resolves.toEqual(accepted);
+
+    await control('run-2');
+    await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
+  });
+
+  it('names a non-JSON response as a mismatched probe host', async () => {
+    const fetchHtml = async () =>
+      new Response('<!doctype html>', {
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      });
+
+    await expect(fetchAcceptedProbeReport('http://probe.test', fetchHtml)).rejects.toThrow(
+      'did not answer with probe-host JSON'
+    );
+  });
+
   // Issue 1316: a locked iPad and an installed clean bundled build both look
   // like a successful devicectl launch followed by silence. The counter is the
   // signal the runner separates them with, so it has to count and to reset.
@@ -699,6 +812,56 @@ describe('the probe host refusing a stale run over HTTP', () => {
       body: JSON.stringify({ nonce: 'next-run', reset: true }),
     });
     expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).planRequests).toBe(0);
+  });
+
+  it('exposes only the current nonce-bound refill acknowledgement and clears it on reset', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+    const control = (body) =>
+      fetch(`${base}/__probe/control`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    const postRefill = (body) =>
+      fetch(`${base}/__probe/refill`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+    await control({
+      nonce: 'run-1',
+      reset: true,
+      eraserRefillRequest: { sequence: 1, afterStroke: 10 },
+    });
+    await postRefill({
+      nonce: 'stale-run',
+      request: { sequence: 1, afterStroke: 10 },
+      entry: { afterStroke: 10 },
+    });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).refill).toBeNull();
+
+    await postRefill({
+      nonce: 'run-1',
+      request: { sequence: 1, afterStroke: 20 },
+      entry: { afterStroke: 20 },
+    });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).refill).toBeNull();
+
+    await postRefill({
+      nonce: 'run-1',
+      request: { sequence: 1, afterStroke: 10 },
+      entry: { afterStroke: 10 },
+    });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).refill).toMatchObject({
+      nonce: 'run-1',
+      request: { sequence: 1 },
+    });
+
+    await control({ nonce: 'run-2', reset: true, eraserRefillRequest: null });
+    expect((await fetch(`${base}/__probe/state`).then((r) => r.json())).refill).toBeNull();
   });
 
   // A stood-down page used to render a bare <title> while the manual runner

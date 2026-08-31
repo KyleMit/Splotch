@@ -38,6 +38,7 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
     'tools/perf/split-capture/capture-device-frames.mjs',
     'tools/perf/split-capture/lib/page-bootstrap.mjs',
     'tools/perf/split-capture/lib/probe-host.mjs',
+    'tools/perf/split-capture/lib/probe-host-protocol.mjs',
     'tools/perf/split-capture/lib/report-store.mjs',
     'tools/perf/split-capture/lib/android-input.mjs',
     'tools/perf/split-capture/lib/chrome-tabs.mjs',

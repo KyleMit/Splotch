@@ -6,14 +6,7 @@ export const webOnlyBooks = (books) => books.filter((book) => !book.platforms.in
 export const downloadableMobileBooks = (books, starterBookId) =>
   books.filter((book) => book.platforms.includes('mobile') && book.id !== starterBookId);
 
-export const nativeUnusedLineArt = (books) =>
+export const nativeUnusedCoverLineArt = (books) =>
   books
     .filter((book) => book.platforms.includes('mobile'))
-    .flatMap((book) => [
-      book.cover,
-      book.darkCover,
-      ...book.pages.flatMap((page) => [
-        ...Object.values(page.images),
-        ...Object.values(page.darkImages),
-      ]),
-    ]);
+    .flatMap((book) => [book.cover, book.darkCover]);

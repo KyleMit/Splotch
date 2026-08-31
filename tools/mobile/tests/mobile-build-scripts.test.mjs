@@ -297,8 +297,8 @@ describe('mobile build script entry points', () => {
     expect(existsSync(join(buildDir, 'favicon.ico'))).toBe(false);
     expect(existsSync(join(mobileDir, 'cover.overlay.svg'))).toBe(false);
     expect(existsSync(join(mobileDir, 'cover.dark.overlay.svg'))).toBe(false);
-    expect(existsSync(join(mobileDir, 'page-tall.overlay.svg'))).toBe(false);
-    expect(existsSync(join(mobileDir, 'page-tall.dark.overlay.svg'))).toBe(false);
+    expect(existsSync(join(mobileDir, 'page-tall.overlay.svg'))).toBe(true);
+    expect(existsSync(join(mobileDir, 'page-tall.dark.overlay.svg'))).toBe(true);
     expect(existsSync(downloadableDir)).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-1152px'))).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-240px'))).toBe(false);
@@ -307,9 +307,6 @@ describe('mobile build script entry points', () => {
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).toContain('name="viewport"');
     expect(warn).toHaveBeenCalledWith(
       '[strip-static-assets] expected but not found: large-image.png'
-    );
-    expect(warn).toHaveBeenCalledWith(
-      '[strip-static-assets] expected but not found: /coloring/mobile/page-wide.overlay.svg'
     );
     expect(log).toHaveBeenCalledWith('[strip-static-assets] removed /coloring/web-only');
     expect(log).toHaveBeenCalledWith(

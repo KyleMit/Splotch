@@ -3,7 +3,8 @@
 **Status:** Active — amends [ADR-0044](0044-svg-optimization-audit.md),
 [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md),
 [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md), and
-[ADR-0103](0103-progressive-coloring-book-packs.md)
+[ADR-0103](0103-progressive-coloring-book-packs.md); amended by
+[ADR-0152](0152-responsive-raster-coloring-selectors.md)
 
 **Date:** 2026-08
 
@@ -149,3 +150,25 @@ restart-tree `.source.webp` files rather than assuming a committed raster master
 always binds every canonical SVG to its recorded output digest and also verifies recorded source
 digests when that recovery scratch is locally present; after it is removed, those source fields are
 retained provenance rather than independently verifiable inputs.
+
+## Amendment (2026-08): Separate Canonical Authority from Runtime Presentation
+
+ADR-0152 supersedes this amendment's full-page presentation WebPs and single-size selector. The
+canonical SVG again presents the full paper; selectors use a responsive 96/240/400 px raster set.
+
+The SVG remains the only canonical line-art source and the authority for drawing state, Magic
+registration, and screenshot export. Runtime presentation may use a deterministic derivative when
+that avoids repeatedly rasterizing full-page SVG inside a constrained WebKit frame.
+
+Web page grids and the active-page chip use lossless 400 px selector WebPs. The web canvas uses a
+lossless full-size presentation WebP, and compact downloadable packs map that same logical path to a
+lossless 1,152 px presentation derivative. Native page grids retain the selector WebPs, while the
+Capacitor canvas and export path display the canonical SVG and omit presentation WebPs from native
+packs and the static export. Thus pack-resolution invariance still applies to canonical SVGs; it no
+longer claims that every UI surface presents those SVG bytes directly.
+
+Selector and presentation derivatives rasterize SVGs with the pinned `@resvg/resvg-js` renderer
+before Sharp performs only the lossless WebP encoding. The generator disables system-font loading,
+pins the target geometry, and the catalog gate requires every decoded derivative pixel to equal the
+deterministic Resvg RGBA buffer. This removes the macOS/Linux librsvg variance without weakening the
+canonical SVG fidelity contract.

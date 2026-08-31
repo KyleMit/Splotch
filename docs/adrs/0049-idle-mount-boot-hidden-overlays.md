@@ -127,6 +127,35 @@ shell-plus-two-sections start and single sections after, not the ~200 ms task th
 exception. `web/tests/settings-mount.spec.ts` pins the prewarm (fills closed, never shows the
 dialog, first open reports not-busy).
 
+## Amendment (2026-08): foreground demand outranks background residency
+
+Fresh discrete-action attribution exposed a failure the full sweep's leading idle control had
+masked: a genuinely early action could arrive before the background queue drained. The requested
+dialog then waited behind unrelated residents, and the queue continued inserting unrelated hidden
+subtrees while the visible dialog presented. On an iPad mini simulator, an early Coloring Books
+request waited 437 ms for its own mount, a 42 ms frame landed immediately before the dialog
+animation, and unrelated mounts continued at the iOS fallback's approximately 232–240 ms cadence.
+
+The single lazy chunk remains the startup boundary. Once loaded, its residents are keyed and
+mount-once. A state-driven request mounts the demanded resident first, skipping its background
+position; a request that beats the initial idle callback starts the same memoized import directly.
+AI Result also demands Waiting Polaroid first, preserving the only return path from a minimized
+generation. The background queue uses the same idempotent mount owner, skips residents fulfilled by
+demand, retains its canonical order with Settings last, and mounts one resident per slice.
+
+Only that unrelated background queue receives the stronger interaction-quiescence gate. It tracks
+pointer, click, keyboard, and wheel activity on both `requestIdleCallback` and iOS fallback paths,
+requires a deliberate pause, and verifies two in-budget animation frames before each mount. A new
+demand invalidates an already-scheduled background generation before mounting, then starts a fresh
+quiet wait. Generic `scheduleIdle()` callers — including Settings' frame-paced section staging —
+retain their established timing.
+
+The startup mount profiler now starts its bounded settle after the `load` event instead of waiting
+for global network-idle. Spaced background residents intentionally initiate image prefetches; making
+their completion a hidden precondition could time out before the trace's explicit observation window
+began. The settle window is ten seconds so the deferred work remains inside the trace rather than
+being shifted beyond it.
+
 ## Escape hatch if the overlay set grows heavier
 
 The single barrel chunk (`CVCStUCq.js`, ~56 KB) evaluates all six overlays in one synchronous task

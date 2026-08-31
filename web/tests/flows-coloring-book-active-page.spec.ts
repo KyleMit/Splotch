@@ -39,6 +39,31 @@ async function tileGeometry(grid: Locator) {
   );
 }
 
+test('paper presentation residency starts on picker demand and survives clear', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  const paper = page.locator('.paper-view');
+  await expect(paper).not.toHaveClass(/paper-presentation-resident/);
+  await expect(paper).not.toHaveAttribute('data-paper-active');
+
+  await openColoringDialog(page);
+  await expect(paper).toHaveClass(/paper-presentation-resident/);
+  await expect(paper).not.toHaveAttribute('data-paper-active');
+
+  await (await openFarmPageGrid(page)).first().click();
+  await expect(paper).toHaveAttribute('data-paper-active', '');
+
+  await openColoringDialog(page);
+  await page
+    .locator('#coloring-book-dialog')
+    .getByRole('button', { name: 'Clear active coloring page: Cat' })
+    .click();
+  await expect(paper).not.toHaveAttribute('data-paper-active');
+  await expect(paper).toHaveClass(/paper-presentation-resident/);
+});
+
 test('an active page leaves the book grid geometry unchanged', async ({ page }) => {
   await page.setViewportSize({
     width: BOOK_GRID_VIEWPORTS[0].width,
@@ -100,11 +125,15 @@ test('the active-page chip identifies the page in both picker views', async ({ p
   await expect(chip).toBeVisible();
   await expect(chip).toContainText('Cat');
   await expect(chip.locator('[data-icon="close"]')).toBeVisible();
-  await expect(chip.locator('img')).toHaveAttribute('src', /\/farm\/cat-wide\.overlay\.svg$/);
-  await expect(chip.locator('img')).not.toHaveAttribute('srcset');
-  await expect(chip.locator('img')).not.toHaveAttribute('sizes');
-  await expect(chip.locator('img')).toHaveCSS('mix-blend-mode', 'normal');
-  await expect(chip.locator('img')).toHaveCSS('filter', 'none');
+  const chipImage = chip.locator('img');
+  await expect(chipImage).toHaveAttribute('src', /\/farm\/cat-wide\.selector\.webp$/);
+  await expect(chipImage).toHaveAttribute(
+    'srcset',
+    /\/coloring\/max-240px\/farm\/cat-wide\.selector\.webp 240w, \/coloring\/farm\/cat-wide\.selector\.webp 400w$/
+  );
+  await expect(chipImage).toHaveAttribute('sizes', '36px');
+  await expect(chipImage).toHaveCSS('mix-blend-mode', 'normal');
+  await expect(chipImage).toHaveCSS('filter', 'none');
 
   await openFarmPageGrid(page);
   await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
@@ -162,6 +191,26 @@ test.describe('active-page chip on a small viewport', () => {
     await page.keyboard.press('Shift+Tab');
     await expect(chip).toBeFocused();
     await page.keyboard.press('Enter');
+
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#coloringOverlay')).toBeHidden();
+  });
+
+  test('compresses while pressed and clears immediately on release', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await applyFarmPage(page);
+    await openColoringDialog(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await settleFlyIn(dialog);
+    const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
+    const box = await chip.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await expect(chip).not.toHaveCSS('transform', 'none');
+    await page.mouse.up();
 
     await expect(dialog).toBeHidden();
     await expect(page.locator('#coloringOverlay')).toBeHidden();

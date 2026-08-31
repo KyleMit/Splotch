@@ -44,10 +44,11 @@ Two background features use the network. The **AI image button** calls the hoste
 (`web/src/lib/state/network.svelte.ts` + `@capacitor/network`). When Coloring Book is enabled, the
 seven non-starter books download automatically, one complete verified book at a time (ADR-0103).
 Turning it off cancels active background work without deleting completed packs. Compact screens
-receive 1,152 px overlays/fills and canonical 400 px thumbnails; larger or denser screens receive
-the canonical tier. Android WorkManager stores the selected bytes under `noBackupFilesDir`; iOS
-background `URLSession` stores them in Application Support with backup exclusion. The picker exposes
-a book only after its install marker is written.
+receive 1,152 px fills; larger or denser screens receive the canonical tier. Both native pack
+variants retain canonical 400 px cover thumbnails, canonical SVG overlays, and 400 px selector
+rasters. The web-only 240 px selector candidates are omitted. Android WorkManager stores the
+selected bytes under `noBackupFilesDir`; iOS background `URLSession` stores them in Application
+Support with backup exclusion. The picker exposes a book only after its install marker is written.
 
 ### Storage
 

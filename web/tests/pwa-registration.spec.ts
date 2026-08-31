@@ -148,6 +148,7 @@ test.describe('responsive coloring offline fallback', () => {
       expect.arrayContaining([
         '/coloring/farm/cover.thumb.webp',
         '/coloring/farm/cat-tall.overlay.svg',
+        '/coloring/farm/cat-tall.selector.webp',
       ])
     );
 
@@ -160,8 +161,8 @@ test.describe('responsive coloring offline fallback', () => {
 
     const dprOne = await selectFarmImages(page);
     expect(dprOne.pagePreview).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
-      decodedWidth: 1024,
+      currentSrc: '/coloring/max-240px/farm/cat-tall.selector.webp',
+      decodedWidth: 267,
     });
     expect(dprOne.overlay).toEqual({
       currentSrc: '/coloring/farm/cat-tall.overlay.svg',
@@ -177,8 +178,8 @@ test.describe('responsive coloring offline fallback', () => {
     await gotoApp(page);
     const dprThree = await selectFarmImages(page);
     expect(dprThree.pagePreview).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
-      decodedWidth: 1024,
+      currentSrc: '/coloring/farm/cat-tall.selector.webp',
+      decodedWidth: 267,
     });
     expect(dprThree.overlay).toEqual({
       currentSrc: '/coloring/farm/cat-tall.overlay.svg',

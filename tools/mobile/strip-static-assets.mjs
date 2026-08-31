@@ -13,9 +13,8 @@
 //   3. The web-only static files listed in lib/static-export.mjs (social card,
 //      favicons, webmanifest, crawler files, generator inputs) — together with
 //      the head tags that reference them, so the strip can't leave a 404 behind.
-//   4. Full-resolution opaque line-art sources. Runtime presentation uses the
-//      generated alpha overlays and picker thumbnails; the opaque files remain
-//      committed beside them only as asset-pipeline inputs.
+//   4. Cover SVG masters. Runtime cover presentation uses their raster thumbnails;
+//      page SVGs remain because presentation and export both use them.
 //   5. Hosted responsive tiers. Native downloads its selected pack tier after install.
 //
 // books.ts is TypeScript, so this script is launched with Node's
@@ -25,7 +24,7 @@ import { globSync, readFileSync, rmSync, existsSync, statSync, writeFileSync } f
 import { join, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import {
   downloadableMobileBooks,
-  nativeUnusedLineArt,
+  nativeUnusedCoverLineArt,
   webOnlyBooks,
 } from '../lib/coloring-book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/static-export.mjs';
@@ -140,10 +139,10 @@ function stripDownloadableBooks(buildDir, books) {
   );
 }
 
-function stripUnusedLineArt(buildDir, books) {
+function stripUnusedCoverLineArt(buildDir, books) {
   let freedBytes = 0;
   let removed = 0;
-  for (const file of nativeUnusedLineArt(books)) {
+  for (const file of nativeUnusedCoverLineArt(books)) {
     const target = join(buildDir, file);
     if (!existsSync(target)) {
       console.warn(`[strip-static-assets] expected but not found: ${file}`);
@@ -154,7 +153,7 @@ function stripUnusedLineArt(buildDir, books) {
     removed++;
   }
   console.log(
-    `[strip-static-assets] stripped ${removed} asset-pipeline line-art source(s), ` +
+    `[strip-static-assets] stripped ${removed} asset-pipeline cover source(s), ` +
       `${(freedBytes / 1048576).toFixed(2)} MB freed.`
   );
 }
@@ -184,10 +183,8 @@ export function stripStaticAssets(buildDir, books) {
   stripWebOnlyBooks(buildDir, books);
   stripDownloadableBooks(buildDir, books);
   stripWebOnlyFiles(buildDir);
-  stripUnusedLineArt(
-    buildDir,
-    books.filter((book) => book.id === STARTER_COLORING_BOOK_ID)
-  );
+  const starterBooks = books.filter((book) => book.id === STARTER_COLORING_BOOK_ID);
+  stripUnusedCoverLineArt(buildDir, starterBooks);
   stripResponsiveColoringTiers(buildDir);
 }
 

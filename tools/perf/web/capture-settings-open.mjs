@@ -42,15 +42,15 @@ const SHELLS = {
   wide: {
     device: DEVICES.desktop,
     ready: '#settingsModal[open] .settings-pane .settings-section:not(.staged)',
+    warm: '.settings-pane[aria-busy="false"]',
   },
-  'phone-hub': { device: DEVICES.phone, ready: '#settingsModal[open] .hub-row' },
+  'phone-hub': {
+    device: DEVICES.phone,
+    ready: '#settingsModal[open] .hub-row',
+    warm: '#settingsModal .hub-row',
+  },
 };
 
-// The Settings chunk loads — and the closed dialog mounts and prewarms — at
-// idle well after the page settles (ADR-0049); this keeps all of that idle
-// boot work out of the measured window, so the tap is scored on showing an
-// already-warm dialog.
-const IDLE_BOOT_SETTLE_MS = 4000;
 // Long tasks are reported to the observer after they end, and a tail one can
 // start just as the pane completes. Kept short enough that a run of repeats
 // stays quick.
@@ -117,7 +117,7 @@ async function measureOpenCycle(page, ready) {
   return { shownMs, flyInMs, longTasks };
 }
 
-async function measureFirstOpenAndReopen(browser, cdpThrottle, { device, ready }, base) {
+async function measureFirstOpenAndReopen(browser, cdpThrottle, { device, ready, warm }, base) {
   const ctx = await browser.newContext({
     viewport: { width: device.width, height: device.height },
     deviceScaleFactor: device.deviceScaleFactor,
@@ -148,7 +148,10 @@ async function measureFirstOpenAndReopen(browser, cdpThrottle, { device, ready }
 
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.waitForSelector('#drawingCanvas');
-    await page.waitForTimeout(IDLE_BOOT_SETTLE_MS);
+    // The interaction-quiet residency pump deliberately spaces hidden mounts.
+    // Observe the pane's own completion instead of coupling this warm-open
+    // profile to a particular queue length or cadence.
+    await page.waitForSelector(warm, { state: 'attached' });
 
     const firstOpen = await measureOpenCycle(page, ready);
     // Close through the dialog's own close(): modalDialog re-syncs the open

@@ -6,6 +6,7 @@ import {
   bookPackAssetPaths,
   booksForPlatform,
   responsiveColoringAssets,
+  selectorColoringAssets,
   type BookPlatform,
 } from './src/lib/state/books.ts';
 import {
@@ -34,19 +35,24 @@ export function buildColoringPackManifest(
   const books = booksForPlatform(platform).map((book) => {
     const canonicalPaths = bookPackAssetPaths(book);
     const responsiveAssets = responsiveColoringAssets(book);
+    const selectorAssets = selectorColoringAssets(book);
     const compactPaths = new Map(
       responsiveAssets
         .filter((asset) => asset.encoding !== 'thumbnail')
-        .map((asset) => [asset.source, asset.target])
+        .map((asset) => [asset.source, asset.target] as const)
     );
     const canonicalThumbnailPaths = new Set(
       responsiveAssets
         .filter((asset) => asset.encoding === 'thumbnail')
         .map((asset) => asset.source)
     );
+    const canonicalSelectorPaths = new Set(selectorAssets.map((asset) => asset.target));
     const invariantPaths = new Set(canonicalPaths.filter(isInvariantColoringPackAssetPath));
     if (
-      compactPaths.size + canonicalThumbnailPaths.size + invariantPaths.size !==
+      compactPaths.size +
+        canonicalThumbnailPaths.size +
+        canonicalSelectorPaths.size +
+        invariantPaths.size !==
       canonicalPaths.length
     ) {
       throw new Error(`Compact coloring-pack inventory is incomplete for ${book.id}`);
@@ -56,6 +62,7 @@ export function buildColoringPackManifest(
         const downloadPath =
           resolution === 'compact' &&
           !canonicalThumbnailPaths.has(path) &&
+          !canonicalSelectorPaths.has(path) &&
           !invariantPaths.has(path)
             ? compactPaths.get(path)
             : path;

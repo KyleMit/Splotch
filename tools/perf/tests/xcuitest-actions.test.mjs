@@ -391,6 +391,12 @@ describe('action state planning', () => {
     ]);
   });
 
+  it('requires decoded coloring art before a selection can become ready', () => {
+    const selection = coloringSelectionSteps(false)[0];
+    expect(selection.ready).toContain("classList.contains('overlay-ready')");
+    expect(selection.ready).toContain("querySelector('#coloringOverlay')?.naturalWidth > 0");
+  });
+
   it('measures a scrollable page grid before selecting a coloring page', () => {
     const coloringStart = IPAD_ACTIONS.indexOf("if (actions.has('coloring'))");
     const selectionStart = IPAD_ACTIONS.indexOf(

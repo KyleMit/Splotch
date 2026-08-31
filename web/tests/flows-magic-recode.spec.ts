@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { draw, gotoApp, openSettingsModal, renderedCanvasHandle } from './helpers';
+import { draw, gotoApp, openSettingsModal, renderedCanvasHandle, settleFlyIn } from './helpers';
 import {
   applyFarmPage,
   openColoringDialog,
@@ -89,6 +89,7 @@ test('removing the coloring page recodes magic ink and undo restores the page an
 
   await openColoringDialog(page);
   const dialog = page.locator('#coloring-book-dialog');
+  await settleFlyIn(dialog);
   await dialog.locator('.active-page-chip').click();
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toBeHidden();

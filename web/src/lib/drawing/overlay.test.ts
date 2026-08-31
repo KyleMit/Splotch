@@ -40,9 +40,10 @@ describe('getActiveOverlayExportSource', () => {
     expect(getActiveOverlayExportSource()).toBeNull();
   });
 
-  it('reuses a visible overlay when its decoded candidate is canonical', () => {
+  it('reuses the decoded canonical image used by native presentation', () => {
     const overlay = appendLoadedOverlay();
-    overlay.src = '/coloring/farm/cat-tall.overlay.webp';
+    overlay.src = '/coloring/farm/cat-tall.overlay.svg';
+    overlay.dataset.canonicalUrl = '/coloring/farm/cat-tall.overlay.svg';
     Object.defineProperty(overlay, 'currentSrc', { value: overlay.src });
 
     expect(getActiveOverlayExportSource()).toEqual({
@@ -51,16 +52,24 @@ describe('getActiveOverlayExportSource', () => {
     });
   });
 
-  it('requests the canonical src when the decoded candidate is responsive', () => {
+  it('requests the canonical SVG when a visible candidate is not canonical', () => {
     const overlay = appendLoadedOverlay();
-    overlay.src = '/coloring/farm/cat-tall.overlay.webp';
+    overlay.src = '/coloring/farm/cat-tall.selector.webp';
+    overlay.dataset.canonicalUrl = '/coloring/farm/cat-tall.overlay.svg';
     Object.defineProperty(overlay, 'currentSrc', {
-      value: `${location.origin}/coloring/max-1152px/farm/cat-tall.overlay.webp`,
+      value: overlay.src,
     });
 
     expect(getActiveOverlayExportSource()).toEqual({
-      canonicalUrl: overlay.src,
+      canonicalUrl: `${location.origin}/coloring/farm/cat-tall.overlay.svg`,
       decodedCanonicalImage: null,
     });
+  });
+
+  it('fails closed when a visible candidate has no canonical source', () => {
+    const overlay = appendLoadedOverlay();
+    overlay.src = '/coloring/farm/cat-tall.selector.webp';
+
+    expect(getActiveOverlayExportSource()).toBeNull();
   });
 });

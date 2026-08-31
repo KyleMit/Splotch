@@ -13,8 +13,7 @@
 // Why this exists at all: the Appium Android browser transport delivers 46.8
 // contact moves per second against a 100-170 fidelity band, so cells captured
 // through it cannot be scored. This path clears the band.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { eraserRefillArming } from '../lib/eraser-fill.mjs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
@@ -33,10 +32,12 @@ import {
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import {
   STROKES_PER_GESTURE_REPEAT,
+  driveTrustedGesturePasses,
   nativeCanvasBounds,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
 import { ANDROID_NATIVE_PACKAGE, GESTURE_REPEATS, gesturePlanFor } from '../lib/campaign-plan.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
@@ -72,6 +73,7 @@ const PROBE_READY_TIMEOUT_MS = 90_000;
 // deciding the launch did not land, not how long a slow page may take.
 const PROBE_READY_OPEN_TIMEOUT_MS = 30_000;
 const REPORT_TIMEOUT_MS = 120_000;
+const ERASER_REFILL_ACK_TIMEOUT_MS = 30_000;
 // After the last pointerUp the engine still has queued raster work; ending the
 // phase immediately would clip it out of the capture.
 const GESTURE_TAIL_MS = 1_200;
@@ -92,7 +94,42 @@ async function control(host, body) {
   return response.json();
 }
 
-const probeState = (host) => fetch(`${host}/__probe/state`).then((r) => r.json());
+const probeState = (host) => probeHostJson(host, '/__probe/state');
+
+export async function requestPageEraserRefill({
+  host,
+  nonce,
+  afterStroke,
+  controlPage = control,
+  readState = probeState,
+}) {
+  const sequence = afterStroke / STROKES_PER_GESTURE_REPEAT;
+  if (!Number.isSafeInteger(sequence) || sequence < 1) {
+    throw new Error(`invalid eraser refill boundary ${afterStroke}`);
+  }
+  const request = { sequence, afterStroke };
+  await controlPage(host, { eraserRefillRequest: request });
+  const acknowledged = await pollFor(async () => {
+    const refill = (await readState(host)).refill;
+    return refill?.nonce === nonce &&
+      refill.request?.sequence === sequence &&
+      refill.request?.afterStroke === afterStroke
+      ? refill
+      : null;
+  }, ERASER_REFILL_ACK_TIMEOUT_MS);
+  if (!acknowledged) {
+    throw new Error(`the page did not acknowledge eraser refill ${sequence}`);
+  }
+  return acknowledged.entry;
+}
+
+export function driveSplitGesturePasses({ driver, geometry, repeats, refillBetweenPasses = null }) {
+  return driveTrustedGesturePasses({
+    repeats,
+    perform: (count) => driver.dispatch(geometry, count),
+    refillBetweenPasses,
+  });
+}
 
 async function wda(wdaUrl, method, path, body) {
   const response = await fetch(`${wdaUrl}${path}`, {
@@ -409,11 +446,9 @@ export async function captureDeviceFrames({
   wdaUrl = argFlag('wda-url', 'http://127.0.0.1:8100'),
   label = argFlag('label'),
   // Without --output the composed artifact (fidelity, summaries, provenance) is
-  // printed and DISCARDED — only the raw page report lands in --report-dir. A
-  // capture meant to be banked or promoted to evidence must pass --output; a
-  // session lost a clean emulator capture to this before noticing.
+  // printed and DISCARDED. The probe host may archive its accepted raw report,
+  // but a capture meant to be banked or promoted must pass --output.
   output = argFlag('output'),
-  reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
   allowForeignBuild = process.argv.includes('--allow-foreign-build'),
   // `argFlag` only matches `--name=value`, so a BARE flag is invisible to it and
   // reads as absent. A capture that silently ran against Safari while reporting a
@@ -451,14 +486,7 @@ export async function captureDeviceFrames({
     nonce,
     requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
-    // The page refills the tiles between gesture passes so every pass erases
-    // real ink (issue 1292) — the plan carries how the host groups strokes.
-    eraserRefill:
-      brush === 'eraser'
-        ? {
-            ...eraserRefillArming(repeats, STROKES_PER_GESTURE_REPEAT),
-          }
-        : null,
+    eraserRefillRequest: null,
     finish: false,
     reset: true,
   });
@@ -505,7 +533,15 @@ export async function captureDeviceFrames({
   const runtimeIdentity = await driver.runtimeIdentity?.();
   console.log(`canvas ${JSON.stringify(geometry.bounds)} scale ${geometry.densityScale}`);
 
-  await driver.dispatch(geometry, repeats);
+  await driveSplitGesturePasses({
+    driver,
+    geometry,
+    repeats,
+    refillBetweenPasses:
+      brush === 'eraser'
+        ? (afterStroke) => requestPageEraserRefill({ host, nonce, afterStroke })
+        : null,
+  });
   await sleep(GESTURE_TAIL_MS);
   const pulsed = await probeState(host).catch((error) => {
     rethrowIfBroken(error);
@@ -525,7 +561,10 @@ export async function captureDeviceFrames({
     fail(`no report was uploaded${seen}`);
   }
 
-  const payload = JSON.parse(readFileSync(join(reportDir, `${runLabel}.json`), 'utf8'));
+  // Read the same nonce-gated in-memory payload whose `hasReport` flag ended the
+  // poll. A caller-local report directory can contain a same-label artifact from
+  // another host or run, while the live host has already accepted the right one.
+  const payload = await fetchAcceptedProbeReport(host);
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the gesture never reached the canvas');

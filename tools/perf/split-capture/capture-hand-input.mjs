@@ -15,7 +15,7 @@
 // time reusable: every percentile and verdict is derived in Node, so a later
 // revision of the fidelity table re-reads this file rather than asking for
 // another finger. Issue 1218 is the Android half of that measurement.
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
@@ -23,6 +23,7 @@ import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
+import { fetchAcceptedProbeReport, probeHostJson } from './lib/probe-host-protocol.mjs';
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
@@ -77,7 +78,7 @@ const control = (host, body) =>
     body: JSON.stringify(body),
   }).then((response) => response.json());
 
-const probeState = (host) => fetch(`${host}/__probe/state`).then((response) => response.json());
+const probeState = (host) => probeHostJson(host, '/__probe/state');
 
 // The runtime is the one mode dimension the page can answer for itself, and the
 // one this tool used to copy from the request: a hand capture labelled
@@ -292,7 +293,6 @@ export async function captureHandInput({
   opener = argFlag('open', argFlag('platform', 'android') === 'android' ? 'adb' : 'manual'),
   label = argFlag('label'),
   output = argFlag('output'),
-  reportDir = argFlag('report-dir', join(ROOT, 'perf-profiles', 'split-capture', 'reports')),
   allowForeignBuild = argFlag('allow-foreign-build'),
 } = {}) {
   if (!PLATFORMS.includes(platform)) fail(`--platform must be one of ${PLATFORMS.join(', ')}`);
@@ -382,7 +382,7 @@ export async function captureHandInput({
   );
   if (!uploaded) fail('no report was uploaded');
 
-  const payload = JSON.parse(readFileSync(join(reportDir, `${runLabel}.json`), 'utf8'));
+  const payload = await fetchAcceptedProbeReport(host);
   if (payload.error) fail(payload.error);
   if ((payload.report?.events ?? []).length === 0) {
     fail('the capture recorded no pointer events — the finger never reached the canvas');

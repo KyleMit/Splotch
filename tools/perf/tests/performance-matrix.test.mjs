@@ -13,6 +13,7 @@ import {
   renderMarkdown,
   renderReport,
 } from '../gen-performance-matrix.mjs';
+import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
 
 const temporaryDirectories = [];
 const distribution = { p50: 1, p95: 1, p99: 1, max: 1 };
@@ -1214,11 +1215,14 @@ describe('the eraser refill record in a folded cell', () => {
     return name;
   }
 
-  const eraserManifest = (eraser) =>
-    manifest([
+  const eraserManifest = (eraser) => {
+    const built = manifest([
       capturedManifestMode(modeSpecs[0], { drawing: { eraser } }),
       ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
     ]);
+    built.targets[0].id = 'ipad-device-web';
+    return built;
+  };
 
   it('refuses a fold containing an anomalous refill, naming the source and record', () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
@@ -1245,16 +1249,33 @@ describe('the eraser refill record in a folded cell', () => {
     );
   });
 
-  it('folds an absent record and a complete clean one as before', () => {
+  it('refuses a self-consistent refill record whose repeat count differs from the campaign', () => {
     const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
     temporaryDirectories.push(directory);
-    const legacy = writeEraserCapture(directory, 'eraser-legacy.json', {});
-    const complete = writeEraserCapture(directory, 'eraser-complete.json', {
+    const foreign = writeEraserCapture(directory, 'eraser-foreign-repeats.json', {
       gestureRepeats: 3,
       eraserRefills: [
         { afterStroke: 4, pending: false, transparentTiles: [] },
         { afterStroke: 8, pending: false, transparentTiles: [] },
       ],
+    });
+
+    expect(() => normalizeMatrix(eraserManifest([foreign]), directory)).toThrow(
+      /recording 3 gesture repeats, not the campaign contract of 10.*eraser-foreign-repeats\.json/s
+    );
+  });
+
+  it('folds an absent record and a contract-complete clean one', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const legacy = writeEraserCapture(directory, 'eraser-legacy.json', {});
+    const complete = writeEraserCapture(directory, 'eraser-complete.json', {
+      gestureRepeats: GESTURE_REPEATS,
+      eraserRefills: Array.from({ length: GESTURE_REPEATS - 1 }, (_, index) => ({
+        afterStroke: (index + 1) * 10,
+        pending: false,
+        transparentTiles: [],
+      })),
     });
 
     expect(() => normalizeMatrix(eraserManifest([legacy]), directory)).not.toThrow();

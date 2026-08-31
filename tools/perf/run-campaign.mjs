@@ -43,6 +43,10 @@ import {
 import { rethrowIfBroken } from './lib/error-classification.mjs';
 import { instrumentChangeProblem, instrumentFingerprint } from './lib/instrument-fingerprint.mjs';
 import {
+  probeHostJson,
+  probeHostProtocolProblem,
+} from './split-capture/lib/probe-host-protocol.mjs';
+import {
   ALREADY_VALID,
   COMPLETE,
   ERASER_FILL_FAILED,
@@ -222,33 +226,18 @@ function rebootSimulator(udid) {
   spawnSync('xcrun', ['simctl', 'bootstatus', udid, '-b'], { stdio: 'ignore' });
 }
 
-// A 200 is not the probe protocol. A plain-text server on the requested port
-// answered `not a probe` with status 200 and the campaign ran on, which recreates
-// exactly the page-timeout failure this guard exists to eliminate — a wrong server
-// or a permissive fallback on the right port. The plan's own shape is the cheapest
-// marker available, and it has to be parsed rather than merely fetched.
-export function isProbePlan(payload) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
-  return (
-    typeof payload.label === 'string' &&
-    typeof payload.finish === 'boolean' &&
-    Number.isFinite(payload.contactMs)
-  );
-}
-
 // The device is what has to reach this URL, and only the device can prove that. The
 // host can prove the server is up and speaking the probe protocol, which is the
 // half of the failure that is cheap to catch before a queue of cells times out.
-async function probeHostResponds(probeHost) {
+export async function probeHostAvailabilityProblem(probeHost, fetchImpl = fetch) {
   try {
-    const response = await fetch(new URL('/__probe/plan', probeHost), {
-      signal: AbortSignal.timeout(PROBE_HOST_TIMEOUT_MS),
-    });
-    if (!response.ok) return false;
-    return isProbePlan(await response.json());
+    const state = await probeHostJson(probeHost, '/__probe/state', (url) =>
+      fetchImpl(url, { signal: AbortSignal.timeout(PROBE_HOST_TIMEOUT_MS) })
+    );
+    return probeHostProtocolProblem(state?.protocol);
   } catch (error) {
     rethrowIfBroken(error);
-    return false;
+    return error instanceof Error ? error.message : String(error);
   }
 }
 
@@ -343,12 +332,11 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     if (identityProblem) fail(identityProblem);
     const problem = await resolvedProbeHostProblem(flag('probe-host'));
     if (problem) fail(problem);
-    const reachable = await probeHostResponds(flag('probe-host'));
-    if (!reachable) {
+    const availabilityProblem = await probeHostAvailabilityProblem(flag('probe-host'));
+    if (availabilityProblem) {
       fail(
-        `the probe host at ${flag('probe-host')} did not answer the probe protocol — ` +
-          'a server responding on that port is not enough. Start it with ' +
-          "`npm run perf:device:serve` and pass this host's LAN address"
+        `the probe host at ${flag('probe-host')} is incompatible: ${availabilityProblem}. ` +
+          "Start or restart it with `npm run perf:device:serve` and pass this host's LAN address"
       );
     }
   }

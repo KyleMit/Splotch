@@ -6,8 +6,10 @@
   import { isNative } from '$lib/platform';
   import {
     coloringBookGridLayout,
+    COLORING_IMAGE_SIZES,
     coverThumbImageSource,
     pageOverlayImage,
+    pageSelectorImageSource,
     type Book,
     type ColoringPage,
     type ResponsiveColoringImage,
@@ -21,6 +23,7 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { availableColoringBooks } from '$lib/state/coloringPacks.svelte';
   import {
+    cancelImageRequest,
     cancelImagePrefetchesExcept,
     prefetchImages,
     type ResponsiveImageRequest,
@@ -37,6 +40,7 @@
 
   let activeBook = $state<Book | null>(null);
   let pagesGridToken = $state(0);
+  let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
   // so the variant the child colored on must stay applied — and any page picked
@@ -45,7 +49,9 @@
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
   const activePage = $derived(coloringBookState.overlayPage);
   const activePagePreview = $derived(
-    activePage ? pageOverlayImage(activePage, coloringBookState.orientation, resolvedTheme()) : null
+    activePage
+      ? pageSelectorImageSource(activePage, coloringBookState.orientation, resolvedTheme())
+      : null
   );
   const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
@@ -69,10 +75,17 @@
     );
   });
 
-  // Pressing/hovering a book tile warms that book's theme-matched SVG overlays before the
-  // sub-grid renders. Hovering a page keeps that selected URL warm for applying it to the canvas.
+  // Pressing/hovering a book tile warms that book's screen-sized selectors before
+  // the sub-grid renders. Hovering a page warms its canonical canvas SVG.
   function prefetchBookPages(book: Book) {
-    prefetchImages(book.pages.map((page) => pageOverlayImage(page, orientation, resolvedTheme())));
+    prefetchImages(
+      book.pages.map((page) =>
+        imageRequest(
+          pageSelectorImageSource(page, orientation, resolvedTheme()),
+          COLORING_IMAGE_SIZES.pageSelector[orientation]
+        )
+      )
+    );
   }
   function prefetchPageOverlay(page: ColoringPage) {
     prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
@@ -86,9 +99,14 @@
   });
 
   function pickPage(page: ColoringPage) {
-    const selectedOverlayUrl = pageOverlayImage(page, orientation, resolvedTheme());
+    const selectedOrientation = orientation;
+    const selectedTheme = resolvedTheme();
+    const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
     cancelImagePrefetchesExcept(selectedOverlayUrl);
-    applyColoringPageWithMagicUndo(page, orientation, resolvedTheme());
+    for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
+      cancelImageRequest(img);
+    }
+    applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
     coloringBookModal.hide();
   }
 
@@ -148,7 +166,7 @@
 </script>
 
 {#snippet activePageChip()}
-  {#if activePage && activePagePreview}
+  {#if coloringBookModal.open && activePage && activePagePreview}
     <ActivePageChip
       page={activePage}
       preview={activePagePreview}
@@ -169,6 +187,7 @@
 {/snippet}
 
 <dialog
+  bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
   id="coloring-book-dialog"
   use:modalDialog={() => ({
@@ -236,7 +255,7 @@
             use:cutTrailingRow
           >
             {#each activeBook.pages as page (page.id)}
-              {@const pageImage = pageOverlayImage(page, orientation, resolvedTheme())}
+              {@const pageImage = pageSelectorImageSource(page, orientation, resolvedTheme())}
               <button
                 class="coloring-tile"
                 type="button"
@@ -245,7 +264,15 @@
                 onpointerenter={() => prefetchPageOverlay(page)}
                 onpointerdown={() => prefetchPageOverlay(page)}
               >
-                <img src={pageImage} alt="" loading="lazy" />
+                <img
+                  src={pageImage.src}
+                  srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
+                  sizes={__IS_CAPACITOR__
+                    ? undefined
+                    : COLORING_IMAGE_SIZES.pageSelector[orientation]}
+                  alt=""
+                  loading="lazy"
+                />
               </button>
             {/each}
           </div>

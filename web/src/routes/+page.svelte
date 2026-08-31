@@ -12,14 +12,25 @@
   import ClearButton from '$lib/components/ClearButton.svelte';
   import NotchBand from '$lib/components/NotchBand.svelte';
   import SettingsButton from '$lib/components/SettingsButton.svelte';
-  import { settingsModal } from '$lib/state/ui.svelte';
+  import {
+    aiPromptModal,
+    coloringBookModal,
+    colorPickerModal,
+    settingsModal,
+  } from '$lib/state/ui.svelte';
+  import { gate } from '$lib/state/parentalGate.svelte';
+  import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { pwaUpdates } from '$lib/pwa/updates';
   import { settings } from '$lib/state/settings.svelte';
   import { captureAiAccessTokenFromUrl } from '$lib/state/aiAccessToken';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
-  import { mountBootHiddenOverlays } from '$lib/boot/bootHiddenOverlays';
+  import {
+    mountBootHiddenOverlays,
+    type BootHiddenOverlayKey,
+    type BootHiddenOverlays,
+  } from '$lib/boot/bootHiddenOverlays';
   import { installWakeLock } from '$lib/boot/wakeLock';
   import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';
   import { hydratePersistedState } from '$lib/boot/persistedState';
@@ -66,21 +77,40 @@
     if (__IS_CAPACITOR__) return;
     if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
     recordWebInstallRepromptSession();
+    hiddenOverlays?.demand('installBanner');
   });
 
-  // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).
+  // Filled once by foreground demand or one at a time by the interaction-quiet
+  // background pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
-
-  // The Settings dialog mounts at whichever comes first: the idle pump's final
-  // slice (its staged wide pane makes that slice a shell plus two light
-  // sections, then prewarms the rest one section per idle slice — ADR-0049),
-  // or a tap that beats the queue — settingsModal.open latches the mount and
-  // the dialog's modalDialog $effect shows it as soon as it lands. The corner
-  // button that opens it (SettingsButton) stays eagerly mounted above.
   let SettingsModal = $state<Component | null>(null);
-  let settingsModalMounted = $state(false);
+  let hiddenOverlays = $state<BootHiddenOverlays | null>(null);
+
+  function mountHiddenOverlay(key: BootHiddenOverlayKey, overlay: Component) {
+    if (key === 'settings') {
+      SettingsModal = overlay;
+      return;
+    }
+    overlays = [...overlays, overlay];
+  }
+
   $effect(() => {
-    if (settingsModal.open) settingsModalMounted = true;
+    if (gate.open) hiddenOverlays?.demand('parentalGate');
+  });
+  $effect(() => {
+    if (colorPickerModal.open) hiddenOverlays?.demand('colorPicker');
+  });
+  $effect(() => {
+    if (coloringBookModal.open) hiddenOverlays?.demand('coloringBook');
+  });
+  $effect(() => {
+    if (aiPromptModal.open) hiddenOverlays?.demand('aiPrompt');
+  });
+  $effect(() => {
+    if (aiResult.open) hiddenOverlays?.demand('aiResult');
+  });
+  $effect(() => {
+    if (settingsModal.open) hiddenOverlays?.demand('settings');
   });
 
   onMount(() => {
@@ -94,12 +124,10 @@
     applyTheme(settings.theme);
     const settingsReady = capturedAccessToken.then(hydratePersistedState);
 
+    const overlayController = mountBootHiddenOverlays(mountHiddenOverlay);
+    hiddenOverlays = overlayController;
     const teardowns = [
-      mountBootHiddenOverlays(
-        (overlay) => (SettingsModal = overlay),
-        (overlay) => (overlays = [...overlays, overlay]),
-        () => (settingsModalMounted = true)
-      ),
+      () => overlayController.stop(),
       installContextMenuGuard(),
       installWakeLock(),
       initWebOnlyServices(),
@@ -107,7 +135,10 @@
       installUndoShortcut(),
       installColoringPackDownloads(settingsReady),
     ];
-    return () => teardowns.forEach((teardown) => teardown());
+    return () => {
+      hiddenOverlays = null;
+      teardowns.forEach((teardown) => teardown());
+    };
   });
 </script>
 
@@ -124,6 +155,6 @@
 {#each overlays as Overlay (Overlay)}
   <Overlay />
 {/each}
-{#if SettingsModal && settingsModalMounted}
+{#if SettingsModal}
   <SettingsModal />
 {/if}

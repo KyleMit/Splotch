@@ -125,3 +125,37 @@ Magic-fill consumers unchanged.
   model. Web, Android, and iOS builds plus bundle guards cover their shared contract.
 * **-** DPR-3 phones generally select the full tier. The bandwidth win is deliberately limited to
   screens where 1,152 px line art needs no presentation upscale.
+
+## Amendment (2026-08): Platform-Specific Presentation Inventories
+
+Canonical page SVGs remain the cross-target drawing-state and export authority, but the two runtime
+targets no longer carry identical presentation inventories. Web packs contain 98 logical files per
+book: cover thumbnails, Magic fills, canonical SVGs, selector rasters, and full presentation
+rasters. Their compact variant maps each presentation path to a lossless 1,152 px derivative as well
+as mapping the fills to their existing compact derivatives. The logical path stays unchanged, so
+Cache Storage and installed-book consumers keep one URL contract.
+
+Native packs contain 74 logical files per book. They retain selector rasters for picker performance,
+but omit both full and compact presentation rasters because the Capacitor canvas and export path use
+the canonical SVG directly. The starter native export follows that same inventory. Platform is a
+required input to `bookPackAssetPaths()` so a native caller cannot silently inherit the web-only
+presentation bytes.
+
+The presentation tiers are generated directly from the canonical SVG with the repository's pinned
+Resvg renderer, then encoded losslessly. Compact-to-full presentation bytes have their own ratio
+gate in addition to the existing fill-tier gate; manifest tests require every compact web
+presentation to resolve through `/coloring/max-1152px/` and require native packs to contain no
+presentation files.
+
+## Amendment (2026-08): Return to One Cross-Target Pack Inventory
+
+ADR-0152 supersedes the platform-specific presentation inventory above. Full-page presentation
+rasters are retired on web and native; both targets again use the canonical SVG for presentation and
+export, while selector rasters remain the shared picker representation. Every book therefore has the
+same 74 logical files on both targets.
+
+`bookPackAssetPaths()` no longer accepts a platform because the per-book inventory has no
+platform-specific branch. Platform eligibility remains explicit at the manifest boundary through
+`booksForPlatform(platform)`, which still prevents a target from advertising an unavailable book.
+Compact variants map only the raster assets that retain screen-sized derivatives; canonical SVGs,
+selector rasters, and cover thumbnails keep their logical bytes.

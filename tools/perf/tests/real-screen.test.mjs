@@ -28,11 +28,13 @@ import {
   capturedDeviceId,
   clearBundledReportMailbox,
   dismissInstallBannerForMeasurement,
+  driveTrustedGesturePasses,
   flushNativePreferences,
   handCaptureSecondsProblem,
   isWebContext,
   nativeCanvasBounds,
   nativeOrientationNeedsUnlock,
+  refillEraserBetweenPasses,
   selectWebContext,
   STROKES_PER_GESTURE_REPEAT,
   summarizeLiveSurfaceTopology,
@@ -1309,6 +1311,153 @@ describe('trusted XCUITest input', () => {
     );
   });
 
+  it('refills eraser ink between separately dispatched gesture passes', async () => {
+    const calls = [];
+
+    const refills = await driveTrustedGesturePasses({
+      repeats: 10,
+      perform: async (repeats) => calls.push(['perform', repeats]),
+      refillBetweenPasses: async (afterStroke) => {
+        calls.push(['refill', afterStroke]);
+        return { afterStroke, pending: false, transparentTiles: [] };
+      },
+    });
+
+    expect(calls.filter(([kind]) => kind === 'perform')).toHaveLength(10);
+    expect(calls.filter(([kind]) => kind === 'refill')).toEqual(
+      Array.from({ length: 9 }, (_, index) => ['refill', (index + 1) * STROKES_PER_GESTURE_REPEAT])
+    );
+    expect(calls.at(-1)).toEqual(['perform', 1]);
+    expect(refills).toHaveLength(9);
+  });
+
+  it('keeps non-eraser repeats in one native action dispatch', async () => {
+    const performed = [];
+
+    const refills = await driveTrustedGesturePasses({
+      repeats: 3,
+      perform: async (repeats) => performed.push(repeats),
+    });
+
+    expect(performed).toEqual([3]);
+    expect(refills).toBeNull();
+  });
+
+  it('refills in web context and waits for idle frames before resuming native input', async () => {
+    const calls = [];
+    const client = {
+      async request(method, path, body) {
+        calls.push(['request', method, path, body]);
+      },
+    };
+    const execute = async (script) => {
+      calls.push(['execute', script]);
+      return { pending: false, transparentTiles: [], trustedCanvasPointerUps: 17 };
+    };
+    const executeAsync = async (script) => {
+      calls.push(['executeAsync', script]);
+      return true;
+    };
+
+    const refill = await refillEraserBetweenPasses({
+      client,
+      sessionId: 'session-1',
+      execute,
+      executeAsync,
+      webContext: 'WEBVIEW_art.splotch.app',
+      afterStroke: 20,
+      previousTrustedCanvasPointerUps: 0,
+      repeatPauseMs: 0,
+    });
+
+    expect(calls.map(([kind]) => kind)).toEqual(['request', 'execute', 'executeAsync', 'request']);
+    expect(calls[0]).toEqual([
+      'request',
+      'POST',
+      '/session/session-1/context',
+      { name: 'WEBVIEW_art.splotch.app' },
+    ]);
+    expect(calls[1][1]).toContain('const fill = fillEraserInk();');
+    expect(calls[1][1]).toContain('trustedCanvasPointerUps');
+    expect(calls[2][1]).toContain('requestAnimationFrame(tick)');
+    expect(calls[3]).toEqual([
+      'request',
+      'POST',
+      '/session/session-1/context',
+      { name: 'NATIVE_APP' },
+    ]);
+    expect(refill).toEqual({
+      afterStroke: 20,
+      pending: false,
+      transparentTiles: [],
+      trustedCanvasPointerUps: 17,
+    });
+  });
+
+  it('records a page-fill anomaly and still restores native input context', async () => {
+    const contexts = [];
+
+    const refill = await refillEraserBetweenPasses({
+      client: {
+        async request(_method, _path, body) {
+          contexts.push(body.name);
+        },
+      },
+      sessionId: 'session-1',
+      execute: async () => {
+        throw new Error('transparent backing');
+      },
+      executeAsync: async () => true,
+      webContext: 'WEBVIEW_art.splotch.app',
+      afterStroke: 30,
+      previousTrustedCanvasPointerUps: 17,
+      repeatPauseMs: 0,
+    });
+
+    expect(contexts).toEqual(['WEBVIEW_art.splotch.app', 'NATIVE_APP']);
+    expect(refill).toEqual({ afterStroke: 30, error: 'transparent backing' });
+  });
+
+  it('records an anomaly when a requested pass delivered no new trusted canvas lift', async () => {
+    const refill = await refillEraserBetweenPasses({
+      client: { request: async () => null },
+      sessionId: 'session-1',
+      execute: async () => ({
+        pending: false,
+        transparentTiles: [],
+        trustedCanvasPointerUps: 17,
+      }),
+      executeAsync: async () => true,
+      webContext: 'WEBVIEW_art.splotch.app',
+      afterStroke: 30,
+      previousTrustedCanvasPointerUps: 17,
+      repeatPauseMs: 0,
+    });
+
+    expect(refill.error).toContain('no new trusted canvas pointerup');
+  });
+
+  it('aborts when idle frames cannot prove separation from the next pass', async () => {
+    await expect(
+      refillEraserBetweenPasses({
+        client: { request: async () => null },
+        sessionId: 'session-1',
+        execute: async () => ({
+          pending: false,
+          transparentTiles: [],
+          trustedCanvasPointerUps: 17,
+        }),
+        executeAsync: async () => {
+          throw new Error('rAF timeout');
+        },
+        webContext: 'WEBVIEW_art.splotch.app',
+        afterStroke: 20,
+        previousTrustedCanvasPointerUps: 0,
+        repeatPauseMs: 0,
+      })
+    ).rejects.toThrow('rAF timeout');
+  });
+
   it('only permits Apple-account provisioning when explicitly requested', () => {
     const base = {
       deviceId: 'device',
@@ -1406,10 +1555,12 @@ describe('probe selectors still match the app', () => {
     expect(PROBE).toContain(`COLORING_OVERLAY_ID = '${declared}'`);
   });
 
-  // The probe's whole read of "is the coloring page showing" rests on this
-  // attribute being how DrawingCanvas hides the overlay wrapper.
-  it('still learns paper state from the wrapper’s hidden attribute', () => {
-    expect(component('DrawingCanvas.svelte')).toContain('hidden={!overlayUrl()}');
+  it('reads paper state from the wrapper’s explicit logical marker', () => {
+    const source = component('DrawingCanvas.svelte');
+    const wrapperTag = source.match(/<div\s+class="paper-view"[\s\S]*?>/)?.[0];
+
+    expect(wrapperTag).toContain("data-paper-active={overlayUrl() ? '' : undefined}");
+    expect(PROBE).toContain("paperView.hasAttribute('data-paper-active')");
   });
 
   it('waits for progressive coloring controls and decoded art before drawing', () => {

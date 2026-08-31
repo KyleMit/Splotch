@@ -43,6 +43,8 @@ web/static/coloring/{book}/cover.thumb.webp     picker cover thumbnail (light)
 web/static/coloring/{book}/cover.chalk.thumb.webp  picker cover thumbnail (dark)
 web/static/coloring/{book}/{name}.light.webp     light magic-brush fill (fills-only)
 web/static/coloring/{book}/{name}.night.webp     dark magic-brush fill (fills-only)
+web/static/coloring/{book}/{page}.selector.webp  400 px page selector fallback (light)
+web/static/coloring/{book}/{page}.dark.selector.webp  400 px page selector fallback (dark)
 tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fills
 vectorized/coloring-{,dark-}overlays/{stem}.source.webp        uncommitted trace source
 ```
@@ -54,7 +56,7 @@ suffix:
 web/static/coloring/{book}/{name}.{variant}.webp                 canonical raster asset
 web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant line-art overlay
 web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web fill candidate
-web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thumbnail candidate
+web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker candidate
 ```
 
 `max-{edge}px` names the longest-edge bound, not the HTML `srcset` width descriptor. A portrait
@@ -62,25 +64,33 @@ web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thum
 pixels wide and is advertised as `1152w`. The catalog owns both paths and descriptor widths, and an
 asset-pipeline test reads every committed file's metadata so the declarations cannot drift.
 
-Invariant SVG presentation overlays have no responsive derivatives. Raster fills and picker cover
-thumbnails retain their responsive tiers. Native also stays canonical: `build:cap` removes every
-`max-{edge}px` directory until downloadable native packs can select a tier (issue #200).
+Invariant full-page SVG presentation overlays have no responsive derivatives. Raster fills, picker
+cover thumbnails, and page selectors retain responsive tiers. Native also stays canonical:
+`build:cap` removes every `max-{edge}px` directory because installed packs contain the 400 px
+selector fallback and no hosted responsive URLs.
 
 The retired WebP overlay tier was `max-1152px`, the largest measured downscale where every
 derivative was smaller than its source while retaining the overlay pipeline's step-8 alpha
 quantization and maximum 4/255 composite-channel error. That result remains sizing evidence for the
 temporary comparison format; runtime overlays no longer live in the tier.
 
-The picker tier is `max-240px`. It serves the 400 px square cover thumbnails without affecting page
-tiles, which reuse the invariant SVG presentation overlays directly.
+Page selectors use a `max-240px` candidate for ordinary picker tiles and the Active-page chip, plus
+the canonical 400 px selector for large or high-density tiles. A measured 96 px tier was removed
+because the page grid always selected a larger candidate before the chip mounted, making the tier
+unreachable in real sessions. Cover thumbnails use the 240/400 px pair. All page selector candidates
+are lossless/exact WebPs rendered directly from the canonical SVG: catalog-wide measurement found
+that lossy WebP and AVIF were larger for this sparse transparent line art, while indexed PNG damaged
+thin alpha edges (ADR-0152).
 
 Key implementation points:
 
 * `web/src/lib/state/books.ts` builds all catalog paths and derives the light/dark cover-thumbnail
-  siblings. Page tiles use the same `pageOverlayImage()` URL as the canvas.
+  and selector siblings. Page tiles and the Active-page chip publish responsive selector sources;
+  the canvas uses `pageOverlayImage()` directly.
 * `responsiveColoringAssets()` derives web-only tier paths for raster fills and cover thumbnails;
-  invariant SVG page overlays have no responsive candidate. `bookAssetPaths()` includes every
-  runtime path so `check:coloring-assets` rejects a partial inventory.
+  `responsiveSelectorColoringAssets()` derives the smaller selector tier. Invariant SVG page
+  overlays have no responsive candidate. `bookAssetPaths()` includes every runtime path so
+  `check:coloring-assets` rejects a partial inventory.
 * `lib/line-art-targets.mjs` positively selects canonical `*-{tall,wide}.overlay.svg` pages and adds
   `cover.overlay.svg` when callers request covers.
 * `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`; light and night
@@ -89,8 +99,8 @@ Key implementation points:
   the dark generator's review samples in `.coloring-samples-dark/` stay bare (`dog-wide.webp`) — the
   `.night.raw` suffix is added at ship time (the night-fill runbook, now
   `../legacy/night-fills.md`).
-* The E2E overlay assertions (`web/tests/flows-coloring-book.spec.ts`) pin the overlay `src` to the
-  theme-matched SVG.
+* The E2E overlay assertions (`web/tests/flows-coloring-book.spec.ts`) pin the full-page overlay
+  `src` to the theme-matched SVG and the selector surface to raster `srcset` candidates.
 
 ## Consequences
 

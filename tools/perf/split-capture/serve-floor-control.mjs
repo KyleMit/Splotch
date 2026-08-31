@@ -49,13 +49,11 @@ const PAGE = `<!doctype html>
   #drawingCanvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
 </style></head>
 <body>
-<!-- The hidden attribute is load-bearing, not decoration. The probe starts a
-     blank phase only while .paper-view is hidden, which is how the app signals
-     "blank paper" rather than "a coloring page is open". Rendered visible, the
-     probe decides a page is active, never starts the phase, and reports every
-     recorded event as "never started" - thousands of frames attributed to
-     nothing. -->
-<div class="paper-view" hidden></div>
+<!-- The absent data-paper-active marker is load-bearing. It gives this control
+     page the same logical blank-paper state as DrawingCanvas; setting the marker
+     would make the probe wait for an active coloring page instead of starting
+     the blank phase. -->
+<div class="paper-view"></div>
 <canvas id="drawingCanvas"></canvas>
 <script src="/__probe/control.js"></script>
 <script src="/__probe/bootstrap.js"></script>
