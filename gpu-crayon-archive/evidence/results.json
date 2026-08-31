@@ -1,0 +1,258 @@
+{
+  "capturedAt": "2026-08-31T01:16:25.870Z",
+  "label": "archive-pr",
+  "branch": "spike/gpu-crayon",
+  "commit": "13c152be0",
+  "repeats": 1,
+  "sceneScale": 1,
+  "softwareRendered": true,
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+  "scene": {
+    "width": 1120,
+    "height": 780,
+    "scale": 1
+  },
+  "results": [
+    {
+      "id": "cpu",
+      "label": "CPU baseline (shipping)",
+      "blurb": "The crayon in production today: midpoint-quadratic path ops through renderOp, colorized wax tiles from crayonBrush, deposited by crayonPassBuffer onto a 2D canvas.",
+      "stats": {
+        "runs": 1,
+        "gpuMs": null,
+        "presentMs": null,
+        "syncPaintMs": {
+          "p50": 0,
+          "p95": 0.20000000298023224,
+          "max": 0.4000000022351742,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "cpuMs": {
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "max": 0.4000000022351742,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "intervalMs": {
+          "p50": 8.299999999999272,
+          "p95": 8.600000000002183,
+          "max": 18,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "frames": 249,
+        "drawCalls": 249,
+        "primitives": 735,
+        "primitiveNoun": "segments"
+      },
+      "runs": [
+        {
+          "frames": 249,
+          "drawCalls": 249,
+          "primitives": 735,
+          "primitiveNoun": "segments",
+          "cpuMs": {
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "max": 0.4000000022351742
+          },
+          "intervalMs": {
+            "p50": 8.299999999999272,
+            "p95": 8.600000000002183,
+            "max": 18
+          },
+          "gpuMs": null,
+          "presentMs": null,
+          "syncPaintMs": {
+            "p50": 0,
+            "p95": 0.20000000298023224,
+            "max": 0.4000000022351742
+          }
+        }
+      ]
+    },
+    {
+      "id": "stamp",
+      "label": "Stamped tip",
+      "blurb": "Arclength-resampled stamps, one instanced quad each, at 0.08 of stroke diameter — the Procreate/Photoshop model. Extends to per-stamp jitter, rotation and pressure for free.",
+      "stats": {
+        "runs": 1,
+        "gpuMs": null,
+        "presentMs": null,
+        "syncPaintMs": {
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "max": 0.20000000298023224,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "cpuMs": {
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "max": 0.10000000149011612,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "intervalMs": {
+          "p50": 8.299999999995634,
+          "p95": 10.299999999999272,
+          "max": 58.29999999999927,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "frames": 249,
+        "drawCalls": 249,
+        "primitives": 1646,
+        "primitiveNoun": "stamps"
+      },
+      "runs": [
+        {
+          "frames": 249,
+          "drawCalls": 249,
+          "primitives": 1646,
+          "primitiveNoun": "stamps",
+          "cpuMs": {
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "max": 0.10000000149011612
+          },
+          "intervalMs": {
+            "p50": 8.299999999995634,
+            "p95": 10.299999999999272,
+            "max": 58.29999999999927
+          },
+          "gpuMs": null,
+          "presentMs": null,
+          "syncPaintMs": {
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "max": 0.20000000298023224
+          }
+        }
+      ]
+    },
+    {
+      "id": "ciallo",
+      "label": "Analytic (Ciallo)",
+      "blurb": "One quad per segment evaluating the closed-form integral of a quadratic tip over a window of the polyline held in a texture. No stamps, no beading, ends taper for free.",
+      "stats": {
+        "runs": 1,
+        "gpuMs": null,
+        "presentMs": null,
+        "syncPaintMs": {
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "max": 0.19999999552965164,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "cpuMs": {
+          "p50": 0,
+          "p95": 0.09999999776482582,
+          "max": 0.10000000149011612,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "intervalMs": {
+          "p50": 8.299999999995634,
+          "p95": 10.30000000000291,
+          "max": 41.30000000000291,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "frames": 249,
+        "drawCalls": 249,
+        "primitives": 735,
+        "primitiveNoun": "segments"
+      },
+      "runs": [
+        {
+          "frames": 249,
+          "drawCalls": 249,
+          "primitives": 735,
+          "primitiveNoun": "segments",
+          "cpuMs": {
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "max": 0.10000000149011612
+          },
+          "intervalMs": {
+            "p50": 8.299999999995634,
+            "p95": 10.30000000000291,
+            "max": 41.30000000000291
+          },
+          "gpuMs": null,
+          "presentMs": null,
+          "syncPaintMs": {
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "max": 0.19999999552965164
+          }
+        }
+      ]
+    },
+    {
+      "id": "sdf",
+      "label": "SDF polyline",
+      "blurb": "One instanced capsule quad per segment; the fragment measures its own distance to the segment and reads the production density bands off that radius.",
+      "stats": {
+        "runs": 1,
+        "gpuMs": null,
+        "presentMs": null,
+        "syncPaintMs": {
+          "p50": 0,
+          "p95": 0.10000000149011612,
+          "max": 0.20000000298023224,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "cpuMs": {
+          "p50": 0,
+          "p95": 0.09999999776482582,
+          "max": 0.10000000149011612,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "intervalMs": {
+          "p50": 8.30000000000291,
+          "p95": 10.299999999995634,
+          "max": 42.80000000000291,
+          "p50Spread": 0,
+          "samples": 1
+        },
+        "frames": 249,
+        "drawCalls": 249,
+        "primitives": 735,
+        "primitiveNoun": "segments"
+      },
+      "runs": [
+        {
+          "frames": 249,
+          "drawCalls": 249,
+          "primitives": 735,
+          "primitiveNoun": "segments",
+          "cpuMs": {
+            "p50": 0,
+            "p95": 0.09999999776482582,
+            "max": 0.10000000149011612
+          },
+          "intervalMs": {
+            "p50": 8.30000000000291,
+            "p95": 10.299999999995634,
+            "max": 42.80000000000291
+          },
+          "gpuMs": null,
+          "presentMs": null,
+          "syncPaintMs": {
+            "p50": 0,
+            "p95": 0.10000000149011612,
+            "max": 0.20000000298023224
+          }
+        }
+      ]
+    }
+  ]
+}
