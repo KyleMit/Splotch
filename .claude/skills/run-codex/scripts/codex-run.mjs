@@ -8,6 +8,7 @@ import { isAbsolute, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
   assertSubscriptionBilling,
+  SUBSCRIPTION_BASE_URL,
   SUBSCRIPTION_CREDENTIALS_STORE,
   SUBSCRIPTION_MODEL_PROVIDER,
 } from './codex-subscription-auth.mjs';
@@ -115,6 +116,8 @@ export function buildCodexArgs(options) {
     `model_provider="${SUBSCRIPTION_MODEL_PROVIDER}"`,
     '-c',
     `cli_auth_credentials_store="${SUBSCRIPTION_CREDENTIALS_STORE}"`,
+    '-c',
+    `openai_base_url="${SUBSCRIPTION_BASE_URL}"`,
   ];
   if (options.model) shared.push('-m', options.model);
   shared.push('-c', `model_reasoning_effort="${options.effort}"`);

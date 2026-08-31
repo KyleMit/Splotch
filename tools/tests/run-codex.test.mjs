@@ -16,6 +16,7 @@ import {
   assertSubscriptionAuth,
   assertSubscriptionModelProvider,
   stripApiBillingEnvironment,
+  SUBSCRIPTION_BASE_URL,
   SUBSCRIPTION_CREDENTIALS_STORE,
   SUBSCRIPTION_MODEL_PROVIDER,
 } from '../../.claude/skills/run-codex/scripts/codex-subscription-auth.mjs';
@@ -109,6 +110,8 @@ describe('run-codex command construction', () => {
       expect(args).toContain('sandbox_mode="read-only"');
       expect(args).toContain(`model_provider="${SUBSCRIPTION_MODEL_PROVIDER}"`);
       expect(args).toContain(`cli_auth_credentials_store="${SUBSCRIPTION_CREDENTIALS_STORE}"`);
+      // A config-file openai_base_url outranks the provider pin and reaches the metered endpoint.
+      expect(args).toContain(`openai_base_url="${SUBSCRIPTION_BASE_URL}"`);
     }
   });
 

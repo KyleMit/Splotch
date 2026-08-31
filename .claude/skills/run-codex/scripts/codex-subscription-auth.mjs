@@ -31,6 +31,10 @@ export const SUBSCRIPTION_MODEL_PROVIDER = 'openai';
 // The guard validates auth.json, so the child is pinned to the same store rather than a keyring a
 // project config could select — otherwise the credential checked is not the credential used.
 export const SUBSCRIPTION_CREDENTIALS_STORE = 'file';
+// A config-file `openai_base_url` outranks the provider pin and sends the run to the metered
+// endpoint, so the plan endpoint is pinned too. Hardcoding it trades a silent billing escape for a
+// loud failure if Codex ever moves the path — the safe direction of that trade.
+export const SUBSCRIPTION_BASE_URL = 'https://chatgpt.com/backend-api/codex';
 
 // Only a bare top-level assignment can retarget the default provider; one nested under a
 // `[model_providers.*]` table merely defines a provider that nothing has selected yet.
