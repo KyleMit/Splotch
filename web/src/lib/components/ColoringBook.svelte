@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
   import ActivePageChip from './ActivePageChip.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
@@ -61,8 +60,8 @@
     return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
 
-  // Warm the initial cover set at idle. A theme flip must not proactively decode
-  // the alternate off-screen set before the next visible coloring interaction.
+  // Warm the resolved theme's cover thumbnails at idle so the first picker open
+  // and a later theme change both paint without fetching every cover on demand.
   function imageRequest(
     image: ResponsiveColoringImage,
     sizes: string
@@ -72,7 +71,7 @@
 
   $effect(() => {
     if (!hasBookPicker) return;
-    const theme = untrack(resolvedTheme);
+    const theme = resolvedTheme();
     return scheduleIdle(() =>
       prefetchImages(
         books.map((book) => imageRequest(coverThumbImageSource(book, theme), coverThumbnailSizes))

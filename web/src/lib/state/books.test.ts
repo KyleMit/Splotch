@@ -207,7 +207,6 @@ describe('responsive image sources', () => {
     expect(coloringBookComponent).toContain(
       'pageSelectorImageSource(page, orientation, resolvedTheme())'
     );
-    expect(coloringBookComponent).toContain('const theme = untrack(resolvedTheme);');
     expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
     expect(activePageChipComponent).toContain('srcset=');
     expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
