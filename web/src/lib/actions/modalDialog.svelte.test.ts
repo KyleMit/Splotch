@@ -3,6 +3,10 @@ import { createModal } from '$lib/state/modal.svelte';
 import { modalDialog } from './modalDialog.svelte';
 
 describe('modalDialog', () => {
+  function afterContentRetirementPaint() {
+    return new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
+  }
+
   it('clears an anchored origin when the same dialog reopens without one', async () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));
@@ -94,6 +98,75 @@ describe('modalDialog', () => {
       expect(closeRequests).toBe(1);
       expect(pointerDown.defaultPrevented).toBe(true);
     } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
+
+  it('keeps retired content hidden until the closed dialog reopens', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const content = dialog.appendChild(document.createElement('div'));
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: modal.open,
+        onRequestClose: modal.hide,
+      }));
+      return action.destroy;
+    });
+
+    try {
+      modal.show(null);
+      await Promise.resolve();
+      modal.hide();
+      await Promise.resolve();
+
+      expect(dialog.open).toBe(true);
+      expect(content.style.visibility).toBe('hidden');
+
+      await afterContentRetirementPaint();
+
+      expect(dialog.open).toBe(false);
+      expect(content.style.visibility).toBe('hidden');
+
+      modal.show(null);
+      await Promise.resolve();
+
+      expect(dialog.open).toBe(true);
+      expect(content.style.visibility).toBe('');
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
+
+  it('cancels content retirement when the dialog reopens before close', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const content = dialog.appendChild(document.createElement('div'));
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: modal.open,
+        onRequestClose: modal.hide,
+      }));
+      return action.destroy;
+    });
+
+    try {
+      modal.show(null);
+      await Promise.resolve();
+      await afterContentRetirementPaint();
+      modal.hide();
+      await Promise.resolve();
+      await afterContentRetirementPaint();
+      modal.show(null);
+      await Promise.resolve();
+
+      expect(dialog.open).toBe(true);
+      expect(content.style.visibility).toBe('');
+    } finally {
+      modal.hide();
+      await Promise.resolve();
       destroy();
       dialog.remove();
     }

@@ -432,7 +432,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background-color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
     touch-action: manipulation;
   }
 
