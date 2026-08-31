@@ -5,7 +5,7 @@
 <script lang="ts">
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
   import { apiUrl } from '$lib/api';
   import { aiCredentialHeaders } from '$lib/ai/credentials';
   import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
@@ -44,6 +44,7 @@
   let message = $state('');
   let controller: AbortController | null = null;
   let statusEl = $state<HTMLDivElement>();
+  let confirmDialog = $state<HTMLDialogElement>();
 
   // The confirmation is the last step before an irreversible send, so it stands
   // in front of the result rather than in its footer: exactly one action is live
@@ -55,7 +56,10 @@
   // on the control that acts on it. Reached without any tap of theirs when the
   // send times out, which is exactly when being dropped on <body> is worst.
   $effect(() => {
-    if (status === 'error') statusEl?.querySelector('button')?.focus();
+    if (status !== 'error' || !confirmDialog) return;
+    void waitForDialogRetirement(confirmDialog).then(() => {
+      if (status === 'error') statusEl?.querySelector('button')?.focus();
+    });
   });
 
   $effect(() => {
@@ -146,6 +150,7 @@
 {/if}
 
 <dialog
+  bind:this={confirmDialog}
   class="ai-report-confirm modal-dialog modal-fly-in modal-shell"
   class:refusal
   aria-labelledby="aiReportConfirmTitle"

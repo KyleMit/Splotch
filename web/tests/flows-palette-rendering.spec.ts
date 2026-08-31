@@ -135,6 +135,7 @@ test('selected Black ink follows live theme changes without changing swatches', 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(black).toHaveClass(/active/);
   await settings.getByRole('button', { name: 'Close' }).click();
+  await expect(settings).not.toBeVisible();
   await page.waitForTimeout(COLOR_CHANGE_DEBOUNCE_SETTLE_MS);
 
   await draw(page, [
@@ -152,6 +153,7 @@ test('selected Black ink follows live theme changes without changing swatches', 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expect(black).toHaveClass(/active/);
   await settings.getByRole('button', { name: 'Close' }).click();
+  await expect(settings).not.toBeVisible();
   await page.waitForTimeout(COLOR_CHANGE_DEBOUNCE_SETTLE_MS);
 
   await draw(page, [

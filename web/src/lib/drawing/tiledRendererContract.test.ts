@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { compositeVisibleLiveTiles } from './liveTileComposite';
-import { LIVE_TILE_COUNT } from './liveTiles';
+import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
 import {
@@ -114,7 +114,13 @@ describe('tiled renderer contract', () => {
     resizeTiledRenderer(801, 400, 2, true);
 
     const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
-    expect(tiles.every((tile) => tile.width === 100 && tile.height === 100)).toBe(true);
+    expect(
+      tiles.every(
+        (tile) =>
+          tile.width === Math.floor(400 / LIVE_TILE_COLUMNS) &&
+          tile.height === Math.floor(400 / LIVE_TILE_ROWS)
+      )
+    ).toBe(true);
 
     const rendered = compositeVisibleLiveTiles(host);
 

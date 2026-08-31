@@ -1,5 +1,5 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
-import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
+import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 
 test('a dense zigzag survives a resize, repainted from tiled history', async ({ page }) => {
   // A resize rebuilds the live tiles from retained history, so the drawing
@@ -224,30 +224,28 @@ test('a resume rebuilds live tiles whose canvas state was reset while hidden', a
   });
 
   await expect.poll(() => count(page)).toBe(before);
-  const transforms = await page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]'), (tile) => {
+  const tileState = await page.evaluate((columns) => {
+    const tiles = Array.from(
+      document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')
+    );
+    const transforms = tiles.map((tile) => {
       const transform = tile.getContext('2d')!.getTransform();
       return [transform.e, transform.f];
-    })
-  );
-  expect(transforms).toEqual([
-    [0, 0],
-    [-75, 0],
-    [-150, 0],
-    [-225, 0],
-    [0, -75],
-    [-75, -75],
-    [-150, -75],
-    [-225, -75],
-    [0, -150],
-    [-75, -150],
-    [-150, -150],
-    [-225, -150],
-    [0, -225],
-    [-75, -225],
-    [-150, -225],
-    [-225, -225],
-  ]);
+    });
+    const expected = tiles.map((_, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const x = tiles.slice(0, column).reduce((total, tile) => total + tile.width, 0);
+      const y = Array.from(
+        { length: row },
+        (_, priorRow) => tiles[priorRow * columns]!.height
+      ).reduce((total, height) => total + height, 0);
+      return [x === 0 ? 0 : -x, y === 0 ? 0 : -y];
+    });
+    return { transforms, expected };
+  }, LIVE_TILE_COLUMNS);
+  expect(tileState.transforms).toHaveLength(LIVE_TILE_COUNT);
+  expect(tileState.transforms).toEqual(tileState.expected);
 });
 
 test('a reset context plus stale resume geometry replays retained history once', async ({

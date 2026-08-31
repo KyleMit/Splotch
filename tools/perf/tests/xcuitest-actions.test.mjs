@@ -37,6 +37,7 @@ import {
   resolveViewport,
 } from '../web/capture-desktop-actions.mjs';
 import { eraserFillFunctionSource } from '../lib/eraser-fill.mjs';
+import { loadedPageEntryProblem } from '../lib/profile-preview.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
 const LIVE_SURFACE = readFileSync(
@@ -93,6 +94,33 @@ const action = (postActionFrames, changes = {}) => ({
   canvasMutations: [],
   measures: [],
   ...changes,
+});
+
+describe('loaded page identity', () => {
+  const expected = '/_app/immutable/entry/start.current.js';
+
+  it('accepts the entry module from the preview build', () => {
+    expect(
+      loadedPageEntryProblem(expected, [`import { start } from ${JSON.stringify(expected)};`])
+    ).toBeNull();
+  });
+
+  it('rejects a stale service-worker shell before action capture', () => {
+    expect(
+      loadedPageEntryProblem(expected, [
+        'import { start } from "/_app/immutable/entry/start.stale.js";',
+      ])
+    ).toBe(
+      'the loaded page uses /_app/immutable/entry/start.stale.js, but the preview serves ' +
+        expected
+    );
+  });
+
+  it('rejects a page with no inspectable entry module', () => {
+    expect(loadedPageEntryProblem(expected, ['console.log("dead markup")'])).toBe(
+      'the loaded page exposes no SvelteKit entry module'
+    );
+  });
 });
 
 describe('createActionSession', () => {

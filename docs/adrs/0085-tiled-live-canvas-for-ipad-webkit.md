@@ -156,9 +156,36 @@ measured interval, while a smaller phone still pays the 48-canvas topology. Re-r
 campaign on any larger supported surface, or after a renderer, WebKit, brush-buffer, or device-floor
 change, before changing the grid or treating 0.294 Mpx as a universal target.
 
+### Restamp-era surface-budget amendment (2026-08-30)
+
+ADR-0147 replaced Safari crayon's two mutating preview planes with direct restamps onto the normal
+tile and explicitly left the grid unverified for that renderer. A repeated physical-iPad sweep at
+iPadOS 26.5, trusted XCUITest touch, ten gesture repeats, and the production route compared the
+current 4×4 grid with one smaller and two larger topologies. Every capture passed the input-fidelity
+gate.
+
+| Grid | Maximum surface | Crayon portrait P95/P99/max | Crayon lost-frame share | Cross-brush result                  |
+| ---- | --------------: | --------------------------: | ----------------------: | ----------------------------------- |
+| 3×3  |       0.547 Mpx |              2100/2573/3337 |                  93.84% | rejected after one decisive failure |
+| 4×4  |       0.308 Mpx |        15–16/22/50–62 (n=3) |        0.96–1.18% (n=3) | Magic passed at 16/19/34            |
+| 4×5  |       0.246 Mpx |        15/16–17/31–36 (n=3) |        0.21–0.30% (n=3) | Magic passed at 16/20/35            |
+| 5×5  |       0.197 Mpx |        15/16–17/35–44 (n=3) |        0.33–0.36% (n=3) | Magic failed at 16/19/59            |
+
+The 4×4 crayon tail was not engine JavaScript: the slow frames carried at most 1 ms of engine work.
+The 3×3 collapse and the two larger grids' improvement isolate active surface area as the causal
+variable. The 5×5 Magic regression also confirms the older campaign's warning that target count is
+not free. The retained 4×5 compromise lowers maximum surface area by 20% while adding four cells,
+and it is the only measured topology that clears both brushes.
+
+Landscape crayon was repeated three times on the same product build: 15/16–17/27–42 ms and
+0.14–0.34% lost-frame share. Representative pen, ten-undo, Magic, and eraser controls all passed.
+The one-variable experiment commits were 81a978ad784308f1f2a1adf600e7a66edc8d82ac (3×3),
+553106e9f2db49ba2b31ff2f007f20b778ca9680 (5×5), and 743b0a18b2a3302bce10bea8723f13cbd5dedd03 (4×5),
+all based on ce92369ffee964169f63d4b4539377de5075fd44.
+
 ## Decision
 
-The shared `LiveSurface` used by both `DrawingCanvas` and `/dev/engine` renders a fixed 4×4 grid
+The shared `LiveSurface` used by both `DrawingCanvas` and `/dev/engine` renders a fixed 4×5 grid
 from `web/src/lib/drawing/liveTiles.ts`. Each cell has:
 
 * One normal-ink canvas.
@@ -166,7 +193,7 @@ from `web/src/lib/drawing/liveTiles.ts`. Each cell has:
 * One top crayon-preview canvas using the authored color-mix opacity.
 
 The original full-size `#drawingCanvas` remains the transparent input receiver, coordinate source,
-and accessibility surface, but the renderer never paints it. The sixteen cells preserve ADR-0015's
+and accessibility surface, but the renderer never paints it. The twenty cells preserve ADR-0015's
 full `min(devicePixelRatio, 2)` resolution; tiling changes surface topology, not resolution.
 Operations stay in paper coordinates. `tiledRenderer.ts` applies the paper-view transform to each
 tile, culls dots and paths by their paper-space bounds, and renders only intersecting tiles. Its CSS
@@ -180,7 +207,7 @@ and crayon backing-store allocation, deferred hidden-tile clears, and history-ba
 surface lifecycle independent of command ordering without changing allocation timing or pixels.
 
 Production history retains vector operations and folds its non-undoable prefix, one command at a
-time, into a 4×4 offscreen raster base after 1.5 seconds without active input. Pointerdown cancels
+time, into a 4×5 offscreen raster base after 1.5 seconds without active input. Pointerdown cancels
 pending compaction. Each base tile tracks whether folding has painted it; blank base tiles neither
 blit nor make their matching live canvas visible during repaint. ADR-0086 replaces ordinary
 vector-replay undo with cropped, tile-local pre-command patches: a pop restores only the pixels that
@@ -282,7 +309,7 @@ justified by the measured cost.
 * \+ The same topology is neutral or faster on the measured Mac. It removes the old Magic renderer's
   repeatable 495–658 ms between-stroke gap without changing its 19 ms frame P95, so one production
   architecture serves both targets.
-* − The production stack owns 48 positioned tile canvases plus the transparent input canvas. This
+* − The production stack owns 60 positioned tile canvases plus the transparent input canvas. This
   increases DOM/layer count and makes tile geometry, transforms, blend planes, and source cropping
   explicit engine concerns.
 * − Tile culling and target visits added about 0.04–0.11 ms of renderer work per measured Mac frame.
@@ -472,7 +499,7 @@ preserve grouping: five simultaneous fingers are one undo step, a clear is undoa
 stroke must survive resize/remount without being committed twice.
 
 Pure vector retention is not bounded for long sessions. The production variant therefore folds
-commands older than the twenty-step tail into a 4×4 offscreen raster base. The base uses the same
+commands older than the twenty-step tail into a 4×5 offscreen raster base. The base uses the same
 tile boundaries as live rendering. Do not replace it with one aggregate paper canvas; trial 14
 already demonstrates that architecture's failure.
 
@@ -638,12 +665,12 @@ for sound presence and lift-time cutoff.
 The production reconstruction is the combination of the passing architectures, not any single
 prototype:
 
-* 4×4 full-resolution normal-ink tiles.
+* 4×5 full-resolution normal-ink tiles.
 * Two matching crayon preview planes per tile.
 * Transparent aggregate input canvas.
 * Paper-coordinate vector operations with padded tile culling.
 * Twenty-command normal undo tail restored from cropped dirty-region tile snapshots, byte-bounded at
-  six aggregate papers per ADR-0086, plus one-at-a-time idle folding into a 4×4 raster base.
+  six aggregate papers per ADR-0086, plus one-at-a-time idle folding into a 4×5 raster base.
 * Tile-cropped immutable magic sources.
 * A 64-op crayon checkpoint.
 * Deferred tile-local eraser scans.

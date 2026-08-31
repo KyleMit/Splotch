@@ -5,6 +5,7 @@
     type ColoringPage,
     type ResponsiveColoringImage,
   } from '$lib/state/books';
+  import { waitForPressFeedbackToSettle } from '$lib/actions/pressFeedback';
 
   interface Props {
     page: ColoringPage;
@@ -14,6 +15,12 @@
   }
 
   let { page, preview, hoverArmed, onclear }: Props = $props();
+
+  async function clearAfterPressFeedback(event: MouseEvent) {
+    const button = event.currentTarget as HTMLButtonElement;
+    await waitForPressFeedbackToSettle(button);
+    onclear();
+  }
 </script>
 
 <button
@@ -21,7 +28,7 @@
   class:hover-armed={hoverArmed}
   type="button"
   aria-label="Clear active coloring page: {page.name}"
-  onclick={onclear}
+  onclick={clearAfterPressFeedback}
 >
   <img
     class="active-page-thumbnail"

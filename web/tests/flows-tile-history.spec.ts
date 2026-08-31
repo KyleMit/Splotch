@@ -15,6 +15,7 @@ import {
   TILE_HISTORY_FOLD_IDLE_MS,
 } from '../src/lib/drawing/tiledRenderer';
 import { MAX_UNDO_DEPTH } from '../src/lib/drawing/undoHistory';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { openDrawer, pickBrush } from './flows-harness';
 import {
   draw,
@@ -271,6 +272,10 @@ test('pathological strokes shorten undo depth before exceeding the patch budget'
 }) => {
   test.slow();
   await page.setViewportSize({ width: 900, height: 600 });
+  await page.addInitScript(({ key, size }) => localStorage.setItem(key, String(size)), {
+    key: STORAGE_KEYS.strokeWidthSize,
+    size: 5,
+  });
   await gotoApp(page);
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('drawing canvas has no bounds');

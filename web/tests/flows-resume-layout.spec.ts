@@ -8,7 +8,7 @@ import { openDrawer } from './flows-harness';
 import { draw, gotoApp, renderedCanvasHandle } from './helpers';
 
 // The backing-store size of every production live tile. This is the surface the
-// bug destroyed: a rect with no area resized all sixteen to zero, after which
+// bug destroyed: a rect with no area resized every tile to zero, after which
 // ops rendered into nothing.
 function tileBackingSizes(page: Page) {
   return page.evaluate(() =>

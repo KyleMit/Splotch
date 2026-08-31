@@ -20,6 +20,7 @@ import {
   borrowedSessionDescriptor,
   capabilitiesFromFile,
   capturedDeviceId,
+  blockServiceWorkerRegistrationForMeasurement,
   clearDeviceWebCache,
   createWebDriverClient,
   nativeCanvasBounds,
@@ -27,6 +28,7 @@ import {
   switchToWebContext,
 } from './capture-xcuitest-screen.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
+import { entryModulePath, loadedPageEntryProblem } from '../lib/profile-preview.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import {
@@ -1768,10 +1770,18 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     }
     originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
+    const expectedEntry = nativeApp
+      ? null
+      : entryModulePath(await fetch(requestedAppUrl).then((response) => response.text()));
+    if (!nativeApp && !expectedEntry) {
+      throw new Error(`${requestedAppUrl} exposes no SvelteKit entry module`);
+    }
 
     let settingsShell = null;
     const samples = [];
     const expectedLabels = new Set();
+    const pageEntries = new Set();
+    const serviceWorkerRegistrations = new Set();
     let baselineTheme;
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const loadedUrl = profilingUrl(appUrl, repeat);
@@ -1795,6 +1805,17 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         POLL_MS
       );
       if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
+      if (!nativeApp) {
+        const scriptSources = await execute(
+          "return Array.from(document.scripts, (script) => script.src || script.textContent || '');"
+        );
+        const entryProblem = loadedPageEntryProblem(expectedEntry, scriptSources);
+        if (entryProblem) throw new Error(`Preview identity mismatch: ${entryProblem}`);
+        pageEntries.add(entryModulePath(scriptSources.join('\n')));
+      }
+      serviceWorkerRegistrations.add(
+        await blockServiceWorkerRegistrationForMeasurement(execute)
+      );
       await ensureCampaignTheme(execute, requestedTheme);
       baselineTheme = await readResolvedTheme(execute);
       await installActionProbe(execute);
@@ -1866,6 +1887,8 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       repeats,
       orientation: originalOrientation,
       theme: baselineTheme,
+      pageEntries: [...pageEntries],
+      serviceWorkerRegistration: [...serviceWorkerRegistrations],
       // A landscape phone measures CompactShell's quick toggles instead of the
       // section list, so the label set differs by shell rather than by regression.
       settingsShell,

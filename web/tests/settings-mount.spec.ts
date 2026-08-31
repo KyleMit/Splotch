@@ -209,7 +209,7 @@ test('a quick reopen without requestIdleCallback opens paint-clean', async ({ pa
   const presentedAtReopen = await page.evaluate(
     (quickReopenMs) =>
       new Promise<number>((resolve) => {
-        document.querySelector<HTMLElement>('.settings-close')!.click();
+        document.querySelector<HTMLElement>('#settingsModal .modal-close-btn')!.click();
         setTimeout(() => {
           document.querySelector<HTMLElement>('#settingsButton')!.click();
           const step = () => {
