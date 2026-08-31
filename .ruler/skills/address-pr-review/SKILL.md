@@ -178,7 +178,9 @@ reviewer sees a verdict that was checked, not asserted.
    concern is real, fix the concern your way and say so in the reply.
 2. Verify: `npm run check` plus the tests covering the touched files (see the `testing` skill). For
    doc/Markdown-only fixes run `npm run format:check` instead — dprint drift is the usual reason a
-   fresh push goes red.
+   fresh push goes red. Keep this step read-only. A **destructive** check — reverting the fix to
+   prove a new regression test actually fails without it — belongs after the commit in step 3, not
+   here, because restoring the file discards any other uncommitted work in it.
 3. Commit with a descriptive message — one commit per comment, or one per logical group when several
    comments hit the same spot. Granular commits let each reply point at the exact SHA that addressed
    it.
