@@ -35,9 +35,12 @@ campaign prompt, PR body, report, or memory.
 5. Locate the authoritative matrix inputs, source manifest, and generator from the current
    repository rather than carrying paths or output names forward from an older campaign. Discover
    generator-owned JSON, Markdown, and HTML outputs from the generator or directory instructions.
+   `scrapbook/performance/` contains several matrices: identify the deployment-target matrix by its
+   scope, source manifest, and generator rather than assuming the newest or first `data.json` is
+   authoritative.
 
-Inventory every cell in the current `data.json` before changing product or harness code. Classify
-each cell by:
+Resolve the authoritative deployment-target matrix first, then inventory every cell in its
+`data.json` before changing product or harness code. Classify each cell by:
 
 * target and deployment class;
 * web or native runtime;
@@ -76,8 +79,11 @@ Never make the matrix green by:
 * treating stale, incomparable, or invalid evidence as current product approval.
 
 Stale red cells require faithful fresh captures. A harness or scorer change is allowed only when raw
-evidence proves the measurement is wrong. Preserve or strengthen coverage and add a regression test
-for the exact measurement failure.
+evidence proves the measurement is wrong. Promote representative raw captures with
+`npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name>` so they remain rescoreable, and
+trial a scorer change across that preserved corpus with `npm run perf:rescore -- --corpus=<dir>`
+before treating it as valid. Preserve or strengthen coverage and add a regression test for the exact
+measurement failure.
 
 Preserve drawing output, undo semantics, coloring selection and clearing, settings and persistence,
 rotation restoration, export fidelity, native/web parity, accessibility, and toddler-facing visual
@@ -130,8 +136,10 @@ For each cluster:
    can affect.
 9. Broaden across all affected themes, orientations, brushes/actions, and web/native targets.
 10. Recapture complete affected modes, not only the original sample.
-11. Fold only faithful, comparable captures into the authoritative matrix. Regenerate and validate
-    every generator-owned output and prove JSON/Markdown/HTML agreement where present.
+11. Fold only faithful, comparable captures into the authoritative matrix. Regenerate it with
+    `npm run gen:performance-matrix -- <manifest>`; that command runs the staleness check in-process
+    against the manifest it resolved. Validate every generator-owned output and prove
+    JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified improvement separately, update raw evidence and
     remaining status in the PR body, and proceed only from a clean tree.
 
@@ -154,7 +162,9 @@ for an ordinary finding.
 
 For each delivered cluster:
 
-1. run Claude through `run-claude` for an independent empirical review;
+1. get an independent empirical review: from Codex, launch Claude through `run-claude`; otherwise
+   run `leave-pr-review` in a fresh independent session or hand the stack off with
+   `create-pr-feedback-handoff`;
 2. use `address-pr-review` for every inline thread, review summary, and conversation comment;
 3. reproduce findings, fix or rebut them with evidence, reply, and resolve every thread;
 4. rerun the same reviewer after material fixes;
@@ -186,11 +196,11 @@ Treat these as steering inside the active campaign, not as replacements for the 
   shippable work: resolve attribution, land or back out the experiment, run focused correctness and
   exact performance validation, complete affected-mode recapture when needed, fold only faithful
   evidence, regenerate authoritative outputs, commit and push, update the live campaign ledger,
-  complete review and feedback, and confirm CI is green and every delivered PR is ready to merge.
-  Put additional findings in the current stack-tip PR when coherent or in a new feedback/findings PR
-  stacked from the tip. Never amend a lower PR. Then report both the merge-ready delivered scope and
-  the freshly counted campaign remainder; do not claim the overall matrix is complete when cells
-  remain.
+  complete review and feedback, move every delivered PR out of draft, and confirm CI is green and
+  every delivered PR is ready to merge. Put additional findings in the current stack-tip PR when
+  coherent or in a new feedback/findings PR stacked from the tip. Never amend a lower PR. Then
+  report both the merge-ready delivered scope and the freshly counted campaign remainder; do not
+  claim the overall matrix is complete when cells remain.
 
 A casual progress question such as “what is running?”, “where are we?”, or “how much is left?” is a
 **status** message. Phrases such as “finish what is in flight,” “stop after the next complete PR,”
@@ -221,7 +231,7 @@ Complete the full campaign only when:
 * correctness, accessibility, visual behavior, native/web parity, persistence, rotation, undo, and
   export fidelity remain intact;
 * every authoritative generated output agrees;
-* every campaign PR is pushed, reviewed, linked into the stack, green, and ready;
+* every campaign PR is pushed, reviewed, linked into the stack, green, out of draft, and ready;
 * every review comment is answered and resolved;
 * the stack-tip PR summarizes the baseline clusters, root causes, fixes, before/after evidence,
   capture provenance, product commits, and final matrix status;

@@ -42,6 +42,10 @@ when the runner would otherwise stop before saving the complete requested suite.
 
 ### Focused improvement validation
 
+Use this mode when the task starts with one known bottleneck or candidate change and ends with
+focused validation. Use `improve-performance-matrix` when the task starts from a matrix inventory,
+requires causal discovery across red cells, or will ship a stacked improvement campaign.
+
 Measure one action or brush on the first failing target, make one implementation change, and rerun
 that exact test. Back out rejected trials. Once the candidate passes, run the same focused test on
 the other targets whose rendering path could be affected. Do not broaden to the full matrix until
