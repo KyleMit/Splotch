@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
-  import { waitForPressFeedbackToSettle } from '$lib/actions/pressFeedback';
+  import PressFeedbackCloseButton from './PressFeedbackCloseButton.svelte';
   import type { CommonIconName } from './iconTypes';
   import SectionIcon from './SectionIcon.svelte';
   import { ui, settingsModal } from '$lib/state/ui.svelte';
@@ -154,11 +154,6 @@
   const firstDrillIn = SECTIONS.findIndex((section) => !HUB_TOGGLES[section.id]);
   const groupBreakIndex = firstDrillIn > 0 ? firstDrillIn : -1;
 
-  async function closeAfterPressFeedback(event: MouseEvent) {
-    await waitForPressFeedbackToSettle(event.currentTarget as HTMLButtonElement);
-    settingsModal.hide();
-  }
-
   // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
   // reading content. The bound element gets CSS `zoom`; the phone hub/section
   // scroll binds it here and the wide pane binds its own. The compact
@@ -187,13 +182,7 @@
   })}
 >
   <div class="settings-content">
-    <button
-      class="settings-close modal-close-btn"
-      aria-label="Close"
-      onclick={closeAfterPressFeedback}
-    >
-      <Icon name="close" class="modal-close-icon" />
-    </button>
+    <PressFeedbackCloseButton onClose={settingsModal.hide} />
 
     {#if compact.current}
       <CompactShell />
