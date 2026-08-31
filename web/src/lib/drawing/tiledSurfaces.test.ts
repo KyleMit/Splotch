@@ -21,7 +21,7 @@ it('rebinds reset history-base state with each tile-local transform', () => {
   expect(rebindHistoryBaseContexts(tiles)).toBe(true);
   expect(tile.ctx.lineCap).toBe('round');
   expect(tile.ctx.lineJoin).toBe('round');
-  expect(tile.ctx.getTransform()).toMatchObject({ e: -100, f: -100 });
+  expect(tile.ctx.getTransform()).toMatchObject({ e: -tile.x, f: -tile.y });
   expect(historyBaseContextsNeedRecovery(tiles)).toBe(false);
 });
 
