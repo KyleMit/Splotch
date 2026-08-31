@@ -211,9 +211,11 @@ describe('responsive image sources', () => {
       coloringBookComponent.indexOf('async function pickPage'),
       coloringBookComponent.indexOf('async function clearAndClose')
     );
-    expect(pickPage.indexOf('coloringBookModal.hide()')).toBeLessThan(
-      pickPage.indexOf('applyColoringPageWithMagicUndo')
-    );
+    const hideAt = pickPage.indexOf('coloringBookModal.hide()');
+    const applyAt = pickPage.indexOf('applyColoringPageWithMagicUndo');
+    expect(hideAt).toBeGreaterThanOrEqual(0);
+    expect(applyAt).toBeGreaterThanOrEqual(0);
+    expect(hideAt).toBeLessThan(applyAt);
     expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
     expect(activePageChipComponent).toContain('srcset=');
     expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');

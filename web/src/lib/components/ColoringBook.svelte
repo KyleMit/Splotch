@@ -15,7 +15,7 @@
     type ResponsiveColoringImage,
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { modalDialog, waitForDialogClose } from '$lib/actions/modalDialog.svelte';
+  import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
   import ScrollCue from './design/ScrollCue.svelte';
   import { cutTrailingRow } from '$lib/actions/scrollCue';
   import { guardTapZone } from '$lib/actions/launchGuard';
@@ -110,9 +110,9 @@
     for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
       cancelImageRequest(img);
     }
-    const dialogClosed = waitForDialogClose(dialogEl);
+    const dialogRetired = waitForDialogRetirement(dialogEl);
     coloringBookModal.hide();
-    await dialogClosed;
+    await dialogRetired;
     await nextFrame();
     applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
   }

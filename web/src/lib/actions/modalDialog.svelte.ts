@@ -50,9 +50,21 @@ function dismissAllowed(o: ModalOptions) {
   return o.allowDismiss?.() !== false;
 }
 
-export function waitForDialogClose(node: HTMLDialogElement): Promise<void> {
+export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> {
   if (!node.open) return Promise.resolve();
-  return new Promise((resolve) => node.addEventListener('close', () => resolve(), { once: true }));
+  return new Promise((resolve) => {
+    let timer: number | undefined;
+    const settle = () => {
+      node.removeEventListener('close', settle);
+      cancelAnimationFrame(frame);
+      if (timer !== undefined) clearTimeout(timer);
+      resolve();
+    };
+    node.addEventListener('close', settle, { once: true });
+    const frame = requestAnimationFrame(() => {
+      timer = window.setTimeout(settle);
+    });
+  });
 }
 
 function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: () => ModalOptions) {

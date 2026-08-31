@@ -1,21 +1,73 @@
 import { describe, expect, it } from 'vitest';
 import { createModal } from '$lib/state/modal.svelte';
-import { modalDialog, waitForDialogClose } from './modalDialog.svelte';
+import { modalDialog, waitForDialogRetirement } from './modalDialog.svelte';
 
 describe('modalDialog', () => {
   function afterContentRetirementPaint() {
     return new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
   }
 
-  it('waits for an open dialog to leave the top layer', async () => {
+  it('stays pending until the action retires the dialog, then resolves', async () => {
+    const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));
-    dialog.showModal();
-    const closed = waitForDialogClose(dialog);
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: modal.open,
+        onRequestClose: modal.hide,
+      }));
+      return action.destroy;
+    });
 
-    dialog.close();
+    try {
+      modal.show(null);
+      await Promise.resolve();
 
-    await expect(closed).resolves.toBeUndefined();
-    dialog.remove();
+      let settled = false;
+      const retired = waitForDialogRetirement(dialog).then(() => (settled = true));
+      modal.hide();
+      await Promise.resolve();
+      expect(settled).toBe(false);
+
+      await afterContentRetirementPaint();
+      await retired;
+      expect(dialog.open).toBe(false);
+
+      await expect(waitForDialogRetirement(dialog)).resolves.toBeUndefined();
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
+
+  it('settles when dialog retirement is abandoned', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: modal.open,
+        onRequestClose: modal.hide,
+      }));
+      return action.destroy;
+    });
+
+    try {
+      modal.show(null);
+      await Promise.resolve();
+      const retired = waitForDialogRetirement(dialog);
+      modal.hide();
+      await Promise.resolve();
+      modal.show(null);
+      await Promise.resolve();
+
+      await afterContentRetirementPaint();
+      await expect(retired).resolves.toBeUndefined();
+      expect(dialog.open).toBe(true);
+    } finally {
+      modal.hide();
+      await Promise.resolve();
+      destroy();
+      dialog.remove();
+    }
   });
 
   it('clears an anchored origin when the same dialog reopens without one', async () => {
