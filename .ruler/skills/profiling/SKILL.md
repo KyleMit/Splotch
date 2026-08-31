@@ -40,4 +40,4 @@ Two things to check before drawing a conclusion:
   analytically.
 
 For page-load / Core Web Vitals work on a throttled device, use `lighthouse-audit` instead. For the
-cross-platform snapshot, `run-performance-matrix`.
+cross-platform snapshot, `capture-performance-matrix`.

@@ -1,19 +1,19 @@
 ---
-name: fix-performance-matrix
-description: Drive Splotch's deployment-target performance matrix from a fresh cell-by-cell inventory to zero current, scoreable red cells, repairing product or capture causes and shipping each causal cluster as reviewed, green stacked PRs. Use for a sustained performance-remediation campaign; use run-performance-matrix for capture-only snapshots or validation.
+name: improve-performance-matrix
+description: Drive Splotch's deployment-target performance matrix from a fresh cell-by-cell inventory to zero current, scoreable red cells through product improvements, capture-path repairs, and faithful recaptures, shipping each causal cluster as reviewed, green stacked PRs. Use for a sustained performance-improvement campaign; use capture-performance-matrix for capture-only snapshots or validation.
 ---
 
-# Fix performance matrix
+# Improve performance matrix
 
 Run a fresh evidence-led campaign against the authoritative deployment-target matrix. The campaign
 ends only when every current, scoreable cell is green, unless the user sends a control message that
 explicitly requests a merge-ready stopping point.
 
-This is the remediation sibling of `run-performance-matrix`: that skill owns comparable capture
-mechanics and matrix refreshes; this skill owns inventory, causal attribution, product or harness
-repair, stacked delivery, review, and campaign control.
+This is the improvement sibling of `capture-performance-matrix`: that skill owns comparable capture
+mechanics and matrix refreshes; this skill owns inventory, causal attribution, product optimization,
+capture-path repair or faithful recapture, stacked delivery, review, and campaign control.
 
-An explicit user request to run this remediation campaign authorizes its normal in-repository
+An explicit user request to run this improvement campaign authorizes its normal in-repository
 branches, commits, pushes, draft PRs, stack links, and `start-capture-session` device reservation.
 Merely loading the skill for planning or reference does not. Neither form authorizes merging.
 
@@ -30,8 +30,8 @@ campaign prompt, PR body, report, or memory.
 3. Open a draft campaign PR as soon as the first coherent commit is pushed. Keep its body as the
    live campaign ledger: baseline inventory, shipped clusters, current cluster, remaining work,
    exact product commits, raw artifact provenance, correctness evidence, and matrix status.
-4. Read the `profiling`, `run-performance-matrix`, `testing`, and `create-stacked-prs` skills. Read
-   `mobile` before any iOS, Android, or Capacitor work.
+4. Read the `profiling`, `capture-performance-matrix`, `testing`, and `create-stacked-prs` skills.
+   Read `mobile` before any iOS, Android, or Capacitor work.
 5. Locate the authoritative matrix inputs, source manifest, and generator from the current
    repository rather than carrying paths or output names forward from an older campaign. Discover
    generator-owned JSON, Markdown, and HTML outputs from the generator or directory instructions.

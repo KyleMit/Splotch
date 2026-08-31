@@ -117,7 +117,7 @@ those paths, so the report cannot be regenerated without them.
 
 ## Reread first
 
-* `.agents/skills/run-performance-matrix/SKILL.md` and `references/platforms.md` — six host
+* `.agents/skills/capture-performance-matrix/SKILL.md` and `references/platforms.md` — six host
   conditions were added today; the locked-phone and CacheStorage ones are the expensive ones
 * `docs/PROFILING-IPAD.md` — the RemoteXPC tunnel section
 * [#1194](https://github.com/KyleMit/Splotch/issues/1194),

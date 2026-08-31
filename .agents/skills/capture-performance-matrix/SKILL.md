@@ -1,9 +1,9 @@
 ---
-name: run-performance-matrix
-description: Run Splotch's drawing, undo, and discrete-action performance suites across macOS web, physical or simulated iPad web/native, and physical or emulated Android web/native targets. Use when capturing a deployment-target performance snapshot, comparing renderer architectures, validating a performance fix across platforms, or refreshing the committed performance matrix.
+name: capture-performance-matrix
+description: Capture Splotch's drawing, undo, and discrete-action performance suites across macOS web, physical or simulated iPad web/native, and physical or emulated Android web/native targets. Use when producing a deployment-target performance snapshot, comparing renderer architectures, validating a performance change across platforms, or refreshing the committed performance matrix.
 ---
 
-# Run performance matrix
+# Capture performance matrix
 
 Capture comparable performance evidence across Splotch deployment targets without confusing
 transport artifacts, simulator results, or stale builds with product behavior.
@@ -36,11 +36,11 @@ Never put device IDs, credentials, provider tokens, or signing data in committed
 
 ### Snapshot
 
-Measure the current build and report what happens. Do not fix product failures during the capture.
-Preserve the first valid red result instead of repeating until green. Use `--report-only` when the
-runner would otherwise stop before saving the complete requested suite.
+Measure the current build and report what happens. Do not change product failures during the
+capture. Preserve the first valid red result instead of repeating until green. Use `--report-only`
+when the runner would otherwise stop before saving the complete requested suite.
 
-### Focused fix validation
+### Focused improvement validation
 
 Measure one action or brush on the first failing target, make one implementation change, and rerun
 that exact test. Back out rejected trials. Once the candidate passes, run the same focused test on
@@ -135,7 +135,7 @@ Use emulators, simulators, and local browsers as rejection tiers:
 
 Never relabel one target’s calibration as another target’s approval.
 
-## Interpret a failure before fixing
+## Interpret a failure before changing code
 
 Read the raw action/drawing sample and the action-aligned trace. Determine whether work is owned by
 the action:

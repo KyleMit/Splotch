@@ -92,8 +92,9 @@ byte budget.
 `check:matrix-staleness`, which compares the content digest of `web/src` against the commit a cell
 claims to measure and refuses to call a stale cell current. The WebKit commit gates and the undo
 commit-P95 gate. `check-bundle-budgets.mjs` holds the startup, lazy-chunk, and native-export sizes;
-`check-pwa-precache.mjs` holds precache integrity. Skills: `profiling`, `run-performance-matrix`,
-`start-capture-session` before physical-device work, and `lighthouse-audit` for page load.
+`check-pwa-precache.mjs` holds precache integrity. Skills: `profiling`,
+`capture-performance-matrix`, `start-capture-session` before physical-device work, and
+`lighthouse-audit` for page load.
 
 ## Resilience
 
