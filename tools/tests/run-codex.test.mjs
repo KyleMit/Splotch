@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -210,20 +210,22 @@ describe('run-codex streaming lifecycle', () => {
   const STALL_TIMEOUT_MS = 200;
   const SIGKILL_GRACE_MS = 200;
 
-  function streamingRun(nodeScript, directory) {
-    return runCodexStreaming(
+  function streamingRun(nodeScript, directory, logPath = join(directory, `${randomUUID()}.jsonl`)) {
+    const run = runCodexStreaming(
       {
         command: process.execPath,
         args: ['-e', nodeScript],
         cwd: directory,
         env: process.env,
         prompt: '',
-        logPath: join(directory, `${randomUUID()}.jsonl`),
+        logPath,
         onProgress: () => {},
       },
       STALL_TIMEOUT_MS,
       SIGKILL_GRACE_MS
     );
+    run.logPath = logPath;
+    return run;
   }
 
   // Output alone is not progress: a stuck Codex writing retry diagnostics must still trip the
@@ -254,6 +256,37 @@ describe('run-codex streaming lifecycle', () => {
   // leave the detached Codex group alive.
   it('cancels on a hangup as well as an interrupt', () => {
     expect(CANCELLATION_SIGNALS).toEqual(['SIGINT', 'SIGTERM', 'SIGHUP']);
+  });
+
+  // The log is the run's only audit trail, so a result must never be reported ahead of it.
+  it('flushes the log before reporting a result', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'run-codex-stream-'));
+    try {
+      const run = streamingRun(
+        'process.stdout.write(\'{"type":"thread.started","thread_id":"t"}\\n\')',
+        directory
+      );
+      await run;
+
+      expect(readFileSync(run.logPath, 'utf8')).toContain('thread.started');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('fails the run when the log cannot be written', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'run-codex-stream-'));
+    try {
+      await expect(
+        streamingRun(
+          'process.stdout.write("{}\\n")',
+          directory,
+          join(directory, 'absent', 'x.jsonl')
+        )
+      ).rejects.toThrow(/stream log/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   // A leaked handler would silently accumulate across the runs a single session makes.

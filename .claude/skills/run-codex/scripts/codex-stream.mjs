@@ -110,6 +110,7 @@ export function runCodexStreaming(
     let stalled = false;
     let cancelled;
     let logFailure;
+    let logClosed = false;
     let watchdog;
 
     const armWatchdog = () => {
@@ -122,6 +123,9 @@ export function runCodexStreaming(
 
     // The log is the run's only audit trail, so losing it ends the run rather than spending more
     // subscription time on an invocation whose evidence is already gone.
+    log.on('close', () => {
+      logClosed = true;
+    });
     log.on('error', (error) => {
       logFailure ??= error;
       clearTimeout(watchdog);
@@ -173,11 +177,7 @@ export function runCodexStreaming(
     };
     for (const signal of CANCELLATION_SIGNALS) process.on(signal, cancel);
 
-    armWatchdog();
-    child.on('close', (code, signal) => {
-      clearTimeout(watchdog);
-      for (const name of CANCELLATION_SIGNALS) process.off(name, cancel);
-      log.end();
+    const settle = (code, signal) => {
       if (cancelled) {
         rejectPromise(new Error(`cancelled by ${cancelled}; Codex terminated. Log: ${logPath}`));
         return;
@@ -203,6 +203,21 @@ export function runCodexStreaming(
         return;
       }
       resolvePromise({ threadId, usage, message });
+    };
+
+    armWatchdog();
+    child.on('close', (code, signal) => {
+      clearTimeout(watchdog);
+      for (const name of CANCELLATION_SIGNALS) process.off(name, cancel);
+      // Settling waits for the log to close so a failed or truncated final write is seen before the
+      // result is reported. A log that already failed has emitted 'close' before this point, so
+      // waiting for a second one would hang the wrapper forever — the case its own test caught.
+      if (logClosed) {
+        settle(code, signal);
+        return;
+      }
+      log.once('close', () => settle(code, signal));
+      log.end();
     });
   });
 }
