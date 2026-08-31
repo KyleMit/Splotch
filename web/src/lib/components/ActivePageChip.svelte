@@ -14,6 +14,12 @@
   }
 
   let { page, preview, hoverArmed, onclear }: Props = $props();
+
+  async function clearAfterPressFeedback(event: MouseEvent) {
+    const button = event.currentTarget as HTMLButtonElement;
+    await Promise.allSettled(button.getAnimations().map((animation) => animation.finished));
+    onclear();
+  }
 </script>
 
 <button
@@ -21,7 +27,7 @@
   class:hover-armed={hoverArmed}
   type="button"
   aria-label="Clear active coloring page: {page.name}"
-  onclick={onclear}
+  onclick={clearAfterPressFeedback}
 >
   <img
     class="active-page-thumbnail"
