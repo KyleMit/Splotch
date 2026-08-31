@@ -1,6 +1,6 @@
 ---
 name: improve-performance-matrix
-description: Drive Splotch's deployment-target performance matrix from a fresh cell-by-cell inventory to zero current, scoreable red cells through product improvements, capture-path repairs, and faithful recaptures, shipping each causal cluster as reviewed, green stacked PRs. Use for a sustained performance-improvement campaign; use capture-performance-matrix for capture-only snapshots or validation.
+description: Drive Splotch's deployment-target performance matrix from a fresh cell-by-cell inventory to zero current, scoreable red cells through product improvements, capture-path repairs, and faithful recaptures, shipping each causal cluster as reviewed, merge-ready stacked PRs with a green tip. Use for a sustained performance-improvement campaign; use capture-performance-matrix for capture-only snapshots or validation.
 ---
 
 # Improve performance matrix
@@ -22,14 +22,18 @@ Merely loading the skill for planning or reference does not. Neither form author
 Do not inherit a red-cell count, causal theory, target list, or optimization priority from an older
 campaign prompt, PR body, report, or memory.
 
-1. Preserve unrelated local work. Do not stash, delete, clean, commit, or absorb it.
+1. Preserve unrelated local work. Do not stash, delete, clean, commit, or absorb it. If the working
+   tree is not clean, stop and tell the user rather than carrying their changes onto a campaign
+   branch.
 2. Inspect open performance PRs and stacks before creating anything. If an unfinished campaign
    already owns the matrix work, verify its branch, PR, and checkpoint state and resume it instead
    of duplicating it. Otherwise fetch the trunk, verify prior campaign PRs are merged, switch to and
    fast-forward the trunk, then create a fresh campaign branch.
-3. Open a draft campaign PR as soon as the first coherent commit is pushed. Keep its body as the
-   live campaign ledger: baseline inventory, shipped clusters, current cluster, remaining work,
-   exact product commits, raw artifact provenance, correctness evidence, and matrix status.
+3. Open a draft campaign PR as soon as the first coherent commit is pushed. Keep the current
+   stack-tip PR body as the live campaign ledger, copying the ledger forward whenever the stack
+   grows; older PR bodies remain scoped snapshots. Record the baseline inventory, shipped clusters,
+   current cluster, remaining work, exact product commits, raw artifact provenance, correctness
+   evidence, and matrix status.
 4. Read the `profiling`, `capture-performance-matrix`, `testing`, and `create-stacked-prs` skills.
    Read `mobile` before any iOS, Android, or Capacitor work.
 5. Locate the authoritative matrix inputs, source manifest, and generator from the current
@@ -81,9 +85,9 @@ Never make the matrix green by:
 Stale red cells require faithful fresh captures. A harness or scorer change is allowed only when raw
 evidence proves the measurement is wrong. Promote representative raw captures with
 `npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name>` so they remain rescoreable, and
-trial a scorer change across that preserved corpus with `npm run perf:rescore -- --corpus=<dir>`
-before treating it as valid. Preserve or strengthen coverage and add a regression test for the exact
-measurement failure.
+trial a scorer change across that preserved corpus with
+`npm run perf:rescore -- --corpus=perf-profiles/evidence/<name>` before treating it as valid.
+Preserve or strengthen coverage and add a regression test for the exact measurement failure.
 
 Preserve drawing output, undo semantics, coloring selection and clearing, settings and persistence,
 rotation restoration, export fidelity, native/web parity, accessibility, and toddler-facing visual
@@ -121,7 +125,7 @@ For each cluster:
 
 1. Reproduce the smallest representative failure on the current product and capture path.
 2. Inspect raw traces, activities, input delivery, engine marks, frame intervals, layout, paint,
-   raster, GPU/compositor work, and capture metadata—not only the final pass boolean.
+   raster, GPU/compositor work, and capture metadata — not only the final pass boolean.
 3. Attribute the expensive frame or invalid result to a concrete product, runner, transport, or
    instrumentation cause. Separate first-action latency from post-action work and physical
    corroboration from simulator-only behavior.
@@ -129,7 +133,8 @@ For each cluster:
    user-flow A/B control. Do not change the scorer to hide the ambiguity.
 5. Make one causally coherent change. Back out rejected or inconclusive experiments instead of
    stacking speculation.
-6. Run focused correctness tests and the exact failing performance case.
+6. Run focused correctness tests and the exact failing performance case, plus `npm run check`,
+   `npm run lint`, and `npm run format:check` before any commit that touches code or scripts.
 7. Compare raw before/after traces and generated summaries from faithful runs. Preserve the first
    valid red after a change rather than retrying it away.
 8. Verify the real app visually and behaviorally, including every interaction contract the change
@@ -141,7 +146,7 @@ For each cluster:
     against the manifest it resolved. Validate every generator-owned output and prove
     JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified improvement separately, update raw evidence and
-    remaining status in the PR body, and proceed only from a clean tree.
+    remaining status in the current stack-tip PR body, and proceed only from a clean tree.
 
 ## Stack and review discipline
 
@@ -196,11 +201,12 @@ Treat these as steering inside the active campaign, not as replacements for the 
   shippable work: resolve attribution, land or back out the experiment, run focused correctness and
   exact performance validation, complete affected-mode recapture when needed, fold only faithful
   evidence, regenerate authoritative outputs, commit and push, update the live campaign ledger,
-  complete review and feedback, move every delivered PR out of draft, and confirm CI is green and
-  every delivered PR is ready to merge. Put additional findings in the current stack-tip PR when
-  coherent or in a new feedback/findings PR stacked from the tip. Never amend a lower PR. Then
-  report both the merge-ready delivered scope and the freshly counted campaign remainder; do not
-  claim the overall matrix is complete when cells remain.
+  complete review and feedback, move every delivered PR out of draft, confirm the stack tip is
+  green, and explain any surviving lower-PR red by naming the PR that carries its fix. Confirm every
+  delivered PR is ready to merge. Put additional findings in the current stack-tip PR when coherent
+  or in a new feedback/findings PR stacked from the tip. Never amend a lower PR. Then report both
+  the merge-ready delivered scope and the freshly counted campaign remainder; do not claim the
+  overall matrix is complete when cells remain.
 
 A casual progress question such as “what is running?”, “where are we?”, or “how much is left?” is a
 **status** message. Phrases such as “finish what is in flight,” “stop after the next complete PR,”
@@ -231,7 +237,8 @@ Complete the full campaign only when:
 * correctness, accessibility, visual behavior, native/web parity, persistence, rotation, undo, and
   export fidelity remain intact;
 * every authoritative generated output agrees;
-* every campaign PR is pushed, reviewed, linked into the stack, green, out of draft, and ready;
+* every campaign PR is pushed, reviewed, linked into the stack, out of draft, and ready, with the
+  stack tip green and any surviving red on a lower PR explained by the PR carrying its fix;
 * every review comment is answered and resolved;
 * the stack-tip PR summarizes the baseline clusters, root causes, fixes, before/after evidence,
   capture provenance, product commits, and final matrix status;
