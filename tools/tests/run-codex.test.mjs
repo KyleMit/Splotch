@@ -226,6 +226,19 @@ describe('run-codex streaming lifecycle', () => {
     );
   }
 
+  // Output alone is not progress: a stuck Codex writing retry diagnostics must still trip the
+  // watchdog, or the documented ten-minute guarantee is unenforceable.
+  it('terminates a child that only writes to stderr', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'run-codex-stream-'));
+    try {
+      await expect(
+        streamingRun('setInterval(() => process.stderr.write("retrying\\n"), 20)', directory)
+      ).rejects.toThrow(/no stream event/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('terminates a child that stops emitting events', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'run-codex-stream-'));
     try {

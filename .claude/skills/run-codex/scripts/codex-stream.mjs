@@ -157,8 +157,10 @@ export function runCodexStreaming(
       if (rendered) onProgress(rendered);
     });
 
+    // Deliberately does not rearm the watchdog: a Codex stuck in a retry loop keeps writing
+    // diagnostics here, and letting that defer the timeout would break the promise the watchdog
+    // exists to keep — progress is a stream event, not merely output.
     child.stderr.on('data', (chunk) => {
-      armWatchdog();
       stderrTail = `${stderrTail}${chunk}`.slice(-STDERR_TAIL_MAX_CHARS);
     });
 
