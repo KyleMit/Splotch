@@ -11,8 +11,8 @@ support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/
 from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
 `burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
 `analyze-session-transcripts` with format-specific implementations; Codex-only `run-claude` and
-`implement-issue-stack` live only under `.agents/`. See `tools/ruler/lib/direct-provider-skills.mjs`
-for the authoritative registry.
+`implement-issue-stack` live only under `.agents/`, and Claude-only `run-codex` lives only under
+`.claude/`. See `tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                             |
 | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,7 +24,7 @@ for the authoritative registry.
 | `profiling`                             | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                                                                                               |
 | `lighthouse-audit`                      | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                                  |
 | `adrs`                                  | proposing or discussing any architectural approach                                                                                                                                                                          |
-| `run-claude`                            | launching a fresh local Claude process from Codex for a second opinion, inspection, or empirical Splotch PR review                                                                                                          |
+| `run-claude` / `run-codex`              | launching the other vendor's local CLI for an independent second opinion — `run-claude` from Codex (also inspection and empirical Splotch PR review), `run-codex` from Claude for a read-only review of in-flight work      |
 | `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                              |
 | `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, posts by default, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`) |
 | `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                          |
