@@ -18,6 +18,7 @@
   async function clearAfterPressFeedback(event: MouseEvent) {
     const button = event.currentTarget as HTMLButtonElement;
     await Promise.allSettled(button.getAnimations().map((animation) => animation.finished));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     onclear();
   }
 </script>
