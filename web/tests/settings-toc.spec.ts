@@ -95,7 +95,7 @@ test('a jump scrolls the pane and never the card itself', async ({ page }) => {
     modal.evaluate((dialog) => {
       const card = dialog.getBoundingClientRect();
       const top = (selector: string) => dialog.querySelector(selector)!.getBoundingClientRect().top;
-      return Math.min(top('.settings-header'), top('.settings-close')) >= card.top - 0.5;
+      return Math.min(top('.settings-header'), top('.modal-close-btn')) >= card.top - 0.5;
     });
 
   // The landing scroll every open performs is enough to break this on its own.

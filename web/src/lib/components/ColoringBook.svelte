@@ -15,7 +15,7 @@
     type ResponsiveColoringImage,
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
   import ScrollCue from './design/ScrollCue.svelte';
   import { cutTrailingRow } from '$lib/actions/scrollCue';
   import { guardTapZone } from '$lib/actions/launchGuard';
@@ -55,6 +55,10 @@
   );
   const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
+
+  function nextFrame() {
+    return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
 
   // Warm the resolved theme's cover thumbnails at idle so the first picker open
   // and a later theme change both paint without fetching every cover on demand.
@@ -98,7 +102,7 @@
     setOverlayOrientation(orientation);
   });
 
-  function pickPage(page: ColoringPage) {
+  async function pickPage(page: ColoringPage) {
     const selectedOrientation = orientation;
     const selectedTheme = resolvedTheme();
     const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
@@ -106,13 +110,17 @@
     for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
       cancelImageRequest(img);
     }
-    applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
+    const dialogRetired = waitForDialogRetirement(dialogEl);
     coloringBookModal.hide();
+    await dialogRetired;
+    await nextFrame();
+    applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
   }
 
-  function clearAndClose() {
-    clearColoringPageWithMagicUndo();
+  async function clearAndClose() {
     coloringBookModal.hide();
+    await nextFrame();
+    clearColoringPageWithMagicUndo();
   }
 
   // A tile that merely *appears* under a stationary pointer/finger — on open, or
@@ -425,7 +433,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background-color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
     touch-action: manipulation;
   }
 

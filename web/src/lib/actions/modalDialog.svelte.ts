@@ -50,6 +50,57 @@ function dismissAllowed(o: ModalOptions) {
   return o.allowDismiss?.() !== false;
 }
 
+export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> {
+  if (!node.open) return Promise.resolve();
+  return new Promise((resolve) => {
+    let frame = 0;
+    let timer: number | undefined;
+    const settle = () => {
+      node.removeEventListener('close', settle);
+      cancelAnimationFrame(frame);
+      if (timer !== undefined) clearTimeout(timer);
+      resolve();
+    };
+    const scheduleFallback = () => {
+      frame = requestAnimationFrame(() => {
+        timer = window.setTimeout(() => {
+          const contentRetirementPending = [...node.children].some(
+            (child) => child instanceof HTMLElement && child.style.visibility === 'hidden'
+          );
+          if (node.open && contentRetirementPending) {
+            scheduleFallback();
+            return;
+          }
+          settle();
+        });
+      });
+    };
+    node.addEventListener('close', settle, { once: true });
+    scheduleFallback();
+  });
+}
+
+function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: () => ModalOptions) {
+  const contentRoots = [...node.children].filter(
+    (child): child is HTMLElement => child instanceof HTMLElement
+  );
+  for (const root of contentRoots) root.style.visibility = 'hidden';
+  const restoreContent = () => {
+    for (const root of contentRoots) root.style.removeProperty('visibility');
+  };
+  let timer: number | undefined;
+  const frame = requestAnimationFrame(() => {
+    timer = window.setTimeout(() => {
+      if (!getOptions().open && node.open) node.close();
+    });
+  });
+  return () => {
+    cancelAnimationFrame(frame);
+    if (timer !== undefined) clearTimeout(timer);
+    restoreContent();
+  };
+}
+
 export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOptions) {
   function isInsideDialog(x: number, y: number) {
     const r = node.getBoundingClientRect();
@@ -122,20 +173,20 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
   $effect(() => {
     const o = getOptions();
     if (o.open) {
+      if (o.origin) {
+        node.style.setProperty('--origin-x', `${o.origin.x - window.innerWidth / 2}px`);
+        node.style.setProperty('--origin-y', `${o.origin.y - window.innerHeight / 2}px`);
+      } else {
+        node.style.removeProperty('--origin-x');
+        node.style.removeProperty('--origin-y');
+      }
       if (!node.open) {
-        if (o.origin) {
-          node.style.setProperty('--origin-x', `${o.origin.x - window.innerWidth / 2}px`);
-          node.style.setProperty('--origin-y', `${o.origin.y - window.innerHeight / 2}px`);
-        } else {
-          node.style.removeProperty('--origin-x');
-          node.style.removeProperty('--origin-y');
-        }
         guardLaunchZone(o.origin ?? null);
         o.onOpen?.();
         node.showModal();
       }
     } else if (node.open) {
-      node.close();
+      return closeAfterContentRetirementPaint(node, getOptions);
     }
   });
 

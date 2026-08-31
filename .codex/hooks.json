@@ -9,6 +9,11 @@
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/tools/bootstrap-codex-worktree.mjs\"",
             "statusMessage": "Preparing the Splotch worktree"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/tools/install-stack-push-guard.mjs\"",
+            "statusMessage": "Installing the stacked-PR push guard"
           }
         ]
       }

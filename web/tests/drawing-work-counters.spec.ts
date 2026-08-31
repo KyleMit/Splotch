@@ -9,10 +9,10 @@ const COUNTER_STROKE_MOVE_STEPS = 12;
 // This spec uses Chromium-emulated geometry, including the iPad-shaped viewport; it validates
 // deterministic renderer work and memory shapes, not WebKit behavior or physical-device timing.
 
-// ADR-0085 found that more than sixteen cells worsens WebKit's per-surface overhead and seam risk;
-// this independent ceiling must not track a finer grid from production constants.
-const MAX_LIVE_SURFACE_ELEMENTS = 48;
-const MAX_REALIZED_NORMAL_BACKINGS = 16;
+// ADR-0085's restamp-era sweep retains twenty cells; this independent ceiling must not track a
+// finer grid from production constants.
+const MAX_LIVE_SURFACE_ELEMENTS = 60;
+const MAX_REALIZED_NORMAL_BACKINGS = 20;
 
 // The restamp renderer deposits wax on the normal tiles and never realizes the vestigial preview
 // planes (crayonPassBuffer.ts). Any realized crayon backing means the plane path came back.
@@ -26,7 +26,7 @@ const MAX_INPUT_OPS_PER_STROKE = 13;
 // rasterize into the rest of the grid.
 const MAX_SURFACE_VISITS_PER_OP = 4;
 
-// The retained 4×4 culling shape rasterizes thirteen input ops twenty-two times after counting the
+// The retained culling shape rasterizes thirteen input ops twenty-two times after counting the
 // three four-cell seam crossings. A higher total catches lost culling or added seam overdraw.
 const MAX_RASTERIZED_OPS_PER_STROKE = 22;
 
@@ -40,9 +40,8 @@ const RGBA_BYTES_PER_PIXEL = 4;
 // 2.346 Mpx unsafe. This is the measured upper bound every supported geometry must remain under.
 const MAX_MEASURED_SAFE_SURFACE_BYTES = 1_565_000 * RGBA_BYTES_PER_PIXEL;
 
-// Exact output of the fixed 4×4 topology and input at each supported geometry. These are ceilings,
-// not baselines with tolerance: deterministic reductions pass, while one extra backing pixel or
-// undo-patch pixel fails.
+// Safety ceilings from the 4×4 predecessor at each supported geometry. The finer retained grid
+// must reduce maximum surface area without raising aggregate or undo-patch bytes.
 const BYTE_CEILINGS = {
   phone: {
     maxLiveBackingBytes: 346_080,

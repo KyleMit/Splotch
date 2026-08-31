@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
+  import PressFeedbackCloseButton from './PressFeedbackCloseButton.svelte';
   import type { CommonIconName } from './iconTypes';
   import SectionIcon from './SectionIcon.svelte';
   import { ui, settingsModal } from '$lib/state/ui.svelte';
@@ -181,9 +182,7 @@
   })}
 >
   <div class="settings-content">
-    <button class="settings-close modal-close-btn" aria-label="Close" onclick={settingsModal.hide}>
-      <Icon name="close" class="modal-close-icon" />
-    </button>
+    <PressFeedbackCloseButton onClose={settingsModal.hide} />
 
     {#if compact.current}
       <CompactShell />

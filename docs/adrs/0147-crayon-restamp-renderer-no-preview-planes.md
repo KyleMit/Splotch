@@ -100,13 +100,12 @@ this pipeline is activated. Until that sign-off exists the plane pipeline remain
 the deferred pipeline lands behind the `configureCrayonDeposition` seam as measured, unit-tested,
 inactive code.
 
-**Unmet productization condition, recorded rather than inherited:**
-[ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) requires its repeated live-surface grid sweep
-to be re-run after any renderer or brush-buffer change, and this decision is both. The 4×4 grid was
-selected when every tile carried three live canvases and crayon mutated two of them per op; both
-pipelines here delete that hot-path cost, so the old 2×1/3×1/2×2/4×4 ordering does not establish the
-optimum under restamp or deferred deposition. The grid is carried forward **unverified** for these
-pipelines. Re-run that sweep before treating either topology as settled.
+**The productization condition was met on 2026-08-30.**
+[ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md)'s restamp-era surface-budget amendment records
+the repeated physical-device sweep. A 3×3 grid crossed the WebKit surface cliff, 5×5 cleared crayon
+but regressed Magic, and 4×5 cleared both; production therefore uses 4×5. Re-run that sweep after a
+renderer, brush-buffer, WebKit, or device-floor change rather than inheriting this topology as a
+universal optimum.
 
 The original decision text below records the state this amendment supersedes. The pipeline is
 injected through `configureCrayonDeposition` in `web/src/lib/drawing/crayonPassBuffer.ts` — vitest

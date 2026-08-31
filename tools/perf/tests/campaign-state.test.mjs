@@ -239,6 +239,7 @@ describe('resolved theme expression', () => {
 describe('the Settings selectors both transports share', () => {
   const source = (path) => readFileSync(join(ROOT, 'web', 'src', 'lib', path), 'utf8');
   const settingsModal = source('components/SettingsModal.svelte');
+  const pressFeedbackCloseButton = source('components/PressFeedbackCloseButton.svelte');
   const settingsButton = source('components/SettingsButton.svelte');
   const compactShell = source('components/settings/CompactShell.svelte');
   const appearanceSection = source('components/settings/AppearanceSection.svelte');
@@ -248,7 +249,8 @@ describe('the Settings selectors both transports share', () => {
     expect(SETTINGS_MODAL).toBe('#settingsModal');
     expect(settingsModal).toContain('id="settingsModal"');
     expect(SETTINGS_CLOSE_BUTTON).toContain('aria-label="Close"');
-    expect(settingsModal).toContain('aria-label="Close"');
+    expect(settingsModal).toContain('<PressFeedbackCloseButton');
+    expect(pressFeedbackCloseButton).toMatch(/<button[^>]*aria-label="Close"/);
   });
 
   it('finds the button that opens it', () => {
