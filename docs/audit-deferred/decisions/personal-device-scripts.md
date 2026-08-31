@@ -29,8 +29,8 @@ Verified at HEAD (`package.json` scripts block and `scripts-info`):
   mobile guide. Nothing masquerades as portable.
 * The pinned scripts are load-bearing references: `.ruler/skills/mobile/android.md` prescribes
   `npm run android:run:device` as the fix for adb's "more than one device/emulator" error, and
-  `.ruler/skills/run-performance-matrix/references/platforms.md` uses both pinned run commands so
-  performance-matrix captures land on the exact devices the committed matrix
+  `.ruler/skills/capture-performance-matrix/references/platforms.md` uses both pinned run commands
+  so performance-matrix captures land on the exact devices the committed matrix
   (`scrapbook/performance/`) was recorded against. Pinning known hardware in a named script is what
   keeps those snapshots comparable — it is a feature here, not an accident.
 
@@ -47,7 +47,7 @@ Verified at HEAD (`package.json` scripts block and `scripts-info`):
    wrapper scripts plus a config format plus documentation — machinery serving hypothetical
    contributors who already have `android:run` / `ios:run`.
 4. **Delete the pinned scripts** (the prior attempt). Removes working tooling and orphans the mobile
-   and run-performance-matrix skill references. Wrong on the merits, independent of the sandbox
+   and capture-performance-matrix skill references. Wrong on the merits, independent of the sandbox
    failure that stopped it.
 5. **Resolve simulator by name at runtime** (helper mapping "iPad mini (A17 Pro)" → UDID via
    `xcrun simctl list --json`). Makes `ios:run:emulator` machine-portable, but it is macOS-only glue

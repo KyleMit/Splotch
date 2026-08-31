@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Improve Performance Matrix'
+  short_description: 'Improve Splotch performance across deployment targets'
+  default_prompt: 'Use $improve-performance-matrix to drive the deployment-target performance matrix from a fresh inventory to zero current, scoreable red cells.'

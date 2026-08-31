@@ -152,7 +152,7 @@ was earned, and none of them raise an error. Read
 capture, and the `profiling` skill for what each `perf:*` command measures.
 
 For a full cross-target snapshot rather than a single capture, continue with the
-`run-performance-matrix` skill once this preflight is green.
+`capture-performance-matrix` skill once this preflight is green.
 
 ## While capturing
 
