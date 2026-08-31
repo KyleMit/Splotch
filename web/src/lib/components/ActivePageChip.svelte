@@ -5,6 +5,7 @@
     type ColoringPage,
     type ResponsiveColoringImage,
   } from '$lib/state/books';
+  import { waitForPressFeedbackToSettle } from '$lib/actions/pressFeedback';
 
   interface Props {
     page: ColoringPage;
@@ -17,8 +18,7 @@
 
   async function clearAfterPressFeedback(event: MouseEvent) {
     const button = event.currentTarget as HTMLButtonElement;
-    await Promise.allSettled(button.getAnimations().map((animation) => animation.finished));
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await waitForPressFeedbackToSettle(button);
     onclear();
   }
 </script>
