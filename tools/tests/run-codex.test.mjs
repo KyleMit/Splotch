@@ -22,6 +22,7 @@ import {
 } from '../../.claude/skills/run-codex/scripts/codex-subscription-auth.mjs';
 import { assertSubscriptionLogin } from '../../.claude/skills/run-codex/scripts/codex-health.mjs';
 import {
+  CANCELLATION_SIGNALS,
   renderProgressEvent,
   runCodexStreaming,
 } from '../../.claude/skills/run-codex/scripts/codex-stream.mjs';
@@ -234,6 +235,12 @@ describe('run-codex streaming lifecycle', () => {
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
+  });
+
+  // Backgrounding a long review is the documented invocation, so a closed shell session must not
+  // leave the detached Codex group alive.
+  it('cancels on a hangup as well as an interrupt', () => {
+    expect(CANCELLATION_SIGNALS).toEqual(['SIGINT', 'SIGTERM', 'SIGHUP']);
   });
 
   // A leaked handler would silently accumulate across the runs a single session makes.

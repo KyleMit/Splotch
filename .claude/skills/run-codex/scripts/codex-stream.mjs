@@ -8,7 +8,10 @@ export const STREAM_STALL_TIMEOUT_MS = 10 * 60 * 1000;
 // A wedged tool tree that ignores SIGTERM gets this long before the process group is SIGKILLed.
 const STALL_SIGKILL_GRACE_MS = 10 * 1000;
 const GROUP_LIVENESS_POLL_MS = 100;
-const CANCELLATION_SIGNALS = Object.freeze(['SIGINT', 'SIGTERM']);
+// SIGHUP belongs here because the skill documents backgrounding a long review: when that
+// terminal or shell session closes the wrapper is hung up, and the detached Codex group would
+// otherwise survive it and keep spending plan usage.
+export const CANCELLATION_SIGNALS = Object.freeze(['SIGINT', 'SIGTERM', 'SIGHUP']);
 const PROGRESS_TEXT_MAX_CHARS = 160;
 const STDERR_TAIL_MAX_CHARS = 4096;
 // The raw log embeds whole command outputs and lives in a listable shared temp directory, so it is
