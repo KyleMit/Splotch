@@ -66,6 +66,16 @@ that orphaned a still-billing Codex process. That is the strongest evidence avai
 does what it claims, and re-running it on a change to this package is the cheapest regression test
 it has.
 
+Two limits of using the skill on its own package showed up in the second round. Codex cannot run the
+test suite from inside the read-only sandbox — Vitest needs to write a Vite cache — so it can review
+a test's shape but never whether that test fails against the behavior it claims to pin. That has to
+be checked by hand, by reverting the fix and rerunning, and doing so caught a test that passed in
+both states: the log-flush ordering is unobservable through a real file, because the flush always
+wins the race in practice. Pinning it needed the injected `createLogStream` seam, which follows the
+injectable-timeout precedent already in that function. A volume-based attempt at 20,000 lines was
+tried first and could not distinguish the two versions either; it was removed rather than kept as
+false assurance.
+
 The ten-minute stall timeout is inherited from `run-claude` rather than measured. Observed reviews
 of a small diff run three to eight minutes end to end with roughly one command every fifteen
 seconds, so the timeout has never fired; a repo-wide review might legitimately approach it.

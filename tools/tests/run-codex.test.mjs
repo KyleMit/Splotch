@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { Writable } from 'node:stream';
 import { join } from 'node:path';
 import {
   buildCodexArgs,
@@ -210,7 +211,12 @@ describe('run-codex streaming lifecycle', () => {
   const STALL_TIMEOUT_MS = 200;
   const SIGKILL_GRACE_MS = 200;
 
-  function streamingRun(nodeScript, directory, logPath = join(directory, `${randomUUID()}.jsonl`)) {
+  function streamingRun(
+    nodeScript,
+    directory,
+    logPath = join(directory, `${randomUUID()}.jsonl`),
+    createLogStream = undefined
+  ) {
     const run = runCodexStreaming(
       {
         command: process.execPath,
@@ -220,6 +226,7 @@ describe('run-codex streaming lifecycle', () => {
         prompt: '',
         logPath,
         onProgress: () => {},
+        ...(createLogStream ? { createLogStream } : {}),
       },
       STALL_TIMEOUT_MS,
       SIGKILL_GRACE_MS
@@ -258,17 +265,29 @@ describe('run-codex streaming lifecycle', () => {
     expect(CANCELLATION_SIGNALS).toEqual(['SIGINT', 'SIGTERM', 'SIGHUP']);
   });
 
-  // The log is the run's only audit trail, so a result must never be reported ahead of it.
-  it('flushes the log before reporting a result', async () => {
+  // The log is the run's only audit trail, so a result must never be reported ahead of it. A real
+  // file cannot show this: the flush wins the race in practice, so the failing final write is
+  // injected instead.
+  it('fails the run when the log fails while flushing its final write', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'run-codex-stream-'));
+    const failOnFlush = () =>
+      new Writable({
+        write(chunk, encoding, callback) {
+          callback();
+        },
+        final(callback) {
+          callback(new Error('no space left on device'));
+        },
+      });
     try {
-      const run = streamingRun(
-        'process.stdout.write(\'{"type":"thread.started","thread_id":"t"}\\n\')',
-        directory
-      );
-      await run;
-
-      expect(readFileSync(run.logPath, 'utf8')).toContain('thread.started');
+      await expect(
+        streamingRun(
+          'process.stdout.write(\'{"type":"thread.started","thread_id":"t"}\\n\')',
+          directory,
+          join(directory, 'unused.jsonl'),
+          failOnFlush
+        )
+      ).rejects.toThrow(/stream log .* failed: no space left on device/);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

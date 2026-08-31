@@ -85,10 +85,15 @@ async function terminateGroup(pid, sigkillGraceMs) {
   }
 }
 
+// Injected only by tests: a log that fails while flushing its final write cannot be provoked
+// through a real file, and that is exactly the case that must reject rather than report success
+// over a truncated audit trail.
+const defaultLogStream = (path) => createWriteStream(path, STREAM_LOG_OPTIONS);
+
 // `stallTimeoutMs` and `sigkillGraceMs` stay injectable so tests can trip the watchdog and the
 // SIGKILL escalation without waiting minutes.
 export function runCodexStreaming(
-  { command, args, cwd, env, prompt, logPath, onProgress },
+  { command, args, cwd, env, prompt, logPath, onProgress, createLogStream = defaultLogStream },
   stallTimeoutMs = STREAM_STALL_TIMEOUT_MS,
   sigkillGraceMs = STALL_SIGKILL_GRACE_MS
 ) {
@@ -101,7 +106,7 @@ export function runCodexStreaming(
       stdio: ['pipe', 'pipe', 'pipe'],
       detached: true,
     });
-    const log = createWriteStream(logPath, STREAM_LOG_OPTIONS);
+    const log = createLogStream(logPath);
     let stderrTail = '';
     let lastEvent = 'none';
     let threadId;
