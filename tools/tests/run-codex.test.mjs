@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { Writable } from 'node:stream';
 import { join } from 'node:path';
 import {
   buildCodexArgs,
+  buildRoundPrompt,
   buildReviewPrompt,
   describeScope,
+  ISOLATION_FEATURES,
   parseRunArgs,
   readPromptFile,
   resolveWorktree,
@@ -22,6 +24,14 @@ import {
   SUBSCRIPTION_MODEL_PROVIDER,
 } from '../../.claude/skills/run-codex/scripts/codex-subscription-auth.mjs';
 import { assertSubscriptionLogin } from '../../.claude/skills/run-codex/scripts/codex-health.mjs';
+import {
+  parseSessionRecord,
+  readSessionRecord,
+  removeSessionRecord,
+  sessionKey,
+  sessionRecordPath,
+  writeSessionRecord,
+} from '../../.claude/skills/run-codex/scripts/codex-session.mjs';
 import {
   CANCELLATION_SIGNALS,
   renderProgressEvent,
@@ -102,6 +112,29 @@ describe('run-codex argument contract', () => {
 
 describe('run-codex command construction', () => {
   const options = { profile: 'review', scope: 'base', base: 'main', effort: 'high' };
+
+  // Every one of these was a real escape: an on-request approval policy let a "read-only" run
+  // create files, and the built-in `apps` MCP server let one post a review to a pull request.
+  it('applies every sandbox-escape control on every profile', () => {
+    for (const args of [
+      buildCodexArgs(options),
+      buildCodexArgs({ ...options, profile: 'ask' }),
+      buildCodexArgs({ ...options, resumeThreadId: '00000000-0000-4000-8000-000000000000' }),
+    ]) {
+      expect(args).toContain('approval_policy="never"');
+      expect(args).toContain('mcp_servers={}');
+      for (const feature of ISOLATION_FEATURES) {
+        expect(args.slice(args.indexOf('--disable'))).toContain(feature);
+      }
+    }
+  });
+
+  it('resumes the recorded thread and reads its prompt from stdin', () => {
+    const args = buildCodexArgs({ ...options, resumeThreadId: 'abc' });
+
+    expect(args.slice(0, 2)).toEqual(['exec', 'resume']);
+    expect(args.slice(-2)).toEqual(['abc', '-']);
+  });
 
   it('pins the read-only sandbox and the subscription provider on every profile', () => {
     for (const args of [
@@ -319,5 +352,67 @@ describe('run-codex streaming lifecycle', () => {
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
+  });
+});
+
+describe('run-codex review rounds', () => {
+  const options = { profile: 'review', scope: 'base', base: 'main', effort: 'high' };
+
+  it('opts into a fresh reviewer and into ending the session', () => {
+    expect(parseRunArgs(['--fresh'])).toMatchObject({ fresh: true });
+    expect(parseRunArgs(['--end-session'])).toEqual({ endSession: true });
+  });
+
+  // The point of resuming: the reviewer must check its own earlier findings rather than treat the
+  // round as a fresh surface, and must be told that finding nothing is a valid answer.
+  it('frames a later round as verification rather than a new hunt', () => {
+    const prompt = buildRoundPrompt(options, { rounds: 2 }, 'abc123 Fix the thing', undefined);
+
+    expect(prompt).toContain('round 3');
+    expect(prompt).toContain('rounds 1 through 2');
+    expect(prompt).toContain('abc123 Fix the thing');
+    expect(prompt).toMatch(/already reported were actually addressed/);
+    expect(prompt).toMatch(/no defects is a correct and expected outcome/i);
+  });
+
+  it('tells the reviewer plainly when nothing landed since the last round', () => {
+    expect(buildRoundPrompt(options, { rounds: 1 }, '', undefined)).toContain('(no new commits)');
+  });
+
+  it('keeps the no-manufactured-findings instruction on a first round too', () => {
+    expect(buildReviewPrompt(options, undefined)).toMatch(/do not manufacture findings/i);
+  });
+});
+
+describe('run-codex session records', () => {
+  it('keys a session by checkout and branch', () => {
+    expect(sessionKey('/repo', 'main')).toBe(sessionKey('/repo', 'main'));
+    expect(sessionKey('/repo', 'main')).not.toBe(sessionKey('/repo', 'other'));
+    expect(sessionKey('/repo', 'main')).not.toBe(sessionKey('/elsewhere', 'main'));
+  });
+
+  it('round-trips a record and discards an unusable one', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'run-codex-session-'));
+    try {
+      const path = sessionRecordPath(sessionKey('/repo', 'main'), directory);
+      const record = { threadId: randomUUID(), branch: 'main', rounds: 1, head: 'abc' };
+      writeSessionRecord(path, record);
+
+      expect(readSessionRecord(path)).toEqual(record);
+      expect(statSync(path).mode & 0o077).toBe(0);
+
+      removeSessionRecord(path);
+      expect(readSessionRecord(path)).toBeUndefined();
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  // A corrupt record must not reach the command line as a thread id of its own.
+  it('refuses a record whose thread id is not a uuid', () => {
+    expect(parseSessionRecord('{"threadId":"--fresh","rounds":1}')).toBeUndefined();
+    expect(
+      parseSessionRecord('{"threadId":"00000000-0000-4000-8000-000000000000"}')
+    ).toBeUndefined();
   });
 });

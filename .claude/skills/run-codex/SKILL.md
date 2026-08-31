@@ -5,8 +5,11 @@ description: Get an independent second opinion from a fresh Codex CLI process on
 
 # Run Codex
 
-Codex reviews the work; it never changes it. Both profiles run the CLI in a read-only sandbox, so
-Codex can read the checkout, run `git`, and report — and cannot edit, commit, or publish anything.
+Codex reviews the work; it never changes it. Both profiles pin a read-only sandbox, deny approval
+escalation, and disable every ambient tool surface, so Codex can read the checkout, run `git`, and
+report — and cannot edit files, mutate git state, or reach GitHub. All four controls are
+load-bearing and asserted by tests; see [permissions.md](references/permissions.md) for what each
+one closes.
 
 Invoke through the npm scripts below rather than a bare `codex` command. The wrappers pin the
 subscription provider, strip API-billing environment variables, stream progress, and terminate a
@@ -70,6 +73,30 @@ npm run --silent run-codex:ask -- --prompt-file /private/tmp/run-codex-question-
 
 Remove the prompt file when the task is done.
 
+## Review rounds
+
+The first review on a branch opens a fresh reviewer. Later reviews on the same branch **resume it**,
+so round two verifies whether its own earlier findings were addressed rather than meeting the code
+cold. The result JSON carries `round` and `resumed`, and stderr names the thread being resumed.
+
+This matters more than the token saving: a reviewer asked cold to find defects for the fifth time
+will find something whether or not anything is there. Every prompt also states outright that
+reporting no defects is a correct outcome.
+
+Start over, or clean up when the work is done:
+
+```bash
+npm run --silent run-codex:review -- --fresh --uncommitted
+```
+
+```bash
+npm run --silent run-codex:review -- --end-session
+```
+
+Use `--fresh` when the branch moves on to unrelated work, or when you want an independent opinion
+uncoloured by the earlier rounds. If Codex has pruned the recorded thread, the wrapper says so and
+starts a fresh reviewer by itself rather than failing.
+
 ## Options
 
 Both profiles accept `--cwd <dir>` (defaults to the current directory; must be inside a git
@@ -102,4 +129,7 @@ miss constraints you know about. Report what you confirmed, what you rejected an
 real ones. Do not paste the raw review at the user as though it were settled.
 
 This skill produces a review for you to act on locally. To post a review onto a GitHub PR, use the
-`leave-pr-review` skill — the Codex wrapper cannot write anywhere, including GitHub.
+`leave-pr-review` skill — the Codex wrapper cannot write anywhere, including GitHub. Do not relax
+any of the isolation controls to let it publish directly: an early version of this skill was
+isolated in name only, and the reviewer used a built-in GitHub tool to post a review to its own pull
+request unasked.

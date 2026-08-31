@@ -53,6 +53,46 @@ no focus instructions it passes the scope flag and lets Codex's harness drive; w
 passes `-` and moves the scope into the prompt text. If a future Codex release lifts that
 restriction, collapse the two shapes back into one.
 
+## "Read-only" was read-only in name only
+
+The first version pinned `sandbox_mode="read-only"` and the docs claimed Codex "cannot edit files,
+commit, push, or reach GitHub". Both halves were false, and the skill found it out by reviewing its
+own pull request: the reviewer read `leave-pr-review`, created a git worktree, and posted a review
+to PR 1520 — while reporting, as its finding, that the sandbox did not prevent exactly that.
+
+Two independent escapes, each needing its own control:
+
+* **Approval escalation.** `sandbox_mode` sets where the sandbox starts, not where the run ends.
+  With `approval_policy="on-request"` Codex asks to step outside, and a configured
+  `approvals_reviewer` grants it with no human involved. Measured: read-only alone created a file;
+  `approval_policy="never"` denies it. Anyone hardening a Codex invocation should pin the approval
+  policy first and the sandbox second — the sandbox is the weaker of the two.
+* **Ambient tool surfaces.** Hooks, configured MCP servers, and the built-in `apps` server all run
+  outside the sandbox. `apps` is the dangerous one: it ships GitHub read *and write* tools with
+  their own credentials, so no filesystem policy touches it.
+
+The general lesson is the same one the billing guard keeps teaching: a guarantee that rests on one
+setting is a guess. Both of these are now asserted per-profile by tests, because a control that goes
+missing here fails silently and looks like a working review.
+
+Web search is deliberately left on. It cannot write, and the round that found these gaps used it to
+check Codex's own documentation. The honest cost is that a query is outbound traffic.
+
+## Rounds resume; the framing is half the point
+
+Sessions are keyed to checkout plus branch and resumed on later rounds, mirroring what `run-claude`
+does for PR review rounds. The token saving is real but secondary. The reason is that a reviewer
+asked cold to find defects for the fifth time will find something whether or not anything is there —
+so a later round is told which findings it already made, asked to check those were addressed first,
+and told outright that no defects is a correct answer.
+
+`codex exec review` spawns a child thread that does the work under a thin parent, and only the
+parent id reaches the JSON stream. Both resume, very differently: the parent carries the verdicts at
+about 16k tokens, the child the full working context at about 293k. The parent is what this skill
+records — it is the documented surface, it holds the judgements that matter across rounds, and it
+does not grow toward the context limit the way the child would. Finding the child would mean parsing
+Codex's private session store.
+
 ## Unvalidated
 
 Sessions persist under Codex's own store; the skill exposes no `--persist` or `--end-session`
