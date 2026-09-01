@@ -25,6 +25,7 @@ import {
   runToggleRoundTrip,
   screenshotActivation,
   selectedActions,
+  settingsSectionLabelSelector,
   settingsSectionMeasurement,
   settingsSectionSetupReady,
   uiActivationLabel,
@@ -333,6 +334,15 @@ describe('action state planning', () => {
       label: 'open Settings section: Sound',
       ready: expect.stringContaining('.settings-back'),
     });
+  });
+
+  it('reads only the stable Settings title instead of one-time activity copy', () => {
+    expect(settingsSectionLabelSelector('releases', true)).toBe(
+      '#settingsModal button[data-section="releases"] .toc-text > span:first-child'
+    );
+    expect(settingsSectionLabelSelector('releases', false)).toBe(
+      '#settingsModal button[data-section="releases"] .hub-title'
+    );
   });
 
   it('waits for stacked Settings controls to scroll into the active sidebar section', () => {
