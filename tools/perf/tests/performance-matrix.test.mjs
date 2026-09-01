@@ -209,6 +209,7 @@ describe('deployment matrix report', () => {
     expect(html).toContain('<b>0/1</b>');
     expect(html).toContain('Action 1: expand action drawer');
     expect(html).toContain('Portrait · Light');
+    expect(html).toContain('ready P95 1 ms');
     expect(html).not.toContain('idle frame control');
   });
 
@@ -648,6 +649,7 @@ describe('deployment matrix report', () => {
 
     expect(matrix.targets[0].modes[0].actions.worst).toEqual({
       firstFrameP95: null,
+      readyP95: 1,
       postActionFrameP95: null,
       postActionFrameMax: null,
     });
@@ -951,6 +953,47 @@ describe('deployment matrix report', () => {
         from: 'data.json',
         reason: 'The raw captures were local scratch and are gone.',
       });
+    });
+
+    it('backfills readiness summaries when preserved action evidence predates the column', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([
+        { ...action('slow action', true), ready: { ...distribution, p95: 42 } },
+        { ...action('faster action', true), ready: { ...distribution, p95: 7 } },
+      ]);
+      delete actions.worst.readyP95;
+      publishReport(manifestDirectory, { actions });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions.worst.readyP95).toBe(42);
+      expect(renderMarkdown(matrix)).toContain('| 42 |');
+    });
+
+    it('renders preserved action evidence that predates readiness samples', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([action('legacy action', true)]);
+      delete actions.worst.readyP95;
+      for (const result of actions.results) delete result.ready;
+      publishReport(manifestDirectory, { actions });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions.worst.readyP95).toBeNull();
+      expect(renderMarkdown(matrix)).toContain('| — |');
+      expect(renderReport(matrix)).toContain('ready P95 — ms');
     });
 
     it('keeps a freshly captured untracked section scoreable and labels its provenance', () => {

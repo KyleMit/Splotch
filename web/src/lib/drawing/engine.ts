@@ -1085,7 +1085,7 @@ export function setColorSheet(colorUrl: string | null) {
 export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppearance: () => void) {
   const targetSourceKey = targetUrl ? pageCompositionKey(targetUrl) : null;
   const prepared = beginTiledMagicRecode(targetSourceKey, restoreAppearance);
-  if (targetUrl) deferColorSheet(targetUrl);
+  deferColorSheet(targetUrl);
   if (prepared) setCanUndo(true);
   return prepared;
 }
@@ -1215,6 +1215,8 @@ function wireMagicBrushHost(): void {
   initMagicBrush({
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
+    hasRetainedOps: hasRetainedTiledMagicOps,
+    magicActive: () => magicActive,
     repaint: recodeMagicOpsToCurrentSheet,
   });
 }

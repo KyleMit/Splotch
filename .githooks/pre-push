@@ -1,5 +1,12 @@
 #!/bin/sh
 set -eu
 
-repo_root=$(git rev-parse --show-toplevel)
-exec node "$repo_root/tools/guard-stack-push.mjs" "$@"
+hook_dir=$(CDPATH= cd "$(dirname "$0")" && pwd -P)
+guard="$hook_dir/../tools/guard-stack-push.mjs"
+
+if [ ! -f "$guard" ]; then
+  echo "stack push guard: implementation not found beside hooks directory: $guard" >&2
+  exit 1
+fi
+
+exec node "$guard" "$@"

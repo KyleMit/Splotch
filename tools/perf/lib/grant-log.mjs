@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
@@ -10,23 +11,43 @@ import { ROOT } from '../../lib/proc.mjs';
 // an untracked log is one `rm -rf perf-profiles` from erasing the only
 // grant-lifetime evidence.
 export const GRANT_LOG = join(ROOT, 'perf-profiles', 'evidence', 'operator', 'ipad-grant-log.tsv');
+export const GRANT_LOG_HEADER = 'timestamp\tdevice\toutcome\tdetail\n';
+const DEVICE_PSEUDONYM = /^device-[0-9a-f]{12}$/;
+
+export function grantLogDevice(udid) {
+  const digest = createHash('sha256')
+    .update('splotch-ipad-grant-log\0')
+    .update(String(udid))
+    .digest('hex')
+    .slice(0, 12);
+  return `device-${digest}`;
+}
+
+function normalizedGrantLogDevice(device) {
+  return DEVICE_PSEUDONYM.test(String(device)) ? device : grantLogDevice(device);
+}
 
 // Values are flattened to single-line fields so a multi-sentence Appium
 // message cannot break the TSV.
-export function grantLogLine({ timestamp, udid, outcome, detail }) {
+export function grantLogLine({ timestamp, device, outcome, detail }) {
   const cell = (value) =>
     String(value ?? '')
       .replace(/\s+/g, ' ')
       .trim();
-  return `${cell(timestamp)}\t${cell(udid)}\t${cell(outcome)}\t${cell(detail)}\n`;
+  return `${cell(timestamp)}\t${cell(device)}\t${cell(outcome)}\t${cell(detail)}\n`;
 }
 
 export function recordGrantAttempt(udid, outcome, detail, { logPath = GRANT_LOG } = {}) {
   mkdirSync(join(logPath, '..'), { recursive: true });
-  if (!existsSync(logPath)) appendFileSync(logPath, 'timestamp\tudid\toutcome\tdetail\n');
+  if (!existsSync(logPath)) appendFileSync(logPath, GRANT_LOG_HEADER);
   appendFileSync(
     logPath,
-    grantLogLine({ timestamp: new Date().toISOString(), udid, outcome, detail })
+    grantLogLine({
+      timestamp: new Date().toISOString(),
+      device: grantLogDevice(udid),
+      outcome,
+      detail,
+    })
   );
 }
 
@@ -37,8 +58,8 @@ function readGrantLog({ logPath = GRANT_LOG } = {}) {
     .slice(1)
     .filter(Boolean)
     .map((line) => {
-      const [timestamp, udid, outcome, detail] = line.split('\t');
-      return { timestamp, udid, outcome, detail };
+      const [timestamp, device, outcome, detail] = line.split('\t');
+      return { timestamp, device: normalizedGrantLogDevice(device), outcome, detail };
     });
 }
 
@@ -58,9 +79,9 @@ export function isGrantDenial(entry) {
 // lasted — an ok followed (in time) by a grant denial on the same device. Both
 // are null until the log holds the rows to support them; the summary never
 // invents a lifetime the data cannot carry (the campaign's calibration rule).
-export function grantLogSummary(entries, { udid, now = Date.now() } = {}) {
+export function grantLogSummary(entries, { device, now = Date.now() } = {}) {
   const rows = entries
-    .filter((entry) => !udid || entry.udid === udid)
+    .filter((entry) => !device || entry.device === device)
     .map((entry) => ({ ...entry, at: Date.parse(entry.timestamp) }))
     .filter((entry) => Number.isFinite(entry.at))
     .sort((a, b) => a.at - b.at);
@@ -91,8 +112,14 @@ function formatAge(ms) {
 // The one-line grant context the preflight prints before it attempts a
 // launch: how stale the last good grant is, and the tightest lifetime bound
 // the log has actually observed — never a guessed one.
-export function describeGrantHistory(udid, { entries = readGrantLog(), now = Date.now() } = {}) {
-  const summary = grantLogSummary(entries, { udid, now });
+export function describeGrantHistory(
+  udid,
+  { entries, logPath = GRANT_LOG, now = Date.now() } = {}
+) {
+  const summary = grantLogSummary(entries ?? readGrantLog({ logPath }), {
+    device: grantLogDevice(udid),
+    now,
+  });
   if (!summary.attempts) return 'Grant log: no recorded launch attempts for this iPad yet.';
   const lastOk =
     summary.lastOkAgeMs === null

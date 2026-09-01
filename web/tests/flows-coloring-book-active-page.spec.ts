@@ -196,7 +196,9 @@ test.describe('active-page chip on a small viewport', () => {
     await expect(page.locator('#coloringOverlay')).toBeHidden();
   });
 
-  test('compresses while pressed and clears immediately on release', async ({ page }) => {
+  test('shows danger feedback while pressed and clears immediately on release', async ({
+    page,
+  }) => {
     await gotoApp(page);
     await openDrawer(page);
     await applyFarmPage(page);
@@ -207,9 +209,20 @@ test.describe('active-page chip on a small viewport', () => {
     const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
     const box = await chip.boundingBox();
     expect(box).not.toBeNull();
+    const pressedColors = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = 'var(--danger-wash)';
+      probe.style.borderColor = 'var(--danger-text)';
+      document.body.append(probe);
+      const style = getComputedStyle(probe);
+      const colors = { background: style.backgroundColor, border: style.borderColor };
+      probe.remove();
+      return colors;
+    });
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
     await page.mouse.down();
-    await expect(chip).not.toHaveCSS('transform', 'none');
+    await expect(chip).toHaveCSS('background-color', pressedColors.background);
+    await expect(chip).toHaveCSS('border-color', pressedColors.border);
     await page.mouse.up();
 
     await expect(dialog).toBeHidden();
