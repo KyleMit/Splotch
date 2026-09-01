@@ -844,17 +844,20 @@ Two habits avoid it, and the second also fixes the target:
 **Promote the campaign's representative captures into the tracked corpus** as a closing step:
 
 ```sh
-npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=<name>
+npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=<name> \
+  --product-commit=<capture-product-sha>
 ```
 
 `perf-profiles/` is gitignored, so everything a campaign captured disappears from a clean checkout.
-That is what makes a metric correction cost device time rather than seconds: when the beat estimator
-and the charge were corrected, every published cell kept the old number because re-scoring needs the
-raw frames. ADR-0138 tracks one capture per target × brush so the next correction can be re-scored
-against history with `perf:rescore`. Selection prefers a scoreable representative (issue 1305: a
-plain run once kept a failed eraser beside three passing captures), and the promotion **refuses** a
-cell whose every candidate failed a number-invalidating check — `--allow-failed` keeps one
-deliberately, `--filter` narrows to cells that can be scored.
+Promotion requires the exact capture product SHA and stamps it into `index.json`; copy that SHA from
+the campaign's recorded build identity rather than assuming the current checkout still names the
+same bytes. That is what makes a metric correction cost device time rather than seconds: when the
+beat estimator and the charge were corrected, every published cell kept the old number because
+re-scoring needs the raw frames. ADR-0138 tracks one capture per target × brush so the next
+correction can be re-scored against history with `perf:rescore`. Selection prefers a scoreable
+representative (issue 1305: a plain run once kept a failed eraser beside three passing captures),
+and the promotion **refuses** a cell whose every candidate failed a number-invalidating check —
+`--allow-failed` keeps one deliberately, `--filter` narrows to cells that can be scored.
 
 This step is not enforced anywhere, and the moment it gets skipped is the moment a campaign ends in
 a hurry — which is every campaign.

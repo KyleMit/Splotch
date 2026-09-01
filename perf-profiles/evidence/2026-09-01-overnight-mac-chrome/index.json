@@ -1,5 +1,6 @@
 {
   "campaign": "2026-09-01-overnight-mac-chrome",
+  "productCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
   "capturedFrom": "perf-profiles/overnight-20260831",
   "kept": [
     {

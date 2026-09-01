@@ -417,7 +417,10 @@ export async function runOperatorSession() {
   const handPasses = results.filter(({ item, status }) => item.brush && status === 'pass');
   if (handPasses.length) {
     console.log('\nNext steps for the captures:');
-    console.log(`  npm run perf:evidence:keep -- --corpus=${outputDir} --campaign=<name>`);
+    console.log(
+      `  npm run perf:evidence:keep -- --corpus=${outputDir} --campaign=<name> ` +
+        '--product-commit=<capture-product-sha>'
+    );
     console.log('  Then post the calibration readings to issue 1275.');
   }
   console.log('\nThe rig stays up. The campaign can continue unattended from here.');

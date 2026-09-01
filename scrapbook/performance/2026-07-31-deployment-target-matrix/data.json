@@ -1,15 +1,15 @@
 {
   "schemaVersion": 3,
-  "recordedOn": "2026-08-29",
-  "productCommit": "e4877a1065dc3441df0c023141fbf3ef66787dff",
+  "recordedOn": "2026-09-01",
+  "productCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
   "limitations": [
-    "The 2026-08-29 campaign measured product commit e4877a1065dc3441df0c023141fbf3ef66787dff. Later capture-time commits add only representative performance evidence, so their product staleness digest is equivalent.",
-    "All four orientation/theme modes were recaptured for physical iPad web/native, physical Android web, and all three Mac engines in the 2026-08-29 campaign. Android physical native refreshed drawing in all four modes, but not undo or actions. The four simulator/emulator targets remain product-surface current from commit 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 because the matrix staleness digest finds no intervening product change; that verdict does not claim their instruments were revalidated after the 2026-08-28 capture.",
+    "The 2026-09-01 campaign measured product commit c80fc3b240a3a7925257c9eea055cd83739c7eae. Later capture-time commits add only representative performance evidence, so their product staleness digest is equivalent.",
+    "All four orientation/theme modes were recaptured for physical iPad web, iPad Simulator web, and all three Mac engines in the 2026-09-01 campaign. The other six targets remain stale after 11 measured-surface commits and are not current product evidence; the aborted physical Android web run produced only four valid cells and was not folded.",
     "Android physical native undo remains preserved at 6961e50b685d441e88b37d20d3f38a27136572fb, while actions retain their prior per-mode provenance (6961e50b685d441e88b37d20d3f38a27136572fb in portrait and ce88c8e587ac45847c419e05ef7a79d282bc747a in landscape). This is blocked historical evidence, not current-equivalent carryover: the native action runner rejects the physical Android UDID through its iOS XCUITest path before capture. Those action sweeps predate ADR-0142's resize anchor, so their rotation first-frame numbers are not comparable with any other rotation row in this matrix. #1387 tracks teaching that sweep the compact Android shell and transport contract.",
     "Android physical web and native drawing use the ADR-0135 split input/measurement transport. Fresh artifacts record the driving cadence, input fidelity, and page identity used to decide whether a result is scoreable. Browser page identity is proven by URL; split-native page identity is unprovable because the installed app loads the remote probe-host URL, so those captures instead require native foreground-package attestation.",
-    "The campaign accepted every faithful red drawing gate and did not rerun a valid result to turn it green. Capture retries were reserved for transport or harness failures; the completed 2026-08-29 target ledgers record no such retries for the iPad, Android web, or desktop runs.",
+    "The campaign accepted every faithful red drawing or action gate and did not rerun a valid result to turn it green. Retries were reserved for transport or input-fidelity failures. The iPad Simulator web landscape-dark eraser failed cadence on attempts 1-4 through the long-lived Appium server at port 4723, then passed every fidelity check with the same product, gesture, and scorer through a fresh server at port 4725; the campaign ledger retains all five attempts, and docs/PROFILING-IPAD.md records the stale-control-plane recovery.",
     "Physical iPad capture needs a root-owned RemoteXPC tunnel before iOS 26 XCUITest discovery sees the device. See docs/PROFILING-IPAD.md.",
     "A landscape phone renders the compact Settings shell, which offers quick toggles and a pointer to portrait instead of the section list. Compare action modes against the same recorded settingsShell; a different label set between portrait and landscape is a shell difference, not a regression.",
     "Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
@@ -22,7 +22,7 @@
   ],
   "preservedEvidence": {
     "from": "data.json",
-    "reason": "Per-mode raw captures land in gitignored perf-profiles scratch. ADR-0138 deliberately tracks one whole representative capture per target and brush instead of every orientation-theme cell, so historical sections stay preserved while the 2026-08-28 simulator/emulator and 2026-08-29 physical/desktop recapture sections are marked captured-untracked. Both states regenerate from the last normalized data.json, but only captured-untracked sections continue to claim currency and remain subject to check:matrix-staleness."
+    "reason": "Per-mode raw captures land in gitignored perf-profiles scratch. ADR-0138 deliberately tracks one whole representative capture per target and brush instead of every orientation-theme cell. The five targets refreshed on 2026-09-01 are marked captured-untracked; the six targets awaiting this campaign's recapture are preserved historical evidence. Both states regenerate from the last normalized data.json, but only captured-untracked sections claim currency and remain subject to check:matrix-staleness."
   },
   "candidateActions": [
     {
@@ -662,7 +662,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 47,
             "actionCount": 48,
             "passedActionCount": 44,
             "worst": {
@@ -1879,7 +1879,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -2380,7 +2385,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 47,
             "actionCount": 48,
             "passedActionCount": 43,
             "worst": {
@@ -3597,7 +3602,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -4098,7 +4108,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 47,
             "worst": {
@@ -5340,7 +5350,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -5841,7 +5856,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 46,
             "worst": {
@@ -7083,7 +7098,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -7117,10 +7137,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -7226,10 +7248,12 @@
                 "lostFrameTimeShare": 0.0007,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.015,
               "runs": [
@@ -7335,10 +7359,12 @@
                 "lostFrameTimeShare": 0.0005,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -7444,10 +7470,12 @@
                 "lostFrameTimeShare": 0.0553,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -8815,7 +8843,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -8841,10 +8869,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -8950,10 +8980,12 @@
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.015,
               "runs": [
@@ -9059,10 +9091,12 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -9168,10 +9202,12 @@
                 "lostFrameTimeShare": 0.0546,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -10539,7 +10575,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -10565,10 +10601,12 @@
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -10674,10 +10712,12 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.015,
               "runs": [
@@ -10783,10 +10823,12 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -10892,10 +10934,12 @@
                 "lostFrameTimeShare": 0.0526,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -12288,7 +12332,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -12314,10 +12358,12 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -12423,10 +12469,12 @@
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.015,
               "runs": [
@@ -12532,10 +12580,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -12641,10 +12691,12 @@
                 "lostFrameTimeShare": 0.0528,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -14037,7 +14089,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -14554,7 +14606,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 47,
             "actionCount": 48,
             "passedActionCount": 38,
             "worst": {
@@ -15771,7 +15823,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -16272,7 +16329,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 47,
             "actionCount": 48,
             "passedActionCount": 39,
             "worst": {
@@ -17489,7 +17546,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -17990,7 +18052,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 41,
             "worst": {
@@ -19232,7 +19294,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -19733,7 +19800,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 39,
             "worst": {
@@ -20975,7 +21042,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -21009,10 +21081,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -21118,10 +21192,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -21227,10 +21303,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -21336,10 +21414,12 @@
                 "lostFrameTimeShare": 0.0073,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -22707,7 +22787,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -22733,10 +22813,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -22842,10 +22924,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -22951,10 +23035,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -23060,10 +23146,12 @@
                 "lostFrameTimeShare": 0.0071,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -24431,7 +24519,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -24457,10 +24545,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -24566,10 +24656,12 @@
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -24675,10 +24767,12 @@
                 "lostFrameTimeShare": 0.0006,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -24784,10 +24878,12 @@
                 "lostFrameTimeShare": 0.0064,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -26180,7 +26276,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -26206,10 +26302,12 @@
                 "lostFrameTimeShare": 0.0031,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -26315,10 +26413,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -26424,10 +26524,12 @@
                 "lostFrameTimeShare": 0.0002,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -26533,10 +26635,12 @@
                 "lostFrameTimeShare": 0.0068,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -27929,7 +28033,7 @@
             "scoreable": true,
             "controlEvidence": "passed"
           },
-          "untrackedSections": [
+          "preservedSections": [
             "drawing",
             "undo",
             "actions"
@@ -27967,10 +28071,12 @@
                 "lostFrameTimeShare": 0.0061,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -28076,10 +28182,12 @@
                 "lostFrameTimeShare": 0.0075,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -28185,10 +28293,12 @@
                 "lostFrameTimeShare": 0.007,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -28294,10 +28404,12 @@
                 "lostFrameTimeShare": 0.01,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -29666,10 +29778,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -29693,10 +29803,12 @@
                 "lostFrameTimeShare": 0.0082,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -29802,10 +29914,12 @@
                 "lostFrameTimeShare": 0.0077,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -29911,10 +30025,12 @@
                 "lostFrameTimeShare": 0.0078,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -30020,10 +30136,12 @@
                 "lostFrameTimeShare": 0.0133,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -31392,10 +31510,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -31419,10 +31535,12 @@
                 "lostFrameTimeShare": 0.0053,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -31528,10 +31646,12 @@
                 "lostFrameTimeShare": 0.0041,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -31637,10 +31757,12 @@
                 "lostFrameTimeShare": 0.0065,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -31746,10 +31868,12 @@
                 "lostFrameTimeShare": 0.0082,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -32768,10 +32892,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -32795,10 +32917,12 @@
                 "lostFrameTimeShare": 0.0058,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -32904,10 +33028,12 @@
                 "lostFrameTimeShare": 0.0052,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -33013,10 +33139,12 @@
                 "lostFrameTimeShare": 0.0058,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -33122,10 +33250,12 @@
                 "lostFrameTimeShare": 0.0071,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -34144,10 +34274,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         }
@@ -34183,10 +34311,12 @@
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -34293,10 +34423,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -34403,10 +34535,12 @@
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -34513,10 +34647,12 @@
                 "lostFrameTimeShare": 0.0035,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -35911,11 +36047,9 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
+            "drawing",
             "undo",
             "actions"
-          ],
-          "untrackedSections": [
-            "drawing"
           ]
         },
         {
@@ -35938,10 +36072,12 @@
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -36048,10 +36184,12 @@
                 "lostFrameTimeShare": 0.0001,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -36158,10 +36296,12 @@
                 "lostFrameTimeShare": 0.0007,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -36268,10 +36408,12 @@
                 "lostFrameTimeShare": 0.0035,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -37666,11 +37808,9 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
+            "drawing",
             "undo",
             "actions"
-          ],
-          "untrackedSections": [
-            "drawing"
           ]
         },
         {
@@ -37693,10 +37833,12 @@
                 "lostFrameTimeShare": 0.0007,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -37803,10 +37945,12 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -37913,10 +38057,12 @@
                 "lostFrameTimeShare": 0.0044,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -38023,10 +38169,12 @@
                 "lostFrameTimeShare": 0.0099,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -39071,11 +39219,9 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
+            "drawing",
             "undo",
             "actions"
-          ],
-          "untrackedSections": [
-            "drawing"
           ]
         },
         {
@@ -39098,10 +39244,12 @@
                 "lostFrameTimeShare": 0.0047,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -39208,10 +39356,12 @@
                 "lostFrameTimeShare": 0.0007,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -39318,10 +39468,12 @@
                 "lostFrameTimeShare": 0.0004,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -39428,10 +39580,12 @@
                 "lostFrameTimeShare": 0.0035,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "120hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -40476,11 +40630,9 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
+            "drawing",
             "undo",
             "actions"
-          ],
-          "untrackedSections": [
-            "drawing"
           ]
         }
       ]
@@ -40515,10 +40667,12 @@
                 "lostFrameTimeShare": 0.0012,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -40624,10 +40778,12 @@
                 "lostFrameTimeShare": 0.0024,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -40733,10 +40889,12 @@
                 "lostFrameTimeShare": 0.0041,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -40842,10 +41000,12 @@
                 "lostFrameTimeShare": 0.0038,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -42239,10 +42399,8 @@
             "controlEvidence": "failed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -42266,10 +42424,12 @@
                 "lostFrameTimeShare": 0.0059,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -42375,10 +42535,12 @@
                 "lostFrameTimeShare": 0.0009,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -42484,10 +42646,12 @@
                 "lostFrameTimeShare": 0.0033,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -42593,10 +42757,12 @@
                 "lostFrameTimeShare": 0.0106,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -43965,10 +44131,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -43992,10 +44156,12 @@
                 "lostFrameTimeShare": 0.0003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -44101,10 +44267,12 @@
                 "lostFrameTimeShare": 0.003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -44210,10 +44378,12 @@
                 "lostFrameTimeShare": 0.0038,
                 "blankPassed": false,
                 "allPhasesPassed": false,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -44319,10 +44489,12 @@
                 "lostFrameTimeShare": 0.0038,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -45341,10 +45513,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -45368,10 +45538,12 @@
                 "lostFrameTimeShare": 0.0062,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -45477,10 +45649,12 @@
                 "lostFrameTimeShare": 0.003,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -45586,10 +45760,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -45695,10 +45871,12 @@
                 "lostFrameTimeShare": 0.0024,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -46717,10 +46895,8 @@
             "controlEvidence": "failed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         }
@@ -46756,10 +46932,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -46866,10 +47044,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -46976,10 +47156,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -47086,10 +47268,12 @@
                 "lostFrameTimeShare": 0.0006,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -48484,10 +48668,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -48511,10 +48693,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -48621,10 +48805,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -48731,10 +48917,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -48841,10 +49029,12 @@
                 "lostFrameTimeShare": 0.0009,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -50239,10 +50429,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -50266,10 +50454,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -50376,10 +50566,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -50486,10 +50678,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -50596,10 +50790,12 @@
                 "lostFrameTimeShare": 0.0006,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -51644,10 +51840,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         },
@@ -51671,10 +51865,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -51781,10 +51977,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -51891,10 +52089,12 @@
                 "lostFrameTimeShare": 0,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -52001,10 +52201,12 @@
                 "lostFrameTimeShare": 0.0006,
                 "blankPassed": true,
                 "allPhasesPassed": true,
-                "scoreable": true,
+                "scoreable": false,
                 "failedFidelityChecks": [],
                 "refreshRegime": "60hz",
-                "offRefreshRegime": false
+                "offRefreshRegime": false,
+                "unscoreableReason": "preserved: no current verdict",
+                "publishedFidelityChecks": []
               },
               "gateShare": 0.01,
               "runs": [
@@ -53049,10 +53251,8 @@
             "controlEvidence": "passed"
           },
           "preservedSections": [
-            "undo"
-          ],
-          "untrackedSections": [
             "drawing",
+            "undo",
             "actions"
           ]
         }
@@ -53855,7 +54055,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 49,
             "worst": {
@@ -55093,7 +55293,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -55882,7 +56087,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 49,
             "worst": {
@@ -57120,7 +57325,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -57909,7 +58119,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 49,
             "actionCount": 50,
             "passedActionCount": 50,
             "worst": {
@@ -59172,7 +59382,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -59961,7 +60176,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 49,
             "actionCount": 50,
             "passedActionCount": 50,
             "worst": {
@@ -61224,7 +61439,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -62025,7 +62245,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 48,
             "worst": {
@@ -63267,7 +63487,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -64056,7 +64281,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 48,
             "worst": {
@@ -65298,7 +65523,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -66087,7 +66317,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 49,
             "actionCount": 50,
             "passedActionCount": 50,
             "worst": {
@@ -67354,7 +67584,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -68143,7 +68378,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 49,
             "actionCount": 50,
             "passedActionCount": 49,
             "worst": {
@@ -69410,7 +69645,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -70211,7 +70451,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 49,
             "worst": {
@@ -71449,7 +71689,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -72238,7 +72483,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 48,
             "actionCount": 49,
             "passedActionCount": 49,
             "worst": {
@@ -73476,7 +73721,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -74265,7 +74515,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 49,
             "actionCount": 50,
             "passedActionCount": 50,
             "worst": {
@@ -75528,7 +75778,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -76317,7 +76572,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 0,
+            "finalProductCommitActionCount": 49,
             "actionCount": 50,
             "passedActionCount": 50,
             "worst": {
@@ -77580,7 +77835,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     }

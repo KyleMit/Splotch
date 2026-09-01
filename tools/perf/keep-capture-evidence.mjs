@@ -1,6 +1,7 @@
 // Promote a campaign's representative captures into the tracked evidence corpus.
 //
-//   npm run perf:evidence:keep -- --corpus=perf-profiles/campaign --campaign=2026-08-android
+//   npm run perf:evidence:keep -- --corpus=perf-profiles/campaign \
+//     --campaign=2026-08-android --product-commit=$(git rev-parse HEAD)
 //
 // ADR-0138: raw captures are otherwise gitignored, so a metric correction cannot
 // be applied to any number already published — it can only be recaptured on
@@ -143,6 +144,7 @@ export function evidenceFileName(entry, { keepAll = false } = {}) {
 export async function keepCaptureEvidence({
   corpus = argFlag('corpus'),
   campaign = argFlag('campaign'),
+  productCommit = argFlag('product-commit'),
   target = argFlag('target'),
   filter = argFlag('filter'),
   force = argFlag('force') !== undefined || process.argv.includes('--force'),
@@ -155,6 +157,12 @@ export async function keepCaptureEvidence({
 } = {}) {
   if (!corpus) fail('--corpus=<dir> is required');
   if (!campaign) fail('--campaign=<name> is required — the evidence corpus is keyed by campaign');
+  if (!/^[0-9a-f]{40}$/.test(productCommit ?? '')) {
+    fail(
+      '--product-commit=<40-character SHA> is required — representative captures must remain ' +
+        'attributable after their gitignored source corpus and live manifest paths are gone'
+    );
+  }
   // --keep-all bypasses ADR-0138's one-per-target-x-brush retention decision,
   // so it is not a context-free boolean (the PR 1383 review): it requires the
   // study rationale that justifies keeping the whole set, recorded in the
@@ -265,6 +273,7 @@ export async function keepCaptureEvidence({
     JSON.stringify(
       {
         campaign,
+        productCommit,
         capturedFrom: corpus,
         ...(keepAll ? { study } : {}),
         kept: selected.map((entry) => ({
