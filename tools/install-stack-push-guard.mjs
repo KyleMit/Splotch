@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
-import { isMain } from './lib/proc.mjs';
+import { isMain, ROOT } from './lib/proc.mjs';
 
 const HOOKS_DIRECTORY = '.githooks';
 
@@ -20,8 +21,17 @@ function managedWorktreeHooksPath(configuredPath, cwd, runCommand) {
     .includes(resolvedConfiguredPath);
 }
 
-export function installStackPushGuard({ cwd = process.cwd(), runCommand = runProcess } = {}) {
-  const hooksPath = resolve(cwd, HOOKS_DIRECTORY);
+// The hooksPath override lets the linked-worktree integration tests use a
+// disposable repository without changing this repository's shared Git config.
+export function installStackPushGuard({
+  cwd = process.cwd(),
+  runCommand = runProcess,
+  hooksPath = join(ROOT, HOOKS_DIRECTORY),
+} = {}) {
+  const guardHook = join(hooksPath, 'pre-push');
+  if (!existsSync(guardHook)) {
+    throw new Error(`no managed hook at ${guardHook}; run the installer from a product worktree`);
+  }
   const current = runCommand('git', ['config', '--local', '--get', 'core.hooksPath'], cwd);
   if (current.status === 0) {
     const configuredPath = current.stdout.trim();

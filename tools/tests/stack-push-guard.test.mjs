@@ -1,7 +1,15 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { guardStackPush, lowerStackUpdates, parsePushUpdates } from '../guard-stack-push.mjs';
@@ -254,58 +262,83 @@ describe('stacked PR push guard', () => {
 
 describe('stacked PR push guard installation', () => {
   it('installs the tracked hooks path without replacing an existing custom path', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'stack-push-installer-test-'));
+    const main = join(directory, 'main');
+    const hooksPath = join(main, '.githooks');
+    mkdirSync(hooksPath, { recursive: true });
+    writeFileSync(join(hooksPath, 'pre-push'), '#!/bin/sh\n');
     const calls = [];
-    const cwd = '/repo';
+    const cwd = main;
     const installRunner = (command, args) => {
       calls.push([command, ...args]);
       return args.includes('--get') ? result(1) : result(0);
     };
 
-    expect(installStackPushGuard({ cwd, runCommand: installRunner })).toBe(true);
-    expect(calls.at(-1)).toEqual([
-      'git',
-      'config',
-      '--local',
-      'core.hooksPath',
-      join(cwd, '.githooks'),
-    ]);
+    try {
+      expect(installStackPushGuard({ cwd, runCommand: installRunner, hooksPath })).toBe(true);
+      expect(calls.at(-1)).toEqual(['git', 'config', '--local', 'core.hooksPath', hooksPath]);
 
-    expect(
-      installStackPushGuard({
-        cwd,
-        runCommand: () => result(0, `${join(cwd, '.githooks')}\n`),
-      })
-    ).toBe(false);
+      expect(
+        installStackPushGuard({
+          cwd,
+          runCommand: () => result(0, `${hooksPath}\n`),
+          hooksPath,
+        })
+      ).toBe(false);
 
-    expect(() =>
-      installStackPushGuard({
-        cwd,
-        runCommand: () => result(0, '/custom/hooks\n'),
-      })
-    ).toThrow(/refusing to replace an existing hook setup/);
+      expect(() =>
+        installStackPushGuard({
+          cwd,
+          runCommand: () => result(0, '/custom/hooks\n'),
+          hooksPath,
+        })
+      ).toThrow(/refusing to replace an existing hook setup/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
-  it('moves the managed hook path to the worktree running the installer', () => {
-    const cwd = '/repo/feature';
-    const configuredPath = '/repo/main/.githooks';
-    const calls = [];
-    const installRunner = (command, args) => {
-      calls.push([command, ...args]);
-      if (args.includes('--get')) return result(0, `${configuredPath}\n`);
-      if (args.includes('--porcelain')) {
-        return result(0, 'worktree /repo/main\nHEAD abc\n\nworktree /repo/feature\nHEAD def\n');
-      }
-      return result(0);
-    };
+  it('installs the product worktree hook path rather than deriving one from cwd', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'stack-push-worktree-installer-test-'));
+    const main = join(directory, 'main');
+    const feature = join(directory, 'feature');
+    mkdirSync(main);
+    const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' });
+    try {
+      expect(git(main, 'init', '--quiet', '--initial-branch=main').status).toBe(0);
+      expect(git(main, 'config', 'user.email', 'stack-guard@example.test').status).toBe(0);
+      expect(git(main, 'config', 'user.name', 'Stack Guard Test').status).toBe(0);
+      mkdirSync(join(main, '.githooks'));
+      writeFileSync(join(main, '.githooks', 'pre-push'), '#!/bin/sh\n');
+      writeFileSync(join(main, 'tracked.txt'), 'base\n');
+      expect(git(main, 'add', 'tracked.txt', '.githooks/pre-push').status).toBe(0);
+      expect(git(main, 'commit', '--quiet', '-m', 'base').status).toBe(0);
+      expect(git(main, 'worktree', 'add', '--quiet', '-b', 'feature', feature).status).toBe(0);
 
-    expect(installStackPushGuard({ cwd, runCommand: installRunner })).toBe(true);
-    expect(calls.at(-1)).toEqual([
-      'git',
-      'config',
-      '--local',
-      'core.hooksPath',
-      join(cwd, '.githooks'),
-    ]);
+      const featureHooksPath = join(feature, '.githooks');
+      expect(installStackPushGuard({ cwd: main, hooksPath: featureHooksPath })).toBe(true);
+      expect(git(feature, 'config', '--local', '--get', 'core.hooksPath').stdout.trim()).toBe(
+        featureHooksPath
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it('does not replace the guard when the main checkout has no managed hook', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'stack-push-missing-hook-test-'));
+    const runCommand = () => result(0, '/working/hooks\n');
+    try {
+      expect(() =>
+        installStackPushGuard({
+          cwd: directory,
+          runCommand,
+          hooksPath: join(directory, '.githooks'),
+        })
+      ).toThrow(/no managed hook/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('runs from a Git worktree that does not contain the product tools', () => {
@@ -313,13 +346,19 @@ describe('stacked PR push guard installation', () => {
     try {
       expect(spawnSync('git', ['init'], { cwd: directory }).status).toBe(0);
       const hook = join(repoRoot, '.githooks', 'pre-push');
-      const invocation = spawnSync(hook, ['origin', 'git@example.test:assets.git'], {
+      const invocation = spawnSync(hook, ['origin', 'git@github.com:KyleMit/Splotch.git'], {
         cwd: directory,
         encoding: 'utf8',
-        input: '',
+        env: {
+          ...process.env,
+          PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
+        },
+        input: `${pushLine('campaign/lower')}`,
       });
-      expect(invocation.stderr).toBe('');
-      expect(invocation.status).toBe(0);
+      expect(invocation.stderr).toContain(
+        'Could not inspect live open pull requests; refusing an unguarded GitHub push'
+      );
+      expect(invocation.status).not.toBe(0);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
