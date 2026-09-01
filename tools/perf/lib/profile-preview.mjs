@@ -11,10 +11,11 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, fail, run, sleep, tryCapture } from '../../lib/proc.mjs';
+import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { foreignPortListeners, freePort, spawnViteServer } from '../../lib/vite-server.mjs';
 import { buildDirHoldsNativeExport } from './build-variant.mjs';
+import { stampedBuildCommit } from './build-provenance.mjs';
 
 // A preview server left over from a previous build keeps the port and keeps
 // serving the SvelteKit manifest it loaded at startup, so the next capture
@@ -163,13 +164,22 @@ async function defaultFetchText(url) {
 // foreign build, at least observed), as a value an artifact can carry instead
 // of the guard discarding it: the entry chunk name, one digest over every
 // served application chunk, and — only when the served bytes were verified as
-// THIS checkout's build — the checkout's commit. A foreign build records a null
-// productCommit because HEAD says nothing about a build that is not this
-// checkout's; its buildDigest still identifies the served bytes, which is what
-// lets two same-mode captures prove they measured the same arm.
+// THIS checkout's build — the commit the BUILD stamped when it ran
+// (postperf:build). Capture-time HEAD cannot serve: web/build outlives the
+// commit it was built from, so served and local bytes agree while HEAD has
+// moved on, and the artifact would claim a commit whose product was never
+// measured. A build with no stamp, or one from a dirty tree, records a null
+// productCommit; a foreign build records null because HEAD says nothing about
+// a build that is not this checkout's. The buildDigest still identifies the
+// served bytes either way, which is what lets two same-mode captures prove
+// they measured the same arm.
 export async function servedBuildBinding(
   base,
-  { verifiedAgainstCheckout, fetchText = defaultFetchText, resolveProductCommit = gitHead } = {}
+  {
+    verifiedAgainstCheckout,
+    fetchText = defaultFetchText,
+    resolveProductCommit = stampedBuildCommit,
+  } = {}
 ) {
   const { entry, digests } = await servedChunkDigests(base, fetchText);
   return {
@@ -179,11 +189,6 @@ export async function servedBuildBinding(
       : null,
     productCommit: verifiedAgainstCheckout ? resolveProductCommit() : null,
   };
-}
-
-function gitHead() {
-  const result = tryCapture('git', ['rev-parse', 'HEAD']);
-  return result.ok ? result.stdout.trim() : null;
 }
 
 export async function assertServedBuildIsFresh(base, { allowForeignBuild = false } = {}) {

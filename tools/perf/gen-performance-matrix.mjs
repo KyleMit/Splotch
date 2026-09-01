@@ -806,6 +806,42 @@ function mergeActionResults(captures) {
         `${[...fullSweepCommits].join(', ') || 'none'}. Unconfirmed: ${detail}`
     );
   }
+  // Same-commit is necessary, not sufficient: an isolation AGREES with the
+  // sweep it isolates. A focused pass over a same-commit sweep failure is the
+  // focused-green/canonical-red trap wearing a matching commit, and folding it
+  // would publish exactly the green the guard above exists to refuse — the
+  // disagreement is resolved by recapturing the full sweep, never by the
+  // subset. A focused label the sweep never measured has no verdict to agree
+  // with and is refused the same way.
+  const sweepVerdicts = new Map();
+  for (const capture of captures) {
+    if (capture.kind !== 'full' || !capture.productCommit) continue;
+    const labels = sweepVerdicts.get(capture.productCommit) ?? new Map();
+    for (const result of capture.results) labels.set(result.label, result.passed);
+    sweepVerdicts.set(capture.productCommit, labels);
+  }
+  for (const capture of captures) {
+    if (capture.kind !== 'focused') continue;
+    const labels = sweepVerdicts.get(capture.productCommit);
+    for (const result of capture.results) {
+      if (!labels.has(result.label)) {
+        throw new Error(
+          `unconfirmed-focused-action: ${capture.source} records "${result.label}", which the ` +
+            `full sweep at ${capture.productCommit} never measured — a label without a sweep ` +
+            `verdict has nothing to isolate`
+        );
+      }
+      if (labels.get(result.label) !== result.passed) {
+        throw new Error(
+          `focused-contradicts-sweep: ${capture.source} records "${result.label}" as ` +
+            `${result.passed ? 'passing' : 'failing'} while the full sweep at ` +
+            `${capture.productCommit} recorded it ${result.passed ? 'failing' : 'passing'} — ` +
+            `recapture the full sweep rather than folding the subset ` +
+            `(docs/PROFILING-CAMPAIGNS.md, "A focused --actions subset is not the canonical sweep")`
+        );
+      }
+    }
+  }
   const byLabel = new Map();
   for (const capture of captures) {
     for (const result of capture.results) byLabel.set(result.label, result);

@@ -230,25 +230,63 @@ describe('deployment matrix report', () => {
     }
   });
 
-  it('applies focused action captures only to their measured labels', () => {
+  it('applies an agreeing focused capture only to its measured labels', () => {
     const baseline = {
       kind: 'full',
       productCommit: 'final',
       results: [
-        action('expand action drawer', false, 'old'),
-        action('change ink color', false, 'old'),
+        action('expand action drawer', true, 'final'),
+        action('change ink color', false, 'final'),
       ],
     };
     const focused = {
       kind: 'focused',
       productCommit: 'final',
-      results: [action('expand action drawer', true, 'final')],
+      results: [{ ...action('expand action drawer', true, 'final'), refreshed: true }],
     };
 
     expect(mergeActionResults([baseline, focused])).toEqual([
-      action('expand action drawer', true, 'final'),
-      action('change ink color', false, 'old'),
+      { ...action('expand action drawer', true, 'final'), refreshed: true },
+      action('change ink color', false, 'final'),
     ]);
+  });
+
+  // Same-commit is necessary, not sufficient: a focused pass over the sweep's
+  // failure is the focused-green/canonical-red trap wearing a matching commit,
+  // and folding it would publish the exact green the guard refuses.
+  it('refuses a focused verdict that contradicts its same-commit sweep', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'final',
+      source: 'actions-full.json',
+      results: [action('expand action drawer', false, 'final')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'final')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('focused-contradicts-sweep');
+    expect(() => mergeActionResults([baseline, focused])).toThrow('actions-focused.json');
+  });
+
+  it('refuses a focused label its same-commit sweep never measured', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'final',
+      source: 'actions-full.json',
+      results: [action('change ink color', true, 'final')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'final')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('unconfirmed-focused-action');
   });
 
   // Session 01a0556d: focused greens turned canonical red three times — earlier
@@ -788,7 +826,7 @@ describe('deployment matrix report', () => {
     const full = writeActionCapture(manifestDirectory, 'actions-full.json', {
       orientation: 'PORTRAIT',
       theme: 'light',
-      summaries: [action('idle frame control', true), action('expand action drawer', false)],
+      summaries: [action('idle frame control', true), action('expand action drawer', true)],
     });
     const focused = writeActionCapture(manifestDirectory, 'actions-focused.json', {
       orientation: 'PORTRAIT',
