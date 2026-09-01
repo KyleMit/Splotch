@@ -196,8 +196,23 @@ artifact whose user agent contradicts the labelled runtime.
 ## Ending the session
 
 Leave the rig up unless you are told otherwise — verified and idle is a valid handoff, and no
-campaign needs to be started to make takeover count. Report both device verifications and the
-resolved preview/probe/Appium/WDA ports. What does **not** clean itself up is the state
+campaign needs to be started to make takeover count. What does **not** clean itself up is the state
 `--wake-android` wrote: the phone keeps `stayon` and a 30-minute screen timeout until something
 changes them back. Say so when you hand off, rather than leaving a phone that behaves oddly for
 reasons nobody can trace.
+
+End with a **rig-state block** — in the wrap-up reply, and in the handoff packet when one is being
+written — one line per row, so the next session inherits facts instead of re-deriving them:
+
+* checkout and commit the rig's preview/probe are serving;
+* each device: id, and the verification verdict with its failed check when not green;
+* resolved ports (preview, probe, Appium, WDA, and any others the preflight moved);
+* per service: **owned by this session** (with pid) or **borrowed** (left alone, and whose);
+* anything a human must clear (Guided Access, passcode, expired automation grant), stated as the
+  exact action;
+* Android wake state (`stayon` + timeout) and anything else deliberately left set.
+
+The borrowed-vs-owned line is the one that prevents the next session stopping a foreign process; the
+device ids and ports are what it passes as explicit `--url=`/`--probe-host=` instead of assuming
+defaults. This block reports observations — never commit it, and never let it substitute for the
+next session's own preflight: readiness is re-proven, not inherited.

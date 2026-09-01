@@ -50,18 +50,19 @@ victim will be standing at the moment they trip — reading which file, running 
 following which skill — and write the lesson there. A note filed somewhere merely "logical" that the
 tripping session never opens heals nothing.
 
-| The next tripped-up session will be…                | Durable home                                                                                                                      |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| reading or editing the code that traps              | a comment stating the non-obvious WHY (repo comment rules apply), a rename that removes the ambiguity, or a clearer error message |
-| running the script that failed                      | change the script — validate the input, handle the case, or fail with the message that names the fix                              |
-| following the doc, skill, or rule that misled       | edit it — through its `.ruler/**` source when generated (`npm run ruler:apply`); registered direct packages and `docs/` in place  |
-| facing the same architectural choice                | an ADR, via the `create-adr` skill                                                                                                |
-| hitting the same harness papercut                   | fix the harness — `.claude/settings.json`, a hook, a path-scoped rule — so it is enforced rather than described                   |
-| picking up a specific GitHub issue                  | a comment on that issue                                                                                                           |
-| reviewing, resuming, or building on an open PR      | its PR description, or a PR comment                                                                                               |
-| re-litigating this session's investigation          | a `docs/scratchpad/` note holding the evidence and chronology                                                                     |
-| needing Claude to behave differently here           | `memory/` behavioral feedback (see "Memory vs. ADRs" in the root instructions)                                                    |
-| eventually landing a fix too large for this session | a GitHub issue (`docs/ISSUE-WORKFLOW.md`) — the backlog is issues, never a Markdown list                                          |
+| The next tripped-up session will be…                | Durable home                                                                                                                                                  |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| reading or editing the code that traps              | a comment stating the non-obvious WHY (repo comment rules apply), a rename that removes the ambiguity, or a clearer error message                             |
+| running the script that failed                      | change the script — validate the input, handle the case, or fail with the message that names the fix                                                          |
+| following the doc, skill, or rule that misled       | edit it — through its `.ruler/**` source when generated (`npm run ruler:apply`); registered direct packages and `docs/` in place                              |
+| facing the same architectural choice                | an ADR, via the `create-adr` skill                                                                                                                            |
+| hitting the same harness papercut                   | fix the harness — `.claude/settings.json`, a hook, a path-scoped rule — so it is enforced rather than described                                               |
+| picking up a specific GitHub issue                  | a comment on that issue                                                                                                                                       |
+| reviewing, resuming, or building on an open PR      | its PR description, or a PR comment                                                                                                                           |
+| taking a physical-device or profiling capture       | `docs/PROFILING-CAMPAIGNS.md` — the trap catalogue every capture session reads; a capture-path mechanism filed anywhere else is unread at the moment it trips |
+| re-litigating this session's investigation          | a `docs/scratchpad/` note holding the evidence and chronology                                                                                                 |
+| needing Claude to behave differently here           | `memory/` behavioral feedback (see "Memory vs. ADRs" in the root instructions)                                                                                |
+| eventually landing a fix too large for this session | a GitHub issue (`docs/ISSUE-WORKFLOW.md`) — the backlog is issues, never a Markdown list                                                                      |
 
 Two placement traps, both learned from prior sessions:
 
