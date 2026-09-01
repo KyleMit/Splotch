@@ -1,0 +1,50 @@
+{
+  "campaign": "2026-09-01-overnight-mac-chrome",
+  "capturedFrom": "perf-profiles/overnight-20260831",
+  "kept": [
+    {
+      "file": "mac-chrome-crayon.json",
+      "target": "mac-chrome",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-chrome-eraser.json",
+      "target": "mac-chrome",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-chrome-magic.json",
+      "target": "mac-chrome",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-chrome-pen.json",
+      "target": "mac-chrome",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

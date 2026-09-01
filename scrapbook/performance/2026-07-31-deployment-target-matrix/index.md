@@ -3,7 +3,8 @@
 This deployment-target snapshot combines the campaign evidence declared in `sources.json`.
 `e4877a1065dc3441df0c023141fbf3ef66787dff` is the measured product commit. Every normalized result
 retains its target, mode, commit, and declared evidence state; focused action captures, when
-present, replace only their declared scenarios within that mode.
+present, replace only their declared scenarios within that mode, and only alongside a full sweep at
+the same product commit.
 
 The [interactive matrix](./index.html) is the quickest comparison. [`data.json`](./data.json)
 contains every normalized drawing run and grouped action result, and
@@ -113,39 +114,33 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   (undo); Android emulator · native · portrait-light (undo); Android emulator · native ·
   portrait-dark (undo); Android emulator · native · landscape-light (undo); Android emulator ·
   native · landscape-dark (undo).
-* 44 cells were captured for this campaign but their per-mode raw inputs remain untracked under
+* 36 cells were captured for this campaign but their per-mode raw inputs remain untracked under
   ADR-0138; regeneration carries their normalized sections from data.json, while
   check:matrix-staleness still verifies their capture commits. Representative whole captures remain
-  tracked under perf-profiles/evidence/. Untracked-source cells: iPad physical · web ·
-  portrait-light (drawing, undo, actions); iPad physical · web · portrait-dark (drawing, undo,
-  actions); iPad physical · web · landscape-light (drawing, undo, actions); iPad physical · web ·
-  landscape-dark (drawing, undo, actions); iPad physical · native · portrait-light (drawing, undo,
-  actions); iPad physical · native · portrait-dark (drawing, undo, actions); iPad physical · native
-  · landscape-light (drawing, undo, actions); iPad physical · native · landscape-dark (drawing,
-  undo, actions); iPad simulator · web · portrait-light (drawing, undo, actions); iPad simulator ·
-  web · portrait-dark (drawing, undo, actions); iPad simulator · web · landscape-light (drawing,
-  undo, actions); iPad simulator · web · landscape-dark (drawing, undo, actions); iPad simulator ·
-  native · portrait-light (drawing, undo, actions); iPad simulator · native · portrait-dark
-  (drawing, undo, actions); iPad simulator · native · landscape-light (drawing, undo, actions); iPad
-  simulator · native · landscape-dark (drawing, undo, actions); Android physical · web ·
-  portrait-light (drawing, actions); Android physical · web · portrait-dark (drawing, actions);
-  Android physical · web · landscape-light (drawing, actions); Android physical · web ·
-  landscape-dark (drawing, actions); Android physical · native · portrait-light (drawing); Android
-  physical · native · portrait-dark (drawing); Android physical · native · landscape-light
+  tracked under perf-profiles/evidence/. Untracked-source cells: iPad physical · native ·
+  portrait-light (drawing, undo, actions); iPad physical · native · portrait-dark (drawing, undo,
+  actions); iPad physical · native · landscape-light (drawing, undo, actions); iPad physical ·
+  native · landscape-dark (drawing, undo, actions); iPad simulator · web · portrait-light (drawing,
+  undo, actions); iPad simulator · web · portrait-dark (drawing, undo, actions); iPad simulator ·
+  web · landscape-light (drawing, undo, actions); iPad simulator · web · landscape-dark (drawing,
+  undo, actions); iPad simulator · native · portrait-light (drawing, undo, actions); iPad simulator
+  · native · portrait-dark (drawing, undo, actions); iPad simulator · native · landscape-light
+  (drawing, undo, actions); iPad simulator · native · landscape-dark (drawing, undo, actions);
+  Android physical · web · portrait-light (drawing, actions); Android physical · web · portrait-dark
+  (drawing, actions); Android physical · web · landscape-light (drawing, actions); Android physical
+  · web · landscape-dark (drawing, actions); Android physical · native · portrait-light (drawing);
+  Android physical · native · portrait-dark (drawing); Android physical · native · landscape-light
   (drawing); Android physical · native · landscape-dark (drawing); Android emulator · web ·
   portrait-light (drawing, actions); Android emulator · web · portrait-dark (drawing, actions);
   Android emulator · web · landscape-light (drawing, actions); Android emulator · web ·
   landscape-dark (drawing, actions); Android emulator · native · portrait-light (drawing, actions);
   Android emulator · native · portrait-dark (drawing, actions); Android emulator · native ·
   landscape-light (drawing, actions); Android emulator · native · landscape-dark (drawing, actions);
-  Mac · Chrome · portrait-light (drawing, undo, actions); Mac · Chrome · portrait-dark (drawing,
-  undo, actions); Mac · Chrome · landscape-light (drawing, undo, actions); Mac · Chrome ·
-  landscape-dark (drawing, undo, actions); Mac · Safari · portrait-light (drawing, undo, actions);
-  Mac · Safari · portrait-dark (drawing, undo, actions); Mac · Safari · landscape-light (drawing,
-  undo, actions); Mac · Safari · landscape-dark (drawing, undo, actions); Mac · Firefox ·
-  portrait-light (drawing, undo, actions); Mac · Firefox · portrait-dark (drawing, undo, actions);
-  Mac · Firefox · landscape-light (drawing, undo, actions); Mac · Firefox · landscape-dark (drawing,
-  undo, actions).
+  Mac · Safari · portrait-light (drawing, undo, actions); Mac · Safari · portrait-dark (drawing,
+  undo, actions); Mac · Safari · landscape-light (drawing, undo, actions); Mac · Safari ·
+  landscape-dark (drawing, undo, actions); Mac · Firefox · portrait-light (drawing, undo, actions);
+  Mac · Firefox · portrait-dark (drawing, undo, actions); Mac · Firefox · landscape-light (drawing,
+  undo, actions); Mac · Firefox · landscape-dark (drawing, undo, actions).
 
 ## Candidate actions
 
@@ -170,10 +165,10 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 
 | Target                                           | Drawing                                  | Undo                                     | Action source commits                    |
 | ------------------------------------------------ | ---------------------------------------- | ---------------------------------------- | ---------------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff |
-| 1. iPad physical · web · Portrait · Dark         | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff |
-| 1. iPad physical · web · Landscape · Light       | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff |
-| 1. iPad physical · web · Landscape · Dark        | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff | e4877a1065dc3441df0c023141fbf3ef66787dff |
+| 1. iPad physical · web · Portrait · Light        | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 1. iPad physical · web · Portrait · Dark         | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 1. iPad physical · web · Landscape · Light       | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 1. iPad physical · web · Landscape · Dark        | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 2. iPad physical · native · Portrait · Light     | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 |
 | 2. iPad physical · native · Portrait · Dark      | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 |
 | 2. iPad physical · native · Landscape · Light    | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 |
@@ -202,10 +197,10 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 | 8. Android emulator · native · Portrait · Dark   | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 | 6961e50b685d441e88b37d20d3f38a27136572fb | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
 | 8. Android emulator · native · Landscape · Light | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 | 6961e50b685d441e88b37d20d3f38a27136572fb | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
 | 8. Android emulator · native · Landscape · Dark  | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 | 6961e50b685d441e88b37d20d3f38a27136572fb | 13643a1f2cc5972cc4c9f996cdf1bf476c76dc77 |
-| 9. Mac · Chrome · Portrait · Light               | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
-| 9. Mac · Chrome · Portrait · Dark                | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
-| 9. Mac · Chrome · Landscape · Light              | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
-| 9. Mac · Chrome · Landscape · Dark               | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
+| 9. Mac · Chrome · Portrait · Light               | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 9. Mac · Chrome · Portrait · Dark                | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 9. Mac · Chrome · Landscape · Light              | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 9. Mac · Chrome · Landscape · Dark               | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 10. Mac · Safari · Portrait · Light              | 05637bcf8a074d2350e20111b3e8112ee843f808 | 05637bcf8a074d2350e20111b3e8112ee843f808 | 05637bcf8a074d2350e20111b3e8112ee843f808 |
 | 10. Mac · Safari · Portrait · Dark               | 05637bcf8a074d2350e20111b3e8112ee843f808 | 05637bcf8a074d2350e20111b3e8112ee843f808 | 05637bcf8a074d2350e20111b3e8112ee843f808 |
 | 10. Mac · Safari · Landscape · Light             | 05637bcf8a074d2350e20111b3e8112ee843f808 | 05637bcf8a074d2350e20111b3e8112ee843f808 | 05637bcf8a074d2350e20111b3e8112ee843f808 |
@@ -231,52 +226,52 @@ a cell's spread directly (issue 1290) was retracted twice — first as host load
 contamination — so the spread itself remains unmeasured; a clean repeat study belongs to the
 campaign-end recapture, on a quiet host.
 
-| Target                                           | Pen                           | Crayon                        | Magic                                | Eraser                              |
-| ------------------------------------------------ | ----------------------------- | ----------------------------- | ------------------------------------ | ----------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | 16 / 20 / 37 · L0.7%          | **FAIL 16 / 21 / 66 · L1.1%** | 16 / 21 / 50 · L0.8%                 | **FAIL 15 / 21 / 383 · L5.7%**      |
-| 1. iPad physical · web · Portrait · Dark         | 16 / 20 / 36 · L0.8%          | **FAIL 15 / 21 / 54 · L0.8%** | 15 / 21 / 34 · L0.7%                 | **FAIL 16 / 22 / 389 · L6.0%**      |
-| 1. iPad physical · web · Landscape · Light       | 16 / 22 / 36 · L0.8%          | **FAIL 16 / 21 / 51 · L1.0%** | 16 / 19 / 35 · L0.7%                 | **FAIL 16 / 21 / 377 · L5.9%**      |
-| 1. iPad physical · web · Landscape · Dark        | 16 / 22 / 37 · L0.9%          | **FAIL 15 / 22 / 70 · L0.9%** | 16 / 19 / 43 · L0.8%                 | **FAIL 16 / 22 / 379 · L5.7%**      |
-| 2. iPad physical · native · Portrait · Light     | 15 / 16 / 23 · L0%            | 15 / 17 / 39 · L0.1%          | 16 / 17 / 35 · L0.1%                 | **FAIL 16 / 17 / 381 · L5.5%**      |
-| 2. iPad physical · native · Portrait · Dark      | 15 / 16 / 26 · L0%            | 15 / 16 / 39 · L0.0%          | 15 / 16 / 37 · L0.0%                 | **FAIL 16 / 17 / 379 · L5.5%**      |
-| 2. iPad physical · native · Landscape · Light    | 16 / 16 / 34 · L0.0%          | 15 / 16 / 40 · L0.0%          | 15 / 16 / 44 · L0.0%                 | **FAIL 15 / 17 / 373 · L5.3%**      |
-| 2. iPad physical · native · Landscape · Dark     | 15 / 17 / 32 · L0.0%          | 15 / 16 / 31 · L0.0%          | 15 / 16 / 23 · L0%                   | **FAIL 16 / 17 / 376 · L5.3%**      |
-| 3. iPad simulator · web · Portrait · Light       | 16 / 20 / 26 · L0.3%          | 11 / 15 / 32 · L0.3%          | 12 / 14 / 18 · L0.1%                 | 11 / 14 / 24 · L0.8%                |
-| 3. iPad simulator · web · Portrait · Dark        | 14 / 18 / 21 · L0.5%          | 16 / 20 / 24 · L0.3%          | 16 / 19 / 24 · L0.1%                 | 15 / 19 / 27 · L0.8%                |
-| 3. iPad simulator · web · Landscape · Light      | 16 / 18 / 23 · L0.2%          | 14 / 18 / 24 · L0.1%          | 16 / 18 / 23 · L0.0%                 | **FAIL 14 / 18 / 72 · L0.7%**       |
-| 3. iPad simulator · web · Landscape · Dark       | 14 / 18 / 22 · L0.2%          | 11 / 15 / 27 · L0.1%          | 10 / 13 / 16 · L0%                   | 7 / 9 / 28 · L0.6%                  |
-| 4. iPad simulator · native · Portrait · Light    | 15 / 17 / 21 · L0%            | 16 / 17 / 20 · L0%            | 15 / 16 / 25 · L0%                   | 11 / 15 / 27 · L0.7%                |
-| 4. iPad simulator · native · Portrait · Dark     | 11 / 15 / 18 · L0%            | 11 / 16 / 24 · L0%            | 5 / 7 / 13 · L0%                     | 16 / 17 / 34 · L0.7%                |
-| 4. iPad simulator · native · Landscape · Light   | 16 / 16 / 20 · L0%            | 15 / 18 / 21 · L0.0%          | 16 / 18 / 23 · L0.1%                 | 16 / 18 / 30 · L0.6%                |
-| 4. iPad simulator · native · Landscape · Dark    | **FAIL 11 / 15 / 87 · L0.3%** | 15 / 16 / 22 · L0%            | 11 / 13 / 32 · L0.0%                 | 12 / 14 / 27 · L0.7%                |
-| 5. Android physical · web · Portrait · Light     | 7.8 / 8.2 / 16.2 · L0.6%      | 7.9 / 8.2 / 11.6 · L0.8%      | 7.7 / 8.1 / 14.9 · L0.7%             | 7.8 / 8.2 / 11.2 · L1%              |
-| 5. Android physical · web · Portrait · Dark      | 7.9 / 8.2 / 16.5 · L0.8%      | 7.9 / 8.2 / 12.9 · L0.8%      | 7.9 / 8.2 / 16 · L0.8%               | **FAIL 7.7 / 8.2 / 9.2 · L1.3%**    |
-| 5. Android physical · web · Landscape · Light    | 7.7 / 8.2 / 15.3 · L0.5%      | 7.8 / 8.2 / 16.4 · L0.4%      | 8 / 8.2 / 12.9 · L0.7%               | 7.9 / 8.2 / 16 · L0.8%              |
-| 5. Android physical · web · Landscape · Dark     | 7.7 / 8.1 / 11.7 · L0.6%      | 7.7 / 8.2 / 14.6 · L0.5%      | 7.9 / 8.2 / 14.3 · L0.6%             | 7.9 / 8.2 / 11.9 · L0.7%            |
-| 6. Android physical · native · Portrait · Light  | 7.8 / 8 / 14.3 · L0.0%        | 7.8 / 8 / 8.2 · L0%           | 7.9 / 8 / 13.1 · L0.0%               | 7.7 / 7.9 / 15.1 · L0.4%            |
-| 6. Android physical · native · Portrait · Dark   | 7.8 / 7.9 / 15.5 · L0.0%      | 7.7 / 7.9 / 14.2 · L0.0%      | 7.8 / 7.9 / 13.2 · L0.1%             | 7.7 / 7.8 / 23.4 · L0.4%            |
-| 6. Android physical · native · Landscape · Light | 7.7 / 7.9 / 23.1 · L0.1%      | 7.7 / 7.9 / 23 · L0.0%        | 7.9 / 8.1 / 49 · L0.4%               | **FAIL 7.7 / 7.9 / 55.8 · L1.0%**   |
-| 6. Android physical · native · Landscape · Dark  | 7.7 / 7.8 / 22.1 · L0.5%      | 7.6 / 7.7 / 14.8 · L0.1%      | 7.7 / 7.9 / 15.4 · L0.0%             | 7.6 / 7.8 / 23.5 · L0.4%            |
-| 7. Android emulator · web · Portrait · Light     | 16.5 / 16.6 / 16.6 · L0.1%    | 16.5 / 16.6 / 33.2 · L0.2%    | **FAIL 16.5 / 16.6 / 198.5 · L0.4%** | 16.5 / 16.6 / 16.6 · L0.4%          |
-| 7. Android emulator · web · Portrait · Dark      | 14.5 / 16.4 / 32.1 · L0.6%    | 15.5 / 16.4 / 16.5 · L0.1%    | 15.4 / 16.4 / 16.4 · L0.3%           | **FAIL 16.1 / 16.4 / 47.7 · L1.1%** |
-| 7. Android emulator · web · Landscape · Light    | 16.4 / 16.5 / 16.5 · L0.0%    | 16.3 / 16.4 / 16.4 · L0.3%    | **FAIL 16.2 / 16.5 / 196.8 · L0.4%** | 16.4 / 16.4 / 16.5 · L0.4%          |
-| 7. Android emulator · web · Landscape · Dark     | 16.1 / 16.4 / 16.4 · L0.6%    | 16.1 / 16.4 / 16.4 · L0.3%    | 16.3 / 16.6 / 16.7 · L0%             | 16.3 / 16.6 / 16.7 · L0.2%          |
-| 8. Android emulator · native · Portrait · Light  | 16.4 / 16.5 / 16.5 · L0%      | 16.5 / 16.5 / 16.5 · L0%      | 16.4 / 16.4 / 16.5 · L0%             | 16.4 / 16.5 / 21.5 · L0.1%          |
-| 8. Android emulator · native · Portrait · Dark   | 16.5 / 16.6 / 16.6 · L0%      | 16.4 / 16.4 / 16.4 · L0%      | 16.4 / 16.4 / 16.5 · L0%             | 16.4 / 16.5 / 21.4 · L0.1%          |
-| 8. Android emulator · native · Landscape · Light | 16.5 / 16.5 / 16.5 · L0%      | 16.5 / 16.5 / 16.5 · L0%      | 16.4 / 16.5 / 16.5 · L0%             | 16.5 / 16.5 / 21.4 · L0.1%          |
-| 8. Android emulator · native · Landscape · Dark  | 16.5 / 16.5 / 16.6 · L0%      | 16.5 / 16.5 / 16.5 · L0%      | 16.5 / 16.5 / 16.5 · L0%             | 16.4 / 16.5 / 21.4 · L0.1%          |
-| 9. Mac · Chrome · Portrait · Light               | 9.6 / 9.9 / 10.2 · L0%        | 9.5 / 10 / 10.1 · L0%         | 9.7 / 10 / 10.2 · L0%                | 9.4 / 10 / 16.5 · L0.1%             |
-| 9. Mac · Chrome · Portrait · Dark                | 9.7 / 9.9 / 10.1 · L0%        | 9.4 / 9.9 / 10.1 · L0%        | 9.8 / 10 / 10.1 · L0%                | 9.8 / 10 / 10.2 · L0%               |
-| 9. Mac · Chrome · Landscape · Light              | 9.5 / 10 / 10.3 · L0%         | 9.4 / 9.9 / 10.2 · L0%        | 9.6 / 9.9 / 10.1 · L0%               | 9.6 / 10 / 10.2 · L0%               |
-| 9. Mac · Chrome · Landscape · Dark               | 9.7 / 10 / 10.2 · L0%         | 9.5 / 9.8 / 10 · L0%          | 9.7 / 10 / 10.3 · L0%                | 9.7 / 10 / 16.1 · L0.1%             |
-| 10. Mac · Safari · Portrait · Light              | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%                   | 18 / 18 / 18 · L0%                  |
-| 10. Mac · Safari · Portrait · Dark               | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%                   | 18 / 18 / 18 · L0%                  |
-| 10. Mac · Safari · Landscape · Light             | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%            | 18 / 18 / 23 · L0%                   | 17 / 18 / 18 · L0%                  |
-| 10. Mac · Safari · Landscape · Dark              | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%                   | 18 / 18 / 18 · L0%                  |
-| 11. Mac · Firefox · Portrait · Light             | 9.0 / 9.7 / 10.0 · L0%        | 8.9 / 9.5 / 10.1 · L0%        | 9 / 9.7 / 10.1 · L0%                 | 9.2 / 9.9 / 10.3 · L0%              |
-| 11. Mac · Firefox · Portrait · Dark              | 9.2 / 9.9 / 10.3 · L0%        | 8.9 / 9.6 / 10.3 · L0%        | 9.1 / 9.8 / 10.1 · L0%               | 9.1 / 9.7 / 10.1 · L0%              |
-| 11. Mac · Firefox · Landscape · Light            | 9.0 / 9.8 / 10.1 · L0%        | 9.0 / 9.5 / 10.1 · L0%        | 9.2 / 9.8 / 10.2 · L0%               | 9 / 10.1 / 10.1 · L0%               |
-| 11. Mac · Firefox · Landscape · Dark             | 9.0 / 9.7 / 10.1 · L0%        | 8.9 / 9.7 / 10.0 · L0%        | 9 / 9.7 / 10.0 · L0%                 | 9.0 / 9.8 / 10.1 · L0%              |
+| Target                                           | Pen                           | Crayon                     | Magic                                | Eraser                              |
+| ------------------------------------------------ | ----------------------------- | -------------------------- | ------------------------------------ | ----------------------------------- |
+| 1. iPad physical · web · Portrait · Light        | 16 / 21 / 36 · L0.9%          | 15 / 16 / 31 · L0.3%       | 15 / 20 / 35 · L0.7%                 | 16 / 17 / 35 · L0.9%                |
+| 1. iPad physical · web · Portrait · Dark         | 16 / 22 / 35 · L0.9%          | 15 / 16 / 25 · L0.1%       | 15 / 20 / 35 · L0.7%                 | 16 / 18 / 41 · L0.9%                |
+| 1. iPad physical · web · Landscape · Light       | 15 / 22 / 36 · L0.7%          | 15 / 16 / 26 · L0.2%       | 16 / 19 / 34 · L0.6%                 | 15 / 22 / 35 · L0.8%                |
+| 1. iPad physical · web · Landscape · Dark        | 16 / 21 / 36 · L0.8%          | 15 / 17 / 32 · L0.2%       | 15 / 21 / 36 · L0.6%                 | 16 / 20 / 35 · L0.7%                |
+| 2. iPad physical · native · Portrait · Light     | 15 / 16 / 23 · L0%            | 15 / 17 / 39 · L0.1%       | 16 / 17 / 35 · L0.1%                 | **FAIL 16 / 17 / 381 · L5.5%**      |
+| 2. iPad physical · native · Portrait · Dark      | 15 / 16 / 26 · L0%            | 15 / 16 / 39 · L0.0%       | 15 / 16 / 37 · L0.0%                 | **FAIL 16 / 17 / 379 · L5.5%**      |
+| 2. iPad physical · native · Landscape · Light    | 16 / 16 / 34 · L0.0%          | 15 / 16 / 40 · L0.0%       | 15 / 16 / 44 · L0.0%                 | **FAIL 15 / 17 / 373 · L5.3%**      |
+| 2. iPad physical · native · Landscape · Dark     | 15 / 17 / 32 · L0.0%          | 15 / 16 / 31 · L0.0%       | 15 / 16 / 23 · L0%                   | **FAIL 16 / 17 / 376 · L5.3%**      |
+| 3. iPad simulator · web · Portrait · Light       | 16 / 20 / 26 · L0.3%          | 11 / 15 / 32 · L0.3%       | 12 / 14 / 18 · L0.1%                 | 11 / 14 / 24 · L0.8%                |
+| 3. iPad simulator · web · Portrait · Dark        | 14 / 18 / 21 · L0.5%          | 16 / 20 / 24 · L0.3%       | 16 / 19 / 24 · L0.1%                 | 15 / 19 / 27 · L0.8%                |
+| 3. iPad simulator · web · Landscape · Light      | 16 / 18 / 23 · L0.2%          | 14 / 18 / 24 · L0.1%       | 16 / 18 / 23 · L0.0%                 | **FAIL 14 / 18 / 72 · L0.7%**       |
+| 3. iPad simulator · web · Landscape · Dark       | 14 / 18 / 22 · L0.2%          | 11 / 15 / 27 · L0.1%       | 10 / 13 / 16 · L0%                   | 7 / 9 / 28 · L0.6%                  |
+| 4. iPad simulator · native · Portrait · Light    | 15 / 17 / 21 · L0%            | 16 / 17 / 20 · L0%         | 15 / 16 / 25 · L0%                   | 11 / 15 / 27 · L0.7%                |
+| 4. iPad simulator · native · Portrait · Dark     | 11 / 15 / 18 · L0%            | 11 / 16 / 24 · L0%         | 5 / 7 / 13 · L0%                     | 16 / 17 / 34 · L0.7%                |
+| 4. iPad simulator · native · Landscape · Light   | 16 / 16 / 20 · L0%            | 15 / 18 / 21 · L0.0%       | 16 / 18 / 23 · L0.1%                 | 16 / 18 / 30 · L0.6%                |
+| 4. iPad simulator · native · Landscape · Dark    | **FAIL 11 / 15 / 87 · L0.3%** | 15 / 16 / 22 · L0%         | 11 / 13 / 32 · L0.0%                 | 12 / 14 / 27 · L0.7%                |
+| 5. Android physical · web · Portrait · Light     | 7.8 / 8.2 / 16.2 · L0.6%      | 7.9 / 8.2 / 11.6 · L0.8%   | 7.7 / 8.1 / 14.9 · L0.7%             | 7.8 / 8.2 / 11.2 · L1%              |
+| 5. Android physical · web · Portrait · Dark      | 7.9 / 8.2 / 16.5 · L0.8%      | 7.9 / 8.2 / 12.9 · L0.8%   | 7.9 / 8.2 / 16 · L0.8%               | **FAIL 7.7 / 8.2 / 9.2 · L1.3%**    |
+| 5. Android physical · web · Landscape · Light    | 7.7 / 8.2 / 15.3 · L0.5%      | 7.8 / 8.2 / 16.4 · L0.4%   | 8 / 8.2 / 12.9 · L0.7%               | 7.9 / 8.2 / 16 · L0.8%              |
+| 5. Android physical · web · Landscape · Dark     | 7.7 / 8.1 / 11.7 · L0.6%      | 7.7 / 8.2 / 14.6 · L0.5%   | 7.9 / 8.2 / 14.3 · L0.6%             | 7.9 / 8.2 / 11.9 · L0.7%            |
+| 6. Android physical · native · Portrait · Light  | 7.8 / 8 / 14.3 · L0.0%        | 7.8 / 8 / 8.2 · L0%        | 7.9 / 8 / 13.1 · L0.0%               | 7.7 / 7.9 / 15.1 · L0.4%            |
+| 6. Android physical · native · Portrait · Dark   | 7.8 / 7.9 / 15.5 · L0.0%      | 7.7 / 7.9 / 14.2 · L0.0%   | 7.8 / 7.9 / 13.2 · L0.1%             | 7.7 / 7.8 / 23.4 · L0.4%            |
+| 6. Android physical · native · Landscape · Light | 7.7 / 7.9 / 23.1 · L0.1%      | 7.7 / 7.9 / 23 · L0.0%     | 7.9 / 8.1 / 49 · L0.4%               | **FAIL 7.7 / 7.9 / 55.8 · L1.0%**   |
+| 6. Android physical · native · Landscape · Dark  | 7.7 / 7.8 / 22.1 · L0.5%      | 7.6 / 7.7 / 14.8 · L0.1%   | 7.7 / 7.9 / 15.4 · L0.0%             | 7.6 / 7.8 / 23.5 · L0.4%            |
+| 7. Android emulator · web · Portrait · Light     | 16.5 / 16.6 / 16.6 · L0.1%    | 16.5 / 16.6 / 33.2 · L0.2% | **FAIL 16.5 / 16.6 / 198.5 · L0.4%** | 16.5 / 16.6 / 16.6 · L0.4%          |
+| 7. Android emulator · web · Portrait · Dark      | 14.5 / 16.4 / 32.1 · L0.6%    | 15.5 / 16.4 / 16.5 · L0.1% | 15.4 / 16.4 / 16.4 · L0.3%           | **FAIL 16.1 / 16.4 / 47.7 · L1.1%** |
+| 7. Android emulator · web · Landscape · Light    | 16.4 / 16.5 / 16.5 · L0.0%    | 16.3 / 16.4 / 16.4 · L0.3% | **FAIL 16.2 / 16.5 / 196.8 · L0.4%** | 16.4 / 16.4 / 16.5 · L0.4%          |
+| 7. Android emulator · web · Landscape · Dark     | 16.1 / 16.4 / 16.4 · L0.6%    | 16.1 / 16.4 / 16.4 · L0.3% | 16.3 / 16.6 / 16.7 · L0%             | 16.3 / 16.6 / 16.7 · L0.2%          |
+| 8. Android emulator · native · Portrait · Light  | 16.4 / 16.5 / 16.5 · L0%      | 16.5 / 16.5 / 16.5 · L0%   | 16.4 / 16.4 / 16.5 · L0%             | 16.4 / 16.5 / 21.5 · L0.1%          |
+| 8. Android emulator · native · Portrait · Dark   | 16.5 / 16.6 / 16.6 · L0%      | 16.4 / 16.4 / 16.4 · L0%   | 16.4 / 16.4 / 16.5 · L0%             | 16.4 / 16.5 / 21.4 · L0.1%          |
+| 8. Android emulator · native · Landscape · Light | 16.5 / 16.5 / 16.5 · L0%      | 16.5 / 16.5 / 16.5 · L0%   | 16.4 / 16.5 / 16.5 · L0%             | 16.5 / 16.5 / 21.4 · L0.1%          |
+| 8. Android emulator · native · Landscape · Dark  | 16.5 / 16.5 / 16.6 · L0%      | 16.5 / 16.5 / 16.5 · L0%   | 16.5 / 16.5 / 16.5 · L0%             | 16.4 / 16.5 / 21.4 · L0.1%          |
+| 9. Mac · Chrome · Portrait · Light               | 9.6 / 10 / 10.2 · L0%         | 9.3 / 9.9 / 10.1 · L0%     | 9.6 / 10 / 10.3 · L0%                | 9.7 / 10.2 / 10.3 · L0%             |
+| 9. Mac · Chrome · Portrait · Dark                | 9.7 / 10 / 10.1 · L0%         | 9.5 / 9.9 / 10.2 · L0%     | 9.6 / 9.9 / 10 · L0%                 | 9.8 / 10 / 10.2 · L0%               |
+| 9. Mac · Chrome · Landscape · Light              | 9.6 / 10 / 10.2 · L0%         | 9.4 / 10 / 10.2 · L0%      | 9.4 / 10 / 10.3 · L0%                | 9.8 / 10.2 / 16.1 · L0.1%           |
+| 9. Mac · Chrome · Landscape · Dark               | 9.5 / 9.9 / 10.1 · L0%        | 9.6 / 10 / 10.2 · L0%      | 9.6 / 9.9 / 10 · L0%                 | 9.6 / 10.1 / 10.2 · L0%             |
+| 10. Mac · Safari · Portrait · Light              | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%         | 18 / 18 / 18 · L0%                   | 18 / 18 / 18 · L0%                  |
+| 10. Mac · Safari · Portrait · Dark               | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%         | 18 / 18 / 18 · L0%                   | 18 / 18 / 18 · L0%                  |
+| 10. Mac · Safari · Landscape · Light             | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%         | 18 / 18 / 23 · L0%                   | 17 / 18 / 18 · L0%                  |
+| 10. Mac · Safari · Landscape · Dark              | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%         | 18 / 18 / 18 · L0%                   | 18 / 18 / 18 · L0%                  |
+| 11. Mac · Firefox · Portrait · Light             | 9.0 / 9.7 / 10.0 · L0%        | 8.9 / 9.5 / 10.1 · L0%     | 9 / 9.7 / 10.1 · L0%                 | 9.2 / 9.9 / 10.3 · L0%              |
+| 11. Mac · Firefox · Portrait · Dark              | 9.2 / 9.9 / 10.3 · L0%        | 8.9 / 9.6 / 10.3 · L0%     | 9.1 / 9.8 / 10.1 · L0%               | 9.1 / 9.7 / 10.1 · L0%              |
+| 11. Mac · Firefox · Landscape · Light            | 9.0 / 9.8 / 10.1 · L0%        | 9.0 / 9.5 / 10.1 · L0%     | 9.2 / 9.8 / 10.2 · L0%               | 9 / 10.1 / 10.1 · L0%               |
+| 11. Mac · Firefox · Landscape · Dark             | 9.0 / 9.7 / 10.1 · L0%        | 8.9 / 9.7 / 10.0 · L0%     | 9 / 9.7 / 10.0 · L0%                 | 9.0 / 9.8 / 10.1 · L0%              |
 
 ## Undo
 
@@ -284,10 +279,10 @@ Undo timing is `engine P95 / next-frame P95 / next-frame max` in milliseconds.
 
 | Target                                           | Timing            | Result | Product commit                           |
 | ------------------------------------------------ | ----------------- | ------ | ---------------------------------------- |
-| 1. iPad physical · web · Portrait · Light        | 1 / 11 / 11       | Pass   | e4877a1065dc3441df0c023141fbf3ef66787dff |
-| 1. iPad physical · web · Portrait · Dark         | 1 / 11 / 11       | Pass   | e4877a1065dc3441df0c023141fbf3ef66787dff |
-| 1. iPad physical · web · Landscape · Light       | 1 / 12 / 12       | Pass   | e4877a1065dc3441df0c023141fbf3ef66787dff |
-| 1. iPad physical · web · Landscape · Dark        | 1 / 12 / 12       | Pass   | e4877a1065dc3441df0c023141fbf3ef66787dff |
+| 1. iPad physical · web · Portrait · Light        | 2 / 12 / 12       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 1. iPad physical · web · Portrait · Dark         | 1 / 10 / 10       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 1. iPad physical · web · Landscape · Light       | 1 / 10 / 10       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 1. iPad physical · web · Landscape · Dark        | 1 / 11 / 11       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 2. iPad physical · native · Portrait · Light     | 2 / 13 / 13       | Pass   | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 |
 | 2. iPad physical · native · Portrait · Dark      | 1 / 13 / 13       | Pass   | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 |
 | 2. iPad physical · native · Landscape · Light    | 1 / 13 / 13       | Pass   | 14f6a575bfda68737f9a98e25c862f22aed8d6c3 |
@@ -316,10 +311,10 @@ Undo timing is `engine P95 / next-frame P95 / next-frame max` in milliseconds.
 | 8. Android emulator · native · Portrait · Dark   | 0.3 / 13.9 / 13.9 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
 | 8. Android emulator · native · Landscape · Light | 0.3 / 14.2 / 14.2 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
 | 8. Android emulator · native · Landscape · Dark  | 0.2 / 14.7 / 14.7 | Pass   | 6961e50b685d441e88b37d20d3f38a27136572fb |
-| 9. Mac · Chrome · Portrait · Light               | 0.5 / 6.3 / 6.3   | Pass   | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
-| 9. Mac · Chrome · Portrait · Dark                | 0.4 / 8.6 / 8.6   | Pass   | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
-| 9. Mac · Chrome · Landscape · Light              | 0.5 / 6.4 / 6.4   | Pass   | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
-| 9. Mac · Chrome · Landscape · Dark               | 0.5 / 6.2 / 6.2   | Pass   | a5acef7c7834a9d552942b5f8e5ba7ae591d2468 |
+| 9. Mac · Chrome · Portrait · Light               | 0.4 / 8.2 / 8.2   | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 9. Mac · Chrome · Portrait · Dark                | 0.5 / 8.3 / 8.3   | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 9. Mac · Chrome · Landscape · Light              | 0.4 / 6.9 / 6.9   | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 9. Mac · Chrome · Landscape · Dark               | 0.3 / 7.3 / 7.3   | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 10. Mac · Safari · Portrait · Light              | 1 / 11 / 11       | Pass   | 05637bcf8a074d2350e20111b3e8112ee843f808 |
 | 10. Mac · Safari · Portrait · Dark               | 1 / 12 / 12       | Pass   | 05637bcf8a074d2350e20111b3e8112ee843f808 |
 | 10. Mac · Safari · Landscape · Light             | 1 / 11 / 11       | Pass   | 05637bcf8a074d2350e20111b3e8112ee843f808 |
@@ -339,10 +334,10 @@ provenance are available in the interactive matrix and normalized JSON.
 
 | Target                                           | Passing | At final commit | Worst first P95 | Worst post P95 / max | Failed actions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------------------ | ------- | --------------- | --------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1. iPad physical · web · Portrait · Light        | 43 / 47 | 47 / 47         | 32              | 25 / 78              | select custom color; select coloring page; clear coloring page; save screenshot                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 1. iPad physical · web · Portrait · Dark         | 42 / 47 | 47 / 47         | 33              | 22 / 79              | close Settings; select coloring page; clear coloring page; save screenshot; with ink: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 1. iPad physical · web · Landscape · Light       | 45 / 48 | 48 / 48         | 29              | 27 / 80              | open Settings; select coloring page; clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 1. iPad physical · web · Landscape · Dark        | 45 / 48 | 48 / 48         | 33              | 27 / 72              | open Settings; select coloring page; clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 1. iPad physical · web · Portrait · Light        | 43 / 47 | 0 / 47          | 24              | 86 / 97              | open Settings; clear coloring page; clear drawing; with ink: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 1. iPad physical · web · Portrait · Dark         | 42 / 47 | 0 / 47          | 27              | 88 / 91              | select custom color; open Settings; select coloring page; clear coloring page; with ink: PORTRAIT to LANDSCAPE rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 1. iPad physical · web · Landscape · Light       | 46 / 48 | 0 / 48          | 20              | 81 / 90              | select coloring page; clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 1. iPad physical · web · Landscape · Dark        | 45 / 48 | 0 / 48          | 28              | 76 / 91              | open Settings; select coloring page; clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 2. iPad physical · native · Portrait · Light     | 47 / 48 | 0 / 48          | 22              | 19 / 90              | clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | 2. iPad physical · native · Portrait · Dark      | 46 / 48 | 0 / 48          | 27              | 21 / 88              | disable drawing sounds; clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 2. iPad physical · native · Landscape · Light    | 47 / 49 | 0 / 49          | 22              | 83 / 90              | select coloring page; clear coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -371,10 +366,10 @@ provenance are available in the interactive matrix and normalized JSON.
 | 8. Android emulator · native · Portrait · Dark   | 39 / 49 | 0 / 49          | 16.7            | 83.3 / 116.6         | open Settings section: What's New; switch dark theme to light; switch light theme to dark; disable drawing sounds; enable drawing sounds; disable advanced controls; enable advanced controls; enable screenshot action button; open coloring books; open coloring book                                                                                                                                                                                                                                                                                                                                      |
 | 8. Android emulator · native · Landscape · Light | 35 / 35 | 0 / 35          | 16              | 16.8 / 16.8          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 8. Android emulator · native · Landscape · Dark  | 34 / 35 | 0 / 35          | 16.6            | 33.4 / 33.4          | open coloring book                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| 9. Mac · Chrome · Portrait · Light               | 48 / 48 | 0 / 48          | 10.8            | 10.3 / 18            | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 9. Mac · Chrome · Portrait · Dark                | 48 / 48 | 0 / 48          | 10.5            | 10.3 / 17            | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 9. Mac · Chrome · Landscape · Light              | 49 / 49 | 0 / 49          | 11.1            | 10.3 / 17            | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 9. Mac · Chrome · Landscape · Dark               | 49 / 49 | 0 / 49          | 11              | 10.3 / 10.4          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 9. Mac · Chrome · Portrait · Light               | 48 / 48 | 0 / 48          | 11.1            | 10.4 / 16.7          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 9. Mac · Chrome · Portrait · Dark                | 48 / 48 | 0 / 48          | 10              | 10.3 / 17.5          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 9. Mac · Chrome · Landscape · Light              | 49 / 49 | 0 / 49          | 9.9             | 10.3 / 10.4          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 9. Mac · Chrome · Landscape · Dark               | 49 / 49 | 0 / 49          | 10.9            | 10.3 / 10.4          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 10. Mac · Safari · Portrait · Light              | 48 / 48 | 0 / 48          | 25              | 19 / 27              | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 10. Mac · Safari · Portrait · Dark               | 48 / 48 | 0 / 48          | 25              | 19 / 25              | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 10. Mac · Safari · Landscape · Light             | 49 / 49 | 0 / 49          | 23              | 19 / 25              | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -387,8 +382,9 @@ provenance are available in the interactive matrix and normalized JSON.
 ## Method
 
 Action sources are applied in manifest order within one target mode. A focused capture replaces only
-its declared labels in that mode; all other labels retain their earlier measurement and provenance.
-Drawing raw tables and action samples are re-scored with the current metric definitions when this
-report is generated; stored derived summaries are not trusted. Physical iPad web remains the
-Safari-calibrated release gate. Simulator, desktop, native-shell, and automated Android input are
-advisory comparisons.
+its declared labels in that mode, and only when the mode also carries a full sweep at the same
+product commit (`unconfirmed-focused-action` refuses the fold otherwise); all other labels retain
+their earlier measurement and provenance. Drawing raw tables and action samples are re-scored with
+the current metric definitions when this report is generated; stored derived summaries are not
+trusted. Physical iPad web remains the Safari-calibrated release gate. Simulator, desktop,
+native-shell, and automated Android input are advisory comparisons.
