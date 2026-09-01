@@ -1,9 +1,9 @@
 ---
-name: inventory-epic
+name: enumerate-sub-issues
 description: Enumerate an epic's children from the GitHub sub-issues API — never from the epic's prose — classify each (done, dropped, in flight, done-but-open, actionable, blocked, needs triage), read every child's comment thread for retractions and scope changes, and recommend a working order with every bucket reconciled against the API counts. Use when asked what remains on an epic or tracking issue, to inventory or plan a multi-issue campaign, or before implementing any issue that belongs to an epic.
 ---
 
-# Inventory an epic
+# Enumerate an issue's sub-issues
 
 An epic's prose is a stale cache of its children. This repo tracks the parent/child relation as
 GitHub **sub-issues** (`docs/ISSUE-WORKFLOW.md`, "Tracking issues"), and the API is the only

@@ -18,13 +18,14 @@ rules — all untested by the corpus but present); re-litigating the shipped sta
 ## State
 
 Stack \#1533 (bottom→top): \#1530 trap-catalogue entries → \#1531 ADR-0153 (GPU dead end) → \#1532
-campaign skills → \#1534 review-family skills → \#1535 inventory-epic skill → \#1536 artifact
-identity (harness) → \#1537 admission guards (harness). Six Codex review rounds ran across the stack
-(every finding validated against the code before acting; all accepted ones fixed, tip at c5495baec
-including the round-2 unproven-commit refusal); the resumed round confirmed its earlier findings
-addressed. Tip empirically verified on the physical Android (artifact records
-`buildEntry`/`buildDigest`/`productCommit` from the build-time stamp; `paintedOutput.changed: true`;
-fidelity PASS — no false red; nonce-named report file). `npm run test:tools` 3151 green at the tip.
+campaign skills → \#1534 review-family skills → \#1535 enumerate-sub-issues skill (added as
+inventory-epic) → \#1536 artifact identity (harness) → \#1537 admission guards (harness). Six Codex
+review rounds ran across the stack (every finding validated against the code before acting; all
+accepted ones fixed, tip at c5495baec including the round-2 unproven-commit refusal); the resumed
+round confirmed its earlier findings addressed. Tip empirically verified on the physical Android
+(artifact records `buildEntry`/`buildDigest`/`productCommit` from the build-time stamp;
+`paintedOutput.changed: true`; fidelity PASS — no false red; nonce-named report file).
+`npm run test:tools` 3151 green at the tip.
 
 ## Remaining findings, ranked
 

@@ -161,7 +161,7 @@ its own decisions under `tools/asset-gen/docs/`.
 | Skill                         | Use for                                                                            |
 | ----------------------------- | ---------------------------------------------------------------------------------- |
 | `burn-down-backlog`           | Claim the newest unclaimed open issue (`in-progress` label) and drive it to a push |
-| `inventory-epic`              | Enumerate an epic's children from the sub-issues API, classify, and order them     |
+| `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them     |
 | `reconcile-with-main`         | Merge current `main` into a long-running branch and hunt the *semantic* conflicts  |
 | `prune-remote-branches`       | Triage stale `origin` branches and hand back an approved deletion script           |
 | `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports        |
