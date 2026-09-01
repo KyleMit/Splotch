@@ -95,6 +95,7 @@ describe('magic sheet fill-load failure', () => {
       paperSize: () => PAPER,
       sheetBounds: () => ({ x: 0, y: 0, ...PAPER }),
       hasRetainedOps: () => false,
+      magicActive: () => false,
       repaint: () => {},
     });
     return magic;
@@ -347,12 +348,17 @@ describe('magic sheet worker raster', () => {
     HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
   });
 
-  async function mountedWorkerBrush(repaint = vi.fn(), hasRetainedOps = () => false) {
+  async function mountedWorkerBrush(
+    repaint = vi.fn(),
+    hasRetainedOps = () => false,
+    magicActive = () => false
+  ) {
     const magic = await import('./magicBrush');
     magic.initMagicBrush({
       paperSize: () => ({ width: 400, height: 300 }),
       sheetBounds: () => ({ x: 0, y: 0, width: 400, height: 300 }),
       hasRetainedOps,
+      magicActive,
       repaint,
     });
     return { magic, repaint };
@@ -413,6 +419,37 @@ describe('magic sheet worker raster', () => {
     magic.setColorSheet('/coloring/page.light.webp');
 
     expect(bitmap.close).not.toHaveBeenCalled();
+  });
+
+  it('defers the fallback rainbow when a page clears under an inactive brush', async () => {
+    const { magic } = await mountedWorkerBrush();
+    magic.ensureMagicSheet();
+    const gradientBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[0].id, bitmap: gradientBitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(gradientBitmap));
+    magic.setColorSheet('/coloring/page.light.webp');
+
+    magic.setColorSheet(null);
+
+    expect(workers[0].posted).toHaveLength(1);
+    expect(magic.captureMagicSheet()).toBeNull();
+  });
+
+  it('rebuilds the fallback rainbow when a page clears under the Magic brush', async () => {
+    const { magic } = await mountedWorkerBrush(
+      vi.fn(),
+      () => false,
+      () => true
+    );
+    magic.ensureMagicSheet();
+    const gradientBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[0].id, bitmap: gradientBitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(gradientBitmap));
+    magic.setColorSheet('/coloring/page.light.webp');
+
+    magic.setColorSheet(null);
+
+    expect(workers[0].posted).toHaveLength(2);
   });
 
   it('closes a superseded rainbow bitmap', async () => {

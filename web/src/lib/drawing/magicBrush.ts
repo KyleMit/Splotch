@@ -49,6 +49,7 @@ interface MagicBrushHost {
   // The exact paper-coordinate rectangle the sheet must cover.
   sheetBounds: () => { x: number; y: number; width: number; height: number } | null;
   hasRetainedOps: () => boolean;
+  magicActive: () => boolean;
   repaint: () => void;
 }
 
@@ -592,9 +593,12 @@ export function setColorSheet(colorUrl: string | null) {
   fillUrl = colorUrl;
   fillImage = null;
   if (!colorUrl) {
-    // Page removed — the sheet reverts to the gradient source if one exists.
-    rasterizeActiveSheet();
-    host?.repaint();
+    if (host?.magicActive() || host?.hasRetainedOps()) {
+      rasterizeActiveSheet();
+      host?.repaint();
+    } else {
+      invalidateSheet();
+    }
     return;
   }
   invalidateSheet();
