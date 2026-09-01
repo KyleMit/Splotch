@@ -118,7 +118,9 @@
   }
 
   async function clearAndClose() {
+    const dialogRetired = waitForDialogRetirement(dialogEl);
     coloringBookModal.hide();
+    await dialogRetired;
     await nextFrame();
     clearColoringPageWithMagicUndo();
   }
