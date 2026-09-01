@@ -234,7 +234,7 @@ export function settingsSectionMeasurement(section, label, settingsModalUsesSide
 export function settingsSectionLabelSelector(section, settingsModalUsesSidebar) {
   const selector = settingsSectionRow(section);
   return settingsModalUsesSidebar
-    ? `${selector} .toc-text > span:first-child`
+    ? `${selector} [data-toc-label]`
     : `${selector} .hub-title`;
 }
 

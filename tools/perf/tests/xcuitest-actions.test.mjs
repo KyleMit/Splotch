@@ -338,11 +338,12 @@ describe('action state planning', () => {
 
   it('reads only the stable Settings title instead of one-time activity copy', () => {
     expect(settingsSectionLabelSelector('releases', true)).toBe(
-      '#settingsModal button[data-section="releases"] .toc-text > span:first-child'
+      '#settingsModal button[data-section="releases"] [data-toc-label]'
     );
     expect(settingsSectionLabelSelector('releases', false)).toBe(
       '#settingsModal button[data-section="releases"] .hub-title'
     );
+    expect(SIDEBAR_TOC).toContain('<span data-toc-label>{item.label}</span>');
   });
 
   it('waits for stacked Settings controls to scroll into the active sidebar section', () => {
