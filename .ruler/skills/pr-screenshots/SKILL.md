@@ -50,8 +50,12 @@ end-to-end — see the ADR's Verification table.
    mkdir -p <pr-slug>
    cp /path/to/before.png /path/to/after.png <pr-slug>/
    git add -A && git commit -m "pr-assets: shots for <pr-slug>"
-   git push -u origin pr-assets
-   cd - && git worktree remove ../pr-assets-wt --force
+   asset_commit=$(git rev-parse HEAD)
+   cd -
+   # Push from the feature worktree: its pre-push hook still has the product
+   # tree that runs guard-stack-push; the orphan branch intentionally does not.
+   git push origin "$asset_commit:pr-assets"
+   git worktree remove ../pr-assets-wt --force
    ```
 
    No local git? The GitHub MCP `push_files` tool commits the same files straight to the `pr-assets`
