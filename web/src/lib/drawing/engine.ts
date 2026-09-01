@@ -1215,6 +1215,7 @@ function wireMagicBrushHost(): void {
   initMagicBrush({
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
+    hasRetainedOps: hasRetainedTiledMagicOps,
     repaint: recodeMagicOpsToCurrentSheet,
   });
 }

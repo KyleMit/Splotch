@@ -94,6 +94,7 @@ describe('magic sheet fill-load failure', () => {
     magic.initMagicBrush({
       paperSize: () => PAPER,
       sheetBounds: () => ({ x: 0, y: 0, ...PAPER }),
+      hasRetainedOps: () => false,
       repaint: () => {},
     });
     return magic;
@@ -346,11 +347,12 @@ describe('magic sheet worker raster', () => {
     HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
   });
 
-  async function mountedWorkerBrush(repaint = vi.fn()) {
+  async function mountedWorkerBrush(repaint = vi.fn(), hasRetainedOps = () => false) {
     const magic = await import('./magicBrush');
     magic.initMagicBrush({
       paperSize: () => ({ width: 400, height: 300 }),
       sheetBounds: () => ({ x: 0, y: 0, width: 400, height: 300 }),
+      hasRetainedOps,
       repaint,
     });
     return { magic, repaint };
@@ -386,6 +388,31 @@ describe('magic sheet worker raster', () => {
     await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(bitmap));
 
     expect(repaint).toHaveBeenCalledOnce();
+  });
+
+  it('releases an unretained worker sheet when its source changes', async () => {
+    const { magic } = await mountedWorkerBrush();
+    magic.ensureMagicSheet();
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[0].id, bitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(bitmap));
+
+    magic.setColorSheet('/coloring/page.light.webp');
+
+    expect(bitmap.close).toHaveBeenCalledOnce();
+    expect(magic.captureMagicSheet()).toBeNull();
+  });
+
+  it('preserves a worker sheet referenced by retained Magic ops', async () => {
+    const { magic } = await mountedWorkerBrush(vi.fn(), () => true);
+    magic.ensureMagicSheet();
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[0].id, bitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(bitmap));
+
+    magic.setColorSheet('/coloring/page.light.webp');
+
+    expect(bitmap.close).not.toHaveBeenCalled();
   });
 
   it('closes a superseded rainbow bitmap', async () => {

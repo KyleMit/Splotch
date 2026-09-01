@@ -48,6 +48,7 @@ interface MagicBrushHost {
   paperSize: () => { width: number; height: number } | null;
   // The exact paper-coordinate rectangle the sheet must cover.
   sheetBounds: () => { x: number; y: number; width: number; height: number } | null;
+  hasRetainedOps: () => boolean;
   repaint: () => void;
 }
 
@@ -116,6 +117,14 @@ const patternRegionByTarget = new WeakMap<
 >();
 
 function invalidateSheet() {
+  if (!host?.hasRetainedOps() && sheetCanvas) {
+    if ('close' in sheetCanvas) sheetCanvas.close();
+    else {
+      sheetCanvas.width = 0;
+      sheetCanvas.height = 0;
+    }
+    sheetCanvas = null;
+  }
   sheetReady = false;
   sheetSnapshot = null;
   patternCache = new WeakMap();
