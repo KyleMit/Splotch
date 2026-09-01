@@ -9,13 +9,27 @@ function runProcess(command, args, cwd) {
   return spawnSync(command, args, { cwd, encoding: 'utf8' });
 }
 
+function managedWorktreeHooksPath(configuredPath, cwd, runCommand) {
+  const worktrees = runCommand('git', ['worktree', 'list', '--porcelain'], cwd);
+  if (worktrees.status !== 0) return false;
+  const resolvedConfiguredPath = resolve(cwd, configuredPath);
+  return worktrees.stdout
+    .split('\n')
+    .filter((line) => line.startsWith('worktree '))
+    .map((line) => resolve(line.slice('worktree '.length), HOOKS_DIRECTORY))
+    .includes(resolvedConfiguredPath);
+}
+
 export function installStackPushGuard({ cwd = process.cwd(), runCommand = runProcess } = {}) {
   const hooksPath = resolve(cwd, HOOKS_DIRECTORY);
   const current = runCommand('git', ['config', '--local', '--get', 'core.hooksPath'], cwd);
   if (current.status === 0) {
     const configuredPath = current.stdout.trim();
     const resolvedConfiguredPath = resolve(cwd, configuredPath);
-    if (resolvedConfiguredPath !== hooksPath) {
+    if (
+      resolvedConfiguredPath !== hooksPath &&
+      !managedWorktreeHooksPath(configuredPath, cwd, runCommand)
+    ) {
       throw new Error(
         `core.hooksPath is already ${configuredPath}; refusing to replace an existing hook setup. ` +
           `Chain ${HOOKS_DIRECTORY}/pre-push from that hook path instead.`

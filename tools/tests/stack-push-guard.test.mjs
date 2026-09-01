@@ -285,6 +285,29 @@ describe('stacked PR push guard installation', () => {
     ).toThrow(/refusing to replace an existing hook setup/);
   });
 
+  it('moves the managed hook path to the worktree running the installer', () => {
+    const cwd = '/repo/feature';
+    const configuredPath = '/repo/main/.githooks';
+    const calls = [];
+    const installRunner = (command, args) => {
+      calls.push([command, ...args]);
+      if (args.includes('--get')) return result(0, `${configuredPath}\n`);
+      if (args.includes('--porcelain')) {
+        return result(0, 'worktree /repo/main\nHEAD abc\n\nworktree /repo/feature\nHEAD def\n');
+      }
+      return result(0);
+    };
+
+    expect(installStackPushGuard({ cwd, runCommand: installRunner })).toBe(true);
+    expect(calls.at(-1)).toEqual([
+      'git',
+      'config',
+      '--local',
+      'core.hooksPath',
+      join(cwd, '.githooks'),
+    ]);
+  });
+
   it('runs from a Git worktree that does not contain the product tools', () => {
     const directory = mkdtempSync(join(tmpdir(), 'stack-push-hook-test-'));
     try {
