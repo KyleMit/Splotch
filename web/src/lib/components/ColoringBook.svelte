@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import ActivePageChip from './ActivePageChip.svelte';
+  import ColoringBookHeaderActions from './ColoringBookHeaderActions.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import { coloringBookState, setOverlayOrientation } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -16,6 +16,7 @@
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
+  import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
   import ScrollCue from './design/ScrollCue.svelte';
   import { cutTrailingRow } from '$lib/actions/scrollCue';
   import { guardTapZone } from '$lib/actions/launchGuard';
@@ -33,13 +34,12 @@
     applyColoringPageWithMagicUndo,
     clearColoringPageWithMagicUndo,
   } from '$lib/drawing/coloringAppearance';
-
-  const platform = isNative() ? 'mobile' : 'web';
-  const books = $derived(availableColoringBooks(platform));
+  const books = $derived(availableColoringBooks(isNative() ? 'mobile' : 'web'));
   const hasBookPicker = $derived(books.length >= 2);
 
   let activeBook = $state<Book | null>(null);
   let pagesGridToken = $state(0);
+  let retiringAfterPageSelection = $state(false);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
@@ -102,23 +102,29 @@
     setOverlayOrientation(orientation);
   });
 
-  async function pickPage(page: ColoringPage) {
-    const selectedOrientation = orientation;
-    const selectedTheme = resolvedTheme();
-    const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
-    cancelImagePrefetchesExcept(selectedOverlayUrl);
-    for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
-      cancelImageRequest(img);
-    }
-    const dialogRetired = waitForDialogRetirement(dialogEl);
-    coloringBookModal.hide();
-    await dialogRetired;
-    await nextFrame();
-    applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
+  async function pickPage(page: ColoringPage, button: HTMLButtonElement) {
+    if (retiringAfterPageSelection) return;
+    retiringAfterPageSelection = true;
+    await runSingleFlightActivation(button, async () => {
+      const selectedOrientation = orientation;
+      const selectedTheme = resolvedTheme();
+      const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
+      cancelImagePrefetchesExcept(selectedOverlayUrl);
+      for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
+        cancelImageRequest(img);
+      }
+      const dialogRetired = waitForDialogRetirement(dialogEl);
+      coloringBookModal.hide();
+      await dialogRetired;
+      await nextFrame();
+      applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
+    });
   }
 
   async function clearAndClose() {
+    const dialogRetired = waitForDialogRetirement(dialogEl);
     coloringBookModal.hide();
+    await dialogRetired;
     await nextFrame();
     clearColoringPageWithMagicUndo();
   }
@@ -147,6 +153,7 @@
   }
 
   function showInitialView() {
+    retiringAfterPageSelection = false;
     pagesGridToken += 1;
     showView(initialView());
   }
@@ -173,27 +180,6 @@
   }
 </script>
 
-{#snippet activePageChip()}
-  {#if coloringBookModal.open && activePage && activePagePreview}
-    <ActivePageChip
-      page={activePage}
-      preview={activePagePreview}
-      {hoverArmed}
-      onclear={clearAndClose}
-    />
-  {/if}
-{/snippet}
-
-{#snippet closeButton()}
-  <button
-    class="coloring-book-close modal-close-btn"
-    aria-label="Close"
-    onclick={coloringBookModal.hide}
-  >
-    <Icon name="close" class="modal-close-icon" />
-  </button>
-{/snippet}
-
 <dialog
   bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
@@ -203,15 +189,25 @@
     origin: coloringBookModal.origin,
     onRequestClose: coloringBookModal.hide,
     onOpen: showInitialView,
+    retirement: 'compositor',
   })}
 >
-  <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
+  <div
+    class="coloring-book-content"
+    class:hover-armed={hoverArmed}
+    class:retiring-after-page-selection={retiringAfterPageSelection}
+    use:armHoverOnMouseMove
+  >
     {#if !activeBook}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
           <h2>Coloring Books</h2>
-          {@render activePageChip()}
-          {@render closeButton()}
+          <ColoringBookHeaderActions
+            {activePage}
+            {activePagePreview}
+            {hoverArmed}
+            onclear={clearAndClose}
+          />
         </div>
         <div
           class="coloring-grid coloring-books-grid"
@@ -253,8 +249,12 @@
             </button>
           {/if}
           <h2>{activeBook.name}</h2>
-          {@render activePageChip()}
-          {@render closeButton()}
+          <ColoringBookHeaderActions
+            {activePage}
+            {activePagePreview}
+            {hoverArmed}
+            onclear={clearAndClose}
+          />
         </div>
         {#key pagesGridToken}
           <div
@@ -268,7 +268,7 @@
                 class="coloring-tile"
                 type="button"
                 aria-label="{page.name} coloring page"
-                onclick={() => pickPage(page)}
+                onclick={(event) => pickPage(page, event.currentTarget)}
                 onpointerenter={() => prefetchPageOverlay(page)}
                 onpointerdown={() => prefetchPageOverlay(page)}
               >
@@ -318,15 +318,6 @@
     font-size: var(--font-size-xl);
     color: var(--text-strong);
     font-weight: var(--font-weight-semibold);
-  }
-
-  .coloring-book-close {
-    /* The chip and close disc share this header row, so this modal opts out of
-       the global close button's absolute corner positioning. */
-    position: static;
-    flex: 0 0 var(--modal-close-size);
-    transition: opacity var(--duration-base) ease;
-    z-index: 1;
   }
 
   .coloring-book-header {
@@ -451,8 +442,13 @@
     }
   }
 
-  .coloring-tile:active {
+  .coloring-tile:active,
+  .coloring-tile:global(.activation-pending) {
     transform: scale(0.96);
+  }
+
+  .retiring-after-page-selection .coloring-tile {
+    transition: none;
   }
 
   .coloring-tile img {

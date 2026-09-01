@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { waitForPressFeedbackToSettle } from './pressFeedback';
+import { runSingleFlightActivation } from './pressFeedback';
 
 function frameQueue() {
   const frames: FrameRequestCallback[] = [];
@@ -16,36 +16,50 @@ afterEach(() => {
 });
 
 describe('press feedback', () => {
-  it('observes release animations after a frame and retires them before returning', async () => {
+  it('commits activation immediately and runs the action after that state paints', async () => {
     const frames = frameQueue();
-    const node = document.createElement('button');
-    const release = Promise.withResolvers<void>();
-    const getAnimations = vi.fn(() => [{ finished: release.promise }]);
-    Object.defineProperty(node, 'getAnimations', { value: getAnimations });
+    const button = document.createElement('button');
+    const activate = vi.fn();
 
-    const settled = waitForPressFeedbackToSettle(node);
-    expect(getAnimations).not.toHaveBeenCalled();
+    const activation = runSingleFlightActivation(button, activate);
+    expect(button.disabled).toBe(true);
+    expect(button.classList).toContain('activation-pending');
+    expect(activate).not.toHaveBeenCalled();
 
     frames.shift()!(0);
     await Promise.resolve();
-    expect(getAnimations).toHaveBeenCalledOnce();
-
-    release.resolve();
-    await vi.waitFor(() => expect(frames).toHaveLength(1));
+    expect(activate).not.toHaveBeenCalled();
 
     frames.shift()!(16);
-    await settled;
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(activate).toHaveBeenCalledOnce();
+    expect(button.disabled).toBe(true);
+    expect(button.classList).toContain('activation-pending');
+
+    frames.shift()!(32);
+    await activation;
+    expect(button.disabled).toBe(false);
+    expect(button.classList).not.toContain('activation-pending');
   });
 
-  it('returns after the observation frame when the control has no release animation', async () => {
+  it('blocks duplicate and pre-disabled activations', async () => {
     const frames = frameQueue();
-    const node = document.createElement('button');
-    Object.defineProperty(node, 'getAnimations', { value: vi.fn(() => []) });
+    const button = document.createElement('button');
+    const activate = vi.fn();
 
-    const settled = waitForPressFeedbackToSettle(node);
+    const first = runSingleFlightActivation(button, activate);
+    await expect(runSingleFlightActivation(button, activate)).resolves.toBe(false);
     frames.shift()!(0);
-    await settled;
+    await Promise.resolve();
+    frames.shift()!(16);
+    await Promise.resolve();
+    await Promise.resolve();
+    frames.shift()!(32);
+    await expect(first).resolves.toBe(true);
 
-    expect(frames).toHaveLength(0);
+    button.disabled = true;
+    await expect(runSingleFlightActivation(button, activate)).resolves.toBe(false);
+    expect(activate).toHaveBeenCalledOnce();
   });
 });

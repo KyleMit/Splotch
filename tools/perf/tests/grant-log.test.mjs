@@ -1,10 +1,21 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { describeGrantHistory, grantLogSummary, isGrantDenial } from '../lib/grant-log.mjs';
+import {
+  describeGrantHistory,
+  GRANT_LOG,
+  GRANT_LOG_HEADER,
+  grantLogDevice,
+  grantLogSummary,
+  isGrantDenial,
+} from '../lib/grant-log.mjs';
 
 const UDID = '00008103-0006202E3CF1001E';
 const HOUR_MS = 3_600_000;
 
-const row = (timestamp, outcome, detail = '') => ({ timestamp, udid: UDID, outcome, detail });
+const DEVICE = grantLogDevice(UDID);
+const row = (timestamp, outcome, detail = '') => ({ timestamp, device: DEVICE, outcome, detail });
 const DENIAL_DETAIL =
   'the iPad is asking to enable UI automation. Look at the device: XCTest has put an ' +
   '"Enter iPad Passcode for XCTest / Enable UI Automation" prompt on screen.';
@@ -25,7 +36,7 @@ describe('grantLogSummary', () => {
   it('reports the age of the last good grant', () => {
     const summary = grantLogSummary(
       [row('2026-08-26T09:00:00.000Z', 'ok'), row('2026-08-26T10:00:00.000Z', 'ok')],
-      { udid: UDID, now }
+      { device: DEVICE, now }
     );
     expect(summary.attempts).toBe(2);
     expect(summary.lastOkAgeMs).toBe(2 * HOUR_MS);
@@ -41,7 +52,7 @@ describe('grantLogSummary', () => {
         row('2026-08-25T01:00:00.000Z', 'ok'),
         row('2026-08-25T07:00:00.000Z', 'blocked', DENIAL_DETAIL),
       ],
-      { udid: UDID, now }
+      { device: DEVICE, now }
     );
     expect(summary.shortestOkToDeniedMs).toBe(6 * HOUR_MS);
   });
@@ -49,10 +60,10 @@ describe('grantLogSummary', () => {
   it('ignores rows for other devices and unparseable timestamps', () => {
     const summary = grantLogSummary(
       [
-        { timestamp: '2026-08-26T09:00:00.000Z', udid: 'other', outcome: 'ok', detail: '' },
-        { timestamp: 'not-a-date', udid: UDID, outcome: 'ok', detail: '' },
+        { timestamp: '2026-08-26T09:00:00.000Z', device: 'other', outcome: 'ok', detail: '' },
+        { timestamp: 'not-a-date', device: DEVICE, outcome: 'ok', detail: '' },
       ],
-      { udid: UDID, now }
+      { device: DEVICE, now }
     );
     expect(summary.attempts).toBe(0);
     expect(summary.lastOkAgeMs).toBeNull();
@@ -77,5 +88,39 @@ describe('describeGrantHistory', () => {
     });
     expect(text).toContain('last successful launch 2h ago');
     expect(text).toContain('lifetime under 6h');
+  });
+});
+
+describe('grant log schema', () => {
+  it('uses a stable per-device pseudonym and keeps the committed header aligned with the writer', () => {
+    expect(grantLogDevice(UDID)).toBe(DEVICE);
+    expect(grantLogDevice('another-device')).not.toBe(DEVICE);
+    expect(readFileSync(GRANT_LOG, 'utf8').split('\n')[0] + '\n').toBe(GRANT_LOG_HEADER);
+    expect(describeGrantHistory(UDID)).not.toContain('no recorded launch');
+  });
+
+  it('migrates legacy raw-UDID rows while reading an existing log', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-grant-log-'));
+    const logPath = join(directory, 'ipad-grant-log.tsv');
+    writeFileSync(
+      logPath,
+      [
+        'timestamp\tudid\toutcome\tdetail',
+        `2026-08-25T01:00:00.000Z\t${UDID}\tok\tstarted and closed cleanly`,
+        `2026-08-25T07:00:00.000Z\t${UDID}\tblocked\t${DENIAL_DETAIL}`,
+        '',
+      ].join('\n')
+    );
+
+    try {
+      const text = describeGrantHistory(UDID, {
+        logPath,
+        now: Date.parse('2026-08-26T12:00:00.000Z'),
+      });
+      expect(text).toContain('last successful launch 35h ago');
+      expect(text).toContain('lifetime under 6h');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });

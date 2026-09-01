@@ -668,7 +668,8 @@
             "worst": {
               "firstFrameP95": 24,
               "postActionFrameP95": 86,
-              "postActionFrameMax": 97
+              "postActionFrameMax": 97,
+              "readyP95": 12282
             },
             "results": [
               {
@@ -2391,7 +2392,8 @@
             "worst": {
               "firstFrameP95": 27,
               "postActionFrameP95": 88,
-              "postActionFrameMax": 91
+              "postActionFrameMax": 91,
+              "readyP95": 12158
             },
             "results": [
               {
@@ -4114,7 +4116,8 @@
             "worst": {
               "firstFrameP95": 20,
               "postActionFrameP95": 81,
-              "postActionFrameMax": 90
+              "postActionFrameMax": 90,
+              "readyP95": 12167
             },
             "results": [
               {
@@ -5862,7 +5865,8 @@
             "worst": {
               "firstFrameP95": 28,
               "postActionFrameP95": 76,
-              "postActionFrameMax": 91
+              "postActionFrameMax": 91,
+              "readyP95": 12244
             },
             "results": [
               {
@@ -7610,7 +7614,8 @@
             "worst": {
               "firstFrameP95": 22,
               "postActionFrameP95": 19,
-              "postActionFrameMax": 90
+              "postActionFrameMax": 90,
+              "readyP95": 2710
             },
             "results": [
               {
@@ -9342,7 +9347,8 @@
             "worst": {
               "firstFrameP95": 27,
               "postActionFrameP95": 21,
-              "postActionFrameMax": 88
+              "postActionFrameMax": 88,
+              "readyP95": 2793
             },
             "results": [
               {
@@ -11074,7 +11080,8 @@
             "worst": {
               "firstFrameP95": 22,
               "postActionFrameP95": 83,
-              "postActionFrameMax": 90
+              "postActionFrameMax": 90,
+              "readyP95": 2823
             },
             "results": [
               {
@@ -12831,7 +12838,8 @@
             "worst": {
               "firstFrameP95": 25,
               "postActionFrameP95": 83,
-              "postActionFrameMax": 87
+              "postActionFrameMax": 87,
+              "readyP95": 2829
             },
             "results": [
               {
@@ -14612,7 +14620,8 @@
             "worst": {
               "firstFrameP95": 14,
               "postActionFrameP95": 34,
-              "postActionFrameMax": 50
+              "postActionFrameMax": 50,
+              "readyP95": 2371
             },
             "results": [
               {
@@ -16335,7 +16344,8 @@
             "worst": {
               "firstFrameP95": 17,
               "postActionFrameP95": 33,
-              "postActionFrameMax": 50
+              "postActionFrameMax": 50,
+              "readyP95": 2387
             },
             "results": [
               {
@@ -18058,7 +18068,8 @@
             "worst": {
               "firstFrameP95": 17,
               "postActionFrameP95": 41,
-              "postActionFrameMax": 50
+              "postActionFrameMax": 50,
+              "readyP95": 2379
             },
             "results": [
               {
@@ -19806,7 +19817,8 @@
             "worst": {
               "firstFrameP95": 17,
               "postActionFrameP95": 38,
-              "postActionFrameMax": 52
+              "postActionFrameMax": 52,
+              "readyP95": 2389
             },
             "results": [
               {
@@ -21554,7 +21566,8 @@
             "worst": {
               "firstFrameP95": 33,
               "postActionFrameP95": 67,
-              "postActionFrameMax": 67
+              "postActionFrameMax": 67,
+              "readyP95": 2383
             },
             "results": [
               {
@@ -23286,7 +23299,8 @@
             "worst": {
               "firstFrameP95": 15,
               "postActionFrameP95": 32,
-              "postActionFrameMax": 41
+              "postActionFrameMax": 41,
+              "readyP95": 1955
             },
             "results": [
               {
@@ -25018,7 +25032,8 @@
             "worst": {
               "firstFrameP95": 16,
               "postActionFrameP95": 56,
-              "postActionFrameMax": 56
+              "postActionFrameMax": 56,
+              "readyP95": 1957
             },
             "results": [
               {
@@ -26775,7 +26790,8 @@
             "worst": {
               "firstFrameP95": 17,
               "postActionFrameP95": 64,
-              "postActionFrameMax": 64
+              "postActionFrameMax": 64,
+              "readyP95": 2254
             },
             "results": [
               {
@@ -28544,7 +28560,8 @@
             "worst": {
               "firstFrameP95": 29.6,
               "postActionFrameP95": 16.9,
-              "postActionFrameMax": 33.4
+              "postActionFrameMax": 33.4,
+              "readyP95": 2534.1
             },
             "results": [
               {
@@ -30276,7 +30293,8 @@
             "worst": {
               "firstFrameP95": 24.8,
               "postActionFrameP95": 33.4,
-              "postActionFrameMax": 33.6
+              "postActionFrameMax": 33.6,
+              "readyP95": 2568.8
             },
             "results": [
               {
@@ -32008,7 +32026,8 @@
             "worst": {
               "firstFrameP95": 31.2,
               "postActionFrameP95": 33.3,
-              "postActionFrameMax": 33.4
+              "postActionFrameMax": 33.4,
+              "readyP95": 2535.5
             },
             "results": [
               {
@@ -33390,7 +33409,8 @@
             "worst": {
               "firstFrameP95": 24.2,
               "postActionFrameP95": 33.3,
-              "postActionFrameMax": 33.4
+              "postActionFrameMax": 33.4,
+              "readyP95": 2535.8
             },
             "results": [
               {
@@ -34788,7 +34808,8 @@
             "worst": {
               "firstFrameP95": 44.9,
               "postActionFrameP95": 16.7,
-              "postActionFrameMax": 66.7
+              "postActionFrameMax": 66.7,
+              "readyP95": 2980.8
             },
             "results": [
               {
@@ -36549,7 +36570,8 @@
             "worst": {
               "firstFrameP95": 61.2,
               "postActionFrameP95": 16.9,
-              "postActionFrameMax": 50.1
+              "postActionFrameMax": 50.1,
+              "readyP95": 2963.2
             },
             "results": [
               {
@@ -38310,7 +38332,8 @@
             "worst": {
               "firstFrameP95": 40.7,
               "postActionFrameP95": 16.7,
-              "postActionFrameMax": 58.4
+              "postActionFrameMax": 58.4,
+              "readyP95": 2917.2
             },
             "results": [
               {
@@ -39721,7 +39744,8 @@
             "worst": {
               "firstFrameP95": 89.7,
               "postActionFrameP95": 16.6,
-              "postActionFrameMax": 91.8
+              "postActionFrameMax": 91.8,
+              "readyP95": 2932.7
             },
             "results": [
               {
@@ -41140,7 +41164,8 @@
             "worst": {
               "firstFrameP95": 30.8,
               "postActionFrameP95": 83.4,
-              "postActionFrameMax": 116.6
+              "postActionFrameMax": 116.6,
+              "readyP95": 2524.7
             },
             "results": [
               {
@@ -42897,7 +42922,8 @@
             "worst": {
               "firstFrameP95": 14.9,
               "postActionFrameP95": 33.4,
-              "postActionFrameMax": 33.4
+              "postActionFrameMax": 33.4,
+              "readyP95": 2528.8
             },
             "results": [
               {
@@ -44629,7 +44655,8 @@
             "worst": {
               "firstFrameP95": 16.6,
               "postActionFrameP95": 50.1,
-              "postActionFrameMax": 83.4
+              "postActionFrameMax": 83.4,
+              "readyP95": 2535.4
             },
             "results": [
               {
@@ -46011,7 +46038,8 @@
             "worst": {
               "firstFrameP95": 16.2,
               "postActionFrameP95": 83.2,
-              "postActionFrameMax": 116.6
+              "postActionFrameMax": 116.6,
+              "readyP95": 2545.5
             },
             "results": [
               {
@@ -47409,7 +47437,8 @@
             "worst": {
               "firstFrameP95": 20.5,
               "postActionFrameP95": 66.7,
-              "postActionFrameMax": 83.3
+              "postActionFrameMax": 83.3,
+              "readyP95": 2685.9
             },
             "results": [
               {
@@ -49170,7 +49199,8 @@
             "worst": {
               "firstFrameP95": 16.7,
               "postActionFrameP95": 83.3,
-              "postActionFrameMax": 116.6
+              "postActionFrameMax": 116.6,
+              "readyP95": 2701.2
             },
             "results": [
               {
@@ -50931,7 +50961,8 @@
             "worst": {
               "firstFrameP95": 16,
               "postActionFrameP95": 16.8,
-              "postActionFrameMax": 16.8
+              "postActionFrameMax": 16.8,
+              "readyP95": 2696.1
             },
             "results": [
               {
@@ -52342,7 +52373,8 @@
             "worst": {
               "firstFrameP95": 16.6,
               "postActionFrameP95": 33.4,
-              "postActionFrameMax": 33.4
+              "postActionFrameMax": 33.4,
+              "readyP95": 2693.6
             },
             "results": [
               {
@@ -54061,7 +54093,8 @@
             "worst": {
               "firstFrameP95": 11.1,
               "postActionFrameP95": 10.4,
-              "postActionFrameMax": 16.7
+              "postActionFrameMax": 16.7,
+              "readyP95": 1501.8
             },
             "results": [
               {
@@ -56093,7 +56126,8 @@
             "worst": {
               "firstFrameP95": 10,
               "postActionFrameP95": 10.3,
-              "postActionFrameMax": 17.5
+              "postActionFrameMax": 17.5,
+              "readyP95": 1502.1
             },
             "results": [
               {
@@ -58125,7 +58159,8 @@
             "worst": {
               "firstFrameP95": 9.9,
               "postActionFrameP95": 10.3,
-              "postActionFrameMax": 10.4
+              "postActionFrameMax": 10.4,
+              "readyP95": 1502.1
             },
             "results": [
               {
@@ -60182,7 +60217,8 @@
             "worst": {
               "firstFrameP95": 10.9,
               "postActionFrameP95": 10.3,
-              "postActionFrameMax": 10.4
+              "postActionFrameMax": 10.4,
+              "readyP95": 1502.3
             },
             "results": [
               {
@@ -62251,7 +62287,8 @@
             "worst": {
               "firstFrameP95": 23,
               "postActionFrameP95": 23,
-              "postActionFrameMax": 27
+              "postActionFrameMax": 27,
+              "readyP95": 1499
             },
             "results": [
               {
@@ -64287,7 +64324,8 @@
             "worst": {
               "firstFrameP95": 22,
               "postActionFrameP95": 22,
-              "postActionFrameMax": 27
+              "postActionFrameMax": 27,
+              "readyP95": 1504
             },
             "results": [
               {
@@ -66323,7 +66361,8 @@
             "worst": {
               "firstFrameP95": 23,
               "postActionFrameP95": 19,
-              "postActionFrameMax": 24
+              "postActionFrameMax": 24,
+              "readyP95": 1492
             },
             "results": [
               {
@@ -68384,7 +68423,8 @@
             "worst": {
               "firstFrameP95": 24,
               "postActionFrameP95": 19,
-              "postActionFrameMax": 35
+              "postActionFrameMax": 35,
+              "readyP95": 1504
             },
             "results": [
               {
@@ -70457,7 +70497,8 @@
             "worst": {
               "firstFrameP95": 13,
               "postActionFrameP95": 10.32,
-              "postActionFrameMax": 18.22
+              "postActionFrameMax": 18.22,
+              "readyP95": 1521
             },
             "results": [
               {
@@ -72489,7 +72530,8 @@
             "worst": {
               "firstFrameP95": 11.86,
               "postActionFrameP95": 10.32,
-              "postActionFrameMax": 25.02
+              "postActionFrameMax": 25.02,
+              "readyP95": 1520
             },
             "results": [
               {
@@ -74521,7 +74563,8 @@
             "worst": {
               "firstFrameP95": 14.32,
               "postActionFrameP95": 10.34,
-              "postActionFrameMax": 17.54
+              "postActionFrameMax": 17.54,
+              "readyP95": 1520
             },
             "results": [
               {
@@ -76578,7 +76621,8 @@
             "worst": {
               "firstFrameP95": 13.56,
               "postActionFrameP95": 16.6,
-              "postActionFrameMax": 25
+              "postActionFrameMax": 25,
+              "readyP95": 1517
             },
             "results": [
               {
