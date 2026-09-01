@@ -39,7 +39,10 @@ Never review from API diff hunks alone. Check out the PR's head branch so you ca
 diffs and actually execute the code:
 
 1. Read the PR itself and record its repository, number, state, base branch + OID, and head branch +
-   OID. The PR metadata is authoritative; never assume the merge target is `main`.
+   OID. The PR metadata is authoritative; never assume the merge target is `main`. The native PR
+   read carries all four; the CLI spelling is
+   `gh pr view <n> --json baseRefName,baseRefOid,headRefName,headRefOid`. A base OID no local ref
+   covers is fetchable directly: `git fetch origin <base-oid>`.
 2. Make sure the working tree is clean; never mix a review checkout with local work in progress.
 3. Fetch and check out the recorded head branch:
 
@@ -55,6 +58,30 @@ diffs and actually execute the code:
    actual merge target). `git log <base-oid>..<head-oid> --oneline` gives the commit story; per-file
    diffs and `git blame` are all offline from here. This is load-bearing for stacked PRs, whose base
    is the preceding feature branch rather than `main`.
+
+## Reviewing a stack
+
+A stacked campaign hands you several PRs at once (`create-stacked-prs` builds them;
+`create-pr-feedback-handoff` enumerates them). The single-PR procedure above runs once per PR; the
+stack adds four rules around it:
+
+1. **Resolve the live topology first and work bottom → top.** Read every PR's recorded base and
+   head; the chain the handoff listed can have moved. Each PR is diffed against **its own base OID**
+   — against `main` every PR above the bottom shows every PR below it too, and the same change gets
+   reviewed N times.
+2. **Read the existing review threads on each PR before writing findings.** A stack accretes rounds;
+   a finding already posted — yours from an earlier round or anyone else's — is deduplicated, not
+   re-raised, and a resolved thread is not reopened by a fresh comment saying the same thing.
+3. **One atomic review per PR**, exactly as the single-PR flow posts it. A finding about code a
+   lower PR introduced anchors on the PR that introduced it, not where the tip's diff happens to
+   expose it.
+4. **Close with a stack-level verdict in the top PR's review body**: whether the decomposition and
+   sequencing hold up, cross-PR concerns no single diff shows (a lower PR's change invalidating an
+   upper's assumption), and whether the chain is mergeable in order. Line-level review cannot see
+   this; it is the half of a stack review that reviewing the PRs separately misses.
+
+Leave the checkout as you found it: every branch unmodified, nothing pushed, working tree clean —
+reviewing a stack authorizes reviews, never commits.
 
 ## Analysis — verify empirically, anchor as you go
 

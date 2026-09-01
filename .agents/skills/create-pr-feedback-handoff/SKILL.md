@@ -18,9 +18,14 @@ starts from the PRs alone.
 ## 1. Enumerate the PRs
 
 Every PR this session created or materially changed is in scope — a session running stacked PRs
-(`create-stacked-prs`) has several. For each, record from live PR state — copy numbers, URLs, and
-branch names from tool output, never from memory: number, URL, title, head branch, base branch, and
-a one-line scope.
+(`create-stacked-prs`) has several. For each, record from live PR state — copy numbers, URLs, branch
+names, and OIDs from tool output, never from memory: number, URL, title, head branch + OID, base
+branch + OID, and a one-line scope. The OIDs pin what the prompt is asking to have reviewed — a
+stacked base branch moves when a lower PR gains a round of fixes, and a reviewer holding only branch
+names cannot tell that it did.
+
+Also record what has **already been reviewed**: rounds posted on each PR, and whether their findings
+are addressed or open. A reviewer who does not know this re-raises resolved threads.
 
 For a stack, list the chain bottom → top and say so in the prompt: each PR's base is the branch
 below it, so the reviewer must diff each PR against **its own base**, never against `main`.
@@ -59,8 +64,12 @@ authorization to post each review as inline comments on its PR.
 
 PRs to review (bottom → top of the stack — diff each against its own base branch, not main):
 
-1. PR #<N> — <title> — <url> — head `<branch>`, base `<branch>` — <one-line scope>
+1. PR #<N> — <title> — <url> — head `<branch>` @ <head-oid>, base `<branch>` @ <base-oid> —
+   <one-line scope>
 2. …
+
+Already reviewed: <rounds posted per PR and whether their findings are addressed — do not re-raise
+them; "none" when this is the first review>.
 
 Do a **full review sweep of every PR first** — nothing below limits that. Then drive into these
 extra focus areas:
@@ -70,6 +79,14 @@ extra focus areas:
 * Adversarial pass on the overall strategy: the campaign <one-line approach>. Argue the strongest
   case that it should have been shaped differently, and include that assessment in the review
   summary.
+
+Empirical verification: <what running/measuring is authorized — e.g. "run the code and tests";
+include physical-device checks only when the rig is genuinely in scope, naming
+`start-capture-session` as the entry; "static review only" when it is not>.
+
+Boundaries: review only — do not modify, commit to, or push any branch under review, and do not
+merge or close anything. Expected end state: one posted review per PR, the checkout clean and every
+branch exactly as found<, rig verified-and-idle if devices were used>.
 
 Context you'll need: <how to run and verify, nonstandard setup, anything the reviewer can't infer
 from the repo>.
