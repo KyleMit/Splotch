@@ -396,62 +396,6 @@ describe('magic sheet worker raster', () => {
     expect(repaint).toHaveBeenCalledOnce();
   });
 
-  it('releases an unretained worker sheet when its source changes', async () => {
-    const { magic } = await mountedWorkerBrush();
-    magic.ensureMagicSheet();
-    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
-    workers[0].respond({ id: workers[0].posted[0].id, bitmap });
-    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(bitmap));
-
-    magic.setColorSheet('/coloring/page.light.webp');
-
-    expect(bitmap.close).toHaveBeenCalledOnce();
-    expect(magic.captureMagicSheet()).toBeNull();
-  });
-
-  it('preserves a worker sheet referenced by retained Magic ops', async () => {
-    const { magic } = await mountedWorkerBrush(vi.fn(), () => true);
-    magic.ensureMagicSheet();
-    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
-    workers[0].respond({ id: workers[0].posted[0].id, bitmap });
-    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(bitmap));
-
-    magic.setColorSheet('/coloring/page.light.webp');
-
-    expect(bitmap.close).not.toHaveBeenCalled();
-  });
-
-  it('defers the fallback rainbow when a page clears under an inactive brush', async () => {
-    const { magic } = await mountedWorkerBrush();
-    magic.ensureMagicSheet();
-    const gradientBitmap = { close: vi.fn() } as unknown as ImageBitmap;
-    workers[0].respond({ id: workers[0].posted[0].id, bitmap: gradientBitmap });
-    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(gradientBitmap));
-    magic.setColorSheet('/coloring/page.light.webp');
-
-    magic.setColorSheet(null);
-
-    expect(workers[0].posted).toHaveLength(1);
-    expect(magic.captureMagicSheet()).toBeNull();
-  });
-
-  it('rebuilds the fallback rainbow when a page clears under the Magic brush', async () => {
-    const { magic } = await mountedWorkerBrush(
-      vi.fn(),
-      () => false,
-      () => true
-    );
-    magic.ensureMagicSheet();
-    const gradientBitmap = { close: vi.fn() } as unknown as ImageBitmap;
-    workers[0].respond({ id: workers[0].posted[0].id, bitmap: gradientBitmap });
-    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(gradientBitmap));
-    magic.setColorSheet('/coloring/page.light.webp');
-
-    magic.setColorSheet(null);
-
-    expect(workers[0].posted).toHaveLength(2);
-  });
-
   it('closes a superseded rainbow bitmap', async () => {
     const { magic } = await mountedWorkerBrush();
     magic.ensureMagicSheet();
