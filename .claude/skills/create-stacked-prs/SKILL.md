@@ -80,20 +80,21 @@ git push -u origin <new-branch>
 Then open the PR **with its base set to `<previous-branch>`** — the native create-PR tool, or as a
 fallback `gh pr create --base <previous-branch> --title "…" --body-file <path>`.
 
-An ordinary `git push` is valid only for the stack tip. An intentional `gh stack rebase` is
-published with `gh stack push`, which updates the branches non-atomically.
-
-**Check each rewritten lower branch yourself before publishing.** A rebase may rewrite commit
-identities, but it must leave every lower PR's *content* untouched, and nothing will stop a
-`gh stack push` that changes one. Record each PR's `baseRefOid` and `headRefOid` before the rebase,
-then compare the patch each branch carries against the patch it carried before:
+An ordinary `git push` is valid only for the stack tip. After an intentional `gh stack rebase`, do
+not call `gh stack push` directly; publish through:
 
 ```bash
-git diff --binary <base-oid>...<head-oid> | git patch-id --stable
+npm run stack:push:rebased
 ```
 
-Differing IDs mean the rebase changed that PR's content — the no-commits-below rule broken by
-another route. Put the change in the tip instead.
+A rebase may rewrite commit identities, but it must leave every lower PR's *content* untouched, and
+a bare `gh stack push` will publish one that does not. That wrapper reads the live PR head/base
+identities, compares each lower PR's original patch against the patch its rebased branch now
+carries, and refuses to push when any differs — naming the PR. It checks exactly the PRs another
+open PR is based on; the tip is excluded, because new commits legitimately land there.
+
+A refusal means the rebase changed that PR's content — the no-commits-below rule broken by another
+route. Put the change in a new commit at the tip instead.
 
 Branches follow the repo convention — `claude/issue-<NN>-<slug>`. When falling back to the CLI, use
 `--body-file`, not `--body`, for anything longer than a sentence: a body containing backticks, `$`,
