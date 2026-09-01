@@ -3,6 +3,7 @@ import {
   MEASURED_SURFACE,
   assessManifest,
   capturedCommits,
+  implicitBaseWarning,
   modeProvenance,
   everyChangeIsASpec,
 } from '../check-matrix-staleness.mjs';
@@ -180,5 +181,36 @@ describe('a spec is not the product', () => {
     });
 
     expect(row.verdict).toBe('STALE');
+  });
+});
+
+// The HEAD default is legitimate fold-time semantics, but run from a branch
+// carrying its own commits it quietly answers a different question — current
+// against this branch, not against the published branch point — and nothing
+// said so. The warning names the ambiguity without touching verdict or exit.
+describe('implicitBaseWarning', () => {
+  const branchAhead = { headSha: 'branch-tip', mergeBaseSha: 'branch-point' };
+
+  it('fires when --base was not passed and HEAD carries commits origin/main lacks', () => {
+    const warning = implicitBaseWarning({ explicitBase: false, ...branchAhead });
+
+    expect(warning).toContain('--base=origin/main');
+    expect(warning).toContain('this branch');
+  });
+
+  it('stays silent under an explicit --base, --base=HEAD included', () => {
+    expect(implicitBaseWarning({ explicitBase: true, ...branchAhead })).toBeNull();
+  });
+
+  it('stays silent when HEAD sits at the origin/main branch point', () => {
+    expect(
+      implicitBaseWarning({ explicitBase: false, headSha: 'tip', mergeBaseSha: 'tip' })
+    ).toBeNull();
+  });
+
+  it('stays silent when origin/main cannot be resolved', () => {
+    expect(
+      implicitBaseWarning({ explicitBase: false, headSha: 'tip', mergeBaseSha: null })
+    ).toBeNull();
   });
 });

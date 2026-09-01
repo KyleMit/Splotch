@@ -15,9 +15,7 @@
 // time reusable: every percentile and verdict is derived in Node, so a later
 // revision of the fidelity table re-reads this file rather than asking for
 // another finger. Issue 1218 is the Android half of that measurement.
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { argFlag, capture, fail, isMain, ROOT, runMain, sleep } from '../../lib/proc.mjs';
+import { argFlag, capture, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { assertServedBuildIsFresh } from '../lib/profile-preview.mjs';
 import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
@@ -28,7 +26,7 @@ import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { inputRows, pacingRows, summarizeRun } from '../lib/real-screen-stats.mjs';
 import { androidOpenSteps } from './lib/android-input.mjs';
-import { APP_BUNDLE_ID } from './capture-device-frames.mjs';
+import { APP_BUNDLE_ID, writeArtifactFile } from './capture-device-frames.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
@@ -248,6 +246,7 @@ export function handCaptureArtifact({
   device,
   seconds,
   reading,
+  servedBuild = null,
   fidelity,
   summaries,
   payload,
@@ -261,6 +260,12 @@ export function handCaptureArtifact({
     brush,
     orientation,
     theme,
+    // The served-build identity the guard proved before this capture ran — see
+    // drivenCaptureArtifact. A hand capture is the one a person paid for, so
+    // which build it measured must be provable later without re-deriving it.
+    productCommit: servedBuild?.productCommit ?? null,
+    buildEntry: servedBuild?.buildEntry ?? null,
+    buildDigest: servedBuild?.buildDigest ?? null,
     // The page's own answer, not the request — see capture-device-frames.
     observedTheme: ready?.resolvedTheme ?? null,
     pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
@@ -308,7 +313,9 @@ export async function captureHandInput({
     fail('--open=devicectl launches the installed app, so it requires --native-app');
   }
 
-  await assertServedBuildIsFresh(host, { allowForeignBuild: allowForeignBuild !== undefined });
+  const servedBuild = await assertServedBuildIsFresh(host, {
+    allowForeignBuild: allowForeignBuild !== undefined,
+  });
 
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
@@ -436,15 +443,14 @@ export async function captureHandInput({
     device: serial ?? udid ?? null,
     seconds,
     reading,
+    servedBuild,
     fidelity,
     summaries,
     payload,
   });
 
   if (output) {
-    mkdirSync(dirname(join(ROOT, output)), { recursive: true });
-    writeFileSync(join(ROOT, output), JSON.stringify(artifact, null, 2));
-    console.log(`\nWrote ${output}`);
+    console.log(`\nWrote ${writeArtifactFile(output, artifact)}`);
   }
   return artifact;
 }

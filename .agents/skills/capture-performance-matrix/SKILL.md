@@ -51,6 +51,15 @@ that exact test. Back out rejected trials. Once the candidate passes, run the sa
 the other targets whose rendering path could be affected. Do not broaden to the full matrix until
 the focused result is stable.
 
+**A focused result attributes; only the canonical sequence validates.** Action cost depends on the
+state earlier actions in the full sweep leave behind, so a reduced `--actions` subset measures a
+different product state under the same label — the 2026-08-31 session had focused greens turn
+canonical red three times (a `will-change` layer promotion and a theme round-trip residue that only
+the full order exposes) and one focused red that the real user path never shows. Before claiming a
+cell fixed, rerun the canonical full plan for that mode; use subsets to reproduce and isolate a
+canonical failure, never to certify its absence. `docs/PROFILING-CAMPAIGNS.md` ("A focused
+`--actions` subset is not the canonical sweep") carries the incident detail.
+
 ### Architecture comparison
 
 Use the current runner, probe, action plan, gates, viewport, and input plan against both builds.
@@ -161,6 +170,11 @@ For drawing, report paint P95/P99/max and the cumulative lost-frame share of in-
 undo, report engine P95 and next-frame P95/max. For actions, report first-frame P95, post-action
 frame P95, post-action max, activation fidelity, and the count/list of failed actions. Include input
 fidelity and the raw artifact path beside the result.
+
+Before attributing any committed red cell to the product, run
+`npm run check:matrix-staleness -- --base=origin/main` — the cell describes the commit it was
+captured at, and the check's default `--base=HEAD` counts a campaign branch's own commits as drift,
+reporting STALE wrongly from any branch that carries its own work.
 
 When refreshing the committed matrix:
 

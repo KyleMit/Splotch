@@ -172,6 +172,104 @@ describe('campaign sources', () => {
     expect(entry.missing).toEqual(['magic', 'actions']);
   });
 
+  // The 332ba4fb incident: a refuted experimental arm was promoted under the
+  // baseline's label, and no artifact could contradict the hand-typed
+  // --product-commit. Artifacts now record what the served-build guard proved,
+  // and the fold fails closed on any contradiction — while artifacts predating
+  // the fields (every fixture above) keep folding, because they cannot prove
+  // either way.
+  describe('build-identity binding at fold time', () => {
+    const refusing = () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('process exited');
+      });
+      return error;
+    };
+    const identity = {
+      productCommit: PRODUCT_COMMIT,
+      buildEntry: '/_app/immutable/entry/start.Aaa.js',
+      buildDigest: 'a'.repeat(64),
+    };
+
+    it('refuses a --product-commit that contradicts an artifact-recorded commit, naming both', () => {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+        artifact: { ...identity, productCommit: 'f'.repeat(40) },
+      });
+      const error = refusing();
+
+      expect(() => sourcesFor('android-device-web', outputRoot)).toThrow('process exited');
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining(`--product-commit=${PRODUCT_COMMIT}`)
+      );
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining(`records productCommit ${'f'.repeat(40)}`)
+      );
+    });
+
+    it('refuses folding one mode from artifacts recording different builds', () => {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+        artifact: identity,
+        artifactForItem: {
+          crayon: { buildEntry: '/_app/immutable/entry/start.Bbb.js', buildDigest: 'b'.repeat(64) },
+        },
+      });
+      const error = refusing();
+
+      expect(() => sourcesFor('android-device-web', outputRoot)).toThrow('process exited');
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('different build identities'));
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('start.Bbb.js'));
+    });
+
+    it('refuses a malformed recorded build identity rather than reading past it', () => {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+        artifactForItem: { magic: { productCommit: 42 } },
+      });
+      const error = refusing();
+
+      expect(() => sourcesFor('android-device-web', outputRoot)).toThrow('process exited');
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('not a string'));
+    });
+
+    it('republishes an agreeing binding on the mode so readers can re-assert it', () => {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+        artifact: identity,
+      });
+      const [entry] = sourcesFor('android-device-web', outputRoot);
+
+      expect(entry.mode.buildEntry).toBe(identity.buildEntry);
+      expect(entry.mode.buildDigest).toBe(identity.buildDigest);
+    });
+
+    it('records no binding for artifacts predating the fields, and still folds them', () => {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
+      const [entry] = sourcesFor('android-device-web', outputRoot);
+
+      expect(entry.mode.status).toBe('captured');
+      expect(entry.mode).not.toHaveProperty('buildEntry');
+      expect(entry.mode).not.toHaveProperty('buildDigest');
+    });
+
+    // A capture carrying the binding block with no commit is a NEW capture
+    // whose build proved nothing (unstamped, dirty, or foreign) — folding it
+    // would assign --product-commit to bytes nothing certifies, which is the
+    // historical tolerance stretched over exactly the masquerade it must not
+    // cover (Codex review round 2 of the distillation stack).
+    it('refuses a recorded build identity whose productCommit is unproven', () => {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+        artifactForItem: {
+          'pen-undo': { buildEntry: identity.buildEntry, buildDigest: identity.buildDigest },
+        },
+      });
+      const error = refusing();
+
+      expect(() => sourcesFor('android-device-web', outputRoot)).toThrow('process exited');
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining('records a build identity but no productCommit')
+      );
+    });
+  });
+
   it('refuses a native mode captured through a browser transport', () => {
     const outputRoot = writeCampaign('ipad-device-native', 'browser');
     const [entry] = sourcesFor('ipad-device-native', outputRoot);

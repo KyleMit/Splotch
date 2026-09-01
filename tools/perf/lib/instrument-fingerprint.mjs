@@ -87,19 +87,43 @@ export function instrumentFingerprint(commands, readFile = defaultRead) {
 }
 
 // Null when resuming is safe; otherwise the refusal, naming exactly which
-// instrument files changed since the campaign's cells were banked.
-export function instrumentChangeProblem(recorded, current) {
-  if (!recorded || recorded.fingerprint === current.fingerprint) return null;
-  const names = new Set([...Object.keys(recorded.files ?? {}), ...Object.keys(current.files)]);
-  const changed = [...names].filter((file) => recorded.files?.[file] !== current.files[file]);
-  return (
-    'the capture instrument changed since this campaign banked its cells — resuming would ' +
-    'silently mix two instruments in one target (issue 1293). Changed:\n' +
-    changed.map((file) => `  ${file}`).join('\n') +
-    '\nEither start clean (new --output-root, or delete this campaign directory) to recapture ' +
-    'everything with the current instrument, or pass --accept-instrument-change to keep the ' +
-    'banked cells anyway — deliberately, on record.'
+// instrument files changed since the campaign's cells were banked — and which
+// CELLS the ledger records as banked under a different fingerprint.
+// `bankedElsewhere` can refuse on its own: instrument.json holds only the
+// current instrument and is rewritten every invocation, so after one accepted
+// change it matches while the banked rows still name the mixture (session
+// 01a03f61 defeated the file-level check exactly that way).
+export function instrumentChangeProblem(recorded, current, bankedElsewhere = []) {
+  // Only a file BOTH instruments hashed can prove a change: a plan narrowed or
+  // widened with --items drops or adds whole file sets without any content
+  // moving, and counting those as "changed" refused exactly the resumes the
+  // guard exists to allow. A file the recorded run never hashed is unknown, not
+  // changed — the per-row fingerprints carry the per-cell truth from here on.
+  const changed = Object.keys(current.files).filter(
+    (file) => recorded?.files?.[file] !== undefined && recorded.files[file] !== current.files[file]
   );
+  if (!changed.length && !bankedElsewhere.length) return null;
+  const parts = [
+    'the capture instrument changed since this campaign banked its cells — resuming would ' +
+      'silently mix two instruments in one target (issue 1293).',
+  ];
+  if (changed.length) {
+    parts.push('Changed:\n' + changed.map((file) => `  ${file}`).join('\n'));
+  }
+  if (bankedElsewhere.length) {
+    parts.push(
+      'Cells banked under a different instrument:\n' +
+        bankedElsewhere
+          .map(({ cell, fingerprint }) => `  ${cell} (instrument ${fingerprint})`)
+          .join('\n')
+    );
+  }
+  parts.push(
+    'Either start clean (new --output-root, or delete this campaign directory) to recapture ' +
+      'everything with the current instrument, or pass --accept-instrument-change to keep the ' +
+      'banked cells anyway — deliberately, on record.'
+  );
+  return parts.join('\n');
 }
 
 function sha256(value) {

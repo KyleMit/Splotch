@@ -29,6 +29,7 @@ import {
   gesturePlanFor,
   recordedGesturePlan,
   recordedGestureRepeats,
+  recordedPaintedOutput,
 } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
@@ -268,7 +269,15 @@ function rederiveFidelity(profile, phases, captureRuntime) {
 // absence of an inapplicable dimension is not an absent guarantee.
 function composeRunTrust(
   profile,
-  { fidelity, refreshRegime, gestureRepeats, gesturePlan, anomalousRefills, judgingRuntime }
+  {
+    fidelity,
+    refreshRegime,
+    gestureRepeats,
+    gesturePlan,
+    anomalousRefills,
+    paintedOutput,
+    judgingRuntime,
+  }
 ) {
   const trust = [];
   if (fidelity?.passed === true) {
@@ -347,6 +356,21 @@ function composeRunTrust(
   } else {
     trust.push({ name: 'pageIdentity', state: 'unrecorded', detail: identity ?? 'absent' });
   }
+  // Whether the canvas provably changed during the pass — the output-side
+  // guarantee the temporal gates cannot give (a blank renderer passed them
+  // all). Recorded only by the split probe, so most historical captures are a
+  // visible `unrecorded` here, same as pageIdentity for a native run.
+  if (paintedOutput === null || paintedOutput === undefined) {
+    trust.push({ name: 'paintedOutput', state: 'unrecorded' });
+  } else if (paintedOutput.changed === true) {
+    trust.push({ name: 'paintedOutput', state: 'verified' });
+  } else {
+    trust.push({
+      name: 'paintedOutput',
+      state: 'failed',
+      detail: 'no canvas change recorded during the pass',
+    });
+  }
   // The stored label is the runner's day-of claim — the same frozen claim
   // re-derivation exists to distrust — so it is `verified` only when it agrees
   // with the runtime the run was actually judged under, and a disagreement is
@@ -420,6 +444,12 @@ function normalizeDrawingRun(
     // fold below refuses it rather than publishing an optimistic cell.
     anomalousEraserRefills: anomalousEraserRefills(profile),
     eraserRefillShortfall: eraserRefillShortfall(profile, expectedGestureRepeats),
+    // Whether the drawing surfaces provably changed during the pass — the split
+    // probe's output-side evidence (the temporal gates scored a blank renderer;
+    // 7c37d255). Null for artifacts predating the field. Same shared reader as
+    // acceptance, so the two cannot drift; the fold below refuses a recorded
+    // no-change run rather than publishing a number that measured no drawing.
+    paintedOutput: recordedPaintedOutput(profile),
     // One composed answer to "can I trust this number?" — see composeRunTrust.
     trust: composeRunTrust(profile, {
       fidelity,
@@ -427,6 +457,7 @@ function normalizeDrawingRun(
       gestureRepeats: recordedGestureRepeats(profile),
       gesturePlan: recordedGesturePlan(profile),
       anomalousRefills: anomalousEraserRefills(profile),
+      paintedOutput: recordedPaintedOutput(profile),
       judgingRuntime: captureRuntime,
     }),
     fidelity,
@@ -625,6 +656,22 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
           );
         }
       }
+      // Last, mirroring acceptance's ordering: a run refused above has a moot
+      // blank-or-not question. A recorded no-change verdict means the temporal
+      // gates scored a renderer that painted (and erased) nothing, so the
+      // number is not a drawing measurement; absent records are the standing
+      // historical tolerance.
+      const blankRuns = runs.filter(
+        (run) => run.paintedOutput !== null && run.paintedOutput.changed !== true
+      );
+      if (blankRuns.length) {
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds a capture whose report records no canvas ` +
+            `change during the pass (blank-output) — nothing was painted or erased, so the ` +
+            `number measures a renderer that did no drawing work. Recapture the cell. ` +
+            `Sources: ${blankRuns.map((run) => run.source).join(', ')}`
+        );
+      }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
   );
@@ -727,7 +774,74 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   };
 }
 
+// The sweep is part of the instrument: action cost depends on the state the
+// preceding actions left, so a focused subset measures a different product
+// state under the same label (docs/PROFILING-CAMPAIGNS.md; the 2026-08-31
+// campaign hit focused-green-canonical-red three separate times). A focused
+// capture may therefore replace a label only as the ISOLATION of a validated
+// sweep — the same mode carrying a full-sweep capture at the same
+// productCommit — never as a substitute for one. No committed manifest holds a
+// focused source today, so this fails closed outright rather than granting a
+// predating tolerance nothing depends on; a focused capture without a
+// productCommit cannot prove agreement and is refused the same way.
 function mergeActionResults(captures) {
+  const fullSweepCommits = new Set(
+    captures
+      .filter((capture) => capture.kind === 'full' && capture.productCommit)
+      .map((capture) => capture.productCommit)
+  );
+  const unconfirmed = captures.filter(
+    (capture) =>
+      capture.kind === 'focused' &&
+      (!capture.productCommit || !fullSweepCommits.has(capture.productCommit))
+  );
+  if (unconfirmed.length) {
+    const detail = unconfirmed
+      .map((capture) => `${capture.source} (productCommit ${capture.productCommit ?? 'none'})`)
+      .join('; ');
+    throw new Error(
+      `unconfirmed-focused-action: a focused capture may replace a label only when the same ` +
+        `mode carries a full sweep at the same productCommit — the focused result must isolate ` +
+        `a validated sweep, not substitute for one. Full sweeps here: ` +
+        `${[...fullSweepCommits].join(', ') || 'none'}. Unconfirmed: ${detail}`
+    );
+  }
+  // Same-commit is necessary, not sufficient: an isolation AGREES with the
+  // sweep it isolates. A focused pass over a same-commit sweep failure is the
+  // focused-green/canonical-red trap wearing a matching commit, and folding it
+  // would publish exactly the green the guard above exists to refuse — the
+  // disagreement is resolved by recapturing the full sweep, never by the
+  // subset. A focused label the sweep never measured has no verdict to agree
+  // with and is refused the same way.
+  const sweepVerdicts = new Map();
+  for (const capture of captures) {
+    if (capture.kind !== 'full' || !capture.productCommit) continue;
+    const labels = sweepVerdicts.get(capture.productCommit) ?? new Map();
+    for (const result of capture.results) labels.set(result.label, result.passed);
+    sweepVerdicts.set(capture.productCommit, labels);
+  }
+  for (const capture of captures) {
+    if (capture.kind !== 'focused') continue;
+    const labels = sweepVerdicts.get(capture.productCommit);
+    for (const result of capture.results) {
+      if (!labels.has(result.label)) {
+        throw new Error(
+          `unconfirmed-focused-action: ${capture.source} records "${result.label}", which the ` +
+            `full sweep at ${capture.productCommit} never measured — a label without a sweep ` +
+            `verdict has nothing to isolate`
+        );
+      }
+      if (labels.get(result.label) !== result.passed) {
+        throw new Error(
+          `focused-contradicts-sweep: ${capture.source} records "${result.label}" as ` +
+            `${result.passed ? 'passing' : 'failing'} while the full sweep at ` +
+            `${capture.productCommit} recorded it ${result.passed ? 'failing' : 'passing'} — ` +
+            `recapture the full sweep rather than folding the subset ` +
+            `(docs/PROFILING-CAMPAIGNS.md, "A focused --actions subset is not the canonical sweep")`
+        );
+      }
+    }
+  }
   const byLabel = new Map();
   for (const capture of captures) {
     for (const result of capture.results) byLabel.set(result.label, result);
@@ -1458,7 +1572,8 @@ function renderMarkdown(matrix) {
 This deployment-target snapshot combines the campaign evidence declared in \`sources.json\`.
 \`${matrix.productCommit}\` is the measured product commit. Every normalized result retains its
 target, mode, commit, and declared evidence state; focused action captures, when present, replace
-only their declared scenarios within that mode.
+only their declared scenarios within that mode, and only alongside a full sweep at the same
+product commit.
 
 The [interactive matrix](./index.html) is the quickest comparison. [\`data.json\`](./data.json)
 contains every normalized drawing run and grouped action result, and
@@ -1529,8 +1644,9 @@ ${markdownTable(['Target', 'Passing', 'At final commit', 'Worst first P95', 'Wor
 ## Method
 
 Action sources are applied in manifest order within one target mode. A focused capture replaces
-only its declared labels in that mode; all other labels retain their earlier measurement and
-provenance. Drawing raw tables and action samples are re-scored with the current metric definitions
+only its declared labels in that mode, and only when the mode also carries a full sweep at the
+same product commit (\`unconfirmed-focused-action\` refuses the fold otherwise); all other labels
+retain their earlier measurement and provenance. Drawing raw tables and action samples are re-scored with the current metric definitions
 when this report is generated; stored derived summaries are not trusted. Physical iPad web remains
 the Safari-calibrated release gate. Simulator, desktop, native-shell, and automated Android input
 are advisory comparisons.
@@ -1652,7 +1768,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode; each freshly-normalized dot's tooltip states how many captures back it, because a gate verdict from a single capture is one draw from that cell's run-to-run spread and is provisional rather than established (ADR-0136; issue 1290's own spread figures were retracted, leaving the question standing). Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
+  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode; each freshly-normalized dot's tooltip states how many captures back it, because a gate verdict from a single capture is one draw from that cell's run-to-run spread and is provisional rather than established (ADR-0136; issue 1290's own spread figures were retracted, leaving the question standing). Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode, and only when the mode also carries a full sweep at the same product commit — the fold refuses an unconfirmed focused source; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({

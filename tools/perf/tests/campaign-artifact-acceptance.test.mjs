@@ -8,6 +8,7 @@ import {
   recordedGestureRepeats,
 } from '../lib/campaign-plan.mjs';
 import {
+  BLANK_OUTPUT,
   ERASER_FILL_FAILED,
   COMPLETE,
   FAILED,
@@ -101,6 +102,66 @@ describe('inspectArtifact', () => {
     expect(inspectArtifact(silent, 'web', { verdictRequired: true })).toMatchObject({
       ok: false,
       status: UNSCOREABLE,
+    });
+  });
+
+  // Capture 7c37d255: a blank renderer passed every temporal gate (0.00-0.01%
+  // lost, fidelity PASS, ~3790 measures). The probe now records whether the
+  // canvas changed during the pass, and acceptance refuses a recorded
+  // no-change verdict rather than banking a number that measured no drawing.
+  describe('the painted-output record', () => {
+    it('refuses a scored capture whose report records no canvas change', () => {
+      const blank = artifactAt({
+        ...scoreable,
+        report: { paintedOutput: { changed: false } },
+      });
+
+      expect(inspectArtifact(blank, 'web', { verdictRequired: true })).toMatchObject({
+        ok: false,
+        status: BLANK_OUTPUT,
+      });
+    });
+
+    it('accepts a recorded canvas change, and an artifact predating the field', () => {
+      const changed = artifactAt({
+        ...scoreable,
+        report: { paintedOutput: { changed: true } },
+      });
+
+      expect(inspectArtifact(changed, 'web', { verdictRequired: true }).ok).toBe(true);
+      expect(inspectArtifact(artifactAt(scoreable), 'web', { verdictRequired: true }).ok).toBe(
+        true
+      );
+    });
+
+    // A record carrying an error means the probe TRIED and could not sample —
+    // consent it cannot give. It is an invalid artifact, not a historical one.
+    it('refuses an unprovable record as invalid rather than reading past it', () => {
+      const unprovable = artifactAt({
+        ...scoreable,
+        report: { paintedOutput: { error: 'no 2d scratch context to sample through' } },
+      });
+
+      expect(inspectArtifact(unprovable, 'web', { verdictRequired: true })).toMatchObject({
+        ok: false,
+        status: FAILED,
+      });
+    });
+
+    // Most-fundamental-first, like every rejection before it: a capture that
+    // was barely driven has a moot blank-or-not question.
+    it('reports a fidelity failure ahead of blank output', () => {
+      const both = artifactAt({
+        transport: 'browser',
+        fidelity: { passed: false },
+        summaries: { intervalMs: 17 },
+        report: { paintedOutput: { changed: false } },
+      });
+
+      expect(inspectArtifact(both, 'web', { verdictRequired: true })).toMatchObject({
+        ok: false,
+        status: UNSCOREABLE,
+      });
     });
   });
 

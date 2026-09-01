@@ -230,19 +230,89 @@ describe('deployment matrix report', () => {
     }
   });
 
-  it('applies focused action captures only to their measured labels', () => {
+  it('applies an agreeing focused capture only to its measured labels', () => {
     const baseline = {
+      kind: 'full',
+      productCommit: 'final',
       results: [
-        action('expand action drawer', false, 'old'),
-        action('change ink color', false, 'old'),
+        action('expand action drawer', true, 'final'),
+        action('change ink color', false, 'final'),
       ],
     };
-    const focused = { results: [action('expand action drawer', true, 'final')] };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      results: [{ ...action('expand action drawer', true, 'final'), refreshed: true }],
+    };
 
     expect(mergeActionResults([baseline, focused])).toEqual([
-      action('expand action drawer', true, 'final'),
-      action('change ink color', false, 'old'),
+      { ...action('expand action drawer', true, 'final'), refreshed: true },
+      action('change ink color', false, 'final'),
     ]);
+  });
+
+  // Same-commit is necessary, not sufficient: a focused pass over the sweep's
+  // failure is the focused-green/canonical-red trap wearing a matching commit,
+  // and folding it would publish the exact green the guard refuses.
+  it('refuses a focused verdict that contradicts its same-commit sweep', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'final',
+      source: 'actions-full.json',
+      results: [action('expand action drawer', false, 'final')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'final')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('focused-contradicts-sweep');
+    expect(() => mergeActionResults([baseline, focused])).toThrow('actions-focused.json');
+  });
+
+  it('refuses a focused label its same-commit sweep never measured', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'final',
+      source: 'actions-full.json',
+      results: [action('change ink color', true, 'final')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'final')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('unconfirmed-focused-action');
+  });
+
+  // Session 01a0556d: focused greens turned canonical red three times — earlier
+  // actions in the full sweep leave state a reduced plan never creates, so a
+  // focused capture is only the isolation of a validated sweep, never a
+  // substitute for one. No committed manifest carries a focused source, so the
+  // guard fails closed with no predating tolerance.
+  it('refuses a focused capture with no full sweep at the same product commit', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'sweep-commit',
+      source: 'actions-full.json',
+      results: [action('expand action drawer', false, 'sweep-commit')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'later-commit',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'later-commit')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('unconfirmed-focused-action');
+    expect(() => mergeActionResults([baseline, focused])).toThrow('actions-focused.json');
+    expect(() => mergeActionResults([{ ...focused, productCommit: undefined }])).toThrow(
+      'unconfirmed-focused-action'
+    );
   });
 
   it('excludes warmup-only labels while retaining the real scored action', () => {
@@ -746,6 +816,48 @@ describe('deployment matrix report', () => {
         manifestDirectory
       )
     ).toThrow('actions.json does not contain: missing action');
+  });
+
+  // The manifest path of the unconfirmed-focused-action guard: a focused
+  // source folds beside a same-commit full sweep and refuses beside any other.
+  it('folds a focused source only beside a full sweep at the same commit', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const full = writeActionCapture(manifestDirectory, 'actions-full.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [action('idle frame control', true), action('expand action drawer', true)],
+    });
+    const focused = writeActionCapture(manifestDirectory, 'actions-focused.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [action('expand action drawer', true)],
+    });
+    const manifestWith = (focusedCommit) =>
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [
+            { source: full, productCommit: 'sweep123', kind: 'full' },
+            {
+              source: focused,
+              productCommit: focusedCommit,
+              kind: 'focused',
+              labels: ['expand action drawer'],
+            },
+          ],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+    const folded = normalizeMatrix(manifestWith('sweep123'), manifestDirectory);
+    const drawer = folded.targets[0].modes[0].actions.results.find(
+      (result) => result.label === 'expand action drawer'
+    );
+    expect(drawer.passed).toBe(true);
+
+    expect(() => normalizeMatrix(manifestWith('later456'), manifestDirectory)).toThrow(
+      'unconfirmed-focused-action'
+    );
   });
 
   it('reports a clear migration error for the previous schema', () => {
@@ -1280,6 +1392,73 @@ describe('the eraser refill record in a folded cell', () => {
 
     expect(() => normalizeMatrix(eraserManifest([legacy]), directory)).not.toThrow();
     expect(() => normalizeMatrix(eraserManifest([complete]), directory)).not.toThrow();
+  });
+});
+
+// Capture 7c37d255: a blank renderer passed every temporal gate. The split
+// probe now records whether the canvas changed during the pass; the fold
+// refuses a recorded no-change run and publishes the guarantee as a trust
+// dimension, while runs predating the record stay a visible `unrecorded`.
+describe('the painted-output record in a folded cell', () => {
+  function writePaintedCapture(directory, name, paintedOutput) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        ...(paintedOutput === undefined ? {} : { report: { paintedOutput } }),
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  const penRun = (directory, source) => {
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: [source] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    return normalizeMatrix(built, directory).targets[0].modes[0].drawing.pen.runs[0];
+  };
+
+  it('refuses to fold a capture whose report records no canvas change', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const blank = writePaintedCapture(directory, 'pen-blank.json', { changed: false });
+
+    expect(() => penRun(directory, blank)).toThrow(
+      'records no canvas change during the pass (blank-output)'
+    );
+  });
+
+  it('publishes the guarantee as a trust dimension, unrecorded for legacy runs', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const changed = writePaintedCapture(directory, 'pen-changed.json', { changed: true });
+    const legacy = writePaintedCapture(directory, 'pen-legacy.json', undefined);
+    const trustRow = (source) =>
+      penRun(directory, source).trust.find((entry) => entry.name === 'paintedOutput');
+
+    expect(trustRow(changed)).toEqual({ name: 'paintedOutput', state: 'verified' });
+    expect(trustRow(legacy)).toEqual({ name: 'paintedOutput', state: 'unrecorded' });
+  });
+
+  it('surfaces an unprovable record as a loud fold error naming the source', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const unprovable = writePaintedCapture(directory, 'pen-unprovable.json', {
+      error: 'no 2d scratch context to sample through',
+    });
+
+    expect(() => penRun(directory, unprovable)).toThrow('carries no boolean changed verdict');
   });
 });
 

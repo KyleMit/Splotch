@@ -18,6 +18,7 @@
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
+import { rethrowIfBroken } from './lib/error-classification.mjs';
 
 const DEFAULT_MANIFEST = 'scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json';
 
@@ -188,15 +189,54 @@ function engineCommitCounter(base) {
   };
 }
 
+// The HEAD default is fold-time semantics and stays: gen-performance-matrix
+// chains this check in-process, asking whether the captures match the tree the
+// matrix is being folded from. But run from a branch carrying its own commits,
+// "current" then means current against THIS branch — not against the branch
+// point the published matrix describes — and nothing said so. The warning
+// names that ambiguity without changing the verdict or the exit code. Silent
+// when origin/main cannot be resolved: there is no branch point to diverge
+// from, and a warning about an unanswerable comparison helps nobody.
+export function implicitBaseWarning({ explicitBase, headSha, mergeBaseSha }) {
+  if (explicitBase || !headSha || !mergeBaseSha || headSha === mergeBaseSha) return null;
+  return (
+    'WARN  --base defaulted to HEAD, and HEAD carries commits origin/main lacks — a ' +
+    '"current" verdict means current against this branch, not against the published branch ' +
+    'point. Pass --base=origin/main to check the captures against it, or --base=HEAD to ' +
+    'compare against this branch deliberately.'
+  );
+}
+
+// Null is "this ref cannot be resolved" — a repo with no origin/main has no
+// branch point to warn about, so the caller stays silent. Broken code must
+// not read the same way, hence rethrowIfBroken.
+function gitLine(args) {
+  try {
+    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim() || null;
+  } catch (error) {
+    rethrowIfBroken(error);
+    return null;
+  }
+}
+
 export async function checkMatrixStaleness({
   manifestPath = argFlag('manifest', DEFAULT_MANIFEST),
-  base = argFlag('base', 'HEAD'),
+  base = argFlag('base'),
 } = {}) {
+  const explicitBase = base !== undefined;
+  const resolvedBase = base ?? 'HEAD';
+  console.log(`Comparing captured surfaces against --base=${resolvedBase}`);
+  const warning = implicitBaseWarning({
+    explicitBase,
+    headSha: gitLine(['rev-parse', 'HEAD']),
+    mergeBaseSha: gitLine(['merge-base', 'HEAD', 'origin/main']),
+  });
+  if (warning) console.warn(warning);
   const manifest = JSON.parse(readFileSync(`${ROOT}/${manifestPath}`, 'utf8'));
   const rows = assessManifest(manifest, {
-    surfaceAt: gitSurfaceReader(base),
-    commitsSince: engineCommitCounter(base),
-    changedFilesSince: changedFileReader(base),
+    surfaceAt: gitSurfaceReader(resolvedBase),
+    commitsSince: engineCommitCounter(resolvedBase),
+    changedFilesSince: changedFileReader(resolvedBase),
   });
   if (!rows.length) {
     console.log('No current captured cells in the manifest — every target is preserved evidence.');
@@ -207,7 +247,7 @@ export async function checkMatrixStaleness({
   const unverifiable = rows.filter((row) => row.verdict === 'UNVERIFIABLE');
   if (unverifiable.length) {
     fail(
-      `${unverifiable.length} capture commit(s) are not reachable from ${base}: ` +
+      `${unverifiable.length} capture commit(s) are not reachable from ${resolvedBase}: ` +
         `${unverifiable.map((row) => `${row.target} (${row.capturedAt})`).join(', ')}. ` +
         'A shallow clone is the usual cause — this needs the referenced commits fetched. ' +
         'Refusing to report "current" for a commit that could not be checked.'

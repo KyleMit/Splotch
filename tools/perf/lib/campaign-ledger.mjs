@@ -4,7 +4,22 @@
 // Pure over rows so the policy is testable without a device. The runner owns the
 // file and the child processes; this owns what the rows mean.
 
-export const LEDGER_HEADER = ['timestamp', 'cell', 'status', 'attempt', 'artifact', 'log'];
+// `instrument` is the fingerprint of the capture instrument that ran the
+// attempt, recorded per row because instrument.json holds only the CURRENT
+// instrument and is rewritten on every invocation — after one
+// --accept-instrument-change the fact that a target mixes two instruments
+// lived nowhere (session 01a03f61 defeated the issue 1293 mechanism that way).
+// Rows written before the column exists parse with it undefined and are
+// accepted, matching how artifacts predating a field are treated.
+export const LEDGER_HEADER = [
+  'timestamp',
+  'cell',
+  'status',
+  'attempt',
+  'artifact',
+  'log',
+  'instrument',
+];
 
 export const COMPLETE = 'valid-json';
 export const ALREADY_VALID = 'already-valid';
@@ -54,8 +69,25 @@ export const WRONG_GESTURE_PLAN = 'wrong-gesture-plan';
 // rather than banking an optimistic number.
 export const ERASER_FILL_FAILED = 'eraser-fill-failed';
 
-export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
-  return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
+// A capture whose report records that the drawing canvas never changed during
+// the pass: the input arrived and the temporal gates may all pass, but nothing
+// was painted (or erased), so the number describes a renderer that did no
+// drawing work. Spends attempts like a fidelity failure — a transient page
+// state can plausibly blank one run — and exhausts into a named P1 rather than
+// banking a plausible-looking non-measurement. Artifacts predating the
+// recorded field are accepted; they cannot prove either way.
+export const BLANK_OUTPUT = 'blank-output';
+
+// The operator kept a cell banked under another instrument, deliberately, via
+// --accept-instrument-change. Not an attempt and not a completion — the row
+// exists so the acceptance is on record beside the mixture it accepted, and so
+// the same cell is not re-refused on every later resume.
+export const INSTRUMENT_ACCEPTED = 'instrument-change-accepted';
+
+export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log, instrument }) {
+  return [timestamp, cell, status, String(attempt), artifact, log ?? '-', instrument ?? '-'].join(
+    '\t'
+  );
 }
 
 export function parseLedger(text) {
@@ -66,9 +98,49 @@ export function parseLedger(text) {
   return rows
     .filter((line) => line.trim())
     .map((line) => {
-      const [timestamp, cell, status, attempt, artifact, log] = line.split('\t');
-      return { timestamp, cell, status, attempt: Number(attempt), artifact, log };
+      const [timestamp, cell, status, attempt, artifact, log, instrument] = line.split('\t');
+      return { timestamp, cell, status, attempt: Number(attempt), artifact, log, instrument };
     });
+}
+
+// A cell's banked capture belongs to the instrument its COMPLETE row records,
+// and the newest such row speaks for the artifact on disk. A row with no
+// recorded fingerprint predates the column and is accepted; an acceptance row
+// records that the operator kept this cell's mixture deliberately, so the
+// refusal is made once rather than on every subsequent resume.
+//
+// `currentFingerprintByCell` maps each cell in the CURRENT plan to the
+// fingerprint of its own command — per cell, because a run narrowed with
+// --items still shares each cell's instrument with the full run that banked
+// it, and a whole-plan fingerprint would refuse exactly that resume. A banked
+// cell the current plan does not include is not being retried, so it cannot
+// mix instruments in this run and is not this run's question.
+export function cellsBankedUnderDifferentInstrument(rows, currentFingerprintByCell) {
+  const accepted = new Set(
+    rows
+      .filter((row) => row.status === INSTRUMENT_ACCEPTED && knownInstrument(row))
+      .map((row) => `${row.cell}\t${row.instrument}`)
+  );
+  const banked = new Map();
+  for (const row of rows) {
+    if (!row.status?.startsWith(COMPLETE)) continue;
+    const expected = currentFingerprintByCell.get(row.cell);
+    if (expected === undefined) continue;
+    if (
+      !knownInstrument(row) ||
+      row.instrument === expected ||
+      accepted.has(`${row.cell}\t${row.instrument}`)
+    ) {
+      banked.delete(row.cell);
+    } else {
+      banked.set(row.cell, row.instrument);
+    }
+  }
+  return [...banked].map(([cell, fingerprint]) => ({ cell, fingerprint }));
+}
+
+function knownInstrument(row) {
+  return row.instrument && row.instrument !== '-';
 }
 
 export function attemptsFor(rows, cellId) {
@@ -81,7 +153,8 @@ export function attemptsFor(rows, cellId) {
         row.status?.startsWith(OFF_REFRESH_REGIME) ||
         row.status?.startsWith(WRONG_GESTURE_REPEATS) ||
         row.status?.startsWith(WRONG_GESTURE_PLAN) ||
-        row.status?.startsWith(ERASER_FILL_FAILED))
+        row.status?.startsWith(ERASER_FILL_FAILED) ||
+        row.status?.startsWith(BLANK_OUTPUT))
   ).length;
 }
 

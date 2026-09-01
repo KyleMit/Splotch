@@ -46,6 +46,62 @@ const ERASER_FILL_SETTLE_MS = 400;
 // The probe's own row accessors page through its ring buffers; this is the slice
 // size, not a cap on the capture.
 const REPORT_SLICE_ROWS = 5_000;
+// Each drawing surface is downscaled into a scratch this many pixels on a side
+// before its pixels are hashed. Small enough that both samples cost microseconds
+// outside the measured window; a stroke that survives a 16x downscale of every
+// surface it touched is not going to vanish from the hash.
+const CANVAS_DELTA_GRID_PX = 16;
+// FNV-1a's offset basis and prime — algorithm constants, not tuning.
+const FNV_OFFSET_BASIS = 2166136261;
+const FNV_PRIME = 16777619;
+
+// The drawing gates are purely temporal, so a renderer that painted NOTHING
+// passed every one of them (capture 7c37d255: blank output, fidelity PASS,
+// ~3790 measures). This proves the canvas CHANGED during the pass — any pixel
+// delta, which covers the eraser's removals as well as the brushes' additions —
+// by hashing a downscale of every drawing surface before contact banking starts
+// and again after the probe stops. The reads go through a small
+// willReadFrequently scratch (the product's emptyScan.ts pattern, same as the
+// eraser fill's verifier) so the accelerated tiles are never read back directly:
+// a check must not change the thing being measured, and both samples run outside
+// the measured window anyway.
+export function canvasDeltaFunctionSource() {
+  return `function sampleCanvasDelta() {
+    try {
+      const surfaces = [...document.querySelectorAll('canvas[data-live-tile]')];
+      if (!surfaces.length) {
+        const main = document.querySelector('#drawingCanvas');
+        if (main) surfaces.push(main);
+      }
+      if (!surfaces.length) return { error: 'no drawing surfaces to sample' };
+      const scratch = document.createElement('canvas');
+      scratch.width = ${CANVAS_DELTA_GRID_PX};
+      scratch.height = ${CANVAS_DELTA_GRID_PX};
+      const context = scratch.getContext('2d', { willReadFrequently: true });
+      if (!context) return { error: 'no 2d scratch context to sample through' };
+      const digests = [];
+      let inkedSamples = 0;
+      for (const canvas of surfaces) {
+        context.clearRect(0, 0, ${CANVAS_DELTA_GRID_PX}, ${CANVAS_DELTA_GRID_PX});
+        context.drawImage(canvas, 0, 0, ${CANVAS_DELTA_GRID_PX}, ${CANVAS_DELTA_GRID_PX});
+        const data = context.getImageData(
+          0, 0, ${CANVAS_DELTA_GRID_PX}, ${CANVAS_DELTA_GRID_PX}
+        ).data;
+        let hash = ${FNV_OFFSET_BASIS};
+        for (let i = 0; i < data.length; i++) {
+          hash = Math.imul(hash ^ data[i], ${FNV_PRIME}) >>> 0;
+        }
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] > 0) inkedSamples += 1;
+        }
+        digests.push(hash);
+      }
+      return { surfaces: surfaces.length, digests, inkedSamples };
+    } catch (error) {
+      return { error: String(error && error.message || error) };
+    }
+  }`;
+}
 
 export function pageBootstrapSource() {
   return `
@@ -318,6 +374,8 @@ export function pageBootstrapSource() {
     if (!centre || !centre.closest('.canvas-stack')) {
       throw new Error('canvas centre is covered by ' + (centre ? centre.tagName + '.' + centre.className : 'nothing'));
     }
+    ${canvasDeltaFunctionSource()}
+    const paintedBaseline = sampleCanvasDelta();
     await post('/__probe/ready', {
       nonce,
       brush: plan.brush,
@@ -378,6 +436,17 @@ export function pageBootstrapSource() {
     report.events = read('events', counts.events);
     report.measures = read('measures', counts.measures);
     window.__probe.stop();
+    // Any pixel delta between the two samples counts — additions and the
+    // eraser's removals alike. A sample that could not be taken records its
+    // error rather than a verdict; acceptance refuses what it cannot prove.
+    const paintedAfter = sampleCanvasDelta();
+    report.paintedOutput = paintedBaseline.error || paintedAfter.error
+      ? { error: paintedBaseline.error || paintedAfter.error }
+      : {
+          changed: JSON.stringify(paintedBaseline) !== JSON.stringify(paintedAfter),
+          before: paintedBaseline,
+          after: paintedAfter,
+        };
     await log({ kind: 'uploading', nonce, events: report.events.length });
     await post('/__probe/report', {
       // The run this report belongs to. Readiness was nonce-checked from the

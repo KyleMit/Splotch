@@ -845,6 +845,36 @@ function healthyRefillEntry(refill) {
   );
 }
 
+// The painted-output evidence the split probe records (issue: capture 7c37d255
+// scored a renderer that painted NOTHING — the drawing gates are purely
+// temporal, so blank output passed every one). The probe hashes a downscale of
+// every drawing surface before and after the pass and records whether anything
+// changed — additions and the eraser's removals alike. Shared by acceptance
+// and the matrix so the two readers cannot drift.
+//
+// Null means the field is absent: an artifact predating the probe change, or a
+// transport that records no report — accepted, like every field before it. A
+// present record must carry a boolean `changed`: a record that carries an
+// error instead proves the probe TRIED and could not sample, and treating that
+// as consent would fail open on exactly the capture whose output is in
+// question — so it throws, and acceptance maps the throw to a rejection.
+export function recordedPaintedOutput(artifact) {
+  const recorded = artifact?.report?.paintedOutput ?? null;
+  if (recorded === null) return null;
+  if (
+    typeof recorded !== 'object' ||
+    Array.isArray(recorded) ||
+    typeof recorded.changed !== 'boolean'
+  ) {
+    throw new Error(
+      `the artifact records paintedOutput ${JSON.stringify(recorded)}, which carries no boolean ` +
+        'changed verdict — an unprovable painted-output record is an invalid artifact, not a ' +
+        'historical one'
+    );
+  }
+  return recorded;
+}
+
 // Each transport refills after every authored pass except the final one, so a
 // complete eraser capture records exactly repeats - 1 entries. The count guards
 // against a missing acknowledgement or truncated record; each current entry's

@@ -14,6 +14,12 @@ It refuses to report ready while anything below is unresolved, reuses whatever i
 rather than asking for another approval, and moves off a contended port instead of stopping a
 listener another session owns.
 
+Read its verdict from the check marks, not from the exit code of a pipeline. A shell reports the
+**last** command's status, so `perf:preflight … | tail` exits 0 with a ✗ in the output — the same
+masking that lets a `BUILD FAILED` hide behind a green `… | tail` wrapper. When a command's verdict
+gates the next step, run it unpiped or check the marks in its output; the preflight itself does exit
+non-zero on every failed verification.
+
 ## The failure mode this file exists for
 
 Every trap below shares one shape: **it does not raise an error.** The capture completes, writes a
@@ -93,6 +99,37 @@ ps -o command= -p "$(lsof -tnP -iTCP:4173 -sTCP:LISTEN | head -1)"
 If that path is not this checkout, do not capture against it. Serve your own build on a free port
 and pass `--url=`/`--probe-host=` explicitly; the campaign is happy to be pointed anywhere, which is
 exactly why the pointing has to be deliberate.
+
+### The device's own service worker can serve the previous shell
+
+Every check above proves what the **host** serves. A device browser that has visited the LAN preview
+origin before carries a service-worker-cached app shell for it — the PWA's `NetworkFirst` handler
+falls back to that cache when the network times out or fails, and a shell it restores can also keep
+issuing requests for the build it was cached from. Either way the host can prove the new build is
+served (manifest 200, entry chunk 200 from the same LAN origin) while the device runs or references
+the previous one, and a capture labelled with an exact product commit measures an older build with
+every host-side identity check passing.
+
+The tell is the served build's own preview logging a **versioned-asset 404 for a different build's
+version**: the device is asking for a manifest the host no longer has, so *something on the device*
+still references an older build. The tell alone does not say what — a stale shell actually running,
+or only a stale persisted request from a fresh one — so it demotes on its own only when nothing
+stronger is checked. On 2026-08-31 exactly that line — the preview that had just proven
+`manifest-1.5.1231.json` present logging a 404 for `manifest-1.5.1230.json` — demoted three focused
+iPad A/Bs captured with **no page-identity check at all** from product evidence to diagnostics; they
+could no longer certify the product commit on their label. The proof either way is the entry-module
+comparison below: a mismatch is a stale shell, and a pass keeps the capture while the 404 stays a
+recorded caveat.
+
+The XCUITest actions path now guards this (commit 1896c70c6): it compares the served HTML's
+`/_app/immutable/entry/start.*.js` module against `document.scripts` on the device, throws
+`Preview identity mismatch` on disagreement, blocks service-worker registration before measurement,
+and records `pageEntries` and `serviceWorkerRegistration` in the artifact. Two limits, both open:
+other capture paths do not carry the guard, and the same 404 tell has appeared on captures whose
+entry-module check passed — attributed in-session to a persisted pack-manifest request, never proven
+with a clean-state control. A capture showing the tell alongside a passing entry check carries an
+unresolved device-state caveat; record the caveat beside the number rather than ignoring the log
+line. `docs/PROFILING-IPAD.md`'s harness-injection section has the manual unregister snippet.
 
 ## Capture state that survives between runs
 
@@ -436,6 +473,21 @@ read:
   which flips off Settings → Safari → Advanced → Remote Automation and breaks every later capture
   until it is switched back on by hand — but it is not what denies the launch.
 
+### The XCTest automation prompt exists only while a launch is failing
+
+The iPad's automation grant expires on its own (observed lifetimes under 18 hours), and the *Enter
+iPad Passcode for XCTest / Enable UI Automation* prompt is on screen **only while a WebDriverAgent
+session is starting and being denied** — never at rest. So the device shows nothing wrong between
+runs, and a human asked to check an idle iPad correctly reports there is no prompt. That cost the
+2026-08-24 session twice: once concluding the iPad was unusable when a five-second tap would have
+cleared it, and once with a human looking at an apparently clean device that was in exactly that
+state.
+
+When `perf:preflight -- --verify-ios-launch` reports the automation denial, run it again with
+someone watching the device during that minute — the prompt exists then and nowhere else. A rig that
+worked yesterday can need the tap again today; `npm run perf:operator` tracks every grant attempt in
+`perf-profiles/evidence/operator/` so the grant's observed lifetime is on record.
+
 ## Recapturing matrix cells
 
 Cells in the performance matrix can be **preserved evidence** — carried forward from the published
@@ -618,6 +670,17 @@ The check is mechanical and takes a minute: **revert the fix and run the test.**
 it is documentation with an `expect()` in it. That applies to a generated source string as much as
 to a function — a bootstrap built as a template literal can be executed in a DOM fixture, which is
 slower than grepping it and is the only version that can fail.
+
+Revert safely: `git checkout -- <file>` restores the working tree from the **index** — `HEAD` only
+when nothing is staged — so it silently discards any uncommitted work sharing the file with the
+temporary revert, and with the injection itself staged it does not even restore the fix. Commit
+first, or invert the edit instead of restoring the file (`docs/TESTING.md`'s "A regression test must
+fail against the old code" section owns the full rule). On 2026-08-25 an injection round's
+`git checkout` restore ate two uncommitted review fixes, and the follow-up commit's message and a
+published PR disposition both asserted changes the diff did not contain — discovered only when a
+second injection unexpectedly passed. An injection script should `assert` its anchors exist before
+writing, and the restore is proven by content (`grep -c` for something the fix added), never by
+having run a restore command.
 
 The related trap is a seam that only protects the far side of itself. Extracting a chooser and
 testing the chooser proves it picks correctly when handed the right value, which is never what was
@@ -1101,6 +1164,46 @@ The A/B is two builds and about twenty minutes, against however long a candidate
 `npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell
 currently claiming to be a measurement was taken from source that has since changed — without a
 device, and `gen:performance-matrix` now runs it for you.
+
+**Mind the check's `--base`, which defaults to `HEAD`.** Run from a campaign branch, that counts the
+branch's own commits as product drift and reports STALE for cells that are current on the trunk —
+which reads as "this cell needs a recapture" when the truthful answer is "this branch changed the
+product". For the diagnostic question above — is this red cell a measurement of source that has
+since changed on the published product? — pass `--base=origin/main` from any branch carrying its own
+commits. The `HEAD` default is the right question only at fold time, when the branch's own changes
+are exactly what the cells must be current against. On 2026-08 this false STALE cost nothing only
+because it was recognized; the inverse error — trusting a red cell that staleness would have excused
+— cost five candidate implementations written against a 50 ms gate the raster-queue extraction had
+already fixed, none of which was ever measured.
+
+## A focused `--actions` subset is not the canonical sweep
+
+Validating an action fix with a reduced `--actions` subset and promoting its green to "fixed" fails
+in both directions, with device, orientation, theme and repeat count all matched. The 2026-08-31
+session hit four instances:
+
+* **Focused red, canonical green:** a deliberately cold subset measured a 37 ms `ColoringBook`
+  demand-mount that `bootHiddenOverlays` has already performed by the time the real user path
+  reaches it — the subset measured a cold mount the product never shows a user.
+* **Focused green, canonical red** (three separate commits): earlier actions in the full sweep leave
+  state the reduced plan never creates. One fix's own `.modal-dialog > * { will-change: opacity }`
+  promoted a permanently oversized layer that only the full sequence exposed; a dark/light theme
+  round trip left `select coloring page` at 79/87 ms P95/max in the canonical order while the subset
+  reported it 18/20 PASS.
+
+The sweep is part of the instrument: action cost depends on the state the preceding actions left, so
+a subset that skips them measures a different product state under the same label. A reduced plan is
+for **attribution** — and the subset that attributes a canonical red is one chosen to *reproduce* it
+(`--actions=theme,coloring` isolated the theme-residue case above), not the one that stays green.
+Only the canonical full sweep validates the fix; run it before claiming a cell.
+
+The fold enforces this: `gen-performance-matrix` still applies action sources in manifest order, but
+a `kind: "focused"` capture may replace its declared labels **only when the same mode also carries a
+full-sweep capture at the same `productCommit`** — the focused result has to be the isolation of a
+validated sweep, not a substitute for one. A focused source without that confirmation (or without a
+`productCommit` to prove it) refuses the whole fold with an `unconfirmed-focused-action` error
+naming the source and the full-sweep commits present, rather than publishing the replacement as
+matrix evidence.
 
 ## Before believing a result
 

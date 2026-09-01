@@ -18,7 +18,7 @@ import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import {
   argFlag,
   capture,
@@ -362,6 +362,18 @@ function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
   };
 }
 
+// The absolute() guard run-campaign resolves the same flag with: join(ROOT, output)
+// rebases an absolute --output under ROOT, so the runner's inspector looked for an
+// artifact this child had written somewhere else — and its delete-before-retry
+// removed a valid product-red artifact it could not see (session 01a049ec). Shared
+// by capture-hand-input.mjs, whose write had the identical shape.
+export function writeArtifactFile(output, artifact) {
+  const path = isAbsolute(output) ? output : join(ROOT, output);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(artifact, null, 2));
+  return path;
+}
+
 // The artifact envelope, as a pure value. Extracted so the fields a later reader
 // TRUSTS can be asserted without a device: `observedTheme` had no test, and
 // deleting the assignment left the suite green while recreating the exact gap it
@@ -379,6 +391,7 @@ export function drivenCaptureArtifact({
   nativeApp,
   nativePackage = null,
   requirePageIdentity = true,
+  servedBuild = null,
   fidelity,
   drawing,
   summaries,
@@ -390,6 +403,16 @@ export function drivenCaptureArtifact({
     brush,
     orientation,
     theme,
+    // What the served-build guard proved at capture time, kept instead of
+    // discarded (issue: a refuted experimental arm was promoted under the
+    // baseline's label, and no artifact could contradict it). `productCommit`
+    // is the checkout's HEAD, recorded only when the served bytes were verified
+    // as this checkout's build; a --allow-foreign-build capture records null
+    // there but still carries the served digest, so same-mode agreement stays
+    // checkable. Fold-time enforcement lives in campaign-sources.
+    productCommit: servedBuild?.productCommit ?? null,
+    buildEntry: servedBuild?.buildEntry ?? null,
+    buildDigest: servedBuild?.buildDigest ?? null,
     // The repeat count decides the cell's first-touch-to-repeat mix, so cells
     // captured at different counts are not comparable; campaign acceptance
     // refuses a banked cell recording a count other than its contract (issue
@@ -471,7 +494,7 @@ export async function captureDeviceFrames({
   // preview, so the build the device will load is checkable from here — and until
   // it was, only the desktop runners verified a build at all. A native export
   // written after the preview started reached device cells unchallenged.
-  await assertServedBuildIsFresh(host, { allowForeignBuild });
+  const servedBuild = await assertServedBuildIsFresh(host, { allowForeignBuild });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const hostLoadStart = sampleHostLoad();
@@ -622,6 +645,7 @@ export async function captureDeviceFrames({
     nativeApp,
     nativePackage: runtimeIdentity?.nativePackage ?? null,
     requirePageIdentity,
+    servedBuild,
     fidelity,
     drawing,
     summaries,
@@ -629,9 +653,7 @@ export async function captureDeviceFrames({
   });
 
   if (output) {
-    mkdirSync(dirname(join(ROOT, output)), { recursive: true });
-    writeFileSync(join(ROOT, output), JSON.stringify(artifact, null, 2));
-    console.log(`Wrote ${output}`);
+    console.log(`Wrote ${writeArtifactFile(output, artifact)}`);
   }
   return artifact;
 }

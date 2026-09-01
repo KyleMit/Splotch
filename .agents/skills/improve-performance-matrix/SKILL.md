@@ -66,10 +66,18 @@ Report these categories separately:
 * incomparable captures;
 * runner or capture-path blockers.
 
-Generate counts from live data, not prose. Before editing code, turn the failures into a compact
-causal-cluster inventory with a representative cell, affected blast radius, evidence confidence, and
-next discriminating experiment. Prioritize a systemic cause that plausibly explains several cells
-over isolated tail-chasing, but let current evidence choose the order.
+Generate counts from live data, not prose. Before treating any red cell as a current product
+problem, run `npm run check:matrix-staleness -- --base=origin/main` — a red cell describes the
+commit it was captured at, and the product moves underneath it (the 2026-08 campaign wrote five
+candidate implementations against a gate a prior extraction had already fixed; the check needs no
+device and answers in seconds). The explicit `--base` matters: the default is `HEAD`, which from a
+campaign branch counts the branch's own commits as drift and reports STALE wrongly. Cells the check
+marks stale go in the recapture bucket, not the product bucket.
+
+Before editing code, turn the remaining failures into a compact causal-cluster inventory with a
+representative cell, affected blast radius, evidence confidence, and next discriminating experiment.
+Prioritize a systemic cause that plausibly explains several cells over isolated tail-chasing, but
+let current evidence choose the order.
 
 ## Non-negotiable evidence rules
 
@@ -93,6 +101,15 @@ Preserve drawing output, undo semantics, coloring selection and clearing, settin
 rotation restoration, export fidelity, native/web parity, accessibility, and toddler-facing visual
 and interaction feedback. A faster incorrect interaction is a rejected experiment.
 
+That rule has a scheduling consequence: **when a candidate change alters what the user sees — brush
+texture, deposition, color, animation — get the human appearance judgement before spending device
+time on its timing campaign.** Two 2026-08 candidates produced fidelity-passing, CI-green,
+independently reproduced timing wins that were then declined on appearance ("reads as a glitch
+rather than as ink drying… whatever the frame numbers say", ADR-0147); the wasted captures were the
+only waste class in that campaign where every measurement was correct. A screenshot or short
+recording for the user costs minutes and no device occupancy; ask for the verdict early and run the
+timing campaign on candidates that already look right.
+
 ## Physical-device boundary
 
 Before the first physical capture, use `start-capture-session`, read `docs/PROFILING-CAMPAIGNS.md`
@@ -113,7 +130,11 @@ Then follow these invariants:
 * never commit device identifiers, local capture scaffolding, credentials, transient reports, or
   machine-specific state;
 * ask once with the exact action only when unlocking, Guided Access, XCTest authorization, or
-  another genuinely human-only device interaction blocks progress.
+  another genuinely human-only device interaction blocks progress;
+* capture one known-good control cell after the preflight goes green, before the first experimental
+  capture — a cell whose expected value is on record. A control that lands in band proves the whole
+  path (build, serve, transport, fidelity, scoring) in one capture; a surprising first experimental
+  number on an unproven path is undiagnosable.
 
 Simulator, emulator, desktop, and uncalibrated results are advisory unless the current profiling
 rules explicitly give them approval authority. Use them to reject or narrow hypotheses; do not let
@@ -242,7 +263,21 @@ Complete the full campaign only when:
 * every review comment is answered and resolved;
 * the stack-tip PR summarizes the baseline clusters, root causes, fixes, before/after evidence,
   capture provenance, product commits, and final matrix status;
-* `self-heal` has applied durable campaign and harness lessons in the homes future runs will read.
+* `self-heal` has applied durable campaign and harness lessons in the homes future runs will read —
+  and any newly earned capture-path mechanism (a way a capture produces a plausible wrong number or
+  a plausible absence) lands in `docs/PROFILING-CAMPAIGNS.md` specifically, the catalogue every
+  future capture session must read. The 2026-08 campaign routed such mechanisms there same-day for
+  ten days and then stopped in its final wave, losing two; the catalogue is a named self-heal
+  target, not an optional home.
+
+**Every completion or merge-ready claim rests on its authoritative check, re-run after the last
+change the claim covers — never on a proxy.** Name the check beside the claim: matrix state cites
+the freshly regenerated outputs, stack linkage cites the chain verification, "CI green" cites the
+run for the exact head SHA, "rig left as found" cites the current holder, not the port. A claim
+whose own verification failed — or ran before the last change — is withdrawn, not softened. The
+2026-08 corpus has five completion claims resting on proxies (a stack membership asserted 23 s after
+its own check failed; a nine-PR stack called merge-ready on per-PR CI alone), every one with the
+authoritative check available and cheaper than the retraction.
 
 Ask the user only for genuinely human-only device interaction, missing authorization, or a choice
 that materially changes product behavior or campaign scope. Otherwise operate autonomously until the

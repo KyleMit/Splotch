@@ -36,6 +36,7 @@ import {
   cellServerSource,
   recordedGesturePlan,
   recordedGestureRepeats,
+  recordedPaintedOutput,
   resolvedProbeHostProblem,
   planCampaign,
   splitTransportIdentityProblem,
@@ -48,16 +49,19 @@ import {
 } from './split-capture/lib/probe-host-protocol.mjs';
 import {
   ALREADY_VALID,
+  BLANK_OUTPUT,
   COMPLETE,
   ERASER_FILL_FAILED,
   EXHAUSTED,
   FAILED,
+  INSTRUMENT_ACCEPTED,
   LEDGER_HEADER,
   OFF_REFRESH_REGIME,
   UNCALIBRATED_RUNTIME,
   UNSCOREABLE,
   WRONG_GESTURE_PLAN,
   WRONG_GESTURE_REPEATS,
+  cellsBankedUnderDifferentInstrument,
   formatLedgerRow,
   nextAction,
   parseLedger,
@@ -215,6 +219,24 @@ export function inspectArtifact(
   if (shortfall !== null) {
     return { ok: false, status: ERASER_FILL_FAILED, refillShortfall: shortfall };
   }
+  // After everything above, for the standing most-fundamental-first reason: a
+  // capture already refused for its input, beat, contract, or eraser ink has a
+  // blank-or-not question that is moot, and naming the blankness would send
+  // the recapture after the wrong thing. A recorded no-change verdict means
+  // the temporal gates scored a renderer that did no drawing work; an absent
+  // record is the same historical tolerance every recorded field gets, and a
+  // malformed or error-carrying one throws in the shared reader — an invalid
+  // artifact, not consent.
+  let paintedOutput;
+  try {
+    paintedOutput = recordedPaintedOutput(artifact);
+  } catch (error) {
+    rethrowIfBroken(error);
+    return { ok: false, status: FAILED };
+  }
+  if (paintedOutput !== null && paintedOutput.changed !== true) {
+    return { ok: false, status: BLANK_OUTPUT, paintedOutput };
+  }
   return { ok: true, status: COMPLETE, regime };
 }
 
@@ -358,29 +380,61 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   mkdirSync(dirname(ledgerPath), { recursive: true });
   if (!existsSync(ledgerPath)) writeFileSync(ledgerPath, `${LEDGER_HEADER.join('\t')}\n`);
 
-  // Which instrument banked this campaign's cells (issue 1293). Recorded on the
-  // first run; a resume whose instrument moved is refused with the changed
-  // files named, unless the operator accepts the mixture on record. The new
-  // fingerprint is written on acceptance so the decision is made once, not on
-  // every subsequent resume.
+  // The attempts a cell has already spent live in the ledger, not in this process.
+  // Reading them is what makes --max-attempts a budget for the campaign rather than
+  // for one invocation, so an interrupted run resumes instead of restarting at 1.
+  const spentRows = parseLedger(readFileSync(ledgerPath, 'utf8'));
+
+  // Which instrument banked this campaign's cells (issue 1293). instrument.json
+  // records the CURRENT instrument; each attempt row records its own, because
+  // the file is rewritten on every invocation and after one accepted change it
+  // said nothing about the mixture it accepted (session 01a03f61). A resume
+  // whose instrument moved — against the file or against any banked row — is
+  // refused with the changed files and the mixed cells named, unless the
+  // operator accepts on record; acceptance rows keep the decision made once,
+  // not on every subsequent resume.
   const fingerprintPath = join(dirname(ledgerPath), 'instrument.json');
   const currentInstrument = instrumentFingerprint([...new Set(plan.map((cell) => cell.command))]);
+  // Rows carry each cell's OWN command's fingerprint, not the whole plan's
+  // union — a resume narrowed with --items shares every included cell's
+  // instrument with the full run that banked it, and the union differs there
+  // without a single file having moved.
+  const fingerprintByCommand = new Map(
+    [...new Set(plan.map((cell) => cell.command))].map((command) => [
+      command,
+      instrumentFingerprint([command]).fingerprint,
+    ])
+  );
+  const cellInstrument = (cell) => fingerprintByCommand.get(cell.command);
   const recordedInstrument = existsSync(fingerprintPath)
     ? JSON.parse(readFileSync(fingerprintPath, 'utf8'))
     : null;
-  const instrumentProblem = instrumentChangeProblem(recordedInstrument, currentInstrument);
+  const bankedElsewhere = cellsBankedUnderDifferentInstrument(
+    spentRows,
+    new Map(plan.map((cell) => [cell.id, cellInstrument(cell)]))
+  );
+  const instrumentProblem = instrumentChangeProblem(
+    recordedInstrument,
+    currentInstrument,
+    bankedElsewhere
+  );
   if (instrumentProblem && !has('accept-instrument-change')) fail(instrumentProblem);
   if (instrumentProblem) {
     console.log(
       'WARN  resuming across an instrument change — cells banked before this run were ' +
         'captured by a different instrument (accepted with --accept-instrument-change)'
     );
+    for (const { cell, fingerprint } of bankedElsewhere) {
+      appendLedger(ledgerPath, {
+        cell,
+        status: INSTRUMENT_ACCEPTED,
+        attempt: 0,
+        artifact: '-',
+        instrument: fingerprint,
+      });
+    }
   }
   writeFileSync(fingerprintPath, `${JSON.stringify(currentInstrument, null, 2)}\n`);
-  // The attempts a cell has already spent live in the ledger, not in this process.
-  // Reading them is what makes --max-attempts a budget for the campaign rather than
-  // for one invocation, so an interrupted run resumes instead of restarting at 1.
-  const spentRows = parseLedger(readFileSync(ledgerPath, 'utf8'));
 
   const rebootUdid = flag('reboot-simulator');
   const results = [];
@@ -455,6 +509,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         status: `${inspected.status}-exit-${child.status}`,
         attempt,
         artifact: cell.artifact,
+        instrument: cellInstrument(cell),
       });
       if (inspected.status === UNCALIBRATED_RUNTIME) {
         uncalibratedRuntime = true;
