@@ -117,14 +117,38 @@ describe('refusing a resume across an instrument change', () => {
     expect(problem).toContain('issue 1293');
   });
 
-  it('treats a file present on only one side as a change', () => {
+  // A plan narrowed or widened with --items drops or adds whole file sets with
+  // no content moving; counting those as changes refused exactly the resumes
+  // the guard exists to allow (Codex review of the distillation stack). Only a
+  // file both instruments hashed, with differing hashes, proves a change.
+  it('stays silent when --items widens the plan to files the record never hashed', () => {
     const recorded = fingerprintOf({});
     const current = instrumentFingerprint(
       ['perf:web:frames', 'perf:web:actions'],
       (file) => `stable:${file}`
     );
 
-    expect(instrumentChangeProblem(recorded, current)).toContain('capture-desktop-actions.mjs');
+    expect(instrumentChangeProblem(recorded, current)).toBeNull();
+  });
+
+  it('stays silent when --items narrows the plan below the recorded file set', () => {
+    const recorded = instrumentFingerprint(
+      ['perf:web:frames', 'perf:web:actions'],
+      (file) => `stable:${file}`
+    );
+    const current = fingerprintOf({});
+
+    expect(instrumentChangeProblem(recorded, current)).toBeNull();
+  });
+
+  it('still refuses when a shared file changed under a narrowed plan', () => {
+    const recorded = instrumentFingerprint(
+      ['perf:web:frames', 'perf:web:actions'],
+      (file) => `stable:${file}`
+    );
+    const current = fingerprintOf({ 'tools/perf/probes/real-screen-probe.js': 'edited probe' });
+
+    expect(instrumentChangeProblem(recorded, current)).toContain('real-screen-probe.js');
   });
 
   it('names the cells the ledger banked under a different fingerprint', () => {

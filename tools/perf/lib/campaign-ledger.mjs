@@ -99,7 +99,14 @@ export function parseLedger(text) {
 // recorded fingerprint predates the column and is accepted; an acceptance row
 // records that the operator kept this cell's mixture deliberately, so the
 // refusal is made once rather than on every subsequent resume.
-export function cellsBankedUnderDifferentInstrument(rows, currentFingerprint) {
+//
+// `currentFingerprintByCell` maps each cell in the CURRENT plan to the
+// fingerprint of its own command — per cell, because a run narrowed with
+// --items still shares each cell's instrument with the full run that banked
+// it, and a whole-plan fingerprint would refuse exactly that resume. A banked
+// cell the current plan does not include is not being retried, so it cannot
+// mix instruments in this run and is not this run's question.
+export function cellsBankedUnderDifferentInstrument(rows, currentFingerprintByCell) {
   const accepted = new Set(
     rows
       .filter((row) => row.status === INSTRUMENT_ACCEPTED && knownInstrument(row))
@@ -108,9 +115,11 @@ export function cellsBankedUnderDifferentInstrument(rows, currentFingerprint) {
   const banked = new Map();
   for (const row of rows) {
     if (!row.status?.startsWith(COMPLETE)) continue;
+    const expected = currentFingerprintByCell.get(row.cell);
+    if (expected === undefined) continue;
     if (
       !knownInstrument(row) ||
-      row.instrument === currentFingerprint ||
+      row.instrument === expected ||
       accepted.has(`${row.cell}\t${row.instrument}`)
     ) {
       banked.delete(row.cell);

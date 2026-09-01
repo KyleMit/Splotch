@@ -231,6 +231,7 @@ describe('cells banked under a different instrument', () => {
       artifact: 'unused',
       instrument,
     });
+  const currentFor = (...cells) => new Map(cells.map((cell) => [cell, 'fp-current']));
 
   it('records the fingerprint on a row and reads it back', () => {
     const [parsed] = parseLedger(row(CELL, `${COMPLETE}-exit-0`, 'fp-old'));
@@ -243,7 +244,7 @@ describe('cells banked under a different instrument', () => {
     const rows = parseLedger(legacy);
 
     expect(rows[0].instrument).toBeUndefined();
-    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([]);
+    expect(cellsBankedUnderDifferentInstrument(rows, currentFor(CELL))).toEqual([]);
   });
 
   it('names a cell whose banked row records another fingerprint, not one on the current', () => {
@@ -255,9 +256,12 @@ describe('cells banked under a different instrument', () => {
       ].join('\n')
     );
 
-    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([
-      { cell: 'portrait-light/pen-undo', fingerprint: 'fp-old' },
-    ]);
+    expect(
+      cellsBankedUnderDifferentInstrument(
+        rows,
+        currentFor('portrait-light/pen-undo', 'portrait-light/crayon', 'portrait-light/magic')
+      )
+    ).toEqual([{ cell: 'portrait-light/pen-undo', fingerprint: 'fp-old' }]);
   });
 
   it('lets the newest banked row speak for the artifact on disk', () => {
@@ -268,7 +272,7 @@ describe('cells banked under a different instrument', () => {
       ].join('\n')
     );
 
-    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([]);
+    expect(cellsBankedUnderDifferentInstrument(rows, currentFor(CELL))).toEqual([]);
   });
 
   it('stays silent for a mixture an acceptance row already put on record', () => {
@@ -278,7 +282,17 @@ describe('cells banked under a different instrument', () => {
       )
     );
 
-    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([]);
+    expect(cellsBankedUnderDifferentInstrument(rows, currentFor(CELL))).toEqual([]);
+  });
+
+  // A resume narrowed with --items shares each included cell's instrument with
+  // the full run that banked it; a banked cell outside the current plan is not
+  // being retried and must not force --accept-instrument-change (Codex review
+  // of the distillation stack).
+  it('ignores a banked cell the current plan does not include', () => {
+    const rows = parseLedger(row('portrait-light/crayon', `${COMPLETE}-exit-0`, 'fp-old'));
+
+    expect(cellsBankedUnderDifferentInstrument(rows, currentFor(CELL))).toEqual([]);
   });
 });
 

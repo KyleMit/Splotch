@@ -320,12 +320,20 @@ describe('keepIncomingReport', () => {
 
 // Acceptance is nonce-gated, but the on-disk debug copy was label-only — two
 // runs sharing a label overwrote each other's file. The nonce is the run
-// identity, so it belongs in the name.
+// identity, so it names the file — alone, since mintProbeNonce already embeds
+// the label and doubling a long --label breaches the 255-byte filename limit.
 describe('reportFileName', () => {
-  it('embeds the plan nonce beside the label', () => {
+  it('names the file by the plan nonce alone', () => {
     expect(reportFileName({ label: 'pen-portrait', nonce: 'pen-portrait-42-7' })).toBe(
-      'pen-portrait.pen-portrait-42-7.json'
+      'pen-portrait-42-7.json'
     );
+  });
+
+  it('does not double a long label past the filename component limit', () => {
+    const label = 'x'.repeat(120);
+    const name = reportFileName({ label, nonce: `${label}-42-7` });
+    expect(name).toBe(`${label}-42-7.json`);
+    expect(Buffer.byteLength(name)).toBeLessThanOrEqual(255);
   });
 
   it('keeps the label-only name for a hand-opened plan carrying no nonce', () => {
@@ -519,7 +527,7 @@ describe('the floor host refusing another run’s report', () => {
 
     await postReport(base, { nonce: 'floor-run-1', report: { events: [1] } });
 
-    expect(existsSync(join(reportDir, 'same-label.floor-run-1.json'))).toBe(true);
+    expect(existsSync(join(reportDir, 'floor-run-1.json'))).toBe(true);
     expect(existsSync(join(reportDir, 'same-label.json'))).toBe(false);
   });
 });
@@ -832,8 +840,8 @@ describe('the probe host refusing a stale run over HTTP', () => {
     await control('run-2');
     await postReport(base, { nonce: 'run-2', report: { events: [1, 2] } });
 
-    expect(existsSync(join(directory, 'same-label.run-1.json'))).toBe(true);
-    expect(existsSync(join(directory, 'same-label.run-2.json'))).toBe(true);
+    expect(existsSync(join(directory, 'run-1.json'))).toBe(true);
+    expect(existsSync(join(directory, 'run-2.json'))).toBe(true);
   });
 
   it('names a non-JSON response as a mismatched probe host', async () => {
@@ -1002,9 +1010,7 @@ describe('the probe host refusing a stale run over HTTP', () => {
     await postReport(base, { nonce: 'old-run', report: { events: Array.from({ length: 99 }) } });
 
     expect(state.report?.report.events).toHaveLength(3);
-    expect(JSON.parse(readFileSync(join(directory, 'cell.new-run.json'), 'utf8')).nonce).toBe(
-      'new-run'
-    );
+    expect(JSON.parse(readFileSync(join(directory, 'new-run.json'), 'utf8')).nonce).toBe('new-run');
   });
 
   // Issue 1306's last bullet: the ERROR report — the one that exists to stop a
@@ -1027,7 +1033,7 @@ describe('the probe host refusing a stale run over HTTP', () => {
     await postReport(base, { nonce: 'new-run', report: { events: Array.from({ length: 50 }) } });
     await postReport(base, { nonce: 'new-run', error: 'no sized #drawingCanvas' });
     expect(state.report?.error).toBe('no sized #drawingCanvas');
-    expect(JSON.parse(readFileSync(join(directory, 'cell.new-run.json'), 'utf8')).error).toBe(
+    expect(JSON.parse(readFileSync(join(directory, 'new-run.json'), 'utf8')).error).toBe(
       'no sized #drawingCanvas'
     );
   });

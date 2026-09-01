@@ -375,12 +375,23 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // not on every subsequent resume.
   const fingerprintPath = join(dirname(ledgerPath), 'instrument.json');
   const currentInstrument = instrumentFingerprint([...new Set(plan.map((cell) => cell.command))]);
+  // Rows carry each cell's OWN command's fingerprint, not the whole plan's
+  // union — a resume narrowed with --items shares every included cell's
+  // instrument with the full run that banked it, and the union differs there
+  // without a single file having moved.
+  const fingerprintByCommand = new Map(
+    [...new Set(plan.map((cell) => cell.command))].map((command) => [
+      command,
+      instrumentFingerprint([command]).fingerprint,
+    ])
+  );
+  const cellInstrument = (cell) => fingerprintByCommand.get(cell.command);
   const recordedInstrument = existsSync(fingerprintPath)
     ? JSON.parse(readFileSync(fingerprintPath, 'utf8'))
     : null;
   const bankedElsewhere = cellsBankedUnderDifferentInstrument(
     spentRows,
-    currentInstrument.fingerprint
+    new Map(plan.map((cell) => [cell.id, cellInstrument(cell)]))
   );
   const instrumentProblem = instrumentChangeProblem(
     recordedInstrument,
@@ -478,7 +489,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         status: `${inspected.status}-exit-${child.status}`,
         attempt,
         artifact: cell.artifact,
-        instrument: currentInstrument.fingerprint,
+        instrument: cellInstrument(cell),
       });
       if (inspected.status === UNCALIBRATED_RUNTIME) {
         uncalibratedRuntime = true;
