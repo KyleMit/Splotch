@@ -63,12 +63,7 @@
     touch-action: manipulation;
     transition:
       border-color var(--duration-base) ease,
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .active-page-chip:active {
-    transform: scale(0.92);
+      background var(--duration-base) ease;
   }
 
   .active-page-thumbnail {
@@ -117,6 +112,12 @@
       background: var(--brand-wash);
       border-color: var(--brand);
     }
+  }
+
+  .active-page-chip:active,
+  .active-page-chip.hover-armed:active {
+    background: var(--danger-wash);
+    border-color: var(--danger-text);
   }
 
   @media (max-width: 360px) {
