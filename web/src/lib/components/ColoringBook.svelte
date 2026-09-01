@@ -33,9 +33,7 @@
     applyColoringPageWithMagicUndo,
     clearColoringPageWithMagicUndo,
   } from '$lib/drawing/coloringAppearance';
-
-  const platform = isNative() ? 'mobile' : 'web';
-  const books = $derived(availableColoringBooks(platform));
+  const books = $derived(availableColoringBooks(isNative() ? 'mobile' : 'web'));
   const hasBookPicker = $derived(books.length >= 2);
 
   let activeBook = $state<Book | null>(null);
@@ -205,6 +203,7 @@
     origin: coloringBookModal.origin,
     onRequestClose: coloringBookModal.hide,
     onOpen: showInitialView,
+    retirement: 'compositor',
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>

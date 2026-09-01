@@ -206,6 +206,43 @@ describe('modalDialog', () => {
       await Promise.resolve();
 
       expect(dialog.open).toBe(true);
+      expect(content.style.visibility).toBe('hidden');
+
+      await afterContentRetirementPaint();
+
+      expect(dialog.open).toBe(false);
+      expect(content.style.visibility).toBe('hidden');
+
+      modal.show(null);
+      await Promise.resolve();
+
+      expect(dialog.open).toBe(true);
+      expect(content.style.visibility).toBe('');
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
+
+  it('retires compositor content after the transparent dialog closes', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const content = dialog.appendChild(document.createElement('div'));
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: modal.open,
+        onRequestClose: modal.hide,
+        retirement: 'compositor',
+      }));
+      return action.destroy;
+    });
+
+    try {
+      modal.show(null);
+      await Promise.resolve();
+      modal.hide();
+      await Promise.resolve();
+
       expect(dialog.style.opacity).toBe('0');
       expect(content.style.pointerEvents).toBe('none');
       expect(content.style.visibility).toBe('');
@@ -213,8 +250,6 @@ describe('modalDialog', () => {
       await afterContentRetirementPaint();
 
       expect(dialog.open).toBe(false);
-      expect(dialog.style.opacity).toBe('0');
-      expect(content.style.pointerEvents).toBe('none');
       expect(content.style.visibility).toBe('hidden');
 
       modal.show(null);
@@ -253,8 +288,7 @@ describe('modalDialog', () => {
       await Promise.resolve();
 
       expect(dialog.open).toBe(true);
-      expect(dialog.style.opacity).toBe('');
-      expect(content.style.pointerEvents).toBe('');
+      expect(content.style.visibility).toBe('');
     } finally {
       modal.hide();
       await Promise.resolve();

@@ -20,6 +20,8 @@
 //   onOpen          side-effect fired just before showModal() on each open.
 //   onClose         side-effect fired on the dialog's `close` event (Esc and
 //                   programmatic close alike).
+//   retirement      `compositor` hides the dialog surface before closing;
+//                   omit for content retirement.
 //   allowDismiss    () => boolean gate for *both* backdrop tap and Esc. When it
 //                   returns false the dismissal is blocked (the backdrop tap is
 //                   still swallowed; Esc is preventDefault'd).
@@ -41,6 +43,7 @@ interface ModalOptions {
   origin?: Origin | null;
   onOpen?: () => void;
   onClose?: () => void;
+  retirement?: 'compositor';
   allowDismiss?: () => boolean;
   blockBackdropAt?: (x: number, y: number) => boolean;
 }
@@ -64,7 +67,11 @@ export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> 
     const scheduleFallback = () => {
       frame = requestAnimationFrame(() => {
         timer = window.setTimeout(() => {
-          const contentRetirementPending = node.style.opacity === '0';
+          const contentRetirementPending =
+            node.style.opacity === '0' ||
+            [...node.children].some(
+              (child) => child instanceof HTMLElement && child.style.visibility === 'hidden'
+            );
           if (node.open && contentRetirementPending) {
             scheduleFallback();
             return;
@@ -82,18 +89,28 @@ function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: (
   const contentRoots = [...node.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
-  node.style.opacity = '0';
-  for (const root of contentRoots) root.style.pointerEvents = 'none';
+  const compositorRetirement = getOptions().retirement === 'compositor';
+  if (compositorRetirement) {
+    node.style.opacity = '0';
+    for (const root of contentRoots) root.style.pointerEvents = 'none';
+  } else {
+    for (const root of contentRoots) root.style.visibility = 'hidden';
+  }
   const restoreContent = () => {
     node.style.removeProperty('opacity');
-    for (const root of contentRoots) root.style.removeProperty('pointer-events');
+    for (const root of contentRoots) {
+      root.style.removeProperty('pointer-events');
+      root.style.removeProperty('visibility');
+    }
   };
   let timer: number | undefined;
   const frame = requestAnimationFrame(() => {
     timer = window.setTimeout(() => {
       if (!getOptions().open && node.open) {
         node.close();
-        for (const root of contentRoots) root.style.visibility = 'hidden';
+        if (compositorRetirement) {
+          for (const root of contentRoots) root.style.visibility = 'hidden';
+        }
       }
     });
   });
@@ -101,7 +118,6 @@ function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: (
     cancelAnimationFrame(frame);
     if (timer !== undefined) clearTimeout(timer);
     restoreContent();
-    for (const root of contentRoots) root.style.removeProperty('visibility');
   };
 }
 
