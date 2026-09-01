@@ -139,6 +139,31 @@ Never make the matrix green by:
 * copying a pass from another target or calibration tier;
 * treating stale, incomparable, or invalid evidence as current product approval.
 
+Frame pacing and readiness are separate acceptance dimensions. The action scorer's `passed` verdict
+covers first response and presented-frame continuity; `readyMs` records when the action-specific
+observable outcome actually arrived. A cluster is not accepted from a greener frame verdict alone.
+For every discrete-action A/B:
+
+* compare readiness P50/P95 from the same action, target, runtime, transport, polling cadence, and
+  ready predicate, alongside first-frame and post-action distributions;
+* reject a candidate that moves required work beyond the scored activity window, weakens the ready
+  predicate, or delays observable completion merely to protect animation frames;
+* treat a readiness regression larger than the capture path's measured resolution/noise as a product
+  tradeoff, not a performance win. Keep it only with explicit user approval and record the frame
+  benefit, latency cost, and why the deferred work is non-critical;
+* when an intentionally deferred action remains, apply an activation/busy state synchronously and
+  keep it visible until completion. A non-idempotent activation must be single-flight; repeatable,
+  idempotent choices such as selecting the current color need no artificial input lock;
+* capture normal-speed before/after video or GIF for any changed temporal behavior, cropped to the
+  control and affected surface, before asking for the appearance verdict.
+
+The committed matrix reports readiness P95 but does not assign one universal gate: “ready” ranges
+from a local state flip to a full-resolution download, and remote drivers add different polling
+floors. That is why the comparable A/B requirement above is mandatory rather than an invitation to
+ignore the number. If a capture path cannot resolve the proposed readiness difference, it cannot
+approve that experiment; use a finer in-page mark or another faithful path immediately serving the
+named product hypothesis.
+
 Stale red cells require faithful fresh captures. Harness work follows the product-first gate above:
 repair a demonstrated measurement defect or add a targeted diagnostic or validation capability only
 when the named product experiment will use it immediately. Do not create a freestanding harness

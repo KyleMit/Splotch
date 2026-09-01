@@ -16,6 +16,7 @@
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
+  import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
   import ScrollCue from './design/ScrollCue.svelte';
   import { cutTrailingRow } from '$lib/actions/scrollCue';
   import { guardTapZone } from '$lib/actions/launchGuard';
@@ -101,20 +102,23 @@
     setOverlayOrientation(orientation);
   });
 
-  async function pickPage(page: ColoringPage) {
-    const selectedOrientation = orientation;
-    const selectedTheme = resolvedTheme();
-    const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
-    cancelImagePrefetchesExcept(selectedOverlayUrl);
-    for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
-      cancelImageRequest(img);
-    }
+  async function pickPage(page: ColoringPage, button: HTMLButtonElement) {
+    if (retiringAfterPageSelection) return;
     retiringAfterPageSelection = true;
-    const dialogRetired = waitForDialogRetirement(dialogEl);
-    coloringBookModal.hide();
-    await dialogRetired;
-    await nextFrame();
-    applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
+    await runSingleFlightActivation(button, async () => {
+      const selectedOrientation = orientation;
+      const selectedTheme = resolvedTheme();
+      const selectedOverlayUrl = pageOverlayImage(page, selectedOrientation, selectedTheme);
+      cancelImagePrefetchesExcept(selectedOverlayUrl);
+      for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
+        cancelImageRequest(img);
+      }
+      const dialogRetired = waitForDialogRetirement(dialogEl);
+      coloringBookModal.hide();
+      await dialogRetired;
+      await nextFrame();
+      applyColoringPageWithMagicUndo(page, selectedOrientation, selectedTheme);
+    });
   }
 
   async function clearAndClose() {
@@ -264,7 +268,7 @@
                 class="coloring-tile"
                 type="button"
                 aria-label="{page.name} coloring page"
-                onclick={() => pickPage(page)}
+                onclick={(event) => pickPage(page, event.currentTarget)}
                 onpointerenter={() => prefetchPageOverlay(page)}
                 onpointerdown={() => prefetchPageOverlay(page)}
               >
@@ -438,7 +442,8 @@
     }
   }
 
-  .coloring-tile:active {
+  .coloring-tile:active,
+  .coloring-tile:global(.activation-pending) {
     transform: scale(0.96);
   }
 

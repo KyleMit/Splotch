@@ -2,13 +2,23 @@ function nextFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-export async function waitForPressFeedbackToSettle(node: HTMLElement) {
-  await nextFrame();
-  const animations = node.getAnimations();
-  if (animations.length === 0) return;
-  await Promise.allSettled(animations.map((animation) => animation.finished));
-  // Removing or covering a releasing control in the same presentation turn
-  // forces WebKit to retire its transform layer alongside the larger surface.
-  await nextFrame();
-  await nextFrame();
+export async function runSingleFlightActivation(
+  button: HTMLButtonElement,
+  activate: () => void | Promise<void>
+) {
+  if (button.disabled) return false;
+
+  button.disabled = true;
+  button.classList.add('activation-pending');
+  try {
+    // The state above is committed synchronously. One frame presents it; the
+    // following callback can retire the control without waiting out its CSS.
+    await nextFrame();
+    await nextFrame();
+    await activate();
+    return true;
+  } finally {
+    button.classList.remove('activation-pending');
+    button.disabled = false;
+  }
 }

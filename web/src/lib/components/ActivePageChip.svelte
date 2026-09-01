@@ -5,7 +5,7 @@
     type ColoringPage,
     type ResponsiveColoringImage,
   } from '$lib/state/books';
-  import { waitForPressFeedbackToSettle } from '$lib/actions/pressFeedback';
+  import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
 
   interface Props {
     page: ColoringPage;
@@ -16,10 +16,9 @@
 
   let { page, preview, hoverArmed, onclear }: Props = $props();
 
-  async function clearAfterPressFeedback(event: MouseEvent) {
+  function clearAfterPressFeedback(event: MouseEvent) {
     const button = event.currentTarget as HTMLButtonElement;
-    await waitForPressFeedbackToSettle(button);
-    onclear();
+    void runSingleFlightActivation(button, onclear);
   }
 </script>
 
@@ -115,9 +114,14 @@
   }
 
   .active-page-chip:active,
-  .active-page-chip.hover-armed:active {
+  .active-page-chip.hover-armed:active,
+  .active-page-chip:global(.activation-pending) {
     background: var(--danger-wash);
     border-color: var(--danger-text);
+  }
+
+  .active-page-chip:global(.activation-pending) {
+    transition: none;
   }
 
   @media (max-width: 360px) {

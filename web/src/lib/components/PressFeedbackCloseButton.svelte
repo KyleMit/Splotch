@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { waitForPressFeedbackToSettle } from '$lib/actions/pressFeedback';
+  import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
   import Icon from './Icon.svelte';
 
   let { onClose }: { onClose: () => void } = $props();
 
-  async function closeAfterPressFeedback(event: MouseEvent) {
-    await waitForPressFeedbackToSettle(event.currentTarget as HTMLButtonElement);
-    onClose();
+  function closeAfterPressFeedback(event: MouseEvent) {
+    void runSingleFlightActivation(event.currentTarget as HTMLButtonElement, onClose);
   }
 </script>
 

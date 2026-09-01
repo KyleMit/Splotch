@@ -209,6 +209,7 @@ describe('deployment matrix report', () => {
     expect(html).toContain('<b>0/1</b>');
     expect(html).toContain('Action 1: expand action drawer');
     expect(html).toContain('Portrait · Light');
+    expect(html).toContain('ready P95 1 ms');
     expect(html).not.toContain('idle frame control');
   });
 
@@ -648,6 +649,7 @@ describe('deployment matrix report', () => {
 
     expect(matrix.targets[0].modes[0].actions.worst).toEqual({
       firstFrameP95: null,
+      readyP95: 1,
       postActionFrameP95: null,
       postActionFrameMax: null,
     });
