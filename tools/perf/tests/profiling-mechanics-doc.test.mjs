@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { CAMPAIGN_TARGETS } from '../lib/campaign-plan.mjs';
+import { CAMPAIGN_TARGETS, actionsTransportFor } from '../lib/campaign-plan.mjs';
 
 // docs/PROFILING-MECHANICS.md's target table restates, in prose, facts that
 // `CAMPAIGN_TARGETS` owns: which transport draws a target, which one drives its
@@ -25,11 +25,6 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const doc = join(repoRoot, 'docs', 'PROFILING-MECHANICS.md');
 
 const HEADING = '## Which transport drives which target';
-
-// The default is in the plan's own resolution (`useCdp` keys on an explicit
-// 'cdp'), not in the target declaration, so the doc states what the target is
-// actually driven with rather than reproducing the field's absence.
-const DEFAULT_ACTIONS_TRANSPORT = 'appium';
 
 function tableRows() {
   const text = readFileSync(doc, 'utf8');
@@ -80,7 +75,11 @@ describe('docs/PROFILING-MECHANICS.md target table', () => {
       expect(rows.get(id)).toEqual({
         label: target.label,
         drawing: target.transport,
-        actions: target.actionsTransport ?? DEFAULT_ACTIONS_TRANSPORT,
+        // Through the resolver `planCampaign` itself calls, so a changed
+        // fallback fails this table rather than passing it (the PR 1548 review:
+        // a private copy of the default here kept the guard green whatever
+        // production chose).
+        actions: actionsTransportFor(target),
         captureRuntime: target.captureRuntime,
         // A target with no established regime declares null, and the doc has to
         // say so rather than leaving the cell to read as an omission.
