@@ -1197,11 +1197,13 @@ for **attribution** — and the subset that attributes a canonical red is one ch
 (`--actions=theme,coloring` isolated the theme-residue case above), not the one that stays green.
 Only the canonical full sweep validates the fix; run it before claiming a cell.
 
-Nothing enforces this at fold time yet: `gen-performance-matrix` applies action sources in manifest
-order and a focused capture **replaces its declared labels in the published cell** — that is the
-documented design, built before this trap was earned. So a green that entered the matrix through a
-focused source is only as valid as the canonical confirmation behind it, and adding a focused source
-to a manifest is exactly the moment to have run that confirmation.
+The fold enforces this: `gen-performance-matrix` still applies action sources in manifest order, but
+a `kind: "focused"` capture may replace its declared labels **only when the same mode also carries a
+full-sweep capture at the same `productCommit`** — the focused result has to be the isolation of a
+validated sweep, not a substitute for one. A focused source without that confirmation (or without a
+`productCommit` to prove it) refuses the whole fold with an `unconfirmed-focused-action` error
+naming the source and the full-sweep commits present, rather than publishing the replacement as
+matrix evidence.
 
 ## Before believing a result
 

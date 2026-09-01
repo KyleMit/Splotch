@@ -232,17 +232,49 @@ describe('deployment matrix report', () => {
 
   it('applies focused action captures only to their measured labels', () => {
     const baseline = {
+      kind: 'full',
+      productCommit: 'final',
       results: [
         action('expand action drawer', false, 'old'),
         action('change ink color', false, 'old'),
       ],
     };
-    const focused = { results: [action('expand action drawer', true, 'final')] };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'final',
+      results: [action('expand action drawer', true, 'final')],
+    };
 
     expect(mergeActionResults([baseline, focused])).toEqual([
       action('expand action drawer', true, 'final'),
       action('change ink color', false, 'old'),
     ]);
+  });
+
+  // Session 01a0556d: focused greens turned canonical red three times — earlier
+  // actions in the full sweep leave state a reduced plan never creates, so a
+  // focused capture is only the isolation of a validated sweep, never a
+  // substitute for one. No committed manifest carries a focused source, so the
+  // guard fails closed with no predating tolerance.
+  it('refuses a focused capture with no full sweep at the same product commit', () => {
+    const baseline = {
+      kind: 'full',
+      productCommit: 'sweep-commit',
+      source: 'actions-full.json',
+      results: [action('expand action drawer', false, 'sweep-commit')],
+    };
+    const focused = {
+      kind: 'focused',
+      productCommit: 'later-commit',
+      source: 'actions-focused.json',
+      results: [action('expand action drawer', true, 'later-commit')],
+    };
+
+    expect(() => mergeActionResults([baseline, focused])).toThrow('unconfirmed-focused-action');
+    expect(() => mergeActionResults([baseline, focused])).toThrow('actions-focused.json');
+    expect(() => mergeActionResults([{ ...focused, productCommit: undefined }])).toThrow(
+      'unconfirmed-focused-action'
+    );
   });
 
   it('excludes warmup-only labels while retaining the real scored action', () => {
@@ -746,6 +778,48 @@ describe('deployment matrix report', () => {
         manifestDirectory
       )
     ).toThrow('actions.json does not contain: missing action');
+  });
+
+  // The manifest path of the unconfirmed-focused-action guard: a focused
+  // source folds beside a same-commit full sweep and refuses beside any other.
+  it('folds a focused source only beside a full sweep at the same commit', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const full = writeActionCapture(manifestDirectory, 'actions-full.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [action('idle frame control', true), action('expand action drawer', false)],
+    });
+    const focused = writeActionCapture(manifestDirectory, 'actions-focused.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      summaries: [action('expand action drawer', true)],
+    });
+    const manifestWith = (focusedCommit) =>
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [
+            { source: full, productCommit: 'sweep123', kind: 'full' },
+            {
+              source: focused,
+              productCommit: focusedCommit,
+              kind: 'focused',
+              labels: ['expand action drawer'],
+            },
+          ],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+
+    const folded = normalizeMatrix(manifestWith('sweep123'), manifestDirectory);
+    const drawer = folded.targets[0].modes[0].actions.results.find(
+      (result) => result.label === 'expand action drawer'
+    );
+    expect(drawer.passed).toBe(true);
+
+    expect(() => normalizeMatrix(manifestWith('later456'), manifestDirectory)).toThrow(
+      'unconfirmed-focused-action'
+    );
   });
 
   it('reports a clear migration error for the previous schema', () => {
