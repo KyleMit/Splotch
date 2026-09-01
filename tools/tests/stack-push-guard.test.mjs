@@ -255,19 +255,51 @@ describe('stacked PR push guard', () => {
 describe('stacked PR push guard installation', () => {
   it('installs the tracked hooks path without replacing an existing custom path', () => {
     const calls = [];
+    const cwd = '/repo';
     const installRunner = (command, args) => {
       calls.push([command, ...args]);
       return args.includes('--get') ? result(1) : result(0);
     };
 
-    expect(installStackPushGuard({ runCommand: installRunner })).toBe(true);
-    expect(calls.at(-1)).toEqual(['git', 'config', '--local', 'core.hooksPath', '.githooks']);
+    expect(installStackPushGuard({ cwd, runCommand: installRunner })).toBe(true);
+    expect(calls.at(-1)).toEqual([
+      'git',
+      'config',
+      '--local',
+      'core.hooksPath',
+      join(cwd, '.githooks'),
+    ]);
+
+    expect(
+      installStackPushGuard({
+        cwd,
+        runCommand: () => result(0, `${join(cwd, '.githooks')}\n`),
+      })
+    ).toBe(false);
 
     expect(() =>
       installStackPushGuard({
+        cwd,
         runCommand: () => result(0, '/custom/hooks\n'),
       })
     ).toThrow(/refusing to replace an existing hook setup/);
+  });
+
+  it('runs from a Git worktree that does not contain the product tools', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'stack-push-hook-test-'));
+    try {
+      expect(spawnSync('git', ['init'], { cwd: directory }).status).toBe(0);
+      const hook = join(repoRoot, '.githooks', 'pre-push');
+      const invocation = spawnSync(hook, ['origin', 'git@example.test:assets.git'], {
+        cwd: directory,
+        encoding: 'utf8',
+        input: '',
+      });
+      expect(invocation.stderr).toBe('');
+      expect(invocation.status).toBe(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('is installed by both agent session configurations', () => {
