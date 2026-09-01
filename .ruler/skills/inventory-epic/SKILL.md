@@ -1,6 +1,6 @@
 ---
 name: inventory-epic
-description: Enumerate an epic's children from the GitHub sub-issues API — never from the epic's prose — classify each as actionable now, blocked, already done, or needing triage, read every child's comment thread for retractions and scope changes, and recommend a working order with the count reconciled against the API. Use when asked what remains on an epic or tracking issue, to inventory or plan a multi-issue campaign, or before implementing any issue that belongs to an epic.
+description: Enumerate an epic's children from the GitHub sub-issues API — never from the epic's prose — classify each (done, dropped, in flight, done-but-open, actionable, blocked, needs triage), read every child's comment thread for retractions and scope changes, and recommend a working order with every bucket reconciled against the API counts. Use when asked what remains on an epic or tracking issue, to inventory or plan a multi-issue campaign, or before implementing any issue that belongs to an epic.
 ---
 
 # Inventory an epic
@@ -21,23 +21,31 @@ gh api repos/{owner}/{repo}/issues/<epic-number>/sub_issues --paginate \
   --jq '.[] | "\(.number)\t\(.state)\t\(.title)"'
 ```
 
-Record the count. Every later claim about the epic reconciles against it — "N children: A done, B in
-flight, C actionable, D blocked" must sum to N, and an inventory reporting fewer children than the
-API returned is wrong by construction. Epics nest: check each open child for sub-issues of its own
-before calling it a leaf, and fold nested children into the same accounting.
+Record the count per parent. Epics nest: check each open child for sub-issues of its own before
+calling it a leaf, and inventory a nested parent the same way. The reconciliation unit is the parent
+— each parent's buckets sum to that parent's own API count — and the epic-wide total is the count of
+**unique** issues across all levels (a child can be re-parented mid-campaign; count it once). An
+inventory reporting fewer children than the API returned for any parent is wrong by construction.
 
 ## 2. Read before classifying
 
-For each open child, read the issue body **and its full comment thread** — comments retract figures,
+For each child, read the issue body **and its full comment thread** — comments retract figures,
 change scope, and record partial work, and this repo has been bitten by implementing an issue whose
 premise its own comments had withdrawn (the root instructions' "read issue comments before
 implementing" rule). Then classify each child into exactly one bucket:
 
-* **actionable now** — clear, unblocked, correctly labeled;
-* **blocked** — naming the blocker: another child, a human decision, hardware, an external event;
-* **already done** — evidence in hand (a merged PR, a commit, a comment) with the issue still open:
-  flag it for closing rather than redoing it;
-* **needs triage** — unclear or stale premise: state the question that would unblock it.
+* **done** — closed as completed, with the closing evidence;
+* **dropped** — closed as not planned: it is off the epic's remaining scope, and its reason is worth
+  one line since it can prune siblings too;
+* **in flight** — open and claimed: an `in-progress` label, an open PR, or an assignee actively on
+  it. Do not recommend claiming it again;
+* **done but still open** — evidence in hand (a merged PR, a commit, a comment) with the issue not
+  closed: flag it for closing rather than redoing it;
+* **actionable now** — open, unclaimed, clear, unblocked, correctly labeled;
+* **blocked** — open, naming the blocker: another child, a human decision, hardware, an external
+  event;
+* **needs triage** — open with an unclear or stale premise: state the question that would unblock
+  it.
 
 ## 3. Recommend an order
 
@@ -48,5 +56,6 @@ skill's job (`burn-down-backlog` claims one issue, `create-stacked-prs` ships se
 
 ## Completion condition
 
-Every child in exactly one bucket, the buckets summing to the API count, and each classification
-carrying its evidence — a comment, a PR, a label, never a memory of the epic's prose.
+Every child in exactly one bucket, each parent's buckets summing to that parent's API count (and the
+epic-wide total to the unique-issue union), and each classification carrying its evidence — a
+comment, a PR, a label, never a memory of the epic's prose.
