@@ -106,10 +106,11 @@ broken state before the revert check caught them:
   caller. A unit assertion on a helper is not a test of the command documented in a skill.
 
 **Commit the fix before running the revert check.** The check is destructive, and
-`git checkout -- <file>` restores from `HEAD`, so it cannot separate the temporary revert from
-unrelated uncommitted work in the same file — it silently discards both. Commit first, or invert the
-edit rather than restoring the file. Never reach for a bare `git stash` here: the stash stack is
-shared across worktrees and other sessions pop it.
+`git checkout -- <file>` restores the working tree from the **index** (`HEAD` only when nothing is
+staged), so it cannot separate the temporary revert from unrelated uncommitted work in the same file
+— it silently discards both, and if the revert itself was staged it restores the reverted shape
+rather than the fix. Commit first, or invert the edit rather than restoring the file. Never reach
+for a bare `git stash` here: the stash stack is shared across worktrees and other sessions pop it.
 
 ## Server-contract smoke tests — `test:api:smoke`, `test:deploy:smoke`, `test:blobs:smoke`
 

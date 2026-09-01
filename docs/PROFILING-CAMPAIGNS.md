@@ -103,17 +103,23 @@ exactly why the pointing has to be deliberate.
 ### The device's own service worker can serve the previous shell
 
 Every check above proves what the **host** serves. A device browser that has visited the LAN preview
-origin before carries a service-worker-cached app shell for it, and a reused origin serves that
-shell before the network is consulted — so the host can prove the new build is served (manifest 200,
-entry chunk 200 from the same LAN origin) while the device still runs the previous one, and a
-capture labelled with an exact product commit measures an older build with every host-side identity
-check passing.
+origin before carries a service-worker-cached app shell for it — the PWA's `NetworkFirst` handler
+falls back to that cache when the network times out or fails, and a shell it restores can also keep
+issuing requests for the build it was cached from. Either way the host can prove the new build is
+served (manifest 200, entry chunk 200 from the same LAN origin) while the device runs or references
+the previous one, and a capture labelled with an exact product commit measures an older build with
+every host-side identity check passing.
 
 The tell is the served build's own preview logging a **versioned-asset 404 for a different build's
-version**: the device is asking for a manifest the host no longer has, which only an older shell
-does. On 2026-08-31 exactly that line — the preview that had just proven `manifest-1.5.1231.json`
-present logging a 404 for `manifest-1.5.1230.json` — demoted three focused iPad A/Bs from product
-evidence to diagnostics; they could no longer certify the product commit on their label.
+version**: the device is asking for a manifest the host no longer has, so *something on the device*
+still references an older build. The tell alone does not say what — a stale shell actually running,
+or only a stale persisted request from a fresh one — so it demotes on its own only when nothing
+stronger is checked. On 2026-08-31 exactly that line — the preview that had just proven
+`manifest-1.5.1231.json` present logging a 404 for `manifest-1.5.1230.json` — demoted three focused
+iPad A/Bs captured with **no page-identity check at all** from product evidence to diagnostics; they
+could no longer certify the product commit on their label. The proof either way is the entry-module
+comparison below: a mismatch is a stale shell, and a pass keeps the capture while the 404 stays a
+recorded caveat.
 
 The XCUITest actions path now guards this (commit 1896c70c6): it compares the served HTML's
 `/_app/immutable/entry/start.*.js` module against `document.scripts` on the device, throws
@@ -665,14 +671,16 @@ it is documentation with an `expect()` in it. That applies to a generated source
 to a function — a bootstrap built as a template literal can be executed in a DOM fixture, which is
 slower than grepping it and is the only version that can fail.
 
-Revert safely: `git checkout -- <file>` restores from `HEAD`, so it silently discards any
-uncommitted work sharing the file with the temporary revert — commit first, or invert the edit
-instead of restoring the file (`docs/TESTING.md`'s "A regression test must fail against the old
-code" section owns the full rule). On 2026-08-25 an injection round's `git checkout` restore ate two
-uncommitted review fixes, and the follow-up commit's message and a published PR disposition both
-asserted changes the diff did not contain — discovered only when a second injection unexpectedly
-passed. An injection script should `assert` its anchors exist before writing, and the restore is
-proven by content (`grep -c` for something the fix added), never by having run a restore command.
+Revert safely: `git checkout -- <file>` restores the working tree from the **index** — `HEAD` only
+when nothing is staged — so it silently discards any uncommitted work sharing the file with the
+temporary revert, and with the injection itself staged it does not even restore the fix. Commit
+first, or invert the edit instead of restoring the file (`docs/TESTING.md`'s "A regression test must
+fail against the old code" section owns the full rule). On 2026-08-25 an injection round's
+`git checkout` restore ate two uncommitted review fixes, and the follow-up commit's message and a
+published PR disposition both asserted changes the diff did not contain — discovered only when a
+second injection unexpectedly passed. An injection script should `assert` its anchors exist before
+writing, and the restore is proven by content (`grep -c` for something the fix added), never by
+having run a restore command.
 
 The related trap is a seam that only protects the far side of itself. Extracting a chooser and
 testing the chooser proves it picks correctly when handed the right value, which is never what was
@@ -1188,6 +1196,12 @@ a subset that skips them measures a different product state under the same label
 for **attribution** — and the subset that attributes a canonical red is one chosen to *reproduce* it
 (`--actions=theme,coloring` isolated the theme-residue case above), not the one that stays green.
 Only the canonical full sweep validates the fix; run it before claiming a cell.
+
+Nothing enforces this at fold time yet: `gen-performance-matrix` applies action sources in manifest
+order and a focused capture **replaces its declared labels in the published cell** — that is the
+documented design, built before this trap was earned. So a green that entered the matrix through a
+focused source is only as valid as the canonical confirmation behind it, and adding a focused source
+to a manifest is exactly the moment to have run that confirmation.
 
 ## Before believing a result
 
