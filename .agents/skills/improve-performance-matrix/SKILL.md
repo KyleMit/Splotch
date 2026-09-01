@@ -1,6 +1,6 @@
 ---
 name: improve-performance-matrix
-description: Drive Splotch's deployment-target performance matrix from a fresh cell-by-cell inventory to zero current, scoreable red cells through product improvements, capture-path repairs, and faithful recaptures, shipping each causal cluster as reviewed, merge-ready stacked PRs with a green tip. Use for a sustained performance-improvement campaign; use capture-performance-matrix for capture-only snapshots or validation.
+description: Drive Splotch's deployment-target performance matrix from current evidence to zero scoreable red cells through product improvements and faithful recaptures, treating the mature harness as frozen unless a demonstrated measurement defect blocks a named product experiment. Ships causal product clusters as reviewed, merge-ready stacked PRs with a green tip. Use for sustained performance improvement; use capture-performance-matrix for capture-only snapshots or validation.
 ---
 
 # Improve performance matrix
@@ -16,6 +16,43 @@ capture-path repair or faithful recapture, stacked delivery, review, and campaig
 An explicit user request to run this improvement campaign authorizes its normal in-repository
 branches, commits, pushes, draft PRs, stack links, and `start-capture-session` device reservation.
 Merely loading the skill for planning or reference does not. Neither form authorizes merging.
+
+## Product work is the deliverable
+
+This is not a harness-improvement campaign. Splotch's profiling harness is mature and presumed
+sufficient. After one current, scoreable failure is reproduced on a calibrated physical release
+gate, the next meaningful output is a product hypothesis and A/B experiment — not broader capture
+coverage, richer metadata, another metric, or generalized tooling.
+
+Read the whole published matrix at the start, but do not block the first product experiment on
+making every stale target current. Full current coverage remains part of the completion gate. It is
+not a prerequisite for beginning product work when a calibrated physical target already provides a
+reproducible failure. Stale advisory Simulator, emulator, and desktop rows cannot delay that first
+experiment. Recapture a stale authoritative target first only when its result is necessary to
+distinguish the selected hypothesis or establish a calibrated failure.
+
+Freeze `tools/perf/`, matrix schemas and generators, capture transports, scorers, evidence formats,
+and profiling documentation while working a product cluster. A harness repair is allowed only when
+all of these are true:
+
+1. The live campaign ledger already names the current product failure, the product hypothesis, and
+   the before/after experiment the repair must unblock.
+2. A supported existing capture path was attempted, and raw evidence proves its result is invalid or
+   incomparable. Inconvenience, missing polish, incomplete metadata, a warning, future reuse, or an
+   isolated advisory-runtime anomaly is not enough.
+3. The proposed change is the smallest repair that makes that named experiment valid; generalized
+   cleanup and adjacent improvements become issues rather than campaign commits.
+4. The campaign immediately returns to the same product experiment, records its product outcome, and
+   does not promote the repair itself as a delivered causal cluster.
+
+If another harness detour becomes necessary before a product change has landed or a product
+candidate has been empirically rejected, stop and ask the user before expanding harness scope. A
+checkpoint with current product reds and no product outcome is an **inventory checkpoint; campaign
+incomplete** — never a completed improvement, shipped cluster, or merge-ready campaign result.
+
+Keep the PR ledger honest about allocation. At every status update, list product commits, harness
+repair commits, and capture/evidence-only commits separately, name the product experiment each
+harness commit unblocked, and say explicitly when no product optimization has landed.
 
 ## Start from current truth
 
@@ -43,8 +80,9 @@ campaign prompt, PR body, report, or memory.
    scope, source manifest, and generator rather than assuming the newest or first `data.json` is
    authoritative.
 
-Resolve the authoritative deployment-target matrix first, then inventory every cell in its
-`data.json` before changing product or harness code. Classify each cell by:
+Resolve the authoritative deployment-target matrix first, then inventory every published cell in its
+`data.json` before editing. This is a read-only classification pass, not a requirement to recapture
+every stale cell before product work. Classify each cell by:
 
 * target and deployment class;
 * web or native runtime;
@@ -74,10 +112,12 @@ device and answers in seconds). The explicit `--base` matters: the default is `H
 campaign branch counts the branch's own commits as drift and reports STALE wrongly. Cells the check
 marks stale go in the recapture bucket, not the product bucket.
 
-Before editing code, turn the remaining failures into a compact causal-cluster inventory with a
-representative cell, affected blast radius, evidence confidence, and next discriminating experiment.
+As soon as a current calibrated physical failure exists, turn the remaining genuine failures into a
+compact causal-cluster inventory with a representative cell, affected blast radius, evidence
+confidence, and next discriminating product experiment. Select one and start its product A/B.
 Prioritize a systemic cause that plausibly explains several cells over isolated tail-chasing, but
-let current evidence choose the order.
+let current evidence choose the order. Continue stale-target recapture for breadth and completion;
+do not use it as a blanket reason to postpone the selected experiment.
 
 ## Non-negotiable evidence rules
 
@@ -90,10 +130,12 @@ Never make the matrix green by:
 * copying a pass from another target or calibration tier;
 * treating stale, incomparable, or invalid evidence as current product approval.
 
-Stale red cells require faithful fresh captures. A harness or scorer change is allowed only when raw
-evidence proves the measurement is wrong. Promote representative raw captures with
-`npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name>` so they remain rescoreable, and
-trial a scorer change across that preserved corpus with
+Stale red cells require faithful fresh captures. Within an improvement campaign, proof that a
+measurement is wrong does not by itself authorize harness work: the defect must also block the
+already named product experiment under the product-first gate above. Promote representative raw
+captures with
+`npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name> --product-commit=<capture-product-sha>`
+so they remain rescoreable, and trial a scorer change across that preserved corpus with
 `npm run perf:rescore -- --corpus=perf-profiles/evidence/<name>` before treating it as valid.
 Preserve or strengthen coverage and add a regression test for the exact measurement failure.
 
@@ -150,10 +192,12 @@ For each cluster:
 3. Attribute the expensive frame or invalid result to a concrete product, runner, transport, or
    instrumentation cause. Separate first-action latency from post-action work and physical
    corroboration from simulator-only behavior.
-4. If attribution remains ambiguous, add narrowly scoped diagnostic evidence or a supported
-   user-flow A/B control. Do not change the scorer to hide the ambiguity.
-5. Make one causally coherent change. Back out rejected or inconclusive experiments instead of
-   stacking speculation.
+4. If attribution remains ambiguous, first use existing narrowly scoped diagnostics or a supported
+   user-flow A/B control. Any harness edit must pass the product-first exception gate and must
+   immediately return to this same cluster. Do not change the scorer to hide ambiguity.
+5. Make one causally coherent product change. Back out rejected or inconclusive experiments instead
+   of stacking speculation; a measured rejection is still the product outcome that closes the
+   experiment loop.
 6. Run focused correctness tests and the exact failing performance case, plus `npm run check`,
    `npm run lint`, and `npm run format:check` before any commit that touches code or scripts.
 7. Compare raw before/after traces and generated summaries from faithful runs. Preserve the first
@@ -166,13 +210,17 @@ For each cluster:
     `npm run gen:performance-matrix -- <manifest>`; that command runs the staleness check in-process
     against the manifest it resolved. Validate every generator-owned output and prove
     JSON/Markdown/HTML agreement where present.
-12. Commit and push each causally coherent verified improvement separately, update raw evidence and
-    remaining status in the current stack-tip PR body, and proceed only from a clean tree.
+12. Commit and push each causally coherent verified product improvement separately, update raw
+    evidence and remaining status in the current stack-tip PR body, and proceed only from a clean
+    tree. A necessary harness repair may precede it in the same cluster, but never substitutes for
+    the product outcome it exists to unblock.
 
 ## Stack and review discipline
 
-Deliver causally distinct clusters as sequential PRs and link the real chain with `gh stack`. Every
-PR body includes:
+Deliver causally distinct product clusters as sequential PRs and link the real chain with
+`gh stack`. Do not create a standalone harness-improvement cluster unless the user explicitly asks
+for one; an incidental repair stays subordinate to the product cluster it unblocks. Every PR body
+includes:
 
 * root cause and causal scope;
 * exact raw before/after metrics and artifact provenance;
@@ -206,12 +254,14 @@ authorizes making the stack merge-ready, not landing it.
 Treat these as steering inside the active campaign, not as replacements for the campaign objective.
 
 * **status** — report the overall campaign status in commentary, including the freshly established
-  baseline; clusters and PRs already shipped or merge-ready; the exact current in-flight cluster,
-  phase, branch/PR, and latest evidence; remaining current red, stale, incomparable, unavailable,
-  and blocked cells; current runner/device blockers; and the best evidence-based estimate of work
-  left. Re-read live matrix, git, PR, review, and CI state where it may have changed. Do not send a
-  final response, stop tools, pause captures, or treat the question as turn-terminating. Continue
-  the in-flight campaign after answering.
+  baseline; product clusters and PRs already shipped or merge-ready; product, harness-repair, and
+  capture/evidence-only commits as separate lists; the product experiment each harness repair
+  unblocked; the exact current in-flight cluster, phase, branch/PR, and latest evidence; remaining
+  current red, stale, incomparable, unavailable, and blocked cells; current runner/device blockers;
+  and the best evidence-based estimate of work left. State explicitly when no product optimization
+  has landed. Re-read live matrix, git, PR, review, and CI state where it may have changed. Do not
+  send a final response, stop tools, pause captures, or treat the question as turn-terminating.
+  Continue the in-flight campaign after answering.
 * **pause** — stop selecting new clusters, finish or safely back out the current experiment, leave
   the current branch and PR evidence coherent, push a recoverable checkpoint, and report the exact
   resume point. Do not present a paused partial cluster as merge-ready.
@@ -252,6 +302,9 @@ improvement, a green cluster, or a wrap-up that leaves current scoreable reds.
 Complete the full campaign only when:
 
 * a freshly regenerated matrix has zero current, scoreable red cells;
+* every genuine product red that existed during the campaign has a recorded product outcome — a
+  verified improvement or an empirically rejected candidate followed by the next hypothesis; a
+  campaign with product reds and only harness, documentation, or capture commits is incomplete;
 * every stale or unavailable scoreable cell has a faithful current replacement;
 * capture-path blockers are fixed and every affected target is recaptured; a genuinely unsupported
   mode stays explicitly unscoreable rather than being counted as a pass;
