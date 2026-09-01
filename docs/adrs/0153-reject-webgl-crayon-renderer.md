@@ -8,9 +8,15 @@ The crayon deposition work (ADR-0146, ADR-0147, ADR-0148) left three per-runtime
 pipelines and an engine where the crayon is the most expensive brush. A GPU port promised to
 collapse that: the 2026-08-29 `spike/gpu-crayon` session built three working WebGL2 crayon
 architectures — stamped quads, an SDF stroke shader, and a Ciallo-style arclength-integral shader —
-and initially recommended a cutover retiring roughly 5,700 lines of the 8,978-line engine, since
-`gl.MIN` blending reproduces the crayon's subtractive glaze natively (at mix = 1 the glaze collapses
-to `min(S, D)`, which removes `crayonPassBuffer.ts` and all three per-runtime deposition pipelines).
+and initially recommended a cutover retiring roughly 5,700 lines of the 8,978-line engine, on the
+grounds that `gl.MIN` blending renders the glaze with no accumulation surface (at mix = 1 the glaze
+collapses to `min(S, D)`), removing `crayonPassBuffer.ts` and all three per-runtime deposition
+pipelines. That premise was already refuted on appearance before the spike ran: ADR-0148 records a
+human rejecting exactly the `m = 1` form — `min` is a fixed point, so blue drawn back over yellow
+never walks past green and "the crayon reads as refusing to work" — and the shipped glaze's
+non-idempotence is the feature that forces an accumulation surface to exist. So the spike's
+renderers are an appearance-invalid lower bound on GPU cost, and a behavior-preserving GPU glaze
+would need the accumulation work the deletion claim assumed away.
 
 The alternatives were therefore real and implemented, not hypothetical: keep the shipping 2D-canvas
 crayon, or port deposition to one of three measured WebGL architectures.
@@ -61,10 +67,10 @@ with `-stamp`/`-ciallo`/`-sdf` sibling branches); the campaign context is
 
 * \+ A future performance campaign can rule out "port the crayon to the GPU" in one read instead of
   re-running a multi-day spike; the refutation is measured, not argued.
-* \+ The `gl.MIN` glaze equivalence is on record — if the floor ever drops GPU-less devices or
-  WebGPU changes the attachment-area economics, that is the one-line insight a revisit starts from,
-  and re-measuring attachment-area scaling and the software-rasterizer floor is the bar it must
-  clear.
+* \+ The revisit bar is stated: a future GPU attempt (a dropped no-GPU floor, or WebGPU changing the
+  attachment-area economics) starts by formulating a **behavior-preserving** glaze — the spike's
+  `gl.MIN` renderers are the appearance-rejected `m = 1` form (ADR-0148), so its timings are a lower
+  bound — then re-measures attachment-area scaling and the software-rasterizer floor.
 * − The spike branches are unmerged and will rot against the moving engine; they document the
   architectures, not a mergeable implementation.
 * − The three per-runtime deposition pipelines ADR-0146–0148 describe stay, with their maintenance

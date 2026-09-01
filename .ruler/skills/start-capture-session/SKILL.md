@@ -140,7 +140,8 @@ listener merely because it occupies a canonical port. Unknown ownership is forei
   plan is not finished or stale. Otherwise leave it running and use the resolved alternate port.
 
 The preflight resolves preview and probe as a pair, then every other capture port. Record its device
-ids and resolved ports in the handoff; pass both an explicit LAN `--url=` and `--probe-host=` to
+ids and resolved ports in the rig-state block that ends the session (exact ids stay out of committed
+packets — see Ending the session); pass both an explicit LAN `--url=` and `--probe-host=` to
 captures instead of assuming 4173 or 4175.
 
 ## Read before capturing
@@ -201,8 +202,8 @@ campaign needs to be started to make takeover count. What does **not** clean its
 changes them back. Say so when you hand off, rather than leaving a phone that behaves oddly for
 reasons nobody can trace.
 
-End with a **rig-state block** — in the wrap-up reply, and in the handoff packet when one is being
-written — one line per row, so the next session inherits facts instead of re-deriving them:
+End with a **rig-state block** in the wrap-up reply — one line per row, so the next session inherits
+facts instead of re-deriving them:
 
 * checkout and commit the rig's preview/probe are serving;
 * each device: id, and the verification verdict with its failed check when not green;
@@ -214,5 +215,12 @@ written — one line per row, so the next session inherits facts instead of re-d
 
 The borrowed-vs-owned line is the one that prevents the next session stopping a foreign process; the
 device ids and ports are what it passes as explicit `--url=`/`--probe-host=` instead of assuming
-defaults. This block reports observations — never commit it, and never let it substitute for the
-next session's own preflight: readiness is re-proven, not inherited.
+defaults. The block reports observations and never substitutes for the next session's own preflight:
+readiness is re-proven, not inherited.
+
+**The exact identifiers stay out of anything committed.** A handoff packet is committed and pushed
+(`create-handoff`), and this repo never commits device identifiers or machine-specific state — so a
+packet carries the block with devices named by alias (the iPad, the Samsung phone), services by
+ownership and port, and a pointer that the exact ids and pids are in the closing reply of the
+session that held the rig. The full block, ids included, belongs in the chat reply and in local
+uncommitted state only.
