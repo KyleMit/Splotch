@@ -18,7 +18,7 @@ import { mintProbeNonce } from '../lib/capture-attribution.mjs';
 import { pollFor } from './lib/poll.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import { hostQuietRecord, sampleHostLoad } from '../lib/host-quiet.mjs';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import {
   argFlag,
   capture,
@@ -362,6 +362,18 @@ function iosDriver({ wdaUrl, pageUrl, nativeApp }) {
   };
 }
 
+// The absolute() guard run-campaign resolves the same flag with: join(ROOT, output)
+// rebases an absolute --output under ROOT, so the runner's inspector looked for an
+// artifact this child had written somewhere else — and its delete-before-retry
+// removed a valid product-red artifact it could not see (session 01a049ec). Shared
+// by capture-hand-input.mjs, whose write had the identical shape.
+export function writeArtifactFile(output, artifact) {
+  const path = isAbsolute(output) ? output : join(ROOT, output);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(artifact, null, 2));
+  return path;
+}
+
 // The artifact envelope, as a pure value. Extracted so the fields a later reader
 // TRUSTS can be asserted without a device: `observedTheme` had no test, and
 // deleting the assignment left the suite green while recreating the exact gap it
@@ -629,9 +641,7 @@ export async function captureDeviceFrames({
   });
 
   if (output) {
-    mkdirSync(dirname(join(ROOT, output)), { recursive: true });
-    writeFileSync(join(ROOT, output), JSON.stringify(artifact, null, 2));
-    console.log(`Wrote ${output}`);
+    console.log(`Wrote ${writeArtifactFile(output, artifact)}`);
   }
   return artifact;
 }
