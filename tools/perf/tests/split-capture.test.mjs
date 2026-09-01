@@ -693,6 +693,26 @@ describe('what a saved artifact can prove about its own theme', () => {
     ).toMatchObject({ nativeApp: true, nativePackage: 'art.splotch.app' });
   });
 
+  // The served-build guard proves which build the capture measured and used to
+  // discard the proof; both writers keep it, so a fold can refuse an artifact
+  // whose recorded build contradicts the label it is promoted under.
+  it('records the served-build identity the guard proved, on both writers', () => {
+    const servedBuild = {
+      buildEntry: '/_app/immutable/entry/start.Aaa.js',
+      buildDigest: 'd'.repeat(64),
+      productCommit: 'abc123',
+    };
+
+    for (const write of [drivenCaptureArtifact, handCaptureArtifact]) {
+      expect(write({ ...common, ready, servedBuild })).toMatchObject(servedBuild);
+      expect(write({ ...common, ready })).toMatchObject({
+        buildEntry: null,
+        buildDigest: null,
+        productCommit: null,
+      });
+    }
+  });
+
   // Issue 1292: eraser passes get real ink from between-pass refills, which
   // makes old and new eraser numbers incomparable — so the artifact says which
   // plan drove it, and carries the verified-fill and per-refill evidence.

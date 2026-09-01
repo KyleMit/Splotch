@@ -246,6 +246,7 @@ export function handCaptureArtifact({
   device,
   seconds,
   reading,
+  servedBuild = null,
   fidelity,
   summaries,
   payload,
@@ -259,6 +260,12 @@ export function handCaptureArtifact({
     brush,
     orientation,
     theme,
+    // The served-build identity the guard proved before this capture ran — see
+    // drivenCaptureArtifact. A hand capture is the one a person paid for, so
+    // which build it measured must be provable later without re-deriving it.
+    productCommit: servedBuild?.productCommit ?? null,
+    buildEntry: servedBuild?.buildEntry ?? null,
+    buildDigest: servedBuild?.buildDigest ?? null,
     // The page's own answer, not the request — see capture-device-frames.
     observedTheme: ready?.resolvedTheme ?? null,
     pageIdentity: requirePageIdentity ? 'proven-by-url' : 'unprovable',
@@ -306,7 +313,9 @@ export async function captureHandInput({
     fail('--open=devicectl launches the installed app, so it requires --native-app');
   }
 
-  await assertServedBuildIsFresh(host, { allowForeignBuild: allowForeignBuild !== undefined });
+  const servedBuild = await assertServedBuildIsFresh(host, {
+    allowForeignBuild: allowForeignBuild !== undefined,
+  });
 
   const runtime = captureRuntime(platform, nativeApp);
   const runLabel = label ?? `hand-${runtime}-${brush}-${orientation.toLowerCase()}-${theme}`;
@@ -434,6 +443,7 @@ export async function captureHandInput({
     device: serial ?? udid ?? null,
     seconds,
     reading,
+    servedBuild,
     fidelity,
     summaries,
     payload,

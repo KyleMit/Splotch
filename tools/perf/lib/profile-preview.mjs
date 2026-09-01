@@ -11,7 +11,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, fail, run, sleep } from '../../lib/proc.mjs';
+import { ROOT, fail, run, sleep, tryCapture } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { foreignPortListeners, freePort, spawnViteServer } from '../../lib/vite-server.mjs';
 import { buildDirHoldsNativeExport } from './build-variant.mjs';
@@ -82,7 +82,27 @@ function referencedChunks(html, entryModule) {
 function localDigest(chunk, buildDir) {
   const path = join(buildDir, chunk);
   if (!existsSync(path)) return null;
-  return createHash('sha256').update(readFileSync(path)).digest('hex');
+  return sha256(readFileSync(path));
+}
+
+function sha256(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+// What the served page and its entry actually reference, fetched and digested.
+// This is the evidence the fingerprint check walks; keeping it a value lets the
+// same pass both verify the build and record its identity instead of
+// discarding what it just proved.
+async function servedChunkDigests(base, fetchText) {
+  const html = await fetchText(base);
+  const entry = entryModulePath(html);
+  const entryModule = entry ? await fetchText(new URL(entry, base)) : '';
+  const chunks = referencedChunks(html, entryModule);
+  const digests = [];
+  for (const chunk of chunks) {
+    digests.push([chunk, sha256(await fetchText(new URL(chunk, base)))]);
+  }
+  return { entry, digests };
 }
 
 // Returns the first served file whose bytes are not this checkout's, or null.
@@ -108,15 +128,12 @@ export async function servedBuildFingerprintProblem(
     );
   }
 
-  const html = await fetchText(base);
-  const entry = entryModulePath(html);
-  const entryModule = entry ? await fetchText(new URL(entry, base)) : '';
-  const chunks = referencedChunks(html, entryModule);
-  if (!chunks.length) {
+  const { digests } = await servedChunkDigests(base, fetchText);
+  if (!digests.length) {
     return `${base} references no application chunks — the preview is not serving a built app`;
   }
 
-  for (const chunk of chunks) {
+  for (const [chunk, served] of digests) {
     const expected = localDigest(chunk, buildDir);
     if (!expected) {
       return (
@@ -125,9 +142,6 @@ export async function servedBuildFingerprintProblem(
         'product. Choose a free port rather than stopping a listener another session owns.'
       );
     }
-    const served = createHash('sha256')
-      .update(await fetchText(new URL(chunk, base)))
-      .digest('hex');
     if (served !== expected) {
       return (
         `${base} is serving ${chunk} with different content from this checkout's web/build — ` +
@@ -145,11 +159,38 @@ async function defaultFetchText(url) {
   return response.text();
 }
 
+// The identity the fingerprint check just proved (or, for a deliberately
+// foreign build, at least observed), as a value an artifact can carry instead
+// of the guard discarding it: the entry chunk name, one digest over every
+// served application chunk, and — only when the served bytes were verified as
+// THIS checkout's build — the checkout's commit. A foreign build records a null
+// productCommit because HEAD says nothing about a build that is not this
+// checkout's; its buildDigest still identifies the served bytes, which is what
+// lets two same-mode captures prove they measured the same arm.
+export async function servedBuildBinding(
+  base,
+  { verifiedAgainstCheckout, fetchText = defaultFetchText, resolveProductCommit = gitHead } = {}
+) {
+  const { entry, digests } = await servedChunkDigests(base, fetchText);
+  return {
+    buildEntry: entry,
+    buildDigest: digests.length
+      ? sha256(digests.map(([chunk, digest]) => `${chunk} ${digest}`).join('\n'))
+      : null,
+    productCommit: verifiedAgainstCheckout ? resolveProductCommit() : null,
+  };
+}
+
+function gitHead() {
+  const result = tryCapture('git', ['rev-parse', 'HEAD']);
+  return result.ok ? result.stdout.trim() : null;
+}
+
 export async function assertServedBuildIsFresh(base, { allowForeignBuild = false } = {}) {
-  const entry = await assertServedManifestResolves(base);
+  await assertServedManifestResolves(base);
   const problem = await servedBuildFingerprintProblem(base, { allowForeignBuild });
   if (problem) fail(problem);
-  return entry;
+  return servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
 }
 
 export async function buildAndPreview(port, { build = true, timeout = 90_000 } = {}) {
@@ -185,8 +226,8 @@ export async function buildAndPreview(port, { build = true, timeout = 90_000 } =
     throw err;
   }
   try {
-    const entry = await assertServedBuildIsFresh(base);
-    console.log('Server ready, serving %s', entry);
+    const servedBuild = await assertServedBuildIsFresh(base);
+    console.log('Server ready, serving %s', servedBuild.buildEntry);
   } catch (err) {
     stop();
     throw err;

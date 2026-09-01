@@ -391,6 +391,7 @@ export function drivenCaptureArtifact({
   nativeApp,
   nativePackage = null,
   requirePageIdentity = true,
+  servedBuild = null,
   fidelity,
   drawing,
   summaries,
@@ -402,6 +403,16 @@ export function drivenCaptureArtifact({
     brush,
     orientation,
     theme,
+    // What the served-build guard proved at capture time, kept instead of
+    // discarded (issue: a refuted experimental arm was promoted under the
+    // baseline's label, and no artifact could contradict it). `productCommit`
+    // is the checkout's HEAD, recorded only when the served bytes were verified
+    // as this checkout's build; a --allow-foreign-build capture records null
+    // there but still carries the served digest, so same-mode agreement stays
+    // checkable. Fold-time enforcement lives in campaign-sources.
+    productCommit: servedBuild?.productCommit ?? null,
+    buildEntry: servedBuild?.buildEntry ?? null,
+    buildDigest: servedBuild?.buildDigest ?? null,
     // The repeat count decides the cell's first-touch-to-repeat mix, so cells
     // captured at different counts are not comparable; campaign acceptance
     // refuses a banked cell recording a count other than its contract (issue
@@ -483,7 +494,7 @@ export async function captureDeviceFrames({
   // preview, so the build the device will load is checkable from here — and until
   // it was, only the desktop runners verified a build at all. A native export
   // written after the preview started reached device cells unchallenged.
-  await assertServedBuildIsFresh(host, { allowForeignBuild });
+  const servedBuild = await assertServedBuildIsFresh(host, { allowForeignBuild });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const hostLoadStart = sampleHostLoad();
@@ -634,6 +645,7 @@ export async function captureDeviceFrames({
     nativeApp,
     nativePackage: runtimeIdentity?.nativePackage ?? null,
     requirePageIdentity,
+    servedBuild,
     fidelity,
     drawing,
     summaries,

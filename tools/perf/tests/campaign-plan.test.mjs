@@ -25,7 +25,11 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 import { join } from 'node:path';
-import { entryModulePath, servedBuildFingerprintProblem } from '../lib/profile-preview.mjs';
+import {
+  entryModulePath,
+  servedBuildBinding,
+  servedBuildFingerprintProblem,
+} from '../lib/profile-preview.mjs';
 import { ROOT as ROOT_DIR } from '../../lib/proc.mjs';
 import { campaignProgress } from '../campaign-status.mjs';
 import { probeHostAvailabilityProblem } from '../run-campaign.mjs';
@@ -1090,6 +1094,65 @@ describe('servedBuildFingerprintProblem', () => {
         allowForeignBuild: true,
       })
     ).toBeNull();
+  });
+});
+
+// What the guard proves must survive into the artifact (issue: a refuted
+// experimental arm was promoted under the baseline's label, and nothing the
+// capture wrote could contradict it). The binding is the value the guard used
+// to discard.
+describe('servedBuildBinding', () => {
+  const serve = (chunks) => async (url) => {
+    const path = new URL(url, 'http://x/').pathname;
+    if (path === '/') return '<script>import("/_app/immutable/entry/start.Aaa.js")</script>';
+    return chunks[path] ?? '';
+  };
+  const chunks = {
+    '/_app/immutable/entry/start.Aaa.js': 'import "/_app/immutable/entry/app.Bbb.js";',
+    '/_app/immutable/entry/app.Bbb.js': 'export const app = 1;',
+  };
+
+  it('records the entry, one digest over every served chunk, and the checkout commit', async () => {
+    const binding = await servedBuildBinding('http://x/', {
+      verifiedAgainstCheckout: true,
+      fetchText: serve(chunks),
+      resolveProductCommit: () => 'abc123',
+    });
+
+    expect(binding.buildEntry).toBe('/_app/immutable/entry/start.Aaa.js');
+    expect(binding.buildDigest).toMatch(/^[0-9a-f]{64}$/);
+    expect(binding.productCommit).toBe('abc123');
+  });
+
+  it('changes the digest when any served chunk changes', async () => {
+    const same = { verifiedAgainstCheckout: true, resolveProductCommit: () => 'abc123' };
+    const first = await servedBuildBinding('http://x/', { ...same, fetchText: serve(chunks) });
+    const second = await servedBuildBinding('http://x/', {
+      ...same,
+      fetchText: serve({
+        ...chunks,
+        '/_app/immutable/entry/app.Bbb.js': 'export const app = 2;',
+      }),
+    });
+
+    expect(second.buildDigest).not.toBe(first.buildDigest);
+    expect(second.buildEntry).toBe(first.buildEntry);
+  });
+
+  // HEAD says nothing about a build that is not this checkout's, so a foreign
+  // build records no commit — while its served-bytes digest still lets two
+  // same-mode captures prove they measured the same arm.
+  it('records no product commit for a build not verified as this checkout', async () => {
+    const binding = await servedBuildBinding('http://x/', {
+      verifiedAgainstCheckout: false,
+      fetchText: serve(chunks),
+      resolveProductCommit: () => {
+        throw new Error('a foreign build must never be stamped with this checkout HEAD');
+      },
+    });
+
+    expect(binding.productCommit).toBeNull();
+    expect(binding.buildDigest).toMatch(/^[0-9a-f]{64}$/);
   });
 });
 
