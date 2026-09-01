@@ -249,6 +249,25 @@ describe('campaign sources', () => {
       expect(entry.mode).not.toHaveProperty('buildEntry');
       expect(entry.mode).not.toHaveProperty('buildDigest');
     });
+
+    // A capture carrying the binding block with no commit is a NEW capture
+    // whose build proved nothing (unstamped, dirty, or foreign) — folding it
+    // would assign --product-commit to bytes nothing certifies, which is the
+    // historical tolerance stretched over exactly the masquerade it must not
+    // cover (Codex review round 2 of the distillation stack).
+    it('refuses a recorded build identity whose productCommit is unproven', () => {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+        artifactForItem: {
+          'pen-undo': { buildEntry: identity.buildEntry, buildDigest: identity.buildDigest },
+        },
+      });
+      const error = refusing();
+
+      expect(() => sourcesFor('android-device-web', outputRoot)).toThrow('process exited');
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining('records a build identity but no productCommit')
+      );
+    });
   });
 
   it('refuses a native mode captured through a browser transport', () => {

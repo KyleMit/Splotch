@@ -71,6 +71,24 @@ function assertModeBuildIdentity(targetId, modeId, cells, productCommit) {
           'build; the artifact was there.'
       );
     }
+    // A capture that carries the binding block with no commit is not historical
+    // — it is a NEW capture whose build could not prove its commit (unstamped,
+    // dirty tree, or --allow-foreign-build), and folding it would assign
+    // --product-commit to bytes nothing certifies. Only artifacts predating the
+    // block entirely keep the historical tolerance. No override: the diagnostic
+    // home for a foreign or dirty build is perf:rescore, never the committed
+    // matrix.
+    const identityRecorded =
+      recordedBuildField(artifact, path, 'buildEntry') !== null ||
+      recordedBuildField(artifact, path, 'buildDigest') !== null;
+    if (identityRecorded && recorded === null) {
+      fail(
+        `Cannot fold ${targetId}/${modeId}: ${path} records a build identity but no ` +
+          `productCommit — its build was unstamped, dirty, or deliberately foreign, so ` +
+          `nothing certifies that --product-commit=${productCommit} describes its bytes. ` +
+          'Recapture from a clean `npm run perf:build` of the intended commit.'
+      );
+    }
   }
   const identified = cells
     .map(({ path, artifact }) => ({
