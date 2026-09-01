@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import ActivePageChip from './ActivePageChip.svelte';
+  import ColoringBookHeaderActions from './ColoringBookHeaderActions.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import { coloringBookState, setOverlayOrientation } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -176,27 +176,6 @@
   }
 </script>
 
-{#snippet activePageChip()}
-  {#if coloringBookModal.open && activePage && activePagePreview}
-    <ActivePageChip
-      page={activePage}
-      preview={activePagePreview}
-      {hoverArmed}
-      onclear={clearAndClose}
-    />
-  {/if}
-{/snippet}
-
-{#snippet closeButton()}
-  <button
-    class="coloring-book-close modal-close-btn"
-    aria-label="Close"
-    onclick={coloringBookModal.hide}
-  >
-    <Icon name="close" class="modal-close-icon" />
-  </button>
-{/snippet}
-
 <dialog
   bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
@@ -219,8 +198,12 @@
       <div class="coloring-book-view">
         <div class="coloring-book-header">
           <h2>Coloring Books</h2>
-          {@render activePageChip()}
-          {@render closeButton()}
+          <ColoringBookHeaderActions
+            {activePage}
+            {activePagePreview}
+            {hoverArmed}
+            onclear={clearAndClose}
+          />
         </div>
         <div
           class="coloring-grid coloring-books-grid"
@@ -262,8 +245,12 @@
             </button>
           {/if}
           <h2>{activeBook.name}</h2>
-          {@render activePageChip()}
-          {@render closeButton()}
+          <ColoringBookHeaderActions
+            {activePage}
+            {activePagePreview}
+            {hoverArmed}
+            onclear={clearAndClose}
+          />
         </div>
         {#key pagesGridToken}
           <div
@@ -327,15 +314,6 @@
     font-size: var(--font-size-xl);
     color: var(--text-strong);
     font-weight: var(--font-weight-semibold);
-  }
-
-  .coloring-book-close {
-    /* The chip and close disc share this header row, so this modal opts out of
-       the global close button's absolute corner positioning. */
-    position: static;
-    flex: 0 0 var(--modal-close-size);
-    transition: opacity var(--duration-base) ease;
-    z-index: 1;
   }
 
   .coloring-book-header {
