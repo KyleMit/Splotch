@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const workers: WorkerStub[] = [];
+const images: WorkerImage[] = [];
 
 class WorkerImage {
   onload: (() => void) | null = null;
@@ -8,6 +9,10 @@ class WorkerImage {
   naturalWidth = 200;
   naturalHeight = 100;
   src = '';
+
+  constructor() {
+    images.push(this);
+  }
 }
 
 class WorkerStub {
@@ -63,6 +68,7 @@ describe('Magic sheet retention', () => {
   beforeEach(() => {
     vi.resetModules();
     workers.length = 0;
+    images.length = 0;
     vi.stubGlobal('Image', WorkerImage);
     vi.stubGlobal('Worker', WorkerStub);
     vi.stubGlobal('OffscreenCanvas', WorkerOffscreenCanvas);
@@ -90,6 +96,33 @@ describe('Magic sheet retention', () => {
 
     expect(bitmap.close).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { retained: false, expectedWidth: 0, expectedHeight: 0 },
+    { retained: true, expectedWidth: 400, expectedHeight: 300 },
+  ])(
+    'releases DOM canvas backing stores only when retained is $retained',
+    async ({ retained, expectedWidth, expectedHeight }) => {
+      vi.stubGlobal('Worker', undefined);
+      vi.stubGlobal('OffscreenCanvas', undefined);
+      const context = { clearRect: vi.fn(), drawImage: vi.fn() };
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+        context as unknown as CanvasRenderingContext2D
+      );
+      const magic = await mountedWorkerBrush(() => retained);
+
+      magic.setColorSheet('/coloring/page.light.webp');
+      images.at(-1)?.onload?.();
+      const canvas = magic.captureMagicSheet()?.canvas as HTMLCanvasElement;
+      expect(canvas.width).toBe(400);
+      expect(canvas.height).toBe(300);
+
+      magic.setColorSheet('/coloring/next.light.webp');
+
+      expect(canvas.width).toBe(expectedWidth);
+      expect(canvas.height).toBe(expectedHeight);
+    }
+  );
 
   it('defers the fallback rainbow when a page clears under an inactive brush', async () => {
     const magic = await mountedWorkerBrush();

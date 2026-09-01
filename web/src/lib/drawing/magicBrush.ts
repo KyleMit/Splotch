@@ -117,7 +117,7 @@ const patternRegionByTarget = new WeakMap<
   { x: number; y: number; width: number; height: number }
 >();
 
-function invalidateSheet() {
+function releaseUnretainedSheet() {
   if (!host?.hasRetainedOps() && sheetCanvas) {
     if ('close' in sheetCanvas) sheetCanvas.close();
     else {
@@ -126,6 +126,9 @@ function invalidateSheet() {
     }
     sheetCanvas = null;
   }
+}
+
+function invalidateSheet() {
   sheetReady = false;
   sheetSnapshot = null;
   patternCache = new WeakMap();
@@ -209,6 +212,7 @@ function beginGradientRaster(gradient: RainbowGradient) {
   if (!bounds || bounds.width <= 0 || bounds.height <= 0) return false;
   const request = { gradient };
   pendingGradientRaster = request;
+  releaseUnretainedSheet();
   invalidateSheet();
   void rasterizeMagicSheetInWorker({
     gradient,
@@ -429,6 +433,7 @@ function extendSheetEdges(
 // within the paper, matching the overlay image, then its edge colours extend
 // through the fill's own letterbox margins; a gradient fills the whole sheet.
 function rasterizeSheet() {
+  releaseUnretainedSheet();
   invalidateSheet();
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
@@ -597,10 +602,12 @@ export function setColorSheet(colorUrl: string | null) {
       rasterizeActiveSheet();
       host?.repaint();
     } else {
+      releaseUnretainedSheet();
       invalidateSheet();
     }
     return;
   }
+  releaseUnretainedSheet();
   invalidateSheet();
   loadSheetImage(colorUrl);
 }
@@ -618,6 +625,7 @@ export function deferColorSheet(colorUrl: string) {
   pendingGradientRaster = null;
   fillUrl = colorUrl;
   fillImage = null;
+  releaseUnretainedSheet();
   invalidateSheet();
   deferredFillTimer = setTimeout(() => setColorSheet(colorUrl), DEFERRED_FILL_FALLBACK_MS);
 }
@@ -649,6 +657,7 @@ export function clearMagicGradient() {
   activeGradient = null;
   pendingGradientRaster = null;
   if (!fillUrl) {
+    releaseUnretainedSheet();
     invalidateSheet();
   }
 }

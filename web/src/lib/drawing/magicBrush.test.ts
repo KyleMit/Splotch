@@ -348,17 +348,13 @@ describe('magic sheet worker raster', () => {
     HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
   });
 
-  async function mountedWorkerBrush(
-    repaint = vi.fn(),
-    hasRetainedOps = () => false,
-    magicActive = () => false
-  ) {
+  async function mountedWorkerBrush(repaint = vi.fn()) {
     const magic = await import('./magicBrush');
     magic.initMagicBrush({
       paperSize: () => ({ width: 400, height: 300 }),
       sheetBounds: () => ({ x: 0, y: 0, width: 400, height: 300 }),
-      hasRetainedOps,
-      magicActive,
+      hasRetainedOps: () => false,
+      magicActive: () => false,
       repaint,
     });
     return { magic, repaint };
