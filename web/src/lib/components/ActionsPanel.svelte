@@ -220,7 +220,7 @@
   }
 
   function finishDrawerMotion(event: TransitionEvent) {
-    if (event.target === event.currentTarget && event.propertyName === 'opacity')
+    if (event.target === event.currentTarget && event.propertyName.startsWith('margin-'))
       drawerMotion = false;
   }
 
