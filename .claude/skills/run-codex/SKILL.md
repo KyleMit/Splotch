@@ -73,6 +73,17 @@ npm run --silent run-codex:ask -- --prompt-file /private/tmp/run-codex-question-
 
 Remove the prompt file when the task is done.
 
+## The review reads the LIVE checkout — hold the tree still
+
+Codex resolves the diff and runs its own `git`/`rg` commands against the working tree as they
+execute, not against a snapshot taken at launch. Editing files, switching branches, or committing
+while a review runs silently changes what is being reviewed mid-flight — a 2026-08-31 session
+watched its "PR 1 review" drift into reviewing two later PRs' uncommitted edits because work
+continued during the run. Park the checkout on exactly the state under review and do only
+out-of-tree work (scratchpad notes, reading other checkouts, background agents in their own
+worktrees) until the result JSON lands. For a single-commit change, `--commit <sha>` pins the scope
+even if the tree later moves; `--base` does not.
+
 ## Review rounds
 
 The first review on a branch opens a fresh reviewer. Later reviews on the same branch **resume it**,
