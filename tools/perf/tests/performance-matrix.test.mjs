@@ -955,6 +955,27 @@ describe('deployment matrix report', () => {
       });
     });
 
+    it('backfills readiness summaries when preserved action evidence predates the column', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([
+        { ...action('slow action', true), ready: { ...distribution, p95: 42 } },
+        { ...action('faster action', true), ready: { ...distribution, p95: 7 } },
+      ]);
+      delete actions.worst.readyP95;
+      publishReport(manifestDirectory, { actions });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions.worst.readyP95).toBe(42);
+      expect(renderMarkdown(matrix)).toContain('| 42 |');
+    });
+
     it('keeps a freshly captured untracked section scoreable and labels its provenance', () => {
       const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
       temporaryDirectories.push(manifestDirectory);

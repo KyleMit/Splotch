@@ -874,6 +874,20 @@ export function withActionControlScoreability(actions) {
   };
 }
 
+function withActionReadinessSummary(actions) {
+  if (!actions || typeof actions !== 'object' || !Array.isArray(actions.results)) return actions;
+  const comparableResults = actions.results.filter(
+    (result) => !ACTION_CONTROL_LABELS.has(result.label)
+  );
+  return {
+    ...actions,
+    worst: {
+      ...actions.worst,
+      readyP95: round(maximum(comparableResults.map((result) => result.ready?.p95))),
+    },
+  };
+}
+
 function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, targetId) {
   if (!sources?.length) return null;
   const captures = sources.map((source) =>
@@ -970,14 +984,16 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
         normalizedMode
       )
     ),
-    actions: withActionControlScoreability(
-      resolveSection(normalizedMode.actionSources, 'actions', () =>
-        normalizeActions(
-          normalizedMode.actionSources,
-          finalProductCommit,
-          sourceDirectory,
-          normalizedMode,
-          target.id
+    actions: withActionReadinessSummary(
+      withActionControlScoreability(
+        resolveSection(normalizedMode.actionSources, 'actions', () =>
+          normalizeActions(
+            normalizedMode.actionSources,
+            finalProductCommit,
+            sourceDirectory,
+            normalizedMode,
+            target.id
+          )
         )
       )
     ),
