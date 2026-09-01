@@ -114,7 +114,7 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   (undo); Android emulator · native · portrait-light (undo); Android emulator · native ·
   portrait-dark (undo); Android emulator · native · landscape-light (undo); Android emulator ·
   native · landscape-dark (undo).
-* 32 cells were captured for this campaign but their per-mode raw inputs remain untracked under
+* 28 cells were captured for this campaign but their per-mode raw inputs remain untracked under
   ADR-0138; regeneration carries their normalized sections from data.json, while
   check:matrix-staleness still verifies their capture commits. Representative whole captures remain
   tracked under perf-profiles/evidence/. Untracked-source cells: iPad physical · native ·
@@ -135,10 +135,7 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   Android emulator · web · landscape-light (drawing, actions); Android emulator · web ·
   landscape-dark (drawing, actions); Android emulator · native · portrait-light (drawing, actions);
   Android emulator · native · portrait-dark (drawing, actions); Android emulator · native ·
-  landscape-light (drawing, actions); Android emulator · native · landscape-dark (drawing, actions);
-  Mac · Firefox · portrait-light (drawing, undo, actions); Mac · Firefox · portrait-dark (drawing,
-  undo, actions); Mac · Firefox · landscape-light (drawing, undo, actions); Mac · Firefox ·
-  landscape-dark (drawing, undo, actions).
+  landscape-light (drawing, actions); Android emulator · native · landscape-dark (drawing, actions).
 
 ## Candidate actions
 
@@ -203,10 +200,10 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 | 10. Mac · Safari · Portrait · Dark               | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 10. Mac · Safari · Landscape · Light             | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 10. Mac · Safari · Landscape · Dark              | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
-| 11. Mac · Firefox · Portrait · Light             | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 |
-| 11. Mac · Firefox · Portrait · Dark              | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 |
-| 11. Mac · Firefox · Landscape · Light            | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 |
-| 11. Mac · Firefox · Landscape · Dark             | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 | 93209cd151780f353917d72fef78dc3d11048015 |
+| 11. Mac · Firefox · Portrait · Light             | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 11. Mac · Firefox · Portrait · Dark              | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 11. Mac · Firefox · Landscape · Light            | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 11. Mac · Firefox · Landscape · Dark             | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 
 ## Drawing
 
@@ -266,10 +263,10 @@ campaign-end recapture, on a quiet host.
 | 10. Mac · Safari · Portrait · Dark               | 18 / 18 / 19 · L0%            | 18 / 18 / 18 · L0%         | 18 / 18 / 18 · L0%                   | 18 / 18 / 19 · L0%                  |
 | 10. Mac · Safari · Landscape · Light             | 18 / 18 / 18 · L0%            | 18 / 18 / 19 · L0%         | 18 / 18 / 18 · L0%                   | 17 / 18 / 18 · L0%                  |
 | 10. Mac · Safari · Landscape · Dark              | 18 / 18 / 18 · L0%            | 18 / 18 / 18 · L0%         | 18 / 18 / 18 · L0%                   | 18 / 18 / 19 · L0%                  |
-| 11. Mac · Firefox · Portrait · Light             | 9.0 / 9.7 / 10.0 · L0%        | 8.9 / 9.5 / 10.1 · L0%     | 9 / 9.7 / 10.1 · L0%                 | 9.2 / 9.9 / 10.3 · L0%              |
-| 11. Mac · Firefox · Portrait · Dark              | 9.2 / 9.9 / 10.3 · L0%        | 8.9 / 9.6 / 10.3 · L0%     | 9.1 / 9.8 / 10.1 · L0%               | 9.1 / 9.7 / 10.1 · L0%              |
-| 11. Mac · Firefox · Landscape · Light            | 9.0 / 9.8 / 10.1 · L0%        | 9.0 / 9.5 / 10.1 · L0%     | 9.2 / 9.8 / 10.2 · L0%               | 9 / 10.1 / 10.1 · L0%               |
-| 11. Mac · Firefox · Landscape · Dark             | 9.0 / 9.7 / 10.1 · L0%        | 8.9 / 9.7 / 10.0 · L0%     | 9 / 9.7 / 10.0 · L0%                 | 9.0 / 9.8 / 10.1 · L0%              |
+| 11. Mac · Firefox · Portrait · Light             | 9.1 / 9.7 / 10.0 · L0%        | 8.9 / 9.8 / 10.1 · L0%     | 9.1 / 9.8 / 10.2 · L0%               | 9.3 / 10 / 10.1 · L0%               |
+| 11. Mac · Firefox · Portrait · Dark              | 9.0 / 9.7 / 23.1 · L0.3%      | 8.9 / 9.4 / 10.1 · L0%     | 9.0 / 9.6 / 10.3 · L0%               | 9.0 / 9.8 / 10.2 · L0%              |
+| 11. Mac · Firefox · Landscape · Light            | 9.1 / 9.8 / 10.2 · L0%        | 8.9 / 9.6 / 10.0 · L0%     | 9 / 9.8 / 10.2 · L0%                 | 9 / 9.8 / 10.2 · L0%                |
+| 11. Mac · Firefox · Landscape · Dark             | 8.9 / 9.6 / 10.2 · L0%        | 8.9 / 9.6 / 13.7 · L0.1%   | 8.9 / 9.7 / 25.1 · L0.4%             | 9.1 / 9.6 / 10.3 · L0%              |
 
 ## Undo
 
@@ -317,10 +314,10 @@ Undo timing is `engine P95 / next-frame P95 / next-frame max` in milliseconds.
 | 10. Mac · Safari · Portrait · Dark               | 1 / 11 / 11       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 10. Mac · Safari · Landscape · Light             | 1 / 10 / 10       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 | 10. Mac · Safari · Landscape · Dark              | 1 / 17 / 17       | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
-| 11. Mac · Firefox · Portrait · Light             | 4 / 7.8 / 7.8     | Pass   | 93209cd151780f353917d72fef78dc3d11048015 |
-| 11. Mac · Firefox · Portrait · Dark              | 5 / 7.7 / 7.7     | Pass   | 93209cd151780f353917d72fef78dc3d11048015 |
-| 11. Mac · Firefox · Landscape · Light            | 6 / 5.3 / 5.3     | Pass   | 93209cd151780f353917d72fef78dc3d11048015 |
-| 11. Mac · Firefox · Landscape · Dark             | 5 / 8.2 / 8.2     | Pass   | 93209cd151780f353917d72fef78dc3d11048015 |
+| 11. Mac · Firefox · Portrait · Light             | 4 / 7.2 / 7.2     | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 11. Mac · Firefox · Portrait · Dark              | 5 / 7.8 / 7.8     | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 11. Mac · Firefox · Landscape · Light            | 4 / 6.2 / 6.2     | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
+| 11. Mac · Firefox · Landscape · Dark             | 4 / 7.2 / 7.2     | Pass   | c80fc3b240a3a7925257c9eea055cd83739c7eae |
 
 ## Discrete actions
 
@@ -372,10 +369,10 @@ provenance are available in the interactive matrix and normalized JSON.
 | 10. Mac · Safari · Portrait · Dark               | 47 / 48 | 0 / 48          | 22              | 22 / 27              | select coloring page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 10. Mac · Safari · Landscape · Light             | 49 / 49 | 0 / 49          | 23              | 19 / 24              | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 10. Mac · Safari · Landscape · Dark              | 48 / 49 | 0 / 49          | 24              | 19 / 35              | empty after clear: LANDSCAPE to PORTRAIT rotation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| 11. Mac · Firefox · Portrait · Light             | 48 / 48 | 0 / 48          | 12.7            | 10.3 / 18.2          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 11. Mac · Firefox · Portrait · Dark              | 48 / 48 | 0 / 48          | 12.0            | 18.2 / 25.6          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 11. Mac · Firefox · Landscape · Light            | 49 / 49 | 0 / 49          | 13.2            | 10.3 / 25.0          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| 11. Mac · Firefox · Landscape · Dark             | 49 / 49 | 0 / 49          | 12.3            | 10.3 / 25.1          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 11. Mac · Firefox · Portrait · Light             | 48 / 48 | 0 / 48          | 13              | 10.3 / 18.2          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 11. Mac · Firefox · Portrait · Dark              | 48 / 48 | 0 / 48          | 11.9            | 10.3 / 25.0          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 11. Mac · Firefox · Landscape · Light            | 49 / 49 | 0 / 49          | 14.3            | 10.3 / 17.5          | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 11. Mac · Firefox · Landscape · Dark             | 49 / 49 | 0 / 49          | 13.6            | 16.6 / 25            | None                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## Method
 
