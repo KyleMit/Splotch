@@ -313,6 +313,16 @@ Appium's Remote Automation Safari window is not exposed by `ios-webkit-debug-pro
 `perf:ios:webkit:frames` cannot attach to it. The Appium session must own navigation, probe
 injection, native input, and readback as one operation.
 
+Treat repeated cadence failures from one long-lived Appium server as possible control-plane
+degradation, not as product evidence and not as permission to reroll silently. In the 2026-09-01
+iPad Simulator web campaign, four landscape-dark eraser attempts through the long-lived server on
+port 4723 failed the cadence validity gate; the same product commit, gesture, and scorer passed all
+fidelity checks through a fresh server on port 4725. Keep every failed attempt in the campaign
+ledger, start a fresh server on an unused port without stopping the existing listener, and record
+the server change when promoting evidence. A passing replacement is acceptable because cadence
+invalidates the earlier numbers; it is not acceptable if the failed attempts disappear from the
+reviewable campaign history.
+
 ### Bundled WKWebView — `perf:ios:bundled:frames`
 
 Build and install the harness-gated native app before capture; this command deliberately has no

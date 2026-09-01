@@ -1,0 +1,51 @@
+{
+  "campaign": "2026-09-01-overnight-ipad-simulator-web",
+  "productCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+  "capturedFrom": "perf-profiles/overnight-20260831",
+  "kept": [
+    {
+      "file": "ipad-simulator-web-crayon.json",
+      "target": "ipad-simulator-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-simulator-web/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-simulator-web-eraser.json",
+      "target": "ipad-simulator-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-simulator-web/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-simulator-web-magic.json",
+      "target": "ipad-simulator-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-simulator-web/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-simulator-web-pen.json",
+      "target": "ipad-simulator-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-simulator-web/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    }
+  ]
+}

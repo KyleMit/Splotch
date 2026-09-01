@@ -11,6 +11,7 @@ import { ROOT } from '../../lib/proc.mjs';
 import { LOST_FRAME_TIME_SHARE_EXCEPTIONS } from '../lib/drawing-gates.mjs';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import {
   destinationBlocked,
@@ -30,6 +31,7 @@ import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 // and every assertion about the score becomes vacuous.
 const FRAME_COUNT = 120;
 const BEAT_MS = 16.67;
+const PRODUCT_COMMIT = 'c'.repeat(40);
 const frames = Array.from({ length: FRAME_COUNT }, (_, index) => [100 + index * BEAT_MS, -1, 0]);
 const report = {
   meta: { schema: 2 },
@@ -289,6 +291,21 @@ describe('the rescorer honours cellAttributable', () => {
 });
 
 describe('keep-capture-evidence', () => {
+  it('requires an exact product commit before reading the corpus', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        join(ROOT, 'tools/perf/keep-capture-evidence.mjs'),
+        '--corpus=does-not-exist',
+        '--campaign=missing-product-commit',
+      ],
+      { encoding: 'utf8' }
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--product-commit=<40-character SHA> is required');
+  });
+
   it('reads the target from the campaign tree layout', () => {
     expect(targetOf({}, 'android-device-web/landscape-light/crayon-real-screen')).toBe(
       'android-device-web'
@@ -474,10 +491,12 @@ describe('keep-capture-evidence', () => {
       const { selected } = await keepCaptureEvidence({
         corpus: relative(ROOT, corpusDir),
         campaign: 'e2e-test',
+        productCommit: PRODUCT_COMMIT,
         evidenceRoot: relative(ROOT, evidenceDir),
       });
       expect(selected).toHaveLength(1);
       const index = JSON.parse(readFileSync(join(evidenceDir, 'e2e-test', 'index.json'), 'utf8'));
+      expect(index.productCommit).toBe(PRODUCT_COMMIT);
       expect(index.kept).toHaveLength(1);
       expect(index.kept[0]).toMatchObject({
         target: 'ipad-device-web',
@@ -678,6 +697,7 @@ describe('attribution is stamped at promotion and read by the analyzer', () => {
       await keepCaptureEvidence({
         corpus: relative(ROOT, corpusDir),
         campaign: 'stamp-test',
+        productCommit: PRODUCT_COMMIT,
         evidenceRoot: relative(ROOT, evidenceDir),
       });
       const index = JSON.parse(readFileSync(join(evidenceDir, 'stamp-test', 'index.json'), 'utf8'));

@@ -12,3 +12,6 @@ timestamp	udid	outcome	detail
 2026-08-29T02:16:45.821Z	00008103-0006202E3CF1001E	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-01T00:51:10.546Z	00008103-0006202E3CF1001E	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
 2026-09-01T00:52:34.031Z	00008103-0006202E3CF1001E	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-09-01T02:44:59.437Z	00008103-0006202E3CF1001E	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-09-01T09:59:48.294Z	the iPad	blocked	the iPad is asking to enable UI automation. Look at the device: XCTest has put an "Enter iPad Passcode for XCTest / Enable UI Automation" prompt on screen. Enter the passcode there, then re-run. No host-side change will clear this.
+2026-09-01T10:15:24.578Z	the iPad	blocked	the iPad is asking to enable UI automation. Look at the device: XCTest has put an "Enter iPad Passcode for XCTest / Enable UI Automation" prompt on screen. Enter the passcode there, then re-run. No host-side change will clear this.
