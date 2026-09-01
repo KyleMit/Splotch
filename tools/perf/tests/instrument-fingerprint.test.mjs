@@ -126,4 +126,29 @@ describe('refusing a resume across an instrument change', () => {
 
     expect(instrumentChangeProblem(recorded, current)).toContain('capture-desktop-actions.mjs');
   });
+
+  it('names the cells the ledger banked under a different fingerprint', () => {
+    const recorded = fingerprintOf({});
+    const current = fingerprintOf({ 'tools/perf/probes/real-screen-probe.js': 'edited probe' });
+
+    const problem = instrumentChangeProblem(recorded, current, [
+      { cell: 'portrait-light/pen', fingerprint: 'fp-old' },
+    ]);
+    expect(problem).toContain('portrait-light/pen');
+    expect(problem).toContain('fp-old');
+  });
+
+  // Session 01a03f61: instrument.json is rewritten every invocation, so after
+  // one accepted change it matches the current instrument while the banked
+  // rows still name the mixture — the rows alone must be able to refuse.
+  it('refuses on banked-cell evidence alone, with instrument.json agreeing', () => {
+    const current = fingerprintOf({});
+
+    const problem = instrumentChangeProblem(current, current, [
+      { cell: 'portrait-light/pen', fingerprint: 'fp-old' },
+    ]);
+    expect(problem).toContain('portrait-light/pen');
+    expect(problem).toContain('--accept-instrument-change');
+    expect(instrumentChangeProblem(current, current, [])).toBeNull();
+  });
 });

@@ -1,14 +1,17 @@
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runCampaign } from '../run-campaign.mjs';
 import { MAX_ATTEMPTS, artifactPath, campaignTarget } from '../lib/campaign-plan.mjs';
 import {
+  COMPLETE,
   EXHAUSTED,
   FAILED,
+  INSTRUMENT_ACCEPTED,
   LEDGER_HEADER,
   UNCALIBRATED_RUNTIME,
+  cellsBankedUnderDifferentInstrument,
   formatLedgerRow,
   nextAction,
   parseLedger,
@@ -210,5 +213,147 @@ describe('an uncalibrated-runtime row after the runtime is calibrated', () => {
     expect(runtimeHasUncalibratedChecks('ios-capacitor-webview')).toBe(false);
     expect(runtimeHasUncalibratedChecks('android-capacitor-webview')).toBe(false);
     expect(runtimeHasUncalibratedChecks('desktop-playwright')).toBe(true);
+  });
+});
+
+// Session 01a03f61: instrument.json holds only the CURRENT instrument and is
+// rewritten every invocation, so once a change was accepted the target's
+// mixture of instruments was recorded nowhere. Each attempt row now carries
+// the fingerprint that ran it, and the resume refusal names the mixed CELLS
+// from those rows rather than trusting the overwritable file.
+describe('cells banked under a different instrument', () => {
+  const row = (cell, status, instrument) =>
+    formatLedgerRow({
+      timestamp: '2026-08-30T00:00:00.000Z',
+      cell,
+      status,
+      attempt: 1,
+      artifact: 'unused',
+      instrument,
+    });
+
+  it('records the fingerprint on a row and reads it back', () => {
+    const [parsed] = parseLedger(row(CELL, `${COMPLETE}-exit-0`, 'fp-old'));
+
+    expect(parsed.instrument).toBe('fp-old');
+  });
+
+  it('accepts a pre-column six-field row as an unknown instrument', () => {
+    const legacy = `2026-08-21T00:00:00.000Z\t${CELL}\t${COMPLETE}-exit-0\t1\tunused\t-`;
+    const rows = parseLedger(legacy);
+
+    expect(rows[0].instrument).toBeUndefined();
+    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([]);
+  });
+
+  it('names a cell whose banked row records another fingerprint, not one on the current', () => {
+    const rows = parseLedger(
+      [
+        row('portrait-light/pen-undo', `${COMPLETE}-exit-0`, 'fp-old'),
+        row('portrait-light/crayon', `${COMPLETE}-exit-0`, 'fp-current'),
+        row('portrait-light/magic', `${FAILED}-exit-1`, 'fp-old'),
+      ].join('\n')
+    );
+
+    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([
+      { cell: 'portrait-light/pen-undo', fingerprint: 'fp-old' },
+    ]);
+  });
+
+  it('lets the newest banked row speak for the artifact on disk', () => {
+    const rows = parseLedger(
+      [
+        row(CELL, `${COMPLETE}-exit-0`, 'fp-old'),
+        row(CELL, `${COMPLETE}-exit-0`, 'fp-current'),
+      ].join('\n')
+    );
+
+    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([]);
+  });
+
+  it('stays silent for a mixture an acceptance row already put on record', () => {
+    const rows = parseLedger(
+      [row(CELL, `${COMPLETE}-exit-0`, 'fp-old'), row(CELL, INSTRUMENT_ACCEPTED, 'fp-old')].join(
+        '\n'
+      )
+    );
+
+    expect(cellsBankedUnderDifferentInstrument(rows, 'fp-current')).toEqual([]);
+  });
+});
+
+describe('resuming a campaign whose banked cells name another instrument', () => {
+  const seedBankedCell = (root, instrument) => {
+    const artifact = join(root, artifactPath('out', 'ipad-simulator-web', MODE, 'pen-undo'));
+    mkdirSync(dirname(artifact), { recursive: true });
+    writeFileSync(
+      artifact,
+      JSON.stringify({
+        transport: 'browser',
+        fidelity: { passed: true },
+        summaries: {
+          intervalMs: 16.7,
+          phases: [
+            {
+              input: {
+                kinds: 'touch',
+                trust: { share: 1 },
+                movesPerSecond: 116,
+                movesPerFrame: 1.9,
+                moveGapP95Ms: 9,
+                pressure: { p50: 0 },
+                contactWidth: { p50: 74 },
+                contactHeight: { p50: 74 },
+              },
+            },
+          ],
+        },
+      })
+    );
+    const banked = formatLedgerRow({
+      timestamp: '2026-08-21T00:00:00.000Z',
+      cell: CELL,
+      status: `${COMPLETE}-exit-0`,
+      attempt: 1,
+      artifact: 'unused',
+      instrument,
+    });
+    writeFileSync(`${root}/ledger.tsv`, [LEDGER_HEADER.join('\t'), banked].join('\n') + '\n');
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // instrument.json is deliberately absent here — the file-level check has
+  // nothing to say, which is exactly the state an accepted change leaves
+  // behind, and the row-level record must still refuse the silent mixture.
+  it('refuses to resume, naming the mixed cell', async () => {
+    const root = scratch();
+    seedBankedCell(root, 'fp-obsolete');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process exited');
+    });
+
+    await expect(run('ipad-simulator-web', root)).rejects.toThrow('process exited');
+    expect(error).toHaveBeenCalledWith(expect.stringContaining(CELL));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('fp-obsolete'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('--accept-instrument-change'));
+  });
+
+  it('accepts once, on record, and does not re-refuse the next resume', async () => {
+    const root = scratch();
+    seedBankedCell(root, 'fp-obsolete');
+
+    const accepted = await run('ipad-simulator-web', root, ['--accept-instrument-change']);
+    expect(accepted.ran).toEqual([{ cell: CELL, status: 'already-valid' }]);
+    const acceptanceRows = parseLedger(readFileSync(`${root}/ledger.tsv`, 'utf8')).filter(
+      (parsedRow) => parsedRow.status === INSTRUMENT_ACCEPTED
+    );
+    expect(acceptanceRows).toMatchObject([{ cell: CELL, instrument: 'fp-obsolete' }]);
+
+    const resumed = await run('ipad-simulator-web', root);
+    expect(resumed.ran).toEqual([{ cell: CELL, status: 'already-valid' }]);
   });
 });

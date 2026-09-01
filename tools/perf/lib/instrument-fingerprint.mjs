@@ -87,19 +87,38 @@ export function instrumentFingerprint(commands, readFile = defaultRead) {
 }
 
 // Null when resuming is safe; otherwise the refusal, naming exactly which
-// instrument files changed since the campaign's cells were banked.
-export function instrumentChangeProblem(recorded, current) {
-  if (!recorded || recorded.fingerprint === current.fingerprint) return null;
-  const names = new Set([...Object.keys(recorded.files ?? {}), ...Object.keys(current.files)]);
-  const changed = [...names].filter((file) => recorded.files?.[file] !== current.files[file]);
-  return (
+// instrument files changed since the campaign's cells were banked — and which
+// CELLS the ledger records as banked under a different fingerprint.
+// `bankedElsewhere` can refuse on its own: instrument.json holds only the
+// current instrument and is rewritten every invocation, so after one accepted
+// change it matches while the banked rows still name the mixture (session
+// 01a03f61 defeated the file-level check exactly that way).
+export function instrumentChangeProblem(recorded, current, bankedElsewhere = []) {
+  const filesChanged = recorded && recorded.fingerprint !== current.fingerprint;
+  if (!filesChanged && !bankedElsewhere.length) return null;
+  const parts = [
     'the capture instrument changed since this campaign banked its cells — resuming would ' +
-    'silently mix two instruments in one target (issue 1293). Changed:\n' +
-    changed.map((file) => `  ${file}`).join('\n') +
-    '\nEither start clean (new --output-root, or delete this campaign directory) to recapture ' +
-    'everything with the current instrument, or pass --accept-instrument-change to keep the ' +
-    'banked cells anyway — deliberately, on record.'
+      'silently mix two instruments in one target (issue 1293).',
+  ];
+  if (filesChanged) {
+    const names = new Set([...Object.keys(recorded.files ?? {}), ...Object.keys(current.files)]);
+    const changed = [...names].filter((file) => recorded.files?.[file] !== current.files[file]);
+    parts.push('Changed:\n' + changed.map((file) => `  ${file}`).join('\n'));
+  }
+  if (bankedElsewhere.length) {
+    parts.push(
+      'Cells banked under a different instrument:\n' +
+        bankedElsewhere
+          .map(({ cell, fingerprint }) => `  ${cell} (instrument ${fingerprint})`)
+          .join('\n')
+    );
+  }
+  parts.push(
+    'Either start clean (new --output-root, or delete this campaign directory) to recapture ' +
+      'everything with the current instrument, or pass --accept-instrument-change to keep the ' +
+      'banked cells anyway — deliberately, on record.'
   );
+  return parts.join('\n');
 }
 
 function sha256(value) {

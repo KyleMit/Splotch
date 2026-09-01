@@ -4,7 +4,22 @@
 // Pure over rows so the policy is testable without a device. The runner owns the
 // file and the child processes; this owns what the rows mean.
 
-export const LEDGER_HEADER = ['timestamp', 'cell', 'status', 'attempt', 'artifact', 'log'];
+// `instrument` is the fingerprint of the capture instrument that ran the
+// attempt, recorded per row because instrument.json holds only the CURRENT
+// instrument and is rewritten on every invocation — after one
+// --accept-instrument-change the fact that a target mixes two instruments
+// lived nowhere (session 01a03f61 defeated the issue 1293 mechanism that way).
+// Rows written before the column exists parse with it undefined and are
+// accepted, matching how artifacts predating a field are treated.
+export const LEDGER_HEADER = [
+  'timestamp',
+  'cell',
+  'status',
+  'attempt',
+  'artifact',
+  'log',
+  'instrument',
+];
 
 export const COMPLETE = 'valid-json';
 export const ALREADY_VALID = 'already-valid';
@@ -54,8 +69,16 @@ export const WRONG_GESTURE_PLAN = 'wrong-gesture-plan';
 // rather than banking an optimistic number.
 export const ERASER_FILL_FAILED = 'eraser-fill-failed';
 
-export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
-  return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
+// The operator kept a cell banked under another instrument, deliberately, via
+// --accept-instrument-change. Not an attempt and not a completion — the row
+// exists so the acceptance is on record beside the mixture it accepted, and so
+// the same cell is not re-refused on every later resume.
+export const INSTRUMENT_ACCEPTED = 'instrument-change-accepted';
+
+export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log, instrument }) {
+  return [timestamp, cell, status, String(attempt), artifact, log ?? '-', instrument ?? '-'].join(
+    '\t'
+  );
 }
 
 export function parseLedger(text) {
@@ -66,9 +89,40 @@ export function parseLedger(text) {
   return rows
     .filter((line) => line.trim())
     .map((line) => {
-      const [timestamp, cell, status, attempt, artifact, log] = line.split('\t');
-      return { timestamp, cell, status, attempt: Number(attempt), artifact, log };
+      const [timestamp, cell, status, attempt, artifact, log, instrument] = line.split('\t');
+      return { timestamp, cell, status, attempt: Number(attempt), artifact, log, instrument };
     });
+}
+
+// A cell's banked capture belongs to the instrument its COMPLETE row records,
+// and the newest such row speaks for the artifact on disk. A row with no
+// recorded fingerprint predates the column and is accepted; an acceptance row
+// records that the operator kept this cell's mixture deliberately, so the
+// refusal is made once rather than on every subsequent resume.
+export function cellsBankedUnderDifferentInstrument(rows, currentFingerprint) {
+  const accepted = new Set(
+    rows
+      .filter((row) => row.status === INSTRUMENT_ACCEPTED && knownInstrument(row))
+      .map((row) => `${row.cell}\t${row.instrument}`)
+  );
+  const banked = new Map();
+  for (const row of rows) {
+    if (!row.status?.startsWith(COMPLETE)) continue;
+    if (
+      !knownInstrument(row) ||
+      row.instrument === currentFingerprint ||
+      accepted.has(`${row.cell}\t${row.instrument}`)
+    ) {
+      banked.delete(row.cell);
+    } else {
+      banked.set(row.cell, row.instrument);
+    }
+  }
+  return [...banked].map(([cell, fingerprint]) => ({ cell, fingerprint }));
+}
+
+function knownInstrument(row) {
+  return row.instrument && row.instrument !== '-';
 }
 
 export function attemptsFor(rows, cellId) {
