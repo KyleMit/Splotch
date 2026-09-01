@@ -12,6 +12,7 @@ import { ROOT } from '../../lib/proc.mjs';
 // grant-lifetime evidence.
 export const GRANT_LOG = join(ROOT, 'perf-profiles', 'evidence', 'operator', 'ipad-grant-log.tsv');
 export const GRANT_LOG_HEADER = 'timestamp\tdevice\toutcome\tdetail\n';
+const DEVICE_PSEUDONYM = /^device-[0-9a-f]{12}$/;
 
 export function grantLogDevice(udid) {
   const digest = createHash('sha256')
@@ -20,6 +21,10 @@ export function grantLogDevice(udid) {
     .digest('hex')
     .slice(0, 12);
   return `device-${digest}`;
+}
+
+function normalizedGrantLogDevice(device) {
+  return DEVICE_PSEUDONYM.test(String(device)) ? device : grantLogDevice(device);
 }
 
 // Values are flattened to single-line fields so a multi-sentence Appium
@@ -54,7 +59,7 @@ function readGrantLog({ logPath = GRANT_LOG } = {}) {
     .filter(Boolean)
     .map((line) => {
       const [timestamp, device, outcome, detail] = line.split('\t');
-      return { timestamp, device, outcome, detail };
+      return { timestamp, device: normalizedGrantLogDevice(device), outcome, detail };
     });
 }
 
@@ -107,8 +112,14 @@ function formatAge(ms) {
 // The one-line grant context the preflight prints before it attempts a
 // launch: how stale the last good grant is, and the tightest lifetime bound
 // the log has actually observed — never a guessed one.
-export function describeGrantHistory(udid, { entries = readGrantLog(), now = Date.now() } = {}) {
-  const summary = grantLogSummary(entries, { device: grantLogDevice(udid), now });
+export function describeGrantHistory(
+  udid,
+  { entries, logPath = GRANT_LOG, now = Date.now() } = {}
+) {
+  const summary = grantLogSummary(entries ?? readGrantLog({ logPath }), {
+    device: grantLogDevice(udid),
+    now,
+  });
   if (!summary.attempts) return 'Grant log: no recorded launch attempts for this iPad yet.';
   const lastOk =
     summary.lastOkAgeMs === null

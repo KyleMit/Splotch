@@ -215,6 +215,24 @@ describe('magic sheet fill-load failure', () => {
     expect(lastRequest().src).toBe(PAGE_URL);
   });
 
+  it('detaches a cleared fill before the overlay effect settles', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    lastRequest().naturalWidth = 200;
+    lastRequest().naturalHeight = 100;
+    lastRequest().onload!();
+    expect(magic.captureMagicSheet()).not.toBeNull();
+
+    magic.deferColorSheet(null);
+
+    expect(magic.captureMagicSheet()).toBeNull();
+    expect(requested).toHaveLength(1);
+
+    magic.setColorSheet(null);
+    expect(magic.captureMagicSheet()).toBeNull();
+  });
+
   it('ignores a superseded error so it cannot clobber a newer page', async () => {
     const magic = await mountedMagicBrush();
 

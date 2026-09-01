@@ -1085,7 +1085,7 @@ export function setColorSheet(colorUrl: string | null) {
 export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppearance: () => void) {
   const targetSourceKey = targetUrl ? pageCompositionKey(targetUrl) : null;
   const prepared = beginTiledMagicRecode(targetSourceKey, restoreAppearance);
-  if (targetUrl) deferColorSheet(targetUrl);
+  deferColorSheet(targetUrl);
   if (prepared) setCanUndo(true);
   return prepared;
 }

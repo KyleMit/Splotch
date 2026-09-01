@@ -1326,7 +1326,7 @@ function actionHeatmap(matrix) {
               ? 'PASS'
               : 'FAIL'
             : `unscoreable: this mode\u2019s idle frame control is ${target.actions?.controlEvidence ?? 'absent'}`;
-          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
           const cellClass = attributable ? heatClass(ratio) : 'unscoreable';
           return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
         })

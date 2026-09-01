@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   describeGrantHistory,
@@ -95,5 +97,30 @@ describe('grant log schema', () => {
     expect(grantLogDevice('another-device')).not.toBe(DEVICE);
     expect(readFileSync(GRANT_LOG, 'utf8').split('\n')[0] + '\n').toBe(GRANT_LOG_HEADER);
     expect(describeGrantHistory(UDID)).not.toContain('no recorded launch');
+  });
+
+  it('migrates legacy raw-UDID rows while reading an existing log', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-grant-log-'));
+    const logPath = join(directory, 'ipad-grant-log.tsv');
+    writeFileSync(
+      logPath,
+      [
+        'timestamp\tudid\toutcome\tdetail',
+        `2026-08-25T01:00:00.000Z\t${UDID}\tok\tstarted and closed cleanly`,
+        `2026-08-25T07:00:00.000Z\t${UDID}\tblocked\t${DENIAL_DETAIL}`,
+        '',
+      ].join('\n')
+    );
+
+    try {
+      const text = describeGrantHistory(UDID, {
+        logPath,
+        now: Date.parse('2026-08-26T12:00:00.000Z'),
+      });
+      expect(text).toContain('last successful launch 35h ago');
+      expect(text).toContain('lifetime under 6h');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 });
