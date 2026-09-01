@@ -38,6 +38,7 @@
 
   let activeBook = $state<Book | null>(null);
   let pagesGridToken = $state(0);
+  let retiringAfterPageSelection = $state(false);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
@@ -108,6 +109,7 @@
     for (const img of dialogEl.querySelectorAll<HTMLImageElement>('.coloring-pages-grid img')) {
       cancelImageRequest(img);
     }
+    retiringAfterPageSelection = true;
     const dialogRetired = waitForDialogRetirement(dialogEl);
     coloringBookModal.hide();
     await dialogRetired;
@@ -147,6 +149,7 @@
   }
 
   function showInitialView() {
+    retiringAfterPageSelection = false;
     pagesGridToken += 1;
     showView(initialView());
   }
@@ -206,7 +209,12 @@
     retirement: 'compositor',
   })}
 >
-  <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
+  <div
+    class="coloring-book-content"
+    class:hover-armed={hoverArmed}
+    class:retiring-after-page-selection={retiringAfterPageSelection}
+    use:armHoverOnMouseMove
+  >
     {#if !activeBook}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
@@ -454,6 +462,10 @@
 
   .coloring-tile:active {
     transform: scale(0.96);
+  }
+
+  .retiring-after-page-selection .coloring-tile {
+    transition: none;
   }
 
   .coloring-tile img {
