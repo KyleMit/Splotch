@@ -221,11 +221,13 @@ describe('responsive image sources', () => {
     expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
   });
 
-  it('eases the active-page chip out of its pressed state', () => {
-    const transition = activePageChipComponent.match(/transition:\s*([\s\S]*?);/)?.[1];
-    expect(transition).toContain('transform var(--duration-fast) ease');
-    expect(activePageChipComponent).toContain('.active-page-chip:active');
-    expect(activePageChipComponent).toContain('transform: scale(0.92)');
+  it('uses danger colors for active-page press feedback', () => {
+    const activeRule = activePageChipComponent.slice(
+      activePageChipComponent.indexOf('.active-page-chip:active,'),
+      activePageChipComponent.indexOf('@media (max-width: 360px)')
+    );
+    expect(activeRule).toContain('background: var(--danger-wash)');
+    expect(activeRule).toContain('border-color: var(--danger-text)');
   });
 
   // The `sizes` hint's leading clause and the CSS that changes the grid under it
