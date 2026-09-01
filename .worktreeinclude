@@ -1,1 +1,3 @@
 web/.env
+android/local.properties
+ios/local.xcconfig

@@ -275,12 +275,11 @@ describe('stacked PR push guard installation', () => {
     const claude = JSON.parse(readFileSync(join(repoRoot, '.claude', 'settings.json'), 'utf8'));
     const installer = 'install-stack-push-guard.mjs';
 
-    expect(
-      codex.hooks.SessionStart[0].hooks.some(({ command }) => command.includes(installer))
-    ).toBe(true);
-    expect(
-      claude.hooks.SessionStart[0].hooks.some(({ command }) => command.includes(installer))
-    ).toBe(true);
+    const registersInstaller = (groups) =>
+      groups.some(({ hooks }) => hooks.some(({ command }) => command.includes(installer)));
+
+    expect(registersInstaller(codex.hooks.SessionStart)).toBe(true);
+    expect(registersInstaller(claude.hooks.SessionStart)).toBe(true);
     expect(statSync(join(repoRoot, '.githooks', 'pre-push')).mode & 0o111).not.toBe(0);
   });
 });

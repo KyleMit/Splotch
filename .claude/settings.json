@@ -24,6 +24,16 @@
     ],
     "SessionStart": [
       {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/tools/bootstrap-worktree.mjs\" --runner=claude",
+            "timeout": 600
+          }
+        ]
+      },
+      {
         "hooks": [
           {
             "type": "command",

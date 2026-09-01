@@ -212,6 +212,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0059](0059-committed-run-artifacts-github-pages.md)    | Committed Run Artifacts in `/scrapbook`, Published Live via GitHub Pages (amended: renamed from `/artifacts`) | Active                                                      |
 | [0081](0081-dependabot-claude-review-workflow.md)       | Auto-Review Dependabot PRs with Claude, Authenticated from the Dependabot Secret Store                        | Active                                                      |
 | [0107](0107-reference-skill-content-lives-in-docs.md)   | Reference Skills Route to `docs/`; Workflow Skills Stay Inline                                                | Active (amends [0058](0058-ruler-generated-agent-files.md)) |
+| [0154](0154-shared-agent-worktree-bootstrap.md)         | One Startup Bootstrap Provisions Every Agent Worktree                                                         | Active                                                      |
 
 ## Historical
 

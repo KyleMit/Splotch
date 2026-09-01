@@ -15,7 +15,8 @@ one-line entry in the `scripts-info` block of `package.json`.
 
 ## Concurrent worktrees
 
-Codex-managed worktrees share host ports and machine capacity.
+Agent-managed worktrees — Claude Code's and Codex's alike — share host ports and machine capacity. A
+new worktree provisions itself; see `docs/WORKTREES.md` before changing that setup.
 
 * Select an explicit unused port for every server. Run targeted Playwright checks as
   `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`.

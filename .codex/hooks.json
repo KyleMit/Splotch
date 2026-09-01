@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/tools/bootstrap-codex-worktree.mjs\"",
+            "command": "node \"$(git rev-parse --show-toplevel)/tools/bootstrap-worktree.mjs\" --runner=codex",
             "statusMessage": "Preparing the Splotch worktree"
           },
           {

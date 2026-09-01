@@ -1,9 +1,12 @@
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 import { isMain } from './lib/proc.mjs';
 
 const FAILURE_DETAIL_CHAR_LIMIT = 800;
 const MAIN_REF = 'refs/heads/main';
+
+export const RUNNERS = ['claude', 'codex'];
 
 function runProcess(command, args, cwd) {
   return spawnSync(command, args, { cwd, encoding: 'utf8' });
@@ -24,11 +27,6 @@ function requireCommand(runCommand, command, args, cwd, failureMessage) {
   return result.stdout?.trim() ?? '';
 }
 
-function stopTurn(reason) {
-  const message = `Splotch worktree bootstrap stopped: ${reason}`;
-  return { continue: false, stopReason: message, systemMessage: message };
-}
-
 function readLocalMain(runCommand, repoRoot) {
   const result = runCommand('git', ['rev-parse', MAIN_REF], repoRoot);
   if (result.status !== 0) return null;
@@ -45,7 +43,7 @@ function updateStaleMainWorktree(runCommand, repoRoot) {
   );
   if (trackedChanges) {
     throw new Error(
-      'tracked changes are present. Preserve or discard them explicitly before restarting Codex.'
+      'tracked changes are present. Preserve or discard them explicitly before restarting the session.'
     );
   }
 
@@ -113,7 +111,33 @@ function provisionDependencies(runCommand, repoRoot) {
   );
 }
 
-export function bootstrapCodexWorktree({ cwd = process.cwd(), runCommand = runProcess } = {}) {
+/**
+ * A Codex worktree starts detached at whatever `main` pointed to when it was cut, so it needs a
+ * refresh before the first turn. A Claude worktree is already branched from the remote default by
+ * `worktree.baseRef`, arrives on its own branch, and must not be moved.
+ */
+function needsStaleMainRefresh(runCommand, repoRoot) {
+  const branch = requireCommand(
+    runCommand,
+    'git',
+    ['rev-parse', '--abbrev-ref', 'HEAD'],
+    repoRoot,
+    'Could not inspect HEAD'
+  );
+  if (branch !== 'HEAD') return false;
+
+  const initialHead = requireCommand(
+    runCommand,
+    'git',
+    ['rev-parse', 'HEAD'],
+    repoRoot,
+    'Could not read the initial worktree commit'
+  );
+  const localMain = readLocalMain(runCommand, repoRoot);
+  return localMain !== null && initialHead === localMain;
+}
+
+export function bootstrapWorktree({ cwd = process.cwd(), runCommand = runProcess } = {}) {
   try {
     const gitDir = requireCommand(
       runCommand,
@@ -139,35 +163,72 @@ export function bootstrapCodexWorktree({ cwd = process.cwd(), runCommand = runPr
       cwd,
       'Could not locate the linked worktree root'
     );
-    const branch = requireCommand(
-      runCommand,
-      'git',
-      ['rev-parse', '--abbrev-ref', 'HEAD'],
-      repoRoot,
-      'Could not inspect HEAD'
-    );
-    if (branch !== 'HEAD') return null;
 
-    const initialHead = requireCommand(
-      runCommand,
-      'git',
-      ['rev-parse', 'HEAD'],
-      repoRoot,
-      'Could not read the initial worktree commit'
-    );
-    const localMain = readLocalMain(runCommand, repoRoot);
-    if (localMain === null) return null;
-
-    if (initialHead === localMain) updateStaleMainWorktree(runCommand, repoRoot);
+    if (needsStaleMainRefresh(runCommand, repoRoot)) updateStaleMainWorktree(runCommand, repoRoot);
     provisionDependencies(runCommand, repoRoot);
 
     return null;
   } catch (error) {
-    return stopTurn(error instanceof Error ? error.message : String(error));
+    return error instanceof Error ? error.message : String(error);
   }
 }
 
+/**
+ * Claude Code leaves `CLAUDE_PROJECT_DIR` — and so the hook command's own path — pointing at the
+ * main checkout, and reports the worktree only through the payload's `cwd`.
+ */
+export function readHookCwd(payload) {
+  if (!payload) return null;
+  try {
+    const parsed = JSON.parse(payload);
+    const cwd = parsed?.cwd;
+    return typeof cwd === 'string' && cwd ? cwd : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStdin() {
+  if (process.stdin.isTTY) return null;
+  try {
+    return readFileSync(0, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function parseRunner(argv) {
+  const flag = argv.find((arg) => arg.startsWith('--runner='));
+  const runner = flag?.slice('--runner='.length);
+  if (!RUNNERS.includes(runner)) {
+    throw new Error(`--runner must be one of ${RUNNERS.join(', ')}`);
+  }
+  return runner;
+}
+
+/**
+ * Codex reads a stop decision from the hook's stdout; Claude Code reads a non-blocking failure from
+ * a non-zero exit plus stderr, and lets the session start so the message is actionable in place.
+ */
+export function reportFailure(runner, reason) {
+  const message = `Splotch worktree bootstrap stopped: ${reason}`;
+  if (runner === 'codex') {
+    return {
+      stdout: { continue: false, stopReason: message, systemMessage: message },
+      exitCode: 0,
+    };
+  }
+  return { stdout: { systemMessage: message }, stderr: message, exitCode: 1 };
+}
+
 if (isMain(import.meta.url)) {
-  const result = bootstrapCodexWorktree();
-  if (result) process.stdout.write(`${JSON.stringify(result)}\n`);
+  const runner = parseRunner(process.argv.slice(2));
+  const cwd = readHookCwd(readStdin()) ?? process.cwd();
+  const reason = bootstrapWorktree({ cwd });
+  if (reason) {
+    const { stdout, stderr, exitCode } = reportFailure(runner, reason);
+    if (stderr) process.stderr.write(`${stderr}\n`);
+    process.stdout.write(`${JSON.stringify(stdout)}\n`);
+    process.exitCode = exitCode;
+  }
 }

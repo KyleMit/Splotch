@@ -1,11 +1,13 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { bootstrapCodexWorktree } from '../bootstrap-codex-worktree.mjs';
+import { bootstrapWorktree, readHookCwd, reportFailure } from '../bootstrap-worktree.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
+const scriptPath = join(repoRoot, 'tools', 'bootstrap-worktree.mjs');
 const SESSION_CWD = '/worktree/web/src';
 const WORKTREE_ROOT = '/worktree';
 const INITIAL_HEAD = '1111111111111111111111111111111111111111';
@@ -54,8 +56,15 @@ function commandNames(calls) {
   return calls.map(({ command, args }) => [command, ...args].join(' '));
 }
 
-describe('Codex worktree bootstrap hook', () => {
-  it('registers one synchronous startup-only hook through the repository root', () => {
+const PROVISIONING = [
+  'corepack enable pnpm',
+  'corepack install',
+  'pnpm install --frozen-lockfile --prefer-offline',
+  'npm run info',
+];
+
+describe('worktree bootstrap hook registration', () => {
+  it('registers one synchronous startup-only Codex hook through the repository root', () => {
     const config = JSON.parse(readFileSync(join(repoRoot, '.codex', 'hooks.json'), 'utf8'));
     const group = config.hooks.SessionStart[0];
     const hook = group.hooks[0];
@@ -63,29 +72,28 @@ describe('Codex worktree bootstrap hook', () => {
     expect(group.matcher).toBe('^startup$');
     expect(hook.type).toBe('command');
     expect(hook.command).toBe(
-      'node "$(git rev-parse --show-toplevel)/tools/bootstrap-codex-worktree.mjs"'
+      'node "$(git rev-parse --show-toplevel)/tools/bootstrap-worktree.mjs" --runner=codex'
     );
     expect(hook.async).toBeUndefined();
   });
 
-  it('prints structured stop output when the executable cannot inspect Git', () => {
-    const run = spawnSync(
-      process.execPath,
-      [join(repoRoot, 'tools', 'bootstrap-codex-worktree.mjs')],
-      {
-        cwd: '/tmp',
-        encoding: 'utf8',
-      }
+  // CLAUDE_PROJECT_DIR stays on the main checkout when Claude Code enters a worktree, so the hook
+  // command can only ever name the main checkout's copy of the script; the worktree it must
+  // provision arrives in the payload instead.
+  it('registers a startup-only Claude hook through the project directory', () => {
+    const settings = JSON.parse(readFileSync(join(repoRoot, '.claude', 'settings.json'), 'utf8'));
+    const group = settings.hooks.SessionStart.find(({ matcher }) => matcher === 'startup');
+    const hook = group.hooks[0];
+
+    expect(hook.type).toBe('command');
+    expect(hook.command).toBe(
+      'node "$CLAUDE_PROJECT_DIR/tools/bootstrap-worktree.mjs" --runner=claude'
     );
-
-    expect(run.status).toBe(0);
-    expect(JSON.parse(run.stdout)).toEqual({
-      continue: false,
-      stopReason: expect.stringContaining('Could not inspect the Git directory'),
-      systemMessage: expect.stringContaining('Splotch worktree bootstrap stopped'),
-    });
+    expect(hook.timeout).toBeGreaterThanOrEqual(600);
   });
+});
 
+describe('worktree bootstrap', () => {
   it('exits without side effects in the primary checkout', () => {
     const script = new Map([
       [
@@ -99,7 +107,7 @@ describe('Codex worktree bootstrap hook', () => {
     ]);
     const runner = createRunner(script);
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
     expect(commandNames(runner.calls)).toEqual([
       'git rev-parse --path-format=absolute --git-dir',
       'git rev-parse --path-format=absolute --git-common-dir',
@@ -109,7 +117,7 @@ describe('Codex worktree bootstrap hook', () => {
   it('updates a stale main worktree before installing and verifying dependencies', () => {
     const runner = createRunner();
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
     expect(commandNames(runner.calls)).toEqual([
       'git rev-parse --path-format=absolute --git-dir',
       'git rev-parse --path-format=absolute --git-common-dir',
@@ -122,10 +130,7 @@ describe('Codex worktree bootstrap hook', () => {
       'git rev-parse FETCH_HEAD',
       'git checkout --detach FETCH_HEAD',
       'git rev-parse HEAD',
-      'corepack enable pnpm',
-      'corepack install',
-      'pnpm install --frozen-lockfile --prefer-offline',
-      'npm run info',
+      ...PROVISIONING,
     ]);
     expect(runner.calls.slice(0, 3).map(({ cwd }) => cwd)).toEqual([
       SESSION_CWD,
@@ -140,7 +145,7 @@ describe('Codex worktree bootstrap hook', () => {
     script.set(commandKey('git', ['rev-parse', 'HEAD']), [success(FETCHED_HEAD)]);
     const runner = createRunner(script);
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
     expect(commandNames(runner.calls)).toEqual([
       'git rev-parse --path-format=absolute --git-dir',
       'git rev-parse --path-format=absolute --git-common-dir',
@@ -148,19 +153,16 @@ describe('Codex worktree bootstrap hook', () => {
       'git rev-parse --abbrev-ref HEAD',
       'git rev-parse HEAD',
       'git rev-parse refs/heads/main',
-      'corepack enable pnpm',
-      'corepack install',
-      'pnpm install --frozen-lockfile --prefer-offline',
-      'npm run info',
+      ...PROVISIONING,
     ]);
   });
 
-  it('stands down when the local main ref does not exist', () => {
+  it('provisions without moving HEAD when the local main ref does not exist', () => {
     const script = defaultScript();
     script.set(commandKey('git', ['rev-parse', 'refs/heads/main']), [failure('unknown revision')]);
     const runner = createRunner(script);
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
     expect(commandNames(runner.calls)).toEqual([
       'git rev-parse --path-format=absolute --git-dir',
       'git rev-parse --path-format=absolute --git-common-dir',
@@ -168,6 +170,26 @@ describe('Codex worktree bootstrap hook', () => {
       'git rev-parse --abbrev-ref HEAD',
       'git rev-parse HEAD',
       'git rev-parse refs/heads/main',
+      ...PROVISIONING,
+    ]);
+  });
+
+  // The shape every Claude Code worktree arrives in: its own branch, already cut from the remote
+  // default. Nothing about HEAD may move, but the checkout still has no node_modules.
+  it('provisions an attached linked worktree without touching HEAD', () => {
+    const script = defaultScript();
+    script.set(commandKey('git', ['rev-parse', '--abbrev-ref', 'HEAD']), [
+      success('claude/worktree-example'),
+    ]);
+    const runner = createRunner(script);
+
+    expect(bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(commandNames(runner.calls)).toEqual([
+      'git rev-parse --path-format=absolute --git-dir',
+      'git rev-parse --path-format=absolute --git-common-dir',
+      'git rev-parse --show-toplevel',
+      'git rev-parse --abbrev-ref HEAD',
+      ...PROVISIONING,
     ]);
   });
 
@@ -178,25 +200,10 @@ describe('Codex worktree bootstrap hook', () => {
     ]);
     const runner = createRunner(script);
 
-    const result = bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
+    const reason = bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
 
-    expect(result).toMatchObject({ continue: false });
-    expect(result.systemMessage).toContain('tracked changes are present');
+    expect(reason).toContain('tracked changes are present');
     expect(commandNames(runner.calls)).not.toContain('git fetch --no-tags origin main');
-  });
-
-  it('leaves an attached linked worktree untouched', () => {
-    const script = defaultScript();
-    script.set(commandKey('git', ['rev-parse', '--abbrev-ref', 'HEAD']), [success('main')]);
-    const runner = createRunner(script);
-
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
-    expect(commandNames(runner.calls)).toEqual([
-      'git rev-parse --path-format=absolute --git-dir',
-      'git rev-parse --path-format=absolute --git-common-dir',
-      'git rev-parse --show-toplevel',
-      'git rev-parse --abbrev-ref HEAD',
-    ]);
   });
 
   it.each([
@@ -225,18 +232,15 @@ describe('Codex worktree bootstrap hook', () => {
       command: ['npm', 'run', 'info'],
       message: 'Dependency verification failed',
     },
-  ])('returns structured stop output on $name failure', ({ command, message }) => {
+  ])('returns the failure reason on $name failure', ({ command, message }) => {
     const script = defaultScript();
     script.set(commandKey(command[0], command.slice(1)), [failure('simulated failure')]);
     const runner = createRunner(script);
 
-    const result = bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
+    const reason = bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
 
-    expect(result).toEqual({
-      continue: false,
-      stopReason: expect.stringContaining(message),
-      systemMessage: expect.stringContaining('simulated failure'),
-    });
+    expect(reason).toContain(message);
+    expect(reason).toContain('simulated failure');
   });
 
   it('continues when Corepack cannot enable its pnpm shim', () => {
@@ -244,13 +248,8 @@ describe('Codex worktree bootstrap hook', () => {
     script.set(commandKey('corepack', ['enable', 'pnpm']), [failure('read-only Node bin')]);
     const runner = createRunner(script);
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
-    expect(commandNames(runner.calls).slice(-4)).toEqual([
-      'corepack enable pnpm',
-      'corepack install',
-      'pnpm install --frozen-lockfile --prefer-offline',
-      'npm run info',
-    ]);
+    expect(bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(commandNames(runner.calls).slice(-4)).toEqual(PROVISIONING);
   });
 
   it('stops before installing when checkout verification does not match FETCH_HEAD', () => {
@@ -261,12 +260,95 @@ describe('Codex worktree bootstrap hook', () => {
     ]);
     const runner = createRunner(script);
 
-    const result = bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
+    const reason = bootstrapWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
 
-    expect(result).toMatchObject({ continue: false });
-    expect(result.systemMessage).toContain('checkout verification failed');
+    expect(reason).toContain('checkout verification failed');
     expect(commandNames(runner.calls)).not.toContain(
       'pnpm install --frozen-lockfile --prefer-offline'
     );
+  });
+});
+
+describe('hook payload handling', () => {
+  it('reads the worktree root out of a hook payload', () => {
+    expect(readHookCwd(JSON.stringify({ cwd: WORKTREE_ROOT }))).toBe(WORKTREE_ROOT);
+  });
+
+  it.each([
+    { name: 'no payload', payload: '' },
+    { name: 'unparseable payload', payload: 'not json' },
+    { name: 'payload without a cwd', payload: '{"session_id":"abc"}' },
+    { name: 'payload with an empty cwd', payload: '{"cwd":""}' },
+    { name: 'payload with a non-string cwd', payload: '{"cwd":42}' },
+  ])('falls back to the process directory for $name', ({ payload }) => {
+    expect(readHookCwd(payload)).toBeNull();
+  });
+});
+
+describe('runner-specific failure reporting', () => {
+  it('hands Codex a stop decision on stdout and a zero exit', () => {
+    expect(reportFailure('codex', 'boom')).toEqual({
+      stdout: {
+        continue: false,
+        stopReason: expect.stringContaining('boom'),
+        systemMessage: expect.stringContaining('Splotch worktree bootstrap stopped'),
+      },
+      exitCode: 0,
+    });
+  });
+
+  // A non-zero exit is Claude Code's non-blocking error: the notice reaches the user, the
+  // systemMessage reaches Claude, and the session still starts so the fix can happen in place.
+  it('hands Claude a non-blocking error the session survives', () => {
+    const report = reportFailure('claude', 'boom');
+
+    expect(report.exitCode).not.toBe(0);
+    expect(report.stderr).toContain('boom');
+    expect(report.stdout.systemMessage).toContain('Splotch worktree bootstrap stopped');
+    expect(report.stdout.continue).toBeUndefined();
+  });
+});
+
+describe('worktree bootstrap executable', () => {
+  const run = (args, input) =>
+    spawnSync(process.execPath, [scriptPath, ...args], { cwd: '/tmp', encoding: 'utf8', input });
+
+  it('refuses to run without a known runner', () => {
+    const result = run([]);
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('--runner must be one of');
+  });
+
+  it('prints a Codex stop decision when it cannot inspect Git', () => {
+    const result = run(['--runner=codex'], '');
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual({
+      continue: false,
+      stopReason: expect.stringContaining('Could not inspect the Git directory'),
+      systemMessage: expect.stringContaining('Splotch worktree bootstrap stopped'),
+    });
+  });
+
+  it('exits non-zero for Claude when it cannot inspect Git', () => {
+    const result = run(['--runner=claude'], '');
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Could not inspect the Git directory');
+    expect(JSON.parse(result.stdout).systemMessage).toContain('Splotch worktree bootstrap stopped');
+  });
+
+  // The payload directory has to beat the process directory, or a Claude Code hook would provision
+  // the main checkout it was launched from instead of the worktree it was told about.
+  it('prefers the payload directory over the process directory', () => {
+    const result = spawnSync(process.execPath, [scriptPath, '--runner=claude'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      input: JSON.stringify({ cwd: tmpdir() }),
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Could not inspect the Git directory');
   });
 });

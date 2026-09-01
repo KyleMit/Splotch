@@ -1,27 +1,8 @@
-# Codex worktree setup
+# Codex environment setup
 
-## Automatic startup bootstrap
-
-The repository's synchronous `SessionStart` hook prepares a new linked Codex worktree before its
-first model turn. When the detached worktree starts from the local `main` commit, the hook:
-
-1. Confirms the checkout has no tracked changes.
-2. Fetches `origin/main` without tags and detaches at the fetched commit.
-3. Verifies `HEAD`, provisions the pinned pnpm version, and installs the frozen dependency tree.
-4. Runs `npm run info` to verify the dependency installation.
-
-The hook does nothing in the primary checkout or an attached linked worktree. In a detached
-feature-based worktree it leaves `HEAD` untouched but still installs and verifies dependencies. It
-stops the turn with an actionable warning instead of overwriting a dirty linked worktree, or when
-fetching, checkout, installation, or verification fails. Its `^startup$` matcher means it does not
-rerun after resume, clear, or compaction events.
-
-Project hooks require a one-time trust review. When Codex reports that the hook needs review, open
-`/hooks` on the laptop running Codex, inspect the repository's `.codex/hooks.json` entry, and trust
-it. Android Remote cannot complete this laptop-side review while creating a worktree. If a remote
-session starts before the hook is trusted, trust it on the laptop and then start a new session; the
-skipped startup hook does not rerun in the existing session. Codex asks for another review only when
-the hook definition changes.
+Worktree provisioning is shared with Claude Code — the startup bootstrap hook, `.worktreeinclude`,
+and the Codex hook trust review are all documented in [`docs/WORKTREES.md`](../docs/WORKTREES.md).
+`hooks.json` here registers the Codex half of it.
 
 ## Desktop local environment
 
@@ -36,5 +17,9 @@ Complete this one-time setup in the desktop app:
    `corepack enable pnpm && corepack install && pnpm install --frozen-lockfile --prefer-offline`.
 4. Save it, then commit the generated configuration file that appears under `.codex/`.
 
-Do not hand-author the generated configuration. `.worktreeinclude` separately copies `web/.env` into
-new local Codex-managed worktrees without tracking its contents.
+Do not hand-author the generated configuration.
+
+## Cloud environment
+
+`cloud/setup.sh` and `cloud/maintenance.sh` are synced manually into the Codex Cloud environment
+settings — see [`docs/CLOUD/Codex.md`](../docs/CLOUD/Codex.md).
