@@ -34,6 +34,9 @@ describe('press feedback', () => {
     await vi.waitFor(() => expect(frames).toHaveLength(1));
 
     frames.shift()!(16);
+    await vi.waitFor(() => expect(frames).toHaveLength(1));
+
+    frames.shift()!(32);
     await settled;
   });
 

@@ -10,4 +10,5 @@ export async function waitForPressFeedbackToSettle(node: HTMLElement) {
   // Removing or covering a releasing control in the same presentation turn
   // forces WebKit to retire its transform layer alongside the larger surface.
   await nextFrame();
+  await nextFrame();
 }

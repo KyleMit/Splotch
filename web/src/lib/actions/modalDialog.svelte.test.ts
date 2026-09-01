@@ -72,7 +72,7 @@ describe('modalDialog', () => {
 
   it('keeps waiting while retired content remains in an open dialog', async () => {
     const dialog = document.body.appendChild(document.createElement('dialog'));
-    const content = dialog.appendChild(document.createElement('div'));
+    dialog.appendChild(document.createElement('div'));
     try {
       dialog.showModal();
       dialog.style.opacity = '0';
