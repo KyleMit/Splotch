@@ -1283,6 +1283,73 @@ describe('the eraser refill record in a folded cell', () => {
   });
 });
 
+// Capture 7c37d255: a blank renderer passed every temporal gate. The split
+// probe now records whether the canvas changed during the pass; the fold
+// refuses a recorded no-change run and publishes the guarantee as a trust
+// dimension, while runs predating the record stay a visible `unrecorded`.
+describe('the painted-output record in a folded cell', () => {
+  function writePaintedCapture(directory, name, paintedOutput) {
+    writeFileSync(
+      join(directory, name),
+      JSON.stringify({
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        ...(paintedOutput === undefined ? {} : { report: { paintedOutput } }),
+        summaries: {
+          phases: [
+            {
+              key: 'blank',
+              paintLatencyMs: { p50: 1, p95: 1, p99: 1, max: 1 },
+              pacing: { lostFrameTimeShare: 0 },
+            },
+          ],
+        },
+      })
+    );
+    return name;
+  }
+
+  const penRun = (directory, source) => {
+    const built = manifest([
+      capturedManifestMode(modeSpecs[0], { drawing: { pen: [source] } }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    return normalizeMatrix(built, directory).targets[0].modes[0].drawing.pen.runs[0];
+  };
+
+  it('refuses to fold a capture whose report records no canvas change', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const blank = writePaintedCapture(directory, 'pen-blank.json', { changed: false });
+
+    expect(() => penRun(directory, blank)).toThrow(
+      'records no canvas change during the pass (blank-output)'
+    );
+  });
+
+  it('publishes the guarantee as a trust dimension, unrecorded for legacy runs', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const changed = writePaintedCapture(directory, 'pen-changed.json', { changed: true });
+    const legacy = writePaintedCapture(directory, 'pen-legacy.json', undefined);
+    const trustRow = (source) =>
+      penRun(directory, source).trust.find((entry) => entry.name === 'paintedOutput');
+
+    expect(trustRow(changed)).toEqual({ name: 'paintedOutput', state: 'verified' });
+    expect(trustRow(legacy)).toEqual({ name: 'paintedOutput', state: 'unrecorded' });
+  });
+
+  it('surfaces an unprovable record as a loud fold error naming the source', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    const unprovable = writePaintedCapture(directory, 'pen-unprovable.json', {
+      error: 'no 2d scratch context to sample through',
+    });
+
+    expect(() => penRun(directory, unprovable)).toThrow('carries no boolean changed verdict');
+  });
+});
+
 // The eraserInk trust dimension's positive paths, on synthetic profiles the
 // corpus cannot supply (its captures predate the fill recorder).
 describe('the eraserInk trust dimension', () => {

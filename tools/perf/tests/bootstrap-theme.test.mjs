@@ -517,6 +517,80 @@ describe('the bootstrap verifying the eraser fill', () => {
   );
 });
 
+// The drawing gates are purely temporal, so a renderer that painted NOTHING
+// passed them all (capture 7c37d255). The bootstrap now samples the drawing
+// surfaces before contact banking and after the probe stops, and the report
+// records whether the canvas changed — executed here end to end, with the
+// scratch canvas faked so happy-dom's contextless canvases can be read.
+describe('the painted-output record in the uploaded report', () => {
+  function fakeScratchFor() {
+    let drawn = null;
+    return {
+      width: 0,
+      height: 0,
+      getContext: (kind, options) =>
+        options?.willReadFrequently === true
+          ? {
+              clearRect() {
+                drawn = null;
+              },
+              drawImage(source) {
+                drawn = source.pixels;
+              },
+              getImageData() {
+                return { data: drawn ?? [] };
+              },
+            }
+          : null,
+    };
+  }
+
+  async function reportFor(mutateBetweenSamples) {
+    paintShell({ compact: true, startingTheme: 'light' });
+    const canvas = document.querySelector('#drawingCanvas');
+    canvas.pixels = [10, 20, 30, 255];
+    const createElement = document.createElement.bind(document);
+    document.createElement = (tag) => (tag === 'canvas' ? fakeScratchFor() : createElement(tag));
+    try {
+      const plan = { brush: 'pen', theme: 'light', nonce: 'painted-run', finish: false };
+      const { readyPosted, posted } = runBootstrap(plan);
+      await readyPosted;
+      if (mutateBetweenSamples) canvas.pixels = [99, 20, 30, 255];
+      plan.finish = true;
+      return await vi.waitFor(
+        () => {
+          const found = posted.find((entry) => entry.path === '/__probe/report');
+          if (!found) throw new Error('no report yet');
+          return found;
+        },
+        { timeout: BOOTSTRAP_TIMEOUT_MS }
+      );
+    } finally {
+      document.createElement = createElement;
+    }
+  }
+
+  it(
+    'records blank output when no pixel changed between the samples',
+    async () => {
+      const report = await reportFor(false);
+
+      expect(report.body.report.paintedOutput).toMatchObject({ changed: false });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'records a changed canvas when any pixel differs after the pass',
+    async () => {
+      const report = await reportFor(true);
+
+      expect(report.body.report.paintedOutput).toMatchObject({ changed: true });
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+});
+
 describe('the pulse and the error report', () => {
   // The wait loop pulses the live event count so the runner can tell "the
   // injected touches are landing on another tab" (issue 1294) from "the report

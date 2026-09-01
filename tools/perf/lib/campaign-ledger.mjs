@@ -69,6 +69,15 @@ export const WRONG_GESTURE_PLAN = 'wrong-gesture-plan';
 // rather than banking an optimistic number.
 export const ERASER_FILL_FAILED = 'eraser-fill-failed';
 
+// A capture whose report records that the drawing canvas never changed during
+// the pass: the input arrived and the temporal gates may all pass, but nothing
+// was painted (or erased), so the number describes a renderer that did no
+// drawing work. Spends attempts like a fidelity failure — a transient page
+// state can plausibly blank one run — and exhausts into a named P1 rather than
+// banking a plausible-looking non-measurement. Artifacts predating the
+// recorded field are accepted; they cannot prove either way.
+export const BLANK_OUTPUT = 'blank-output';
+
 // The operator kept a cell banked under another instrument, deliberately, via
 // --accept-instrument-change. Not an attempt and not a completion — the row
 // exists so the acceptance is on record beside the mixture it accepted, and so
@@ -144,7 +153,8 @@ export function attemptsFor(rows, cellId) {
         row.status?.startsWith(OFF_REFRESH_REGIME) ||
         row.status?.startsWith(WRONG_GESTURE_REPEATS) ||
         row.status?.startsWith(WRONG_GESTURE_PLAN) ||
-        row.status?.startsWith(ERASER_FILL_FAILED))
+        row.status?.startsWith(ERASER_FILL_FAILED) ||
+        row.status?.startsWith(BLANK_OUTPUT))
   ).length;
 }
 

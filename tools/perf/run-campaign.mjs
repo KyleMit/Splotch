@@ -36,6 +36,7 @@ import {
   cellServerSource,
   recordedGesturePlan,
   recordedGestureRepeats,
+  recordedPaintedOutput,
   resolvedProbeHostProblem,
   planCampaign,
   splitTransportIdentityProblem,
@@ -48,6 +49,7 @@ import {
 } from './split-capture/lib/probe-host-protocol.mjs';
 import {
   ALREADY_VALID,
+  BLANK_OUTPUT,
   COMPLETE,
   ERASER_FILL_FAILED,
   EXHAUSTED,
@@ -216,6 +218,24 @@ export function inspectArtifact(
   const shortfall = eraserRefillShortfall(artifact, expectedGestureRepeats);
   if (shortfall !== null) {
     return { ok: false, status: ERASER_FILL_FAILED, refillShortfall: shortfall };
+  }
+  // After everything above, for the standing most-fundamental-first reason: a
+  // capture already refused for its input, beat, contract, or eraser ink has a
+  // blank-or-not question that is moot, and naming the blankness would send
+  // the recapture after the wrong thing. A recorded no-change verdict means
+  // the temporal gates scored a renderer that did no drawing work; an absent
+  // record is the same historical tolerance every recorded field gets, and a
+  // malformed or error-carrying one throws in the shared reader — an invalid
+  // artifact, not consent.
+  let paintedOutput;
+  try {
+    paintedOutput = recordedPaintedOutput(artifact);
+  } catch (error) {
+    rethrowIfBroken(error);
+    return { ok: false, status: FAILED };
+  }
+  if (paintedOutput !== null && paintedOutput.changed !== true) {
+    return { ok: false, status: BLANK_OUTPUT, paintedOutput };
   }
   return { ok: true, status: COMPLETE, regime };
 }

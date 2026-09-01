@@ -29,6 +29,7 @@ import {
   gesturePlanFor,
   recordedGesturePlan,
   recordedGestureRepeats,
+  recordedPaintedOutput,
 } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
@@ -268,7 +269,15 @@ function rederiveFidelity(profile, phases, captureRuntime) {
 // absence of an inapplicable dimension is not an absent guarantee.
 function composeRunTrust(
   profile,
-  { fidelity, refreshRegime, gestureRepeats, gesturePlan, anomalousRefills, judgingRuntime }
+  {
+    fidelity,
+    refreshRegime,
+    gestureRepeats,
+    gesturePlan,
+    anomalousRefills,
+    paintedOutput,
+    judgingRuntime,
+  }
 ) {
   const trust = [];
   if (fidelity?.passed === true) {
@@ -347,6 +356,21 @@ function composeRunTrust(
   } else {
     trust.push({ name: 'pageIdentity', state: 'unrecorded', detail: identity ?? 'absent' });
   }
+  // Whether the canvas provably changed during the pass — the output-side
+  // guarantee the temporal gates cannot give (a blank renderer passed them
+  // all). Recorded only by the split probe, so most historical captures are a
+  // visible `unrecorded` here, same as pageIdentity for a native run.
+  if (paintedOutput === null || paintedOutput === undefined) {
+    trust.push({ name: 'paintedOutput', state: 'unrecorded' });
+  } else if (paintedOutput.changed === true) {
+    trust.push({ name: 'paintedOutput', state: 'verified' });
+  } else {
+    trust.push({
+      name: 'paintedOutput',
+      state: 'failed',
+      detail: 'no canvas change recorded during the pass',
+    });
+  }
   // The stored label is the runner's day-of claim — the same frozen claim
   // re-derivation exists to distrust — so it is `verified` only when it agrees
   // with the runtime the run was actually judged under, and a disagreement is
@@ -420,6 +444,12 @@ function normalizeDrawingRun(
     // fold below refuses it rather than publishing an optimistic cell.
     anomalousEraserRefills: anomalousEraserRefills(profile),
     eraserRefillShortfall: eraserRefillShortfall(profile, expectedGestureRepeats),
+    // Whether the drawing surfaces provably changed during the pass — the split
+    // probe's output-side evidence (the temporal gates scored a blank renderer;
+    // 7c37d255). Null for artifacts predating the field. Same shared reader as
+    // acceptance, so the two cannot drift; the fold below refuses a recorded
+    // no-change run rather than publishing a number that measured no drawing.
+    paintedOutput: recordedPaintedOutput(profile),
     // One composed answer to "can I trust this number?" — see composeRunTrust.
     trust: composeRunTrust(profile, {
       fidelity,
@@ -427,6 +457,7 @@ function normalizeDrawingRun(
       gestureRepeats: recordedGestureRepeats(profile),
       gesturePlan: recordedGesturePlan(profile),
       anomalousRefills: anomalousEraserRefills(profile),
+      paintedOutput: recordedPaintedOutput(profile),
       judgingRuntime: captureRuntime,
     }),
     fidelity,
@@ -624,6 +655,22 @@ function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode, ta
               `Source: ${foreign.source}`
           );
         }
+      }
+      // Last, mirroring acceptance's ordering: a run refused above has a moot
+      // blank-or-not question. A recorded no-change verdict means the temporal
+      // gates scored a renderer that painted (and erased) nothing, so the
+      // number is not a drawing measurement; absent records are the standing
+      // historical tolerance.
+      const blankRuns = runs.filter(
+        (run) => run.paintedOutput !== null && run.paintedOutput.changed !== true
+      );
+      if (blankRuns.length) {
+        throw new Error(
+          `${targetId} ${mode.id} ${brush} folds a capture whose report records no canvas ` +
+            `change during the pass (blank-output) — nothing was painted or erased, so the ` +
+            `number measures a renderer that did no drawing work. Recapture the cell. ` +
+            `Sources: ${blankRuns.map((run) => run.source).join(', ')}`
+        );
       }
       return [brush, { aggregate: aggregateDrawingRuns(runs), gateShare, runs }];
     })
