@@ -452,9 +452,7 @@
     inset: 0;
     background-color: var(--color);
     clip-path: var(--hex-clip);
-    transition:
-      inset 0.1s ease,
-      filter 0.1s ease;
+    transition: filter 0.1s ease;
   }
 
   /* The .hover class is JS-driven (hoveredHex) so it works on the touch/pen drag
