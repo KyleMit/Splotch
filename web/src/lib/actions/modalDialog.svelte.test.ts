@@ -75,7 +75,7 @@ describe('modalDialog', () => {
     const content = dialog.appendChild(document.createElement('div'));
     try {
       dialog.showModal();
-      content.style.visibility = 'hidden';
+      content.style.opacity = '0';
 
       let settled = false;
       const retired = waitForDialogRetirement(dialog).then(() => (settled = true));
@@ -206,18 +206,21 @@ describe('modalDialog', () => {
       await Promise.resolve();
 
       expect(dialog.open).toBe(true);
-      expect(content.style.visibility).toBe('hidden');
+      expect(content.style.opacity).toBe('0');
+      expect(content.style.pointerEvents).toBe('none');
 
       await afterContentRetirementPaint();
 
       expect(dialog.open).toBe(false);
-      expect(content.style.visibility).toBe('hidden');
+      expect(content.style.opacity).toBe('0');
+      expect(content.style.pointerEvents).toBe('none');
 
       modal.show(null);
       await Promise.resolve();
 
       expect(dialog.open).toBe(true);
-      expect(content.style.visibility).toBe('');
+      expect(content.style.opacity).toBe('');
+      expect(content.style.pointerEvents).toBe('');
     } finally {
       destroy();
       dialog.remove();
@@ -247,7 +250,8 @@ describe('modalDialog', () => {
       await Promise.resolve();
 
       expect(dialog.open).toBe(true);
-      expect(content.style.visibility).toBe('');
+      expect(content.style.opacity).toBe('');
+      expect(content.style.pointerEvents).toBe('');
     } finally {
       modal.hide();
       await Promise.resolve();

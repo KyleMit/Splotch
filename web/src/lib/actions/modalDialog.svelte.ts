@@ -65,7 +65,7 @@ export function waitForDialogRetirement(node: HTMLDialogElement): Promise<void> 
       frame = requestAnimationFrame(() => {
         timer = window.setTimeout(() => {
           const contentRetirementPending = [...node.children].some(
-            (child) => child instanceof HTMLElement && child.style.visibility === 'hidden'
+            (child) => child instanceof HTMLElement && child.style.opacity === '0'
           );
           if (node.open && contentRetirementPending) {
             scheduleFallback();
@@ -84,9 +84,15 @@ function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: (
   const contentRoots = [...node.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
-  for (const root of contentRoots) root.style.visibility = 'hidden';
+  for (const root of contentRoots) {
+    root.style.opacity = '0';
+    root.style.pointerEvents = 'none';
+  }
   const restoreContent = () => {
-    for (const root of contentRoots) root.style.removeProperty('visibility');
+    for (const root of contentRoots) {
+      root.style.removeProperty('opacity');
+      root.style.removeProperty('pointer-events');
+    }
   };
   let timer: number | undefined;
   const frame = requestAnimationFrame(() => {
