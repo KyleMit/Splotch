@@ -1,6 +1,6 @@
 ---
 name: improve-performance-matrix
-description: Drive Splotch's deployment-target performance matrix from current evidence to zero scoreable red cells through product improvements and faithful recaptures, treating the mature harness as frozen unless a demonstrated measurement defect blocks a named product experiment. Ships causal product clusters as reviewed, merge-ready stacked PRs with a green tip. Use for sustained performance improvement; use capture-performance-matrix for capture-only snapshots or validation.
+description: Drive Splotch's deployment-target performance matrix from current evidence to zero scoreable red cells through product improvements and faithful recaptures, keeping harness work subordinate to and immediately useful for a named product experiment. Ships causal product clusters as reviewed, merge-ready stacked PRs with a green tip. Use for sustained performance improvement; use capture-performance-matrix for capture-only snapshots or validation.
 ---
 
 # Improve performance matrix
@@ -21,8 +21,10 @@ Merely loading the skill for planning or reference does not. Neither form author
 
 This is not a harness-improvement campaign. Splotch's profiling harness is mature and presumed
 sufficient. After one current, scoreable failure is reproduced on a calibrated physical release
-gate, the next meaningful output is a product hypothesis and A/B experiment — not broader capture
-coverage, richer metadata, another metric, or generalized tooling.
+gate, the next meaningful output is a product hypothesis and A/B experiment. Harness work may be
+part of that experiment when it directly improves diagnosis, execution, or validation; broader
+capture coverage, richer metadata, another metric, or generalized tooling is not an alternative to
+the product loop.
 
 Read the whole published matrix at the start, but do not block the first product experiment on
 making every stale target current. Full current coverage remains part of the completion gate. It is
@@ -31,28 +33,29 @@ reproducible failure. Stale advisory Simulator, emulator, and desktop rows canno
 experiment. Recapture a stale authoritative target first only when its result is necessary to
 distinguish the selected hypothesis or establish a calibrated failure.
 
-Freeze `tools/perf/`, matrix schemas and generators, capture transports, scorers, evidence formats,
-and profiling documentation while working a product cluster. A harness repair is allowed only when
-all of these are true:
+Treat `tools/perf/`, matrix schemas and generators, capture transports, scorers, evidence formats,
+and profiling documentation as stable supporting infrastructure while working a product cluster. A
+harness change is allowed when all of these are true:
 
 1. The live campaign ledger already names the current product failure, the product hypothesis, and
-   the before/after experiment the repair must unblock.
-2. A supported existing capture path was attempted, and raw evidence proves its result is invalid or
-   incomparable. Inconvenience, missing polish, incomplete metadata, a warning, future reuse, or an
-   isolated advisory-runtime anomaly is not enough.
-3. The proposed change is the smallest repair that makes that named experiment valid; generalized
-   cleanup and adjacent improvements become issues rather than campaign commits.
+   the before/after experiment the harness change will serve.
+2. The existing path was attempted or inspected closely enough to show a concrete shortcoming for
+   that experiment. The change may repair invalid or incomparable evidence, add a diagnostic needed
+   to distinguish the hypothesis, or make the faithful A/B materially more reliable. Convenience,
+   polish, future reuse, or an isolated advisory-runtime anomaly is not enough.
+3. The proposed change is the smallest useful slice, and the same cluster uses it immediately;
+   generalized cleanup and adjacent improvements become issues rather than campaign commits.
 4. The campaign immediately returns to the same product experiment, records its product outcome, and
-   does not promote the repair itself as a delivered causal cluster.
+   does not promote the harness change itself as a delivered causal cluster.
 
-If another harness detour becomes necessary before a product change has landed or a product
-candidate has been empirically rejected, stop and ask the user before expanding harness scope. A
-checkpoint with current product reds and no product outcome is an **inventory checkpoint; campaign
-incomplete** — never a completed improvement, shipped cluster, or merge-ready campaign result.
+If harness work starts expanding beyond what the named experiment will use immediately, stop and ask
+the user before expanding scope. A checkpoint with current product reds and no product outcome is an
+**inventory checkpoint; campaign incomplete** — never a completed improvement, shipped cluster, or
+merge-ready campaign result.
 
 Keep the PR ledger honest about allocation. At every status update, list product commits, harness
 repair commits, and capture/evidence-only commits separately, name the product experiment each
-harness commit unblocked, and say explicitly when no product optimization has landed.
+harness commit served, and say explicitly when no product optimization has landed.
 
 ## Start from current truth
 
@@ -130,10 +133,10 @@ Never make the matrix green by:
 * copying a pass from another target or calibration tier;
 * treating stale, incomparable, or invalid evidence as current product approval.
 
-Stale red cells require faithful fresh captures. Within an improvement campaign, proof that a
-measurement is wrong does not by itself authorize harness work: the defect must also block the
-already named product experiment under the product-first gate above. Promote representative raw
-captures with
+Stale red cells require faithful fresh captures. Harness work follows the product-first gate above:
+repair a demonstrated measurement defect or add a targeted diagnostic or validation capability only
+when the named product experiment will use it immediately. Do not create a freestanding harness
+roadmap inside the campaign. Promote representative raw captures with
 `npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name> --product-commit=<capture-product-sha>`
 so they remain rescoreable, and trial a scorer change across that preserved corpus with
 `npm run perf:rescore -- --corpus=perf-profiles/evidence/<name>` before treating it as valid.
@@ -193,7 +196,7 @@ For each cluster:
    instrumentation cause. Separate first-action latency from post-action work and physical
    corroboration from simulator-only behavior.
 4. If attribution remains ambiguous, first use existing narrowly scoped diagnostics or a supported
-   user-flow A/B control. Any harness edit must pass the product-first exception gate and must
+   user-flow A/B control. Any harness edit must pass the product-first direct-utility gate and must
    immediately return to this same cluster. Do not change the scorer to hide ambiguity.
 5. Make one causally coherent product change. Back out rejected or inconclusive experiments instead
    of stacking speculation; a measured rejection is still the product outcome that closes the
@@ -212,8 +215,8 @@ For each cluster:
     JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified product improvement separately, update raw
     evidence and remaining status in the current stack-tip PR body, and proceed only from a clean
-    tree. A necessary harness repair may precede it in the same cluster, but never substitutes for
-    the product outcome it exists to unblock.
+    tree. A directly useful harness change may precede it in the same cluster, but never substitutes
+    for the product outcome it exists to support.
 
 ## Stack and review discipline
 
@@ -256,7 +259,7 @@ Treat these as steering inside the active campaign, not as replacements for the 
 * **status** — report the overall campaign status in commentary, including the freshly established
   baseline; product clusters and PRs already shipped or merge-ready; product, harness-repair, and
   capture/evidence-only commits as separate lists; the product experiment each harness repair
-  unblocked; the exact current in-flight cluster, phase, branch/PR, and latest evidence; remaining
+  served; the exact current in-flight cluster, phase, branch/PR, and latest evidence; remaining
   current red, stale, incomparable, unavailable, and blocked cells; current runner/device blockers;
   and the best evidence-based estimate of work left. State explicitly when no product optimization
   has landed. Re-read live matrix, git, PR, review, and CI state where it may have changed. Do not

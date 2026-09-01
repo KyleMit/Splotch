@@ -16,23 +16,25 @@ product work remained uncertain and could always be postponed until one more tar
 The accepted correction separates **starting product work** from **finishing the campaign**. One
 current calibrated physical failure is enough to select a product hypothesis and run an A/B. Full
 current target coverage is still mandatory before completion, but stale advisory rows cannot block
-the first product experiment. Harness work is frozen by default and becomes an exception subordinate
-to an already named product experiment.
+the first product experiment. Harness work is stable by default and stays subordinate to an already
+named product experiment.
 
-The harness exception deliberately requires both kinds of evidence: raw proof that the existing
-measurement is invalid and a concrete product experiment that cannot proceed without the repair.
-Raw proof alone would preserve the old failure mode, because a mature harness always has another
-edge worth improving. Convenience, richer provenance, generalized reuse, warnings, and advisory-only
-anomalies remain useful issue material but are not improvement-campaign deliverables.
+The harness exception deliberately requires a concrete product experiment and immediate utility. A
+harness change can repair invalid evidence, add a diagnostic that distinguishes the hypothesis, or
+make its faithful A/B materially more reliable; it does not need to wait for a total blocker. The
+same cluster must use it immediately and return to the product loop. Without that tie, a mature
+harness always has another edge worth improving, so convenience, generalized reuse, and
+advisory-only anomalies remain issue material rather than campaign deliverables.
 
 Two alternatives were rejected:
 
 * Requiring all eleven targets to be current before any product edit protects breadth but repeats
   the observed starvation failure. Breadth belongs in validation and the completion gate.
-* Banning harness edits entirely makes a demonstrated invalid capture impossible to repair. The
-  narrow exception keeps the product experiment as the unit of work and requires an immediate
-  return to it.
+* Banning harness edits unless the experiment is completely blocked excludes useful diagnostics and
+  validation improvements that product work genuinely motivates. The direct-utility rule keeps the
+  product experiment as the unit of work and requires an immediate return to it.
 
-The user explicitly declined a repository check for this policy. The skill text and live PR ledger
-are the enforcement surface; do not add a keyword test or a new performance-harness feature to
-police the rule.
+The user explicitly declined a drift-guard test for this policy, not harness changes themselves. Do
+not add a keyword or prose-matching test whose purpose is to police the skill text. Continue adding
+ordinary behavioral regression coverage when actual harness code changes, and allow useful harness
+work when the named product experiment motivates and immediately exercises it.
