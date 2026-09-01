@@ -220,8 +220,11 @@ describe('responsive image sources', () => {
     expect(suppressRetiringTransitionsAt).toBeLessThan(hideAt);
     expect(hideAt).toBeLessThan(applyAt);
     expect(coloringBookComponent).toContain('retiringAfterPageSelection = false');
-    expect(coloringBookComponent).toContain('.retiring-after-page-selection .coloring-tile {');
-    expect(coloringBookComponent).toContain('transition: none');
+    const retiringRule = coloringBookComponent.slice(
+      coloringBookComponent.indexOf('.retiring-after-page-selection .coloring-tile {'),
+      coloringBookComponent.indexOf('.coloring-tile img {')
+    );
+    expect(retiringRule).toContain('transition: none');
     expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
     expect(activePageChipComponent).toContain('srcset=');
     expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
@@ -234,6 +237,8 @@ describe('responsive image sources', () => {
     );
     expect(activeRule).toContain('background: var(--danger-wash)');
     expect(activeRule).toContain('border-color: var(--danger-text)');
+    expect(activeRule).toContain('background: var(--danger-text)');
+    expect(activeRule).toContain('fill: var(--surface)');
   });
 
   // The `sizes` hint's leading clause and the CSS that changes the grid under it

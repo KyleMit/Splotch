@@ -31,8 +31,14 @@ describe('press feedback', () => {
     expect(activate).not.toHaveBeenCalled();
 
     frames.shift()!(16);
-    await activation;
+    await Promise.resolve();
+    await Promise.resolve();
     expect(activate).toHaveBeenCalledOnce();
+    expect(button.disabled).toBe(true);
+    expect(button.classList).toContain('activation-pending');
+
+    frames.shift()!(32);
+    await activation;
     expect(button.disabled).toBe(false);
     expect(button.classList).not.toContain('activation-pending');
   });
@@ -47,6 +53,9 @@ describe('press feedback', () => {
     frames.shift()!(0);
     await Promise.resolve();
     frames.shift()!(16);
+    await Promise.resolve();
+    await Promise.resolve();
+    frames.shift()!(32);
     await expect(first).resolves.toBe(true);
 
     button.disabled = true;

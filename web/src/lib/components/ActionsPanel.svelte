@@ -220,7 +220,9 @@
   }
 
   function finishDrawerMotion(event: TransitionEvent) {
-    if (event.target === event.currentTarget && event.propertyName.startsWith('margin-'))
+    // One grid track owns the collapse in each orientation; unlike the decorative
+    // gap margins, that transition cannot disappear without replacing the drawer.
+    if (event.target === event.currentTarget && event.propertyName.startsWith('grid-template-'))
       drawerMotion = false;
   }
 

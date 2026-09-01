@@ -309,7 +309,9 @@ body {
 
 .modal-close-btn.activation-pending {
   transform: scale(0.92);
-  transition: none;
+  transition:
+    border-color var(--duration-base) ease,
+    background var(--duration-base) ease;
 }
 
 /* Tinted via `fill` (not the old filter chain) so the gray tracks the theme

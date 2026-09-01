@@ -452,7 +452,10 @@
     inset: 0;
     background-color: var(--color);
     clip-path: var(--hex-clip);
-    transition: filter 0.1s ease;
+    transform-origin: center;
+    transition:
+      transform 0.1s ease,
+      filter 0.1s ease;
   }
 
   /* The .hover class is JS-driven (hoveredHex) so it works on the touch/pen drag
@@ -464,7 +467,7 @@
   }
 
   .hexagon.hover::after {
-    inset: 2px;
+    transform: scale(0.9);
     filter: brightness(1.2);
   }
 
@@ -475,7 +478,7 @@
     }
 
     .hexagon:hover::after {
-      inset: 2px;
+      transform: scale(0.9);
       filter: brightness(1.2);
     }
   }

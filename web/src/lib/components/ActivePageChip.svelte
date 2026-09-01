@@ -124,6 +124,18 @@
     transition: none;
   }
 
+  .active-page-chip:active .active-page-clear,
+  .active-page-chip.hover-armed:active .active-page-clear,
+  .active-page-chip:global(.activation-pending) .active-page-clear {
+    background: var(--danger-text);
+  }
+
+  .active-page-chip:active :global(.active-page-clear-icon svg),
+  .active-page-chip.hover-armed:active :global(.active-page-clear-icon svg),
+  .active-page-chip:global(.activation-pending) :global(.active-page-clear-icon svg) {
+    fill: var(--surface);
+  }
+
   @media (max-width: 360px) {
     .active-page-name {
       display: none;

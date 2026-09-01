@@ -89,16 +89,21 @@ function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: (
   const contentRoots = [...node.children].filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
+  const initiallyInert = new Map(contentRoots.map((root) => [root, root.hasAttribute('inert')]));
   const compositorRetirement = getOptions().retirement === 'compositor';
   if (compositorRetirement) {
     node.style.opacity = '0';
-    for (const root of contentRoots) root.style.pointerEvents = 'none';
+    for (const root of contentRoots) {
+      root.inert = true;
+      root.style.pointerEvents = 'none';
+    }
   } else {
     for (const root of contentRoots) root.style.visibility = 'hidden';
   }
   const restoreContent = () => {
     node.style.removeProperty('opacity');
     for (const root of contentRoots) {
+      if (!initiallyInert.get(root)) root.inert = false;
       root.style.removeProperty('pointer-events');
       root.style.removeProperty('visibility');
     }

@@ -70,12 +70,67 @@ describe('modalDialog', () => {
     }
   });
 
+  it('removes compositor-retired content from focus and accessibility until cleanup', async () => {
+    const modal = createModal();
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const content = dialog.appendChild(document.createElement('div'));
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: modal.open,
+        onRequestClose: modal.hide,
+        retirement: 'compositor',
+      }));
+      return action.destroy;
+    });
+
+    try {
+      modal.show(null);
+      await Promise.resolve();
+      modal.hide();
+      await Promise.resolve();
+
+      expect(content.inert).toBe(true);
+      await afterContentRetirementPaint();
+      expect(dialog.open).toBe(false);
+
+      modal.show(null);
+      await Promise.resolve();
+      expect(content.inert).toBe(false);
+    } finally {
+      modal.hide();
+      await Promise.resolve();
+      destroy();
+      dialog.remove();
+    }
+  });
+
   it('keeps waiting while retired content remains in an open dialog', async () => {
     const dialog = document.body.appendChild(document.createElement('dialog'));
     dialog.appendChild(document.createElement('div'));
     try {
       dialog.showModal();
       dialog.style.opacity = '0';
+
+      let settled = false;
+      const retired = waitForDialogRetirement(dialog).then(() => (settled = true));
+      await afterContentRetirementPaint();
+      expect(settled).toBe(false);
+
+      dialog.close();
+      await retired;
+      expect(settled).toBe(true);
+    } finally {
+      if (dialog.open) dialog.close();
+      dialog.remove();
+    }
+  });
+
+  it('keeps waiting while hidden content remains in an open dialog', async () => {
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const content = dialog.appendChild(document.createElement('div'));
+    try {
+      dialog.showModal();
+      content.style.visibility = 'hidden';
 
       let settled = false;
       const retired = waitForDialogRetirement(dialog).then(() => (settled = true));
