@@ -63,12 +63,12 @@ regression tier, and `perf:web:undo:webkit` is the CI commit gate in Playwright 
 
 ## What each transport is
 
-| Transport | Input                                                                                       | Measurement                                                                                | Notes                                                                                                       |
-| --------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `desktop` | The probe's own synthetic pointer events for drawing, Playwright's mouse for actions        | Same process                                                                               | Not trusted input, and honest about it — desktop calibration stays advisory.                                |
-| `appium`  | XCUITest through WebDriverAgent (iOS) or UiAutomator2 (Android native)                      | The same Appium session's script channel, switching between the web and native contexts    | The only transport that provides an app shell plus context switching, which is why native work stays on it. |
-| `split`   | The platform's own trusted injection: `adb shell input swipe`, or WebDriverAgent's HTTP API | An HTTP upload to a probe host that proxies the preview and injects one same-origin script | ADR-0135. Needs no debugger channel, so it runs unattended.                                                 |
-| `cdp`     | `Input.dispatchTouchEvent` over a forwarded DevTools socket                                 | The same CDP connection                                                                    | ADR-0092. Android browser only.                                                                             |
+| Transport | Input                                                                                       | Measurement                                                                                | Notes                                                                                                               |
+| --------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `desktop` | The probe's own synthetic pointer events for drawing, Playwright's mouse for actions        | Same process                                                                               | Not trusted input, and honest about it — desktop calibration stays advisory.                                        |
+| `appium`  | XCUITest through WebDriverAgent (iOS) or UiAutomator2 (Android native)                      | The same Appium session's script channel, switching between the web and native contexts    | The only transport that provides an app shell plus context switching, which is why native work stays on it.         |
+| `split`   | The platform's own trusted injection: `adb shell input swipe`, or WebDriverAgent's HTTP API | An HTTP upload to a probe host that proxies the preview and injects one same-origin script | ADR-0135. Needs no debugger channel and no RemoteXPC tunnel (iOS reaches WDA over `iproxy`), so it runs unattended. |
+| `cdp`     | `Input.dispatchTouchEvent` over a forwarded DevTools socket                                 | The same CDP connection                                                                    | ADR-0092. Android browser only.                                                                                     |
 
 The split transport carries three guards, each of which caught a capture that would otherwise have
 been scored: a **nonce** on the plan, because a suspended tab's bootstrap polls the same plan and
@@ -205,7 +205,7 @@ through the real event path, so events arrive trusted and digitizer-shaped.
 
 **WebDriverAgent (WDA).** The XCUITest runner app installed on the device, exposing a WebDriver HTTP
 server on port 8100. "Appium XCUITest" means Appium drives WDA; driving WDA's HTTP API directly
-needs no Appium session and no tunnel.
+needs no Appium session and no RemoteXPC tunnel, and is reached over `iproxy`.
 
 **SafariDriver.** Apple's own WebDriver. Ruled out above.
 
@@ -252,7 +252,8 @@ one-command test of whether remote inspection works at all. Its CDP bridge sends
 event before any reply, so a client that resolves on the first frame it receives concludes every
 method timed out.
 
-**`iproxy`.** TCP over USB, used to reach WebDriverAgent without a tunnel.
+**`iproxy`.** TCP over USB. Forwards port 8100 to reach WebDriverAgent — required by the direct-WDA
+path, which avoids the RemoteXPC tunnel but not this.
 
 **`osascript`.** Not a profiling mechanic. `do shell script … with administrator privileges` routes
 the tunnel's root password prompt to the macOS GUI — one human, once per host boot, and precisely
