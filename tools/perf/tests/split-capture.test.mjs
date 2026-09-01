@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
@@ -38,7 +38,11 @@ import {
 } from '../ios/capture-xcuitest-screen.mjs';
 import { guardVerifyForeground } from '../split-capture/verify-android-input.mjs';
 import { STAND_DOWN_PATH } from '../split-capture/lib/chrome-tabs.mjs';
-import { keepIncomingReport, reportRejectionReason } from '../split-capture/lib/report-store.mjs';
+import {
+  keepIncomingReport,
+  reportFileName,
+  reportRejectionReason,
+} from '../split-capture/lib/report-store.mjs';
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import {
   classifyInputCadence,
@@ -314,6 +318,21 @@ describe('keepIncomingReport', () => {
   });
 });
 
+// Acceptance is nonce-gated, but the on-disk debug copy was label-only — two
+// runs sharing a label overwrote each other's file. The nonce is the run
+// identity, so it belongs in the name.
+describe('reportFileName', () => {
+  it('embeds the plan nonce beside the label', () => {
+    expect(reportFileName({ label: 'pen-portrait', nonce: 'pen-portrait-42-7' })).toBe(
+      'pen-portrait.pen-portrait-42-7.json'
+    );
+  });
+
+  it('keeps the label-only name for a hand-opened plan carrying no nonce', () => {
+    expect(reportFileName({ label: 'run' })).toBe('run.json');
+  });
+});
+
 describe('pageBootstrapSource', () => {
   it('takes its brush selectors from the capture module rather than duplicating them', () => {
     const source = pageBootstrapSource();
@@ -487,6 +506,21 @@ describe('the floor host refusing another run’s report', () => {
 
     await postReport(base, { report: { events: Array.from({ length: 99 }) } });
     expect(state.report?.report.events).toHaveLength(3);
+  });
+
+  it('writes the on-disk debug copy under the run nonce, not the shared label', async () => {
+    const reportDir = mkdtempSync(join(tmpdir(), 'splotch-floor-reports-'));
+    directories.push(reportDir);
+    const { server, state } = createFloorControlHost({ reportDir, log: () => {} });
+    started.push(server);
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    state.plan = { ...state.plan, label: 'same-label', nonce: 'floor-run-1' };
+
+    await postReport(base, { nonce: 'floor-run-1', report: { events: [1] } });
+
+    expect(existsSync(join(reportDir, 'same-label.floor-run-1.json'))).toBe(true);
+    expect(existsSync(join(reportDir, 'same-label.json'))).toBe(false);
   });
 });
 
@@ -782,6 +816,26 @@ describe('the probe host refusing a stale run over HTTP', () => {
     await expect(fetchAcceptedProbeReport(base)).rejects.toThrow('(404)');
   });
 
+  it('keeps two runs sharing a label as two on-disk files', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-probe-host-'));
+    directories.push(directory);
+    const { base } = await hostAt(directory);
+    const control = (nonce) =>
+      fetch(`${base}/__probe/control`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ label: 'same-label', nonce, reset: true }),
+      });
+
+    await control('run-1');
+    await postReport(base, { nonce: 'run-1', report: { events: [1] } });
+    await control('run-2');
+    await postReport(base, { nonce: 'run-2', report: { events: [1, 2] } });
+
+    expect(existsSync(join(directory, 'same-label.run-1.json'))).toBe(true);
+    expect(existsSync(join(directory, 'same-label.run-2.json'))).toBe(true);
+  });
+
   it('names a non-JSON response as a mismatched probe host', async () => {
     const fetchHtml = async () =>
       new Response('<!doctype html>', {
@@ -948,7 +1002,9 @@ describe('the probe host refusing a stale run over HTTP', () => {
     await postReport(base, { nonce: 'old-run', report: { events: Array.from({ length: 99 }) } });
 
     expect(state.report?.report.events).toHaveLength(3);
-    expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).nonce).toBe('new-run');
+    expect(JSON.parse(readFileSync(join(directory, 'cell.new-run.json'), 'utf8')).nonce).toBe(
+      'new-run'
+    );
   });
 
   // Issue 1306's last bullet: the ERROR report — the one that exists to stop a
@@ -971,7 +1027,7 @@ describe('the probe host refusing a stale run over HTTP', () => {
     await postReport(base, { nonce: 'new-run', report: { events: Array.from({ length: 50 }) } });
     await postReport(base, { nonce: 'new-run', error: 'no sized #drawingCanvas' });
     expect(state.report?.error).toBe('no sized #drawingCanvas');
-    expect(JSON.parse(readFileSync(join(directory, 'cell.json'), 'utf8')).error).toBe(
+    expect(JSON.parse(readFileSync(join(directory, 'cell.new-run.json'), 'utf8')).error).toBe(
       'no sized #drawingCanvas'
     );
   });

@@ -10,6 +10,15 @@
 // nothing, and losing it to a thickness comparison leaves a silent empty run.
 const eventCount = (payload) => payload?.report?.events?.length ?? 0;
 
+// The on-disk debug copy of an accepted report. Acceptance is nonce-gated, but
+// the filename was label-only, so two runs sharing a label overwrote each
+// other's file — the nonce is the run identity and belongs in the name. A
+// hand-opened standalone host runs plans that carry no nonce; those keep the
+// label-only name because there is no run identity to disambiguate with.
+export function reportFileName(plan) {
+  return plan?.nonce ? `${plan.label}.${plan.nonce}.json` : `${plan.label}.json`;
+}
+
 export function keepIncomingReport(stored, incoming) {
   if (!stored) return true;
   if (incoming?.error) return true;

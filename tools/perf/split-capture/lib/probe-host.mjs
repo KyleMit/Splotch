@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { ROOT } from '../../../lib/proc.mjs';
 import { pageBootstrapSource } from './page-bootstrap.mjs';
 import { PROBE_HOST_PROTOCOL, PROBE_REPORT_PATH } from './probe-host-protocol.mjs';
-import { keepIncomingReport, reportRejectionReason } from './report-store.mjs';
+import { keepIncomingReport, reportFileName, reportRejectionReason } from './report-store.mjs';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './chrome-tabs.mjs';
 
 const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
@@ -134,7 +134,7 @@ export function createProbeHost({ upstream, reportDir, log = console.log } = {})
         if (keepIncomingReport(state.report, payload)) {
           state.report = payload;
           if (reportDir) {
-            writeFileSync(join(reportDir, `${state.plan.label}.json`), JSON.stringify(payload));
+            writeFileSync(join(reportDir, reportFileName(state.plan)), JSON.stringify(payload));
           }
           const events = payload.report?.events?.length ?? 0;
           log(

@@ -27,7 +27,7 @@ import { createServer } from 'node:http';
 import { STAND_DOWN_PAGE_HTML, STAND_DOWN_PATH } from './lib/chrome-tabs.mjs';
 import { join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain } from '../../lib/proc.mjs';
-import { keepIncomingReport, reportRejectionReason } from './lib/report-store.mjs';
+import { keepIncomingReport, reportFileName, reportRejectionReason } from './lib/report-store.mjs';
 
 const PROBE_SOURCE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 const DEFAULT_PORT = 4176;
@@ -239,7 +239,7 @@ export function createFloorControlHost({ reportDir, log = console.log } = {}) {
         if (keepIncomingReport(state.report, payload)) {
           state.report = payload;
           if (reportDir) {
-            writeFileSync(join(reportDir, `${state.plan.label}.json`), JSON.stringify(payload));
+            writeFileSync(join(reportDir, reportFileName(state.plan)), JSON.stringify(payload));
           }
           log(`report received for ${state.plan.label}`);
         }
