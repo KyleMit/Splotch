@@ -81,6 +81,36 @@ nothing matches reports nothing, which is indistinguishable from a clean repo.
 the rule fires, and pins what each deliberate relaxation lets through. Extend it when you add a
 rule.
 
+### A regression test must fail against the old code
+
+The lint rules above catch a test that *structurally* cannot fail. They cannot catch the other
+shape: a test full of real assertions that would have passed against the code as it was before the
+fix. It reads as coverage, ships as coverage, and pins nothing — and unlike a vacuous test, nothing
+in the suite will ever tell you.
+
+**So prove it: revert the fix, rerun the test, and require it to fail.** A test that stays green
+against the unfixed code is evidence about the test, not the fix. Either it asserts the wrong thing
+or the behavior it describes is unobservable at that seam — both are worth knowing before the test
+is committed as protection.
+
+Two shapes in `tools/tests/run-codex.test.mjs` are the worked examples, because both passed in the
+broken state before the revert check caught them:
+
+* **The defect is real but unobservable through the seam under test.** Asserting that a log file was
+  complete when a promise resolved passed either way, because in practice the flush always wins the
+  race; a volume-based attempt at 20,000 lines could not separate the two versions either.
+  Distinguishing them needed an injected stream that fails while flushing — the ordering was only
+  observable once the failure was injectable.
+* **The assertion never reaches the path a user runs.** Asserting an argument parser's return value
+  passed while the command that parser feeds crashed on invocation, because the crash lived in the
+  caller. A unit assertion on a helper is not a test of the command documented in a skill.
+
+**Commit the fix before running the revert check.** The check is destructive, and
+`git checkout -- <file>` restores from `HEAD`, so it cannot separate the temporary revert from
+unrelated uncommitted work in the same file — it silently discards both. Commit first, or invert the
+edit rather than restoring the file. Never reach for a bare `git stash` here: the stash stack is
+shared across worktrees and other sessions pop it.
+
 ## Server-contract smoke tests — `test:api:smoke`, `test:deploy:smoke`, `test:blobs:smoke`
 
 Three Node smoke entry points guard the server contract:

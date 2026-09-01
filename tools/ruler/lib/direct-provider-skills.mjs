@@ -5,6 +5,7 @@ export const DIRECT_PROVIDER_SKILLS = [
   { name: 'burn-down-audits', providers: ['claude', 'codex'] },
   { name: 'implement-issue-stack', providers: ['codex'] },
   { name: 'run-claude', providers: ['codex'] },
+  { name: 'run-codex', providers: ['claude'] },
 ];
 
 const PROVIDER_ROOTS = {

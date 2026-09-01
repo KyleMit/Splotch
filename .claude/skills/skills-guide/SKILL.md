@@ -64,9 +64,10 @@ staging file, `fix-audits` burns the issues down.
 
 ## Cross-agent execution
 
-| Skill        | Use when you are…                                                                            |
-| ------------ | -------------------------------------------------------------------------------------------- |
-| `run-claude` | **Launching** a fresh local Claude process from Codex for a second opinion or bounded review |
+| Skill        | Use when you are…                                                                               |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| `run-claude` | **Launching** a fresh local Claude process from Codex for a second opinion or bounded review    |
+| `run-codex`  | **Launching** a read-only Codex process from Claude for an independent review of in-flight work |
 
 ## Pull requests — author, review, respond
 
@@ -183,8 +184,8 @@ when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are g
 `.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
 `tools/ruler/lib/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
 implementations, as does `analyze-session-transcripts`; `run-claude` and `implement-issue-stack` are
-Codex-only. When editing one, change only the declared provider; never copy one implementation into
-an undeclared provider tree.
+Codex-only, and `run-codex` is Claude-only. When editing one, change only the declared provider;
+never copy one implementation into an undeclared provider tree.
 
 **When you add, rename, or delete a skill, update this guide in the same change**, then run
 `npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
