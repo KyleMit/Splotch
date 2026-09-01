@@ -91,13 +91,17 @@ function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: (
   let timer: number | undefined;
   const frame = requestAnimationFrame(() => {
     timer = window.setTimeout(() => {
-      if (!getOptions().open && node.open) node.close();
+      if (!getOptions().open && node.open) {
+        node.close();
+        for (const root of contentRoots) root.style.visibility = 'hidden';
+      }
     });
   });
   return () => {
     cancelAnimationFrame(frame);
     if (timer !== undefined) clearTimeout(timer);
     restoreContent();
+    for (const root of contentRoots) root.style.removeProperty('visibility');
   };
 }
 

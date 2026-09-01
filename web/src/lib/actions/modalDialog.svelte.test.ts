@@ -208,12 +208,14 @@ describe('modalDialog', () => {
       expect(dialog.open).toBe(true);
       expect(dialog.style.opacity).toBe('0');
       expect(content.style.pointerEvents).toBe('none');
+      expect(content.style.visibility).toBe('');
 
       await afterContentRetirementPaint();
 
       expect(dialog.open).toBe(false);
       expect(dialog.style.opacity).toBe('0');
       expect(content.style.pointerEvents).toBe('none');
+      expect(content.style.visibility).toBe('hidden');
 
       modal.show(null);
       await Promise.resolve();
@@ -221,6 +223,7 @@ describe('modalDialog', () => {
       expect(dialog.open).toBe(true);
       expect(dialog.style.opacity).toBe('');
       expect(content.style.pointerEvents).toBe('');
+      expect(content.style.visibility).toBe('');
     } finally {
       destroy();
       dialog.remove();
