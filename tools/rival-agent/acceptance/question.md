@@ -37,7 +37,7 @@ nonce as the reply token.
 Ask the handler to run this command and expect exit 23:
 
 ```sh
-node --input-type=module -e 'process.stdout.write("STDOUT:{{NONCE}}\\n"); process.stderr.write("STDERR:{{NONCE}}\\n"); process.exit(23)'
+node --input-type=module -e 'process.stdout.write("STDOUT:{{NONCE}}\n"); process.stderr.write("STDERR:{{NONCE}}\n"); process.exit(23)'
 ```
 
 Confirm that the reply preserves the exit code plus both output streams. A nonzero exit is data, not
@@ -65,7 +65,7 @@ This stage combines the parser repro and the targeted Vitest command used during
 Codex-native-handler review. Ask for the following as one broker request:
 
 ```sh
-node --input-type=module -e 'import { parseDiffAnchors } from "./tools/rival-agent/post-review.mjs"; const patch = ["diff --git a/db/schema.sql b/db/schema.sql", "index 1111111..2222222 100644", "--- a/db/schema.sql", "+++ b/db/schema.sql", "@@ -1,3 +1,3 @@", " create table t (", "--- legacy column", "+++ replacement column", " );"].join("\\n"); const anchors = parseDiffAnchors(patch); console.log(JSON.stringify([...anchors].map(([path, sides]) => ({ path, RIGHT: [...sides.RIGHT], LEFT: [...sides.LEFT] }))));' && npx vitest run --config tools/vitest.config.mjs rival-agent/tests
+node --input-type=module -e 'import { parseDiffAnchors } from "./tools/rival-agent/post-review.mjs"; const patch = ["diff --git a/db/schema.sql b/db/schema.sql", "index 1111111..2222222 100644", "--- a/db/schema.sql", "+++ b/db/schema.sql", "@@ -1,3 +1,3 @@", " create table t (", "--- legacy column", "+++ replacement column", " );"].join("\n"); const anchors = parseDiffAnchors(patch); console.log(JSON.stringify([...anchors].map(([path, sides]) => ({ path, RIGHT: [...sides.RIGHT], LEFT: [...sides.LEFT] }))));' && npx vitest run --config tools/vitest.config.mjs rival-agent/tests
 ```
 
 The parser result must contain only `db/schema.sql`, with RIGHT and LEFT anchors `[1,2,3]`. Report
