@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
@@ -10,7 +11,18 @@ const RESPONSIVE_GENERATION_CONCURRENCY = 4;
 export const RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION = 0.2;
 
 function isSvgRaster(asset) {
-  return asset.encoding === 'selector';
+  return asset.encoding === 'selector' || asset.encoding === 'presentation';
+}
+
+// A presentation tier trades bytes for raster time: it is larger than the SVG
+// it was rendered from by design, so it is outside the size and savings rules
+// that govern the compression derivatives.
+function isCompressionDerivative(asset) {
+  return asset.encoding !== 'presentation';
+}
+
+function sha256(bytes) {
+  return createHash('sha256').update(bytes).digest('hex');
 }
 
 function staticAssetPath(staticDir, url) {
@@ -82,7 +94,8 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
   }
   const sourceBytes = (await stat(sourcePath)).size;
   const outputBytes = (await stat(targetPath)).size;
-  if (outputBytes >= sourceBytes) {
+  const compression = isCompressionDerivative(asset);
+  if (compression && outputBytes >= sourceBytes) {
     throw new Error(
       `${asset.target} is ${outputBytes} bytes, not smaller than its ${sourceBytes}-byte source.`
     );
@@ -91,9 +104,65 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
     encoding: asset.encoding,
     sourceBytes,
     outputBytes,
-    compressionSourceBytes: sourceBytes,
-    compressionOutputBytes: outputBytes,
+    compressionSourceBytes: compression ? sourceBytes : 0,
+    compressionOutputBytes: compression ? outputBytes : 0,
   };
+}
+
+/**
+ * The sidecar that binds every presentation raster to the SVG it was rendered
+ * from, keyed by the source's repo-relative static path: a re-trace changes
+ * the SVG digest, and the catalog test then fails on the stale raster instead
+ * of shipping it. Filtered generator runs merge into the existing record.
+ */
+export async function recordPresentationSources(staticDir, assets, sidecarPath) {
+  const record = JSON.parse(await readFile(sidecarPath, 'utf8').catch(() => '{}'));
+  for (const asset of assets) {
+    if (asset.encoding !== 'presentation') continue;
+    const entry = (record[asset.source] ??= { sourceSha256: '', rasters: {} });
+    entry.sourceSha256 = sha256(await readFile(staticAssetPath(staticDir, asset.source)));
+    entry.rasters[asset.target] = sha256(await readFile(staticAssetPath(staticDir, asset.target)));
+  }
+  const sorted = Object.fromEntries(
+    Object.keys(record)
+      .sort()
+      .map((source) => [
+        source,
+        {
+          sourceSha256: record[source].sourceSha256,
+          rasters: Object.fromEntries(
+            Object.entries(record[source].rasters).sort(([a], [b]) => (a < b ? -1 : 1))
+          ),
+        },
+      ])
+  );
+  await mkdir(dirname(sidecarPath), { recursive: true });
+  await writeFile(sidecarPath, `${JSON.stringify(sorted, null, 2)}\n`);
+  return sorted;
+}
+
+/** Every presentation raster whose recorded source or output digest no longer matches disk. */
+export async function stalePresentationRasters(staticDir, assets, sidecarPath) {
+  const record = JSON.parse(await readFile(sidecarPath, 'utf8').catch(() => '{}'));
+  const stale = [];
+  for (const asset of assets) {
+    if (asset.encoding !== 'presentation') continue;
+    const entry = record[asset.source];
+    const recorded = entry?.rasters?.[asset.target];
+    if (!recorded) {
+      stale.push({ target: asset.target, reason: 'unrecorded' });
+      continue;
+    }
+    if (entry.sourceSha256 !== sha256(await readFile(staticAssetPath(staticDir, asset.source)))) {
+      stale.push({ target: asset.target, reason: 'source changed' });
+      continue;
+    }
+    const current = await readFile(staticAssetPath(staticDir, asset.target)).catch(() => null);
+    if (!current || sha256(current) !== recorded) {
+      stale.push({ target: asset.target, reason: current ? 'raster changed' : 'missing' });
+    }
+  }
+  return stale;
 }
 
 export function responsiveSavingsFraction(sourceBytes, outputBytes) {

@@ -233,7 +233,7 @@ export function nativeColoringPresentationProblems(
     page.darkImages.portrait,
     page.darkImages.landscape,
   ]);
-  const retiredPresentationPaths = globSync('coloring/**/*.presentation.webp', { cwd: dir })
+  const presentationRasterPaths = globSync('coloring/**/*.presentation.webp', { cwd: dir })
     .sort()
     .map((path) => `/${path}`);
   const buildPath = (assetPath) => join(dir, assetPath.replace(/^\//, ''));
@@ -244,7 +244,9 @@ export function nativeColoringPresentationProblems(
     ...canonicalPagePaths.flatMap((path) =>
       existsSync(buildPath(path)) ? [] : [`Native canonical coloring page is missing: ${path}`]
     ),
-    ...retiredPresentationPaths.map((path) => `Retired coloring presentation remains: ${path}`),
+    ...presentationRasterPaths.map(
+      (path) => `Web-only coloring presentation raster remains native: ${path}`
+    ),
     ...responsiveTierPaths.map(
       (path) => `Web-only responsive coloring tier remains native: ${path}`
     ),

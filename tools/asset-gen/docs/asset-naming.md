@@ -57,6 +57,7 @@ web/static/coloring/{book}/{name}.{variant}.webp                 canonical raste
 web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant line-art overlay
 web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web fill candidate
 web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker candidate
+web/static/coloring/max-{edge}px/{book}/{page}.{dark.}presentation.webp   web paper candidate (edge 1152, 1536, 2304, 3072)
 ```
 
 `max-{edge}px` names the longest-edge bound, not the HTML `srcset` width descriptor. A portrait
@@ -64,15 +65,20 @@ web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker cand
 pixels wide and is advertised as `1152w`. The catalog owns both paths and descriptor widths, and an
 asset-pipeline test reads every committed file's metadata so the declarations cannot drift.
 
-Invariant full-page SVG presentation overlays have no responsive derivatives. Raster fills, picker
-cover thumbnails, and page selectors retain responsive tiers. Native also stays canonical:
-`build:cap` removes every `max-{edge}px` directory because installed packs contain the 400 px
-selector fallback and no hosted responsive URLs.
+The invariant full-page SVG overlays stay canonical, and the web paper presents them through
+`presentation.webp` tiers: lossless, alpha-exact Resvg renders at max edges 1152, 1536, 2304, and
+3072 px — every one a whole-number 3:2 (wide) or 2:3 (tall) scale of the 1536×1024 viewBox, so a
+tier registers against the SVG and the 1152×768 fills exactly. The paper's `srcset` lists the four
+tiers and closes with the SVG itself, so a paper wider than the top tier keeps vector art. Each tier
+is bound to the digest of the SVG it was rendered from in `golden/presentation-sources.json`, which
+the catalog test checks so a re-trace cannot leave a stale raster. Raster fills, picker cover
+thumbnails, and page selectors retain their responsive tiers. Native stays canonical: `build:cap`
+removes every `max-{edge}px` directory because installed packs contain the 400 px selector fallback
+and no hosted responsive URLs, and the Capacitor paper presents the SVG.
 
-The retired WebP overlay tier was `max-1152px`, the largest measured downscale where every
-derivative was smaller than its source while retaining the overlay pipeline's step-8 alpha
-quantization and maximum 4/255 composite-channel error. That result remains sizing evidence for the
-temporary comparison format; runtime overlays no longer live in the tier.
+The earlier `max-1152px` overlay derivative was retired as a *compression* tier (a lossy downscale
+under alpha-quantization limits); the presentation tiers are lossless renders that trade bytes for
+WebKit's synchronous SVG raster time and are exempt from the compression savings rule.
 
 Page selectors use a `max-240px` candidate for ordinary picker tiles and the Active-page chip, plus
 the canonical 400 px selector for large or high-density tiles. A measured 96 px tier was removed

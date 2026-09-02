@@ -24,6 +24,8 @@ export const STYLE_SOURCE_SVG = join(ASSET_GEN_DIR, 'style-covers', 'source.svg'
 // score outline registration. Deliberately OUTSIDE web/static so they never ship to
 // web or native. Layout mirrors COLORING_DIR: {book}/{page}-{orient}.{light,night}.raw.webp
 export const FILL_SRC_DIR = join(ASSET_GEN_DIR, 'fill-src');
+// Binds each paper presentation raster to the digest of the SVG it was rendered from.
+export const PRESENTATION_SOURCES_PATH = join(ASSET_GEN_DIR, 'golden', 'presentation-sources.json');
 
 // Gitignored review scratch — candidates, overlays, review sheets. Never shipped.
 export const SAMPLES_DIR = join(REPO_ROOT, '.coloring-samples');

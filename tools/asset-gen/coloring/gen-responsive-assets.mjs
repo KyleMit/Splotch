@@ -1,7 +1,10 @@
 import { BOOKS, coloringDerivativeAssets } from '../../../web/src/lib/state/books.ts';
 import { fail } from '../lib/asset-cli.mjs';
-import { WEB_STATIC } from '../lib/asset-paths.mjs';
-import { generateResponsiveColoringAssets } from '../lib/responsive-coloring.mjs';
+import { PRESENTATION_SOURCES_PATH, WEB_STATIC } from '../lib/asset-paths.mjs';
+import {
+  generateResponsiveColoringAssets,
+  recordPresentationSources,
+} from '../lib/responsive-coloring.mjs';
 
 const filters = process.argv.slice(2);
 const unknown = filters.filter((filter) => !BOOKS.some((book) => book.id === filter));
@@ -11,13 +14,16 @@ const books = filters.length > 0 ? BOOKS.filter((book) => filters.includes(book.
 const assets = books.flatMap(coloringDerivativeAssets);
 const { count, outputBytes, compressionSourceBytes, compressionOutputBytes, byEncoding } =
   await generateResponsiveColoringAssets(WEB_STATIC, assets);
+await recordPresentationSources(WEB_STATIC, assets, PRESENTATION_SOURCES_PATH);
 const savedBytes = compressionSourceBytes - compressionOutputBytes;
 const selectorBytes = byEncoding.selector?.outputBytes ?? 0;
+const presentationBytes = byEncoding.presentation?.outputBytes ?? 0;
 
 console.log(
   `[gen:coloring-responsive] wrote ${count} image(s) across ${books.length} book(s), ` +
     `${(outputBytes / 1048576).toFixed(2)} MB total; saved ` +
     `${(savedBytes / 1048576).toFixed(2)} MB ` +
     `(${((savedBytes / compressionSourceBytes) * 100).toFixed(1)}%) across compression tiers; ` +
-    `${(selectorBytes / 1048576).toFixed(2)} MB selectors.`
+    `${(selectorBytes / 1048576).toFixed(2)} MB selectors; ` +
+    `${(presentationBytes / 1048576).toFixed(2)} MB paper presentation tiers.`
 );

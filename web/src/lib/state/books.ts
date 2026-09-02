@@ -18,12 +18,17 @@ export interface ResponsiveColoringImage {
   srcset: string;
 }
 
+/** The paper's art: its `sizes` follows from the art's orientation, so it ships with the source. */
+export interface ResponsivePaperImage extends ResponsiveColoringImage {
+  sizes: string;
+}
+
 export interface ColoringDerivativeAsset {
   source: string;
   target: string;
   maxEdgePx: number;
   widthPx: number;
-  encoding: 'fill' | 'thumbnail' | 'selector';
+  encoding: 'fill' | 'thumbnail' | 'selector' | 'presentation';
 }
 
 interface ColoringBookGridLayout {
@@ -77,9 +82,39 @@ const RESPONSIVE_COLORING_TIERS = {
 export const COMPACT_COLORING_PACK_MAX_EDGE_PX = RESPONSIVE_COLORING_TIERS.overlay.maxEdgePx;
 export const COMPACT_COLORING_PACK_SHORT_EDGE_PX =
   RESPONSIVE_COLORING_TIERS.overlay.widths.portrait.candidate;
+/**
+ * The canonical page SVG viewBox is 1536×1024 (3:2). Every paper presentation
+ * tier is a whole-number 3:2 (wide) / 2:3 (tall) scale of that box, so a raster
+ * registers against the SVG and the 1152×768 fills exactly; a max edge whose
+ * two-thirds is fractional (2732) is deliberately absent. WebKit rasterizes an
+ * SVG `<img>` synchronously on the main thread at ~86 ms for a full iPad paper,
+ * while a lossless WebP decodes off-thread — the tier exists to move that cost.
+ */
+export const PRESENTATION_TIER_MAX_EDGES_PX = [1152, 1536, 2304, 3072] as const;
+export type PresentationTierMaxEdgePx = (typeof PRESENTATION_TIER_MAX_EDGES_PX)[number];
+const PAGE_LONG_EDGE_UNITS = 3;
+const PAGE_SHORT_EDGE_UNITS = 2;
+const PRESENTATION_TIERS = PRESENTATION_TIER_MAX_EDGES_PX.map((maxEdgePx) => ({
+  directory: `max-${maxEdgePx}px`,
+  maxEdgePx,
+  widths: {
+    landscape: maxEdgePx,
+    portrait: (maxEdgePx * PAGE_SHORT_EDGE_UNITS) / PAGE_LONG_EDGE_UNITS,
+  },
+}));
+export const COMPACT_COLORING_PRESENTATION_MAX_EDGE_PX = PRESENTATION_TIER_MAX_EDGES_PX[0];
+/**
+ * The canonical SVG closes the `srcset` above the raster ladder so a paper
+ * wider than the top tier keeps vector art rather than an upscaled raster. An
+ * SVG has no intrinsic pixel width, so its descriptor is the first width the
+ * ladder cannot serve at native density: twice the top tier.
+ */
+const CANONICAL_OVERLAY_SRCSET_WIDTH_FACTOR = 2;
 export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [
   ...new Set(
-    Object.values(RESPONSIVE_COLORING_TIERS).map((tier) => `${COLORING_ROOT}/${tier.directory}`)
+    [...Object.values(RESPONSIVE_COLORING_TIERS), ...PRESENTATION_TIERS].map(
+      (tier) => `${COLORING_ROOT}/${tier.directory}`
+    )
   ),
 ];
 const BOOK_GRID_DEFAULT_COLUMNS = 4;
@@ -117,6 +152,19 @@ export const COLORING_IMAGE_SIZES = {
     landscape: '(max-width: 520px) calc((90vw - 40px) / 2), min(calc((90vw - 92px) / 2), 414px)',
   },
   activePageChip: '36px',
+  // The paper contain-fits the 3:2 art into the viewport, and the art's
+  // orientation matches the viewport's whenever it is chosen, so its rendered
+  // width is the viewport width or the height-limited width, whichever is
+  // smaller. Written in vmin/vmax rather than vw/vh so the value — and the
+  // candidate the browser selected — survives a rotation with ink, where the
+  // paper locks its art and is merely re-presented (ADR-0050); the same
+  // expressions therefore describe the other orientation's art for the
+  // rotation warm-up. Over-estimating for a toolbar or letterbox only ever
+  // selects the next tier up, never a soft one.
+  paper: {
+    landscape: `min(100vmax, ${(100 * PAGE_LONG_EDGE_UNITS) / PAGE_SHORT_EDGE_UNITS}vmin)`,
+    portrait: `min(100vmin, calc(${100 * PAGE_SHORT_EDGE_UNITS}vmax / ${PAGE_LONG_EDGE_UNITS}))`,
+  },
 } as const;
 
 export function coloringBookGridLayout(visibleTileCount: number): ColoringBookGridLayout {
@@ -140,6 +188,8 @@ const ASSET_SUFFIXES = {
   darkOverlay: '.dark.overlay.svg',
   selector: '.selector.webp',
   darkSelector: '.dark.selector.webp',
+  presentation: '.presentation.webp',
+  darkPresentation: '.dark.presentation.webp',
 } as const;
 
 const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
@@ -285,6 +335,45 @@ export function pageOverlayImage(
   return resolveColoringAssetUrl(pageOverlayAssetPath(page, orientation, theme));
 }
 
+function pagePresentationAssetPath(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme,
+  directory: string
+): string {
+  const overlay = pageOverlayAssetPath(page, orientation, theme);
+  const sourceSuffix = theme === 'dark' ? ASSET_SUFFIXES.darkOverlay : ASSET_SUFFIXES.overlay;
+  const targetSuffix =
+    theme === 'dark' ? ASSET_SUFFIXES.darkPresentation : ASSET_SUFFIXES.presentation;
+  return responsiveTierPath(`${overlay.slice(0, -sourceSuffix.length)}${targetSuffix}`, directory);
+}
+
+/**
+ * The web paper's `<img>` source: the canonical SVG as `src` and export
+ * authority, with the lossless presentation tiers as `srcset` candidates the
+ * browser picks by rendered width and density. Native omits the candidates and
+ * presents the SVG (installed packs carry no hosted tier URLs).
+ */
+export function pageOverlayImageSource(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): ResponsivePaperImage {
+  const source = pageOverlayAssetPath(page, orientation, theme);
+  const topTier = PRESENTATION_TIERS[PRESENTATION_TIERS.length - 1];
+  return {
+    src: resolveColoringAssetUrl(source),
+    srcset: [
+      ...PRESENTATION_TIERS.map(
+        (tier) =>
+          `${pagePresentationAssetPath(page, orientation, theme, tier.directory)} ${tier.widths[orientation]}w`
+      ),
+      `${source} ${topTier.widths[orientation] * CANONICAL_OVERLAY_SRCSET_WIDTH_FACTOR}w`,
+    ].join(', '),
+    sizes: COLORING_IMAGE_SIZES.paper[orientation],
+  };
+}
+
 function pageSelectorAssetPath(
   page: ColoringPage,
   orientation: BookOrientation,
@@ -418,11 +507,32 @@ export function responsiveSelectorColoringAssets(book: Book): ColoringDerivative
   );
 }
 
+export function presentationColoringAssets(
+  book: Book,
+  maxEdgesPx: readonly PresentationTierMaxEdgePx[] = PRESENTATION_TIER_MAX_EDGES_PX
+): ColoringDerivativeAsset[] {
+  const tiers = PRESENTATION_TIERS.filter((tier) => maxEdgesPx.includes(tier.maxEdgePx));
+  return book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) =>
+      (['light', 'dark'] as const).flatMap((theme) =>
+        tiers.map((tier) => ({
+          source: pageOverlayAssetPath(page, orientation, theme),
+          target: pagePresentationAssetPath(page, orientation, theme, tier.directory),
+          maxEdgePx: tier.maxEdgePx,
+          widthPx: tier.widths[orientation],
+          encoding: 'presentation' as const,
+        }))
+      )
+    )
+  );
+}
+
 export function coloringDerivativeAssets(book: Book): ColoringDerivativeAsset[] {
   return [
     ...responsiveColoringAssets(book),
     ...selectorColoringAssets(book),
     ...responsiveSelectorColoringAssets(book),
+    ...presentationColoringAssets(book),
   ];
 }
 

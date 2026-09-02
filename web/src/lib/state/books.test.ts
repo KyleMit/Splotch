@@ -13,8 +13,12 @@ import {
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
+  pageOverlayImageSource,
   pageSelectorImage,
   pageSelectorImageSource,
+  presentationColoringAssets,
+  PRESENTATION_TIER_MAX_EDGES_PX,
+  RESPONSIVE_COLORING_TIER_DIRECTORIES,
   responsiveColoringAssets,
   responsiveSelectorColoringAssets,
   selectorColoringAssets,
@@ -161,6 +165,41 @@ describe('responsive image sources', () => {
     });
   });
 
+  it('gives the paper the whole-number presentation ladder and closes it with the SVG', () => {
+    const cat = farm.pages.find((page) => page.id === 'cat')!;
+    expect(pageOverlayImageSource(cat, 'landscape', 'light')).toEqual({
+      src: '/coloring/farm/cat-wide.overlay.svg',
+      srcset: [
+        '/coloring/max-1152px/farm/cat-wide.presentation.webp 1152w',
+        '/coloring/max-1536px/farm/cat-wide.presentation.webp 1536w',
+        '/coloring/max-2304px/farm/cat-wide.presentation.webp 2304w',
+        '/coloring/max-3072px/farm/cat-wide.presentation.webp 3072w',
+        '/coloring/farm/cat-wide.overlay.svg 6144w',
+      ].join(', '),
+      sizes: 'min(100vmax, 150vmin)',
+    });
+    expect(pageOverlayImageSource(cat, 'portrait', 'dark')).toEqual({
+      src: '/coloring/farm/cat-tall.dark.overlay.svg',
+      srcset: [
+        '/coloring/max-1152px/farm/cat-tall.dark.presentation.webp 768w',
+        '/coloring/max-1536px/farm/cat-tall.dark.presentation.webp 1024w',
+        '/coloring/max-2304px/farm/cat-tall.dark.presentation.webp 1536w',
+        '/coloring/max-3072px/farm/cat-tall.dark.presentation.webp 2048w',
+        '/coloring/farm/cat-tall.dark.overlay.svg 4096w',
+      ].join(', '),
+      sizes: 'min(100vmin, calc(200vmax / 3))',
+    });
+    for (const asset of presentationColoringAssets(farm)) {
+      expect(Number.isInteger(asset.widthPx), asset.target).toBe(true);
+      expect(asset.maxEdgePx % 3, asset.target).toBe(0);
+    }
+    expect(RESPONSIVE_COLORING_TIER_DIRECTORIES).toEqual(
+      expect.arrayContaining(
+        PRESENTATION_TIER_MAX_EDGES_PX.map((edge) => `/coloring/max-${edge}px`)
+      )
+    );
+  });
+
   it('keeps picker sizes aligned with the modal grid geometry', () => {
     for (const ownedCssValue of [
       'max-width: min(920px, calc(100vw - 32px))',
@@ -270,6 +309,8 @@ describe('pageCompositionKey', () => {
       '/coloring/farm/cat-tall.dark.overlay.svg?version=1',
       '/coloring/farm/cat-tall.selector.webp',
       '/coloring/farm/cat-tall.dark.selector.webp',
+      '/coloring/farm/cat-tall.presentation.webp',
+      '/coloring/farm/cat-tall.dark.presentation.webp',
     ];
 
     expect(new Set(siblings.map(pageCompositionKey))).toEqual(new Set(['/coloring/farm/cat-tall']));
@@ -282,7 +323,9 @@ describe('bookAssetPaths', () => {
   it('keeps every catalog asset inside its enclosing book directory', () => {
     for (const book of BOOKS) {
       for (const path of bookAssetPaths(book)) {
-        expect(path).toMatch(new RegExp(`^/coloring/(?:max-(?:1152|240|96)px/)?${book.id}/`));
+        expect(path).toMatch(
+          new RegExp(`^/coloring/(?:max-(?:1152|1536|2304|3072|240)px/)?${book.id}/`)
+        );
       }
     }
   });
@@ -361,6 +404,20 @@ describe('bookAssetPaths', () => {
       expect(paths.has(asset.target), asset.target).toBe(true);
       expect(asset.target).toContain('/coloring/max-240px/');
     }
+  });
+
+  it('lists every paper presentation tier and renders each from its canonical SVG', () => {
+    const paths = new Set(bookAssetPaths(farm));
+    const presentation = presentationColoringAssets(farm);
+    expect(presentation).toHaveLength(farm.pages.length * 2 * 2 * 4);
+    for (const asset of presentation) {
+      expect(paths.has(asset.target), asset.target).toBe(true);
+      expect(asset.source).toMatch(/\.overlay\.svg$/);
+      expect(asset.target).toMatch(/^\/coloring\/max-\d+px\/farm\/.+\.presentation\.webp$/);
+    }
+    expect(presentationColoringAssets(farm, [1152]).map((asset) => asset.maxEdgePx)).toEqual(
+      Array(farm.pages.length * 4).fill(1152)
+    );
   });
 });
 
