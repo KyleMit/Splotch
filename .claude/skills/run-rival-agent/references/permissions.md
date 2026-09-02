@@ -1,7 +1,7 @@
 # Trust boundary
 
 No installation step exists. Claude Code runs its Bash tool on the host, so the wrappers reach the
-Codex CLI and its stored login directly — the reason the mirror-image `run-claude` skill needs an
+Codex CLI and its stored login directly — the reason this skill's Codex-side package needs an
 installer is Codex's sandbox, which Claude Code does not impose here.
 
 ## Billing

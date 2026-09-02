@@ -1,9 +1,15 @@
 ---
-name: run-claude
-description: Launch a fresh, subscription-authenticated local Claude Code process from Codex through fixed permission-reviewed wrappers. Use when the user explicitly asks Codex to run Claude, wants an independent Claude second opinion or adversarial review, or another Codex-only workflow needs a Claude subprocess; supports output-only prompts, read-only repository inspection, and the fixed Splotch PR-review publisher, with streamed per-event progress and resumable multi-turn sessions.
+name: run-rival-agent
+description: Launch the rival agent — a fresh, subscription-authenticated local Claude Code process — from Codex through fixed permission-reviewed wrappers. Use when the user asks Codex to run Claude, wants an independent Claude second opinion or adversarial review, or another Codex-only workflow needs a Claude subprocess; supports output-only prompts, read-only repository inspection, and the fixed Splotch PR-review publisher, with streamed per-event progress and resumable multi-turn sessions. On Claude the same skill name launches Codex instead.
 ---
 
-# Run Claude
+# Run Rival Agent: Claude from Codex
+
+This is the Codex-side package of `run-rival-agent`; it launches Claude. The Claude-side package of
+the same name launches Codex, so shared prose can name `run-rival-agent` without knowing which
+runner it is on — each provider tree carries the package that launches the *other* vendor. The
+`run-claude:*` npm scripts and the installed `splotch-claude-*` wrappers keep their names because
+they name the process they launch.
 
 Use the installed wrappers, never raw `claude`, a renamed binary, or an indirect shell escape. The
 wrappers run outside Codex's sandbox so the Claude CLI can read its macOS Keychain login; Claude's
@@ -187,8 +193,8 @@ When the task that created a session concludes, end it so no transcript outlives
 
 ## Consuming this skill
 
-A Codex-only workflow that needs Claude must name `run-claude`, select the narrowest profile above,
-and keep any external-write authorization in the fixed wrapper's contract. Do not copy invocation,
-authentication, installation, or permission logic into the consuming skill.
+A Codex-only workflow that needs Claude must name `run-rival-agent`, select the narrowest profile
+above, and keep any external-write authorization in the fixed wrapper's contract. Do not copy
+invocation, authentication, installation, or permission logic into the consuming skill.
 
 Read [permissions.md](references/permissions.md) before changing the installation or trust boundary.

@@ -7,10 +7,11 @@
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
 > the output. Direct provider packages registered in `tools/ruler/lib/direct-provider-skills.mjs`
-> are the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude
-> and Codex implementations, while `run-claude` and `implement-issue-stack` are intentionally
-> Codex-only and `run-codex` is intentionally Claude-only. Edit only the registered provider package
-> and note you intend to change; never manufacture a missing provider by copying another one.
+> are the exceptions: `burn-down-audits`, `analyze-session-transcripts`, and `run-rival-agent` have
+> independent Claude and Codex implementations (each `run-rival-agent` package launches the *other*
+> vendor's CLI), while `implement-issue-stack` is intentionally Codex-only. Edit only the registered
+> provider package and note you intend to change; never manufacture a missing provider by copying
+> another one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
@@ -50,13 +51,13 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
   from concatenating them into root instructions.
 * Direct-maintained exceptions are declared in `tools/ruler/lib/direct-provider-skills.mjs`.
-  `burn-down-audits` has independent Claude and Codex packages; `run-claude` and
-  `implement-issue-stack` have only Codex packages because they orchestrate a standalone Claude
-  process and Codex-native subagents respectively; `run-codex` has only a Claude package for the
-  mirror-image reason, orchestrating a standalone Codex process; `analyze-session-transcripts` has
-  independent provider packages because Claude Code and Codex persist different transcript formats.
-  Edit registered packages and notes directly, never through `.ruler/`, and never create an
-  undeclared provider by copying one.
+  `burn-down-audits` has independent Claude and Codex packages; `run-rival-agent` has one package
+  per provider, each launching the *other* vendor's local CLI (the Claude package runs Codex, the
+  Codex package runs Claude), so that one skill name works from either runner;
+  `implement-issue-stack` has only a Codex package because it orchestrates Codex-native subagents;
+  `analyze-session-transcripts` has independent provider packages because Claude Code and Codex
+  persist different transcript formats. Edit registered packages and notes directly, never through
+  `.ruler/`, and never create an undeclared provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
@@ -269,25 +270,25 @@ support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/
 `.claude/skills/<name>/`). Most are generated from `.ruler/`; managed runner forks may be produced
 from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
 `burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
-`analyze-session-transcripts` with format-specific implementations; Codex-only `run-claude` and
-`implement-issue-stack` live only under `.agents/`, and Claude-only `run-codex` lives only under
-`.claude/`. See `tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
+`analyze-session-transcripts` with format-specific implementations and `run-rival-agent`, whose two
+packages each launch the *other* vendor's CLI; Codex-only `implement-issue-stack` lives only under
+`.agents/`. See `tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
 
-| Skill                                   | Read it before…                                                                                                                                                                                                             |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `architecture`                          | navigating unfamiliar code, placing new code, naming UI elements                                                                                                                                                            |
-| `design`                                | writing or changing component styles, picking a color/size/shadow/easing, or writing user-facing copy — the token vocabulary, primitives, voice, and the public `/design` styleguide                                        |
-| `api`                                   | adding, changing, or calling any `/api/*` endpoint                                                                                                                                                                          |
-| `mobile`                                | touching anything Android/iOS/Capacitor, or store-release work                                                                                                                                                              |
-| `testing`                               | writing/running tests beyond the basics, or debugging CI failures                                                                                                                                                           |
-| `profiling`                             | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                                                                                               |
-| `lighthouse-audit`                      | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                                  |
-| `adrs`                                  | proposing or discussing any architectural approach                                                                                                                                                                          |
-| `run-claude` / `run-codex`              | launching the other vendor's local CLI for an independent second opinion — `run-claude` from Codex (also inspection and empirical Splotch PR review), `run-codex` from Claude for a read-only review of in-flight work      |
-| `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                              |
-| `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, posts by default, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`) |
-| `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                          |
-| `self-heal`                             | wrapping up a session that hit hiccups, surprises, or hard-won lessons — judges which are durable and writes each into the home the next tripped-up session will actually see                                               |
+| Skill                                   | Read it before…                                                                                                                                                                                                                                            |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `architecture`                          | navigating unfamiliar code, placing new code, naming UI elements                                                                                                                                                                                           |
+| `design`                                | writing or changing component styles, picking a color/size/shadow/easing, or writing user-facing copy — the token vocabulary, primitives, voice, and the public `/design` styleguide                                                                       |
+| `api`                                   | adding, changing, or calling any `/api/*` endpoint                                                                                                                                                                                                         |
+| `mobile`                                | touching anything Android/iOS/Capacitor, or store-release work                                                                                                                                                                                             |
+| `testing`                               | writing/running tests beyond the basics, or debugging CI failures                                                                                                                                                                                          |
+| `profiling`                             | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                                                                                                                              |
+| `lighthouse-audit`                      | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                                                                 |
+| `adrs`                                  | proposing or discussing any architectural approach                                                                                                                                                                                                         |
+| `run-rival-agent`                       | launching the other vendor's local CLI for an independent second opinion or review — from Claude it runs Codex (read-only review or question); from Codex it runs Claude (output-only, read-only inspection, or the empirical Splotch PR-review publisher) |
+| `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                                                             |
+| `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, posts by default, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`)                                |
+| `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                                                         |
+| `self-heal`                             | wrapping up a session that hit hiccups, surprises, or hard-won lessons — judges which are durable and writes each into the home the next tripped-up session will actually see                                                                              |
 
 That table covers the highest-traffic skills. The **full catalog** — every skill, grouped by the
 workflow it belongs to and how related skills chain together (the audit lifecycle, the PR flow,

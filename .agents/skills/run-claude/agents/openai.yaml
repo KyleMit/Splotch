@@ -1,4 +1,0 @@
-interface:
-  display_name: 'Run Claude'
-  short_description: 'Run a fresh local Claude task safely'
-  default_prompt: 'Use $run-claude to run this task through a fresh local Claude Code process and return its result.'

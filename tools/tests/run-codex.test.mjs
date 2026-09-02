@@ -14,7 +14,7 @@ import {
   parseRunArgs,
   readPromptFile,
   resolveWorktree,
-} from '../../.claude/skills/run-codex/scripts/codex-run.mjs';
+} from '../../.claude/skills/run-rival-agent/scripts/codex-run.mjs';
 import {
   API_BILLING_ENVIRONMENT_KEYS,
   assertSubscriptionAuth,
@@ -23,8 +23,8 @@ import {
   SUBSCRIPTION_BASE_URL,
   SUBSCRIPTION_CREDENTIALS_STORE,
   SUBSCRIPTION_MODEL_PROVIDER,
-} from '../../.claude/skills/run-codex/scripts/codex-subscription-auth.mjs';
-import { assertSubscriptionLogin } from '../../.claude/skills/run-codex/scripts/codex-health.mjs';
+} from '../../.claude/skills/run-rival-agent/scripts/codex-subscription-auth.mjs';
+import { assertSubscriptionLogin } from '../../.claude/skills/run-rival-agent/scripts/codex-health.mjs';
 import {
   parseSessionRecord,
   readSessionRecord,
@@ -32,13 +32,13 @@ import {
   sessionKey,
   sessionRecordPath,
   writeSessionRecord,
-} from '../../.claude/skills/run-codex/scripts/codex-session.mjs';
+} from '../../.claude/skills/run-rival-agent/scripts/codex-session.mjs';
 import {
   CANCELLATION_SIGNALS,
   renderProgressEvent,
   runCodexStreaming,
   STREAM_FAILURE,
-} from '../../.claude/skills/run-codex/scripts/codex-stream.mjs';
+} from '../../.claude/skills/run-rival-agent/scripts/codex-stream.mjs';
 
 const PLAN_AUTH = { auth_mode: 'chatgpt', tokens: { access_token: 'token' } };
 

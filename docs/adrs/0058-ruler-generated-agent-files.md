@@ -61,13 +61,14 @@ directly:
   implementations in `.claude/skills/burn-down-audits/` and `.agents/skills/burn-down-audits/`.
   `analyze-session-transcripts` likewise has independent provider packages because Claude Code and
   Codex use different transcript stores and record formats; sharing the name preserves one user
-  concept without imposing a shared parser or runbook. `run-claude` exists only in
-  `.agents/skills/run-claude/`: its defining operation is Codex launching a fresh local Claude Code
-  process through fixed permission-reviewed wrappers. `implement-issue-stack` also exists only in
+  concept without imposing a shared parser or runbook. `run-rival-agent` has one package per
+  provider, each launching the *other* vendor's local CLI: the Codex package launches a fresh local
+  Claude Code process through fixed permission-reviewed wrappers, and the Claude package launches a
+  read-only Codex process (see the 2026-09 amendment below). `implement-issue-stack` exists only in
   `.agents/skills/implement-issue-stack/`: it orchestrates Codex-native implementers and consumes
-  `run-claude` for independent adversarial review. Claude packages for either would misrepresent the
-  workflow. The registry declares exactly which providers exist; changing one never implies creating
-  or syncing another provider.
+  the Codex package of `run-rival-agent` for independent adversarial review; a Claude package would
+  misrepresent the workflow. The registry declares exactly which providers exist; changing one never
+  implies creating or syncing another provider.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
 * **Skill design notes:** shared notes in `.ruler/skill-notes/` are mirrored to both agents. A
@@ -124,3 +125,42 @@ first attempt rather than retrying after a partial pass.
 * − Contributors (human and agent) must learn a narrow exception to the indirection: editing the
   file an agent loaded is normally wrong, but is correct for a package registered to that provider
   in `scripts/direct-provider-skills.mjs`.
+
+## Amendment (2026-09): one skill name for the cross-vendor launcher
+
+`run-claude` (Codex launches Claude) and `run-codex` (Claude launches Codex) were registered as two
+one-sided direct packages. They were the same capability pointed in opposite directions, but a
+shared skill could only reference them conditionally — "from Codex use `run-claude`; otherwise use
+`run-codex`" — and the `skills-guide` spent two rows on one concept.
+
+Both packages now carry the single name `run-rival-agent`, registered for both providers. Nothing
+detects the running agent: a Claude session only loads `.claude/skills/`, a Codex session only
+`.agents/skills/`, so each runner receives the package that launches the *other* vendor by virtue of
+which tree it reads. Shared prose names `run-rival-agent` without knowing where it runs.
+
+Alternatives rejected:
+
+* **A thin shared router skill** that detects the runner and points at the provider-specific skill.
+  It unifies only the reference, not the invocation, and the agent pays context for two skills while
+  trusting the first to describe the second correctly.
+* **A runtime dispatcher script** behind one npm entry. Codex could reach it the way it reaches the
+  installed wrappers — by requesting host execution for the command — so the objection is not that
+  the dispatcher is unreachable. It is that a repository-owned script would become a new mutable
+  host-trusted surface, or would need its own installed fixed wrapper and exec-policy entry to avoid
+  being one, while the provider-specific invocation grammar underneath it stayed put. That is a
+  trust-boundary cost paid for a name the provider trees already select for free.
+* **Managed skill forks** under `.ruler/skill-forks/`. The mechanism fits, but it would turn the
+  installer and Codex exec-policy scripts into generated output with a regeneration step on every
+  edit, and no fork exists yet to prove the path. Direct registration for both providers is the
+  in-use precedent (`burn-down-audits`).
+
+Kept deliberately: the `run-claude:*` / `run-codex:*` npm namespaces, the installed
+`~/.local/libexec/splotch-claude-*.mjs` wrapper names, and the install/health log strings. Each
+names the process it launches, which is unambiguous from either side; a shared `run-rival-agent:*`
+namespace would have to answer "which rival?" in every variant name, and the exec-policy patterns
+key on the installed paths, so leaving them means the rename never touches the trust boundary.
+
+The two packages remain asymmetric in capability. Only the Codex side carries a write-capable
+profile (the fixed Splotch PR-review publisher); the Claude side is read-only by design. Giving the
+Claude side a publishing profile is a separate decision with its own trust-boundary consequences and
+is not part of this amendment.

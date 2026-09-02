@@ -31,9 +31,8 @@ a shared contract.
 
 Unmanaged provider packages are registered in `tools/ruler/lib/direct-provider-skills.mjs`. Their
 notes are edited directly in the matching `.claude/skill-notes/` or `.agents/skill-notes/` tree and
-have no `.ruler/` source. `burn-down-audits` and `analyze-session-transcripts` have independent
-notes for both providers; `run-claude` and `implement-issue-stack` have Codex notes only, and
-`run-codex` has a Claude note only.
+have no `.ruler/` source. `burn-down-audits`, `analyze-session-transcripts`, and `run-rival-agent`
+have independent notes for both providers; `implement-issue-stack` has a Codex note only.
 
 A skill's `SKILL.md` is a runbook: it tells an agent what to do *now*, and every line it carries is
 context the agent pays for on each invocation. That leaves no room for the other half of the story —

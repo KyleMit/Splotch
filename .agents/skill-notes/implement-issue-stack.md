@@ -1,8 +1,9 @@
 # Implement issue stack — design notes
 
 This is a direct Codex-only package because it orchestrates Codex subagents, GitHub stacks, and the
-Codex-only `run-claude` capability. Claude authentication, installation, permission policy, and
-standalone-review publication live in `run-claude`; this note records only issue-stack decisions.
+Codex-side `run-rival-agent` capability. Claude authentication, installation, permission policy, and
+standalone-review publication live in `run-rival-agent`; this note records only issue-stack
+decisions.
 
 The orchestrator intentionally remains prose-driven while the checkpoint and reviewer seams are
 fixed Node programs. GitHub stack behavior is new in `gh stack` 0.1.0, so the skill pins that
@@ -10,9 +11,10 @@ validated interface in preflight rather than pretending it is stable forever.
 
 ## Permission boundary
 
-The stack workflow installs `run-claude` together with its own GitHub and push rules. General `gh`
-and `git push` stay at `prompt`; PR/stack merge, repository deletion, and GitHub logout remain
-forbidden. See the `run-claude` design note for the Claude subprocess and publication boundary.
+The stack workflow installs `run-rival-agent`'s Claude wrappers together with its own GitHub and
+push rules. General `gh` and `git push` stay at `prompt`; PR/stack merge, repository deletion, and
+GitHub logout remain forbidden. See the `run-rival-agent` design note for the Claude subprocess and
+publication boundary.
 
 The checkpoint names CI attempts `ciRepairContinuations`: only handing a confirmed failure back to
 the implementer for product-code changes consumes the limit. Polls, infrastructure reruns,

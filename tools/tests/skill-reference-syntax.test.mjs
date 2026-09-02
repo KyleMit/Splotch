@@ -14,7 +14,7 @@ describe('skill reference vocabulary', () => {
 
   it('covers authored skills and the direct provider packages', () => {
     expect(names).toContain('cut-release');
-    expect(names).toContain('run-claude');
+    expect(names).toContain('run-rival-agent');
     expect(names).toContain('burn-down-audits');
   });
 

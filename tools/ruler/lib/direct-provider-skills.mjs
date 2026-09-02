@@ -4,8 +4,7 @@ export const DIRECT_PROVIDER_SKILLS = [
   { name: 'analyze-session-transcripts', providers: ['claude', 'codex'] },
   { name: 'burn-down-audits', providers: ['claude', 'codex'] },
   { name: 'implement-issue-stack', providers: ['codex'] },
-  { name: 'run-claude', providers: ['codex'] },
-  { name: 'run-codex', providers: ['claude'] },
+  { name: 'run-rival-agent', providers: ['claude', 'codex'] },
 ];
 
 const PROVIDER_ROOTS = {

@@ -1,18 +1,22 @@
-# Run Codex — design notes
+# Run Rival Agent (Claude side: launching Codex) — design notes
 
-`run-codex` is a direct Claude-only package for the same reason [run-claude](run-claude.md) is
-Codex-only: its defining boundary is one agent runner launching another vendor's local authenticated
-CLI. A Codex-side copy would tell Codex to orchestrate an independent Codex process, which is not a
-second opinion.
+This is the Claude-side package of `run-rival-agent`, the skill that launches the other vendor's
+local authenticated CLI; the Codex-side package, with its own note under `.agents/skill-notes/`,
+launches Claude. The two sides share one name so shared prose can reference the capability without
+knowing which runner it is on — each provider tree simply carries the package that launches the
+*other* vendor, and nothing detects the session at runtime. Until 2026-09 this side was the separate
+skill the Claude-side package; the `run-codex:*` npm scripts keep that name because they name the
+process they launch. A copy of this package in the Codex tree would tell Codex to orchestrate an
+independent Codex process, which is not a second opinion.
 
 ## Why this one has no installer
 
-The two skills are mirror images in purpose but not in size. `run-claude` needs an installer,
-`~/.local/libexec` wrappers, hashed settings, and a Codex exec-policy because Codex runs inside a
-Seatbelt sandbox that cannot read the macOS Keychain, so reaching Claude at all requires a reviewed
-escalation boundary. Claude Code's Bash tool already runs on the host, so `run-codex` needs none of
-that: `npm run run-codex:*` reaches the Codex CLI directly, and `Bash(npm run *)` is already
-allowed, so the skill added no new permission rules.
+The two sides are mirror images in purpose but not in size. the Codex-side package needs an
+installer, `~/.local/libexec` wrappers, hashed settings, and a Codex exec-policy because Codex runs
+inside a Seatbelt sandbox that cannot read the macOS Keychain, so reaching Claude at all requires a
+reviewed escalation boundary. Claude Code's Bash tool already runs on the host, so the Claude-side
+package needs none of that: `npm run run-codex:*` reaches the Codex CLI directly, and
+`Bash(npm run *)` is already allowed, so the skill added no new permission rules.
 
 Resisting the urge to mirror the installer was the main design decision. Copying that machinery
 would have produced several hundred lines defending a boundary that does not exist here.
@@ -35,17 +39,17 @@ the same argument again about `cli_auth_credentials_store`: a project config sel
 would have left the guard validating an `auth.json` the child never loads. Both were fixed by
 pinning, and any third precedence layer found later should be fixed the same way.
 
-Stripping rather than refusing on an inherited `OPENAI_API_KEY` is deliberate. Refusal is what
-`run-claude` does, because it cannot be sure which of several selectors Claude will honor. Here the
-precedence is known, so removing the variable from the child is both stricter and usable from a
-shell that exports one for unrelated work.
+Stripping rather than refusing on an inherited `OPENAI_API_KEY` is deliberate. Refusal is what the
+Codex-side package does, because it cannot be sure which of several selectors Claude will honor.
+Here the precedence is known, so removing the variable from the child is both stricter and usable
+from a shell that exports one for unrelated work.
 
 ## Two profiles, not three
 
 `review` wraps `codex exec review`, whose harness already produces file-and-line anchored findings
 with `[P1]`–`[P3]` priorities. `ask` is the free-form read-only fallback. Both are read-only; no
-write-capable profile exists, and the PR-publishing profile that `run-claude` carries has no analog
-because `leave-pr-review` already owns posting to GitHub from this side.
+write-capable profile exists, and the PR-publishing profile that the Codex-side package carries has
+no analog because `leave-pr-review` already owns posting to GitHub from this side.
 
 `codex exec review` rejects a scope flag and a custom `PROMPT` in the same invocation, which is not
 documented in its help text and was found by running it. The wrapper therefore has two shapes: with
@@ -80,11 +84,11 @@ check Codex's own documentation. The honest cost is that a query is outbound tra
 
 ## Rounds resume; the framing is half the point
 
-Sessions are keyed to checkout plus branch and resumed on later rounds, mirroring what `run-claude`
-does for PR review rounds. The token saving is real but secondary. The reason is that a reviewer
-asked cold to find defects for the fifth time will find something whether or not anything is there —
-so a later round is told which findings it already made, asked to check those were addressed first,
-and told outright that no defects is a correct answer.
+Sessions are keyed to checkout plus branch and resumed on later rounds, mirroring what the
+Codex-side package does for PR review rounds. The token saving is real but secondary. The reason is
+that a reviewer asked cold to find defects for the fifth time will find something whether or not
+anything is there — so a later round is told which findings it already made, asked to check those
+were addressed first, and told outright that no defects is a correct answer.
 
 `codex exec review` spawns a child thread that does the work under a thin parent, and only the
 parent id reaches the JSON stream. Both resume, very differently: the parent carries the verdicts at
@@ -96,9 +100,9 @@ Codex's private session store.
 ## Unvalidated
 
 Sessions persist under Codex's own store; the skill exposes no `--persist` or `--end-session`
-controls the way `run-claude` does, on the grounds that a reviewer thread is useful to reopen in the
-Codex TUI. If review transcripts turn out to accumulate in a way that matters, the ledger-and-
-end-session shape from `run-claude` is the precedent to copy.
+controls the way the Codex-side package does, on the grounds that a reviewer thread is useful to
+reopen in the Codex TUI. If review transcripts turn out to accumulate in a way that matters, the
+ledger-and- end-session shape from the Codex-side package is the precedent to copy.
 
 The wrapper reviews its own diff, and both rounds found real defects — the provider-precedence gap,
 a health probe that ignored nonzero exits, a prompt sized only after being read, and a cancelled run
@@ -116,6 +120,6 @@ injectable-timeout precedent already in that function. A volume-based attempt at
 tried first and could not distinguish the two versions either; it was removed rather than kept as
 false assurance.
 
-The ten-minute stall timeout is inherited from `run-claude` rather than measured. Observed reviews
-of a small diff run three to eight minutes end to end with roughly one command every fifteen
+The ten-minute stall timeout is inherited from the Codex-side package rather than measured. Observed
+reviews of a small diff run three to eight minutes end to end with roughly one command every fifteen
 seconds, so the timeout has never fired; a repo-wide review might legitimately approach it.

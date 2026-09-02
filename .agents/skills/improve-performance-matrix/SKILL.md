@@ -271,12 +271,13 @@ for an ordinary finding.
 Every newly opened PR gets a fresh independent cross-runner review before another stack layer is
 started:
 
-* when the campaign runs in Codex, use `run-claude`'s fixed PR-review publisher for that exact PR;
-* when the campaign runs in Claude, keep the checkout on that PR's head and use `run-codex` with
-  `--base <that PR's base branch>` before moving the checkout or starting the next layer. Validate
-  and address its findings locally. The read-only wrapper cannot reach GitHub; if a posted GitHub
-  review is also required, run `leave-pr-review` separately for its own checkout, verification, and
-  publication rather than treating it as a publisher for Codex's output.
+* when the campaign runs in Codex, use `run-rival-agent`'s fixed PR-review publisher for that exact
+  PR;
+* when the campaign runs in Claude, keep the checkout on that PR's head and use `run-rival-agent`
+  with `--base <that PR's base branch>` before moving the checkout or starting the next layer.
+  Validate and address its findings locally. The read-only wrapper cannot reach GitHub; if a posted
+  GitHub review is also required, run `leave-pr-review` separately for its own checkout,
+  verification, and publication rather than treating it as a publisher for Codex's output.
 
 Do not substitute same-session self-review or postpone the reviews until wrap-up. If the required
 reviewer runner is unavailable, stop adding stack layers and report the blocker.
