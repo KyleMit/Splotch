@@ -1,7 +1,7 @@
 import { COLORING_PACK_RESOLUTIONS, type ColoringPackResolution } from './resolution.ts';
 
 /** @public Build-time manifest generator entry used from the Vite config graph. */
-export const COLORING_PACK_FORMAT_VERSION = 3;
+export const COLORING_PACK_FORMAT_VERSION = 4;
 
 interface ColoringPackFile {
   path: string;
@@ -80,9 +80,23 @@ export function isInvariantColoringPackAssetPath(path: string): boolean {
   return /(?:^|\/)[^/]+(?:\.dark)?\.overlay\.svg$/.test(path);
 }
 
+/**
+ * A paper presentation raster lives under its hosted tier URL rather than a
+ * logical book path, because the paper's `srcset` requests that URL and an
+ * installed web pack serves it from the cache by URL. Which tiers a variant
+ * carries follows the device class, so these paths are the one part of the
+ * inventory that may differ between the compact and full variants.
+ */
+export function isPresentationTierColoringPackAssetPath(path: string, bookId: string): boolean {
+  const match = /^\/coloring\/max-\d+px\/([^/]+)\/[^/]+\.presentation\.webp$/.exec(path);
+  return match?.[1] === bookId;
+}
+
 function isCanonicalColoringAssetPath(path: string, bookId: string): boolean {
+  if (path.includes('..')) return false;
+  if (isPresentationTierColoringPackAssetPath(path, bookId)) return true;
   const prefix = `/coloring/${bookId}/`;
-  if (!path.startsWith(prefix) || path.includes('..')) return false;
+  if (!path.startsWith(prefix)) return false;
   const filename = path.slice(prefix.length);
   return path.endsWith('.webp') || isInvariantColoringPackAssetPath(filename);
 }
@@ -93,7 +107,11 @@ function validDownloadPath(
   bookId: string,
   resolution: ColoringPackResolution
 ): boolean {
-  if (resolution === 'full' || isInvariantColoringPackAssetPath(path)) {
+  if (
+    resolution === 'full' ||
+    isInvariantColoringPackAssetPath(path) ||
+    isPresentationTierColoringPackAssetPath(path, bookId)
+  ) {
     return downloadPath === path;
   }
   const compactMatch = /^\/coloring\/max-\d+px\/([^/]+)\/.+\.webp$/.exec(downloadPath);
@@ -162,15 +180,15 @@ export function parseColoringPackManifest(
       validVariant(variants[resolution], book.id as string, resolution)
     );
     if (!variantsValid) return false;
+    const bookId = book.id as string;
+    const logicalFiles = (resolution: ColoringPackResolution) =>
+      (variants[resolution] as ColoringPackVariantManifest).files.filter(
+        (file) => !isPresentationTierColoringPackAssetPath(file.path, bookId)
+      );
     const [firstResolution, ...otherResolutions] = COLORING_PACK_RESOLUTIONS;
-    const firstFiles = new Map(
-      (variants[firstResolution] as ColoringPackVariantManifest).files.map((file) => [
-        file.path,
-        file,
-      ])
-    );
+    const firstFiles = new Map(logicalFiles(firstResolution).map((file) => [file.path, file]));
     return otherResolutions.every((resolution) => {
-      const files = (variants as Record<string, ColoringPackVariantManifest>)[resolution].files;
+      const files = logicalFiles(resolution);
       return (
         files.length === firstFiles.size &&
         files.every((file) => {

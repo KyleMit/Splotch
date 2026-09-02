@@ -25,17 +25,50 @@ describe('responsive coloring service-worker route', () => {
     expect(RESPONSIVE_COLORING_URL_PATTERN.test('/coloring/max-999px/farm/cat.webp')).toBe(false);
   });
 
-  it('returns a successful responsive response without consulting the precache', async () => {
+  it('serves an installed pack tier from the cache before the network', async () => {
+    const installed = new Response('installed');
+    const fetchMock = vi.fn();
+    const match = vi.fn(async () => installed);
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('caches', { match });
+    const input = requestFor('/coloring/max-2304px/farm/cat-wide.presentation.webp?version=one');
+
+    await expect(serveResponsiveColoringWithCanonicalFallback(input)).resolves.toBe(installed);
+    expect(match).toHaveBeenCalledWith(input.request, { ignoreSearch: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns a successful responsive response without a canonical lookup', async () => {
     const response = new Response('responsive');
     const fetchMock = vi.fn(async () => response);
-    const match = vi.fn();
+    const match = vi.fn(async () => undefined);
     vi.stubGlobal('fetch', fetchMock);
     vi.stubGlobal('caches', { match });
     const input = requestFor('/coloring/max-1152px/farm/cat.overlay.webp');
 
     await expect(serveResponsiveColoringWithCanonicalFallback(input)).resolves.toBe(response);
     expect(fetchMock).toHaveBeenCalledWith(input.request);
-    expect(match).not.toHaveBeenCalled();
+    expect(match).toHaveBeenCalledTimes(1);
+    expect(match).toHaveBeenCalledWith(input.request, { ignoreSearch: true });
+  });
+
+  it('falls back from a presentation raster to the canonical SVG it was rendered from', async () => {
+    const canonical = new Response('canonical');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new TypeError('offline')))
+    );
+    const match = vi.fn(async (key: unknown) => (typeof key === 'string' ? canonical : undefined));
+    vi.stubGlobal('caches', { match });
+
+    await expect(
+      serveResponsiveColoringWithCanonicalFallback(
+        requestFor('/coloring/max-3072px/farm/cat-tall.dark.presentation.webp')
+      )
+    ).resolves.toBe(canonical);
+    expect(match).toHaveBeenLastCalledWith(`${origin}/coloring/farm/cat-tall.dark.overlay.svg`, {
+      ignoreSearch: true,
+    });
   });
 
   it.each(RESPONSIVE_COLORING_TIER_DIRECTORIES)(
@@ -46,14 +79,17 @@ describe('responsive coloring service-worker route', () => {
         'fetch',
         vi.fn(async () => Promise.reject(new TypeError('offline')))
       );
-      const match = vi.fn(async () => canonical);
+      const match = vi.fn(async (key: unknown) =>
+        typeof key === 'string' ? canonical : undefined
+      );
       vi.stubGlobal('caches', { match });
       const input = requestFor(`${directory}/farm/cat.overlay.webp?version=one`);
 
       await expect(serveResponsiveColoringWithCanonicalFallback(input)).resolves.toBe(canonical);
-      expect(match).toHaveBeenCalledWith(`${origin}/coloring/farm/cat.overlay.webp?version=one`, {
-        ignoreSearch: true,
-      });
+      expect(match).toHaveBeenLastCalledWith(
+        `${origin}/coloring/farm/cat.overlay.webp?version=one`,
+        { ignoreSearch: true }
+      );
     }
   );
 
@@ -63,7 +99,9 @@ describe('responsive coloring service-worker route', () => {
       'fetch',
       vi.fn(async () => new Response('missing', { status: 404 }))
     );
-    vi.stubGlobal('caches', { match: vi.fn(async () => canonical) });
+    vi.stubGlobal('caches', {
+      match: vi.fn(async (key: unknown) => (typeof key === 'string' ? canonical : undefined)),
+    });
 
     await expect(
       serveResponsiveColoringWithCanonicalFallback(
@@ -107,7 +145,9 @@ describe('responsive coloring service-worker route', () => {
       'fetch',
       vi.fn(async () => Promise.reject(new TypeError('offline')))
     );
-    vi.stubGlobal('caches', { match: vi.fn(async () => canonical) });
+    vi.stubGlobal('caches', {
+      match: vi.fn(async (key: unknown) => (typeof key === 'string' ? canonical : undefined)),
+    });
 
     await expect(
       serializedHandler(requestFor('/coloring/max-1152px/farm/cat.overlay.webp'))

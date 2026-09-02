@@ -11,8 +11,10 @@ const MAX_COLORING_PACK_MANIFEST_BYTES_PER_FILE = 168;
 const MAX_COMPACT_TO_FULL_TIERED_RASTER_BYTES_RATIO = 0.7;
 
 function isTieredRaster(path: string): boolean {
-  return path.endsWith('.webp') && !/\.(?:thumb|selector)\.webp$/.test(path);
+  return path.endsWith('.webp') && !/\.(?:thumb|selector|presentation)\.webp$/.test(path);
 }
+
+const isPresentationTier = (path: string) => path.endsWith('.presentation.webp');
 
 describe('buildColoringPackManifest', () => {
   it('offers every logical runtime file at compact and full resolutions', () => {
@@ -75,13 +77,57 @@ describe('buildColoringPackManifest', () => {
 
     for (const book of manifest.books) {
       for (const variant of Object.values(book.variants)) {
-        expect(variant.files.some((file) => file.path.endsWith('.presentation.webp'))).toBe(false);
         expect(variant.files.filter((file) => file.path.endsWith('.overlay.svg'))).toHaveLength(24);
         expect(
           variant.files
             .filter((file) => file.path.endsWith('.overlay.svg'))
             .every((file) => file.downloadPath === undefined)
         ).toBe(true);
+      }
+    }
+  });
+
+  it('carries the paper presentation tiers a web device class can select, under their tier URLs', () => {
+    const { manifest, source } = buildColoringPackManifest('1.2.3-test', 'web');
+    const catalog = new Map(booksForPlatform('web').map((book) => [book.id, book]));
+    let manifestFileCount = 0;
+
+    for (const book of manifest.books) {
+      const compactTiers = book.variants.compact.files.filter((file) =>
+        isPresentationTier(file.path)
+      );
+      const fullTiers = book.variants.full.files.filter((file) => isPresentationTier(file.path));
+      // Two orientations and two themes per catalog page.
+      const pageVariants = catalog.get(book.id)!.pages.length * 4;
+      expect(compactTiers).toHaveLength(pageVariants);
+      expect(fullTiers).toHaveLength(pageVariants * 4);
+      expect(compactTiers.every((file) => file.path.startsWith('/coloring/max-1152px/'))).toBe(
+        true
+      );
+      expect(new Set(fullTiers.map((file) => /max-(\d+)px/.exec(file.path)?.[1]))).toEqual(
+        new Set(['1152', '1536', '2304', '3072'])
+      );
+      for (const file of [...compactTiers, ...fullTiers]) {
+        expect(file.downloadPath, file.path).toBeUndefined();
+        expect(file.path).toContain(`/${book.id}/`);
+      }
+      const logical = (files: { path: string }[]) =>
+        files.map((file) => file.path).filter((path) => !isPresentationTier(path));
+      expect(logical(book.variants.compact.files)).toEqual(logical(book.variants.full.files));
+      manifestFileCount += book.variants.compact.files.length + book.variants.full.files.length;
+    }
+    expect(Buffer.byteLength(source)).toBeLessThan(
+      manifestFileCount * MAX_COLORING_PACK_MANIFEST_BYTES_PER_FILE
+    );
+    expect(() => parseColoringPackManifest(manifest, '1.2.3-test')).not.toThrow();
+  });
+
+  it('installs no hosted presentation tier into a native pack', () => {
+    const { manifest } = buildColoringPackManifest('1.2.3-test', 'mobile');
+    for (const book of manifest.books) {
+      for (const variant of Object.values(book.variants)) {
+        expect(variant.files.some((file) => isPresentationTier(file.path))).toBe(false);
+        expect(variant.files.some((file) => file.path.includes('/max-'))).toBe(false);
       }
     }
   });

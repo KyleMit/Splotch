@@ -2,11 +2,15 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+  COMPACT_COLORING_PRESENTATION_MAX_EDGE_PX,
+  PRESENTATION_TIER_MAX_EDGES_PX,
   STARTER_COLORING_BOOK_ID,
   bookPackAssetPaths,
   booksForPlatform,
+  presentationColoringAssets,
   responsiveColoringAssets,
   selectorColoringAssets,
+  type Book,
   type BookPlatform,
 } from './src/lib/state/books.ts';
 import {
@@ -21,6 +25,22 @@ const STATIC_DIRECTORY = fileURLToPath(new URL('./static', import.meta.url));
 
 function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex');
+}
+
+// A compact device (paper long edge ≤ 1152 px) can only select the 1152 tier;
+// a full device selects a different tier per orientation, so it carries the
+// ladder. Native presents the canonical SVG and installs no hosted tier URLs.
+function presentationTierPaths(
+  book: Book,
+  platform: BookPlatform,
+  resolution: ColoringPackResolution
+): string[] {
+  if (platform !== 'web') return [];
+  const maxEdgesPx =
+    resolution === 'compact'
+      ? [COMPACT_COLORING_PRESENTATION_MAX_EDGE_PX]
+      : PRESENTATION_TIER_MAX_EDGES_PX;
+  return presentationColoringAssets(book, maxEdgesPx).map((asset) => asset.target);
 }
 
 export function buildColoringPackManifest(
@@ -58,12 +78,14 @@ export function buildColoringPackManifest(
       throw new Error(`Compact coloring-pack inventory is incomplete for ${book.id}`);
     }
     const variant = (resolution: ColoringPackResolution) => {
-      const files = canonicalPaths.map((path) => {
+      const tierPaths = presentationTierPaths(book, platform, resolution);
+      const files = [...canonicalPaths, ...tierPaths].map((path) => {
         const downloadPath =
           resolution === 'compact' &&
           !canonicalThumbnailPaths.has(path) &&
           !canonicalSelectorPaths.has(path) &&
-          !invariantPaths.has(path)
+          !invariantPaths.has(path) &&
+          !tierPaths.includes(path)
             ? compactPaths.get(path)
             : path;
         if (!downloadPath) throw new Error(`No compact coloring asset for ${path}`);

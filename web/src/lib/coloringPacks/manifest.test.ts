@@ -11,7 +11,7 @@ function manifest() {
     sha256: 'a'.repeat(64),
   });
   return {
-    formatVersion: 3,
+    formatVersion: 4,
     appVersion: '1.2.3',
     starterBookId: 'farm',
     books: [
@@ -61,6 +61,37 @@ describe('parseColoringPackManifest', () => {
       mutation(value);
       expect(() => parseColoringPackManifest(value, '1.2.3')).toThrow();
     }
+  });
+
+  it('admits paper presentation tiers under their tier URLs, per variant, for the named book', () => {
+    const tier = (edge: number, bookId = 'farm') => ({
+      path: `/coloring/max-${edge}px/${bookId}/cat-tall.presentation.webp`,
+      bytes: 5,
+      sha256: 'd'.repeat(64),
+    });
+    const value = manifest();
+    value.books[0].variants.compact.files.push(tier(1152));
+    value.books[0].variants.compact.bytes += 5;
+    for (const edge of [1152, 1536, 2304, 3072]) {
+      value.books[0].variants.full.files.push(tier(edge));
+      value.books[0].variants.full.bytes += 5;
+    }
+    const parsed = parseColoringPackManifest(value, '1.2.3');
+    expect(resolveColoringPackManifest(parsed, 'compact').books[0].files).toHaveLength(2);
+    expect(resolveColoringPackManifest(parsed, 'full').books[0].files).toHaveLength(5);
+
+    const otherBook = manifest();
+    otherBook.books[0].variants.full.files.push(tier(1152, 'dinosaur'));
+    otherBook.books[0].variants.full.bytes += 5;
+    expect(() => parseColoringPackManifest(otherBook, '1.2.3')).toThrow();
+
+    const remapped = manifest();
+    remapped.books[0].variants.compact.files.push({
+      ...tier(1152),
+      downloadPath: '/coloring/max-240px/farm/cat-tall.presentation.webp',
+    });
+    remapped.books[0].variants.compact.bytes += 5;
+    expect(() => parseColoringPackManifest(remapped, '1.2.3')).toThrow();
   });
 
   it('accepts only invariant overlay SVGs and requires identical bytes across tiers', () => {
