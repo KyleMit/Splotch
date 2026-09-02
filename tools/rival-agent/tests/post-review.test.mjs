@@ -72,6 +72,23 @@ describe('diff anchors', () => {
     expect([...anchors.get('src/old.ts').LEFT]).toEqual([1, 2]);
   });
 
+  it('does not mistake hunk content for file headers', () => {
+    const patch = `diff --git a/db/schema.sql b/db/schema.sql
+index 111..222 100644
+--- a/db/schema.sql
++++ b/db/schema.sql
+@@ -1,4 +1,4 @@
+ create table t (
+--- legacy column
++++ replacement column
+ );
+`;
+    const anchors = parseDiffAnchors(patch);
+    expect([...anchors.keys()]).toEqual(['db/schema.sql']);
+    expect([...anchors.get('db/schema.sql').RIGHT]).toEqual([1, 2, 3]);
+    expect([...anchors.get('db/schema.sql').LEFT]).toEqual([1, 2, 3]);
+  });
+
   it('keeps anchored findings and sets the rest aside instead of dropping them', () => {
     const { anchored, unanchored } = partitionFindings(FINDINGS.findings, parseDiffAnchors(PATCH));
     expect(anchored.map((item) => item.body)).toEqual(['claim', 'span', 'deleted']);

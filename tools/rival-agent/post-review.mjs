@@ -27,16 +27,18 @@ export function markerScope({ base, head }) {
 export function parseDiffAnchors(patch) {
   const anchors = new Map();
   let current;
+  let inHunk = false;
   let leftLine = 0;
   let rightLine = 0;
   for (const raw of patch.split('\n')) {
     if (raw.startsWith('diff --git ')) {
       current = undefined;
+      inHunk = false;
       continue;
     }
     // A deleted file names its path only on the `---` line, an added file only on `+++`; a
     // rename names both, and the new path is what GitHub anchors comments to.
-    if (raw.startsWith('--- ') || raw.startsWith('+++ ')) {
+    if (!inHunk && (raw.startsWith('--- ') || raw.startsWith('+++ '))) {
       const path = raw.slice('--- '.length).replace(/^[ab]\//, '');
       if (path !== '/dev/null') {
         current = anchors.get(path) ?? { RIGHT: new Set(), LEFT: new Set() };
@@ -46,6 +48,7 @@ export function parseDiffAnchors(patch) {
     }
     const hunk = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(raw);
     if (hunk) {
+      inHunk = true;
       leftLine = Number(hunk[1]);
       rightLine = Number(hunk[2]);
       continue;
