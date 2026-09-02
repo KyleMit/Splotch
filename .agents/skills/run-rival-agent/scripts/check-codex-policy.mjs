@@ -63,7 +63,7 @@ export function validateManagedRules(content) {
 export function validateSkillExecutionContract(content) {
   for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
     if (!content.includes(requirement)) {
-      throw new Error(`run-claude skill is missing its ${name}`);
+      throw new Error(`run-rival-agent skill is missing its ${name}`);
     }
   }
 }
