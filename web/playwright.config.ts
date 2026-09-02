@@ -10,9 +10,11 @@ import {
   commonWebServer,
   developmentServerCommand,
   managedAccessTokenForRetry,
+  playwrightReportFolder,
   previewOnlyCommand,
   productionPreviewCommand,
 } from './playwright.shared';
+import type { FlakyReporterOptions } from './playwright-flaky-reporter';
 import { ENGINE_SMOKE } from './tests/tags';
 
 // An engine-smoke project only joins when its browser binary is installed: CI
@@ -120,9 +122,18 @@ export default defineConfig({
   workers,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? ciRetries : 0,
-  // The flaky reporter collects nothing when retries are off, so it needs no
-  // branch — it only has anything to say where retries can mask a failure.
-  reporter: [['list'], ['html', { open: 'never' }], ['./playwright-flaky-reporter.ts']],
+  // The flaky reporter annotates nothing when retries are off, so it needs no
+  // branch — it only has anything to say where retries can mask a failure. Its
+  // flaky.json is written on every run regardless, so a digest can tell a clean
+  // job from one whose reporter never ran.
+  reporter: [
+    ['list'],
+    ['html', { open: 'never', outputFolder: playwrightReportFolder }],
+    [
+      './playwright-flaky-reporter.ts',
+      { outputFolder: playwrightReportFolder } satisfies FlakyReporterOptions,
+    ],
+  ],
   use: {
     ...commonPlaywrightConfig.use,
     trace: 'on-first-retry',
