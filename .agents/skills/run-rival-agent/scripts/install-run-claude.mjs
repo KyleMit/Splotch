@@ -114,13 +114,16 @@ function isCurrent({ root, shims }, expected) {
   );
 }
 
+// `home` is injectable only so the check-mode test can run on a CI runner whose home is not the
+// fixed one; a real install still refuses any other machine.
 export function installRunClaude({
   check = false,
   root = INSTALL_ROOT,
   shims = INSTALL_SHIMS,
   stalePaths = STALE_PATHS,
+  home = homedir(),
 } = {}) {
-  if (homedir() !== EXPECTED_HOME || (!check && repositoryRoot !== EXPECTED_REPOSITORY_ROOT)) {
+  if (home !== EXPECTED_HOME || (!check && repositoryRoot !== EXPECTED_REPOSITORY_ROOT)) {
     throw new Error(`this trusted installer is fixed to ${EXPECTED_REPOSITORY_ROOT}`);
   }
   const expected = expectedInstalledFiles();

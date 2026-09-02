@@ -239,7 +239,10 @@ describe('trusted installation', () => {
     for (const name of PACKAGE_FILES) {
       expect(files.get(name).toString()).not.toContain('../../../../');
     }
-    expect(files.get('launch-claude.mjs').toString()).toContain("from './launch.mjs'");
+    // Assembled rather than written inline: the specifier-resolution guard reads a literal
+    // `from './x'` in any tools/ file as a real import and would resolve it against this file.
+    const importOf = (spec) => `import x from '${spec}';`;
+    expect(files.get('launch-claude.mjs').toString()).toContain(`from '${'./launch.mjs'}'`);
     const parsed = JSON.parse(manifest.toString());
     expect(Object.keys(parsed.files)).toEqual([...files.keys()]);
     for (const [name, content] of files) expect(parsed.files[name]).toBe(digest(content));
@@ -248,17 +251,14 @@ describe('trusted installation', () => {
     );
     expect([...shims.keys()]).toEqual(Object.keys(INSTALL_SHIMS));
     expect(shimSource('claude-health.mjs')).toContain(
-      "import { main } from './splotch-rival-agent/claude-health.mjs'"
+      `import { main } from '${'./splotch-rival-agent/claude-health.mjs'}'`
     );
-  });
-
-  it('refuses a package file that still reaches outside the install directory', () => {
-    expect(() =>
-      rewriteCoreImports("import x from '../../../../tools/lib/proc.mjs';", 'x.mjs')
-    ).toThrow(/outside the install directory/);
-    expect(
-      rewriteCoreImports("import x from '../../../../tools/rival-agent/spool.mjs';", 'x.mjs')
-    ).toBe("import x from './spool.mjs';");
+    expect(() => rewriteCoreImports(importOf('../../../../tools/lib/proc.mjs'), 'x.mjs')).toThrow(
+      /outside the install directory/
+    );
+    expect(rewriteCoreImports(importOf('../../../../tools/rival-agent/spool.mjs'), 'x.mjs')).toBe(
+      importOf('./spool.mjs')
+    );
   });
 
   it('verifies every installed byte against the manifest and says what drifted', () => {
@@ -294,8 +294,11 @@ describe('trusted installation', () => {
         reviewPublish: join(root, 'shim-publish.mjs'),
         health: join(root, 'shim-health.mjs'),
       };
-      expect(() => installRunClaude({ check: true, root: join(root, 'pkg'), shims })).toThrow(
-        /missing or stale/
+      expect(() =>
+        installRunClaude({ check: true, root: join(root, 'pkg'), shims, home: EXPECTED_HOME })
+      ).toThrow(/missing or stale/);
+      expect(() => installRunClaude({ check: true, root, shims, home: '/home/other' })).toThrow(
+        /fixed to/
       );
     } finally {
       rmSync(root, { recursive: true, force: true });

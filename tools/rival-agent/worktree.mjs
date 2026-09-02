@@ -36,9 +36,17 @@ export function snapshotWorkingTree(repoRoot) {
     git(repoRoot, ['add', '--all'], { env });
     const tree = git(repoRoot, ['write-tree'], { env });
     const head = git(repoRoot, ['rev-parse', 'HEAD']);
+    // Both identities are set explicitly: a CI runner has no git config, and commit-tree refuses
+    // to write a commit with an unknown committer.
+    const identity = {
+      GIT_AUTHOR_NAME: 'rival-agent',
+      GIT_AUTHOR_EMAIL: 'rival-agent@splotch',
+      GIT_COMMITTER_NAME: 'rival-agent',
+      GIT_COMMITTER_EMAIL: 'rival-agent@splotch',
+    };
     return requireOid(
       git(repoRoot, ['commit-tree', tree, '-p', head, '-m', 'rival-agent working-tree snapshot'], {
-        env: { ...env, GIT_AUTHOR_NAME: 'rival-agent', GIT_AUTHOR_EMAIL: 'rival-agent@splotch' },
+        env: { ...env, ...identity },
       }),
       'snapshot commit'
     );
