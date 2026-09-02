@@ -329,8 +329,13 @@ The full suite runs parallel workers, derived from the machine rather than hardc
 shares the CPU with the others, and a test that passes alone but fails in the full run is almost
 always a timing race under that contention, not a real regression. Locally `retries: 0` surfaces it
 immediately; CI retries, so a flake can still ship green — which is why a retried pass is annotated
-(`playwright-flaky-reporter.ts`) rather than left silent in the log of a job nobody opens. Write
-specs that can't race in the first place:
+(`playwright-flaky-reporter.ts`) rather than left silent in the log of a job nobody opens. Neither
+annotations nor job summaries can be searched across runs, so the same reporter also writes every
+run — clean or not — as `playwright-report/flaky.json` inside the job's uploaded report artifact:
+each retried pass with its project and spec file, plus the run id, attempt, commit, branch (the real
+head branch on a pull request, not the `<n>/merge` ref), shard, and test count, so masked flakes can
+be summed over a week of jobs instead of scraped from thirty log archives. Write specs that can't
+race in the first place:
 
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (Settings, ADR-0049) can drop the first click before their handler is attached, so a bare

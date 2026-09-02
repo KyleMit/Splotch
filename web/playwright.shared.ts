@@ -1,5 +1,6 @@
 // cSpell:ignore SLOWMO
 import { existsSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { chromium, type LaunchOptions, type PlaywrightTestConfig } from '@playwright/test';
 
 import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
@@ -89,6 +90,16 @@ export const playwrightSlowMo = Number(process.env.SLOWMO) || 0;
 export function chromiumLaunchOptions(): LaunchOptions {
   return { slowMo: playwrightSlowMo, executablePath: chromiumExecutablePath() };
 }
+
+/**
+ * Where the HTML reporter and playwright-flaky-reporter.ts both write. Pinned
+ * rather than left to the HTML reporter's default (the nearest package.json
+ * directory — the repo root under ADR-0024, not web/) so the two reporters share
+ * one folder by construction, not by two resolutions happening to agree. The
+ * upload steps in .github/workflows/test.yml name this folder by literal path;
+ * tools/tests/playwright-report-folder.test.mjs fails if either side moves.
+ */
+export const playwrightReportFolder = resolve(import.meta.dirname, '..', 'playwright-report');
 
 export const commonPlaywrightConfig = {
   testDir: './tests',

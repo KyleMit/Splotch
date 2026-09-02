@@ -255,8 +255,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-shard-${{ matrix.shard }}
-          # The HTML reporter resolves its default folder against the
-          # package.json directory — the repo root here (ADR-0024), not web/.
+          # playwrightReportFolder in web/playwright.shared.ts: the HTML report
+          # plus the flaky reporter's flaky.json. Drift-guarded by
+          # tools/tests/playwright-report-folder.test.mjs.
           path: playwright-report/
           if-no-files-found: error
           retention-days: 7
@@ -332,7 +333,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-webkit
-          # Same package.json-relative resolution as the shard reports above.
+          # Same pinned folder as the shard reports above.
           path: playwright-report/
           if-no-files-found: error
           retention-days: 7
