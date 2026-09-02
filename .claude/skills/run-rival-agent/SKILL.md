@@ -1,9 +1,14 @@
 ---
 name: run-rival-agent
-description: Get an independent second opinion from a fresh Codex CLI process on the ChatGPT plan's included usage — a read-only review of the current in-flight work, or a free-form question about this checkout. Use when the user asks for an outside/independent/second-opinion review, wants Codex to check the work before a PR, or when a change is risky enough to deserve a reviewer that did not write it. The mirror of the Codex-side run-claude skill.
+description: Launch the rival agent — a fresh Codex CLI process on the ChatGPT plan's included usage — for an independent second opinion: a read-only review of the current in-flight work, or a free-form question about this checkout. Use when the user asks for an outside/independent/second-opinion review, wants Codex to check the work before a PR, or when a change is risky enough to deserve a reviewer that did not write it. On Codex the same skill name launches Claude instead.
 ---
 
-# Run Codex
+# Run Rival Agent: Codex from Claude
+
+This is the Claude-side package of `run-rival-agent`; it launches Codex. The Codex-side package of
+the same name launches Claude through fixed wrappers, so shared prose can name `run-rival-agent`
+without knowing which runner it is on — each provider tree carries the package that launches the
+*other* vendor.
 
 Codex reviews the work; it never changes it. Both profiles pin a read-only sandbox, deny approval
 escalation, and disable every ambient tool surface, so Codex can read the checkout, run `git`, and

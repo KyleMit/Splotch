@@ -1,9 +1,14 @@
-# Run Claude — design notes
+# Run Rival Agent (Codex side: launching Claude) — design notes
 
-`run-claude` is a direct Codex-only package because its defining boundary is one agent runner
-launching another vendor's local authenticated CLI. A shared Claude package would imply Claude
-should orchestrate an independent Claude process and would spread Codex exec-policy details into a
-provider that cannot use them.
+This is the Codex-side package of `run-rival-agent`, the skill that launches the other vendor's
+local authenticated CLI; the Claude-side package, with its own note under `.claude/skill-notes/`,
+launches Codex. The two sides share one name so shared prose can reference the capability without
+knowing which runner it is on — each provider tree carries the package that launches the *other*
+vendor, and nothing detects the session at runtime. Until 2026-09 this side was the separate skill
+`run-claude`; the `run-claude:*` npm scripts and the installed `splotch-claude-*` wrappers keep that
+name because they name the process they launch. A copy of this package in the Claude tree would
+imply Claude should orchestrate an independent Claude process and would spread Codex exec-policy
+details into a provider that cannot use them.
 
 ## Capability split
 

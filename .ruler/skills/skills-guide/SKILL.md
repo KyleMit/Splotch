@@ -64,24 +64,26 @@ staging file, `fix-audits` burns the issues down.
 
 ## Cross-agent execution
 
-| Skill        | Use when you are…                                                                               |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| `run-claude` | **Launching** a fresh local Claude process from Codex for a second opinion or bounded review    |
-| `run-codex`  | **Launching** a read-only Codex process from Claude for an independent review of in-flight work |
+| Skill             | Use when you are…                                                                                                             |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `run-rival-agent` | **Launching** the other vendor's local CLI for an independent second opinion or review — Codex from Claude, Claude from Codex |
+
+One name, two packages: each provider tree carries the package that launches the *other* vendor, so
+a shared skill can name `run-rival-agent` without knowing which runner it is on.
 
 ## Pull requests — author, review, respond
 
 These augment the built-in PR flows rather than replacing them.
 
-| Skill                        | Use when you are…                                                                  |
-| ---------------------------- | ---------------------------------------------------------------------------------- |
-| `create-stacked-prs`         | **Sequencing** a multi-issue campaign into a chain of stacked PRs                  |
-| `pr-screenshots`             | **Opening** a PR that touches UI — screenshot/before-after/gif conventions         |
-| `create-pr-feedback-handoff` | **Handing off** this session's PRs to an independent reviewer — builds the prompt  |
-| `leave-pr-review`            | **Authoring** a review — local checkout, empirical verification, posts by default  |
-| `address-pr-review`          | **Receiving** a review — triage every comment, fix or rebut, reply and resolve     |
-| `implement-issue-stack`      | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-claude` |
-| `triage-dependabot-prs`      | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest |
+| Skill                        | Use when you are…                                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------------- |
+| `create-stacked-prs`         | **Sequencing** a multi-issue campaign into a chain of stacked PRs                       |
+| `pr-screenshots`             | **Opening** a PR that touches UI — screenshot/before-after/gif conventions              |
+| `create-pr-feedback-handoff` | **Handing off** this session's PRs to an independent reviewer — builds the prompt       |
+| `leave-pr-review`            | **Authoring** a review — local checkout, empirical verification, posts by default       |
+| `address-pr-review`          | **Receiving** a review — triage every comment, fix or rebut, reply and resolve          |
+| `implement-issue-stack`      | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-rival-agent` |
+| `triage-dependabot-prs`      | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest      |
 
 `create-stacked-prs` comes first in that table for a reason: it decides the *shape* of the campaign
 before any single PR exists, and every later skill in the group has to respect that shape. Its one
@@ -184,9 +186,9 @@ Every skill must appear here in exactly one primary group (cross-reference a sec
 when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
 `.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
 `tools/ruler/lib/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
-implementations, as does `analyze-session-transcripts`; `run-claude` and `implement-issue-stack` are
-Codex-only, and `run-codex` is Claude-only. When editing one, change only the declared provider;
-never copy one implementation into an undeclared provider tree.
+implementations, as do `analyze-session-transcripts` and `run-rival-agent` (each package launching
+the other vendor); `implement-issue-stack` is Codex-only. When editing one, change only the declared
+provider; never copy one implementation into an undeclared provider tree.
 
 **When you add, rename, or delete a skill, update this guide in the same change**, then run
 `npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
