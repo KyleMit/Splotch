@@ -22,6 +22,18 @@ job that it can sum. Alternatives considered for producing one:
   shared between TypeScript and YAML, which the cross-file rule says obliges a drift-guard test.
   Placing the record inside the folder the jobs already upload removes that obligation instead of
   satisfying it — provided the HTML reporter cannot clobber it (see below).
+* **Emit Playwright's built-in `json` reporter (or the `blob` event stream) into the artifact and
+  derive flakes in the digest.** The strongest alternative: in Playwright 1.62.1 the JSON reporter
+  already serializes the project name, the rootDir-relative file and line, every result's `status`
+  and `retry`, and aggregate flaky counts, and blob preserves the whole reporter event stream with
+  shard merging — so there would be no bespoke schema and no `schemaVersion` promise. Rejected on
+  three counts: the output is the entire suite, several megabytes per shard against a few hundred
+  bytes for a record that names only what flaked; neither carries the GitHub run identity — above
+  all the head branch — that the motivating sweep needed; and a JSON `outputFile` placed inside the
+  HTML folder depends on reporter `onEnd` order exactly as a naive custom write would, with no
+  `onExit` to move it to. The trade is a small versioned contract of this repo's own against a large
+  one of Playwright's; a digest that later wants per-test detail can add the JSON reporter beside
+  this record rather than replace it.
 * **Write only when something flaked.** Rejected: a digest that only ever sees flaky runs cannot
   compute a rate, and cannot tell a clean shard from one whose reporter never ran.
 * **Lower `retries` so flakes go red.** Out of scope, and ADR-0078 §4 already rejected it on the
@@ -61,6 +73,7 @@ gitignored so nothing churns.
   "schemaVersion": 1,
   "run": { "id": "…", "attempt": 1, "sha": "…", "branch": "…", "event": "pull_request" },
   "shard": { "current": 3, "total": 8 },
+  "status": "passed",
   "tests": 47,
   "flaky": [
     {
@@ -81,8 +94,14 @@ gitignored so nothing churns.
 * `project` and `file` are carried structurally (`test.parent.project()`, `test.location.file`
   relative to `config.rootDir`, Playwright's documented base for reporter paths) rather than parsed
   back out of the `›`-joined title; the tests pin that they agree with the title's segments.
-* `tests` counts each test once, on its first attempt, excluding skipped ones — the denominator for
-  a per-execution flake rate, which a 200-test shard and a four-test engine smoke need separately.
+* `status` is Playwright's verdict on the whole run (`passed`, `failed`, `timedout`, `interrupted`).
+  A run cut short by SIGINT or `globalTimeout` still reaches `onExit`, and the workflow's
+  `if: !cancelled()` still uploads its folder, so without this an interrupted shard would read as a
+  small clean sample. A digest keeps `passed` and `failed` and drops the rest; the record is marked
+  rather than omitted because an absent record is indistinguishable from a reporter that never ran.
+* `tests` counts each test once, on its first attempt, excluding skipped and interrupted ones — the
+  denominator for a per-execution flake rate, which a 200-test shard and a four-test engine smoke
+  need separately.
 * `schemaVersion` is present from the first version. With one version and no reader yet it is
   arguably speculative surface, but the artifacts are retained across commits and a digest reading a
   week of them must be able to tell a record it understands from one it would misread — the same
