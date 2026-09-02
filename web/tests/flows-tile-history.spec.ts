@@ -118,6 +118,11 @@ for (const brush of ['pen', 'crayon'] as const) {
 }
 
 test('tiled history folds its old prefix and retains twenty undo steps', async ({ page }) => {
+  // Real strokes past the depth cap, the fold's idle wait, and a full unwind:
+  // at the supported worker count this runs within seconds of the default
+  // budget and blows through it at CI's oversubscription, so it takes the
+  // slow budget its two sibling stress tests below already declare.
+  test.slow();
   await gotoApp(page);
   const foldedPrefix = 3;
   const strokeCount = MAX_UNDO_DEPTH + foldedPrefix;
