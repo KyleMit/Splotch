@@ -37,7 +37,7 @@ export function readManifestAttribute(manifest, attribute) {
   const at = manifest.indexOf(key);
   if (at < 0) return null;
 
-  let p = at + key.length;
+  const p = at + key.length;
   if (manifest[p] !== 0x1a) return null; // field 3 (value), length-delimited
   const { value: length, next } = readVarint(manifest, p + 1);
   return manifest.subarray(next, next + length).toString('utf8');

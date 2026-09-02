@@ -89,7 +89,7 @@ describe('awaitGeneration', () => {
     }
   });
 
-  it('gives up as retryable once it has waited longer than a child should', async () => {
+  it('gives up as retryable once it has waited longer than a child would', async () => {
     vi.useFakeTimers();
     try {
       // Never settles, so the sleeps run the budget out on their own.
