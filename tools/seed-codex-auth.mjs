@@ -27,12 +27,16 @@ export function decodeSeed(raw) {
   return JSON.parse(json);
 }
 
+export function encodeSeed(auth) {
+  return Buffer.from(JSON.stringify(auth)).toString('base64');
+}
+
 export function seedAgeDays(auth, now) {
   const lastRefresh = Date.parse(auth.last_refresh ?? '');
   return Number.isNaN(lastRefresh) ? undefined : (now - lastRefresh) / DAY_MS;
 }
 
-function assertSeed(auth) {
+export function assertSeed(auth) {
   assertSubscriptionAuth(auth);
   if (!auth.tokens?.refresh_token) {
     throw new Error('the seed carries no refresh token, so it would die at the first expiry');

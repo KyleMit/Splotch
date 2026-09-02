@@ -115,7 +115,9 @@ when the VM is reclaimed. Three ways of getting a login there were weighed on 20
   the seed through `assertSubscriptionAuth` plus a refresh-token check. The setup script installs
   the CLI but never touches the login, because the environment snapshot must not hold a credential.
   Base64 is the documented paste form because the dialog takes `.env` lines and a raw JSON value's
-  quotes are at the mercy of its parser.
+  quotes are at the mercy of its parser. `npm run run-codex:seed` produces the value on the laptop
+  through the same encoder the hook decodes, signing in under `~/.codex-cloud` so the seed never
+  shares a chain with the working login.
 
 The seed's shelf life is set by refresh-token rotation, not expiry. Codex refreshes a bundle whose
 `last_refresh` is older than about eight days and rotates the refresh token as it does; the rotated

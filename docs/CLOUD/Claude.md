@@ -288,16 +288,20 @@ needed on every fresh VM. Instead:
 
 ### Seeding
 
-On your own machine, create a **dedicated** login and copy it as base64:
+On your own machine:
 
 ```bash
-CODEX_HOME=~/.codex-cloud codex login
-base64 < ~/.codex-cloud/auth.json | tr -d '\n' | pbcopy
+npm run run-codex:seed
 ```
 
-Set `CODEX_AUTH_JSON` to the clipboard contents in the environment dialog; it takes effect on the
-next session. If the environment's network access is Trusted or Custom rather than Full, also allow
-`chatgpt.com` and `auth.openai.com` — `.claude/cloud/environment.example` carries both entries.
+It signs in a **dedicated** login under `~/.codex-cloud` (one browser round-trip), checks that the
+result is a ChatGPT-plan login carrying a refresh token, and copies its base64 to the clipboard —
+`pbcopy` on macOS, `wl-copy`, `xclip`, or `xsel` on Linux, an owner-only temp file when none is
+present; the value never reaches the terminal. Paste it as `CODEX_AUTH_JSON` in the **Update cloud
+environment** dialog at claude.ai/code, under Environment variables. It takes effect on the next
+session and does not rebuild the snapshot. If the environment's network access is Trusted or Custom
+rather than Full, also allow `chatgpt.com` and `auth.openai.com` —
+`.claude/cloud/environment.example` carries both entries.
 
 Dedicated means a separate `CODEX_HOME`, never a copy of the working `~/.codex/auth.json`. OAuth
 refresh rotates the refresh token and retires the previous one **within the same chain**: two

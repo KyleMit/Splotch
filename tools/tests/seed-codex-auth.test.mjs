@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CODEX_TOKEN_REFRESH_INTERVAL_DAYS,
   decodeSeed,
+  encodeSeed,
   SEED_ENVIRONMENT_KEY,
   SEED_WARNING_AGE_DAYS,
   seedCodexAuth,
@@ -20,7 +21,7 @@ function planAuth(ageDays = 1) {
 }
 
 function base64(auth) {
-  return Buffer.from(JSON.stringify(auth)).toString('base64');
+  return encodeSeed(auth);
 }
 
 function run({ seed, existing, remote = true, installed = true, now = NOW } = {}) {

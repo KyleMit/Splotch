@@ -22,7 +22,7 @@ ADMIN_ACCESS_TOKEN=                              # /admin console + /api/admin/*
 ALLOWED_TOKENS_LIST=                             # seed access codes
 USAGE_GRANT_ID_SECRET=                           # HMAC key for opaque managed-code usage ids
 # Codex ChatGPT-plan login for run-rival-agent: base64 of an auth.json from a DEDICATED login
-# (`CODEX_HOME=~/.codex-cloud codex login`), never your working ~/.codex one — see
+# (`npm run run-codex:seed` signs it in and copies the value), never your working ~/.codex one — see
 # docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan", for the refresh-rotation shelf life.
 CODEX_AUTH_JSON=
 # Non-secret — safe to pin here. Lets plain `npm run dev` accept the tunnel host (vite
