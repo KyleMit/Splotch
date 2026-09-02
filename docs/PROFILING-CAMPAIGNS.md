@@ -587,8 +587,9 @@ npm run perf:campaign:sources -- --target=android-device-web \
   --modes=landscape-light,landscape-dark \
   --manifest=scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 
-# 3. regenerate; every untouched cell keeps its preserved evidence
-npm run gen:performance-matrix -- scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
+# 3. regenerate; every untouched cell keeps its preserved evidence. --strict makes this
+#    regenerate a currency claim: any captured row left behind fails it (ADR-0158)
+npm run gen:performance-matrix -- --strict scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 
 Two properties of step 2 decide how small an increment can be:

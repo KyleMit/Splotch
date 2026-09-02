@@ -253,9 +253,11 @@ For each cluster:
    can affect.
 9. Broaden across all affected themes, orientations, brushes/actions, and web/native targets.
 10. Recapture complete affected modes, not only the original sample.
-11. Fold only faithful, comparable captures into the authoritative matrix. Regenerate it with
-    `npm run gen:performance-matrix -- <manifest>`; that command runs the staleness check in-process
-    against the manifest it resolved. Validate every generator-owned output and prove
+11. Fold only faithful, comparable captures into the authoritative matrix. Mark every captured row
+    the campaign did not recapture `preserved`, then regenerate with
+    `npm run gen:performance-matrix -- --strict <manifest>`; that command runs the staleness check
+    in-process against the manifest it resolved, and `--strict` is what turns a row left behind into
+    a failure rather than a report (ADR-0158). Validate every generator-owned output and prove
     JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified product improvement separately, update raw
     evidence and remaining status in the current stack-tip PR body, and proceed only from a clean

@@ -73,9 +73,10 @@ regeneration, and the campaign wrap-up that claims currency runs `--strict` and 
 because a commit landed.
 
 − The check has no teeth unless someone passes `--strict`. The campaign runbook
-(`docs/PROFILING-CAMPAIGNS.md`, step 3) names the regenerate that must, and a wrap-up that skips it
-can once again publish stale rows as current. The default output names the stale rows either way, so
-the omission is visible in the transcript rather than hidden.
+(`docs/PROFILING-CAMPAIGNS.md`, step 3) and the regenerate steps of the `capture-performance-matrix`
+and `improve-performance-matrix` skills all pass it, and a wrap-up that skips those steps can once
+again publish stale rows as current. The default output names the stale rows either way, so the
+omission is visible in the transcript rather than hidden.
 
 − A reader of the console table has to know that STALE is informational by default. The summary line
 says so on every run.
