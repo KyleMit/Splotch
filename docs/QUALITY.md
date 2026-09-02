@@ -89,9 +89,10 @@ Drawing holds its frame budget on the supported device floor, and startup stays 
 byte budget.
 
 **Backed by.** The `perf:*` harness across web, Android, and iOS. The committed matrix with
-`check:matrix-staleness`, which compares the content digest of `web/src` against the commit a cell
-claims to measure and refuses to call a stale cell current. The WebKit commit gates and the undo
-commit-P95 gate. `check-bundle-budgets.mjs` holds the startup, lazy-chunk, and native-export sizes;
+`check:matrix-staleness`, which compares the content digest of the measured product surface against
+the commit a cell claims to measure, reports a stale cell at every regeneration, and fails on one
+only under `--strict` (ADR-0158). The WebKit commit gates and the undo commit-P95 gate.
+`check-bundle-budgets.mjs` holds the startup, lazy-chunk, and native-export sizes;
 `check-pwa-precache.mjs` holds precache integrity. Skills: `profiling`,
 `capture-performance-matrix`, `start-capture-session` before physical-device work, and
 `lighthouse-audit` for page load.
@@ -218,9 +219,9 @@ change that invalidates it.
 
 **Backed by.** `ruler:check` reruns the generation pipeline and fails if output changed;
 `check:skill-refs` catches the wrong invocation sigil for the tree it appears in; `check:adrs`
-guards record integrity; `check:matrix-staleness` guards performance claims; `scrapbook:check`
-guards the published index. Skills: `skills-guide` for the catalog, `create-handoff` and
-`resume-handoff` for session-to-session transfer.
+guards record integrity; `check:matrix-staleness` reports drifted performance claims;
+`scrapbook:check` guards the published index. Skills: `skills-guide` for the catalog,
+`create-handoff` and `resume-handoff` for session-to-session transfer.
 
 ## Developer Experience
 

@@ -6,6 +6,7 @@ import {
   implicitBaseWarning,
   modeProvenance,
   everyChangeIsASpec,
+  stalenessOutcome,
 } from '../check-matrix-staleness.mjs';
 
 const target = (id, modes) => ({ id, modes });
@@ -212,5 +213,58 @@ describe('implicitBaseWarning', () => {
     expect(
       implicitBaseWarning({ explicitBase: false, headSha: 'tip', mergeBaseSha: null })
     ).toBeNull();
+  });
+});
+
+// Rows go stale by design between campaigns — the suite cannot run on every
+// product commit — so a STALE row is the committed matrix's normal state and
+// must not fail the default run. On 2026-09-02 one CSS commit after the
+// campaign's capture marked four rows stale and turned every regeneration red
+// (ADR-0158). Only the regenerate that asserts currency, --strict, fails on it.
+describe('stalenessOutcome', () => {
+  const stale = { target: 'ipad-device-web', capturedAt: '31476d91d3ec', verdict: 'STALE' };
+  const current = { target: 'mac-chrome', capturedAt: 'abc', verdict: 'current' };
+  const unverifiable = { target: 'mac-safari', capturedAt: 'gone', verdict: 'UNVERIFIABLE' };
+  const at = (rows, strict) => stalenessOutcome({ rows, resolvedBase: 'HEAD', strict });
+
+  it('reports a stale row without failing by default', () => {
+    const outcome = at([stale, current], false);
+
+    expect(outcome.failed).toBe(false);
+    expect(outcome.stale).toEqual([stale]);
+    expect(outcome.lines.join('\n')).toContain('ipad-device-web (31476d91d3ec)');
+    expect(outcome.lines.join('\n')).toContain('Expected between campaigns');
+  });
+
+  it('fails a stale row under --strict, and says what asserting currency needs', () => {
+    const outcome = at([stale, current], true);
+
+    expect(outcome.failed).toBe(true);
+    expect(outcome.lines.join('\n')).toContain('--strict');
+  });
+
+  // Neither mode may call an unreachable commit current: a shallow clone makes
+  // every lookup fail, and "current" there is the failure shape this exists to end.
+  it('warns about an unreachable commit by default and never calls it current', () => {
+    const outcome = at([unverifiable], false);
+
+    expect(outcome.failed).toBe(false);
+    expect(outcome.lines.join('\n')).toContain('WARN');
+    expect(outcome.lines.join('\n')).not.toContain('all from the current product surface');
+  });
+
+  it('fails an unreachable commit under --strict', () => {
+    expect(at([unverifiable], true).failed).toBe(true);
+  });
+
+  it('reports every row current when nothing drifted, in either mode', () => {
+    for (const strict of [false, true]) {
+      const outcome = at([current], strict);
+
+      expect(outcome.failed).toBe(false);
+      expect(outcome.lines).toEqual([
+        '1 captured cell group(s), all from the current product surface.',
+      ]);
+    }
   });
 });
