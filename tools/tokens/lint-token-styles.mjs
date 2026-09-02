@@ -35,6 +35,13 @@
 //    rgba() would for color — the elevation tokens cover the modal/settings
 //    surfaces, and rule 2 of the design skill governs the rest.
 //
+// 4. !important — zero tolerance, no baseline yet. A declaration that needs
+//    !important is out-arguing the cascade instead of fixing the specificity
+//    or source-order problem underneath, and the next reader inherits a rule
+//    that can only be beaten by another !important. The first legitimate
+//    one-off gets a BASELINE-style per-file allowlist map like the hex
+//    ratchet, never an inline exception or weakened check.
+//
 // Run via `npm run lint:tokens` (wired into the CI Quality job).
 // The countRaw* seams are unit-tested in
 // web/src/lib/design/lint-token-styles.test.ts.
@@ -157,6 +164,18 @@ export function countRawHexCss(cssText) {
   return (stripCss(cssText).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
 }
 
+// Property names and keywords are case-insensitive in CSS, and the grammar
+// allows whitespace between the ! and the keyword.
+const IMPORTANT = /!\s*important\b/gi;
+
+export function countImportantCss(cssText) {
+  return (stripCss(cssText).match(IMPORTANT) ?? []).length;
+}
+
+export function countImportant(source) {
+  return (strippedStyles(source).match(IMPORTANT) ?? []).length;
+}
+
 export function countRawZIndexCss(cssText) {
   return (stripCss(cssText).match(/z-index\s*:\s*-?\d{2,}/g) ?? []).length;
 }
@@ -233,6 +252,13 @@ async function main() {
           `now lower its entry in tools/tokens/lint-token-styles.mjs so the ratchet holds.`
       );
     }
+    const importantCount = isCss ? countImportantCss(source) : countImportant(source);
+    if (importantCount > 0) {
+      problems.push(
+        `${rel}: ${importantCount} !important declaration(s) in <style> — fix the specificity or ` +
+          `source order instead; a genuine one-off gets a baseline allowlist here, never an inline pass.`
+      );
+    }
     const fontCount = isCss ? countRawFontSizeCss(source) : countRawFontSize(source);
     const fontAllowed = FONT_SIZE_BASELINE.get(rel) ?? 0;
     if (fontCount > fontAllowed) {
@@ -265,7 +291,7 @@ async function main() {
   }
   console.log(
     `Token style lint passed (${BASELINE.size} allowlisted raw-hex files, ` +
-      `${FONT_SIZE_BASELINE.size} allowlisted raw-font-size files, 0 raw z-index).`
+      `${FONT_SIZE_BASELINE.size} allowlisted raw-font-size files, 0 raw z-index, 0 !important).`
   );
 }
 

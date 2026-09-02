@@ -5,6 +5,8 @@ import { describe, it, expect } from 'vitest';
 // the token tests. The script's scan-and-exit path only runs when invoked
 // directly, so this import is side-effect free.
 import {
+  countImportant,
+  countImportantCss,
   countRawFontSize,
   countRawFontSizeCss,
   countRawHex,
@@ -142,5 +144,27 @@ describe('countRawFontSizeCss', () => {
     expect(
       countRawFontSizeCss('.a { font-size: 13px; } .b { font-size: var(--font-size-sm); }')
     ).toBe(1);
+  });
+});
+
+describe('countImportant', () => {
+  it('counts !important only inside <style> blocks', () => {
+    const source = `<script>const s = 'very !important string';</script>
+<style>.a { color: red !important; } .b { color: blue; }</style>`;
+    expect(countImportant(source)).toBe(1);
+  });
+
+  it('ignores mentions in CSS comments', () => {
+    expect(countImportant('<style>/* never use !important */ .a { color: red; }</style>')).toBe(0);
+  });
+
+  it('matches the case-insensitive, whitespace-tolerant grammar', () => {
+    expect(countImportant('<style>.a { color: red ! IMPORTANT; }</style>')).toBe(1);
+  });
+});
+
+describe('countImportantCss', () => {
+  it('counts a plain .css source without needing a style tag', () => {
+    expect(countImportantCss('.a { display: none !important; } .b { color: red; }')).toBe(1);
   });
 });
