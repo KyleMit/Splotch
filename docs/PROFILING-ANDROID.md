@@ -179,11 +179,15 @@ Do this **before** quoting a Perfetto-traced capture as a performance result, no
 `docs/PROFILING-CAMPAIGNS.md` is the full catalogue. Three of its entries bite hardest on Android:
 
 * **Input cadence is a measured variable.** The Appium browser transport drives this phone at 46.8
-  contact moves/s against a 100–170 band, and cells captured that way score ~11% lost frame time
-  that means nothing. Use the split transport (`perf:device:frames`), and read the fidelity verdict
-  before the result.
-* **The fidelity gate is not yet satisfiable on Android** — its `pressure` and `contactGeometry`
-  thresholds are calibrated from a hand capture on the iPad, and Chrome cannot produce them. Do not
-  widen it; it is what proves a run exercised the real touch path.
+  contact moves/s — 0.44 moves per painted frame — and cells captured that way score ~11% lost frame
+  time that means nothing. Use the split transport (`perf:device:frames`), and read the fidelity
+  verdict before the result.
+* **The fidelity gate asks Android only what Chrome can answer.** `pressure`, `contactGeometry` and
+  `coalescedPerMove` were measured to be identical for a real finger and for `adb shell input` on
+  this phone, so `android-chrome` declares them `not-applicable` and they are absent from the
+  verdict rather than present and passing (ADR-0141). What is left — `trustedTouch` and `cadence` —
+  is what proves a run exercised the real touch path, and `cadence` gates on moves per frame rather
+  than on a rate, because a rate encodes the panel's refresh instead of the stream's density
+  (ADR-0145). Never widen either to make a transport pass.
 * **Never run heavy host work during a capture.** The host drives input dispatch, and contention
   changes cadence.

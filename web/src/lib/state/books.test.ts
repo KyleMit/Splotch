@@ -211,21 +211,34 @@ describe('responsive image sources', () => {
       coloringBookComponent.indexOf('async function pickPage'),
       coloringBookComponent.indexOf('async function clearAndClose')
     );
+    const suppressRetiringTransitionsAt = pickPage.indexOf('retiringAfterPageSelection = true');
     const hideAt = pickPage.indexOf('coloringBookModal.hide()');
     const applyAt = pickPage.indexOf('applyColoringPageWithMagicUndo');
+    expect(suppressRetiringTransitionsAt).toBeGreaterThanOrEqual(0);
     expect(hideAt).toBeGreaterThanOrEqual(0);
     expect(applyAt).toBeGreaterThanOrEqual(0);
+    expect(suppressRetiringTransitionsAt).toBeLessThan(hideAt);
     expect(hideAt).toBeLessThan(applyAt);
+    expect(coloringBookComponent).toContain('retiringAfterPageSelection = false');
+    const retiringRule = coloringBookComponent.slice(
+      coloringBookComponent.indexOf('.retiring-after-page-selection .coloring-tile {'),
+      coloringBookComponent.indexOf('.coloring-tile img {')
+    );
+    expect(retiringRule).toContain('transition: none');
     expect(coloringBookComponent).toContain('COLORING_IMAGE_SIZES.pageSelector[orientation]');
     expect(activePageChipComponent).toContain('srcset=');
     expect(activePageChipComponent).toContain('COLORING_IMAGE_SIZES.activePageChip');
   });
 
-  it('eases the active-page chip out of its pressed state', () => {
-    const transition = activePageChipComponent.match(/transition:\s*([\s\S]*?);/)?.[1];
-    expect(transition).toContain('transform var(--duration-fast) ease');
-    expect(activePageChipComponent).toContain('.active-page-chip:active');
-    expect(activePageChipComponent).toContain('transform: scale(0.92)');
+  it('uses danger colors for active-page press feedback', () => {
+    const activeRule = activePageChipComponent.slice(
+      activePageChipComponent.indexOf('.active-page-chip:active,'),
+      activePageChipComponent.indexOf('@media (max-width: 360px)')
+    );
+    expect(activeRule).toContain('background: var(--danger-wash)');
+    expect(activeRule).toContain('border-color: var(--danger-text)');
+    expect(activeRule).toContain('background: var(--danger-text)');
+    expect(activeRule).toContain('fill: var(--surface)');
   });
 
   // The `sizes` hint's leading clause and the CSS that changes the grid under it

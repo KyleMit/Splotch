@@ -48,6 +48,8 @@ interface MagicBrushHost {
   paperSize: () => { width: number; height: number } | null;
   // The exact paper-coordinate rectangle the sheet must cover.
   sheetBounds: () => { x: number; y: number; width: number; height: number } | null;
+  hasRetainedOps: () => boolean;
+  magicActive: () => boolean;
   repaint: () => void;
 }
 
@@ -115,7 +117,15 @@ const patternRegionByTarget = new WeakMap<
   { x: number; y: number; width: number; height: number }
 >();
 
-function invalidateSheet() {
+function releaseAndInvalidateSheet() {
+  if (!host?.hasRetainedOps() && sheetCanvas) {
+    if ('close' in sheetCanvas) sheetCanvas.close();
+    else {
+      sheetCanvas.width = 0;
+      sheetCanvas.height = 0;
+    }
+    sheetCanvas = null;
+  }
   sheetReady = false;
   sheetSnapshot = null;
   patternCache = new WeakMap();
@@ -199,7 +209,7 @@ function beginGradientRaster(gradient: RainbowGradient) {
   if (!bounds || bounds.width <= 0 || bounds.height <= 0) return false;
   const request = { gradient };
   pendingGradientRaster = request;
-  invalidateSheet();
+  releaseAndInvalidateSheet();
   void rasterizeMagicSheetInWorker({
     gradient,
     width: bounds.width,
@@ -419,7 +429,7 @@ function extendSheetEdges(
 // within the paper, matching the overlay image, then its edge colours extend
 // through the fill's own letterbox margins; a gradient fills the whole sheet.
 function rasterizeSheet() {
-  invalidateSheet();
+  releaseAndInvalidateSheet();
   const paper = host?.paperSize();
   const bounds = host?.sheetBounds();
   if (!paper || !bounds || bounds.width <= 0 || bounds.height <= 0) return;
@@ -574,8 +584,14 @@ function cancelDeferredFill() {
 // straight into the sheet; it decodes async, and magic ops recorded before it's
 // ready reveal nothing until the load handler repaints.
 export function setColorSheet(colorUrl: string | null) {
+  const resolvesDeferredFill = deferredFillTimer !== null && colorUrl === fillUrl;
   cancelDeferredFill();
-  if (colorUrl === fillUrl && (colorUrl === null || fillImage || pendingLoad)) return;
+  if (
+    !resolvesDeferredFill &&
+    colorUrl === fillUrl &&
+    (colorUrl === null || fillImage || pendingLoad)
+  )
+    return;
   // Whatever is still decoding is for the outgoing source — disown it.
   pendingLoad = null;
   pendingFillRaster = null;
@@ -583,29 +599,32 @@ export function setColorSheet(colorUrl: string | null) {
   fillUrl = colorUrl;
   fillImage = null;
   if (!colorUrl) {
-    // Page removed — the sheet reverts to the gradient source if one exists.
-    rasterizeActiveSheet();
-    host?.repaint();
+    if (host?.magicActive() || host?.hasRetainedOps()) {
+      rasterizeActiveSheet();
+      host?.repaint();
+    } else {
+      releaseAndInvalidateSheet();
+    }
     return;
   }
-  invalidateSheet();
+  releaseAndInvalidateSheet();
   loadSheetImage(colorUrl);
 }
 
-// Reserve an incoming page without immediately starting its fill transfer. The
+// Reserve an incoming source without immediately starting its fill transfer. The
 // overlay line art owns network priority, but new strokes must stop sampling the
-// outgoing page as soon as the child selects its replacement. DrawingCanvas pays
-// the reservation with setColorSheet after the overlay settles; the fallback keeps
-// the brush self-healing if that decode never settles. Recorded ops retain their
+// outgoing page as soon as the child replaces or clears it. DrawingCanvas pays the
+// reservation with setColorSheet after the overlay settles; the fallback keeps the
+// brush self-healing if that effect never settles. Recorded ops retain their
 // captured snapshot until the replacement sheet recodes them.
-export function deferColorSheet(colorUrl: string) {
+export function deferColorSheet(colorUrl: string | null) {
   cancelDeferredFill();
   pendingLoad = null;
   pendingFillRaster = null;
   pendingGradientRaster = null;
   fillUrl = colorUrl;
   fillImage = null;
-  invalidateSheet();
+  releaseAndInvalidateSheet();
   deferredFillTimer = setTimeout(() => setColorSheet(colorUrl), DEFERRED_FILL_FALLBACK_MS);
 }
 
@@ -636,6 +655,6 @@ export function clearMagicGradient() {
   activeGradient = null;
   pendingGradientRaster = null;
   if (!fillUrl) {
-    invalidateSheet();
+    releaseAndInvalidateSheet();
   }
 }

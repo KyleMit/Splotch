@@ -31,6 +31,13 @@ timings from `dumpsys gfxinfo … framestats`, whole-device Perfetto traces (inc
 answers "was the app slow or was it descheduled?"), and CDP `Tracing` inside the WebView — the one
 instrument with no iPad counterpart. Start at its "Which instrument answers which question" table.
 
+**[`docs/PROFILING-MECHANICS.md`](../../../docs/PROFILING-MECHANICS.md)** answers what the harness
+is *made of* rather than what a command measures: the layer model, which transport drives which
+deployment target, what each transport actually is, every driver that was tried and ruled out with
+the evidence against it, and a glossary of the toolchain's vocabulary. Read it when choosing a
+transport, when a capture path fails and the question is whether the tool or the device is at fault,
+or when a term in an artifact is unfamiliar.
+
 Two things to check before drawing a conclusion:
 
 * **Pick the command that brackets the window you care about.** Every web command except

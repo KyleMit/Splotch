@@ -432,6 +432,8 @@
   }
 
   .hexagon {
+    --hex-hover-scale: 0.94;
+
     position: relative;
     width: calc(60px * var(--hex-scale));
     height: calc(69px * var(--hex-scale)); /* For a regular hexagon, height = width * 1.15 */
@@ -452,8 +454,9 @@
     inset: 0;
     background-color: var(--color);
     clip-path: var(--hex-clip);
+    transform-origin: center;
     transition:
-      inset 0.1s ease,
+      transform 0.1s ease,
       filter 0.1s ease;
   }
 
@@ -466,7 +469,7 @@
   }
 
   .hexagon.hover::after {
-    inset: 2px;
+    transform: scale(var(--hex-hover-scale));
     filter: brightness(1.2);
   }
 
@@ -477,7 +480,7 @@
     }
 
     .hexagon:hover::after {
-      inset: 2px;
+      transform: scale(var(--hex-hover-scale));
       filter: brightness(1.2);
     }
   }
@@ -511,5 +514,17 @@
 
   .hexagon.selected::after {
     inset: 3px;
+  }
+
+  /* The inset-based hover rule was overridden by these states, so their ring
+     widths stay fixed while the brightness feedback remains active. */
+  .hexagon.hover:is(.border, .border-dim, .selected)::after {
+    transform: none;
+  }
+
+  @media (hover: hover) {
+    .hexagon:hover:is(.border, .border-dim, .selected)::after {
+      transform: none;
+    }
   }
 </style>

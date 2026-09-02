@@ -874,6 +874,20 @@ export function withActionControlScoreability(actions) {
   };
 }
 
+function withActionReadinessSummary(actions) {
+  if (!actions || typeof actions !== 'object' || !Array.isArray(actions.results)) return actions;
+  const comparableResults = actions.results.filter(
+    (result) => !ACTION_CONTROL_LABELS.has(result.label)
+  );
+  return {
+    ...actions,
+    worst: {
+      ...actions.worst,
+      readyP95: round(maximum(comparableResults.map((result) => result.ready?.p95))),
+    },
+  };
+}
+
 function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, targetId) {
   if (!sources?.length) return null;
   const captures = sources.map((source) =>
@@ -900,6 +914,7 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, ta
             .map((result) => result.firstFrame?.p95)
         )
       ),
+      readyP95: round(maximum(comparableResults.map((result) => result.ready?.p95))),
       postActionFrameP95: round(
         maximum(comparableResults.map((result) => result.postActionFrames?.p95))
       ),
@@ -969,14 +984,16 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
         normalizedMode
       )
     ),
-    actions: withActionControlScoreability(
-      resolveSection(normalizedMode.actionSources, 'actions', () =>
-        normalizeActions(
-          normalizedMode.actionSources,
-          finalProductCommit,
-          sourceDirectory,
-          normalizedMode,
-          target.id
+    actions: withActionReadinessSummary(
+      withActionControlScoreability(
+        resolveSection(normalizedMode.actionSources, 'actions', () =>
+          normalizeActions(
+            normalizedMode.actionSources,
+            finalProductCommit,
+            sourceDirectory,
+            normalizedMode,
+            target.id
+          )
         )
       )
     ),
@@ -1309,7 +1326,7 @@ function actionHeatmap(matrix) {
               ? 'PASS'
               : 'FAIL'
             : `unscoreable: this mode\u2019s idle frame control is ${target.actions?.controlEvidence ?? 'absent'}`;
-          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${firstFrameP95Text(result)} · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
           const cellClass = attributable ? heatClass(ratio) : 'unscoreable';
           return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
         })
@@ -1529,10 +1546,10 @@ function renderMarkdown(matrix) {
   const actionRows = rows.map((target) => {
     const label = `${target.targetNumber}. ${rowLabel(target)}`;
     if (target.status !== 'captured') {
-      return [label, '—', '—', '—', '—', `Unavailable: ${target.reason}`];
+      return [label, '—', '—', '—', '—', '—', `Unavailable: ${target.reason}`];
     }
     if (!target.actions) {
-      return [label, '—', '—', '—', '—', 'Not measured'];
+      return [label, '—', '—', '—', '—', '—', 'Not measured'];
     }
     const comparable = comparableActionResults(target.actions);
     const failures = comparable.filter((result) => !result.passed).map((result) => result.label);
@@ -1546,6 +1563,7 @@ function renderMarkdown(matrix) {
       `${comparable.filter((result) => result.passed).length} / ${comparable.length}`,
       `${target.actions.finalProductCommitActionCount} / ${comparable.length}`,
       allFirstFramesNa ? 'N/A' : fmt(target.actions.worst.firstFrameP95),
+      fmt(target.actions.worst.readyP95),
       `${fmt(target.actions.worst.postActionFrameP95)} / ${fmt(target.actions.worst.postActionFrameMax)}`,
       failures.length ? failures.join('; ') : 'None',
     ];
@@ -1593,7 +1611,9 @@ max ≤ ${matrix.gates.drawing.paintMaxMs} ms, and cumulative lost frame time �
 passes at engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, and next-frame max ≤
 ${matrix.gates.undo.nextFrameMaxMs} ms. A discrete action passes at first-frame P95 ≤
 ${matrix.gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${matrix.gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤
-${matrix.gates.actions.postActionFrameMaxMs} ms. Rotation first frames on iPad Safari are not applicable rather than gated:
+${matrix.gates.actions.postActionFrameMaxMs} ms. Readiness P95 is reported separately because its
+completion semantics and transport polling resolution differ by action; a frame-gate pass is not
+evidence that an optimization preserved end-to-end response time. Rotation first frames on iPad Safari are not applicable rather than gated:
 under ADR-0142's \`resize\` anchor the value reads 0–2 ms by construction there, so those cells
 render N/A and rotation is scored by the post-action frame gates alone.
 
@@ -1636,10 +1656,11 @@ ${markdownTable(['Target', 'Timing', 'Result', 'Product commit'], undoRows)}
 The idle-frame profiling control is excluded from the columns below and **consulted** rather than
 merely dropped: it performs no interaction, so a mode where it fails its own gate cannot attribute
 any action score to the product. Such a mode is marked \`no control\` and left out of the
-cross-mode failure ranking. The post-action column is \`P95 / max\` in milliseconds. Full
-per-action timing and provenance are available in the interactive matrix and normalized JSON.
+cross-mode failure ranking. Ready P95 is the action-specific observable completion time. The post-action column is
+\`P95 / max\` in milliseconds. Full per-action timing and provenance are available in the
+interactive matrix and normalized JSON.
 
-${markdownTable(['Target', 'Passing', 'At final commit', 'Worst first P95', 'Worst post P95 / max', 'Failed actions'], actionRows)}
+${markdownTable(['Target', 'Passing', 'At final commit', 'Worst first P95', 'Worst ready P95', 'Worst post P95 / max', 'Failed actions'], actionRows)}
 
 ## Method
 
