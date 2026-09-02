@@ -124,7 +124,7 @@ describe('FlakyPassReporter', () => {
    * are pinned for the same reason the summary is unset: so the record's `run`
    * is the fixture's, whether or not this test itself runs on Actions.
    */
-  async function run(results, { summaryPath, shard = null, env = {} } = {}) {
+  async function run(results, { summaryPath, shard = null, status = 'passed', env = {} } = {}) {
     const outputFolder = tempDir('flaky-record-');
     const reporter = new FlakyPassReporter({ outputFolder });
     const lines = [];
@@ -151,7 +151,7 @@ describe('FlakyPassReporter', () => {
     try {
       reporter.onBegin({ rootDir: ROOT_DIR, shard });
       for (const [test, result] of results) reporter.onTestEnd(test, result);
-      reporter.onEnd();
+      reporter.onEnd({ status });
       await reporter.onExit();
     } finally {
       console.log = log;
@@ -215,9 +215,25 @@ describe('FlakyPassReporter', () => {
       schemaVersion: FLAKY_RECORD_SCHEMA_VERSION,
       run: null,
       shard: null,
+      status: 'passed',
       tests: 1,
       flaky: [],
     });
+  });
+
+  // A run cut short by SIGINT or globalTimeout still reaches onExit, and the
+  // workflow still uploads its folder. Unmarked, that record would be summed as
+  // a small clean sample — and a test the interruption never ran is not one.
+  it('marks an interrupted run and leaves its unrun tests out of the count', async () => {
+    const written = await record(
+      [
+        [testCase('chromium', 'ran'), attempt(0)],
+        [testCase('chromium', 'cut short'), attempt(0, 'interrupted')],
+      ],
+      { status: 'interrupted' }
+    );
+    expect(written.status).toBe('interrupted');
+    expect(written.tests).toBe(1);
   });
 
   it('carries the project and spec file structurally, not just in the title', async () => {
@@ -274,7 +290,7 @@ describe('FlakyPassReporter', () => {
     const outputFolder = tempDir('flaky-record-');
     const reporter = new FlakyPassReporter({ outputFolder });
     reporter.onBegin({ rootDir: ROOT_DIR, shard: null });
-    reporter.onEnd();
+    reporter.onEnd({ status: 'passed' });
     const recordPath = join(outputFolder, FLAKY_RECORD_FILENAME);
     expect(existsSync(recordPath)).toBe(false);
     await reporter.onExit();

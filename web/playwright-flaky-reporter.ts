@@ -1,6 +1,13 @@
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
+import type {
+  FullConfig,
+  FullResult,
+  Reporter,
+  TestCase,
+  TestResult,
+  TestStatus,
+} from '@playwright/test/reporter';
 
 // Make a retried pass visible on a green build.
 //
@@ -35,6 +42,11 @@ export type FlakyRecord = {
   schemaVersion: typeof FLAKY_RECORD_SCHEMA_VERSION;
   run: RunIdentity | null;
   shard: FullConfig['shard'];
+  // Playwright's verdict on the whole run. A digest keeps `passed` and `failed`
+  // and drops the rest: an interrupted or timed-out run (SIGINT, globalTimeout)
+  // still reaches onExit and still gets uploaded, and without this it would read
+  // as a small clean sample.
+  status: FullResult['status'];
   tests: number;
   flaky: FlakyPass[];
 };
@@ -47,6 +59,9 @@ export const FLAKY_RECORD_FILENAME = 'flaky.json';
 // A digest reads records retained from earlier commits, and this is how it
 // tells one it understands from one it would misread.
 export const FLAKY_RECORD_SCHEMA_VERSION = 1;
+
+// First attempts that never executed, so they are not part of the denominator.
+const UNRUN_STATUSES: ReadonlySet<TestStatus> = new Set(['skipped', 'interrupted']);
 
 const ANNOTATION_TITLE = 'Flaky test';
 
@@ -102,7 +117,7 @@ export function runIdentity(env: NodeJS.ProcessEnv): RunIdentity | null {
 
 export function flakyRecord(
   passes: readonly FlakyPass[],
-  context: Pick<FlakyRecord, 'run' | 'shard' | 'tests'>
+  context: Pick<FlakyRecord, 'run' | 'shard' | 'status' | 'tests'>
 ): FlakyRecord {
   return { schemaVersion: FLAKY_RECORD_SCHEMA_VERSION, ...context, flaky: [...passes] };
 }
@@ -118,6 +133,7 @@ export default class FlakyPassReporter implements Reporter {
   private readonly flaky: FlakyPass[] = [];
   private tests = 0;
   private config: Pick<FullConfig, 'rootDir' | 'shard'> | undefined;
+  private status: FullResult['status'] | undefined;
 
   // Playwright hands a reporter whatever object the config listed beside it,
   // unvalidated, so the one required option is checked here: a run whose
@@ -134,7 +150,7 @@ export default class FlakyPassReporter implements Reporter {
   }
 
   onTestEnd(test: TestCase, result: TestResult) {
-    if (result.retry === 0 && result.status !== 'skipped') this.tests += 1;
+    if (result.retry === 0 && !UNRUN_STATUSES.has(result.status)) this.tests += 1;
     if (result.status === 'passed' && result.retry > 0) {
       this.flaky.push({
         title: test.titlePath().filter(Boolean).join(' › '),
@@ -145,7 +161,8 @@ export default class FlakyPassReporter implements Reporter {
     }
   }
 
-  onEnd() {
+  onEnd(result: FullResult) {
+    this.status = result.status;
     if (this.flaky.length === 0) return;
     for (const line of flakyAnnotations(this.flaky)) console.log(line);
     const summaryPath = process.env.GITHUB_STEP_SUMMARY;
@@ -157,9 +174,11 @@ export default class FlakyPassReporter implements Reporter {
   // has finished onEnd, so the record survives whatever order the config lists
   // the reporters in.
   async onExit() {
+    if (!this.status) throw new Error('FlakyPassReporter was exited before onEnd');
     const record = flakyRecord(this.flaky, {
       run: runIdentity(process.env),
       shard: this.begun.shard,
+      status: this.status,
       tests: this.tests,
     });
     mkdirSync(this.outputFolder, { recursive: true });
