@@ -39,12 +39,13 @@ Three gate-posture questions had been answered case by case rather than once:
   same label. ADR-0142 fixed where the clock starts but not whether a two-frame hitch inside the
   animation is a defect for a toddler app.
 
-Alternatives considered for the max gate: keeping 33.5 ms but requiring the breach in two of three
-captures of the mode. Rejected for now because the matrix holds one capture per mode and the fold
-has no notion of a confirming recapture; adding one is a schema and campaign-runner change a gate
-decision should not wait on. Raising the max to 50 ms is one constant, and 50 ms already has a
-meaning in this codebase: it is the drawing paint max gate and the interval ADR-0090 called "the
-visible freeze".
+Alternatives considered for the max gate: raising `ACTION_FRAME_MAX_GATE_MS` to 50 ms — one
+constant, and 50 ms already means "the visible freeze" and the drawing paint max here. Rejected on
+review: the P95 is pooled across every scored frame of the three repeats, so one 33 ms frame on
+every activation of a long animation is 3 of ~120 gaps and never reaches the P95. The max is the
+only statistic that catches a hitch recurring on every tap, and raising it to 50 would wave that
+hitch through. Confirming the breach across samples keeps the threshold and removes the
+single-sample noise instead.
 
 ## Decision
 
@@ -60,14 +61,16 @@ visible freeze".
    reject or narrow hypotheses; they cannot fail a campaign or approve one. The matrix keeps
    rendering their red; the `improve-performance-matrix` completion gate reads "zero current,
    scoreable red cells on the release-gate rows".
-4. **`ACTION_FRAME_MAX_GATE_MS` is 50 ms** (`tools/perf/lib/action-stats.mjs`): three 60 Hz
-   intervals, the first a toddler sees as a freeze, matching the drawing paint max. A single
-   two-beat frame in a three-repeat capture no longer fails a cell; a repeated two-beat frame still
-   fails the unchanged 20 ms P95, and a three-beat frame fails every sample that shows it.
-   First-frame (33.5 ms) and every drawing gate are unchanged. The `open Settings` 56 ms max
-   allowance stays with its recorded reopen condition (ADR-0090's amendment): its breaches were
-   three-beat frames.
-5. **Rotation with ink stays gated at the base 20 ms P95 and the 50 ms max with no allowance.** A
+4. **A post-action max breach is confirmed, not declared, by one sample.**
+   `ACTION_FRAME_MAX_GATE_MS` stays 33.5 ms and the P95 stays 20 ms, but a group with warm-up
+   metadata (the canonical one-warm-up-plus-three-scored sweep) fails on max only when at least
+   `MAX_BREACH_CONFIRMING_SAMPLES` (2) of its scored samples carry a frame over the gate
+   (`tools/perf/lib/action-stats.mjs`, `summarizeActionGroup`). One breaching sample is recorded as
+   `frames.maxUnconfirmed` with `frames.maxBreachSamples`, and is the cell the next recapture
+   targets first. A bare single-sample group keeps the direct rule. First-frame and every drawing
+   gate are unchanged; the `open Settings` 56 ms max allowance stays with its recorded reopen
+   condition (ADR-0090's amendment), since its breaches recurred on every run.
+5. **Rotation with ink stays gated at the base 20 ms P95 and 33.5 ms max with no allowance.** A
    two-frame hitch inside an OS-animated rotation is the moment the paper the child was drawing on
    visibly stutters, and toddlers rotate tablets constantly. Nothing is lowered silently; a future
    allowance needs the ADR-0090 shape — measured, per runtime, recorded into the capture.
@@ -80,7 +83,8 @@ visible freeze".
   fails.
 * − Simulator and emulator red is easier to ignore; it stays rendered so a systemic regression there
   is still visible.
-* − A two-beat frame that a user could notice on a 120 Hz display is now caught only by the P95, and
-  only when it repeats.
-* − Every published action cell re-scores against 50 ms on the next matrix regeneration, so cells
-  that were red on max alone turn green without a recapture; the regeneration's diff is the record.
+* − A two-beat frame that recurs in only one of three repeats is a warning, not a failure, until a
+  recapture confirms or clears it.
+* − Every published action cell re-scores under the confirmation rule on the next matrix
+  regeneration, so a cell that was red on one breaching sample turns green without a recapture; the
+  regeneration's diff is the record.

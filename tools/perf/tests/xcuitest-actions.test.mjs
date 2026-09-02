@@ -776,6 +776,50 @@ describe('action probe selector contract', () => {
   });
 });
 
+describe('max-breach confirmation across scored repeats (ADR-0156)', () => {
+  // Every frame is inside a visual effect so the whole run is action-owned and scored — a
+  // dialog fly-in rather than a tap that settles in four frames.
+  const scored = (gaps, warmup = false) => ({
+    ...action(gaps.map((gapMs, index) => frame(index * 16.7, gapMs, true))),
+    warmup,
+  });
+  const steady = (length) => Array.from({ length }, () => 16.7);
+  const clean = () => scored(steady(20));
+  const breaching = () => scored([...steady(8), ACTION_FRAME_MAX_GATE_MS + 1, ...steady(11)]);
+
+  it('records a single breaching repeat as unconfirmed rather than failing the group', () => {
+    const summary = summarizeActionGroup([scored([16.7], true), breaching(), clean(), clean()]);
+    expect(summary.frames.max).toBe(ACTION_FRAME_MAX_GATE_MS + 1);
+    expect(summary.frames.maxBreachSamples).toBe(1);
+    expect(summary.frames.maxUnconfirmed).toBe(true);
+    expect(summary.passed).toBe(true);
+  });
+
+  it('fails a breach that recurs in two of three scored repeats', () => {
+    const summary = summarizeActionGroup([scored([16.7], true), breaching(), clean(), breaching()]);
+    expect(summary.frames.maxBreachSamples).toBe(2);
+    expect(summary.frames.maxUnconfirmed).toBe(false);
+    expect(summary.passed).toBe(false);
+  });
+
+  // Pooled P95 cannot see a hitch that recurs once per long activation, which is
+  // why the max has to stay at two beats and why it must recur to count.
+  it('still fails one two-beat frame per repeat inside a long animation', () => {
+    const long = () => scored([...steady(39), ACTION_FRAME_MAX_GATE_MS + 1]);
+    const summary = summarizeActionGroup([scored([16.7], true), long(), long(), long()]);
+    expect(summary.frames.p95).toBeLessThanOrEqual(ACTION_FRAME_P95_GATE_MS);
+    expect(summary.frames.maxBreachSamples).toBe(3);
+    expect(summary.passed).toBe(false);
+  });
+
+  it('keeps the direct max rule for a bare group without warm-up metadata', () => {
+    const bare = action([frame(0, 16.7), frame(16.7, ACTION_FRAME_MAX_GATE_MS + 1)]);
+    const summary = summarizeActionGroup([bare]);
+    expect(summary.frames.maxUnconfirmed).toBe(false);
+    expect(summary.passed).toBe(false);
+  });
+});
+
 describe('action-owned frame attribution', () => {
   it('keeps immediate jank and the stable frames that follow it', () => {
     const frames = [

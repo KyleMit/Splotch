@@ -11,6 +11,7 @@ import {
   ACTION_FRAME_P95_GATE_MS,
   rotationFirstFrameNa,
   summarizeActions,
+  MAX_BREACH_CONFIRMING_SAMPLES,
 } from './lib/action-stats.mjs';
 import { summarizeRun } from './lib/real-screen-stats.mjs';
 import { IN_REGIME, UNESTABLISHED_REGIME, refreshRegimeVerdict } from './lib/refresh-regime.mjs';
@@ -1134,6 +1135,7 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
         firstFrameP95Ms: ACTION_FIRST_FRAME_GATE_MS,
         postActionFrameP95Ms: ACTION_FRAME_P95_GATE_MS,
         postActionFrameMaxMs: ACTION_FRAME_MAX_GATE_MS,
+        postActionFrameMaxConfirmingSamples: MAX_BREACH_CONFIRMING_SAMPLES,
       },
     },
     targets: manifest.targets.map((target) =>
@@ -1611,7 +1613,8 @@ max ≤ ${matrix.gates.drawing.paintMaxMs} ms, and cumulative lost frame time �
 passes at engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, and next-frame max ≤
 ${matrix.gates.undo.nextFrameMaxMs} ms. A discrete action passes at first-frame P95 ≤
 ${matrix.gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${matrix.gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤
-${matrix.gates.actions.postActionFrameMaxMs} ms. Readiness P95 is reported separately because its
+${matrix.gates.actions.postActionFrameMaxMs} ms, a max breach counting only when
+${matrix.gates.actions.postActionFrameMaxConfirmingSamples} of the three scored repeats show it (ADR-0156). Readiness P95 is reported separately because its
 completion semantics and transport polling resolution differ by action; a frame-gate pass is not
 evidence that an optimization preserved end-to-end response time. Rotation first frames on iPad Safari are not applicable rather than gated:
 under ADR-0142's \`resize\` anchor the value reads 0–2 ms by construction there, so those cells

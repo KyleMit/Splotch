@@ -30,11 +30,13 @@ capture coverage, richer metadata, another metric, or generalized tooling is not
 the product loop.
 
 Read the whole published matrix at the start, but do not block the first product experiment on
-making every stale target current. Full current coverage remains part of the completion gate. It is
-not a prerequisite for beginning product work when a calibrated physical target already provides a
-reproducible failure. Stale advisory Simulator, emulator, and desktop rows cannot delay that first
-experiment. Recapture a stale authoritative target first only when its result is necessary to
-distinguish the selected hypothesis or establish a calibrated failure.
+making every stale target current. Current coverage of the release-gate rows remains part of the
+completion gate (ADR-0156); advisory rows are recaptured for breadth when the rig is free, never as
+a completion requirement. Coverage is not a prerequisite for beginning product work when a
+calibrated physical target already provides a reproducible failure. Stale advisory Simulator,
+emulator, and desktop rows cannot delay that first experiment. Recapture a stale authoritative
+target first only when its result is necessary to distinguish the selected hypothesis or establish a
+calibrated failure.
 
 Treat `tools/perf/`, matrix schemas and generators, capture transports, scorers, evidence formats,
 and profiling documentation as stable supporting infrastructure while working a product cluster. A
@@ -339,12 +341,13 @@ The workflow must not depend on provider-specific goal tracking. The matrix, raw
 history, live PR stack, and campaign ledger remain the durable source of truth.
 
 When Goal mode is available, use it only if the user explicitly requests Goal mode for this
-campaign. Create one objective for zero current, scoreable red cells and omit a token budget unless
-the user supplies one. Goal mode is useful for automatic continuation and for keeping the terminal
-condition visible across long tool runs. It is a poor fit for an ordinary campaign that may receive
-`pause` or `wrap up`: it supports completion or genuine blocking, not a merge-ready pause, permits
-only one active goal, and does not replace external checkpoints. Never mark the goal complete for an
-improvement, a green cluster, or a wrap-up that leaves current scoreable reds.
+campaign. Create one objective for zero current, scoreable red cells on the release-gate rows
+(ADR-0156) and omit a token budget unless the user supplies one. Goal mode is useful for automatic
+continuation and for keeping the terminal condition visible across long tool runs. It is a poor fit
+for an ordinary campaign that may receive `pause` or `wrap up`: it supports completion or genuine
+blocking, not a merge-ready pause, permits only one active goal, and does not replace external
+checkpoints. Never mark the goal complete for an improvement, a green cluster, or a wrap-up that
+leaves current scoreable reds on a release-gate row.
 
 ## Completion gate
 
@@ -356,7 +359,9 @@ Complete the full campaign only when:
 * every genuine product red that existed during the campaign has a recorded product outcome — a
   verified improvement or an empirically rejected candidate followed by the next hypothesis; a
   campaign with product reds and only harness, documentation, or capture commits is incomplete;
-* every stale or unavailable scoreable cell has a faithful current replacement;
+* every stale or unavailable scoreable cell on a release-gate row has a faithful current
+  replacement; a stale advisory row is either recaptured or marked preserved so it stops claiming
+  currency;
 * capture-path blockers are fixed and every affected target is recaptured; a genuinely unsupported
   mode stays explicitly unscoreable rather than being counted as a pass;
 * correctness, accessibility, visual behavior, native/web parity, persistence, rotation, undo, and
