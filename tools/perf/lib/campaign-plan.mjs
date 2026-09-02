@@ -49,6 +49,14 @@ const DESKTOP_ACTIONS_COMMAND = 'perf:web:actions';
 const DESKTOP_LANDSCAPE_VIEWPORT = '1366x915';
 const DESKTOP_PORTRAIT_VIEWPORT = '915x1366';
 const ACTIONS_APPIUM_COMMAND = 'perf:ios:xcuitest:actions';
+
+// Which transport drives a target's discrete-action sweep. Appium is the fallback
+// rather than a declared field because it is what a target with no opinion gets;
+// exported so `planCampaign` and the documentation guard read the same answer
+// instead of each spelling the default out.
+export function actionsTransportFor(target) {
+  return target?.actionsTransport ?? 'appium';
+}
 const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 
 // `captureRuntime` names which runtime's input-fidelity expectations a cell is
@@ -718,7 +726,7 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
   for (const mode of resolveModes(modes)) {
     for (const item of resolveItems(items)) {
       const isActions = item === 'actions';
-      const useCdp = isActions && target.actionsTransport === 'cdp';
+      const useCdp = isActions && actionsTransportFor(target) === 'cdp';
       const useSplit = !isActions && target.transport === 'split';
       const useDesktop = target.transport === 'desktop';
       const artifact = artifactPath(outputRoot, targetId, mode, item);
