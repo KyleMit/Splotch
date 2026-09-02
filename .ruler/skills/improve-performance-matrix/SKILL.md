@@ -356,14 +356,16 @@ Complete the full campaign only when:
 * a freshly regenerated matrix has zero current, scoreable red cells on the release-gate rows
   (ADR-0156); simulator and emulator red is rendered and reported, never counted as remainder, and a
   Mac cell counts only when it turned red on a change that was green on the trunk;
-* every genuine product red that existed during the campaign has a recorded product outcome — a
+* every genuine product red on a release-gate row (or a Mac cell that turned red on a change that
+  was green on the trunk) that existed during the campaign has a recorded product outcome — a
   verified improvement or an empirically rejected candidate followed by the next hypothesis; a
-  campaign with product reds and only harness, documentation, or capture commits is incomplete;
+  campaign with such reds and only harness, documentation, or capture commits is incomplete;
 * every stale or unavailable scoreable cell on a release-gate row has a faithful current
   replacement; a stale advisory row is either recaptured or marked preserved so it stops claiming
   currency;
-* capture-path blockers are fixed and every affected target is recaptured; a genuinely unsupported
-  mode stays explicitly unscoreable rather than being counted as a pass;
+* capture-path blockers on release-gate rows are fixed and every affected release-gate target is
+  recaptured; an advisory target's blocker is filed as an issue, and a genuinely unsupported mode
+  stays explicitly unscoreable rather than being counted as a pass;
 * correctness, accessibility, visual behavior, native/web parity, persistence, rotation, undo, and
   export fidelity remain intact;
 * every authoritative generated output agrees;
