@@ -46,6 +46,8 @@ describe('ledger', () => {
     expect(record).toMatchObject({ rivalSessionId: SESSION_ID, rounds: 1, lastHead: 'h' });
     expect(planRound(record)).toMatchObject({ round: 2, resume: SESSION_ID, previous: record });
     expect(planRound(record, { fresh: true })).toMatchObject({ round: 1, resume: undefined });
+    expect(planRound(record, { rival: 'codex' })).toMatchObject({ round: 2, resume: SESSION_ID });
+    expect(planRound(record, { rival: 'claude' })).toMatchObject({ round: 1, resume: undefined });
 
     let current = record;
     for (let round = 2; round <= MAX_ROUNDS; round += 1) {

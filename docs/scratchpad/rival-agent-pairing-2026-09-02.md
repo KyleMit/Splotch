@@ -182,3 +182,12 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   `--unified=3` from the poster's constant), and a provisioning failure was invisible through `next`
   because `session.json` was written late (now written first). About twelve minutes and 1.8M input
   tokens, 1.7M of them cached.
+* 2026-09-02 — Codex side rebuilt on the core. The launch flow lives in
+  `tools/rival-agent/launch.mjs` behind a vendor adapter; each launcher is now only its CLI's pins.
+  The Claude rival runs `--restricted` print mode with `Read`, `Grep`, `Glob`, and the broker. The
+  installer copies the core and the package into `~/.local/libexec/splotch-rival-agent/` with a
+  manifest every wrapper verifies, keeps `splotch-claude-review-publish.mjs` as an alias that
+  declines every broker request (an orchestrated review has no handler to serve one), and removes
+  the files earlier installers wrote. The installer is fixed to the canonical checkout, so it was
+  not run from this worktree; the Codex-side path was exercised from the checkout with this Claude
+  session serving as the handler.

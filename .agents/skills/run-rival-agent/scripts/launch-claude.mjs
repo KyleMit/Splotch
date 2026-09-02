@@ -39,6 +39,13 @@ export function claudeEnvironment(environment = process.env) {
   return { ...environment, MCP_TOOL_TIMEOUT: String(PENDING_REQUEST_TIMEOUT_MS) };
 }
 
+// Claude's --json-schema validator refuses the draft 2020-12 `$schema` declaration ("no schema
+// with key or ref"); the shape validates fine without it. Codex accepts the file as written.
+export function schemaForClaude(schemaPath) {
+  const { $schema: _dialect, ...schema } = JSON.parse(readFileSync(schemaPath, 'utf8'));
+  return JSON.stringify(schema);
+}
+
 export function buildClaudeArgs({
   session,
   packetDir,
@@ -72,7 +79,7 @@ export function buildClaudeArgs({
     'stream-json',
     '--verbose',
     '--json-schema',
-    readFileSync(schemaPath, 'utf8'),
+    schemaForClaude(schemaPath),
     ...(rivalSession.mode === 'resume'
       ? ['--resume', rivalSession.id]
       : ['--session-id', rivalSession.id]),

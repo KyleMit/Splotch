@@ -59,8 +59,12 @@ export function removeLedgerRecord(path) {
   rmSync(path, { force: true });
 }
 
-export function planRound(record, { fresh = false } = {}) {
-  if (fresh || !record) return { round: 1, resume: undefined, previous: undefined };
+// A record written by the other vendor's launcher holds a session id its CLI cannot resume; the
+// key already separates them, and this refuses to follow one that reached the wrong side anyway.
+export function planRound(record, { fresh = false, rival } = {}) {
+  if (fresh || !record || (rival && record.rival !== rival)) {
+    return { round: 1, resume: undefined, previous: undefined };
+  }
   if (record.rounds >= MAX_ROUNDS) {
     throw new Error(
       `review round budget of ${MAX_ROUNDS} exhausted; pass --fresh to start a new reviewer or --end-session to close this one`

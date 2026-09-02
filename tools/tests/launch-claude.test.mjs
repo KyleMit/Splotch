@@ -117,11 +117,15 @@ describe('Claude rival command construction', () => {
     });
   });
 
-  it('passes the findings schema and the model and effort', () => {
+  // Claude's validator refused the draft 2020-12 `$schema` key on the first real launch.
+  it('passes the findings schema without its dialect declaration, then the model and effort', () => {
     const args = buildClaudeArgs(options);
-    expect(args[args.indexOf('--json-schema') + 1]).toBe(
+    const passed = JSON.parse(args[args.indexOf('--json-schema') + 1]);
+    const { $schema: dialect, ...expected } = JSON.parse(
       readFileSync(FINDINGS_SCHEMA_PATH, 'utf8')
     );
+    expect(dialect).toContain('2020-12');
+    expect(passed).toEqual(expected);
     expect(args.slice(-4)).toEqual(['--model', 'opus', '--effort', 'high']);
   });
 

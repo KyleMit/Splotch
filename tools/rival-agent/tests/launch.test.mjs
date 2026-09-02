@@ -31,23 +31,39 @@ describe('shared launch arguments', () => {
     });
   });
 
-  it('keys the reviewer by PR, by resolved commit, or by branch', () => {
+  it('keys the reviewer by vendor and by PR, resolved commit, or branch', () => {
     const repoRoot = '/repo';
+    const rival = 'codex';
     const resolveCommit = (root, ref) =>
       ref === 'HEAD' || ref === 'abc1234' ? 'a'.repeat(40) : ref;
-    const pr = ledgerKeyFor({ repoRoot, scope: { kind: 'pr', number: 7 }, branch: 'x' });
-    expect(pr).toBe(ledgerKeyFor({ repoRoot, scope: { kind: 'pr', number: 7 }, branch: 'y' }));
-    const branch = ledgerKeyFor({ repoRoot, scope: { kind: 'base', base: 'main' }, branch: 'x' });
-    expect(branch).toBe(ledgerKeyFor({ repoRoot, scope: { kind: 'uncommitted' }, branch: 'x' }));
+    const pr = ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'x' });
+    expect(pr).toBe(
+      ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'y' })
+    );
+    // The first Claude smoke resumed the Codex thread recorded for the same PR.
+    expect(pr).not.toBe(
+      ledgerKeyFor({ repoRoot, rival: 'claude', scope: { kind: 'pr', number: 7 }, branch: 'x' })
+    );
+    const branch = ledgerKeyFor({
+      repoRoot,
+      rival,
+      scope: { kind: 'base', base: 'main' },
+      branch: 'x',
+    });
+    expect(branch).toBe(
+      ledgerKeyFor({ repoRoot, rival, scope: { kind: 'uncommitted' }, branch: 'x' })
+    );
     expect(branch).not.toBe(pr);
     const byHead = ledgerKeyFor({
       repoRoot,
+      rival,
       scope: { kind: 'commit', commit: 'HEAD' },
       branch: 'x',
       resolveCommit,
     });
     const byShort = ledgerKeyFor({
       repoRoot,
+      rival,
       scope: { kind: 'commit', commit: 'abc1234' },
       branch: 'x',
       resolveCommit,

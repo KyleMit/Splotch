@@ -88,13 +88,27 @@ const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${r
 
 // A commit scope is keyed by its full OID, never by the ref as typed: `HEAD` names a different
 // commit tomorrow, and a short hash typed one way and a full hash typed another must still find
-// the same reviewer.
-export function ledgerKeyFor({ repoRoot, scope, branch, resolveCommit = defaultResolveCommit }) {
-  if (scope.kind === 'pr') return ledgerKey({ repoRoot, kind: 'pr', ref: String(scope.number) });
-  if (scope.kind === 'commit') {
-    return ledgerKey({ repoRoot, kind: 'commit', ref: resolveCommit(repoRoot, scope.commit) });
+// the same reviewer. The rival's vendor is part of the key because a Codex thread id and a Claude
+// session id are not interchangeable — the first Claude smoke tried to resume a Codex thread.
+export function ledgerKeyFor({
+  repoRoot,
+  rival,
+  scope,
+  branch,
+  resolveCommit = defaultResolveCommit,
+}) {
+  const kindPrefix = `${rival}:`;
+  if (scope.kind === 'pr') {
+    return ledgerKey({ repoRoot, kind: `${kindPrefix}pr`, ref: String(scope.number) });
   }
-  return ledgerKey({ repoRoot, kind: 'branch', ref: branch });
+  if (scope.kind === 'commit') {
+    return ledgerKey({
+      repoRoot,
+      kind: `${kindPrefix}commit`,
+      ref: resolveCommit(repoRoot, scope.commit),
+    });
+  }
+  return ledgerKey({ repoRoot, kind: `${kindPrefix}branch`, ref: branch });
 }
 
 export function logPathForAttempt(session, attempt) {
@@ -166,7 +180,9 @@ export async function launch(
   const { env, notes = [] } = vendor.prepare();
   const repoRoot = resolveRepoRoot(options.cwd);
   const branch = git(repoRoot, ['rev-parse', '--abbrev-ref', 'HEAD']);
-  const recordPath = ledgerPath(ledgerKeyFor({ repoRoot, scope: options.scope, branch }));
+  const recordPath = ledgerPath(
+    ledgerKeyFor({ repoRoot, rival: vendor.rival, scope: options.scope, branch })
+  );
 
   if (options.endSession) {
     const record = readLedgerRecord(recordPath);
@@ -181,7 +197,7 @@ export async function launch(
   // A question is one turn, not a review that a later round would verify.
   let plan = question
     ? planRound(undefined)
-    : planRound(readLedgerRecord(recordPath), { fresh: options.fresh });
+    : planRound(readLedgerRecord(recordPath), { fresh: options.fresh, rival: vendor.rival });
 
   const scope = resolveLaunchScope(repoRoot, options.scope);
   scope.range = `${scope.base}...${scope.head}`;
