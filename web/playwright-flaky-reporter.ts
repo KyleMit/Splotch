@@ -38,7 +38,7 @@ export type RunIdentity = {
   event: string;
 };
 
-export type FlakyRecord = {
+type FlakyRecord = {
   schemaVersion: typeof FLAKY_RECORD_SCHEMA_VERSION;
   run: RunIdentity | null;
   shard: FullConfig['shard'];
@@ -115,7 +115,7 @@ export function runIdentity(env: NodeJS.ProcessEnv): RunIdentity | null {
   return { id, attempt, sha, branch, event };
 }
 
-export function flakyRecord(
+function flakyRecord(
   passes: readonly FlakyPass[],
   context: Pick<FlakyRecord, 'run' | 'shard' | 'status' | 'tests'>
 ): FlakyRecord {
