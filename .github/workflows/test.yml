@@ -366,6 +366,7 @@ jobs:
       issues: write
     outputs:
       gate-outcome: ${{ steps.verdict.outputs.gate }}
+      gate-failures: ${{ steps.verdict.outputs.failures }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -379,10 +380,19 @@ jobs:
       # scope failure() also fires for a checkout or setup failure, and a
       # setup-failed retry would file "gate failed on main" for a gate that
       # never ran (the PR 1381 review).
+      #
+      # `failures` carries WHAT failed, not just that something did, so the retry
+      # can compare like with like. Reading the artifact rather than the exit code
+      # is the point: on 2026-09-02 this runner skipped crayon-scribbles on a
+      # settle timeout while measuring multi-finger clean, the retry runner
+      # completed crayon-scribbles and breached multi-finger, and an
+      # outcome-only comparison read two unrelated failures as a reproduction.
       - name: Record the gate verdict
         id: verdict
         if: always()
-        run: echo "gate=${{ steps.gate.outcome }}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "gate=${{ steps.gate.outcome }}" >> "$GITHUB_OUTPUT"
+          echo "failures=$(node tools/perf/report-undo-gate-failures.mjs | tr -d '\n')" >> "$GITHUB_OUTPUT"
 
       # Uploaded on green runs too (issue 1250): the noise investigation had
       # outcomes but no distributions, because only failures kept their tables.
@@ -454,19 +464,71 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      # A second failure is only a reproduction if it is the SAME failure. This
+      # compares the two runners' failure fingerprints and reports the overlap;
+      # an empty overlap means the two runs failed for unrelated reasons, which
+      # is host noise rather than a broken main (ADR-0158). A pair that cannot be
+      # compared at all reports `unknown:not-comparable`, which is non-empty and
+      # therefore files — the fail-closed direction.
+      #
+      # Only on this runner's own failure: a green retry has nothing to compare,
+      # and asking anyway would report the uncomparable sentinel for a run that
+      # reproduced nothing because there was nothing to reproduce.
+      #
+      # continue-on-error so THIS step's failure stays readable as an outcome
+      # instead of skipping the steps below it. The reporter is not guaranteed
+      # to exit 0 — it deliberately rethrows a TypeError/ReferenceError so a
+      # broken reporter or a malformed artifact cannot masquerade as "no
+      # failures" (issue 1296) — and a step `if` naming no status function
+      # carries an implicit success(), so a crashed comparator would skip both
+      # `File the failure` and `Fail on a reproduced breach` and leave a real
+      # breach unreported on a red main. The conditions below therefore read
+      # `steps.compare.outcome` as well as its output, and a failed comparison
+      # files (the PR 1573 review).
+      - name: Compare this runner's failure with the first runner's
+        id: compare
+        if: steps.gate.outcome == 'failure'
+        continue-on-error: true
+        env:
+          FIRST_FAILURES: ${{ needs.webkit-commit-gate-fast.outputs.gate-failures }}
+        run: |
+          mine="$(node tools/perf/report-undo-gate-failures.mjs | tr -d '\n')"
+          reproduced="$(node tools/perf/report-undo-gate-failures.mjs --first="$FIRST_FAILURES" | tr -d '\n')"
+          {
+            echo "mine=${mine}"
+            echo "reproduced=${reproduced}"
+          } >> "$GITHUB_OUTPUT"
+          echo "first runner: ${FIRST_FAILURES:-<none>}"
+          echo "this runner:  ${mine:-<none>}"
+          echo "reproduced:   ${reproduced:-<nothing>}"
+
       # Deliberately "not reproduced", not "acquitted": the first job stays
       # red on main as telemetry (the noisy first run is a real observation
       # worth counting), and this summary is where a reader of that red job
-      # learns no issue was filed and why.
+      # learns no issue was filed and why. A step whose `if` names no status
+      # function still carries an implicit success(), so a crashed comparison
+      # skips this too rather than acquitting on an empty output.
       - name: Record the non-reproduction
-        if: steps.gate.outcome == 'success'
+        if: >-
+          steps.gate.outcome == 'success' ||
+          (steps.compare.outcome == 'success' && steps.compare.outputs.reproduced == '')
+        env:
+          FIRST_FAILURES: ${{ needs.webkit-commit-gate-fast.outputs.gate-failures }}
+          MINE: ${{ steps.compare.outputs.mine }}
         run: |
           {
-            echo '## WebKit commit gate: breach not reproduced on a fresh runner'
+            echo '## WebKit commit gate: failure not reproduced on a fresh runner'
             echo
-            echo 'The post-merge gate breached on its first runner and passed on this one.'
+            echo 'The post-merge gate failed on its first runner, and this runner did not'
+            echo 'reproduce that failure — it either passed, or failed at something else.'
+            echo
+            echo "* First runner failed at: \`${FIRST_FAILURES:-<none recorded>}\`"
+            echo "* This runner failed at: \`${MINE:-<nothing; it passed>}\`"
+            echo '* Reproduced: nothing'
+            echo
             echo 'Recorded as host noise per issue 1250; no issue filed. The first job'
-            echo 'stays red as deliberate telemetry; a real regression fails both runners.'
+            echo 'stays red as deliberate telemetry; a real regression fails both runners'
+            echo 'on the same scenario.'
           } >> "$GITHUB_STEP_SUMMARY"
 
       # A post-merge gate nobody is watching is not a gate. One open issue
@@ -482,25 +544,37 @@ jobs:
       # open or append a false production-breakage report. A dispatch failure
       # is delivered by the red run itself, to the person who fired it.
       - name: File the failure
-        if: steps.gate.outcome == 'failure' && github.event_name == 'push'
+        if: >-
+          steps.gate.outcome == 'failure' && github.event_name == 'push' &&
+          (steps.compare.outcome == 'failure' || steps.compare.outputs.reproduced != '')
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPRODUCED: ${{ steps.compare.outputs.reproduced }}
+          COMPARE_OUTCOME: ${{ steps.compare.outcome }}
         run: |
+          verdict="on two runners, in the same way: ${REPRODUCED}"
+          if [[ "$COMPARE_OUTCOME" != 'success' ]]; then
+            verdict='on two runners, and the comparison between the two failures could not be run. This is filed fail-closed: establish whether both runners failed at the same thing before reading it as a regression'
+          fi
           title='WebKit commit gate failed on main'
           body_file="${RUNNER_TEMP}/webkit-commit-gate-failure.md"
           cat >"$body_file" <<EOF
-          The post-merge WebKit commit gate failed on main at commit ${GITHUB_SHA}.
+          The post-merge WebKit commit gate failed on main at commit ${GITHUB_SHA}, ${verdict}.
 
           * Run: ${RUN_URL}
           * Evidence: the webkit-undo-fast-diagnostics artifact on that run holds the scenario
-            table (undo-scenarios.md) and every raw commit sample (undo-scenarios.json).
+            table (undo-scenarios.md) and every raw commit sample (undo-scenarios.json), and the
+            confirmations array holds the re-measured distribution behind each breach.
 
-          This tier gates a millisecond P95 on a shared macOS runner, so before treating it as
-          product evidence read the raw commit P95 against the normalized gate value in the
-          report — ADR-0093 records why those differ and PR 729 records what happens when the
-          difference is ignored. The legacy renderer's structural blob-encoding half retired with
-          that implementation, so a failure here is a timing regression or host noise.
+          This tier gates a millisecond P95 on a shared macOS runner. Nothing is normalized: every
+          fast-tier score is the raw commit P95 against the budget COMMIT_GATE_MS declares, because
+          ADR-0140 retired the crayon divisor rather than recalibrate it. So read the raw P95 and
+          the sample distribution rather than looking for a normalized value — over a scenario's
+          ~22 samples that P95 resolves to the SECOND-HIGHEST sample, so the question is whether
+          the whole distribution shifted (a regression) or two samples spiked (a stalled runner).
+          ADR-0158 records why a failure reaching this issue had to fail the same way on two
+          separate runners.
           EOF
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
           if [[ -n "$existing" ]]; then
@@ -512,7 +586,9 @@ jobs:
       # continue-on-error above kept this job green so far; a reproduced
       # breach must still land a red retry job.
       - name: Fail on a reproduced breach
-        if: steps.gate.outcome == 'failure'
+        if: >-
+          steps.gate.outcome == 'failure' &&
+          (steps.compare.outcome == 'failure' || steps.compare.outputs.reproduced != '')
         run: exit 1
 
   webkit-commit-gate-full:
