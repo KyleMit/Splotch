@@ -211,6 +211,7 @@ describe('workflow hygiene', () => {
   });
 
   for (const { name, lines } of workflows) {
+    // eslint-disable-next-line vitest/valid-title -- parametrized suite named by the discovered workflow file
     describe(name, () => {
       it('declares a top-level permissions block', () => {
         expect(lines.some((line) => /^permissions:/.test(line))).toBe(true);

@@ -400,14 +400,12 @@ export default tseslint.config(
       'vitest/prefer-comparison-matcher': 'error',
       'vitest/prefer-to-contain': 'error',
       'vitest/prefer-hooks-on-top': 'error',
-      // The house convention is bare behavior titles, not sentence-cased "should …" prose.
-      // ignoreTypeOfDescribeName keeps the parametrized-describe pattern legal — a describe()
-      // over a discovered set (dev servers, workflow files) takes its name from the loop
-      // variable.
-      'vitest/valid-title': [
-        'error',
-        { disallowedWords: ['should'], ignoreTypeOfDescribeName: true },
-      ],
+      // The house convention is bare behavior titles, not sentence-cased "should …" prose. The
+      // parametrized-describe pattern — a describe() over a discovered set taking its name from
+      // the loop variable — gets a justified per-line disable at each site instead of
+      // ignoreTypeOfDescribeName, which would wave through every non-string title repo-wide
+      // (even an accidental object literal).
+      'vitest/valid-title': ['error', { disallowedWords: ['should'] }],
     },
   },
   {
