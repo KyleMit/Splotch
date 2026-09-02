@@ -24,7 +24,7 @@ context. Skip steps 1 and 4 below — there is no file to name, commit, or push 
 branch itself if it has unpushed commits, for the same dead-link reason. Refresh the live state
 (branch, PR, CI, processes) immediately before rendering; a prompt assembled from memory hands off a
 state that no longer exists. A request to have other PRs *reviewed* is not this mode — that prompt
-is `create-pr-feedback-handoff`'s.
+is `create-pr-review-prompt`'s.
 
 ## Steps
 

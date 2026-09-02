@@ -11,8 +11,8 @@ input side of [`address-pr-review`](../address-pr-review/SKILL.md): the comments
 exactly what that skill later triages on the receiving branch, so every comment must stand on its
 own as an actionable, anchored critique.
 
-A reviewing session may also arrive here through a handoff prompt written by
-`create-pr-feedback-handoff` — it enumerates every PR a session produced (a stacked campaign has
+A reviewing session may also arrive here through a review prompt written by
+`create-pr-review-prompt` — it enumerates every PR a session produced (a stacked campaign has
 several) and appends extra focus areas on top of the full sweep this skill performs.
 
 **Posting is the default — invoking this skill bare is the explicit authorization to post.** A
@@ -62,7 +62,7 @@ diffs and actually execute the code:
 ## Reviewing a stack
 
 A stacked campaign hands you several PRs at once (`create-stacked-prs` builds them;
-`create-pr-feedback-handoff` enumerates them). The single-PR procedure above runs once per PR; the
+`create-pr-review-prompt` enumerates them). The single-PR procedure above runs once per PR; the
 stack adds four rules around it:
 
 1. **Resolve the live topology first and work bottom → top.** Read every PR's recorded base and
