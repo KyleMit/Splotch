@@ -79,6 +79,15 @@ describe('reproduction across runners', () => {
     expect(reproducedGateFailures(first, second)).toEqual(['multi-finger:breach']);
   });
 
+  // A deliberate false negative, pinned so it cannot change silently. The same
+  // expensive stroke-end work could plausibly blow the budget on a fast host and
+  // keep history from settling on a slow one, and this suppresses that pair even
+  // though both runners implicate the same scenario. Matching on scope alone is
+  // not the fix: `incomplete` collapses a settle timeout, a navigation failure
+  // and every other scenario exception into one token, so scope-only agreement
+  // would pair a real breach with an unrelated harness fault. Closing it needs
+  // `incomplete` split into subcauses with a declared compatibility rule —
+  // ADR-0158 records why that waits for evidence.
   it('does not treat the same scenario failing differently as a reproduction', () => {
     expect(
       reproducedGateFailures(['crayon-scribbles:incomplete'], ['crayon-scribbles:breach'])

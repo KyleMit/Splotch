@@ -116,6 +116,18 @@ because only its summary was persisted.
   and nothing is filed. The first job stays red on `main` as telemetry, which is where that case
   surfaces; the alternative is the false positive this replaces, and a regression bad enough to
   matter fails the same scenario twice.
+* − **The narrower version of that gap is same-scenario, different-cause, and it is the likelier
+  one.** Matching is exact on `scope:cause`, so `crayon-scribbles:breach` on one runner and
+  `crayon-scribbles:incomplete` on the other reproduce nothing — even though both implicate the same
+  scenario, and even though one plausible common cause (stroke-end work expensive enough to blow the
+  budget on a fast host and to keep history from settling on a slow one) would produce exactly that
+  pair. Matching on scope alone is not the fix: `incomplete` currently collapses a settle timeout, a
+  navigation failure, and every other scenario exception into one token, so scope-only agreement
+  would pair a real breach with an unrelated harness fault. The honest resolution is to split
+  `incomplete` into subcauses and declare which are compatible with a breach — which needs evidence
+  about which subcauses actually occur, and is left for the same calibration pass that owns the
+  statistic. Until then the gap is documented rather than closed, and the first job's red run is
+  what surfaces it.
 * − The comparison depends on the artifact being written. A gate that dies before writing one falls
   back to outcome-only filing, which is the old behaviour — correct, but it means the fingerprint is
   not available on exactly the paths where the run broke earliest.

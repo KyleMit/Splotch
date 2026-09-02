@@ -9,6 +9,12 @@
 //
 // So a run's failure is fingerprinted by WHAT failed, not by whether something did,
 // and a breach reproduces only when the same scenario failed the same way twice.
+//
+// "The same way" is exact on scope AND cause, which is deliberately strict and
+// carries a known false negative: one runner breaching `crayon-scribbles` while
+// another leaves it incomplete reproduces nothing here. ADR-0158 records why
+// loosening it to scope alone would be worse while `incomplete` collapses every
+// scenario exception into one token.
 
 const GATE_FAILURE_CAUSES = Object.freeze({
   // The scenario's commit p95 was measured and exceeded the budget.
