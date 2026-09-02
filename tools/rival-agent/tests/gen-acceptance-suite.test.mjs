@@ -3,7 +3,11 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { generateAcceptanceSuite, parseAcceptanceArgs } from '../gen-acceptance-suite.mjs';
+import {
+  generateAcceptanceSuite,
+  handlerBrief,
+  parseAcceptanceArgs,
+} from '../gen-acceptance-suite.mjs';
 import { MAX_INLINE_OUTPUT_CHARS, truncateOutput } from '../spool.mjs';
 
 const repositoryRoot = resolve(import.meta.dirname, '../../..');
@@ -79,6 +83,16 @@ describe('acceptance stage commands, executed as shipped', () => {
     expect(commands).toHaveLength(7);
     expect(commands[6]).toMatch(/^git -C \/\S+ status --short$/);
     expect(commands[6]).not.toContain(NONCE);
+    const brief = handlerBrief('/suite/question.md');
+    expect(brief[0]).toContain('--question-file /suite/question.md');
+    const numbered = brief.filter((line) => /^\d\. /.test(line));
+    expect(numbered).toHaveLength(commands.length);
+    expect(
+      numbered
+        .slice(0, 6)
+        .every((line) => line.startsWith(`${numbered.indexOf(line) + 1}. Approve`))
+    ).toBe(true);
+    expect(numbered[6]).toMatch(/^7\. Decline/);
   });
 
   it('chains a generated reply token from the handshake into the carry request', () => {
