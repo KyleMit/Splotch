@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -91,6 +91,12 @@ describe('spool', () => {
     const before = lastSpoolActivityAt(session);
     appendRequest(session, { command: 'a', why: 'first' });
     expect(lastSpoolActivityAt(session)).toBeGreaterThanOrEqual(before);
+  });
+
+  it('does not follow an atomic-write temp entry while measuring activity', () => {
+    const replies = sessionPath(session, SESSION_FILES.replies);
+    symlinkSync(join(replies, 'already-renamed'), join(replies, '.123-456.tmp'));
+    expect(() => lastSpoolActivityAt(session)).not.toThrow();
   });
 
   it('treats an unanswered request as live activity until its own budget runs out', () => {

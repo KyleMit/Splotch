@@ -134,20 +134,23 @@ export function readFailed(session) {
   return readJson(sessionPath(session, SESSION_FILES.failed));
 }
 
-function newestMtime(directory) {
-  if (!existsSync(directory)) return 0;
-  return readdirSync(directory).reduce(
-    (newest, name) => Math.max(newest, statSync(join(directory, name)).mtimeMs),
-    statSync(directory).mtimeMs
-  );
+function directoryMtime(directory) {
+  try {
+    // Requests and replies are append-only atomic renames, so the directory mtime records every
+    // completed write without following a temporary entry that can disappear between readdir/stat.
+    return statSync(directory).mtimeMs;
+  } catch (error) {
+    if (error.code === 'ENOENT') return 0;
+    throw error;
+  }
 }
 
 // The rival is silent on its stream while a brokered request is out with the handler, so the
 // watchdog counts spool traffic as liveness alongside stream events.
 export function lastSpoolActivityAt(session) {
   return Math.max(
-    newestMtime(sessionPath(session, SESSION_FILES.requests)),
-    newestMtime(sessionPath(session, SESSION_FILES.replies))
+    directoryMtime(sessionPath(session, SESSION_FILES.requests)),
+    directoryMtime(sessionPath(session, SESSION_FILES.replies))
   );
 }
 
