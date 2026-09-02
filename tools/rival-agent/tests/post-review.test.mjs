@@ -129,8 +129,16 @@ describe('review request', () => {
   });
 });
 
-function fakeGh({ head = HEAD, base = BASE, reviews = [], state = 'OPEN' } = {}) {
+// Reviews come back as `--paginate --slurp` pages: an array of per-page arrays.
+function fakeGh({ head = HEAD, base = BASE, reviews = [], state = 'OPEN', pageSize = 30 } = {}) {
   const calls = [];
+  const pages = () => {
+    const chunks = [];
+    for (let start = 0; start < reviews.length; start += pageSize) {
+      chunks.push(reviews.slice(start, start + pageSize));
+    }
+    return chunks.length > 0 ? chunks : [[]];
+  };
   const gh = (args, options) => {
     calls.push({ args, input: options?.input });
     if (args[0] === 'pr') {
@@ -157,7 +165,8 @@ function fakeGh({ head = HEAD, base = BASE, reviews = [], state = 'OPEN' } = {})
       reviews.push(created);
       return JSON.stringify(created);
     }
-    return JSON.stringify(reviews);
+    expect(args).toContain('--slurp');
+    return JSON.stringify(pages());
   };
   return { gh, calls, reviews };
 }
@@ -198,6 +207,23 @@ describe('posting', () => {
     expect(calls.some(({ args }) => args[1] === '--method')).toBe(false);
   });
 
+  it('finds a marked review on a later page of a long review list', () => {
+    const marker = buildMarker({ rival: 'claude', base: BASE, head: HEAD, id: 'older' });
+    const humans = Array.from({ length: 31 }, (_, index) => ({
+      id: index,
+      body: `human ${index}`,
+      commit_id: HEAD,
+      state: 'COMMENTED',
+    }));
+    const { gh } = fakeGh({
+      reviews: [
+        ...humans,
+        { id: 99, html_url: 'u', body: marker, commit_id: HEAD, state: 'COMMENTED' },
+      ],
+    });
+    expect(postReview({ ...options, gh })).toEqual({ state: 'adopted', reviewId: 99, url: 'u' });
+  });
+
   it('refuses a head or base that moved since the review', () => {
     expect(() => postReview({ ...options, gh: fakeGh({ head: 'c'.repeat(40) }).gh })).toThrow(
       /head is/
@@ -210,7 +236,8 @@ describe('posting', () => {
 
   it('fails loudly when the posted review cannot be read back', () => {
     const { gh } = fakeGh();
-    const forgetful = (args, options) => (args[0] === 'api' && !options ? '[]' : gh(args, options));
+    const forgetful = (args, options) =>
+      args[0] === 'api' && !options ? '[[]]' : gh(args, options);
     expect(() => postReview({ ...options, gh: forgetful })).toThrow(/exactly one marked COMMENT/);
   });
 

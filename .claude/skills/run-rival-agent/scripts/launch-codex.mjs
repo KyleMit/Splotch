@@ -190,10 +190,21 @@ export function buildCodexArgs({
   return ['exec', ...shared, '-'];
 }
 
-export function ledgerKeyFor({ repoRoot, scope, branch }) {
+const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
+
+// A commit scope is keyed by its full OID, never by the ref as typed: `HEAD` names a different
+// commit tomorrow, and a short hash typed one way and a full hash typed another must still find
+// the same reviewer.
+export function ledgerKeyFor({ repoRoot, scope, branch, resolveCommit = defaultResolveCommit }) {
   if (scope.kind === 'pr') return ledgerKey({ repoRoot, kind: 'pr', ref: String(scope.number) });
-  if (scope.kind === 'commit') return ledgerKey({ repoRoot, kind: 'commit', ref: scope.commit });
+  if (scope.kind === 'commit') {
+    return ledgerKey({ repoRoot, kind: 'commit', ref: resolveCommit(repoRoot, scope.commit) });
+  }
   return ledgerKey({ repoRoot, kind: 'branch', ref: branch });
+}
+
+export function logPathForAttempt(session, attempt) {
+  return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
 }
 
 // Only Codex refusing the run is worth a second attempt; every other failure is either the user's
@@ -222,28 +233,30 @@ function describeLandedCommits(repoRoot, previous, head) {
   });
 }
 
-function runCodex(args, { worktree, env, prompt, session }) {
+function runCodex(args, { worktree, env, prompt, session, attempt }) {
+  const logPath = logPathForAttempt(session, attempt);
+  process.stderr.write(`stream log: ${logPath}\n`);
   return runStreaming({
     command: 'codex',
     args,
     cwd: worktree,
     env,
     stdin: prompt,
-    logPath: sessionPath(session, SESSION_FILES.log),
+    logPath,
     onProgress: (line) => process.stderr.write(`${line}\n`),
     reducer: codexReducer,
     activityProbe: () => spoolActivityAt(session),
   });
 }
 
-function finish(session, state, extra) {
+function finish(session, state, logPath, extra) {
   const parsed = parseFindings(state.message ?? '');
   writeFileSync(sessionPath(session, SESSION_FILES.rawResult), `${state.message ?? ''}\n`);
   if (!parsed.ok) {
     writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), {
       reason: `the rival's final message is not a findings document: ${parsed.errors.join('; ')}`,
       rawResultPath: sessionPath(session, SESSION_FILES.rawResult),
-      logPath: sessionPath(session, SESSION_FILES.log),
+      logPath,
       ...extra,
     });
     throw new Error(`findings did not validate: ${parsed.errors.join('; ')}`);
@@ -256,7 +269,7 @@ function finish(session, state, extra) {
     unverified: parsed.findings.unverified.length,
     rivalSessionId: state.sessionId,
     usage: state.usage,
-    logPath: sessionPath(session, SESSION_FILES.log),
+    logPath,
     ...extra,
   };
   writeJsonAtomic(sessionPath(session, SESSION_FILES.done), done);
@@ -301,7 +314,9 @@ export async function launch(options) {
   try {
     createDisposableWorktree(repoRoot, scope.head, worktree);
     writeReviewPacket(repoRoot, scope, packetDir);
+    let attempt = 0;
     const runRound = async () => {
+      attempt += 1;
       writeJsonAtomic(sessionPath(session, SESSION_FILES.session), {
         id,
         rival: RIVAL,
@@ -334,7 +349,7 @@ export async function launch(options) {
         effort: options.effort,
         resumeThreadId: plan.resume,
       });
-      return runCodex(args, { worktree, env, prompt, session });
+      return runCodex(args, { worktree, env, prompt, session, attempt });
     };
 
     let state;
@@ -349,7 +364,11 @@ export async function launch(options) {
       plan = planRound(undefined);
       state = await runRound();
     }
-    const done = finish(session, state, { session, round: plan.round, scope });
+    const done = finish(session, state, logPathForAttempt(session, attempt), {
+      session,
+      round: plan.round,
+      scope,
+    });
     if (!question) {
       recordRound(recordPath, {
         record: plan.previous,
@@ -366,7 +385,7 @@ export async function launch(options) {
         reason: error.message,
         code: error.code,
         session,
-        logPath: sessionPath(session, SESSION_FILES.log),
+        logPath: logPathForAttempt(session, Math.max(attempt, 1)),
       });
     }
     throw error;

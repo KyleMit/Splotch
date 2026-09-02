@@ -186,8 +186,12 @@ export function readPullRequest(number, gh = defaultGh) {
   return metadata;
 }
 
+// `--paginate` alone concatenates one JSON array per page, which is not JSON; `--slurp` wraps the
+// pages in an outer array. A PR with more than one page of reviews would otherwise fail to parse.
 export function readReviews(number, gh = defaultGh) {
-  return JSON.parse(gh(['api', '--paginate', `repos/${REPOSITORY}/pulls/${number}/reviews`]));
+  return JSON.parse(
+    gh(['api', '--paginate', '--slurp', `repos/${REPOSITORY}/pulls/${number}/reviews`])
+  ).flat();
 }
 
 // Posting is one request, so GitHub either creates the whole review or none of it; the marker is

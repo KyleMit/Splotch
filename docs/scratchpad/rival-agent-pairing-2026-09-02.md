@@ -159,3 +159,14 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   moved from `run-codex:*` to `rival:*`. The marker becomes `splotch-rival-review:rival=<vendor>;…`
   — the `splotch-claude-review` consumers in `address-pr-review` and `implement-issue-stack` are
   updated in the Codex-side pass.
+* 2026-09-02 — first real round, Codex reviewing this PR at
+  dc716a5819342ff74f145e9bc6e9edb4108fe85e. Ten minutes, about 1.8M input tokens (1.6M cached), zero
+  findings, two unverified, posted through the new poster as review 5090705253. The rival never
+  called the broker: it ran Vitest in its own read-only sandbox, hit `EPERM` on
+  `node_modules/.vite-temp`, and reported that as a handler decline. Its unverified list still named
+  three real defects that landed as fixes — `gh api
+  --paginate` without `--slurp` concatenates
+  pages into non-JSON, the one retry after a pruned resume reused the exclusively-created log path,
+  and a commit scope was keyed by the ref as typed rather than its OID. The rival prompt now says
+  outright that the sandbox cannot escalate and that anything that writes goes through `run` the
+  first time.

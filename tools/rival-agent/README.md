@@ -44,7 +44,7 @@ outputs/<seq>.out   the full captured output the handler redirected into
 findings.json       the validated findings document, once the rival finishes
 done.json           written by the launcher when findings validated
 failed.json         written by the launcher when the rival exited without valid findings
-rival.ndjson        the raw stream log
+rival.ndjson        the raw stream log (rival-retry.ndjson for the one retry after a pruned resume)
 ```
 
 The launchers live in the skill packages: `.claude/skills/run-rival-agent/scripts/` (Claude is the
