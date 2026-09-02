@@ -52,8 +52,14 @@ single-sample noise instead.
 1. **The physical iPad (web and native) and the physical Android phone (web and native) are the
    release gate.** A campaign's remainder is counted on those four rows only. Their fidelity classes
    differ — the iPad web row is `physical-safari-gated`, the other three stay advisory in the
-   fidelity sense because their input instruments are uncalibrated on some checks — but a red
-   scoreable cell on any of them is a product finding that must end in a recorded product outcome.
+   fidelity sense because their input instruments are uncalibrated on some checks (ADR-0139) — and
+   that difference is itself part of the remainder: on a release-gate row, a cell that is
+   **unscoreable because its instrument is uncalibrated counts as red**, not as absent. A campaign
+   cannot declare the gate green while three of its four rows have no calibrated drawing verdict;
+   calibrating the instrument (or recording why the runtime cannot be calibrated, which keeps the
+   cell explicitly unscoreable and the row a gate-in-waiting) is product-adjacent work the campaign
+   owes before completion. A red scoreable cell on any of the four rows is a product finding that
+   must end in a recorded product outcome.
 2. **Mac rows are a regression tripwire.** A Mac cell that turns red on a change that was green on
    the trunk is a finding to attribute before shipping; a Mac cell that was already red is not a
    campaign remainder (ADR-0087: Playwright WebKit does not reproduce the iPad compositor).
@@ -79,6 +85,9 @@ single-sample noise instead.
 
 * \+ A campaign has a finite, release-relevant remainder, and device time goes to rows that gate a
   release.
+* − Three of the four release-gate rows currently carry uncalibrated drawing instruments, so under
+  this rule they are gates-in-waiting: the remainder they add is calibration work, and until it is
+  done only the physical Safari row enforces the drawing gates in practice.
 * \+ A single lucky or unlucky frame no longer flips an action cell; a persistent max breach still
   fails.
 * − Simulator and emulator red is easier to ignore; it stays rendered so a systemic regression there

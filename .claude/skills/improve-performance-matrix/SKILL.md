@@ -362,8 +362,10 @@ leaves current scoreable reds on a release-gate row.
 Complete the full campaign only when:
 
 * a freshly regenerated matrix has zero current, scoreable red cells on the release-gate rows
-  (ADR-0156); simulator and emulator red is rendered and reported, never counted as remainder, and a
-  Mac cell counts only when it turned red on a change that was green on the trunk;
+  (ADR-0156), and no release-gate cell that is unscoreable because its instrument is uncalibrated —
+  such a cell counts as red until the runtime is calibrated or recorded as uncalibratable; simulator
+  and emulator red is rendered and reported, never counted as remainder, and a Mac cell counts only
+  when it turned red on a change that was green on the trunk;
 * every genuine product red on a release-gate row (or a Mac cell that turned red on a change that
   was green on the trunk) that existed during the campaign has a recorded product outcome — a
   verified improvement or an empirically rejected candidate followed by the next hypothesis; a
