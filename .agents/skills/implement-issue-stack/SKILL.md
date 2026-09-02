@@ -58,8 +58,8 @@ Complete preflight before creating any branch or PR:
    clean it. Determine the remote default branch, fetch it, and record its exact OID.
 3. Resolve every issue reference through GitHub. Read each body and labels. Confirm all are open,
    unique, in this repository, and actionable in the requested order.
-4. Read and follow the Codex-only `run-claude` skill, then run `npm run issue-stack:policy:check`.
-   Invoke its fixed read-only authentication probe
+4. Read and follow the Codex package of the `run-rival-agent` skill, then run
+   `npm run issue-stack:policy:check`. Invoke its fixed read-only authentication probe
    `/Users/kylemit/.local/libexec/splotch-claude-health.mjs` outside the sandbox, then run
    `gh auth status --hostname github.com` outside the sandbox. A failed policy or authentication
    check is a global blocker: tell the user to run `npm run issue-stack:install` and restart Codex;
@@ -144,8 +144,8 @@ until the final CI phase.
 
 Every product PR and gate-repair support PR receives a standalone review. Do not wait for CI before
 starting review, and do not treat an automatic check result as a reason to interrupt a review cycle.
-Use the `run-claude` skill's empirical Splotch PR-review profile. Invoke only its installed fixed
-wrapper outside the Codex sandbox:
+Use the `run-rival-agent` skill's empirical Splotch PR-review profile. Invoke only its installed
+fixed wrapper outside the Codex sandbox:
 
 ```sh
 /Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs --pr <number>

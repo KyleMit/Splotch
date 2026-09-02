@@ -57,7 +57,7 @@ round confirmed its earlier findings addressed. Tip empirically verified on the 
    campaign skills now own the status protocol; a standalone skill for non-campaign contexts was
    judged marginal. Reopen if bare "status?" prompts keep recurring outside campaigns.
 7. **Host-only review-launch scripts** (`~/.local/libexec/splotch-claude-*.mjs`, partly mirrored at
-   `.agents/skills/run-claude/scripts/`): bringing them into `tools/` was the Claude lane's
+   `.agents/skills/run-rival-agent/scripts/`): bringing them into `tools/` was the Claude lane's
    secondary rec.
 8. **`personal-device-scripts.md` stale premise**: the pinned `ANDROID_SERIAL` names an SM-S938U1
    while committed targets name SM-G990U1 — reopen the decision record (root instructions already

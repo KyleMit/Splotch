@@ -131,8 +131,8 @@ describe('skill contracts', () => {
     expect(stackSkill).toContain('`gh stack unstack <recorded-stack-number>`');
     expect(stackSkill).toContain('npm run issue-stack:policy:check');
     expect(stackSkill).toContain('gh auth status --hostname github.com');
-    expect(stackSkill).toContain('Codex-only `run-claude` skill');
-    expect(stackSkill).toContain("`run-claude` skill's empirical Splotch PR-review profile");
+    expect(stackSkill).toContain('Codex package of the `run-rival-agent` skill');
+    expect(stackSkill).toContain("`run-rival-agent` skill's empirical Splotch PR-review profile");
     expect(stackSkill).toContain('Checkpoint every phase transition and external mutation');
     expect(stackSkill).toContain('Poll pending checks every 30 seconds for up to 45 minutes');
     expect(stackSkill).toContain('`ciRepairContinuations` starts at zero');

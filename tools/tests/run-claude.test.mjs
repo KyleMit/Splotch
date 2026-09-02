@@ -25,11 +25,11 @@ import {
   sessionArguments,
   sessionRecordPath,
   updateSessionRecord,
-} from '../../.agents/skills/run-claude/scripts/claude-run.mjs';
+} from '../../.agents/skills/run-rival-agent/scripts/claude-run.mjs';
 import {
   renderProgressEvent,
   runClaudeStreaming,
-} from '../../.agents/skills/run-claude/scripts/splotch-claude-stream.mjs';
+} from '../../.agents/skills/run-rival-agent/scripts/splotch-claude-stream.mjs';
 import {
   buildAuthorizationPrompt,
   endReviewerSession,
@@ -42,29 +42,29 @@ import {
   REVIEWER_PATHS,
   reviewerSessionArguments,
   reviewerSessionRecordPath,
-} from '../../.agents/skills/run-claude/scripts/claude-review-publish.mjs';
-import { HEALTH_PATHS } from '../../.agents/skills/run-claude/scripts/claude-health.mjs';
+} from '../../.agents/skills/run-rival-agent/scripts/claude-review-publish.mjs';
+import { HEALTH_PATHS } from '../../.agents/skills/run-rival-agent/scripts/claude-health.mjs';
 import {
   POLICY_RULES,
   replaceManagedRules,
   upsertTopLevelToml,
-} from '../../.agents/skills/run-claude/scripts/install-codex-policy.mjs';
+} from '../../.agents/skills/run-rival-agent/scripts/install-codex-policy.mjs';
 import {
   POLICY_CASES,
   REQUIRED_SKILL_EXECUTION_CONTRACT,
   validateCodexConfig,
   validateManagedRules,
   validateSkillExecutionContract,
-} from '../../.agents/skills/run-claude/scripts/check-codex-policy.mjs';
+} from '../../.agents/skills/run-rival-agent/scripts/check-codex-policy.mjs';
 import {
   EXPECTED_HOME,
   expectedRunClaudeFiles,
   INSTALL_PATHS,
-} from '../../.agents/skills/run-claude/scripts/install-run-claude.mjs';
+} from '../../.agents/skills/run-rival-agent/scripts/install-run-claude.mjs';
 import {
   assertClaudePlanAuthentication,
   assertNoApiBillingEnvironment,
-} from '../../.agents/skills/run-claude/scripts/splotch-claude-subscription-auth.mjs';
+} from '../../.agents/skills/run-rival-agent/scripts/splotch-claude-subscription-auth.mjs';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
 const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
@@ -644,7 +644,7 @@ describe('trusted Claude PR reviewer', () => {
 
   it('hardcodes Auto and safe mode and installs every trusted byte', () => {
     const wrapper = readFileSync(
-      join(repositoryRoot, '.agents/skills/run-claude/scripts/claude-review-publish.mjs'),
+      join(repositoryRoot, '.agents/skills/run-rival-agent/scripts/claude-review-publish.mjs'),
       'utf8'
     );
     for (const required of [
@@ -689,7 +689,10 @@ describe('trusted Claude PR reviewer', () => {
 
 describe('run-claude Codex policy', () => {
   it('requires the skill to enter the host approval boundary before invoking wrappers', () => {
-    const skill = readFileSync(join(repositoryRoot, '.agents/skills/run-claude/SKILL.md'), 'utf8');
+    const skill = readFileSync(
+      join(repositoryRoot, '.agents/skills/run-rival-agent/SKILL.md'),
+      'utf8'
+    );
     expect(() => validateSkillExecutionContract(skill)).not.toThrow();
     for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
       expect(skill).toContain(requirement);
@@ -698,7 +701,10 @@ describe('run-claude Codex policy', () => {
   });
 
   it('documents every one-time setup and verification command in the authoritative skill', () => {
-    const skill = readFileSync(join(repositoryRoot, '.agents/skills/run-claude/SKILL.md'), 'utf8');
+    const skill = readFileSync(
+      join(repositoryRoot, '.agents/skills/run-rival-agent/SKILL.md'),
+      'utf8'
+    );
     for (const required of [
       'cd /Users/kylemit/Code/Splotch',
       'npm run run-claude:install',

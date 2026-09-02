@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   CODEX_POLICY_PATHS,
   installCodexPolicy as installRunClaudePolicy,
-} from '../../run-claude/scripts/install-codex-policy.mjs';
+} from '../../run-rival-agent/scripts/install-codex-policy.mjs';
 
 const START_MARKER = '# BEGIN SPLOTCH ISSUE STACK';
 const END_MARKER = '# END SPLOTCH ISSUE STACK';

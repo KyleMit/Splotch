@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 import {
   checkCodexPolicy as checkRunClaudePolicy,
   evaluateDecision,
-} from '../../run-claude/scripts/check-codex-policy.mjs';
-import { CODEX_POLICY_PATHS } from '../../run-claude/scripts/install-codex-policy.mjs';
+} from '../../run-rival-agent/scripts/check-codex-policy.mjs';
+import { CODEX_POLICY_PATHS } from '../../run-rival-agent/scripts/install-codex-policy.mjs';
 import { ISSUE_STACK_POLICY_RULES } from './install-codex-policy.mjs';
 
 const POLICY_CASES = [

@@ -1,5 +1,5 @@
 ---
-name: run-claude
+name: run-rival-agent
 description: Launch a fresh, subscription-authenticated local Claude Code process from Codex through fixed permission-reviewed wrappers. Use when the user explicitly asks Codex to run Claude, wants an independent Claude second opinion or adversarial review, or another Codex-only workflow needs a Claude subprocess; supports output-only prompts, read-only repository inspection, and the fixed Splotch PR-review publisher, with streamed per-event progress and resumable multi-turn sessions.
 ---
 

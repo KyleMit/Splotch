@@ -1,5 +1,5 @@
 ---
-name: run-codex
+name: run-rival-agent
 description: Get an independent second opinion from a fresh Codex CLI process on the ChatGPT plan's included usage — a read-only review of the current in-flight work, or a free-form question about this checkout. Use when the user asks for an outside/independent/second-opinion review, wants Codex to check the work before a PR, or when a change is risky enough to deserve a reviewer that did not write it. The mirror of the Codex-side run-claude skill.
 ---
 
