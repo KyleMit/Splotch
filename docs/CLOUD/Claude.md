@@ -319,10 +319,21 @@ sessions a store they can restore the file from and write it back to — the pat
 for ephemeral CI runners at <https://learn.chatgpt.com/docs/auth/ci-cd-auth>; the dialog has no API
 to receive a refreshed file.
 
-If `npm run --silent run-codex:health` fails in a cloud session, relay the hook's status line and
-re-seed. Do not run `codex login` from the sandbox (device-code auth does work there, but it is a
-login per VM), and never fall back to an API key: the guard rejects it, and it bills metered
-credits.
+### When the seed has been retired
+
+Nothing before the first review can tell. The hook validates the seed's shape and age, and
+`npm run --silent run-codex:health` passes too, because `codex login status` reads only the file.
+The first `run-codex:review` or `run-codex:ask` then fails within seconds — Codex tries to refresh,
+the auth server answers that the refresh token was already used, and the wrapper prints "Codex could
+not refresh its stored ChatGPT login" with the re-seed instructions (measured with a fake rotated
+token; nothing is billed). Relay that and re-seed. Do not run `codex login` from the sandbox
+(device-code auth does work there, but it is a login per VM), and never fall back to an API key: the
+guard rejects it, and it bills metered credits.
+
+The invocation itself is the same wrapper, guard, and `auth.json` contract as on a developer
+machine; only provisioning differs. Locally Codex refreshes the file in place and nothing else holds
+its chain, so the login effectively never goes stale. In the cloud the seed is a copy of a chain
+that the cloud itself rotates, so staleness is scheduled rather than accidental.
 
 ## Previewing the dev server on a phone
 

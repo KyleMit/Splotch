@@ -233,10 +233,30 @@ function reviewPrompt(options, session, cwd, extraInstructions) {
   return buildRoundPrompt(options, session.record, landed, extraInstructions);
 }
 
+// Codex's own wording when its stored refresh token has been rotated elsewhere — the certain fate
+// of a cloud seed once any VM has refreshed it. `codex login status` is offline and reports the file
+// as healthy, so this is where a retired login first becomes visible.
+const LOGIN_FAILURE_PATTERN =
+  /could not be refreshed|refresh token was already used|log out and sign in again/i;
+
+export function isLoginFailure(error) {
+  return error?.code === STREAM_FAILURE.exited && LOGIN_FAILURE_PATTERN.test(error.message ?? '');
+}
+
+// The remedy differs by where the wrapper runs: a developer machine signs in again, a Claude Code
+// on the web session has no browser and takes its login from the seeded environment variable.
+export function describeLoginFailure(error, env = process.env) {
+  const remedy =
+    env.CLAUDE_CODE_REMOTE === 'true'
+      ? 'This is a Claude Code on the web session, so the seeded login has been retired by refresh rotation. Re-seed it: run `npm run run-codex:seed` on your machine and paste the value as CODEX_AUTH_JSON in the cloud environment (docs/CLOUD/Claude.md, "Codex reviews on the ChatGPT plan").'
+      : 'Run `codex login` to sign in again.';
+  return `Codex could not refresh its stored ChatGPT login. ${remedy}\n${error.message}`;
+}
+
 // Only Codex refusing the run is worth a second attempt; every other failure is either the user's
-// decision or a condition a retry would repeat.
+// decision or a condition a retry would repeat — a retired login included.
 export function isRetryableResumeFailure(error) {
-  return error?.code === STREAM_FAILURE.exited;
+  return error?.code === STREAM_FAILURE.exited && !isLoginFailure(error);
 }
 
 async function runRound(options, session, { cwd, env, extraInstructions, logPath }) {
@@ -337,7 +357,9 @@ async function main() {
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
   main().catch((error) => {
-    process.stderr.write(`${error.message}\n`);
+    process.stderr.write(
+      `${isLoginFailure(error) ? describeLoginFailure(error) : error.message}\n`
+    );
     process.exitCode = 1;
   });
 }

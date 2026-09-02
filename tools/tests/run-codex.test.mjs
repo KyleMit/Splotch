@@ -9,7 +9,9 @@ import {
   buildRoundPrompt,
   buildReviewPrompt,
   describeScope,
+  describeLoginFailure,
   ISOLATION_FEATURES,
+  isLoginFailure,
   isRetryableResumeFailure,
   parseRunArgs,
   readPromptFile,
@@ -393,6 +395,33 @@ describe('run-codex review rounds', () => {
     expect(isRetryableResumeFailure({ code: STREAM_FAILURE.stalled })).toBe(false);
     expect(isRetryableResumeFailure({ code: STREAM_FAILURE.logFailed })).toBe(false);
     expect(isRetryableResumeFailure(new Error('something else'))).toBe(false);
+  });
+
+  // Measured with a fake auth.json whose refresh token the auth server had never issued: Codex
+  // exits 1 with this wording, while `codex login status` and the health check stay green because
+  // both read only the file. A retry would spend nothing but would also fix nothing.
+  it('names the remedy for a login whose refresh token was rotated away', () => {
+    const codexError = Object.assign(
+      new Error(
+        'codex exited 1 after "thread.started". Log: /tmp/x.jsonl\nERROR: Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.'
+      ),
+      { code: STREAM_FAILURE.exited }
+    );
+
+    expect(isLoginFailure(codexError)).toBe(true);
+    expect(isRetryableResumeFailure(codexError)).toBe(false);
+    expect(
+      isLoginFailure({ code: STREAM_FAILURE.stalled, message: 'refresh token was already used' })
+    ).toBe(false);
+
+    const cloud = describeLoginFailure(codexError, { CLAUDE_CODE_REMOTE: 'true' });
+    expect(cloud).toContain('run-codex:seed');
+    expect(cloud).toContain('CODEX_AUTH_JSON');
+    expect(cloud).not.toContain('codex login`');
+    const local = describeLoginFailure(codexError, {});
+    expect(local).toContain('codex login');
+    expect(local).not.toContain('CODEX_AUTH_JSON');
+    expect(local).toContain(codexError.message);
   });
 
   // An unreachable recorded head means the range is unknown, not empty: telling the reviewer

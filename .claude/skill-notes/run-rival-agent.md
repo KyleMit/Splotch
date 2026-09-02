@@ -131,11 +131,18 @@ sandbox can reach; it was left as a follow-up rather than built into this packag
 
 ## Unvalidated
 
-The eight-day refresh interval and the rotation semantics come from OpenAI's documentation and the
-Codex issue tracker, not from a measured cloud run; the first re-seed will show whether the warning
-leads the rotation by enough. Whether a 401 ever triggers a refresh earlier than that — an idle seed
-whose access token expired before its eighth day — is the case that would shorten the shelf life
-below what the note above claims.
+The retired-seed failure was measured, not inferred: with a fake `auth.json` carrying an expired
+access token and a refresh token the auth server never issued, `codex login status` and
+`run-codex:health` both passed — both read only the file — and `codex exec` exited 1 within a second
+with "Your access token could not be refreshed because your refresh token was already used." The
+wrapper now recognizes that wording, skips the resume retry for it, and prints the remedy for the
+platform it runs on. A liveness probe in the health check was considered and rejected: the only
+honest probe is a real request, which either spends plan usage or rotates the token itself.
+
+The eight-day refresh interval comes from OpenAI's documentation, not from a measured cloud run; the
+first re-seed will show whether the warning leads the rotation by enough. Whether a 401 ever
+triggers a refresh earlier than that — an idle seed whose access token expired before its eighth day
+— is the case that would shorten the shelf life below what the note above claims.
 
 Sessions persist under Codex's own store; the skill exposes no `--persist` or `--end-session`
 controls the way the Codex-side package does, on the grounds that a reviewer thread is useful to
