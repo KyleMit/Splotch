@@ -150,9 +150,11 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 
 | Global class (`app.css`)                 | Use for                                                                    |
 | ---------------------------------------- | -------------------------------------------------------------------------- |
-| `.modal-dialog` / `.modal-fly-in`        | The dimmed, blurred `<dialog>` backdrop, and the fly-in from the opening   |
-|                                          | button. AiImageResult has its own open choreography, so it takes           |
-|                                          | `.modal-dialog` alone                                                      |
+| `.modal-dialog` / `.modal-fly-in`        | The dimmed `<dialog>` backdrop — blurred on fine pointers, a plain deeper  |
+|                                          | dim under `pointer: coarse` and `prefers-reduced-transparency` (the blur   |
+|                                          | reads the canvas stack back every frame; ADR-0157) — and the fly-in from   |
+|                                          | the opening button. AiImageResult has its own open choreography, so it     |
+|                                          | takes `.modal-dialog` alone                                                |
 | `.modal-shell`                           | The centered modal card — surface, radius, shadow, and re-inked            |
 |                                          | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt, |
 |                                          | AiImageResult, ColoringBook, SettingsModal                                 |

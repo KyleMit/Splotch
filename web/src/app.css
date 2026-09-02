@@ -194,13 +194,30 @@ body {
 }
 
 /* Shared dialog-modal treatment. Every <dialog>-based modal carries
-   .modal-dialog for the dimmed, blurred backdrop. Modals that fly in from
-   their opening button add .modal-fly-in; ones with their own open
-   choreography (e.g. AiImageResult) take .modal-dialog alone. */
+   .modal-dialog for the dimmed backdrop. Modals that fly in from their
+   opening button add .modal-fly-in; ones with their own open choreography
+   (e.g. AiImageResult) take .modal-dialog alone. */
 .modal-dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+/* The blur reads the whole canvas stack back every frame the backdrop is on
+   screen, and a touch device pays it inside the frames a child is watching:
+   on the physical iPad (Safari, 2026-09-02 A/B, three scored repeats each) the
+   coloring picker's page select read 31 / 31 / 33 ms and its clear 28 / 28 /
+   28 ms post-action P95 with the blur, 18 / 18 / 32 and 17 / 17 / 18 without
+   it (ADR-0157). Settings and the theme switches did not move. A pointing
+   device with a coarse pointer therefore gets a plain, slightly deeper dim;
+   so does anyone who asked for less transparency. Fine pointers keep the
+   blur. */
+@media (pointer: coarse), (prefers-reduced-transparency: reduce) {
+  .modal-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .modal-dialog.modal-fly-in[open] {
