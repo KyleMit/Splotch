@@ -150,3 +150,12 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
 
 * 2026-09-02 — plan reviewed, probes run, note written. Build order: shared core and tests, Claude
   side, Codex side, deletions and notes.
+* 2026-09-02 — shared core landed under `tools/rival-agent/` with the broker protocol tested end to
+  end (the test is the rival, over real stdio JSON-RPC). One more hole closed while building: a
+  request the handler is still working on has to hold the rival's watchdog open, so an unanswered
+  request counts as activity for up to an hour and both CLIs' MCP tool timeouts are set to match.
+* 2026-09-02 — Claude side rebuilt: `launch-codex.mjs` replaces `codex-run.mjs`,
+  `codex-session.mjs`, and `codex-stream.mjs`; the `ask` and `review` profiles are gone; npm scripts
+  moved from `run-codex:*` to `rival:*`. The marker becomes `splotch-rival-review:rival=<vendor>;…`
+  — the `splotch-claude-review` consumers in `address-pr-review` and `implement-issue-stack` are
+  updated in the Codex-side pass.

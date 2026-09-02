@@ -20,10 +20,12 @@ import {
   lastSpoolActivityAt,
   MAX_INLINE_OUTPUT_CHARS,
   outputPath,
+  PENDING_REQUEST_TIMEOUT_MS,
   pendingRequests,
   readReply,
   SESSION_FILES,
   sessionPath,
+  spoolActivityAt,
   truncateOutput,
   writeJsonAtomic,
   writeReply,
@@ -89,6 +91,18 @@ describe('spool', () => {
     const before = lastSpoolActivityAt(session);
     appendRequest(session, { command: 'a', why: 'first' });
     expect(lastSpoolActivityAt(session)).toBeGreaterThanOrEqual(before);
+  });
+
+  it('treats an unanswered request as live activity until its own budget runs out', () => {
+    const start = Date.now();
+    expect(spoolActivityAt(session, () => start + 1000)).toBeLessThanOrEqual(start + 1);
+    appendRequest(session, { command: 'npm test', why: 'slow' });
+    const later = start + PENDING_REQUEST_TIMEOUT_MS / 2;
+    expect(spoolActivityAt(session, () => later)).toBe(later);
+    const expired = start + PENDING_REQUEST_TIMEOUT_MS + 1000;
+    expect(spoolActivityAt(session, () => expired)).toBeLessThan(expired);
+    writeReply(session, 1, { exit: 0, output: '' });
+    expect(spoolActivityAt(session, () => expired)).toBeLessThan(expired);
   });
 });
 

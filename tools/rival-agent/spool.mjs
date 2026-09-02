@@ -149,6 +149,20 @@ export function lastSpoolActivityAt(session) {
   );
 }
 
+// An unanswered request means the handler is deciding or running the command — a full test run
+// can sit silent for well past the stream's stall budget — so the request itself counts as
+// activity until it has waited this long. Both CLIs' MCP tool timeouts are raised to match.
+export const PENDING_REQUEST_TIMEOUT_MS = 60 * 60 * 1000;
+
+export function spoolActivityAt(session, now = Date.now) {
+  const [oldestPending] = pendingRequests(session);
+  if (oldestPending) {
+    const requestedAt = Date.parse(oldestPending.createdAt);
+    if (now() - requestedAt < PENDING_REQUEST_TIMEOUT_MS) return now();
+  }
+  return lastSpoolActivityAt(session);
+}
+
 const sleep = (ms) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 
 export async function waitForReply(session, seq, { pollMs = REPLY_POLL_MS, shouldStop } = {}) {

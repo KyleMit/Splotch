@@ -20,6 +20,7 @@ function sh(args, cwd = repo) {
   return execFileSync('git', args, {
     cwd,
     encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
       GIT_AUTHOR_NAME: 't',
