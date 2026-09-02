@@ -59,6 +59,7 @@ export function buildRivalPrompt({
   previous,
   landedCommits,
   extraInstructions,
+  localToolBoundary,
   template = readFileSync(RIVAL_PROMPT_PATH, 'utf8'),
 }) {
   return fill(template, {
@@ -66,6 +67,7 @@ export function buildRivalPrompt({
     WORKTREE: worktree,
     PACKET_DIR: packetDir,
     RANGE: scope.range,
+    LOCAL_TOOL_BOUNDARY: localToolBoundary,
     ROUND: describeRound({ round, previous, landedCommits }),
     EXTRA: extraInstructions
       ? `## Extra instructions from the handler\n\n${extraInstructions}`

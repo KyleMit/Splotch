@@ -170,8 +170,8 @@ function finish(session, state, logPath, extra) {
 
 // A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
 // (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
-// `reducer`, `newSessionId()` (a wrapper-issued id for CLIs that take one up front), and
-// `endSession(record)`. Everything else in a round is the same on both sides.
+// `reducer`, `localToolBoundary`, `newSessionId()` (a wrapper-issued id for CLIs that take one up
+// front), and `endSession(record)`. Everything else in a round is the same on both sides.
 export async function launch(
   options,
   vendor,
@@ -249,6 +249,7 @@ export async function launch(
         previous: plan.previous,
         landedCommits: describeLandedCommits(repoRoot, plan.previous, scope.head),
         extraInstructions,
+        localToolBoundary: vendor.localToolBoundary,
       });
       return runStreaming({
         command: vendor.command,

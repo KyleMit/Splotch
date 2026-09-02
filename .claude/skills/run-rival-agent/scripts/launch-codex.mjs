@@ -16,6 +16,8 @@ import { FINDINGS_SCHEMA_PATH } from '../../../../tools/rival-agent/validate-fin
 
 export { BROKER_SERVER_PATH };
 export const RIVAL = 'codex';
+export const LOCAL_TOOL_BOUNDARY =
+  "* **Your own shell is sandboxed read-only and cannot escalate.** `git`, `rg`, `sed`, `cat`, and other reads work there. A test runner, a type check, a build, an install, a script that writes a temp file, or anything that needs the network will fail there with a permission error — that is the sandbox, not the handler, and it is never a finding. Do not try such a command locally first and do not report the sandbox's refusal as a decline. Send it through `run` the first time.";
 // Ambient tool surfaces that bypass the sandbox. `apps` is the one that matters most: it is a
 // built-in MCP server exposing GitHub read *and write* tools, and it is how a review of this very
 // skill once posted a review to its own pull request while claiming it could not reach GitHub.
@@ -117,6 +119,7 @@ export const codexVendor = Object.freeze({
   rival: RIVAL,
   command: 'codex',
   reducer: codexReducer,
+  localToolBoundary: LOCAL_TOOL_BOUNDARY,
   prepare() {
     const { env, stripped } = assertSubscriptionBilling();
     const notes =

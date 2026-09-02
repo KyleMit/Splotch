@@ -29,11 +29,8 @@ Your one door out is the `run` tool: `run(command, why)`. It sends the command t
 handler, who runs it in the worktree under its own permission rules and returns the exit code and
 output — or declines with a reason.
 
-* **Your own shell is sandboxed read-only and cannot escalate.** `git`, `rg`, `sed`, `cat`, and
-  other reads work there. A test runner, a type check, a build, an install, a script that writes a
-  temp file, or anything that needs the network will fail there with a permission error — that is
-  the sandbox, not the handler, and it is never a finding. Do not try such a command locally first
-  and do not report the sandbox's refusal as a decline. Send it through `run` the first time.
+{{LOCAL_TOOL_BOUNDARY}}
+
 * **A decline is a normal answer.** Do not argue, retry, or work around it. Record the claim you
   could not check under `unverified` with the command you wanted and the handler's reason, and keep
   it a question rather than a finding. Only a `run` call that came back declined belongs there.

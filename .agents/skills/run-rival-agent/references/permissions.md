@@ -14,10 +14,11 @@ command in Codex, and restart Codex so its config and rules reload. The installe
 * allows only the launcher, the poster, the publisher alias, and the health probe at Codex's
   approval boundary while forbidding raw Claude entry points.
 
-Every installed wrapper hashes its siblings against the manifest before doing anything else; a byte
-that differs refuses to run. In the checkout there is no manifest and nothing to verify — the
-checkout is the source. The reviewed worktree is untrusted material, and the installed wrappers
-import nothing from it.
+The launcher and health probe hash every installed file against the manifest before launching the
+rival; the publisher alias inherits that check through the launcher. The standalone poster relies on
+the launcher having verified the session's installed package. In the checkout there is no manifest
+and nothing to verify — the checkout is the source. The reviewed worktree is untrusted material, and
+the installed wrappers import nothing from it.
 
 ## What the rival can do
 

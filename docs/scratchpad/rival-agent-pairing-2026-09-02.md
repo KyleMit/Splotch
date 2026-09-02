@@ -202,3 +202,21 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   test run; every one approved. Zero findings, zero unverified, posted as review 5091158063. The
   rival prompt now names those git reads as requests it must not make. Cost: about 2.1M cache-read
   tokens and 20k output tokens on sonnet, roughly seven minutes.
+* 2026-09-02 — first real Codex-native-handler round at a13c6212f2db1aac53746e676a2d95c7913b7f6f,
+  Claude opus as the rival. Policy and health checks passed after installation; the health probe
+  verified the manifest, and all eight legacy paths named by the installer were absent. The rival
+  made three broker requests. One was a forbidden `wc` of the supplied packet and was declined; the
+  other two were an approved parser repro plus tools tier and its approved targeted retry. The
+  targeted rival-agent suite passed inside the temp-root worktree without escalation, including
+  Vitest's `node_modules/.vite-temp` write.
+* 2026-09-02 — Codex's 30-second `exec_command` yield is shorter than a 60-second `broker next`:
+  each quiet wait returned a live handle and needed one follow-up poll before reporting `waiting`.
+  The launcher handle survived throughout the broker loop, and sandboxed `tail` of its redirected
+  stderr was sufficient to follow the rival's tools and requests. The broad brokered tools tier
+  produced its parser output but did not finish after fourteen minutes, so the handler interrupted
+  it, replied with exit 130 and the captured output, and accepted the rival's targeted retry.
+* 2026-09-02 — the Claude rival posted five anchored comments as review 5092335442. Its reproduced
+  diff-header parser defect, vendor-inaccurate local-shell prompt, overstated manifest prose, and
+  stale ADR survived validation. Its resumed-session-id question did not: the orchestrated alias
+  resumed round two with the same Claude session id, then adopted review 5092335442 without posting
+  again. The alias completed normally while declining its one brokered tools-tier request.

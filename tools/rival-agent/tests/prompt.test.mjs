@@ -10,16 +10,23 @@ const SCOPE = {
   description: 'pull request 7',
   range: `${'a'.repeat(40)}...${'b'.repeat(40)}`,
 };
+const LOCAL_TOOL_BOUNDARY = '* **Local tools.** Read only.';
 
 describe('rival prompt', () => {
   it('fills every placeholder for a first-round review', () => {
-    const prompt = buildRivalPrompt({ scope: SCOPE, worktree: '/wt', packetDir: '/wt/.packet' });
+    const prompt = buildRivalPrompt({
+      scope: SCOPE,
+      worktree: '/wt',
+      packetDir: '/wt/.packet',
+      localToolBoundary: LOCAL_TOOL_BOUNDARY,
+    });
     expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
     expect(prompt).toContain('a review of pull request 7');
     expect(prompt).toContain('`/wt`');
     expect(prompt).toContain('`/wt/.packet`');
     expect(prompt).toContain(`git diff ${SCOPE.range}`);
     expect(prompt).toContain('Reporting no defects is a correct and expected outcome');
+    expect(prompt).toContain(LOCAL_TOOL_BOUNDARY);
     expect(prompt).not.toContain('## Round');
     expect(prompt).not.toContain('Extra instructions');
   });
@@ -30,6 +37,7 @@ describe('rival prompt', () => {
       question: 'Does the retry loop terminate?',
       worktree: '/wt',
       packetDir: '/p',
+      localToolBoundary: LOCAL_TOOL_BOUNDARY,
     });
     expect(prompt).toContain('Does the retry loop terminate?');
     expect(prompt).toContain('`findings` may be empty');
@@ -45,6 +53,7 @@ describe('rival prompt', () => {
       previous: { lastHead: 'c'.repeat(40) },
       landedCommits: 'abc fix it',
       extraInstructions: 'Focus on the undo stack.',
+      localToolBoundary: LOCAL_TOOL_BOUNDARY,
     });
     expect(prompt).toContain('## Round 2');
     expect(prompt).toContain('abc fix it');
