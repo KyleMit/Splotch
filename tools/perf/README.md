@@ -42,6 +42,12 @@ complete flag and output descriptions.
   exist and where each writes; `lib/campaign-ledger.mjs` owns what the ledger rows mean. Host
   identity — device ids, capability files, preview URLs — stays a flag, so nothing device-specific
   is committed.
+* `report-undo-gate-failures.mjs` reports WHAT the WebKit undo gate failed at, read from the run's
+  own `undo-scenarios.json` rather than from its exit code. It has no npm script because CI consumes
+  its stdout verbatim: `webkit-commit-gate-fast` publishes the fingerprint as a job output, and the
+  fresh-runner retry passes it back through `--first=` to file only the failures that reproduced on
+  both VMs (ADR-0158). `lib/undo-gate-failures.mjs` holds the derivation and comparison as pure
+  functions.
 * `gen:performance-matrix` rebuilds the committed deployment-target report from its source manifest.
 * `perf:build` and `perf:serve` prepare and serve the instrumented production bundle.
 * Platform capture commands live under [`web/`](web/README.md), [`android/`](android/README.md), and
