@@ -89,7 +89,7 @@ describe('output-only Claude runner', () => {
       promptFile: '/private/tmp/ping.txt',
       profile: 'ask',
       cwd: undefined,
-      model: 'sonnet',
+      model: 'opus',
       effort: 'high',
       persist: false,
       resume: undefined,

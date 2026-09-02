@@ -106,7 +106,7 @@ gets only `Read`, `Grep`, and `Glob`; it cannot run Bash, browse, edit, or publi
   --prompt-file /private/tmp/splotch-claude-prompt-<unique>.md
 ```
 
-The runner accepts `--model sonnet|opus` and `--effort low|medium|high`; defaults are `sonnet` and
+The runner accepts `--model sonnet|opus` and `--effort low|medium|high`; defaults are `opus` and
 `high`. It also accepts the session controls described under Multi-turn sessions below. Do not use
 this profile when empirical tests are required.
 

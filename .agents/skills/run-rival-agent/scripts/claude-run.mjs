@@ -83,7 +83,7 @@ export function parseRunArgs(argv) {
     promptFile: values['prompt-file'],
     profile: values.profile ?? 'ask',
     cwd: values.cwd,
-    model: values.model ?? 'sonnet',
+    model: values.model ?? 'opus',
     effort: values.effort ?? 'high',
     persist: values.persist,
     resume: values.resume,
