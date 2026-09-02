@@ -143,10 +143,12 @@ Alternatives rejected:
 * **A thin shared router skill** that detects the runner and points at the provider-specific skill.
   It unifies only the reference, not the invocation, and the agent pays context for two skills while
   trusting the first to describe the second correctly.
-* **A runtime dispatcher script** behind one npm entry. From Codex the dispatcher runs inside the
-  sandbox and cannot reach the installed Keychain-backed wrappers, so it could only print the
-  escalated command for Codex to run — a worse contract than the direct one, and a new entry the
-  Codex exec-policy would have to review.
+* **A runtime dispatcher script** behind one npm entry. Codex could reach it the way it reaches the
+  installed wrappers — by requesting host execution for the command — so the objection is not that
+  the dispatcher is unreachable. It is that a repository-owned script would become a new mutable
+  host-trusted surface, or would need its own installed fixed wrapper and exec-policy entry to avoid
+  being one, while the provider-specific invocation grammar underneath it stayed put. That is a
+  trust-boundary cost paid for a name the provider trees already select for free.
 * **Managed skill forks** under `.ruler/skill-forks/`. The mechanism fits, but it would turn the
   installer and Codex exec-policy scripts into generated output with a regeneration step on every
   edit, and no fork exists yet to prove the path. Direct registration for both providers is the
