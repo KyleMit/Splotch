@@ -26,6 +26,34 @@ const RATE_LIMIT_MESSAGE =
   'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).';
 const RATE_LIMIT_ARGUMENT_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpression'];
 
+// no-restricted-syntax selectors shared across blocks. Flat config REPLACES a rule's earlier
+// entry rather than merging, so every block that configures no-restricted-syntax for a slice of
+// web/src must recompose the full set that applies there — these constants are what make that
+// recomposition mechanical instead of copy-paste that drifts. The positive control
+// tools/tests/named-exports-lint.test.mjs fails if a web/src file shape stops rejecting a
+// default export.
+const NAMED_EXPORTS_ONLY = {
+  selector: 'ExportDefaultDeclaration',
+  message:
+    'web/src uses named exports only — a default export gets a new name at every import site.',
+};
+// An index signature on a Props interface erases type checking for every forwarded attribute;
+// svelte/elements ships the accurate types for `...rest` bags.
+const INDEX_SIGNATURE_PROP_BAG = {
+  selector: 'TSInterfaceDeclaration TSIndexSignature',
+  message:
+    'Extend HTMLAttributes<...> from svelte/elements instead of an index-signature prop bag.',
+};
+// Mixing the it()/test() vocabularies makes greps and reporter output lie about which tier a
+// test is in — Vitest files use it()/describe(), test() is the Playwright vocabulary.
+const VITEST_VOCABULARY_SELECTORS = [
+  'CallExpression[callee.name="test"]',
+  'CallExpression[callee.object.name="test"]',
+].map((selector) => ({
+  selector,
+  message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
+}));
+
 // A test that cannot fail is worse than no test: it advertises coverage it does not have, and
 // nothing downstream reports it — a green suite looks identical either way. These are the shapes
 // a reviewer has to spot by eye, so they are lint instead. The two tiers get the same guard
@@ -235,12 +263,10 @@ export default tseslint.config(
           message: RATE_LIMIT_MESSAGE,
         })),
         // Merged here rather than its own web/src block, which would silently replace the
-        // rate-limit selectors above (that actually happened during evaluation).
-        {
-          selector: 'ExportDefaultDeclaration',
-          message:
-            'web/src uses named exports only — a default export gets a new name at every import site.',
-        },
+        // rate-limit selectors above (that actually happened during evaluation). The Svelte and
+        // Vitest blocks below replace this entry for their file shapes, so each is followed by a
+        // web/src-scoped block that recomposes NAMED_EXPORTS_ONLY into its selector set.
+        NAMED_EXPORTS_ONLY,
       ],
     },
   },
@@ -252,16 +278,7 @@ export default tseslint.config(
     rules: {
       // Misfires on `$bindable()` destructuring defaults, which read as unused assignments.
       'no-useless-assignment': 'off',
-      // An index signature on a Props interface erases type checking for every forwarded
-      // attribute; svelte/elements ships the accurate types for `...rest` bags.
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'TSInterfaceDeclaration TSIndexSignature',
-          message:
-            'Extend HTMLAttributes<...> from svelte/elements instead of an index-signature prop bag.',
-        },
-      ],
+      'no-restricted-syntax': ['error', INDEX_SIGNATURE_PROP_BAG],
       // Rune-aware replacement for prefer-const (see the split-glob block above), plus the
       // svelte-specific conventions the codebase already satisfied when ratified (ADR-0031).
       'svelte/prefer-const': 'error',
@@ -278,6 +295,16 @@ export default tseslint.config(
       'svelte/no-target-blank': 'error',
       'svelte/valid-prop-names-in-kit-pages': 'error',
       'svelte/prefer-writable-derived': 'error',
+    },
+  },
+  {
+    // The block above replaces no-restricted-syntax for every Svelte-flavoured file, which would
+    // silently exempt web/src ones from the named-exports ban — recompose the full effective set
+    // for that slice. (The rate-limit selectors stay absent on purpose: rateLimit() is
+    // server-only and can't appear in these files.)
+    files: ['web/src/**/*.svelte', 'web/src/**/*.svelte.ts', 'web/src/**/*.svelte.js'],
+    rules: {
+      'no-restricted-syntax': ['error', INDEX_SIGNATURE_PROP_BAG, NAMED_EXPORTS_ONLY],
     },
   },
   {
@@ -365,17 +392,7 @@ export default tseslint.config(
     files: ['**/*.test.ts', '**/*.test.mjs'],
     plugins: { vitest },
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'CallExpression[callee.name="test"]',
-          message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
-        },
-        {
-          selector: 'CallExpression[callee.object.name="test"]',
-          message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS],
       ...VACUOUS_TEST_RULES.vitest,
       'vitest/no-alias-methods': 'error',
       'vitest/no-commented-out-tests': 'error',
@@ -391,6 +408,16 @@ export default tseslint.config(
         'error',
         { disallowedWords: ['should'], ignoreTypeOfDescribeName: true },
       ],
+    },
+  },
+  {
+    // The Vitest block above replaces no-restricted-syntax for test files, which would silently
+    // exempt web/src's colocated unit tests from the named-exports ban — recompose the full
+    // effective set for that slice. (The rate-limit selectors stay deliberately absent: ad-hoc
+    // literal bucket keys are the point of a unit test.)
+    files: ['web/src/**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS, NAMED_EXPORTS_ONLY],
     },
   },
   {
