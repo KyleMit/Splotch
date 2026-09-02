@@ -19,7 +19,7 @@ exist. The checkout-only live acceptance generator and its templates are not ins
 | `broker.mjs`               | The handler's CLI: `next` blocks for the next request or the finished findings, `reply` answers one request or declines it, `status` reports. |
 | `post-review.mjs`          | Posts a session's findings to a PR as one `COMMENT` review with anchored comments and a hidden marker; adopts an existing marked review.      |
 | `validate-findings.mjs`    | Checks a findings document against `findings.schema.json`.                                                                                    |
-| `gen-acceptance-suite.mjs` | Generates a real-agent acceptance question and a vendor-neutral native-handler handoff under the temp root.                                   |
+| `gen-acceptance-suite.mjs` | Generates a nonce-bearing real-agent acceptance question under the temp root.                                                                 |
 
 ## Supporting modules
 
@@ -62,12 +62,11 @@ the test acting as a fake rival over real stdio JSON-RPC.
 ## Live agent-to-agent acceptance
 
 `npm run gen:rival-acceptance` creates a unique owner-only directory under the system temp root with
-`question.md` and `HANDOFF.md`. Give the handoff to a Codex or Claude Code session: it invokes that
-runner's `run-rival-agent` package for one non-posting question round, serves the broker normally,
-and judges a multi-stage exchange covering chained replies, nonzero output, stdout/stderr,
-truncation, instruction-as-data, a targeted Vitest write inside the disposable worktree, and a real
-decline. The parser probe and targeted test command are preserved from the first real
-Codex-native-handler review.
+`question.md`. Give its absolute path to a Codex or Claude Code native handler for one non-posting
+`run-rival-agent` question round: the handler serves the broker normally and judges a multi-stage
+exchange covering chained replies, nonzero output, stdout/stderr, truncation, instruction-as-data, a
+targeted Vitest write inside the disposable worktree, and a real decline. The parser probe and
+targeted test command are preserved from the first real Codex-native-handler review.
 
 This suite intentionally uses the real rival CLI and plan login. It is manual, nondeterministic in
 wording, and never part of `npm test` or CI. The generated nonce and the broker spool provide the

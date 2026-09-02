@@ -10,7 +10,6 @@ import { isEntryPoint } from './broker-server.mjs';
 
 const ACCEPTANCE_DIRECTORY = join(dirname(fileURLToPath(import.meta.url)), 'acceptance');
 const QUESTION_TEMPLATE = join(ACCEPTANCE_DIRECTORY, 'question.md');
-const HANDOFF_TEMPLATE = join(ACCEPTANCE_DIRECTORY, 'handoff.md');
 const SUITE_DIRECTORY_MODE = 0o700;
 const SUITE_FILE_MODE = 0o600;
 const USAGE = 'usage: gen-acceptance-suite.mjs [--output-dir <new-directory>]';
@@ -43,19 +42,10 @@ export function generateAcceptanceSuite({
   const suiteDirectory = outputDirectory ?? join(tmpdir(), `splotch-rival-acceptance-${nonce}`);
   mkdirSync(suiteDirectory, { mode: SUITE_DIRECTORY_MODE });
   const questionPath = join(suiteDirectory, 'question.md');
-  const handoffPath = join(suiteDirectory, 'HANDOFF.md');
-  const values = {
-    NONCE: nonce,
-    QUESTION_PATH: questionPath,
-    SUITE_DIRECTORY: suiteDirectory,
-  };
-  writeFileSync(questionPath, fill(readFileSync(QUESTION_TEMPLATE, 'utf8'), values), {
+  writeFileSync(questionPath, fill(readFileSync(QUESTION_TEMPLATE, 'utf8'), { NONCE: nonce }), {
     mode: SUITE_FILE_MODE,
   });
-  writeFileSync(handoffPath, fill(readFileSync(HANDOFF_TEMPLATE, 'utf8'), values), {
-    mode: SUITE_FILE_MODE,
-  });
-  return { suiteDirectory, questionPath, handoffPath, nonce };
+  return { suiteDirectory, questionPath, nonce };
 }
 
 export function main(argv = process.argv.slice(2)) {

@@ -221,9 +221,9 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   resumed round two with the same Claude session id, then adopted review 5092335442 without posting
   again. The alias completed normally while declining its one brokered tools-tier request.
 * 2026-09-02 — added the checkout-only `gen:rival-acceptance` manual suite for real agent-to-agent
-  testing, with a generated vendor-neutral handoff that can be given to either a Codex or Claude
-  native handler. The first Codex-handler/Claude-rival run passed all six stages with exactly seven
-  sequential broker requests and no extras: local packet read, random-token reply chaining, exit 23
-  with stdout/stderr plus recovery, 60,118-byte truncation with both boundary markers and an inert
-  instruction, the earlier parser repro plus 8-file/68-test worktree-local Vitest run, and one real
-  out-of-worktree decline accepted without retry. The suite remains outside `npm test` and CI.
+  testing, generating a question that can be given to either a Codex or Claude native handler. The
+  first Codex-handler/Claude-rival run passed all six stages with exactly seven sequential broker
+  requests and no extras: local packet read, random-token reply chaining, exit 23 with stdout/stderr
+  plus recovery, 60,118-byte truncation with both boundary markers and an inert instruction, the
+  earlier parser repro plus 8-file/68-test worktree-local Vitest run, and one real out-of-worktree
+  decline accepted without retry. The suite remains outside `npm test` and CI.
