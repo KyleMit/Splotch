@@ -168,3 +168,22 @@ describe('countImportantCss', () => {
     expect(countImportantCss('.a { display: none !important; } .b { color: red; }')).toBe(1);
   });
 });
+
+describe('quoted-string stripping', () => {
+  it('does not count !important inside a content string', () => {
+    expect(
+      countImportant('<style>.label::after { content: "!important"; color: red; }</style>')
+    ).toBe(0);
+  });
+
+  it('survives escaped quotes without swallowing the declarations after them', () => {
+    const css = String.raw`.a::after { content: "he said \"!important\""; } .b { color: red !important; }`;
+    expect(countImportantCss(css)).toBe(1);
+  });
+
+  it('still counts a real !important beside a decoy string in a plain .css source', () => {
+    expect(
+      countImportantCss(".a::before { content: '!important'; display: none !important; }")
+    ).toBe(1);
+  });
+});

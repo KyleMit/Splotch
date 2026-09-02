@@ -148,8 +148,16 @@ function styledFiles(dir) {
 // up as a baseline bump to investigate, not a silent pass), and the var()
 // strip doesn't survive nested parens (var(--x, rgba(…))) — fine while
 // fallbacks stay simple, since the leftover text contains no hex.
+// Comments strip before strings on purpose: an apostrophe inside a comment
+// ("don't") would otherwise open a phantom string that swallows real CSS,
+// while a comment marker inside a string (content: "/*") is the rarer hazard.
+const QUOTED_STRING = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
+
 function stripCss(cssText) {
-  return cssText.replace(/\/\*[\s\S]*?\*\//g, '').replace(/var\([^)]*\)/g, 'var()');
+  return cssText
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(QUOTED_STRING, '""')
+    .replace(/var\([^)]*\)/g, 'var()');
 }
 
 // A .svelte source contributes its <style> blocks; a .css source is one big
