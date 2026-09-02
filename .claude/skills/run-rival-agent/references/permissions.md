@@ -53,7 +53,23 @@ than a failure:
 
 Web search stays enabled: it cannot write, and a reviewer that can check vendor documentation gives
 better findings. A query is outbound traffic, so treat the reviewed code as visible to a search
-provider.
+provider. Measured on 2026-09-02: the read-only sandbox reads the whole disk (`~/.codex/auth.json`
+included), so the reach of a query is every readable file, not only the reviewed code; the
+disposable worktree omitting `.worktreeinclude` secrets protects nothing against the rival itself.
+
+## The workspace-write pilot path
+
+`--sandbox workspace-write` replaces the broker with the sandbox as the boundary. Measured with the
+model-free `codex sandbox` runner: a targeted Vitest file, `npm run check`, and `npm run build` pass
+inside the disposable worktree; writes to the home directory and the canonical checkout are refused;
+a commit fails because the worktree's gitdir lives under the canonical checkout's `.git`; DNS fails
+with the network off. Writes under the system temp root are allowed, which includes the session
+spool — nothing there is read as instructions, and the findings come from the stream, not from a
+file the rival could pre-write. Every other pin stays. Two more are added and asserted by the
+launcher test: `sandbox_workspace_write.network_access=false`, and `web_search="disabled"` because
+disk-wide reads plus one outbound channel is an exfiltration path for a prompt injected through the
+diff. Nothing on this path is judged per command by the handler; the decision it keeps is whether to
+launch.
 
 ## What the handler does
 

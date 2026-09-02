@@ -2,7 +2,15 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const RIVAL_PROMPT_PATH = join(dirname(fileURLToPath(import.meta.url)), 'rival-prompt.md');
+const PROMPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+export const RIVAL_PROMPT_PATH = join(PROMPT_DIRECTORY, 'rival-prompt.md');
+// The execution section is the one part of the contract that depends on how the rival was
+// launched: through the broker (its shell cannot write, `run` is its one door) or inside a
+// workspace-write sandbox with no broker at all.
+export const EXECUTION_PARTIAL_PATHS = Object.freeze({
+  broker: join(PROMPT_DIRECTORY, 'rival-prompt-broker.md'),
+  sandbox: join(PROMPT_DIRECTORY, 'rival-prompt-sandbox.md'),
+});
 export const MAX_PROMPT_BYTES = 256 * 1024;
 
 export function readPromptFile(path) {
@@ -50,6 +58,27 @@ function fill(template, values) {
   });
 }
 
+// What differs between a brokered rival and a sandboxed one, beyond the execution section: who the
+// handler is to it, what it may do to the worktree, and how it reproduces a claim.
+export function describeExecutionMode(broker) {
+  if (broker) {
+    return {
+      HANDLER:
+        'A **native handler** — the agent that launched you — holds every permission you lack and is waiting to run commands for you.',
+      WORKTREE_RULES:
+        'It is read-only to you and nobody else will ever see it. Do not try to edit, commit, or reach outside it.',
+      VERIFY_HOW: 'through `run`',
+    };
+  }
+  return {
+    HANDLER:
+      'The **native handler** that launched you will read your findings when you finish; it will not run commands for you.',
+    WORKTREE_RULES:
+      'Nobody else will ever see it. Your shell may write inside it — test caches, build output, a scratch script — and nowhere else. Do not commit, and do not try to reach outside it.',
+    VERIFY_HOW: 'by running it',
+  };
+}
+
 export function buildRivalPrompt({
   scope,
   question,
@@ -59,15 +88,21 @@ export function buildRivalPrompt({
   previous,
   landedCommits,
   extraInstructions,
-  localToolBoundary,
+  broker = true,
+  toolBoundary,
   template = readFileSync(RIVAL_PROMPT_PATH, 'utf8'),
+  executionTemplate = readFileSync(
+    broker ? EXECUTION_PARTIAL_PATHS.broker : EXECUTION_PARTIAL_PATHS.sandbox,
+    'utf8'
+  ),
 }) {
   return fill(template, {
     TASK: describeTask({ scope, question }),
     WORKTREE: worktree,
     PACKET_DIR: packetDir,
     RANGE: scope.range,
-    LOCAL_TOOL_BOUNDARY: localToolBoundary,
+    ...describeExecutionMode(broker),
+    EXECUTION: fill(executionTemplate, { LOCAL_TOOL_BOUNDARY: toolBoundary }).trim(),
     ROUND: describeRound({ round, previous, landedCommits }),
     EXTRA: extraInstructions
       ? `## Extra instructions from the handler\n\n${extraInstructions}`

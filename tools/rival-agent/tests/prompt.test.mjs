@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildRivalPrompt, describeRound, MAX_PROMPT_BYTES, readPromptFile } from '../prompt.mjs';
+import {
+  buildRivalPrompt,
+  describeExecutionMode,
+  describeRound,
+  MAX_PROMPT_BYTES,
+  readPromptFile,
+} from '../prompt.mjs';
 
 const SCOPE = {
   base: 'a'.repeat(40),
@@ -10,7 +16,7 @@ const SCOPE = {
   description: 'pull request 7',
   range: `${'a'.repeat(40)}...${'b'.repeat(40)}`,
 };
-const LOCAL_TOOL_BOUNDARY = '* **Local tools.** Read only.';
+const TOOL_BOUNDARY = '* **Local tools.** Read only.';
 
 describe('rival prompt', () => {
   it('fills every placeholder for a first-round review', () => {
@@ -18,7 +24,7 @@ describe('rival prompt', () => {
       scope: SCOPE,
       worktree: '/wt',
       packetDir: '/wt/.packet',
-      localToolBoundary: LOCAL_TOOL_BOUNDARY,
+      toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
     expect(prompt).toContain('a review of pull request 7');
@@ -26,9 +32,47 @@ describe('rival prompt', () => {
     expect(prompt).toContain('`/wt/.packet`');
     expect(prompt).toContain(`git diff ${SCOPE.range}`);
     expect(prompt).toContain('Reporting no defects is a correct and expected outcome');
-    expect(prompt).toContain(LOCAL_TOOL_BOUNDARY);
+    expect(prompt).toContain(TOOL_BOUNDARY);
     expect(prompt).not.toContain('## Round');
     expect(prompt).not.toContain('Extra instructions');
+  });
+
+  it('describes the broker as the one door by default', () => {
+    const prompt = buildRivalPrompt({
+      scope: SCOPE,
+      worktree: '/wt',
+      packetDir: '/p',
+      toolBoundary: TOOL_BOUNDARY,
+    });
+    expect(prompt).toContain('## The `run` tool');
+    expect(prompt).toContain('waiting to run commands for you');
+    expect(prompt).toContain('It is read-only to you');
+    expect(prompt).toContain('reproduced through `run`');
+    expect(prompt).not.toContain('## Running commands');
+  });
+
+  // A sandboxed rival has no broker: telling it about `run` would send it looking for a tool that
+  // does not exist, and telling it the worktree is read-only would stop it running the tests it
+  // was given a shell for.
+  it('drops every mention of the broker for a sandboxed rival', () => {
+    const prompt = buildRivalPrompt({
+      scope: SCOPE,
+      worktree: '/wt',
+      packetDir: '/p',
+      broker: false,
+      toolBoundary: TOOL_BOUNDARY,
+    });
+    expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
+    expect(prompt).toContain('## Running commands');
+    expect(prompt).toContain(TOOL_BOUNDARY);
+    expect(prompt).toContain('will not run commands for you');
+    expect(prompt).toContain('Your shell may write inside it');
+    expect(prompt).toContain('reproduced by running it');
+    expect(prompt).not.toContain('`run`');
+    expect(prompt).not.toContain('handler declined');
+    expect(Object.keys(describeExecutionMode(false))).toEqual(
+      Object.keys(describeExecutionMode(true))
+    );
   });
 
   it('frames a question instead of a review when one is given', () => {
@@ -37,7 +81,7 @@ describe('rival prompt', () => {
       question: 'Does the retry loop terminate?',
       worktree: '/wt',
       packetDir: '/p',
-      localToolBoundary: LOCAL_TOOL_BOUNDARY,
+      toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).toContain('Does the retry loop terminate?');
     expect(prompt).toContain('`findings` may be empty');
@@ -53,7 +97,7 @@ describe('rival prompt', () => {
       previous: { lastHead: 'c'.repeat(40) },
       landedCommits: 'abc fix it',
       extraInstructions: 'Focus on the undo stack.',
-      localToolBoundary: LOCAL_TOOL_BOUNDARY,
+      toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).toContain('## Round 2');
     expect(prompt).toContain('abc fix it');

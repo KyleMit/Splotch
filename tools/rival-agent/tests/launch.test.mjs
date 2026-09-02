@@ -4,6 +4,8 @@ import {
   ledgerKeyFor,
   logPathForAttempt,
   parseLaunchArgs,
+  SANDBOXES,
+  toolBoundaryFor,
 } from '../launch.mjs';
 import { STREAM_FAILURE } from '../stream.mjs';
 
@@ -21,6 +23,28 @@ describe('shared launch arguments', () => {
     expect(() => parseLaunchArgs(['--pr', 'seven'])).toThrow(/--pr/);
     expect(() => parseLaunchArgs(['--effort', 'max'])).toThrow(/effort/);
     expect(() => parseLaunchArgs(['extra'])).toThrow(/positional/);
+  });
+
+  it('pairs through the broker unless a workspace-write sandbox is asked for', () => {
+    expect(parseLaunchArgs([])).toMatchObject({ sandbox: 'read-only' });
+    expect(parseLaunchArgs(['--sandbox', 'workspace-write'])).toMatchObject({
+      sandbox: 'workspace-write',
+    });
+    expect(SANDBOXES).toEqual(['read-only', 'workspace-write']);
+    expect(() => parseLaunchArgs(['--sandbox', 'danger-full-access'])).toThrow(/sandbox/);
+  });
+
+  // The Claude rival has no sandboxed launch shape yet, and a vendor without one must be refused
+  // before a worktree is provisioned rather than launched with the broker's instructions.
+  it('refuses a sandbox the vendor has no tool boundary for', () => {
+    const vendor = { rival: 'claude', localToolBoundary: 'read only' };
+    expect(toolBoundaryFor(vendor, 'read-only')).toBe('read only');
+    expect(() => toolBoundaryFor(vendor, 'workspace-write')).toThrow(
+      /claude rival has no workspace-write/
+    );
+    expect(
+      toolBoundaryFor({ ...vendor, sandboxedToolBoundary: 'own shell' }, 'workspace-write')
+    ).toBe('own shell');
   });
 
   it('opts into a fresh reviewer and into ending the session', () => {

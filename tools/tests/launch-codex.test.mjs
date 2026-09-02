@@ -104,6 +104,30 @@ describe('Codex rival command construction', () => {
     }
   });
 
+  // The sandboxed path trades the broker for a shell confined to the worktree. Every other pin
+  // stays, the broker is absent rather than merely unapproved, and the two channels that would let
+  // a prompt injected through the diff carry a file off the disk — the sandbox's network and web
+  // search — are pinned off on the command line.
+  it('swaps the broker for a network-off workspace-write sandbox when asked', () => {
+    const args = buildCodexArgs({ ...options, sandbox: 'workspace-write' });
+    expect(args).toContain('sandbox_mode="workspace-write"');
+    expect(args).toContain('sandbox_workspace_write.network_access=false');
+    expect(args).toContain('web_search="disabled"');
+    expect(args).toContain('--ignore-user-config');
+    expect(args).toContain('approval_policy="never"');
+    for (const feature of ISOLATION_FEATURES) {
+      expect(args.slice(args.indexOf('--disable'))).toContain(feature);
+    }
+    expect(args.some((arg) => arg.startsWith('mcp_servers='))).toBe(false);
+    expect(args.slice(args.indexOf('-C'), args.indexOf('-C') + 2)).toEqual([
+      '-C',
+      '/tmp/session/worktree',
+    ]);
+    const brokered = buildCodexArgs(options);
+    expect(brokered).not.toContain('web_search="disabled"');
+    expect(brokered).not.toContain('sandbox_workspace_write.network_access=false');
+  });
+
   it('attaches exactly the broker, approved, with a tool timeout matching the pending budget', () => {
     const args = buildCodexArgs(options);
     const mcp = args.find((arg) => arg.startsWith('mcp_servers='));
@@ -159,6 +183,8 @@ describe('Codex rival command construction', () => {
 
   it('exposes the vendor adapter the shared launcher drives', () => {
     expect(codexVendor).toMatchObject({ rival: 'codex', command: 'codex' });
+    expect(codexVendor.localToolBoundary).toContain('read-only');
+    expect(codexVendor.sandboxedToolBoundary).toContain('network off');
     expect(typeof codexVendor.prepare).toBe('function');
     expect(typeof codexVendor.resolveModel).toBe('function');
     expect(codexVendor.buildArgs).toBe(buildCodexArgs);

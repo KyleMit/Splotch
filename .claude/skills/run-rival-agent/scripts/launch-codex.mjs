@@ -18,6 +18,19 @@ export { BROKER_SERVER_PATH };
 export const RIVAL = 'codex';
 export const LOCAL_TOOL_BOUNDARY =
   "* **Your own shell is sandboxed read-only and cannot escalate.** `git`, `rg`, `sed`, `cat`, and other reads work there. A test runner, a type check, a build, an install, a script that writes a temp file, or anything that needs the network will fail there with a permission error — that is the sandbox, not the handler, and it is never a finding. Do not try such a command locally first and do not report the sandbox's refusal as a decline. Send it through `run` the first time.";
+// Measured with the model-free `codex sandbox` runner on 2026-09-02: a targeted Vitest file,
+// `npm run check`, and `npm run build` all pass inside the disposable worktree; writes to the home
+// directory and the canonical checkout are refused; a commit fails because the worktree's gitdir
+// lives under the canonical checkout's .git; DNS resolution fails with the network off.
+export const SANDBOXED_TOOL_BOUNDARY =
+  '* **Your shell is sandboxed to this worktree, with the network off, and it cannot escalate.** Tests, type checks, builds, and scripts that write inside the worktree run there. Writes anywhere else, and every network call, fail with a permission error — that is the sandbox, and it is never a finding.';
+// The workspace-write sandbox reads the whole disk (measured: `~/.codex/auth.json` and the
+// canonical checkout's `web/.env` are readable), and the reviewed diff is untrusted input. Web
+// search would be the one outbound channel a prompt injected through the diff could carry a read
+// file out on, so the sandboxed rival runs without it and reports vendor-documentation claims it
+// could not check under `unverified`.
+const SANDBOXED_SEARCH_PIN = 'web_search="disabled"';
+const SANDBOXED_NETWORK_PIN = 'sandbox_workspace_write.network_access=false';
 // Ambient tool surfaces that bypass the sandbox. `apps` is the one that matters most: it is a
 // built-in MCP server exposing GitHub read *and write* tools, and it is how a review of this very
 // skill once posted a review to its own pull request while claiming it could not reach GitHub.
@@ -68,8 +81,23 @@ export function buildCodexArgs({
   schemaPath = FINDINGS_SCHEMA_PATH,
   model,
   effort,
+  sandbox = 'read-only',
   rivalSession = { mode: 'create' },
 }) {
+  const execution =
+    sandbox === 'workspace-write'
+      ? ['-c', SANDBOXED_NETWORK_PIN, '-c', SANDBOXED_SEARCH_PIN]
+      : [
+          // MCP tool calls are auto-rejected under approval_policy="never" unless the server itself
+          // is marked approved; the broker is the one door the design opens.
+          '-c',
+          brokerServerToml({
+            session,
+            brokerServerPath,
+            nodePath,
+            toolTimeoutSeconds: PENDING_REQUEST_TIMEOUT_MS / 1000,
+          }),
+        ];
   const shared = [
     '--json',
     // A -c override of mcp_servers merges into the configured table instead of replacing it, so the
@@ -78,21 +106,13 @@ export function buildCodexArgs({
     '--ignore-user-config',
     ...ISOLATION_FEATURES.flatMap((feature) => ['--disable', feature]),
     '-c',
-    'sandbox_mode="read-only"',
-    // sandbox_mode alone is not read-only: with an on-request approval policy Codex escalates out
+    `sandbox_mode="${sandbox}"`,
+    // sandbox_mode alone is not a boundary: with an on-request approval policy Codex escalates out
     // of the sandbox, and a configured auto-reviewer approves it without a human ever seeing the
     // request. Verified — read-only alone created a file; this pin denies it.
     '-c',
     'approval_policy="never"',
-    // MCP tool calls are auto-rejected under approval_policy="never" unless the server itself is
-    // marked approved; the broker is the one door the design opens.
-    '-c',
-    brokerServerToml({
-      session,
-      brokerServerPath,
-      nodePath,
-      toolTimeoutSeconds: PENDING_REQUEST_TIMEOUT_MS / 1000,
-    }),
+    ...execution,
     '-c',
     `model_provider="${SUBSCRIPTION_MODEL_PROVIDER}"`,
     '-c',
@@ -120,6 +140,7 @@ export const codexVendor = Object.freeze({
   command: 'codex',
   reducer: codexReducer,
   localToolBoundary: LOCAL_TOOL_BOUNDARY,
+  sandboxedToolBoundary: SANDBOXED_TOOL_BOUNDARY,
   prepare() {
     const { env, stripped } = assertSubscriptionBilling();
     const notes =

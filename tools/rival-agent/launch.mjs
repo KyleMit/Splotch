@@ -30,9 +30,16 @@ import {
 } from './worktree.mjs';
 
 const EFFORTS = new Set(['low', 'medium', 'high']);
+// `read-only` is the pairing: the rival's shell cannot write and the broker is its one door.
+// `workspace-write` is the pilot alternative: no broker, the rival runs its own commands inside a
+// sandbox confined to the disposable worktree with the network off, and reports what it could not
+// run under `unverified`. The vocabulary is Codex's own sandbox_mode so the flag reads the same in
+// the launch arguments and in the pinned config.
+export const SANDBOXES = Object.freeze(['read-only', 'workspace-write']);
+const DEFAULT_SANDBOX = 'read-only';
 const DEFAULT_BASE_REF = 'main';
 const USAGE =
-  'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--fresh] | --end-session [--pr <n> | ...]';
+  'usage: launch [--pr <n> | --base <ref> | --commit <sha> | --uncommitted] [--question-file <path>] [--prompt-file <path>] [--cwd <dir>] [--model <slug>] [--effort low|medium|high] [--sandbox read-only|workspace-write] [--fresh] | --end-session [--pr <n> | ...]';
 
 // The one argument vocabulary both launchers share; a vendor validates `model` itself because the
 // two CLIs name models differently.
@@ -51,6 +58,7 @@ export function parseLaunchArgs(argv) {
       cwd: { type: 'string' },
       model: { type: 'string' },
       effort: { type: 'string' },
+      sandbox: { type: 'string' },
       fresh: { type: 'boolean', default: false },
       'end-session': { type: 'boolean', default: false },
     },
@@ -66,6 +74,8 @@ export function parseLaunchArgs(argv) {
   if (values.pr !== undefined && !/^\d+$/.test(values.pr)) throw new Error('--pr must be a number');
   const effort = values.effort ?? 'high';
   if (!EFFORTS.has(effort)) throw new Error(`unsupported effort: ${effort}`);
+  const sandbox = values.sandbox ?? DEFAULT_SANDBOX;
+  if (!SANDBOXES.includes(sandbox)) throw new Error(`unsupported sandbox: ${sandbox}`);
   const kind = scopes[0] ?? 'base';
   return {
     scope: {
@@ -79,9 +89,20 @@ export function parseLaunchArgs(argv) {
     cwd: values.cwd ?? process.cwd(),
     model: values.model,
     effort,
+    sandbox,
     fresh: values.fresh,
     endSession: values['end-session'],
   };
+}
+
+// The rival is told what its own shell can do in words the vendor owns; a vendor without a
+// boundary for a sandbox has no launch shape for it, and that is refused before any worktree is
+// provisioned rather than discovered as a rival with the wrong instructions.
+export function toolBoundaryFor(vendor, sandbox) {
+  const boundary =
+    sandbox === 'workspace-write' ? vendor.sandboxedToolBoundary : vendor.localToolBoundary;
+  if (!boundary) throw new Error(`the ${vendor.rival} rival has no ${sandbox} launch path`);
+  return boundary;
 }
 
 const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
@@ -170,8 +191,10 @@ function finish(session, state, logPath, extra) {
 
 // A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
 // (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
-// `reducer`, `localToolBoundary`, `newSessionId()` (a wrapper-issued id for CLIs that take one up
-// front), and `endSession(record)`. Everything else in a round is the same on both sides.
+// `reducer`, `localToolBoundary` (what the rival's own shell can do under the broker), an optional
+// `sandboxedToolBoundary` (the same for the workspace-write path; absent means the vendor has no
+// such path), `newSessionId()` (a wrapper-issued id for CLIs that take one up front), and
+// `endSession(record)`. Everything else in a round is the same on both sides.
 export async function launch(
   options,
   vendor,
@@ -192,6 +215,8 @@ export async function launch(
   }
 
   const model = vendor.resolveModel(options.model);
+  const toolBoundary = toolBoundaryFor(vendor, options.sandbox);
+  const broker = options.sandbox === 'read-only';
   const question = options.questionFile ? readPromptFile(options.questionFile) : undefined;
   const extraInstructions = options.promptFile ? readPromptFile(options.promptFile) : undefined;
   // A question is one turn, not a review that a later round would verify.
@@ -218,6 +243,8 @@ export async function launch(
       question: Boolean(question),
       worktree,
       packetDir,
+      sandbox: options.sandbox,
+      broker,
       round: plan.round,
       resumed: Boolean(plan.resume),
       repoRoot,
@@ -249,7 +276,8 @@ export async function launch(
         previous: plan.previous,
         landedCommits: describeLandedCommits(repoRoot, plan.previous, scope.head),
         extraInstructions,
-        localToolBoundary: vendor.localToolBoundary,
+        broker,
+        toolBoundary,
       });
       return runStreaming({
         command: vendor.command,
@@ -259,6 +287,7 @@ export async function launch(
           packetDir,
           model,
           effort: options.effort,
+          sandbox: options.sandbox,
           rivalSession,
         }),
         cwd: worktree,

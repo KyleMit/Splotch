@@ -135,7 +135,26 @@ by earlier rounds. A question (`--question-file`) is always a fresh, unrecorded 
 
 `--cwd <dir>` (defaults to the current directory; must be inside a git worktree), `--model <slug>`
 (defaults to the top-level `model` in `~/.codex/config.toml`, the one key the launcher reads back
-after ignoring the rest), and `--effort low|medium|high` (defaults to `high`).
+after ignoring the rest), `--effort low|medium|high` (defaults to `high`), and
+`--sandbox read-only|workspace-write` (defaults to `read-only`, the pairing described above).
+
+## The workspace-write pilot
+
+`--sandbox workspace-write` is a pilot of a simpler shape, kept behind the flag while the evidence
+is gathered (`docs/scratchpad/rival-agent-simplification-2026-09-02.md`). It attaches no broker. The
+rival gets Codex's workspace-write sandbox with the disposable worktree as its root and the network
+off, runs its own tests, type checks, builds, and repros there, and reports what needed the network
+or this machine under `unverified`. Web search is pinned off on that path: the sandbox reads the
+whole disk, and the diff under review is untrusted input.
+
+```bash
+npm run --silent rival:launch -- --sandbox workspace-write --base main
+```
+
+There is no broker loop to serve — the launcher's stdout JSON is the whole result — and the trust
+boundary is different: on the default path you judge every command the rival runs; on this path the
+sandbox does, and the only judgement left to you is whether to launch. Only the Codex rival has this
+path; the Claude-side launcher refuses the flag.
 
 ## Reading the result
 

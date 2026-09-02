@@ -29,8 +29,9 @@ exist. The checkout-only live acceptance generator and its templates are not ins
 | `worktree.mjs`         | Scope resolution to base/head OIDs (the uncommitted scope becomes a snapshot commit), the disposable worktree, the packet. |
 | `stream.mjs`           | One NDJSON runner with the stall watchdog, plus the Codex and Claude event renderers and reducers.                         |
 | `ledger.mjs`           | Rounds per unit of work, the rival's session id for resuming, the three-round cap.                                         |
-| `prompt.mjs`           | Assembles `rival-prompt.md` for a scope, round, and any extra instructions.                                                |
-| `rival-prompt.md`      | The rival's contract: where it is, what `run` is, how to review, what to return.                                           |
+| `prompt.mjs`           | Assembles `rival-prompt.md` for a scope, round, execution mode, and any extra instructions.                                |
+| `rival-prompt.md`      | The rival's contract: where it is, how it executes, how to review, what to return.                                         |
+| `rival-prompt-*.md`    | The execution section: `broker` (the `run` tool is the one door) or `sandbox` (own shell, no broker).                      |
 | `findings.schema.json` | The findings document both CLIs' structured-output flags enforce and the poster consumes.                                  |
 
 ## Session layout
