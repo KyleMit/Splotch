@@ -430,7 +430,7 @@ report timeout. The tell in an unguarded capture is `ev 0, down 0` in the probe'
 ready page and a working network (issue 1294; the same landscape cell banked first try once the
 foreground was owned).
 
-## Safari in a Stage Manager window passes every check and misses every tap
+## Safari that is not full-screen passes every check and misses every tap
 
 iPadOS **Windowed Apps** (Stage Manager) runs Safari in a floating window narrower than the screen.
 Nothing host-side can see it: the device enumerates, the tunnel is up, WebDriverAgent launches, the
@@ -442,11 +442,13 @@ before a screenshot over the automation session showed the window).
 
 The tell is the WebDriverAgent window rect: `GET /session/<id>/window/rect` reported a 613 pt width
 while the page's `screen.width` still reported the panel. `--verify-ios-launch` now compares the two
-during its rotation check and fails naming the setting. The fix is on the device — **Settings →
-Multitasking & Gestures → Full Screen Apps** — and it is reachable over the same automation session
-(activate `com.apple.Preferences`, tap the `Multitasking & Gestures` row, then the
-`…multitaskingAndGestures.fullScreenApps` accessibility id), which is how the 2026-09-02 session
-restored it; record the mode you found so the owner can put it back.
+during its rotation check and fails naming both remedies — the width alone cannot tell a Stage
+Manager window from a Split View pane, and the Full Screen Apps setting does not close a split. A
+runtime that reported pane-sized `screen` dimensions would escape the check. The fix is on the
+device — **Settings → Multitasking & Gestures → Full Screen Apps** — and it is reachable over the
+same automation session (activate `com.apple.Preferences`, tap the `Multitasking & Gestures` row,
+then the `…multitaskingAndGestures.fullScreenApps` accessibility id), which is how the 2026-09-02
+session restored it; record the mode you found so the owner can put it back.
 
 ## An iPad with a software update scheduled will reboot into a locked screen
 
@@ -457,6 +459,16 @@ discovery problem. Read the Settings root over the automation session when a cam
 unattended — the same `com.apple.Preferences` activation used for the Stage Manager check lists it
 by name — and hand the decision to the owner; the 2026-09-02 rig showed it and was left alone on
 purpose, with the risk recorded in the campaign ledger.
+
+A scheduled update that **fails** is the worse case: the device does not reboot, so no cell reports
+a discovery problem, but iPadOS leaves a system alert ("iPadOS 26.6.1 Not Installed — The update
+will try again later — OK") over whatever is on screen, and every native tap lands on it. The
+signature is the Stage Manager one — a session that launches, a page that answers every poll, and
+the first action timing out with `eventType: 'uncaptured'` and an empty `armedEvents` — with a
+full-screen window rect, so the width check passes. A screenshot over the session shows the alert;
+`GET /session/<id>/alert/text` names it and `POST /session/<id>/alert/accept` clears it (the
+2026-09-02 rig produced exactly this at 06:36, after the rig had run clean all night). Read the
+alert text before dismissing anything: a passcode or automation prompt is not yours to accept.
 
 ## The device going to sleep
 

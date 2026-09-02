@@ -304,14 +304,16 @@ export function pageFollowedRotation(requested, width, height) {
   return (width > height ? 'LANDSCAPE' : 'PORTRAIT') === requested;
 }
 
-// iPadOS "Windowed Apps" (Stage Manager) runs Safari in a floating window that
-// is narrower than the screen. Every host-side check passes, WebDriverAgent
-// launches, the page loads and answers every poll — in its compact layout — and
-// every native tap the runner derives from page coordinates lands outside the
-// window, so the first action times out with no pointer event. Observed
-// 2026-09-02: a 613 pt Safari window on a 1024 pt screen. The page's own
-// `screen` dimensions still report the panel, so the difference is decidable
-// from inside the session; the fix is a device setting no host command reaches.
+// iPadOS can present Safari narrower than the screen — a Stage Manager
+// ("Windowed Apps") window or a Split View pane. Every host-side check passes,
+// WebDriverAgent launches, the page loads and answers every poll in its compact
+// layout, and every native tap the runner derives from page coordinates lands
+// outside the pane, so the first action times out with no pointer event.
+// Observed 2026-09-02: a 613 pt Safari window on a 1024 pt screen. The page's
+// own `screen` dimensions still report the panel, so the mismatch is decidable
+// from inside the session; the width alone cannot say which iPadOS feature
+// caused it, so the message names both remedies. A runtime that reported
+// pane-sized `screen` dimensions would escape this check.
 export function safariWindowProblem(orientation, windowWidth, screenWidth, screenHeight) {
   if (![windowWidth, screenWidth, screenHeight].every(Number.isFinite)) return null;
   const expected =
@@ -320,10 +322,10 @@ export function safariWindowProblem(orientation, windowWidth, screenWidth, scree
       : Math.max(screenWidth, screenHeight);
   if (windowWidth >= expected) return null;
   return (
-    `Safari is running in a ${windowWidth} pt window on a ${expected} pt screen — ` +
-    'iPadOS Windowed Apps (Stage Manager) is on, and native taps derived from page ' +
-    'coordinates land outside the window. On the iPad: Settings → Multitasking & ' +
-    'Gestures → Full Screen Apps.'
+    `Safari is not full-screen: a ${windowWidth} pt window on a ${expected} pt screen, so native ` +
+    'taps derived from page coordinates land outside it. On the iPad, either leave Split View ' +
+    '(drag the divider to the edge, or tap the window\u2019s top control and choose full screen) ' +
+    'or turn off Windowed Apps: Settings \u2192 Multitasking & Gestures \u2192 Full Screen Apps.'
   );
 }
 

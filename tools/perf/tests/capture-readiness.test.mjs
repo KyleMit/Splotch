@@ -476,11 +476,19 @@ describe('whether a page followed the device round', () => {
 describe('safariWindowProblem', () => {
   // The exact shape observed on 2026-09-02: a 613 pt Safari window on a 1024 pt
   // screen. Every cheap check passed and every native tap missed the page.
-  it('names Windowed Apps when the Safari window is narrower than the screen', () => {
-    expect(safariWindowProblem('PORTRAIT', 613, 1024, 1366)).toMatch(
-      /613 pt window on a 1024 pt screen.*Full Screen Apps/
-    );
+  it('reports a Safari window narrower than the screen with both iPadOS remedies', () => {
+    const problem = safariWindowProblem('PORTRAIT', 613, 1024, 1366);
+    expect(problem).toMatch(/not full-screen: a 613 pt window on a 1024 pt screen/);
+    expect(problem).toMatch(/Split View/);
+    expect(problem).toMatch(/Full Screen Apps/);
     expect(safariWindowProblem('LANDSCAPE', 613, 1024, 1366)).toMatch(/1366 pt screen/);
+  });
+
+  // A Split View pane is about half the long edge in landscape; the check must
+  // take that branch too rather than only the Stage Manager window it was found on.
+  it('catches a Split View pane, not only a Stage Manager window', () => {
+    expect(safariWindowProblem('LANDSCAPE', 683, 1024, 1366)).toMatch(/683 pt window/);
+    expect(safariWindowProblem('PORTRAIT', 507, 1024, 1366)).toMatch(/507 pt window/);
   });
 
   it('accepts a full-screen window in either orientation', () => {
