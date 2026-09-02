@@ -287,8 +287,8 @@ describe('undo scenario profiling', () => {
 
   it('does not time out a settled history on a host too slow to poll it', async () => {
     // The 2026-09-02 post-merge gate on main: crayon-scribbles was skipped for a
-    // history that "never settled", and the reading it quoted was byte-identical
-    // to the settled reading a second runner reported for the same commit. On a
+    // history that "never settled", and every counter the timeout text reported
+    // matched the settled reading a second runner took for the same commit. On a
     // saturated main thread the getUndoDebug() polls queue behind the very work
     // being waited on, so the wall clock expires after two or three reads when
     // four are needed to see quiescence at all. A clock that jumps several

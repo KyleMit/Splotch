@@ -31,16 +31,24 @@ that fail for unrelated reasons carry the same bit as two runs that fail identic
 second is evidence about `main`. This is not a corner case on a gate with two scenarios and two
 independent ways for each to fail (breach, no measurement) on a shared macOS runner.
 
-**The settle timeout expired on a history that had settled.** `settleHistory` polls `getUndoDebug()`
-and needs four consecutive identical readings inside a 10 s budget. The budget is wall clock, but on
-a saturated main thread the polls *are* what spends it: each `page.evaluate` round trip queues
-behind the work being waited on. The crayon draw phase measured **58,317 ms** on that host, and the
-"never settled" reading the harness quoted —
-`undoEntries=20 livePatchEntries=20 patchBytes=29341600 baseTiles=20 historyCommands=21` — is
-byte-identical to the reading the *other* runner reported for a completed `crayon-scribbles`. The
-history was quiescent throughout. The harness got two or three looks at it where four are needed to
-see quiescence at all, and reported the shortfall as missing coverage, which the gate correctly
-refuses to certify.
+**The settle timeout expired on a history that had, on the evidence, settled.** `settleHistory`
+polls `getUndoDebug()` and needs four consecutive identical readings inside a 10 s budget. The
+budget is wall clock, but on a saturated main thread the polls *are* what spends it: each
+`page.evaluate` round trip queues behind the work being waited on. The crayon draw phase measured
+**58,317 ms** on that host, and every counter the "never settled" text reported —
+`undoEntries=20 livePatchEntries=20 patchBytes=29341600 baseTiles=20 historyCommands=21`, plus
+`baseRasterBytes` — matches the completed `crayon-scribbles` reading the *other* runner reported for
+the same commit. The harness got two or three looks where four are needed to see quiescence at all,
+and reported the shortfall as missing coverage, which the gate correctly refuses to certify.
+
+Be precise about how far that evidence reaches, because the diagnostic that would settle it is the
+thing this ADR is adding. The timeout text carried **six** of the seven fields `sameHistory`
+compares — `pendingCommands` was not among them — and the artifact preserves only the final
+timed-out reading, not the sequence that preceded it. So the artifacts show the *reported counters*
+agreeing across the two runners, which is consistent with undersampling and not with a history still
+moving through those counters; they cannot prove the full readings were identical, nor that history
+was quiescent for the whole wait. The change below makes the next occurrence decidable from its own
+error message instead of from a second runner.
 
 ### What this does not decide
 

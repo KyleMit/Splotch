@@ -396,10 +396,12 @@ async function settleHistory(page, timeoutMs = 10_000) {
     // The wall clock alone cannot expire this wait, because on a saturated main
     // thread the polls themselves are what spend it: each getUndoDebug() round
     // trip queues behind the work being waited on, so a slow host can burn the
-    // whole budget on two or three reads and time out on a history that has
-    // been quiescent throughout. Observed on the 2026-09-02 main gate, where
-    // the "never settled" reading was byte-identical to the settled reading a
-    // second runner reported for the same commit. Quiescence is only visible
+    // whole budget on two or three reads and time out on a history nothing was
+    // still changing. Observed on the 2026-09-02 main gate, where every counter
+    // the timeout text reported matched the settled reading a second runner
+    // took for the same commit — consistent with undersampling, though the text
+    // omitted pendingCommands and kept no earlier sample, which is why this
+    // message now reports both. Quiescence is only visible
     // once SETTLE_STABLE_SAMPLES readings exist, so until that many have been
     // taken there is nothing for a timeout to have been long enough for.
     if (samples >= SETTLE_STABLE_SAMPLES && Date.now() - t0 > timeoutMs) {
