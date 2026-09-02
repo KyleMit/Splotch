@@ -43,6 +43,38 @@ it('accepts responsive assets only when their canonical fallback is precached wi
   ).toEqual([]);
 });
 
+it('falls a paper presentation tier back to its canonical SVG and never precaches it', () => {
+  const presentationManifest = {
+    starterBookId: 'farm',
+    books: [
+      {
+        id: 'farm',
+        variants: {
+          full: {
+            files: [
+              { path: '/coloring/farm/cat-wide.overlay.svg' },
+              { path: '/coloring/max-3072px/farm/cat-wide.presentation.webp' },
+            ],
+          },
+        },
+      },
+    ],
+  };
+  expect(
+    pwaPrecacheProblems({
+      precacheUrls: ['_app/env.js', 'coloring/farm/cat-wide.overlay.svg'],
+      precacheBytes: 1,
+      responsiveAssetUrls: [
+        'coloring/max-1152px/farm/cat-wide.presentation.webp',
+        'coloring/max-3072px/farm/cat-wide.dark.presentation.webp',
+      ],
+      coloringManifest: presentationManifest,
+    })
+  ).toEqual([
+    '1 responsive coloring derivatives lack a precached canonical fallback: coloring/farm/cat-wide.dark.overlay.svg',
+  ]);
+});
+
 it('rejects responsive precache entries, missing fallbacks, and an oversized bundle', () => {
   expect(
     pwaPrecacheProblems({

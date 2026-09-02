@@ -7,6 +7,17 @@ const CLIENT_DIR = join(ROOT, 'web/.svelte-kit/output/client');
 const SW_PATH = join(CLIENT_DIR, 'sw.js');
 const STATIC_COLORING_DIR = join(ROOT, 'web/static/coloring');
 const RESPONSIVE_TIER_PATTERN = /^max-\d+px$/;
+const RESPONSIVE_TIER_URL_PATTERN = /^coloring\/max-\d+px\//;
+// The canonical file a responsive derivative falls back to offline. A paper
+// presentation raster falls back to the SVG it was rendered from; this mirrors
+// the service worker's serveResponsiveColoringWithCanonicalFallback, whose
+// serialized body cannot import a helper, so tools/tests/check-pwa-precache.test.mjs
+// and web/src/lib/pwa/coloringFallback.test.ts each pin the presentation case.
+function canonicalFallbackUrl(url) {
+  return url
+    .replace(RESPONSIVE_TIER_URL_PATTERN, 'coloring/')
+    .replace(/\.presentation\.webp$/, '.overlay.svg');
+}
 const RUNTIME_GENERATED_PRECACHE_URLS = new Set(['_app/env.js']);
 const SERVED_ONLY_ASSET_URLS = new Set(['large-image.png']);
 // Leaves room for ordinary app growth while rejecting a second bundled coloring book.
@@ -60,8 +71,11 @@ export function pwaPrecacheProblems({
   }
   const starterFiles =
     coloringManifest?.books.find((book) => book.id === starterBookId)?.variants?.full?.files ?? [];
+  // A web pack's presentation tiers are hosted responsive distribution, never
+  // precached: offline, the starter paper falls back to its precached SVG.
   const missingStarterFiles = starterFiles
     .map((file) => file.path.slice(1))
+    .filter((url) => !RESPONSIVE_TIER_URL_PATTERN.test(url))
     .filter((url) => !precached.has(url));
   if (missingStarterFiles.length) {
     problems.push(
@@ -69,7 +83,7 @@ export function pwaPrecacheProblems({
     );
   }
   const missingCanonicalUrls = responsiveAssetUrls
-    .map((url) => url.replace(/^coloring\/max-\d+px\//, 'coloring/'))
+    .map(canonicalFallbackUrl)
     .filter((url) => !starterBookId || url.startsWith(`coloring/${starterBookId}/`))
     .filter((url) => !precached.has(url));
   if (missingCanonicalUrls.length) {
