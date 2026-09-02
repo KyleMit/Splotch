@@ -119,9 +119,12 @@ workers ×4: 25.7s, 35.4s, 38.9s, 44.5s; full suite at 8 workers: 48.4s.
 Not reproduced: 0 of 9 reps, 0 of 24 instrumented copies (6 per rep in sweep2 reps 3–6), 0 of 1 at 8
 workers. ADR-0078 §4a records it red once in 35 with the gap `mouse.move` leaving the target
 un-highlighted. The picker snapshots hexagon centres and its snap radius on the drag's
-`pointerdown`, the spec's drag began right after `retryOpen` on a dialog still flying in (the window
-captured above), and the gap probe sits at 39px against a 40px landed radius. The tap sibling
-already had `settleFlyIn`; the exploration test now does too. Evidence of no harm only.
+`pointerdown`, the spec's drag began right after `retryOpen` on a dialog still flying in, and the
+gap probe sits at 39px against a 40px landed radius. That mechanism is a hypothesis, not a capture:
+a down at the pending keyframe is swallowed by the launch zone before `handlePickerDown` runs, so
+only a down landing on a partially progressed fly-in could snapshot scaled centres, and none was
+observed. The tap sibling already had `settleFlyIn`; the exploration test now does too. Evidence of
+no harm only.
 
 ## Safe-area matrix
 

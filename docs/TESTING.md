@@ -433,11 +433,13 @@ specs that can't race in the first place:
   `#coloring-book-dialog`, `.ai-prompt-modal`, `.parental-gate`, `.ai-report-confirm`) needs the
   same wait between its open and the first pointer action on its content. The colour picker is the
   sharpest case: it snapshots every hexagon's center and its snap radius on the `pointerdown` that
-  starts a drag, so a drag begun on an unlanded grid keeps a scaled-down snapshot for the whole
-  gesture — the shape of the one red run ADR-0078 §4a recorded for the pointer-exploration spec,
-  which opened without the wait its tap sibling already had. Query `getAnimations()` on the dialog
-  element alone — the fly-in animates it directly, and `{ subtree: true }` would start waiting on
-  unrelated descendant animations too.
+  starts a drag, so a drag begun on an unlanded grid would keep a scaled-down snapshot for the whole
+  gesture. Whether that explains the one red run ADR-0078 §4a recorded for the pointer-exploration
+  spec is unproven — a down at the first keyframe is swallowed by the launch zone before the picker
+  sees it, and the failure was never reproduced — but the spec now waits like its tap sibling, which
+  closes the window either way. Query `getAnimations()` on the dialog element alone — the fly-in
+  animates it directly, and `{ subtree: true }` would start waiting on unrelated descendant
+  animations too.
 * **Budget a frame-paced condition in frames, not milliseconds.** The wide Settings pane mounts one
   section per frame once the card lands (issue \#910), and `aria-busy` clears only when the last one
   is in — so the wait for it is on the fill's clock, which is the frame. Playwright's assertion
