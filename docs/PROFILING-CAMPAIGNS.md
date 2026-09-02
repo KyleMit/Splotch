@@ -430,6 +430,24 @@ report timeout. The tell in an unguarded capture is `ev 0, down 0` in the probe'
 ready page and a working network (issue 1294; the same landscape cell banked first try once the
 foreground was owned).
 
+## Safari in a Stage Manager window passes every check and misses every tap
+
+iPadOS **Windowed Apps** (Stage Manager) runs Safari in a floating window narrower than the screen.
+Nothing host-side can see it: the device enumerates, the tunnel is up, WebDriverAgent launches, the
+page loads and answers every readiness poll — in its compact layout — and `perf:preflight` reported
+ready. Then the first action of every sweep timed out with `eventType: 'uncaptured'` and no pointer
+event at all: the runner derives its native taps from page coordinates, and inside a 613 pt window
+on a 1024 pt screen those coordinates land on the wallpaper (2026-09-02, two identical failures
+before a screenshot over the automation session showed the window).
+
+The tell is the WebDriverAgent window rect: `GET /session/<id>/window/rect` reported a 613 pt width
+while the page's `screen.width` still reported the panel. `--verify-ios-launch` now compares the two
+during its rotation check and fails naming the setting. The fix is on the device — **Settings →
+Multitasking & Gestures → Full Screen Apps** — and it is reachable over the same automation session
+(activate `com.apple.Preferences`, tap the `Multitasking & Gestures` row, then the
+`…multitaskingAndGestures.fullScreenApps` accessibility id), which is how the 2026-09-02 session
+restored it; record the mode you found so the owner can put it back.
+
 ## The device going to sleep
 
 Android sleeps mid-campaign and locks. `npm run perf:preflight -- --wake-android` wakes it and sets

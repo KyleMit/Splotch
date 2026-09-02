@@ -304,6 +304,29 @@ export function pageFollowedRotation(requested, width, height) {
   return (width > height ? 'LANDSCAPE' : 'PORTRAIT') === requested;
 }
 
+// iPadOS "Windowed Apps" (Stage Manager) runs Safari in a floating window that
+// is narrower than the screen. Every host-side check passes, WebDriverAgent
+// launches, the page loads and answers every poll — in its compact layout — and
+// every native tap the runner derives from page coordinates lands outside the
+// window, so the first action times out with no pointer event. Observed
+// 2026-09-02: a 613 pt Safari window on a 1024 pt screen. The page's own
+// `screen` dimensions still report the panel, so the difference is decidable
+// from inside the session; the fix is a device setting no host command reaches.
+export function safariWindowProblem(orientation, windowWidth, screenWidth, screenHeight) {
+  if (![windowWidth, screenWidth, screenHeight].every(Number.isFinite)) return null;
+  const expected =
+    orientation === 'PORTRAIT'
+      ? Math.min(screenWidth, screenHeight)
+      : Math.max(screenWidth, screenHeight);
+  if (windowWidth >= expected) return null;
+  return (
+    `Safari is running in a ${windowWidth} pt window on a ${expected} pt screen — ` +
+    'iPadOS Windowed Apps (Stage Manager) is on, and native taps derived from page ' +
+    'coordinates land outside the window. On the iPad: Settings → Multitasking & ' +
+    'Gestures → Full Screen Apps.'
+  );
+}
+
 // The innermost cause of a WebDriverAgent launch failure never reaches the HTTP
 // response. Verified against a real failure on 2026-08-24: the payload — message
 // AND stacktrace — carries only Appium's outer `xcodebuild failed with code 65`,
