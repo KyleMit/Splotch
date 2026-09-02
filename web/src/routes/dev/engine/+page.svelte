@@ -28,7 +28,7 @@
   let canvasEl: HTMLCanvasElement = $state()!;
   let wrapperEl: HTMLDivElement;
   let engine: ReturnType<typeof initDrawingCanvas> | null = null;
-  let paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
+  const paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
 
   // The Playwright engine spec reaches the harness through these window globals.
   interface EngineHarnessWindow {

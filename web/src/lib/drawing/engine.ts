@@ -81,7 +81,7 @@ import {
   crayonColorMix,
   warmCrayonTiles,
   cancelCrayonWarmup,
-  CrayonPassTracker,
+  type CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
 import { type HistoryDebug, type RecordedPaperState } from './undoHistory';

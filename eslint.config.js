@@ -1,3 +1,4 @@
+import { builtinModules } from 'node:module';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import svelte from 'eslint-plugin-svelte';
@@ -10,9 +11,48 @@ const PLAYWRIGHT_IMPORT_RESTRICTION = {
   name: 'playwright',
   message: 'Import from @playwright/test — bare playwright is an undeclared transitive dependency.',
 };
+// Node builtins must use the node: protocol so a builtin import can't be shadowed by (or read
+// as) an npm package. Generated from the runtime's own list rather than enumerated, so new
+// builtins are covered without an edit here. Like the playwright restriction above, every
+// no-restricted-imports entry in this config must carry these — a later block REPLACES, not
+// merges, the paths list.
+const NODE_BUILTIN_IMPORT_RESTRICTIONS = builtinModules
+  .filter((name) => !name.startsWith('node:'))
+  .map((name) => ({
+    name,
+    message: `Use the node: protocol (import from 'node:${name}').`,
+  }));
 const RATE_LIMIT_MESSAGE =
   'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).';
 const RATE_LIMIT_ARGUMENT_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpression'];
+
+// no-restricted-syntax selectors shared across blocks. Flat config REPLACES a rule's earlier
+// entry rather than merging, so every block that configures no-restricted-syntax for a slice of
+// web/src must recompose the full set that applies there — these constants are what make that
+// recomposition mechanical instead of copy-paste that drifts. The positive control
+// tools/tests/named-exports-lint.test.mjs fails if a web/src file shape stops rejecting a
+// default export.
+const NAMED_EXPORTS_ONLY = {
+  selector: 'ExportDefaultDeclaration',
+  message:
+    'web/src uses named exports only — a default export gets a new name at every import site.',
+};
+// An index signature on a Props interface erases type checking for every forwarded attribute;
+// svelte/elements ships the accurate types for `...rest` bags.
+const INDEX_SIGNATURE_PROP_BAG = {
+  selector: 'TSInterfaceDeclaration TSIndexSignature',
+  message:
+    'Extend HTMLAttributes<...> from svelte/elements instead of an index-signature prop bag.',
+};
+// Mixing the it()/test() vocabularies makes greps and reporter output lie about which tier a
+// test is in — Vitest files use it()/describe(), test() is the Playwright vocabulary.
+const VITEST_VOCABULARY_SELECTORS = [
+  'CallExpression[callee.name="test"]',
+  'CallExpression[callee.object.name="test"]',
+].map((selector) => ({
+  selector,
+  message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
+}));
 
 // A test that cannot fail is worse than no test: it advertises coverage it does not have, and
 // nothing downstream reports it — a green suite looks identical either way. These are the shapes
@@ -132,10 +172,79 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [PLAYWRIGHT_IMPORT_RESTRICTION],
+          paths: [PLAYWRIGHT_IMPORT_RESTRICTION, ...NODE_BUILTIN_IMPORT_RESTRICTIONS],
         },
       ],
     },
+  },
+  {
+    // Conventions the codebase already followed universally, ratified as rules so the first
+    // violation fails lint instead of relying on review vigilance (ADR-0031). The set was chosen
+    // empirically: candidate rules were run over the real repo and only kept where the code
+    // already complied. Rejected candidates are recorded in ADR-0031 — don't re-litigate them
+    // here without new evidence.
+    files: ['**/*.{ts,mts,mjs,js,svelte}'],
+    rules: {
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
+      'no-var': 'error',
+      'no-object-constructor': 'error',
+      'object-shorthand': ['error', 'properties'],
+      'prefer-object-spread': 'error',
+      'prefer-spread': 'error',
+      'prefer-regex-literals': 'error',
+      'no-useless-rename': 'error',
+      'no-useless-computed-key': 'error',
+      'no-useless-concat': 'error',
+      'no-unneeded-ternary': 'error',
+      'no-else-return': 'error',
+      'no-lonely-if': 'error',
+      'no-throw-literal': 'error',
+      'array-callback-return': 'error',
+      'default-case-last': 'error',
+      'no-constructor-return': 'error',
+      'guard-for-in': 'error',
+      'no-labels': 'error',
+      'no-sequences': 'error',
+      'no-return-assign': 'error',
+      'no-new-wrappers': 'error',
+      'no-proto': 'error',
+      radix: 'error',
+      yoda: 'error',
+      'symbol-description': 'error',
+      'grouped-accessor-pairs': 'error',
+      'func-style': ['error', 'declaration', { allowArrowFunctions: true }],
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-inferrable-types': 'error',
+      '@typescript-eslint/prefer-function-type': 'error',
+      '@typescript-eslint/consistent-indexed-object-style': 'error',
+      '@typescript-eslint/unified-signatures': 'error',
+      '@typescript-eslint/prefer-literal-enum-member': 'error',
+      // The house convention: a pure type-only import is `import type { X }`; a statement that
+      // also pulls a value marks the type inline (`import { a, type B }`). Both forms pass —
+      // fixStyle only governs autofix output, and inline produces a one-token fix instead of a
+      // hoisted second statement. disallowTypeAnnotations must stay false: inline
+      // `import('...')` type annotations are load-bearing here (app.d.ts must not become a
+      // module or `declare global` breaks; lazy-import typing; importActual type arguments).
+      // With verbatimModuleSyntax on (SvelteKit's tsconfig), an unmarked type-only import is
+      // emitted as a real runtime import — this rule has teeth beyond style.
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'inline-type-imports',
+          disallowTypeAnnotations: false,
+        },
+      ],
+    },
+  },
+  {
+    // NOT the svelte-flavoured globs: plain prefer-const reads `let x = $state()` as
+    // never-reassigned (hundreds of false positives), so .svelte / .svelte.ts / .svelte.js get
+    // the rune-aware svelte/prefer-const in the svelte-files block instead. This split is what
+    // makes the rule adoptable at all.
+    files: ['**/*.{ts,mts,mjs,js}'],
+    ignores: ['**/*.svelte.ts', '**/*.svelte.js'],
+    rules: { 'prefer-const': 'error' },
   },
   {
     // Rate-limit bucket keys are a shared contract (ADR-0014): every producer must go through
@@ -153,6 +262,11 @@ export default tseslint.config(
           selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
           message: RATE_LIMIT_MESSAGE,
         })),
+        // Merged here rather than its own web/src block, which would silently replace the
+        // rate-limit selectors above (that actually happened during evaluation). The Svelte and
+        // Vitest blocks below replace this entry for their file shapes, so each is followed by a
+        // web/src-scoped block that recomposes NAMED_EXPORTS_ONLY into its selector set.
+        NAMED_EXPORTS_ONLY,
       ],
     },
   },
@@ -164,16 +278,33 @@ export default tseslint.config(
     rules: {
       // Misfires on `$bindable()` destructuring defaults, which read as unused assignments.
       'no-useless-assignment': 'off',
-      // An index signature on a Props interface erases type checking for every forwarded
-      // attribute; svelte/elements ships the accurate types for `...rest` bags.
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'TSInterfaceDeclaration TSIndexSignature',
-          message:
-            'Extend HTMLAttributes<...> from svelte/elements instead of an index-signature prop bag.',
-        },
-      ],
+      'no-restricted-syntax': ['error', INDEX_SIGNATURE_PROP_BAG],
+      // Rune-aware replacement for prefer-const (see the split-glob block above), plus the
+      // svelte-specific conventions the codebase already satisfied when ratified (ADR-0031).
+      'svelte/prefer-const': 'error',
+      'svelte/require-each-key': 'error',
+      'svelte/block-lang': ['error', { script: ['ts'] }],
+      'svelte/no-inspect': 'error',
+      'svelte/prefer-svelte-reactivity': 'error',
+      'svelte/no-dom-manipulating': 'error',
+      'svelte/no-useless-mustaches': 'error',
+      'svelte/no-useless-children-snippet': 'error',
+      'svelte/shorthand-attribute': 'error',
+      'svelte/shorthand-directive': 'error',
+      'svelte/html-self-closing': 'error',
+      'svelte/no-target-blank': 'error',
+      'svelte/valid-prop-names-in-kit-pages': 'error',
+      'svelte/prefer-writable-derived': 'error',
+    },
+  },
+  {
+    // The block above replaces no-restricted-syntax for every Svelte-flavoured file, which would
+    // silently exempt web/src ones from the named-exports ban — recompose the full effective set
+    // for that slice. (The rate-limit selectors stay absent on purpose: rateLimit() is
+    // server-only and can't appear in these files.)
+    files: ['web/src/**/*.svelte', 'web/src/**/*.svelte.ts', 'web/src/**/*.svelte.js'],
+    rules: {
+      'no-restricted-syntax': ['error', INDEX_SIGNATURE_PROP_BAG, NAMED_EXPORTS_ONLY],
     },
   },
   {
@@ -213,6 +344,10 @@ export default tseslint.config(
                 'onDestroy runs during SSR — use an $effect cleanup (.claude/rules/svelte.md).',
             },
             PLAYWRIGHT_IMPORT_RESTRICTION,
+            // web/src does import node builtins (server modules, colocated unit tests), so the
+            // node: protocol restriction has to ride along here too — root coverage alone would
+            // be replaced away by this block.
+            ...NODE_BUILTIN_IMPORT_RESTRICTIONS,
           ],
         },
       ],
@@ -257,18 +392,30 @@ export default tseslint.config(
     files: ['**/*.test.ts', '**/*.test.mjs'],
     plugins: { vitest },
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'CallExpression[callee.name="test"]',
-          message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
-        },
-        {
-          selector: 'CallExpression[callee.object.name="test"]',
-          message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS],
       ...VACUOUS_TEST_RULES.vitest,
+      'vitest/no-alias-methods': 'error',
+      'vitest/no-commented-out-tests': 'error',
+      'vitest/no-import-node-test': 'error',
+      'vitest/prefer-comparison-matcher': 'error',
+      'vitest/prefer-to-contain': 'error',
+      'vitest/prefer-hooks-on-top': 'error',
+      // The house convention is bare behavior titles, not sentence-cased "should …" prose. The
+      // parametrized-describe pattern — a describe() over a discovered set taking its name from
+      // the loop variable — gets a justified per-line disable at each site instead of
+      // ignoreTypeOfDescribeName, which would wave through every non-string title repo-wide
+      // (even an accidental object literal).
+      'vitest/valid-title': ['error', { disallowedWords: ['should'] }],
+    },
+  },
+  {
+    // The Vitest block above replaces no-restricted-syntax for test files, which would silently
+    // exempt web/src's colocated unit tests from the named-exports ban — recompose the full
+    // effective set for that slice. (The rate-limit selectors stay deliberately absent: ad-hoc
+    // literal bucket keys are the point of a unit test.)
+    files: ['web/src/**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': ['error', ...VITEST_VOCABULARY_SELECTORS, NAMED_EXPORTS_ONLY],
     },
   },
   {
@@ -276,7 +423,23 @@ export default tseslint.config(
     // plugin's rule names; the two vocabularies never mix, so the globs stay disjoint.
     files: ['web/tests/**/*.spec.ts'],
     plugins: { playwright },
-    rules: VACUOUS_TEST_RULES.playwright,
+    rules: {
+      ...VACUOUS_TEST_RULES.playwright,
+      // The flake-resistance discipline docs/TESTING.md teaches, encoded: no pauses, no element
+      // handles, no bare waitForSelector, web-first assertions, native locators.
+      'playwright/no-page-pause': 'error',
+      'playwright/no-element-handle': 'error',
+      'playwright/no-eval': 'error',
+      'playwright/no-wait-for-selector': 'error',
+      'playwright/prefer-web-first-assertions': 'error',
+      'playwright/prefer-native-locators': 'error',
+      'playwright/prefer-to-have-length': 'error',
+      'playwright/no-commented-out-tests': 'error',
+      'playwright/no-nested-step': 'error',
+      'playwright/max-nested-describe': 'error',
+      'playwright/valid-title': 'error',
+      'playwright/no-get-by-title': 'error',
+    },
   },
   {
     // The ONE type-aware exception to the fast non-type-aware design above: floating promises

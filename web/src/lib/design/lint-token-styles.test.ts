@@ -5,6 +5,8 @@ import { describe, it, expect } from 'vitest';
 // the token tests. The script's scan-and-exit path only runs when invoked
 // directly, so this import is side-effect free.
 import {
+  countImportant,
+  countImportantCss,
   countRawFontSize,
   countRawFontSizeCss,
   countRawHex,
@@ -141,6 +143,47 @@ describe('countRawFontSizeCss', () => {
   it('counts a plain .css source without needing a style tag', () => {
     expect(
       countRawFontSizeCss('.a { font-size: 13px; } .b { font-size: var(--font-size-sm); }')
+    ).toBe(1);
+  });
+});
+
+describe('countImportant', () => {
+  it('counts !important only inside <style> blocks', () => {
+    const source = `<script>const s = 'very !important string';</script>
+<style>.a { color: red !important; } .b { color: blue; }</style>`;
+    expect(countImportant(source)).toBe(1);
+  });
+
+  it('ignores mentions in CSS comments', () => {
+    expect(countImportant('<style>/* never use !important */ .a { color: red; }</style>')).toBe(0);
+  });
+
+  it('matches the case-insensitive, whitespace-tolerant grammar', () => {
+    expect(countImportant('<style>.a { color: red ! IMPORTANT; }</style>')).toBe(1);
+  });
+});
+
+describe('countImportantCss', () => {
+  it('counts a plain .css source without needing a style tag', () => {
+    expect(countImportantCss('.a { display: none !important; } .b { color: red; }')).toBe(1);
+  });
+});
+
+describe('quoted-string stripping', () => {
+  it('does not count !important inside a content string', () => {
+    expect(
+      countImportant('<style>.label::after { content: "!important"; color: red; }</style>')
+    ).toBe(0);
+  });
+
+  it('survives escaped quotes without swallowing the declarations after them', () => {
+    const css = String.raw`.a::after { content: "he said \"!important\""; } .b { color: red !important; }`;
+    expect(countImportantCss(css)).toBe(1);
+  });
+
+  it('still counts a real !important beside a decoy string in a plain .css source', () => {
+    expect(
+      countImportantCss(".a::before { content: '!important'; display: none !important; }")
     ).toBe(1);
   });
 });

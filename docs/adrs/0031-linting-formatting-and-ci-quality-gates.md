@@ -2,7 +2,8 @@
 
 **Status:** Active **Date:** 2026-06 (amended 2026-07: ignore-based file selection; markdown handed
 to dprint — ADR-0057; hand-authored configuration brought into Prettier scope; amended 2026-08:
-dependency audit raised from critical to high)
+dependency audit raised from critical to high; amended 2026-09: the silently-followed conventions
+ratified as rules — issue 1529)
 
 ## Context
 
@@ -30,6 +31,43 @@ choices:
   `svelte/no-navigation-without-resolve` is off (the app has no base path). Intentional `{@html}`
   (first-party icons / build-time Markdown) carries a justified per-line disable so the security
   rule keeps its value elsewhere.
+* **The silently-followed conventions are ratified as rules** (amended 2026-09, issue 1529).
+  Selection was empirical, not aspirational: ~120 candidate rules were layered onto the real config
+  and run over the repo, and only those the codebase already satisfied were kept — ~70 rules, with
+  the small residue (13 violations) fixed in the adopting change. The headline invariants that had
+  been protected by nothing: zero `any` (`@typescript-eslint/no-explicit-any`), no committed
+  `$inspect` (`svelte/no-inspect`), no plain `Map`/`Set`/`Date` in reactive state
+  (`svelte/prefer-svelte-reactivity`), the `node:` protocol on builtin imports, named exports only
+  under `web/src`, and the Playwright flake-resistance rules that encode `docs/TESTING.md`'s
+  spec-authoring discipline. Two adoption traps live as comments in `eslint.config.js`: plain
+  `prefer-const` must exclude Svelte-flavoured files in favour of the rune-aware
+  `svelte/prefer-const` (it reads `let x = $state()` as never-reassigned — a naive single glob
+  produces hundreds of false positives and makes the rule look unadoptable), and because a later
+  flat-config block **replaces** a rule's earlier entry, additions to `no-restricted-imports` /
+  `no-restricted-syntax` must be merged into every existing entry for those rules. In the same
+  change, `!important` joined `npm run lint:tokens` as a zero-tolerance check and test-file
+  placement (`.test.ts` colocated under `web/src`, `.spec.ts` in `web/tests`) gained the drift guard
+  `tools/tests/test-file-placement.test.mjs`. Naming conventions stay prose-only on purpose:
+  PascalCase component files, camelCase lib modules, and dot-joined multi-aspect test names have no
+  worthwhile lint spelling.
+* **Rejected rule candidates — measured, do not re-litigate without new evidence.** Same verdict as
+  the `no-magic-numbers` rejection (~750 hits): each of these carries a violation count showing the
+  codebase deliberately follows a different convention (counts as of the 2026-09 evaluation):
+  `vitest/prefer-strict-equal` 1062 · `no-plusplus` 933 · `no-await-in-loop` 874 ·
+  `svelte/consistent-selector-style` 848 · `playwright/no-raw-locators` 803 ·
+  `svelte/sort-attributes` 688 · `prefer-named-capture-group` 480 · `no-continue` 447 ·
+  `no-underscore-dangle` 411 · `require-await` 334 · `@typescript-eslint/no-empty-function` 304 ·
+  `@typescript-eslint/no-non-null-assertion` 276 (mostly tests) · `curly` 225 ·
+  `svelte/no-unused-class-name` 151 · `prefer-template` 109 · `no-shadow` 105 ·
+  `no-implicit-coercion` 105 · `svelte/no-inline-styles` 97 · `consistent-return` 46. Three carry a
+  specific note: `prefer-lowercase-title` looks adoptable (its few flagged titles are all proper
+  nouns and identifiers) but the real convention is "no sentence-casing", which `valid-title` with
+  `disallowedWords: ['should']` captures instead; `no-extend-native` has exactly 2 hits, both
+  deliberate `page.addInitScript` instrumentation in `web/tests/flows-settings.spec.ts` — if ever
+  adopted, use the justified per-line disable pattern the config already uses for `{@html}`; and
+  `@typescript-eslint/consistent-type-definitions` is a genuine coin flip (`interface` 257 vs `type`
+  264 at evaluation) — a decision to make someday, not a convention to ratify, and deliberately out
+  of scope.
 * **Prettier matches the existing style** (2-space, single-quote, width 100, `trailingComma: es5`).
   Adopting it meant a one-time reformat of `web/src` and `scripts`; hand-authored JSON, YAML, and
   web manifests are also in scope. Markdown is dprint's (ADR-0057), while generated and frozen
@@ -76,6 +114,9 @@ existing `test` job.
   TypeScript-version skew with typescript-eslint.
 * − A one-time Prettier reformat touched most source files; future `git blame` crosses that commit
   (isolated as a single `style:` commit to make it skippable).
+* \+ The near-universal conventions (zero `any`, `node:` imports, named exports under `web/src`,
+  rune-aware `prefer-const`, flake-resistant spec shapes, no `!important`) fail CI on their first
+  violation instead of relying on a reviewer noticing.
 * \+ High and critical dependency advisories block changes before merge.
 * − Moderate and low advisories remain visible in audit output but do not block CI.
 * − No pre-commit hook means a contributor can commit lint/format violations locally; CI catches

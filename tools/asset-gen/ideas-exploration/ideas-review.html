@@ -5788,7 +5788,10 @@ export async function detectInventedShapes(fillBuf, sourceBuf) {
     gs.push(t.data[i * 3 + 1]);
     bs.push(t.data[i * 3 + 2]);
   }
-  const med = (a) =&gt; (a.sort((x, y) =&gt; x - y), a[a.length &gt;&gt; 1]);
+  const med = (a) =&gt; {
+    a.sort((x, y) =&gt; x - y);
+    return a[a.length &gt;&gt; 1];
+  };
   const mr = med(rs),
     mg = med(gs),
     mb = med(bs);
@@ -6001,10 +6004,7 @@ if (isMain) {
     if (res.flagged.length) flaggedPages++;
     if (values.overlay) {
       const outName = `${id.replace(/\//g, '__')}.detect.png`;
-      await overlayImage(fill, res, join(values.overlay, outName));
-    }
-  }
-  con
+      await overlayImage(fill, res, join(values.overlay, outNam
 … (truncated)</code></pre></div></details><details class="code"><summary>Synthesized-positive injector (planet + star)</summary><div class="codewrap"><pre><code>// IDEA 13 experiment — synthesize a POSITIVE test case: paste a saturated
 // &quot;invented planet&quot; and a small &quot;invented star&quot; onto a clean shipped night
 // raw's open background, so the detector can be proven to catch the failure

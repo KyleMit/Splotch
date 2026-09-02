@@ -100,6 +100,7 @@ describe('throwaway server env', () => {
   });
 
   for (const { name, env } of servers) {
+    // eslint-disable-next-line vitest/valid-title -- parametrized suite named by the discovered server
     describe(name, () => {
       it('declares an env at all', () => {
         expect(Object.keys(env).length).toBeGreaterThan(0);

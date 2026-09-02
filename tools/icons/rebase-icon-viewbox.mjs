@@ -124,7 +124,7 @@ function transformSvg(svg, s, tx, ty) {
   const defsEnd = defsStart === -1 ? -1 : svg.indexOf('</defs>', defsStart);
   const inDefs = (offset) => defsStart !== -1 && offset > defsStart && offset < defsEnd;
 
-  let out = svg.replace(
+  const out = svg.replace(
     /<(path|circle|ellipse|rect|line|polyline|polygon|use|linearGradient|radialGradient|g)\b[^>]*\/?>/g,
     (rawTag, el, offset) => {
       const transform = getAttr(rawTag, 'transform');
@@ -258,7 +258,7 @@ function transformSvg(svg, s, tx, ty) {
           unhandled.push(`use transform: ${transform}`);
           return tag;
         }
-        let t = setAttr(tag, 'x', num(s * Number(getAttr(tag, 'x') ?? 0) + tx));
+        const t = setAttr(tag, 'x', num(s * Number(getAttr(tag, 'x') ?? 0) + tx));
         return setAttr(t, 'y', num(s * Number(getAttr(tag, 'y') ?? 0) + ty));
       }
       if (el === 'linearGradient' || el === 'radialGradient') {

@@ -49,7 +49,7 @@
   // contain-fit and centered (scaled down when it doesn't fit). The overlay
   // wrapper below is positioned with the exact same transform the canvas paints
   // through, so page art and strokes stay aligned.
-  let paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
+  const paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
   let paperPresentationResident = $state(!!overlayUrl());
 
   $effect(() => {

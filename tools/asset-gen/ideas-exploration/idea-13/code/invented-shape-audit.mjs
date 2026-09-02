@@ -110,7 +110,10 @@ export async function detectInventedShapes(fillBuf, sourceBuf) {
     gs.push(t.data[i * 3 + 1]);
     bs.push(t.data[i * 3 + 2]);
   }
-  const med = (a) => (a.sort((x, y) => x - y), a[a.length >> 1]);
+  const med = (a) => {
+    a.sort((x, y) => x - y);
+    return a[a.length >> 1];
+  };
   const mr = med(rs),
     mg = med(gs),
     mb = med(bs);

@@ -3,6 +3,8 @@
 export function countRawHex(source: string): number;
 export function countRawZIndex(source: string): number;
 export function countRawFontSize(source: string): number;
+export function countImportant(source: string): number;
 export function countRawHexCss(cssText: string): number;
+export function countImportantCss(cssText: string): number;
 export function countRawZIndexCss(cssText: string): number;
 export function countRawFontSizeCss(cssText: string): number;

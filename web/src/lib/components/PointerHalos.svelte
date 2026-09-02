@@ -14,7 +14,7 @@
   let { canvasEl, eraserSizePx, brushRingSizePx }: Props = $props();
 
   // Bubble that previews the eraser footprint at the pointer while erasing.
-  let eraserCursor = $state({ visible: false, x: 0, y: 0 });
+  const eraserCursor = $state({ visible: false, x: 0, y: 0 });
 
   // Impact rings that track each drawing pointer while a stroke is live (pen and
   // magic brush; the eraser has its own bubble above). One ring per active

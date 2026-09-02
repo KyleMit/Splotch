@@ -35,6 +35,13 @@
 //    rgba() would for color — the elevation tokens cover the modal/settings
 //    surfaces, and rule 2 of the design skill governs the rest.
 //
+// 4. !important — zero tolerance, no baseline yet. A declaration that needs
+//    !important is out-arguing the cascade instead of fixing the specificity
+//    or source-order problem underneath, and the next reader inherits a rule
+//    that can only be beaten by another !important. The first legitimate
+//    one-off gets a BASELINE-style per-file allowlist map like the hex
+//    ratchet, never an inline exception or weakened check.
+//
 // Run via `npm run lint:tokens` (wired into the CI Quality job).
 // The countRaw* seams are unit-tested in
 // web/src/lib/design/lint-token-styles.test.ts.
@@ -141,8 +148,16 @@ function styledFiles(dir) {
 // up as a baseline bump to investigate, not a silent pass), and the var()
 // strip doesn't survive nested parens (var(--x, rgba(…))) — fine while
 // fallbacks stay simple, since the leftover text contains no hex.
+// Comments strip before strings on purpose: an apostrophe inside a comment
+// ("don't") would otherwise open a phantom string that swallows real CSS,
+// while a comment marker inside a string (content: "/*") is the rarer hazard.
+const QUOTED_STRING = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g;
+
 function stripCss(cssText) {
-  return cssText.replace(/\/\*[\s\S]*?\*\//g, '').replace(/var\([^)]*\)/g, 'var()');
+  return cssText
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(QUOTED_STRING, '""')
+    .replace(/var\([^)]*\)/g, 'var()');
 }
 
 // A .svelte source contributes its <style> blocks; a .css source is one big
@@ -155,6 +170,18 @@ function strippedStyles(source) {
 
 export function countRawHexCss(cssText) {
   return (stripCss(cssText).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
+}
+
+// Property names and keywords are case-insensitive in CSS, and the grammar
+// allows whitespace between the ! and the keyword.
+const IMPORTANT = /!\s*important\b/gi;
+
+export function countImportantCss(cssText) {
+  return (stripCss(cssText).match(IMPORTANT) ?? []).length;
+}
+
+export function countImportant(source) {
+  return (strippedStyles(source).match(IMPORTANT) ?? []).length;
 }
 
 export function countRawZIndexCss(cssText) {
@@ -233,6 +260,13 @@ async function main() {
           `now lower its entry in tools/tokens/lint-token-styles.mjs so the ratchet holds.`
       );
     }
+    const importantCount = isCss ? countImportantCss(source) : countImportant(source);
+    if (importantCount > 0) {
+      problems.push(
+        `${rel}: ${importantCount} !important declaration(s) in <style> — fix the specificity or ` +
+          `source order instead; a genuine one-off gets a baseline allowlist here, never an inline pass.`
+      );
+    }
     const fontCount = isCss ? countRawFontSizeCss(source) : countRawFontSize(source);
     const fontAllowed = FONT_SIZE_BASELINE.get(rel) ?? 0;
     if (fontCount > fontAllowed) {
@@ -265,7 +299,7 @@ async function main() {
   }
   console.log(
     `Token style lint passed (${BASELINE.size} allowlisted raw-hex files, ` +
-      `${FONT_SIZE_BASELINE.size} allowlisted raw-font-size files, 0 raw z-index).`
+      `${FONT_SIZE_BASELINE.size} allowlisted raw-font-size files, 0 raw z-index, 0 !important).`
   );
 }
 

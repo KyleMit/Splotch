@@ -158,7 +158,17 @@ new worktree provisions itself; see `docs/WORKTREES.md` before changing that set
   its inline copy, adds the drift-guard test, and carries a comment stating the constraint and
   naming the enforcing spec — that comment is load-bearing evidence of intent, not the "keep in
   sync" defect above, and refactoring the duplication away past it breaks the boundary it protects.
-* **TypeScript everywhere.** No plain `.js` source files in `src/`.
+* **TypeScript everywhere.** No plain `.js` source files in `src/`, and no `any`
+  (`@typescript-eslint/no-explicit-any` enforces the zero count).
+* **Near-universal conventions are lint rules, not review vigilance** (ADR-0031, which also records
+  the measured rejected candidates — don't re-litigate them without new evidence). The empirically
+  ratified set in `eslint.config.js` includes: builtin imports use the `node:` protocol, `web/src`
+  uses named exports only, a mixed import marks its types inline (`import { a, type B }`),
+  `prefer-const` runs rune-aware on Svelte files (`svelte/prefer-const`), and "should" is banned
+  from test titles. `!important` fails `npm run lint:tokens`; test placement (`.test.ts` colocated
+  under `web/src`, `.spec.ts` in `web/tests`) is drift-guarded by
+  `tools/tests/test-file-placement.test.mjs`. Prose-only by choice: PascalCase component files,
+  camelCase lib modules, and dot-joined multi-aspect test names (`platform.osLabel.test.ts`).
 * **Close finite value sets in the type.** A value drawn from a fixed vocabulary (style names,
   platforms, sizes, themes) is a literal union or `keyof typeof`, threaded end to end — never bare
   `string`/`number` plus a runtime fallback; constant maps are `Record<UnionType, V>` (or

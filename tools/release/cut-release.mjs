@@ -124,7 +124,8 @@ function resolveVersionCode(releaseFile, version) {
   const currentCode = Number(gradle.match(/versionCode\s+(\d+)/)?.[1] ?? 0);
   const parsed = parseFrontmatter(readFileSync(releaseFile, 'utf8'));
   if (!parsed) fail(`${releaseFile}: malformed frontmatter`);
-  let { frontmatter, body } = parsed;
+  let { frontmatter } = parsed;
+  const { body } = parsed;
   const pinned = Number(parsed.meta.androidVersionCode);
   const versionCode = Number.isInteger(pinned) ? pinned : currentCode + 1;
 

@@ -88,7 +88,7 @@
 
   // Element refs for the roving focus moves below — deliberately untracked,
   // nothing renders from them.
-  let optionEls: HTMLButtonElement[] = [];
+  const optionEls: HTMLButtonElement[] = [];
 
   // APG radio-group pattern: the group is one tab stop. The selected option
   // carries it — or the first enabled one while nothing is selected.

@@ -89,7 +89,7 @@ describe('awaitGeneration', () => {
     }
   });
 
-  it('gives up as retryable once it has waited longer than a child should', async () => {
+  it('returns a retryable timeout when the polling budget expires', async () => {
     vi.useFakeTimers();
     try {
       // Never settles, so the sleeps run the budget out on their own.
