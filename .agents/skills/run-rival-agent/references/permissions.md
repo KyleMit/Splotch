@@ -39,9 +39,10 @@ as the only MCP server. The rival has no Bash, no web, no edit tools, and no Git
 the only door out, and `MCP_TOOL_TIMEOUT` is raised so a brokered call can wait through a handler
 turn and a long command.
 
-The worktree's dependency install runs with `--ignore-scripts`: the reviewed commit owns
-`package.json`, and a PR-controlled `postinstall` would otherwise run at launch before anyone read
-the diff.
+The worktree's dependency install runs with `--ignore-scripts` and `--ignore-pnpmfile`: the reviewed
+commit owns `package.json` and `.pnpmfile.cjs`, and a PR-controlled `postinstall` or pnpmfile hook
+would otherwise run at launch before anyone read the diff. A commit whose lockfile records a
+pnpmfile checksum fails the install loudly instead.
 
 ## What the handler does
 

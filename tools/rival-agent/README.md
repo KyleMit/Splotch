@@ -65,8 +65,12 @@ the test acting as a fake rival over real stdio JSON-RPC.
 `question.md`. Give its absolute path to a Codex or Claude Code native handler for one non-posting
 `run-rival-agent` question round: the handler serves the broker normally and judges a multi-stage
 exchange covering chained replies, nonzero output, stdout/stderr, truncation, instruction-as-data, a
-targeted Vitest write inside the disposable worktree, and a real decline. The parser probe and
-targeted test command are preserved from the first real Codex-native-handler review.
+targeted Vitest write inside the disposable worktree, and a real decline. The command's JSON output
+carries `handlerBrief` beside `questionPath`: the seven requests to expect in order, the one to
+decline, and what to judge afterwards, so the handler's side of the exchange travels with the
+question. Without it a handler judging on merits alone approves the final harmless `git status` and
+the decline stage silently goes unexercised. The parser probe and targeted test command are
+preserved from the first real Codex-native-handler review.
 
 This suite intentionally uses the real rival CLI and plan login. It is manual, nondeterministic in
 wording, and never part of `npm test` or CI. The generated nonce and the broker spool provide the

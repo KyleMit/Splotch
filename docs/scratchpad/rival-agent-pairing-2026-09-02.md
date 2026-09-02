@@ -222,8 +222,18 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   again. The alias completed normally while declining its one brokered tools-tier request.
 * 2026-09-02 — added the checkout-only `gen:rival-acceptance` manual suite for real agent-to-agent
   testing, generating a question that can be given to either a Codex or Claude native handler. The
-  first Codex-handler/Claude-rival run passed all six stages with exactly seven sequential broker
-  requests and no extras: local packet read, random-token reply chaining, exit 23 with stdout/stderr
-  plus recovery, 60,118-byte truncation with both boundary markers and an inert instruction, the
-  earlier parser repro plus 8-file/68-test worktree-local Vitest run, and one real out-of-worktree
-  decline accepted without retry. The suite remains outside `npm test` and CI.
+  first Codex-handler/Claude-rival run reported all six stages passing with exactly seven sequential
+  broker requests and no extras: local packet read, random-token reply chaining, exit 23 with
+  stdout/stderr plus recovery, 60,118-byte truncation with both boundary markers and an inert
+  instruction, the earlier parser repro plus 8-file/68-test worktree-local Vitest run, and one real
+  out-of-worktree decline accepted without retry. The suite remains outside `npm test` and CI.
+* 2026-09-02 — the reciprocal Claude-handler/Codex-rival run made the same seven sequential
+  requests, six approved and one declined, and reported the parser stage as FAIL: the template's
+  `\\n` inside shell single quotes reached Node as two characters, so the shipped probe printed
+  `[]`. The earlier Claude rival had rewritten the escape to `\n` on its way through the broker and
+  so passed a stage the shipped command could not. The review of that run fixed the template and
+  added a generator test that executes every filled stage command as shipped, printed the handler's
+  brief beside the question path, added `--ignore-pnpmfile` to the worktree install (measured:
+  `--ignore-scripts` alone still ran a committed `.pnpmfile.cjs`), moved the documented broker wait
+  under the Bash tool's default timeout, and quoted the brokered command as one `bash -c` argument
+  so a trailing shell comment cannot strand the reply.

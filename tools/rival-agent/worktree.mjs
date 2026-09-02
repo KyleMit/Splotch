@@ -89,14 +89,19 @@ export function resolveScope(repoRoot, scope) {
 
 // A linked worktree resolves nothing upward, so dependencies install into it (frozen, from the
 // warm store: about three seconds) or Vitest and Prettier fail there in confusing ways.
-// `--ignore-scripts` because the reviewed commit owns package.json: a PR-controlled postinstall
-// would otherwise run on the handler's machine at launch, before anyone has read the diff. Native
-// modules still arrive built from the store's side-effects cache (measured: sharp, esbuild).
+// `--ignore-scripts` and `--ignore-pnpmfile` because the reviewed commit owns package.json and
+// .pnpmfile.cjs: a PR-controlled postinstall or pnpmfile hook would otherwise run on the handler's
+// machine at launch, before anyone has read the diff (measured: `--ignore-scripts` alone still ran
+// readPackage and afterAllResolved). Native modules still arrive built from the store's
+// side-effects cache (measured: sharp, esbuild). A lockfile that records a pnpmfile checksum fails
+// the frozen install under `--ignore-pnpmfile`, which is the loud outcome wanted for a commit that
+// introduces one.
 export const WORKTREE_INSTALL_ARGS = Object.freeze([
   'install',
   '--frozen-lockfile',
   '--prefer-offline',
   '--ignore-scripts',
+  '--ignore-pnpmfile',
 ]);
 
 export function createDisposableWorktree(repoRoot, head, directory, { install = true } = {}) {
