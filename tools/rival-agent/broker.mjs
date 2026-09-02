@@ -74,10 +74,13 @@ function shellQuote(value) {
 }
 
 // The command text appears verbatim so the handler's own permission rules read it: a deny rule on
-// `git push --force` and the auto-mode classifier both see exactly what the rival asked for.
+// `git push --force` and the auto-mode classifier both see exactly what the rival asked for. It is
+// handed to `bash -c` as one quoted argument so a trailing `#` comment or an embedded newline in the
+// rival's text cannot swallow the capture and the reply that follow it (measured: an unquoted
+// `echo hi # why` left the subshell unterminated and the request pending forever).
 export function handlerCommand({ brokerPath, session, request, worktree }) {
   const output = outputPath(session, request.seq);
-  return `cd ${shellQuote(worktree)} && ( ${request.command} ) > ${shellQuote(output)} 2>&1; node ${shellQuote(brokerPath)} reply --session ${shellQuote(session)} --request ${request.seq} --exit $? --output-file ${shellQuote(output)}`;
+  return `cd ${shellQuote(worktree)} && ( bash -c ${shellQuote(request.command)} ) > ${shellQuote(output)} 2>&1; node ${shellQuote(brokerPath)} reply --session ${shellQuote(session)} --request ${request.seq} --exit $? --output-file ${shellQuote(output)}`;
 }
 
 export function describeRequest({ brokerPath, session, request, worktree }) {

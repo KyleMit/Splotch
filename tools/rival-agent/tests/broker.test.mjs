@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -154,9 +154,26 @@ describe('broker CLI', () => {
     appendRequest(session, { command: "git status && echo 'it''s'", why: 'see the tree' });
     const result = await nextRequest({ session, timeoutSeconds: 0, brokerPath: BROKER_CLI });
     expect(result).toMatchObject({ state: 'request', seq: 1, worktree: '/tmp/worktree' });
-    expect(result.handlerCommand).toContain("( git status && echo 'it''s' )");
+    expect(result.handlerCommand).toContain(
+      "( bash -c 'git status && echo '\\''it'\\'''\\''s'\\''' )"
+    );
     expect(result.handlerCommand).toContain(`--request 1 --exit $?`);
     expect(result.handlerCommand.startsWith(`cd '/tmp/worktree' && `)).toBe(true);
+  });
+
+  // An unquoted subshell let a trailing `#` comment swallow the capture and the reply, leaving
+  // the request pending forever.
+  it('still captures and replies when the rival command ends in a shell comment', () => {
+    const command = "echo first # verify the thing\necho 'second'";
+    const request = appendRequest(session, { command, why: 'comment' });
+    const line = handlerCommand({ brokerPath: BROKER_CLI, session, request, worktree: session });
+    const result = spawnSync('bash', ['-c', line], { encoding: 'utf8' });
+    expect(result.status).toBe(0);
+    expect(readReply(session, request.seq)).toMatchObject({
+      exit: 0,
+      output: 'first\nsecond\n',
+      truncated: false,
+    });
   });
 
   it('quotes a worktree path containing a single quote', () => {
