@@ -93,6 +93,12 @@ test('pointer exploration still snaps a hexagon gap and commits the highlighted 
   await retryOpen(dialog, () =>
     page.getByRole('button', { name: 'Custom Color' }).click({ timeout: 1000 })
   );
+  // The picker snapshots every hexagon's center and its snap radius on the
+  // pointerdown that starts a drag, and a real `hover`/`mouse.down` can land on a
+  // fly-in still pending its first frame (see the fly-in bullet in
+  // docs/TESTING.md) — a snapshot taken off that scaled-down grid leaves the
+  // gap probe below outside the radius of every landed hexagon.
+  await settleFlyIn(dialog);
   const start = dialog.locator('.grid.landscape .row.r5 .hexagon.c3');
   const target = dialog.locator('.grid.landscape .row.r5 .hexagon.c1');
 
