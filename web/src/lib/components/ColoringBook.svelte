@@ -9,6 +9,7 @@
     COLORING_IMAGE_SIZES,
     coverThumbImageSource,
     pageOverlayImage,
+    pageOverlayImageSource,
     pageSelectorImageSource,
     type Book,
     type ColoringPage,
@@ -80,7 +81,8 @@
   });
 
   // Pressing/hovering a book tile warms that book's screen-sized selectors before
-  // the sub-grid renders. Hovering a page warms its canonical canvas SVG.
+  // the sub-grid renders. Hovering a page warms the paper art the canvas will
+  // present — the browser-selected raster tier on web, the canonical SVG on native.
   function prefetchBookPages(book: Book) {
     prefetchImages(
       book.pages.map((page) =>
@@ -92,7 +94,8 @@
     );
   }
   function prefetchPageOverlay(page: ColoringPage) {
-    prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
+    const overlay = pageOverlayImageSource(page, orientation, resolvedTheme());
+    prefetchImages([__IS_CAPACITOR__ ? overlay.src : overlay]);
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the

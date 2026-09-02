@@ -90,8 +90,12 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
     'data-canonical-url',
     /\/coloring\/farm\/.+-(wide|tall)\.overlay\.svg$/
   );
-  await expect(overlay).not.toHaveAttribute('srcset');
-  await expect(overlay).not.toHaveAttribute('sizes');
+  // The web paper presents a whole-number raster tier of the SVG, closed by the SVG itself.
+  await expect(overlay).toHaveAttribute(
+    'srcset',
+    /\/coloring\/max-1152px\/farm\/.+\.presentation\.webp \d+w, .*\/coloring\/farm\/.+\.overlay\.svg \d+w$/
+  );
+  await expect(overlay).toHaveAttribute('sizes', /^min\(100vm(?:in|ax), /);
 
   await openColoringBookGrid(page);
   const activePagePreview = dialog
@@ -112,7 +116,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
 test.describe('responsive coloring selection at DPR 1', () => {
   test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
 
-  test('selects responsive raster picker art and uses canonical canvas SVG', async ({ page }) => {
+  test('selects responsive raster picker art and the smallest paper tier', async ({ page }) => {
     await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
     await openColoringBookGrid(page);
@@ -135,12 +139,15 @@ test.describe('responsive coloring selection at DPR 1', () => {
       'data-canonical-url',
       /\/coloring\/farm\/cat-tall\.overlay\.svg$/
     );
+    // A 390 px tall page at DPR 1 needs 390 px of art: the 768 px-wide 1152 tier.
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
+      .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.presentation\.webp$/);
   });
 
-  test('does not refetch the canonical SVG when exporting the displayed page', async ({ page }) => {
+  test('exports from the canonical SVG, fetched once, while the paper shows a raster tier', async ({
+    page,
+  }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await gotoApp(page);
     await openDrawer(page);
@@ -148,7 +155,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
     const overlay = page.locator('#coloringOverlay');
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/farm\/cat-tall\.dark\.overlay\.svg$/);
+      .toMatch(/\/coloring\/max-\d+px\/farm\/cat-tall\.dark\.presentation\.webp$/);
     await draw(page, [
       { x: 100, y: 180 },
       { x: 260, y: 260 },
@@ -163,12 +170,10 @@ test.describe('responsive coloring selection at DPR 1', () => {
     await page.locator('#screenshotButton').click();
     expect(await (await download).failure()).toBeNull();
 
-    expect(exportOverlayRequests).toBe(0);
+    expect(exportOverlayRequests).toBe(1);
   });
 
-  test('prefetches the canonical SVG for the locked orientation after rotation', async ({
-    page,
-  }) => {
+  test('prefetches the paper tier for the locked orientation after rotation', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await gotoApp(page);
     await openDrawer(page);
@@ -179,14 +184,15 @@ test.describe('responsive coloring selection at DPR 1', () => {
     ]);
 
     await rotateViewportViaCdp(page, { width: 1000, height: 390, angle: 90 });
-    const expectedPrefetch = /\/coloring\/farm\/cow-tall\.dark\.overlay\.svg$/;
+    // A 390 px-tall landscape viewport holds tall art at 390 px: the 768 px-wide 1152 tier.
+    const expectedPrefetch = /\/coloring\/max-1152px\/farm\/cow-tall\.dark\.presentation\.webp$/;
     const cowPrefetch = page.waitForRequest(expectedPrefetch);
     await page.emulateMedia({ colorScheme: 'dark' });
     const overlay = page.locator('#coloringOverlay');
     await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
     await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.dark\.overlay\.svg$/);
-    await expect(overlay).not.toHaveAttribute('sizes');
-    await expect(overlay).not.toHaveAttribute('srcset');
+    await expect(overlay).toHaveAttribute('sizes', 'min(100vmin, calc(200vmax / 3))');
+    await expect(overlay).toHaveAttribute('srcset', /cat-tall\.dark\.presentation\.webp 768w/);
     await expect
       .poll(() =>
         page.locator('#drawingCanvas').evaluate((canvas) => canvas.getBoundingClientRect().width)
@@ -204,7 +210,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
 test.describe('responsive coloring selection at DPR 3', () => {
   test.use({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 });
 
-  test('keeps canonical cover and canvas SVG sources with responsive picker art', async ({
+  test('keeps canonical cover sources and selects the density-matched paper tier', async ({
     page,
   }) => {
     await gotoAppWithInstalledColoringBook(page, 'dinosaur');
@@ -225,11 +231,19 @@ test.describe('responsive coloring selection at DPR 3', () => {
 
     const overlay = page.locator('#coloringOverlay');
     await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.overlay\.svg$/);
+    // 393 css px of tall art at DPR 3 needs 1179 px: the 1536 px-wide tall tier.
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
+      .toMatch(/\/coloring\/max-2304px\/farm\/cat-tall\.presentation\.webp$/);
   });
 });
+
+// The paper's srcset lets the browser pick a presentation tier or the canonical SVG, so a test
+// that stages decode timing holds every candidate for the page rather than one URL.
+const HELD_CAT_WIDE_ART =
+  /\/coloring\/(?:max-\d+px\/)?farm\/cat-wide\.(?:overlay\.svg|presentation\.webp)$/;
+const HELD_COW_WIDE_ART =
+  /\/coloring\/(?:max-\d+px\/)?farm\/cow-wide\.(?:overlay\.svg|presentation\.webp)$/;
 
 test('a selected page stays hidden while browser-selected art decodes', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
@@ -237,7 +251,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
   const fullImageHeld = new Promise<void>((resolve) => {
     releaseFullImage = resolve;
   });
-  await page.route(/\/coloring\/farm\/cat-wide\.overlay\.svg$/, async (route) => {
+  await page.route(HELD_CAT_WIDE_ART, async (route) => {
     await fullImageHeld;
     await route.continue();
   });
@@ -290,7 +304,7 @@ test('a save during overlay decode omits the overlay instead of capturing a thum
   const fullImageHeld = new Promise<void>((resolve) => {
     releaseFullImage = resolve;
   });
-  await page.route(/\/coloring\/farm\/cat-wide\.overlay\.svg$/, async (route) => {
+  await page.route(HELD_CAT_WIDE_ART, async (route) => {
     await fullImageHeld;
     await route.continue();
   });
@@ -343,7 +357,7 @@ test('a newly applied page cannot paint the previous page fill while its art dec
   const nextOverlayHeld = new Promise<void>((resolve) => {
     releaseNextOverlay = resolve;
   });
-  await page.route(/\/coloring\/farm\/cow-wide\.overlay\.svg$/, async (route) => {
+  await page.route(HELD_COW_WIDE_ART, async (route) => {
     await nextOverlayHeld;
     await route.continue();
   });

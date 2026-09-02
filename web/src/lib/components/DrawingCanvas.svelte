@@ -21,12 +21,12 @@
   import {
     overlayUrl,
     coloringBookState,
-    themedOverlayUrl as currentThemedOverlayUrl,
+    themedOverlaySource as currentThemedOverlaySource,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { pageCompositionKey } from '$lib/state/books';
+  import { pageCompositionKey, type ResponsivePaperImage } from '$lib/state/books';
   import {
     canPlayDrawingSound,
     playDrawSound,
@@ -186,38 +186,49 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // The canonical SVG is the presentation, export, and Magic authority. Selector
-  // surfaces use responsive raster previews, but the paper never substitutes a
-  // derivative whose registration or scale could diverge from the SVG.
+  // The canonical SVG is the export and Magic authority, and native presents
+  // it directly. The web paper presents a lossless raster of that SVG at an
+  // exact whole-number scale, chosen by the browser from `srcset` (see
+  // PRESENTATION_TIER_MAX_EDGES_PX): WebKit rasterizes an SVG <img> on the
+  // main thread when a page is selected or cleared, and a WebP decodes off it.
+  // Registration cannot diverge, because every tier is the same viewBox scaled.
   // Reading resolvedTheme() re-picks the theme sibling on a live switch.
-  const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
+  const themedOverlay = $derived(currentThemedOverlaySource(resolvedTheme()));
+  const themedOverlayUrl = $derived(themedOverlay?.src ?? null);
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide composition. Hide art when
   // the composition changes, decode the browser-selected file off-DOM, and show
   // it only once ready. A theme sibling has identical registration, so it
   // keeps the current art visible until the sibling is ready.
-  let displayedOverlayUrl = $state<string | null>(null);
+  let displayedOverlay = $state<ResponsivePaperImage | null>(null);
+  const displayedOverlayUrl = $derived(displayedOverlay?.src ?? null);
 
   $effect(() => {
-    const url = themedOverlayUrl;
-    if (!url) {
-      displayedOverlayUrl = null;
+    const overlay = themedOverlay;
+    if (!overlay) {
+      displayedOverlay = null;
       return;
     }
-    const displayed = untrack(() => displayedOverlayUrl);
-    if (!displayed || pageCompositionKey(displayed) !== pageCompositionKey(url)) {
-      displayedOverlayUrl = null;
+    const displayed = untrack(() => displayedOverlay);
+    if (!displayed || pageCompositionKey(displayed.src) !== pageCompositionKey(overlay.src)) {
+      displayedOverlay = null;
     }
     let stale = false;
     const img = new Image();
     img.fetchPriority = 'high';
-    img.src = url;
+    // The same sizes/srcset as the <img> below, so the candidate decoded here
+    // is the one the browser then paints from cache.
+    if (!__IS_CAPACITOR__) {
+      img.sizes = overlay.sizes;
+      img.srcset = overlay.srcset;
+    }
+    img.src = overlay.src;
     // Show on decode failure too — the <img> then surfaces the same broken
     // state a direct src assignment would have.
     const show = () => {
       if (!stale) {
-        displayedOverlayUrl = url;
+        displayedOverlay = overlay;
       }
     };
     img.decode().then(show, show);
@@ -243,9 +254,9 @@
     const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());
     const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
-    const otherUrl = currentThemedOverlayUrl(theme, other);
-    if (!otherUrl) return;
-    return scheduleIdle(() => prefetchImages([otherUrl]));
+    const otherOverlay = currentThemedOverlaySource(theme, other);
+    if (!otherOverlay) return;
+    return scheduleIdle(() => prefetchImages([__IS_CAPACITOR__ ? otherOverlay.src : otherOverlay]));
   });
 </script>
 
@@ -275,9 +286,11 @@
   >
     <img
       class="coloring-overlay"
-      class:overlay-ready={!!displayedOverlayUrl}
+      class:overlay-ready={!!displayedOverlay}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
+      srcset={displayedOverlay && !__IS_CAPACITOR__ ? displayedOverlay.srcset : undefined}
+      sizes={displayedOverlay && !__IS_CAPACITOR__ ? displayedOverlay.sizes : undefined}
       data-canonical-url={themedOverlayUrl ?? undefined}
       alt=""
       hidden={!overlayUrl()}
