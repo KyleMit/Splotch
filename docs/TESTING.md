@@ -407,25 +407,37 @@ specs that can't race in the first place:
   ADR-0080); prefer that shape — a signal for the state you actually depend on — over retrying an
   action until its effect appears. Where you must assert instead, pick a metric a wrong-mode action
   can't satisfy: a canvas-fill pixel count is not one, since a pen stroke fills the band too.
-* **Let a fly-in dialog land before reading a coordinate off it.** A real Playwright `.click()`
-  waits for its target to stop moving; an `evaluate` that reads `getBoundingClientRect()` and
-  dispatches synthetic pointer events there does not. `dialogFlyFromOrigin` (app.css) starts a modal
-  at `scale(0.05)` **on the button that opened it**, and `modalDialog` arms a launch dead zone at
-  that same point (`launchGuard`: 72px, 600ms) whose capture-phase `pointerdown` handler swallows
-  everything inside it — dialog content included, by design (issue \#308's ghost click). So for the
-  opening frames the whole dialog sits in the dead zone: Settings' content pane centers **6px** from
-  the launch origin at the first keyframe and only clears the radius ~13ms into the animation. A CSS
-  animation advances with *rendered frames*, so a starved worker parks the dialog on that keyframe
-  for far longer than 13ms of wall clock, and the gesture is aimed straight into the guard and
-  silently does nothing. That was issue \#665 — the three zoom/pinch specs that were the entire
-  residual flake rate (ADR-0078 §4), all failing as "the pinch produced no zoom". The fix is to
-  await the dialog's `Animation.finished` before reading any coordinate off it — `openSettingsModal`
-  does this, which puts the pane 574px from the origin and removes the dependency on animation
-  progress instead of timing it. Three other dialogs carry `modal-fly-in` (`#color-picker`,
-  `#coloring-book-dialog`, `.ai-prompt-modal`); the helper is private to `tests/helpers.ts` until a
-  second caller needs it, so lift it there rather than copying the wait. Query `getAnimations()` on
-  the dialog element alone — the fly-in animates it directly, and `{ subtree: true }` would start
-  waiting on unrelated descendant animations too.
+* **Let a fly-in dialog land before acting on it — a real click included.** An `evaluate` that reads
+  `getBoundingClientRect()` and dispatches synthetic pointer events there never waits for the dialog
+  to stop moving, and a real Playwright `.click()` only *usually* does: its stability check is two
+  consecutive frames with an identical rect, and a CSS animation still **pending** its start time (a
+  starved compositor grants it late) holds its first keyframe across frames and passes that check.
+  Captured under full-suite contention in `ai-report.spec.ts`: the click on the confirmation's Send
+  button dispatched 52ms after open, at a 17×21px dialog (the 5% keyframe), 9px from the launch
+  origin — inside the dead zone below, so it was swallowed and nothing was sent. The immune tests in
+  that spec were the ones that pressed Escape or ran under reduced motion, which is the tell.
+  `dialogFlyFromOrigin` (app.css) starts a modal at `scale(0.05)` **on the button that opened it**,
+  and `modalDialog` arms a launch dead zone at that same point (`launchGuard`: 72px, 600ms) whose
+  capture-phase `pointerdown` handler swallows everything inside it — dialog content included, by
+  design (issue \#308's ghost click). So for the opening frames the whole dialog sits in the dead
+  zone: Settings' content pane centers **6px** from the launch origin at the first keyframe and only
+  clears the radius ~13ms into the animation. A CSS animation advances with *rendered frames*, so a
+  starved worker parks the dialog on that keyframe for far longer than 13ms of wall clock, and the
+  gesture is aimed straight into the guard and silently does nothing. That was issue \#665 — the
+  three zoom/pinch specs that were the entire residual flake rate (ADR-0078 §4), all failing as "the
+  pinch produced no zoom". The fix is to await the dialog's `Animation.finished` before touching it
+  — `settleFlyIn` (`tests/helpers.ts`), which `openSettingsModal` and `landedReportConfirm`
+  (`tests/ai-harness.ts`) wrap. Landed, the Settings pane rests 574px from the origin and the report
+  confirmation's buttons 130px+, so the dependency on animation progress is removed instead of
+  timed. Every dialog carrying `modal-fly-in` (`#settingsModal`, `#color-picker`,
+  `#coloring-book-dialog`, `.ai-prompt-modal`, `.parental-gate`, `.ai-report-confirm`) needs the
+  same wait between its open and the first pointer action on its content. The colour picker is the
+  sharpest case: it snapshots every hexagon's center and its snap radius on the `pointerdown` that
+  starts a drag, so a drag begun on an unlanded grid keeps a scaled-down snapshot for the whole
+  gesture — the shape of the one red run ADR-0078 §4a recorded for the pointer-exploration spec,
+  which opened without the wait its tap sibling already had. Query `getAnimations()` on the dialog
+  element alone — the fly-in animates it directly, and `{ subtree: true }` would start waiting on
+  unrelated descendant animations too.
 * **Budget a frame-paced condition in frames, not milliseconds.** The wide Settings pane mounts one
   section per frame once the card lands (issue \#910), and `aria-busy` clears only when the last one
   is in — so the wait for it is on the fill's clock, which is the frame. Playwright's assertion

@@ -4,6 +4,7 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { enforceProductionCsp } from './helpers';
 import {
   MOCK_REPORT_TOKEN,
+  landedReportConfirm,
   openAiResult,
   resultBoxes,
   revealAiResult,
@@ -51,7 +52,7 @@ test.describe('AI picture report', () => {
     await report.focus();
     await expect(report).toBeFocused();
     await page.keyboard.press('Enter');
-    const confirm = page.locator('dialog.ai-report-confirm');
+    const confirm = await landedReportConfirm(page);
     await expect(confirm).toContainText('the report is deleted after 30 days.');
     // The confirmation names the two artifacts by showing them, and stands in
     // front of the result rather than in its footer — so the Download button is
@@ -83,9 +84,8 @@ test.describe('AI picture report', () => {
     await revealAiResult(page);
 
     const before = await revealedBoxes(page);
-    const confirm = page.locator('dialog.ai-report-confirm');
     await page.getByRole('button', { name: 'Report this picture' }).click();
-    await expect(confirm).toBeVisible();
+    const confirm = await landedReportConfirm(page);
     // The picture behind it does not resize to make room, as the old inline
     // confirmation made it.
     expect((await revealedBoxes(page)).stage.height).toBeCloseTo(before.stage.height, 0);
@@ -113,10 +113,9 @@ test.describe('AI picture report', () => {
       await revealAiResult(page);
 
       const report = page.getByRole('button', { name: 'Report this picture' });
-      const confirm = page.locator('dialog.ai-report-confirm');
       await report.focus();
       await page.keyboard.press('Enter');
-      await expect(confirm).toBeVisible();
+      const confirm = await landedReportConfirm(page);
 
       if (dismissal === 'Escape') await page.keyboard.press('Escape');
       else await confirm.getByRole('button', { name: 'Cancel' }).click();
@@ -142,12 +141,13 @@ test.describe('AI picture report', () => {
     await revealAiResult(page);
 
     await page.getByRole('button', { name: 'Report this picture' }).click();
+    const confirm = await landedReportConfirm(page);
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
 
     const retry = page.getByRole('button', { name: 'Try again' });
     await expect(retry).toBeVisible({ timeout: CLIENT_REQUEST_TIMEOUT_MS * 1.5 });
-    await expect(page.locator('dialog.ai-report-confirm')).not.toBeVisible();
+    await expect(confirm).not.toBeVisible();
     await expect(page.getByRole('alert')).toContainText('taking too long');
     // The dialog that closed took the focused button with it, so the retry it
     // left behind is where a keyboard user has to land.
@@ -177,7 +177,7 @@ test.describe('AI picture report', () => {
 
     await page.getByRole('button', { name: 'Report this picture' }).focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('dialog.ai-report-confirm')).toBeVisible();
+    await landedReportConfirm(page);
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByText(/Keep this report reference.*free-report-id/)).toBeVisible();
 
@@ -220,7 +220,7 @@ test.describe('AI picture report', () => {
 
     await report.focus();
     await page.keyboard.press('Enter');
-    const confirm = page.locator('dialog.ai-report-confirm');
+    const confirm = await landedReportConfirm(page);
     await expect(confirm).toContainText(
       "The rejected drawing, selected art style, exact instruction sent to the AI, and the AI's refusal reason"
     );
@@ -256,8 +256,7 @@ test.describe('AI picture report', () => {
       const report = page.getByRole('button', { name: 'Report this refusal' });
       await report.focus();
       await page.keyboard.press('Enter');
-      const confirm = page.locator('dialog.ai-report-confirm');
-      await expect(confirm).toBeVisible();
+      const confirm = await landedReportConfirm(page);
       const geometry = await confirm.evaluate((dialog) => {
         const dialogBox = dialog.getBoundingClientRect();
         const headingBox = dialog.querySelector('h3')!.getBoundingClientRect();
@@ -306,10 +305,12 @@ test.describe('AI picture report', () => {
     await endpoint.fail(422);
 
     await page.getByRole('button', { name: 'Report this refusal' }).click();
+    await landedReportConfirm(page);
     await page.getByRole('button', { name: 'Send report' }).click();
     const retry = page.getByRole('button', { name: 'Try again' });
     await expect(retry).toBeFocused();
     await retry.click();
+    await landedReportConfirm(page);
     await page.getByRole('button', { name: 'Send report' }).click();
 
     await expect(page.getByText(/Keep this report reference.*retried-refusal-id/)).toBeVisible();

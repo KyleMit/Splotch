@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { aiOutputFor } from './artifacts/ai-output-fixtures.ts';
-import { drawCommittedStroke, gotoApp, seedAiEnabled } from './helpers';
+import { drawCommittedStroke, gotoApp, seedAiEnabled, settleFlyIn } from './helpers';
 
 // Shared harness for the AI generation flow, used by ai-result.spec.ts (the
 // result modal's presentation) and ai-report.spec.ts (the report flow). The
@@ -152,6 +152,24 @@ export async function revealAiResult(page: Page, options: AiGenerationOptions = 
   const endpoint = await openAiResult(page, options);
   await endpoint.succeed(options.freeTier ? { 'X-Report-Token': MOCK_REPORT_TOKEN } : undefined);
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
+}
+
+// The report confirmation after its fly-in has landed — the only state in which
+// a click on its buttons reaches them. AiImageReport flies the dialog in from
+// the Report control's center, and modalDialog arms the launch dead zone there,
+// so at the first keyframe the whole dialog (scaled to 5%) sits inside the zone
+// and a pointerdown anywhere on it is swallowed by design. A real Playwright
+// click does not wait that out: its stability check wants two consecutive
+// frames with the same rect, and a fly-in still *pending* its start time (which
+// a starved compositor hands out late) holds that first keyframe across frames.
+// Captured under full-suite contention: the click dispatched 52ms after open, at
+// a 17×21px dialog, 9px from the origin, and never sent. Waiting for the
+// animation to finish removes the dependency on its progress (ADR-0078 §4a).
+export async function landedReportConfirm(page: Page) {
+  const confirm = page.locator('dialog.ai-report-confirm');
+  await expect(confirm).toBeVisible();
+  await settleFlyIn(confirm);
+  return confirm;
 }
 
 export async function resultBoxes(page: Page) {

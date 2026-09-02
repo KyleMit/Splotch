@@ -389,6 +389,19 @@ advance first, which is the tell that the window is about one round trip wide.
 animation progress is removed rather than timed. Nothing in the app changed: the dead zone
 swallowing content that is momentarily sitting on the launch button is what it is for.
 
+**The same window reaches a real click** (2026-09-02). The paragraph above leans on the
+actionability checks a real `.click()` performs, and they are not enough: Playwright's stability
+check is two consecutive frames with an identical rect, and a CSS animation still *pending* its
+start time holds its first keyframe across frames, so a starved compositor that grants the start
+late passes the check with the dialog parked at 5% scale on the launch button. Five
+`ai-report.spec.ts` tests that click the report confirmation's buttons straight after it opens were
+39 of the 52 retried passes in 106 CI runs; the `Escape` and reduced-motion variants in the same
+spec had none. A probe run under full-suite contention at 4 workers captured it: the click
+dispatched 52ms after `showModal()`, at a 17×21px dialog with its fly-in `running/pending@0`, 9px
+from the origin — inside the zone, swallowed, no request sent. The fix is the one above, applied
+before the first pointer action on the dialog rather than only before a coordinate read
+(`landedReportConfirm` in `tests/ai-harness.ts`).
+
 **Re-measured**, 35 reps at 4 workers, retries off (run 30581020210):
 
 | spec cluster                                                                      | before    | after |
