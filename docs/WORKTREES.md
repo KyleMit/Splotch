@@ -28,15 +28,20 @@ In a linked worktree it:
 Failure reporting differs because the two runners read different hook contracts, which is what
 `--runner` selects:
 
-| Runner | On failure                                                         | Session |
-| ------ | ------------------------------------------------------------------ | ------- |
-| Codex  | `{ continue: false, stopReason, systemMessage }` on stdout, exit 0 | stopped |
-| Claude | message on stderr, `{ systemMessage }` on stdout, exit 1           | starts  |
+| Runner | On failure                                                                 | Session |
+| ------ | -------------------------------------------------------------------------- | ------- |
+| Codex  | `{ continue: false, stopReason, systemMessage }` on stdout, exit 0         | stopped |
+| Claude | `systemMessage` + `hookSpecificOutput.additionalContext` on stdout, exit 0 | starts  |
 
-Claude Code treats a non-zero exit from `SessionStart` as a non-blocking error: the user sees the
-notice, Claude sees the `systemMessage`, and the session still opens so the install can be retried
-in place. Exit 2 would block the session from starting at all, which is the wrong trade for a
-dependency install that a plain `pnpm install --frozen-lockfile` recovers from.
+The two Claude fields are not interchangeable, and getting this wrong fails silently. Top-level
+`systemMessage` is a **warning shown to the user** and never reaches the model;
+`hookSpecificOutput.additionalContext` is the only field that puts the failure into Claude's
+context. A hook that returns one and not the other still looks like it worked.
+
+The exit code carries nothing here. `SessionStart` cannot block on any exit code — even exit 2 only
+shows stderr to the user — and a schema-valid JSON body makes Claude Code ignore the exit code
+rather than report a hook error. So the session always starts, and the bootstrap exits 0, the
+documented exit code for structured output. Its stderr reaches the debug log only.
 
 ### Why the Claude hook reads its directory from stdin
 

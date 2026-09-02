@@ -44,10 +44,13 @@ Two things stay runner-shaped, and a `--runner=` flag selects them:
   gate replaces the old `branch !== 'HEAD'` early return, which skipped provisioning entirely; an
   attached Codex worktree now gets dependencies too.
 * **How failure is reported.** Codex reads a stop decision from stdout
-  (`{ continue: false, stopReason, systemMessage }`, exit 0). Claude Code gets a non-zero exit plus
-  stderr — its *non-blocking* error shape: the user sees the notice, Claude sees the
-  `systemMessage`, and the session still opens. Exit 2 would block the session from starting, which
-  is the wrong trade for a failure that a plain `pnpm install --frozen-lockfile` recovers from.
+  (`{ continue: false, stopReason, systemMessage }`, exit 0). Claude Code splits the two audiences
+  across two fields that cannot substitute for each other: top-level `systemMessage` is a warning
+  shown to the **user** and never reaches the model, while `hookSpecificOutput.additionalContext` is
+  the only field that puts the failure into **Claude's** context. The bootstrap returns both, so a
+  failed install is visible to the person who can fix it and to the agent that will otherwise run
+  `npm` against an empty `node_modules`. Returning only one still looks like it worked, which is why
+  `tools/tests/bootstrap-worktree.test.mjs` pins `additionalContext` by name.
 
 The non-obvious invariant is the working directory. Claude Code keeps `${CLAUDE_PROJECT_DIR}`
 pointing at the **main checkout** after entering a worktree and reports the worktree only through
@@ -80,6 +83,11 @@ nothing.
 
 − The bootstrap adds an install to the front of every fresh worktree session. It is a warm-cache
 `--prefer-offline` install, but it is not free, and it runs before the first model turn.
+
+− A Claude Code session cannot be gated on a successful install. `SessionStart` blocks on no exit
+code, and a schema-valid JSON body makes Claude Code ignore the exit code entirely, so a worktree
+whose install failed still opens — carrying the warning, but open. Codex can stop its turn; Claude
+can only be told.
 
 − The Claude hook executes the **main checkout's** copy of the script, not the worktree's. A change
 to the bootstrap does not take effect for a worktree session until it lands in the main checkout —

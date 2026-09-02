@@ -297,15 +297,27 @@ describe('runner-specific failure reporting', () => {
     });
   });
 
-  // A non-zero exit is Claude Code's non-blocking error: the notice reaches the user, the
-  // systemMessage reaches Claude, and the session still starts so the fix can happen in place.
-  it('hands Claude a non-blocking error the session survives', () => {
+  // Claude Code splits the audiences: systemMessage reaches only the user, and only
+  // hookSpecificOutput.additionalContext reaches the model. Losing the second field is silent —
+  // the session still starts and nothing reports an error — so it is pinned here by name.
+  it('hands Claude the failure on both the user and the model channel', () => {
     const report = reportFailure('claude', 'boom');
 
-    expect(report.exitCode).not.toBe(0);
-    expect(report.stderr).toContain('boom');
     expect(report.stdout.systemMessage).toContain('Splotch worktree bootstrap stopped');
+    expect(report.stdout.hookSpecificOutput).toMatchObject({
+      hookEventName: 'SessionStart',
+      additionalContext: expect.stringContaining('boom'),
+    });
+    expect(report.stdout.hookSpecificOutput.additionalContext).toContain(
+      'pnpm install --frozen-lockfile'
+    );
     expect(report.stdout.continue).toBeUndefined();
+  });
+
+  // SessionStart cannot block on any exit code, and a schema-valid body makes Claude Code ignore
+  // the exit code rather than report an error, so a non-zero exit would buy nothing and mislead.
+  it('exits zero for Claude so the structured body is the whole contract', () => {
+    expect(reportFailure('claude', 'boom').exitCode).toBe(0);
   });
 });
 
@@ -331,12 +343,16 @@ describe('worktree bootstrap executable', () => {
     });
   });
 
-  it('exits non-zero for Claude when it cannot inspect Git', () => {
+  it('prints a Claude SessionStart body when it cannot inspect Git', () => {
     const result = run(['--runner=claude'], '');
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('Could not inspect the Git directory');
-    expect(JSON.parse(result.stdout).systemMessage).toContain('Splotch worktree bootstrap stopped');
+    expect(result.status).toBe(0);
+    const stdout = JSON.parse(result.stdout);
+    expect(stdout.systemMessage).toContain('Splotch worktree bootstrap stopped');
+    expect(stdout.hookSpecificOutput.hookEventName).toBe('SessionStart');
+    expect(stdout.hookSpecificOutput.additionalContext).toContain(
+      'Could not inspect the Git directory'
+    );
   });
 
   // The payload directory has to beat the process directory, or a Claude Code hook would provision
@@ -348,7 +364,8 @@ describe('worktree bootstrap executable', () => {
       input: JSON.stringify({ cwd: tmpdir() }),
     });
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('Could not inspect the Git directory');
+    expect(JSON.parse(result.stdout).hookSpecificOutput.additionalContext).toContain(
+      'Could not inspect the Git directory'
+    );
   });
 });

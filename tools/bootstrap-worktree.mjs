@@ -206,9 +206,17 @@ function parseRunner(argv) {
   return runner;
 }
 
+const RECOVERY_INSTRUCTION =
+  'This worktree may have no dependencies installed. Run `pnpm install --frozen-lockfile` in the ' +
+  'worktree root before any npm script, and report the failure above if it recurs.';
+
 /**
- * Codex reads a stop decision from the hook's stdout; Claude Code reads a non-blocking failure from
- * a non-zero exit plus stderr, and lets the session start so the message is actionable in place.
+ * Codex reads a stop decision from the hook's stdout. Claude Code splits the two audiences across
+ * two fields and cannot merge them: `systemMessage` reaches only the user, and only
+ * `hookSpecificOutput.additionalContext` reaches the model. SessionStart cannot block on any exit
+ * code, and a schema-valid JSON body makes Claude Code ignore the exit code entirely rather than
+ * report an error — so the session always starts and the exit code is 0, the documented one for
+ * structured output.
  */
 export function reportFailure(runner, reason) {
   const message = `Splotch worktree bootstrap stopped: ${reason}`;
@@ -218,7 +226,17 @@ export function reportFailure(runner, reason) {
       exitCode: 0,
     };
   }
-  return { stdout: { systemMessage: message }, stderr: message, exitCode: 1 };
+  return {
+    stdout: {
+      systemMessage: message,
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext: `${message}\n${RECOVERY_INSTRUCTION}`,
+      },
+    },
+    stderr: message,
+    exitCode: 0,
+  };
 }
 
 if (isMain(import.meta.url)) {
