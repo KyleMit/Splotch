@@ -170,3 +170,15 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   and a commit scope was keyed by the ref as typed rather than its OID. The rival prompt now says
   outright that the sandbox cannot escalate and that anything that writes goes through `run` the
   first time.
+* 2026-09-02 — second real round at 57415c7b971bb02150e40bb132bfed0c67ddbd65. The resume failed
+  first (`codex exec resume` rejects `--cd` with a usage error and filters recorded threads by
+  directory, so the launcher now drops `-C` and passes `--all` on resume) and the launcher fell back
+  to a fresh reviewer as designed. This time the rival used the broker three times, each request a
+  self-contained repro under tmp, and every one was approved and run as the handler. Four blocking
+  findings, all reproduced, all posted as anchored inline comments (review 5090878454), all fixed:
+  the worktree install ran a PR-controlled `postinstall` (now `--ignore-scripts`, measured to keep
+  sharp and esbuild working from the store), `broker next` handed out a stale request after the
+  rival had exited (terminal files now win), the packet diff inherited `diff.context` (now
+  `--unified=3` from the poster's constant), and a provisioning failure was invisible through `next`
+  because `session.json` was written late (now written first). About twelve minutes and 1.8M input
+  tokens, 1.7M of them cached.

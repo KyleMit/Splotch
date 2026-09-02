@@ -5,11 +5,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   createDisposableWorktree,
+  DIFF_CONTEXT_LINES,
   git,
   PACKET_FILES,
   removeDisposableWorktree,
   resolveScope,
   snapshotWorkingTree,
+  WORKTREE_INSTALL_ARGS,
   writeReviewPacket,
 } from '../worktree.mjs';
 
@@ -112,6 +114,8 @@ describe('disposable worktree and packet', () => {
     mkdirSync(packet);
     writeReviewPacket(repo, scope, packet);
     expect(readFileSync(join(packet, PACKET_FILES.diff), 'utf8')).toContain('+two');
+    expect(WORKTREE_INSTALL_ARGS).toContain('--ignore-scripts');
+    expect(WORKTREE_INSTALL_ARGS).toContain('--frozen-lockfile');
     expect(readFileSync(join(packet, PACKET_FILES.commits), 'utf8')).toContain('second');
     expect(readFileSync(join(packet, PACKET_FILES.files), 'utf8')).toMatch(/^M\ta\.txt/);
     expect(JSON.parse(readFileSync(join(packet, PACKET_FILES.scope), 'utf8'))).toMatchObject({
@@ -123,5 +127,29 @@ describe('disposable worktree and packet', () => {
     removeDisposableWorktree(repo, directory);
     expect(existsSync(directory)).toBe(false);
     expect(sh(['worktree', 'list'])).not.toContain('wt');
+  });
+
+  // The rival's second real round found this: a developer's diff.context widened the packet past
+  // what GitHub renders, so the poster would have accepted anchors GitHub then rejected.
+  it('pins the packet diff to the context GitHub renders regardless of git config', () => {
+    sh(['config', 'diff.context', '10']);
+    writeFileSync(
+      join(repo, 'a.txt'),
+      `${Array.from({ length: 30 }, (_, i) => `l${i}`).join('\n')}\n`
+    );
+    sh(['commit', '-q', '-am', 'thirty lines']);
+    const lines = readFileSync(join(repo, 'a.txt'), 'utf8').split('\n');
+    lines[15] = 'changed';
+    writeFileSync(join(repo, 'a.txt'), lines.join('\n'));
+    sh(['commit', '-q', '-am', 'one change']);
+    const scope = resolveScope(repo, { kind: 'commit', commit: 'HEAD' });
+    const packet = join(root, 'packet-context');
+    mkdirSync(packet);
+    writeReviewPacket(repo, scope, packet);
+    const hunk = readFileSync(join(packet, PACKET_FILES.diff), 'utf8')
+      .split('\n')
+      .find((line) => line.startsWith('@@'));
+    const span = DIFF_CONTEXT_LINES * 2 + 1;
+    expect(hunk).toMatch(new RegExp(`^@@ -13,${span} \\+13,${span} @@`));
   });
 });

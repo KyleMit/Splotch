@@ -13,9 +13,6 @@ import { PACKET_FILES } from './worktree.mjs';
 export const REPOSITORY = 'KyleMit/Splotch';
 export const MARKER_PREFIX = 'splotch-rival-review';
 const OID_PATTERN = /^[0-9a-f]{40}$/;
-// GitHub renders the diff with three context lines, and every rendered line — added, deleted, or
-// context — accepts a review comment; a line outside a rendered hunk rejects the whole review.
-export const DIFF_CONTEXT_LINES = 3;
 
 export function buildMarker({ rival, base, head, id }) {
   return `<!-- ${MARKER_PREFIX}:rival=${rival};base=${base};head=${head};id=${id} -->`;

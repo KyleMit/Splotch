@@ -182,12 +182,14 @@ export async function waitForPendingOrEnd(
 ) {
   const deadline = now() + timeoutMs;
   for (;;) {
-    const pending = pendingRequests(session);
-    if (pending.length > 0) return { state: 'request', request: pending[0] };
+    // A terminal file outranks a pending request: once the rival has exited, nobody is waiting
+    // for the answer, and handing the command out would run it for no one.
     const failed = readFailed(session);
     if (failed) return { state: 'failed', failed };
     const done = readDone(session);
     if (done) return { state: 'done', done };
+    const pending = pendingRequests(session);
+    if (pending.length > 0) return { state: 'request', request: pending[0] };
     if (now() >= deadline) return { state: 'waiting' };
     await sleep(pollMs);
   }

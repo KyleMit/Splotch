@@ -159,8 +159,6 @@ export function buildCodexArgs({
     // only way to leave the user's servers behind is to leave the whole config behind; auth still
     // resolves from CODEX_HOME.
     '--ignore-user-config',
-    '-C',
-    worktree,
     ...ISOLATION_FEATURES.flatMap((feature) => ['--disable', feature]),
     '-c',
     'sandbox_mode="read-only"',
@@ -186,8 +184,11 @@ export function buildCodexArgs({
     '--output-schema',
     schemaPath,
   ];
-  if (resumeThreadId) return ['exec', 'resume', ...shared, resumeThreadId, '-'];
-  return ['exec', ...shared, '-'];
+  // `exec resume` has no --cd flag (the process cwd is the worktree instead) and filters recorded
+  // threads by the directory they ran in, which every round's fresh worktree would fail; --all
+  // lifts that filter. Both were found by round two exiting 2 before the first event.
+  if (resumeThreadId) return ['exec', 'resume', '--all', ...shared, resumeThreadId, '-'];
+  return ['exec', '-C', worktree, ...shared, '-'];
 }
 
 const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
@@ -311,25 +312,31 @@ export async function launch(options) {
     process.stderr.write(`ignoring API-billing environment: ${stripped.join(', ')}\n`);
   }
 
+  // session.json lands before provisioning so a failure there is still observable through
+  // `broker next` rather than as "no session" — the rival's second real round probed exactly that.
+  const writeSessionRecord = () =>
+    writeJsonAtomic(sessionPath(session, SESSION_FILES.session), {
+      id,
+      rival: RIVAL,
+      scope,
+      question: Boolean(question),
+      worktree,
+      packetDir,
+      round: plan.round,
+      resumed: Boolean(plan.resume),
+      repoRoot,
+      branch,
+      createdAt: new Date().toISOString(),
+    });
+  writeSessionRecord();
+  let attempt = 0;
+
   try {
     createDisposableWorktree(repoRoot, scope.head, worktree);
     writeReviewPacket(repoRoot, scope, packetDir);
-    let attempt = 0;
     const runRound = async () => {
       attempt += 1;
-      writeJsonAtomic(sessionPath(session, SESSION_FILES.session), {
-        id,
-        rival: RIVAL,
-        scope,
-        question: Boolean(question),
-        worktree,
-        packetDir,
-        round: plan.round,
-        resumed: Boolean(plan.resume),
-        repoRoot,
-        branch,
-        createdAt: new Date().toISOString(),
-      });
+      writeSessionRecord();
       if (plan.resume)
         process.stderr.write(`resuming reviewer ${plan.resume} for round ${plan.round}\n`);
       const prompt = buildRivalPrompt({

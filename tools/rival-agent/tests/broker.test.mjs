@@ -201,13 +201,18 @@ describe('broker CLI', () => {
     );
   });
 
-  it('prefers a pending request over a terminal file so nothing is left unanswered', async () => {
-    appendRequest(session, { command: 'a', why: 'x' });
+  // The rival's second real round probed this: a stale request behind a terminal file must not be
+  // handed to the handler, who would run it for a reviewer that has already exited.
+  it('never hands out a request once the rival is gone', async () => {
+    appendRequest(session, { command: 'touch /tmp/should-not-run', why: 'stale' });
+    writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), { reason: 'rival exited' });
+    expect(await nextRequest({ session, timeoutSeconds: 0, brokerPath: BROKER_CLI })).toMatchObject(
+      { state: 'failed' }
+    );
+    rmSync(sessionPath(session, SESSION_FILES.failed));
     writeJsonAtomic(sessionPath(session, SESSION_FILES.done), {});
     expect(await nextRequest({ session, timeoutSeconds: 0, brokerPath: BROKER_CLI })).toMatchObject(
-      {
-        state: 'request',
-      }
+      { state: 'done' }
     );
   });
 

@@ -81,10 +81,20 @@ export function resolveScope(repoRoot, scope) {
 
 // A linked worktree resolves nothing upward, so dependencies install into it (frozen, from the
 // warm store: about three seconds) or Vitest and Prettier fail there in confusing ways.
+// `--ignore-scripts` because the reviewed commit owns package.json: a PR-controlled postinstall
+// would otherwise run on the handler's machine at launch, before anyone has read the diff. Native
+// modules still arrive built from the store's side-effects cache (measured: sharp, esbuild).
+export const WORKTREE_INSTALL_ARGS = Object.freeze([
+  'install',
+  '--frozen-lockfile',
+  '--prefer-offline',
+  '--ignore-scripts',
+]);
+
 export function createDisposableWorktree(repoRoot, head, directory, { install = true } = {}) {
   git(repoRoot, ['worktree', 'add', '--detach', directory, head]);
   if (!install) return directory;
-  const result = spawnSync('pnpm', ['install', '--frozen-lockfile', '--prefer-offline'], {
+  const result = spawnSync('pnpm', [...WORKTREE_INSTALL_ARGS], {
     cwd: directory,
     encoding: 'utf8',
   });
@@ -112,10 +122,17 @@ export const PACKET_FILES = Object.freeze({
   files: 'files.txt',
   scope: 'scope.json',
 });
+// GitHub renders the diff with three context lines, and every rendered line accepts a review
+// comment; a line outside a rendered hunk rejects the whole review. Pinned on the command line so
+// a developer's diff.context setting cannot widen the packet past what the poster can anchor to.
+export const DIFF_CONTEXT_LINES = 3;
 
 export function writeReviewPacket(repoRoot, { base, head, description }, directory) {
   const range = `${base}...${head}`;
-  writeFileSync(join(directory, PACKET_FILES.diff), `${git(repoRoot, ['diff', range])}\n`);
+  writeFileSync(
+    join(directory, PACKET_FILES.diff),
+    `${git(repoRoot, ['diff', `--unified=${DIFF_CONTEXT_LINES}`, range])}\n`
+  );
   writeFileSync(
     join(directory, PACKET_FILES.commits),
     `${git(repoRoot, ['log', '--oneline', '--no-decorate', `${base}..${head}`])}\n`

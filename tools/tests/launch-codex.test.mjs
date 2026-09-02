@@ -197,12 +197,14 @@ describe('Codex rival command construction', () => {
     ]);
   });
 
-  it('reads the prompt from stdin and resumes the recorded thread the same way', () => {
+  it('reads the prompt from stdin and resumes the recorded thread across worktrees', () => {
     expect(buildCodexArgs(options).slice(0, 1)).toEqual(['exec']);
     expect(buildCodexArgs(options).at(-1)).toBe('-');
     const resumed = buildCodexArgs({ ...options, resumeThreadId: 'abc' });
-    expect(resumed.slice(0, 2)).toEqual(['exec', 'resume']);
+    expect(resumed.slice(0, 3)).toEqual(['exec', 'resume', '--all']);
     expect(resumed.slice(-2)).toEqual(['abc', '-']);
+    // `exec resume` rejects --cd with a usage error, which round two of the first real review hit.
+    expect(resumed).not.toContain('-C');
   });
 
   // Retrying a run the user stopped would spend plan usage they just tried to stop. Only Codex
