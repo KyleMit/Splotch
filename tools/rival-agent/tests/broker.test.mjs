@@ -116,7 +116,7 @@ describe('broker CLI', () => {
   it('parses each subcommand and rejects a reply that is neither an exit nor a decline', () => {
     expect(parseBrokerArgs(['next', '--session', session])).toMatchObject({
       command: 'next',
-      timeoutSeconds: 300,
+      timeoutSeconds: 100,
     });
     expect(parseBrokerArgs(['next', '--session', session, '--timeout-seconds', '0'])).toMatchObject(
       { timeoutSeconds: 0 }

@@ -45,8 +45,9 @@ npm run --silent rival:launch -- --commit <sha>
 ```
 
 For a free-form question rather than a review, write it to a file and pass `--question-file`; to
-steer a review, pass `--prompt-file` with extra instructions. Both must be absolute paths under
-`/private/tmp`; never interpolate prompt text into the command line.
+steer a review, pass `--prompt-file` with extra instructions. Both must be absolute paths to regular
+files (`gen:rival-acceptance` writes its question under the system temp root, which is
+`/var/folders/…` on macOS); never interpolate prompt text into the command line.
 
 The launcher resolves the scope to base and head commit ids (the uncommitted scope becomes a
 snapshot commit, so nothing you do to the working tree afterwards changes what is reviewed), creates
@@ -59,10 +60,11 @@ handle for everything below.
 ## Serve the broker loop
 
 The rival asks for commands one at a time. Each call blocks until a request arrives, the rival
-finishes, or the timeout passes:
+finishes, or the timeout passes. The default sits under the Bash tool's two-minute default limit; a
+longer wait needs a longer tool `timeout` as well, or the call dies with no JSON:
 
 ```bash
-node tools/rival-agent/broker.mjs next --session <dir> --timeout-seconds 300
+node tools/rival-agent/broker.mjs next --session <dir> --timeout-seconds 100
 ```
 
 It prints one JSON document with a `state`:

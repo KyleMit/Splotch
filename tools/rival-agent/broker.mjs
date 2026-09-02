@@ -17,9 +17,9 @@ import {
   writeReply,
 } from './spool.mjs';
 
-// Under Claude's ten-minute Bash cap and Codex's exec_command yield; the handler loops on
-// `waiting` rather than holding one call open.
-export const DEFAULT_NEXT_TIMEOUT_SECONDS = 300;
+// Under Claude's two-minute default Bash timeout and Codex's exec_command yield; the handler loops
+// on `waiting` rather than holding one call open.
+export const DEFAULT_NEXT_TIMEOUT_SECONDS = 100;
 const USAGE = `usage:
   broker.mjs next   --session <dir> [--timeout-seconds <n>]
   broker.mjs reply  --session <dir> --request <seq> (--exit <code> --output-file <path> | --declined <reason>)
