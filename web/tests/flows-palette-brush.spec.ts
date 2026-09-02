@@ -93,6 +93,14 @@ test('pointer exploration still snaps a hexagon gap and commits the highlighted 
   await retryOpen(dialog, () =>
     page.getByRole('button', { name: 'Custom Color' }).click({ timeout: 1000 })
   );
+  // The picker snapshots every hexagon's center and its snap radius on the
+  // pointerdown that starts a drag, so a drag begun before the fly-in lands
+  // would keep a scaled-down snapshot for the whole gesture. Whether that is
+  // what left the gap probe below un-snapped in the one red run ADR-0078 §4a
+  // records is unproven: a down at the first keyframe is swallowed by the
+  // launch zone before the picker sees it, and the failure never reproduced.
+  // Landing first closes the window either way, as the tap test below does.
+  await settleFlyIn(dialog);
   const start = dialog.locator('.grid.landscape .row.r5 .hexagon.c3');
   const target = dialog.locator('.grid.landscape .row.r5 .hexagon.c1');
 

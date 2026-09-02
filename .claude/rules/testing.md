@@ -94,20 +94,22 @@ paths:
   with a window sized for a starved worker (`expect(await count()).toBe(n)` races the repaint — use
   `await expect.poll(() => count())`); wait on the *engine's* state rather than the button that
   requests it (`pickBrush` polls `window.__committedBrushMode`, ADR-0080); let a fly-in dialog
-  **land** before reading a coordinate off it and dispatching synthetic events there — a real
-  `.click()` waits for the element to stop moving, an `evaluate` does not, and a dialog still flying
-  in sits inside the launch dead zone that swallows the gesture; await its `Animation.finished`
-  first, as `openSettingsModal` does (ADR-0078 §4a); budget a **frame-paced** condition in frames
-  rather than milliseconds — the wide Settings pane mounts a section per frame, so
-  `settleSettingsPane` samples `aria-busy` from inside the page once per `requestAnimationFrame` and
-  spends `SETTINGS_FILL_FRAME_BUDGET` frames, where the default 5s assertion timeout failed a fill
-  that was only unfinished; reach for `settleTapGuard` when clicking where a tap just landed, since
-  `launchGuard` arms a dead zone for any tap that repaints something under the finger, modal or not
-  (a book cover swapping in that book's page grid, say); drive strokes through `draw`/`dragStroke`,
-  which pace their samples inside the engine's dropped-pointer threshold — a hand-rolled run of
-  far-apart `mouse.move`s gets read as a lifted finger and paints a stub of the stroke; make a
-  mocked endpoint control resolve only after its awaited `route.fulfill()` completes; pace
-  compositor-dependent synthetic gesture phases with rendered frames, not a fixed sleep; do not
-  invent generic `waitForStable`, route-controller, or `nextFrame` abstractions without multiple
-  real callers; and verify a fix with `--repeat-each=10`, never in isolation. Full checklist with
-  examples: the `testing` skill, "Writing flake-resistant specs."
+  **land** before any pointer action on its content — an `evaluate` never waits for the element to
+  stop moving, and a real `.click()` only usually does (a fly-in still *pending* its start time
+  holds its first keyframe across frames, which passes the stability check), while a dialog still
+  flying in sits inside the launch dead zone that swallows the gesture; await its
+  `Animation.finished` first via `settleFlyIn`, as `openSettingsModal` and `landedReportConfirm` do
+  (ADR-0078 §4a); budget a **frame-paced** condition in frames rather than milliseconds — the wide
+  Settings pane mounts a section per frame, so `settleSettingsPane` samples `aria-busy` from inside
+  the page once per `requestAnimationFrame` and spends `SETTINGS_FILL_FRAME_BUDGET` frames, where
+  the default 5s assertion timeout failed a fill that was only unfinished; reach for
+  `settleTapGuard` when clicking where a tap just landed, since `launchGuard` arms a dead zone for
+  any tap that repaints something under the finger, modal or not (a book cover swapping in that
+  book's page grid, say); drive strokes through `draw`/`dragStroke`, which pace their samples inside
+  the engine's dropped-pointer threshold — a hand-rolled run of far-apart `mouse.move`s gets read as
+  a lifted finger and paints a stub of the stroke; make a mocked endpoint control resolve only after
+  its awaited `route.fulfill()` completes; pace compositor-dependent synthetic gesture phases with
+  rendered frames, not a fixed sleep; do not invent generic `waitForStable`, route-controller, or
+  `nextFrame` abstractions without multiple real callers; and verify a fix with `--repeat-each=10`,
+  never in isolation. Full checklist with examples: the `testing` skill, "Writing flake-resistant
+  specs."

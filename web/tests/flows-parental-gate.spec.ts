@@ -17,7 +17,7 @@ import {
   solveParentalGate,
 } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { openAiResult } from './ai-harness';
+import { landedReportConfirm, openAiResult } from './ai-harness';
 
 // The Grown-Ups Only gate (ParentalGate.svelte + state/parentalGate.svelte.ts)
 // sits at operation boundaries, never in front of Settings itself (ADR-0094).
@@ -600,7 +600,7 @@ test('reporting an AI picture waits for its own parental gate before confirming'
   expect(reportRequests).toBe(0);
 
   await solveParentalGate(page);
-  await expect(confirm).toBeVisible();
+  await landedReportConfirm(page);
   expect(reportRequests).toBe(0);
 
   await confirm.getByRole('button', { name: 'Send report' }).click();
@@ -638,7 +638,7 @@ test('reporting a safety refusal uses the AI-report parental gate before confirm
   expect(reportRequests).toBe(0);
 
   await solveParentalGate(page);
-  await expect(confirm).toBeVisible();
+  await landedReportConfirm(page);
   expect(reportRequests).toBe(0);
 
   await confirm.getByRole('button', { name: 'Send report' }).click();

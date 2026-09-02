@@ -118,6 +118,9 @@ for (const brush of ['pen', 'crayon'] as const) {
 }
 
 test('tiled history folds its old prefix and retains twenty undo steps', async ({ page }) => {
+  // The same irreducible max-depth traversal as the two stress tests below,
+  // on the budget they declare.
+  test.slow();
   await gotoApp(page);
   const foldedPrefix = 3;
   const strokeCount = MAX_UNDO_DEPTH + foldedPrefix;
