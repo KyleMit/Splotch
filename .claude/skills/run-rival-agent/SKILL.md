@@ -30,7 +30,10 @@ npm run --silent run-codex:health
 
 It verifies the CLI is installed and that `~/.codex/auth.json` holds a ChatGPT plan login rather
 than an API key. If it fails, stop and ask the user to run `codex login` — never work around it by
-calling `codex` directly, and never set `OPENAI_API_KEY` to get past it. See
+calling `codex` directly, and never set `OPENAI_API_KEY` to get past it. In a Claude Code on the web
+session nobody can run `codex login`: the login is seeded from the environment's `CODEX_AUTH_JSON`
+by a SessionStart hook, so relay that hook's status line and ask the user to re-seed instead
+(`docs/CLOUD/Claude.md`, "Codex reviews on the ChatGPT plan"). See
 [permissions.md](references/permissions.md) for what the guard actually checks.
 
 ## Choose one profile

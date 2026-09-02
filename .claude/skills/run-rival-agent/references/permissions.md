@@ -1,8 +1,12 @@
 # Trust boundary
 
-No installation step exists. Claude Code runs its Bash tool on the host, so the wrappers reach the
-Codex CLI and its stored login directly — the reason this skill's Codex-side package needs an
-installer is Codex's sandbox, which Claude Code does not impose here.
+No installation step exists on a developer machine. Claude Code runs its Bash tool on the host, so
+the wrappers reach the Codex CLI and its stored login directly — the reason this skill's Codex-side
+package needs an installer is Codex's sandbox, which Claude Code does not impose here. A Claude Code
+on the web session has no CLI and no login of its own: the environment's setup script installs the
+CLI and `tools/seed-codex-auth.mjs` seeds `auth.json` from the `CODEX_AUTH_JSON` environment
+variable at SessionStart, through the same billing guard below (`docs/CLOUD/Claude.md`, "Codex
+reviews on the ChatGPT plan").
 
 ## Billing
 

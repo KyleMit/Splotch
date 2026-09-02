@@ -269,6 +269,57 @@ cdn.playwright.dev
 playwright.download.prss.microsoft.com
 ```
 
+## Codex reviews on the ChatGPT plan
+
+The `run-rival-agent` skill launches the Codex CLI for an independent review, and its wrapper
+refuses anything but a ChatGPT-plan login (the billing guard described in
+`.claude/skills/run-rival-agent/references/permissions.md`). A cloud session has neither the CLI nor
+a login by default, and the container disk does not survive reclamation, so a `codex login` would be
+needed on every fresh VM. Instead:
+
+* **The CLI is installed by the setup script** (`.claude/cloud/setup.sh`, pinned by its
+  `CODEX_VERSION`) and lives in the environment snapshot. Its binary ships as an npm optional
+  dependency, so the install needs only `registry.npmjs.org`.
+* **The login is seeded per session** by `tools/seed-codex-auth.mjs`, a SessionStart hook registered
+  in `.claude/settings.json`. When no `$CODEX_HOME/auth.json` exists yet it writes one from the
+  `CODEX_AUTH_JSON` environment variable, after checking that it is a ChatGPT login with a refresh
+  token, and prints one status line into the session's context. A file already on disk is never
+  overwritten, because Codex refreshes it in place. The snapshot never holds the credential.
+
+### Seeding
+
+On your own machine, create a **dedicated** login and copy it as base64:
+
+```bash
+CODEX_HOME=~/.codex-cloud codex login
+base64 < ~/.codex-cloud/auth.json | tr -d '\n' | pbcopy
+```
+
+Set `CODEX_AUTH_JSON` to the clipboard contents in the environment dialog; it takes effect on the
+next session. If the environment's network access is Trusted or Custom rather than Full, also allow
+`chatgpt.com` and `auth.openai.com` — `.claude/cloud/environment.example` carries both entries.
+
+Dedicated means a separate `CODEX_HOME`, never a copy of the working `~/.codex/auth.json`. OAuth
+refresh rotates the refresh token and retires the previous one **within the same chain**: two
+machines holding the same file log each other out at the first refresh, while two independent logins
+on one account coexist indefinitely. Plan rate limits are shared across all of them.
+
+### Shelf life
+
+Codex refreshes a bundle whose `last_refresh` is older than about eight days (or on a 401), and the
+refresh rotates the token on the cloud VM's disk, which nothing writes back into the dialog. The
+first session that refreshes therefore retires the seed for every later VM: expect to re-seed
+roughly weekly, and the hook's status line warns from day six. Two VMs seeded from the same value
+collide only if both refresh, which is that same moment. Extending past the ceiling means giving
+sessions a store they can restore the file from and write it back to — the pattern OpenAI documents
+for ephemeral CI runners at <https://learn.chatgpt.com/docs/auth/ci-cd-auth>; the dialog has no API
+to receive a refreshed file.
+
+If `npm run --silent run-codex:health` fails in a cloud session, relay the hook's status line and
+re-seed. Do not run `codex login` from the sandbox (device-code auth does work there, but it is a
+login per VM), and never fall back to an API key: the guard rejects it, and it bills metered
+credits.
+
 ## Previewing the dev server on a phone
 
 Because there's no inbound forwarding, viewing the running app on a phone needs an **outbound**

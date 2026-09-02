@@ -97,7 +97,43 @@ records — it is the documented surface, it holds the judgements that matter ac
 does not grow toward the context limit the way the child would. Finding the child would mean parsing
 Codex's private session store.
 
+## Cloud sessions: a seeded plan login
+
+A Claude Code on the web session starts with no Codex CLI and no login, on a disk that is discarded
+when the VM is reclaimed. Three ways of getting a login there were weighed on 2026-09-02:
+
+* **Device-code auth works** — `codex login --device-auth` reached `auth.openai.com` through the
+  TLS-intercepting egress proxy (Codex trusts the proxy CA via the preset `SSL_CERT_FILE`) and
+  printed a real code. Rejected as the primary path only because it is a login per fresh VM: the
+  user has to enter a code every time the container is reclaimed.
+* **An API key is permanent and rejected.** `OPENAI_API_KEY` is already in the environment for the
+  image endpoint, and Codex accepts it non-interactively, but it bills metered credits, and the
+  billing guard exists to refuse exactly that. Relaxing the guard for cloud would reverse the
+  skill's premise for the one place where reviews would run unattended.
+* **A seeded `auth.json`** is what shipped: `tools/seed-codex-auth.mjs` writes it from the
+  `CODEX_AUTH_JSON` environment variable at SessionStart, only when no file exists, after running
+  the seed through `assertSubscriptionAuth` plus a refresh-token check. The setup script installs
+  the CLI but never touches the login, because the environment snapshot must not hold a credential.
+  Base64 is the documented paste form because the dialog takes `.env` lines and a raw JSON value's
+  quotes are at the mercy of its parser.
+
+The seed's shelf life is set by refresh-token rotation, not expiry. Codex refreshes a bundle whose
+`last_refresh` is older than about eight days and rotates the refresh token as it does; the rotated
+file lands on the VM's disk and nothing writes it back into the dialog, so the first session to
+refresh retires the seed for every later VM. The hook warns from day six. The seed must come from a
+dedicated login (`CODEX_HOME=~/.codex-cloud codex login`): rotation retires the previous token in
+the same chain, so a copy of the user's working `auth.json` would log the laptop out at the first
+cloud refresh, while independent logins on one account coexist. The path past the ceiling is the
+restore-run-write-back pattern OpenAI documents for ephemeral CI runners, which needs a store the
+sandbox can reach; it was left as a follow-up rather than built into this package.
+
 ## Unvalidated
+
+The eight-day refresh interval and the rotation semantics come from OpenAI's documentation and the
+Codex issue tracker, not from a measured cloud run; the first re-seed will show whether the warning
+leads the rotation by enough. Whether a 401 ever triggers a refresh earlier than that — an idle seed
+whose access token expired before its eighth day — is the case that would shorten the shelf life
+below what the note above claims.
 
 Sessions persist under Codex's own store; the skill exposes no `--persist` or `--end-session`
 controls the way the Codex-side package does, on the grounds that a reviewer thread is useful to
