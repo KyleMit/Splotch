@@ -56,6 +56,7 @@ describe('shared launch arguments', () => {
     expect(rivalEnvironment(env, { session: '/s', broker: false })).toEqual({
       PATH: '/usr/bin',
       TMPDIR: '/s/tmp',
+      DPRINT_CACHE_DIR: '/s/tmp/dprint-cache',
     });
   });
 

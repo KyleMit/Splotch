@@ -213,4 +213,88 @@ Two things it also establishes, neither flattering:
 
 ### Round B — Codex rival in the workspace-write sandbox, no broker
 
+`npm run --silent rival:launch -- --fresh --sandbox workspace-write --base main`, nothing for the
+handler to serve. Seven minutes twenty (15:32:24 → 15:39:44, overlapping round A's tail and the
+hosted run), twenty-four shell commands of its own (two failed), zero broker requests, four blocking
+findings, one unverified. Usage: 1,814,091 input tokens (1,679,744 cached), 19,864 output (14,459
+reasoning).
+
+It ran the five focused test files (141 tests), `npm run check`, `npm run lint`, and `format:check`
+itself, wrote its own repro scripts under the worktree, and found:
+
+1. The token-inheritance defect in the workflow — the same as round A's first finding, with the
+   added observation that it contradicts ADR-0081's rule that the privileged reviewer never executes
+   checkout code.
+2. The stale-head defect — the same as round A's third.
+3. The spool defect from a different angle: not forging requests into a sibling session but
+   corrupting its **own** session's control files, which the launcher still trusted. Its repro:
+   malformed JSON in `requests/1.json` makes `spoolActivityAt` throw inside the watchdog. The
+   private `TMPDIR` closes the write path; the launcher now also stops probing the spool for
+   liveness at all when no broker is attached, so nothing in the session directory is read while a
+   sandboxed rival runs.
+4. **The channel nobody had written down.** With the network and web search off, the rival's own
+   findings document is still an outbound channel: it is streamed to the handler and, for a PR
+   scope, posted verbatim, and finding bodies accept arbitrary text. A prompt injected through the
+   diff can copy `~/.codex/auth.json` into a plausible-looking finding. This is true of the
+   read-only pairing path today as well — it reads the same disk and posts the same way — and no
+   Codex sandbox setting closes it (probe 2). Not fixed here; see the recommendation.
+
+Its one unverified item was `format:check`: dprint exited 12 trying to compile its plugin cache
+under `~/Library/Caches`, outside the sandbox. The launcher now sets `DPRINT_CACHE_DIR` inside the
+rival's private `TMPDIR`; measured with `codex sandbox`, `format:check` then passes.
+
+### Hosted run 2 — the two-job workflow
+
 *Filled in below.*
+
+## Comparison
+
+Same head, same Codex model both local rounds, one hosted Claude run.
+
+| Reviewer                  | Wall clock | Handler turns | Input tokens (cached) | Output | Blocking findings, real | Ran the gates itself |
+| ------------------------- | ---------- | ------------- | --------------------- | ------ | ----------------------- | -------------------- |
+| A: Codex, broker          | 5m47s      | 1             | 1.40M (1.27M)         | 14.1k  | 3                       | via the handler      |
+| B: Codex, workspace-write | 7m20s      | 0             | 1.81M (1.68M)         | 19.9k  | 4 (A's three plus one)  | yes, 24 commands     |
+| Hosted Claude, single job | 9m30s      | 0             | not reported          | —      | 0                       | yes, in the action   |
+
+Round B cost about thirty percent more cached input than round A and produced a strictly better
+review with no handler involvement. The hosted run cost nothing local and found nothing, and its
+runner tree was not the PR's for the paths that mattered.
+
+## Recommendation
+
+**Layer 1, the broker and handler loop: retire it for the Codex rival, in favour of the
+workspace-write path, once two things land.** The evidence is one pair of rounds on one diff, but it
+points one way: the sandboxed rival verified more, found more, and needed no handler turn, and the
+sandbox's boundary held everywhere it was probed except the two places this PR closed (the shared
+temp root, the dprint cache). The two things:
+
+* **Say the trust change out loud.** On the pairing path the handler judges every command; on the
+  sandboxed path the handler's only decision is whether to launch, and Codex's Seatbelt profile is
+  the whole policy. That is a different contract, and the skill text should say so rather than
+  describing the sandbox as a stricter version of the same thing. The `--sandbox` flag's default
+  should flip only when the skill and the notes have been rewritten around the new contract.
+* **Close, or knowingly accept, the findings-as-channel exposure (round B, finding 4).** It is not
+  specific to the sandboxed path, it is the pairing's exposure too, and no Codex setting closes it.
+  The options are a credential-free account or container for the rival (the real fix), or a
+  handler-side check that refuses to post a findings document containing the bytes of any known
+  local credential (cheap, partial, and easy to add to `post-review.mjs`). Either is a decision for
+  the owner, not the pilot.
+
+Keep the broker for the Claude rival until its sandbox is pinned: Claude's default sandbox writes
+into the canonical `.git` from a linked worktree (probe 3) and needs `denyWrite` on that path and
+`denyRead` on the credential stores; the Codex-side launcher does not carry those pins yet.
+
+**Layer 2, the Codex-side trusted install: keep it for now; the hosted substitute is not ready to
+replace it.** The hosted Claude review works end to end — token, install, tests, comment — but on
+this diff it found none of the three defects the local rival found, and claude-code-action's
+restoration of `.claude/` from main means it cannot even see the PR's version of the direct-provider
+packages that live there, which is precisely what `implement-issue-stack` asks it to review. The
+two-job workflow is worth keeping as a cheap, no-install second opinion on ordinary PRs; it is not a
+substitute for the alias contract until a run of it catches something a local round catches. The
+Codex GitHub integration, the mirror image, is installed but has posted nothing since 2026-08-18;
+whether to turn automatic reviews back on is an account setting for the owner.
+
+**Not done here, on purpose:** no deletion, no default flip, no ADR. The decision this evidence
+supports — retire the Codex-rival broker behind a stated trust change, keep the install — is worth
+an ADR amendment to ADR-0058's trust-boundary note once the owner has made it.

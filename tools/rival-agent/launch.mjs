@@ -142,7 +142,11 @@ export function logPathForAttempt(session, attempt) {
 // a Linux host whose os.tmpdir() is `/tmp`; there the spool root should be moved before this path
 // is relied on.
 export function rivalEnvironment(env, { session, broker }) {
-  return broker ? env : { ...env, TMPDIR: sessionPath(session, SESSION_FILES.tmp) };
+  if (broker) return env;
+  const tmp = sessionPath(session, SESSION_FILES.tmp);
+  // dprint compiles its plugin cache under ~/Library/Caches, which the sandbox refuses (the first
+  // sandboxed round's `format:check` exited 12 there); its cache directory is pointed inside too.
+  return { ...env, TMPDIR: tmp, DPRINT_CACHE_DIR: join(tmp, 'dprint-cache') };
 }
 
 // Only the rival refusing the run is worth a second attempt; every other failure is either the
@@ -305,7 +309,9 @@ export async function launch(
         logPath,
         onProgress,
         reducer: vendor.reducer,
-        activityProbe: () => spoolActivityAt(session),
+        // Spool traffic is liveness only while a broker can produce it; with none attached the
+        // watchdog reads nothing from the session directory.
+        activityProbe: broker ? () => spoolActivityAt(session) : undefined,
       });
     };
 

@@ -73,6 +73,14 @@ stays. Two more are added and asserted by the launcher test:
 plus one outbound channel is an exfiltration path for a prompt injected through the diff. Nothing on
 this path is judged per command by the handler; the decision it keeps is whether to launch.
 
+One exposure is shared by both paths and closed by neither: the findings document itself is an
+outbound channel. It is streamed to the handler and, for a PR scope, posted verbatim, and finding
+bodies accept any text, so a prompt injected through the diff can copy a readable credential into a
+finding. The sandboxed round of the 2026-09-02 pilot named it; no Codex sandbox setting restricts
+reads. Until it is closed — a credential-free account or container for the rival, or a poster that
+refuses a document carrying the bytes of a known local credential — read a rival's findings before
+trusting the post, on either path.
+
 ## What the handler does
 
 Every brokered command runs through this session's Bash tool with the rival's command text inline,

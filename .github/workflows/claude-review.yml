@@ -77,12 +77,13 @@ jobs:
 
       # Every gate runs even when an earlier one fails, and this job stays
       # green either way: a red gate is the reviewer's evidence, not this
-      # job's verdict. Each log ends with the gate's exit code.
+      # job's verdict. Each log ends with the gate's exit code. The colon in a
+      # script name becomes a dash: upload-artifact rejects it in a file name.
       - name: Run every gate and record its output
         run: |
           mkdir -p verify
           for script in check lint lint:dead format:check test:tools test:unit; do
-            { npm run --silent "$script"; echo "exit=$?"; } > "verify/$script.log" 2>&1 || true
+            { npm run --silent "$script"; echo "exit=$?"; } > "verify/${script//:/-}.log" 2>&1 || true
           done
           grep -H '^exit=' verify/*.log
 
@@ -155,8 +156,8 @@ jobs:
 
             A separate job already ran the repository's gates against this PR
             and left one log per gate under `verify/`: `check.log` (svelte-check),
-            `lint.log`, `lint:dead.log`, `format:check.log`, `test:tools.log`,
-            and `test:unit.log`. Each ends with `exit=<code>`. Read them first.
+            `lint.log`, `lint-dead.log`, `format-check.log`, `test-tools.log`,
+            and `test-unit.log`. Each ends with `exit=<code>`. Read them first.
             A failing gate is evidence for a finding; report what the log shows,
             with the failing test or file named. The Playwright suite and the
             native builds were not run.

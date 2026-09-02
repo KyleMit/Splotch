@@ -98,6 +98,14 @@ parent id reaches the stream; the parent carries the verdicts and is what the le
 
 ## Unvalidated
 
+* Whether the broker earns its place against a sandbox. The 2026-09-02 pilot
+  (`docs/scratchpad/rival-agent-simplification-2026-09-02.md`) added `--sandbox workspace-write`,
+  under which the Codex rival runs its own commands in a network-off Seatbelt profile rooted at the
+  worktree and no broker is attached. On one diff it found strictly more than the brokered round
+  with no handler turn, and it named an exposure both paths share: the findings document is an
+  outbound channel from a rival that can read the whole disk. The pilot's recommendation is to
+  retire the broker for the Codex rival behind a stated change of trust contract, once that channel
+  is closed or knowingly accepted. Nothing was retired.
 * The posting identity. Both sides post as the user's `gh` account with a hidden marker naming the
   rival and the range. Nobody has yet had to tell a rival review from a human one at a glance on the
   PR page; the marker is machine-readable, not visible.
