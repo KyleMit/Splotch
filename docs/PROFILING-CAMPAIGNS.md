@@ -448,6 +448,16 @@ Multitasking & Gestures → Full Screen Apps** — and it is reachable over the 
 `…multitaskingAndGestures.fullScreenApps` accessibility id), which is how the 2026-09-02 session
 restored it; record the mode you found so the owner can put it back.
 
+## An iPad with a software update scheduled will reboot into a locked screen
+
+`Settings → General → Software Update` can carry a scheduled overnight install ("Software Update
+Tonight" on the Settings root); the preflight does not look, and a rig that passes every check at
+23:00 reboots into the passcode screen a few hours later, failing every remaining cell as a
+discovery problem. Read the Settings root over the automation session when a campaign will run
+unattended — the same `com.apple.Preferences` activation used for the Stage Manager check lists it
+by name — and hand the decision to the owner; the 2026-09-02 rig showed it and was left alone on
+purpose, with the risk recorded in the campaign ledger.
+
 ## The device going to sleep
 
 Android sleeps mid-campaign and locks. `npm run perf:preflight -- --wake-android` wakes it and sets

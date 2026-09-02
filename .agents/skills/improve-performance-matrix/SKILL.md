@@ -126,6 +126,14 @@ device and answers in seconds). The explicit `--base` matters: the default is `H
 campaign branch counts the branch's own commits as drift and reports STALE wrongly. Cells the check
 marks stale go in the recapture bucket, not the product bucket.
 
+The same check applies to numbers a campaign **prompt** calls established. A prompt is written from
+the matrix and the sessions before it, so its "measured" figures carry the commit they were measured
+at, not the trunk's; on 2026-09-02 a prompt's central cause (an ~86 ms `clear coloring page` raster
+on every physical iPad cell) had been fixed on `main` the day before by a commit the prompt's author
+never saw, and a full layer was built and A/B-tested against it before a concurrent control on
+`main` showed the cell already green. Run the staleness check and one concurrent control on the
+trunk before building on a prompt's figures, however authoritative their framing.
+
 As soon as a current calibrated physical failure exists, turn the remaining genuine failures into a
 compact causal-cluster inventory with a representative cell, affected blast radius, evidence
 confidence, and next discriminating product experiment. Select one and start its product A/B.
