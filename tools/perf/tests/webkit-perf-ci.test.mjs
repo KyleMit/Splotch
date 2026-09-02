@@ -26,6 +26,16 @@ function job(id) {
   return body;
 }
 
+// One step's block, so a per-step key (`continue-on-error`) can be asserted
+// against the step that must carry it rather than against anything in the job.
+function step(jobBody, name) {
+  const body = jobBody.match(
+    new RegExp(`\n      - name: ${name}\n([\\s\\S]*?)(?=\n      - name: |$)`)
+  )?.[1];
+  if (!body) throw new Error(`Workflow step not found: ${name}`);
+  return body;
+}
+
 function timingScenario({ key = 'crayon-scribbles', commitP95Ms, drawTotalMs, drawOps }) {
   return {
     key,
@@ -156,6 +166,52 @@ describe('WebKit performance CI', () => {
     // The retry runs the IDENTICAL gate — a different command would measure a
     // different quantity and acquit nothing.
     expect(retryJob).toContain('npm run perf:web:undo:webkit:fast');
+  });
+
+  // A step `if` naming no status function carries an implicit success(), so a
+  // comparator that exits non-zero would skip every step below it — including
+  // the filing — and a real breach on a red main would go unreported. The
+  // reporter can exit non-zero by design: it rethrows a TypeError/ReferenceError
+  // rather than let a broken reporter read as "no failures" (issue 1296).
+  // Reproduced in the PR 1573 review from a malformed artifact.
+  it('files when the comparison itself fails, rather than skipping the filing', () => {
+    const retryJob = job('webkit-commit-gate-fast-retry');
+    const compare = step(retryJob, "Compare this runner's failure with the first runner's");
+    const fileFailure = step(retryJob, 'File the failure');
+    const nonReproduction = step(retryJob, 'Record the non-reproduction');
+    const reFail = step(retryJob, 'Fail on a reproduced breach');
+
+    // Without this the comparator's failure fails the job silently instead of
+    // becoming an outcome the steps below can read.
+    expect(compare).toContain('continue-on-error: true');
+
+    // Fail closed: a comparison that could not run files, exactly as a
+    // reproduced breach does.
+    for (const filing of [fileFailure, reFail]) {
+      expect(filing).toContain("steps.compare.outcome == 'failure'");
+      expect(filing).toContain("steps.compare.outputs.reproduced != ''");
+    }
+
+    // And the acquittal requires a comparison that actually succeeded — an
+    // empty `reproduced` is also what a crashed step reports.
+    expect(nonReproduction).toContain("steps.compare.outcome == 'success'");
+    expect(nonReproduction).toContain("steps.compare.outputs.reproduced == ''");
+
+    // The filed issue says which case it is, so a fail-closed filing is not
+    // read as a confirmed regression.
+    expect(fileFailure).toContain('COMPARE_OUTCOME: ${{ steps.compare.outcome }}');
+    expect(fileFailure).toContain('filed fail-closed');
+  });
+
+  // The issue body is the first thing an investigator reads. It described a
+  // normalized gate value and cited ADR-0093 for why it differs from the raw
+  // P95 — but ADR-0140 retired normalization, so that sent the reader down a
+  // path that no longer exists (the PR 1573 review).
+  it('points a filed issue at the raw P95 rather than a retired normalized value', () => {
+    const fileFailure = step(job('webkit-commit-gate-fast-retry'), 'File the failure');
+    expect(fileFailure).toContain('Nothing is normalized');
+    expect(fileFailure).toContain('ADR-0140');
+    expect(fileFailure).not.toContain('normalized gate value');
   });
 
   // The filing step is a check-then-create, so "one open issue" only holds while

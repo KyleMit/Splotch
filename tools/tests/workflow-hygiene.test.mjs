@@ -435,9 +435,13 @@ describe('workflow hygiene', () => {
   // apostrophe in the prose ends the scan early.
   const filingSteps = [
     {
-      body: ["renderer's", 'ADR-0093'],
+      // The apostrophe excerpt is the regression guard, not decoration: it is
+      // the character that broke this step when the body came from a variable.
+      body: ["scenario's", 'ADR-0140', 'multi-finger:breach'],
       env: {
+        COMPARE_OUTCOME: 'success',
         GITHUB_SHA: 'e4cb7451e0aa0dcd5e0f2c9e0b3b5c8ea1f2d3c4',
+        REPRODUCED: 'multi-finger:breach',
         RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/1',
       },
       label: 'area:ci-testing',
@@ -504,6 +508,32 @@ describe('workflow hygiene', () => {
       expect(ghCalls).not.toContain('issue create');
       for (const excerpt of step.body) expect(body).toContain(excerpt);
     });
+  });
+
+  // The fail-closed arm of the same step. A comparison that could not run still
+  // files — otherwise a reporter crash on top of a real breach leaves a red main
+  // with nothing filed (the PR 1573 review) — but the issue has to say that is
+  // what happened, or the reader takes an unverified failure for a confirmed
+  // regression.
+  it('says so when it files because the comparison could not be run', () => {
+    const script = stepScript(
+      workflows.find(({ name }) => name === 'test.yml').lines,
+      'File the failure'
+    );
+    const { body, result } = runFilingStep(
+      script,
+      {
+        COMPARE_OUTCOME: 'failure',
+        GITHUB_SHA: 'e4cb7451e0aa0dcd5e0f2c9e0b3b5c8ea1f2d3c4',
+        REPRODUCED: '',
+        RUN_URL: 'https://github.com/KyleMit/Splotch/actions/runs/1',
+      },
+      ''
+    );
+
+    expect(result.status).toBe(0);
+    expect(body).toContain('filed fail-closed');
+    expect(body).not.toContain('in the same way');
   });
 
   // Locks the harness itself. If the stub stops resolving --body-file, every
