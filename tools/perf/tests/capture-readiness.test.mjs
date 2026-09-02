@@ -16,6 +16,7 @@ import {
   resolvePort,
   summarize,
   pageFollowedRotation,
+  safariWindowProblem,
   classifyAppiumLog,
 } from '../lib/capture-readiness.mjs';
 
@@ -469,6 +470,28 @@ describe('whether a page followed the device round', () => {
   it('declines to answer when the dimensions cannot decide it', () => {
     expect(pageFollowedRotation('LANDSCAPE', 1024, 1024)).toBeNull();
     expect(pageFollowedRotation('LANDSCAPE', undefined, 934)).toBeNull();
+  });
+});
+
+describe('safariWindowProblem', () => {
+  // The exact shape observed on 2026-09-02: a 613 pt Safari window on a 1024 pt
+  // screen. Every cheap check passed and every native tap missed the page.
+  it('names Windowed Apps when the Safari window is narrower than the screen', () => {
+    expect(safariWindowProblem('PORTRAIT', 613, 1024, 1366)).toMatch(
+      /613 pt window on a 1024 pt screen.*Full Screen Apps/
+    );
+    expect(safariWindowProblem('LANDSCAPE', 613, 1024, 1366)).toMatch(/1366 pt screen/);
+  });
+
+  it('accepts a full-screen window in either orientation', () => {
+    expect(safariWindowProblem('PORTRAIT', 1024, 1024, 1366)).toBeNull();
+    expect(safariWindowProblem('LANDSCAPE', 1366, 1024, 1366)).toBeNull();
+    expect(safariWindowProblem('LANDSCAPE', 1366, 1366, 1024)).toBeNull();
+  });
+
+  it('declines to answer when a dimension is unreadable', () => {
+    expect(safariWindowProblem('PORTRAIT', undefined, 1024, 1366)).toBeNull();
+    expect(safariWindowProblem('PORTRAIT', 613, NaN, 1366)).toBeNull();
   });
 });
 

@@ -32,6 +32,7 @@ import {
   deviceAccessProblem,
   iosIdentifierProblem,
   pageFollowedRotation,
+  safariWindowProblem,
   PORT_ROLES,
   probeHostReuse,
   resolvePort,
@@ -402,10 +403,24 @@ async function verifyIosRotation(appiumUrl, sessionId) {
     for (const orientation of IOS_ORIENTATIONS) {
       await wdaSession(appiumUrl, sessionId, 'POST', '/orientation', { orientation });
       await new Promise((resolve) => setTimeout(resolve, IOS_ROTATION_SETTLE_MS));
-      const [width, height] = await wdaSession(appiumUrl, sessionId, 'POST', '/execute/sync', {
-        script: 'return [window.innerWidth, window.innerHeight]',
-        args: [],
-      });
+      const [width, height, screenWidth, screenHeight] = await wdaSession(
+        appiumUrl,
+        sessionId,
+        'POST',
+        '/execute/sync',
+        {
+          script: 'return [window.innerWidth, window.innerHeight, screen.width, screen.height]',
+          args: [],
+        }
+      );
+      const windowRect = await wdaSession(appiumUrl, sessionId, 'GET', '/window/rect');
+      const windowProblem = safariWindowProblem(
+        orientation,
+        windowRect?.width,
+        screenWidth,
+        screenHeight
+      );
+      if (windowProblem) return { ok: false, message: windowProblem };
       const followed = pageFollowedRotation(orientation, width, height);
       if (followed !== true) {
         const reported =
