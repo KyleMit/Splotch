@@ -105,7 +105,7 @@
   description: 'Review pass complete — ready for the project ToDo queue'
 - name: 'claude-review'
   color: 'd97757'
-  description: 'Apply to a PR to have the hosted Claude reviewer run the tests and post one review comment (.github/workflows/claude-review.yml)'
+  description: 'Hosted Claude review of this PR: installs deps, runs targeted tests, posts one comment'
 - name: 'user-report'
   color: '0e8a16'
   description: 'Filed from the in-app Report form (Settings → About)'

@@ -136,6 +136,15 @@ export function logPathForAttempt(session, attempt) {
   return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
 }
 
+// A brokered rival inherits the handler's environment; a sandboxed one gets a TMPDIR of its own
+// inside the session, because the sandbox's writable temp root would otherwise be the directory
+// that holds every session's spool. `/tmp` itself stays writable to the sandbox, which matters on
+// a Linux host whose os.tmpdir() is `/tmp`; there the spool root should be moved before this path
+// is relied on.
+export function rivalEnvironment(env, { session, broker }) {
+  return broker ? env : { ...env, TMPDIR: sessionPath(session, SESSION_FILES.tmp) };
+}
+
 // Only the rival refusing the run is worth a second attempt; every other failure is either the
 // user's decision or a condition a retry would repeat.
 export function isRetryableResumeFailure(error) {
@@ -291,7 +300,7 @@ export async function launch(
           rivalSession,
         }),
         cwd: worktree,
-        env,
+        env: rivalEnvironment(env, { session, broker }),
         stdin: prompt,
         logPath,
         onProgress,

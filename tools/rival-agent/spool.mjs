@@ -29,6 +29,11 @@ export const SESSION_FILES = Object.freeze({
   requests: 'requests',
   replies: 'replies',
   outputs: 'outputs',
+  // The sandboxed rival's private TMPDIR. Codex's workspace-write sandbox lets a command write
+  // anywhere under the process's TMPDIR, and the handler's TMPDIR is where every session lives
+  // (measured: a sandboxed rival created a request file in a sibling session). Pointing the rival
+  // at a directory of its own keeps the spool out of its reach.
+  tmp: 'tmp',
 });
 
 // A reply carries at most this much of the command output inline; the full text stays in the
@@ -52,6 +57,7 @@ export function createSessionDirectory(id, root = SESSION_ROOT) {
     SESSION_FILES.requests,
     SESSION_FILES.replies,
     SESSION_FILES.outputs,
+    SESSION_FILES.tmp,
   ]) {
     mkdirSync(join(session, directory), { mode: SESSION_DIRECTORY_MODE });
   }

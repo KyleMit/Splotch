@@ -63,13 +63,15 @@ disposable worktree omitting `.worktreeinclude` secrets protects nothing against
 model-free `codex sandbox` runner: a targeted Vitest file, `npm run check`, and `npm run build` pass
 inside the disposable worktree; writes to the home directory and the canonical checkout are refused;
 a commit fails because the worktree's gitdir lives under the canonical checkout's `.git`; DNS fails
-with the network off. Writes under the system temp root are allowed, which includes the session
-spool — nothing there is read as instructions, and the findings come from the stream, not from a
-file the rival could pre-write. Every other pin stays. Two more are added and asserted by the
-launcher test: `sandbox_workspace_write.network_access=false`, and `web_search="disabled"` because
-disk-wide reads plus one outbound channel is an exfiltration path for a prompt injected through the
-diff. Nothing on this path is judged per command by the handler; the decision it keeps is whether to
-launch.
+with the network off. The sandbox also writes anywhere under the rival's `TMPDIR`, and the handler's
+`TMPDIR` is where every session's spool lives — the first sandboxed round's own review reproduced a
+request file written into a sibling session — so the launcher gives the sandboxed rival a private
+`TMPDIR` inside its session, and the spool root is measured unwritable from there. `/tmp` itself
+stays writable, which is the spool root on a Linux host and is not addressed here. Every other pin
+stays. Two more are added and asserted by the launcher test:
+`sandbox_workspace_write.network_access=false`, and `web_search="disabled"` because disk-wide reads
+plus one outbound channel is an exfiltration path for a prompt injected through the diff. Nothing on
+this path is judged per command by the handler; the decision it keeps is whether to launch.
 
 ## What the handler does
 

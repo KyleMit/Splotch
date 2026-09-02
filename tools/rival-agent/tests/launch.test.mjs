@@ -4,6 +4,7 @@ import {
   ledgerKeyFor,
   logPathForAttempt,
   parseLaunchArgs,
+  rivalEnvironment,
   SANDBOXES,
   toolBoundaryFor,
 } from '../launch.mjs';
@@ -45,6 +46,17 @@ describe('shared launch arguments', () => {
     expect(
       toolBoundaryFor({ ...vendor, sandboxedToolBoundary: 'own shell' }, 'workspace-write')
     ).toBe('own shell');
+  });
+
+  // Measured on the first sandboxed round's review: a workspace-write rival created a request file
+  // in a sibling session, because the sandbox's writable temp root is the spool root.
+  it('gives a sandboxed rival a private TMPDIR and a brokered one the handler environment', () => {
+    const env = { PATH: '/usr/bin', TMPDIR: '/var/folders/x/T' };
+    expect(rivalEnvironment(env, { session: '/s', broker: true })).toBe(env);
+    expect(rivalEnvironment(env, { session: '/s', broker: false })).toEqual({
+      PATH: '/usr/bin',
+      TMPDIR: '/s/tmp',
+    });
   });
 
   it('opts into a fresh reviewer and into ending the session', () => {

@@ -153,4 +153,64 @@ pairing). On `workspace-write` the Codex launcher attaches no broker, pins
 
 ## Rounds
 
-*Filled in below as they run.*
+All three reviewers saw the same range, `94d15c2ca…bea4a8399` (this PR's first commit against main:
+the launcher flag, the prompt partials, the single-job workflow, this note). The Codex rival was
+`gpt-5.6-sol` at high effort, the same model both ways.
+
+### Round A — Codex rival through the broker (the pairing as shipped)
+
+`npm run --silent rival:launch -- --base main`, this session serving the broker. Six minutes
+(15:26:18 → 15:32:05), twelve read-only shell commands of its own, **one** brokered request, three
+blocking findings, zero unverified. Usage: 1,401,074 input tokens (1,270,784 cached), 14,076 output
+(10,126 reasoning).
+
+The one request bundled the three changed test files, `npm run check`, and a self-contained probe
+under `mktemp -d` that ran `codex sandbox` in workspace-write mode and touched a file shaped like
+`splotch-rival-agent/other/requests/1.json` in a sibling directory of the temp root. Approved and
+run verbatim; the probe succeeded, which was the point. The findings:
+
+1. **Blocking, the workflow.** The single credentialed job ran PR-controlled code (tests, tools)
+   with a `GH_TOKEN` that held `pull-requests: write` and `issues: write`; every child process
+   inherits it, so the `allowedTools` list bounding Claude's own `gh` use bounded nothing.
+   `test.yml` runs the same code under `contents: read`. Correct, and the reason the workflow is now
+   two jobs: `verify` installs and runs every gate under a read-only token and uploads the logs;
+   `review` holds the credentials, installs nothing, and reads them.
+2. **Blocking, the sandboxed path.** The workspace-write sandbox writes anywhere under the rival's
+   `TMPDIR`, which is the spool root, so a sandboxed rival could forge a request into a concurrent
+   brokered session for the handler to run. Reproduced by its own probe. Fixed by giving the
+   sandboxed rival a private `TMPDIR` inside its session (`rivalEnvironment` in `launch.mjs`);
+   measured afterwards with `codex sandbox`: the spool root is `Operation not permitted` while the
+   private directory and `/tmp` remain writable. `/tmp` is the spool root on Linux and is left as a
+   documented gap.
+3. **Blocking, the workflow.** Nothing rechecked that the PR head still matched the event's head
+   before posting, and a push during the job neither cancels nor re-triggers a `labeled`-only
+   workflow. Fixed in the reviewer prompt: compare `gh pr view --json headRefOid` with the event
+   head immediately before `gh pr comment`, and post nothing on a mismatch.
+
+Not caught by anyone but found during the round: the `claude-review` label description in
+`labels.yml` was over GitHub's 100-character limit, which `gh label create` refused; shortened.
+
+### Hosted run 1 — `anthropics/claude-code-action`, single-job workflow
+
+Run 33673253743 on the pilot PR, triggered by applying the label: nine and a half minutes, verdict
+**NO BLOCKERS**, posted as one comment with the marker. What it establishes for probe 4a: the
+Actions-store OAuth token works for a non-Dependabot event, the runner installed dependencies and
+the reviewer ran `npm run check`, `format:check`, and the whole `tools/` Vitest tier itself, and the
+comment landed through `gh pr comment` under the read-then-write `permissions` block.
+
+Two things it also establishes, neither flattering:
+
+* It did not find any of the three defects the Codex rival found in the same diff — including the
+  token-inheritance defect in the very workflow that was running it.
+* It reported two `launch-codex.test.mjs` failures and blamed "a pre-existing uncommitted local
+  revert of `launch-codex.mjs`" in the checkout. The run log explains it: claude-code-action
+  restores `.claude/`, `CLAUDE.md`, `.mcp.json`, `.claude.json`, `.husky` and a few more paths from
+  `origin/main` before Claude starts (`PR head is untrusted`) and keeps the PR's copies under
+  `.claude-pr/`. This repository keeps tested code under `.claude/skills/` (the direct-provider
+  packages), so the reviewer's tree was the PR's tests against main's launcher. The two-job split
+  runs the gates before the action can touch the tree, and the prompt now says where the PR's copies
+  are.
+
+### Round B — Codex rival in the workspace-write sandbox, no broker
+
+*Filled in below.*
