@@ -15,7 +15,7 @@
     "Physical iPad capture needs a root-owned RemoteXPC tunnel before iOS 26 XCUITest discovery sees the device. See docs/PROFILING-IPAD.md.",
     "A landscape phone renders the compact Settings shell, which offers quick toggles and a pointer to portrait instead of the section list. Compare action modes against the same recorded settingsShell; a different label set between portrait and landscape is a shell difference, not a regression.",
     "Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
-    "Desktop captures used exact 1366\u00d7915 or 915\u00d71366 CSS viewports at DPR 2 \u2014 iPad Pro 12.9 geometry, so the canvas area matches the physical-iPad rows. Playwright retains the requested page viewport regardless of the browser window size.",
+    "Desktop captures used exact 1366×915 or 915×1366 CSS viewports at DPR 2 — iPad Pro 12.9 geometry, so the canvas area matches the physical-iPad rows. Playwright retains the requested page viewport regardless of the browser window size.",
     "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport.",
     "Raw perf-profiles are local scratch and are mostly untracked. ADR-0138 tracks one representative whole capture per target and brush under perf-profiles/evidence/, while current normalized per-mode sections are marked captured-untracked and remain subject to npm run check:matrix-staleness.",
     "Android emulator web omitted the `open coloring book` action row in portrait-dark and both landscape modes because the persisted picker state reopened already drilled into the selected book. Those three omissions are not passes and must not be read as improvement; the action runner now returns to the book list as setup before measuring selection so future sweeps keep a stable row set.",
@@ -126,11 +126,11 @@
     {
       "id": "ipad-device-web",
       "number": 1,
-      "label": "iPad physical \u00b7 web",
+      "label": "iPad physical · web",
       "platform": "iOS",
       "deviceKind": "physical",
       "runtime": "web",
-      "environment": "iPad13,8 \u00b7 iPadOS 26.5 \u00b7 Safari",
+      "environment": "iPad13,8 · iPadOS 26.5 · Safari",
       "fidelity": "physical-safari-gated",
       "modes": [
         {
@@ -178,11 +178,11 @@
     {
       "id": "ipad-device-native",
       "number": 2,
-      "label": "iPad physical \u00b7 native",
+      "label": "iPad physical · native",
       "platform": "iOS",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "iPad13,8 \u00b7 iPadOS 26.5 \u00b7 Capacitor WebView",
+      "environment": "iPad13,8 · iPadOS 26.5 · Capacitor WebView",
       "fidelity": "physical-native-advisory",
       "modes": [
         {
@@ -230,11 +230,11 @@
     {
       "id": "ipad-simulator-web",
       "number": 3,
-      "label": "iPad simulator \u00b7 web",
+      "label": "iPad simulator · web",
       "platform": "iOS",
       "deviceKind": "simulator",
       "runtime": "web",
-      "environment": "iPad mini (A17 Pro) simulator \u00b7 iOS 26.5 \u00b7 Safari",
+      "environment": "iPad mini (A17 Pro) simulator · iOS 26.5 · Safari",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -282,11 +282,11 @@
     {
       "id": "ipad-simulator-native",
       "number": 4,
-      "label": "iPad simulator \u00b7 native",
+      "label": "iPad simulator · native",
       "platform": "iOS",
       "deviceKind": "simulator",
       "runtime": "native",
-      "environment": "iPad mini (A17 Pro) simulator \u00b7 iOS 26.5 \u00b7 Capacitor WebView",
+      "environment": "iPad mini (A17 Pro) simulator · iOS 26.5 · Capacitor WebView",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -334,11 +334,11 @@
     {
       "id": "android-device-web",
       "number": 5,
-      "label": "Android physical \u00b7 web",
+      "label": "Android physical · web",
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "web",
-      "environment": "Samsung SM-G990U1 \u00b7 Android 16 \u00b7 Chrome 151.0.0.0",
+      "environment": "Samsung SM-G990U1 · Android 16 · Chrome 151.0.0.0",
       "fidelity": "physical-web-advisory",
       "modes": [
         {
@@ -390,11 +390,11 @@
     {
       "id": "android-device-native",
       "number": 6,
-      "label": "Android physical \u00b7 native",
+      "label": "Android physical · native",
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "Samsung SM-G990U1 \u00b7 Android 16 \u00b7 Capacitor WebView (Chrome 150.0.7871.181)",
+      "environment": "Samsung SM-G990U1 · Android 16 · Capacitor WebView (Chrome 150.0.7871.181)",
       "fidelity": "physical-native-advisory",
       "modes": [
         {
@@ -446,11 +446,11 @@
     {
       "id": "android-emulator-web",
       "number": 7,
-      "label": "Android emulator \u00b7 web",
+      "label": "Android emulator · web",
       "platform": "Android",
       "deviceKind": "emulator",
       "runtime": "web",
-      "environment": "Pixel 7 Pro API 33 emulator \u00b7 Android 13 \u00b7 Chrome 149.0.0.0",
+      "environment": "Pixel 7 Pro API 33 emulator · Android 13 · Chrome 149.0.0.0",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -502,11 +502,11 @@
     {
       "id": "android-emulator-native",
       "number": 8,
-      "label": "Android emulator \u00b7 native",
+      "label": "Android emulator · native",
       "platform": "Android",
       "deviceKind": "emulator",
       "runtime": "native",
-      "environment": "Pixel 7 Pro API 33 emulator \u00b7 Android 13 \u00b7 Capacitor WebView (Chrome 149.0.7827.91)",
+      "environment": "Pixel 7 Pro API 33 emulator · Android 13 · Capacitor WebView (Chrome 149.0.7827.91)",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -558,11 +558,11 @@
     {
       "id": "mac-chrome",
       "number": 9,
-      "label": "Mac \u00b7 Chrome",
+      "label": "Mac · Chrome",
       "platform": "macOS",
       "deviceKind": "desktop",
       "runtime": "web",
-      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright Chromium 151.0.7922.34",
+      "environment": "Mac desktop · macOS 26.6.2 (25G83) · arm64 · Playwright Chromium 151.0.7922.34",
       "fidelity": "desktop-advisory",
       "modes": [
         {
@@ -610,11 +610,11 @@
     {
       "id": "mac-safari",
       "number": 10,
-      "label": "Mac \u00b7 Safari",
+      "label": "Mac · Safari",
       "platform": "macOS",
       "deviceKind": "desktop",
       "runtime": "web",
-      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright WebKit 26.5",
+      "environment": "Mac desktop · macOS 26.6.2 (25G83) · arm64 · Playwright WebKit 26.5",
       "fidelity": "desktop-advisory",
       "modes": [
         {
@@ -662,11 +662,11 @@
     {
       "id": "mac-firefox",
       "number": 11,
-      "label": "Mac \u00b7 Firefox",
+      "label": "Mac · Firefox",
       "platform": "macOS",
       "deviceKind": "desktop",
       "runtime": "web",
-      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright Firefox 153.0",
+      "environment": "Mac desktop · macOS 26.6.2 (25G83) · arm64 · Playwright Firefox 153.0",
       "fidelity": "desktop-advisory",
       "modes": [
         {
