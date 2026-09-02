@@ -364,11 +364,12 @@ npm run perf:ios:xcuitest:actions --ignore-scripts -- --device-id=<UDID> \
 The default four-repeat suite retains one warmup and three scored samples across the action drawer,
 palette, brushes, stroke width, Settings and every section, themes, coloring-grid open/scroll plus
 page selection/removal, screenshot, undo, drag-to-clear, and rotation. It writes `actions.json` and
-fails a grouped action when frame P95 exceeds 20 ms or the first/worst frame exceeds 33.5 ms —
-except rotation first frames on iPad Safari, which are declared N/A rather than gated (ADR-0142:
-`resize` lands in the same rendering turn as the first frame, so the value is 0-2 ms by
-construction). Use `--report-only` for a broad discovery sweep, then `--actions=` for one-change
-trials against the failing family.
+fails a grouped action when frame P95 exceeds 20 ms, the first frame exceeds 33.5 ms, or the worst
+frame exceeds 33.5 ms in two of the three scored repeats (one breaching repeat is recorded as
+`frames.maxUnconfirmed`, ADR-0156) — except rotation first frames on iPad Safari, which are declared
+N/A rather than gated (ADR-0142: `resize` lands in the same rendering turn as the first frame, so
+the value is 0-2 ms by construction). Use `--report-only` for a broad discovery sweep, then
+`--actions=` for one-change trials against the failing family.
 
 The rAF recorder runs inside MobileSafari, so WebDriver's Mac/device round-trip is not part of the
 frame score. The reported first-observed readiness is only an upper bound: the driver must return

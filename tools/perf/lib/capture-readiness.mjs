@@ -304,6 +304,31 @@ export function pageFollowedRotation(requested, width, height) {
   return (width > height ? 'LANDSCAPE' : 'PORTRAIT') === requested;
 }
 
+// iPadOS can present Safari narrower than the screen — a Stage Manager
+// ("Windowed Apps") window or a Split View pane. Every host-side check passes,
+// WebDriverAgent launches, the page loads and answers every poll in its compact
+// layout, and every native tap the runner derives from page coordinates lands
+// outside the pane, so the first action times out with no pointer event.
+// Observed 2026-09-02: a 613 pt Safari window on a 1024 pt screen. The page's
+// own `screen` dimensions still report the panel, so the mismatch is decidable
+// from inside the session; the width alone cannot say which iPadOS feature
+// caused it, so the message names both remedies. A runtime that reported
+// pane-sized `screen` dimensions would escape this check.
+export function safariWindowProblem(orientation, windowWidth, screenWidth, screenHeight) {
+  if (![windowWidth, screenWidth, screenHeight].every(Number.isFinite)) return null;
+  const expected =
+    orientation === 'PORTRAIT'
+      ? Math.min(screenWidth, screenHeight)
+      : Math.max(screenWidth, screenHeight);
+  if (windowWidth >= expected) return null;
+  return (
+    `Safari is not full-screen: a ${windowWidth} pt window on a ${expected} pt screen, so native ` +
+    'taps derived from page coordinates land outside it. On the iPad, either leave Split View ' +
+    '(drag the divider to the edge, or tap the window\u2019s top control and choose full screen) ' +
+    'or turn off Windowed Apps: Settings \u2192 Multitasking & Gestures \u2192 Full Screen Apps.'
+  );
+}
+
 // The innermost cause of a WebDriverAgent launch failure never reaches the HTTP
 // response. Verified against a real failure on 2026-08-24: the payload — message
 // AND stacktrace — carries only Appium's outer `xcodebuild failed with code 65`,

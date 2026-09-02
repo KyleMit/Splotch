@@ -89,3 +89,19 @@ file and requires pixel equality with a fresh canonical render at the same dimen
   raster tiers.
 * − Web distribution carries two selector files per theme/orientation instead of one, and the PWA
   fallback must understand the responsive tier root.
+
+## Amendment 2026-09-02: raster presentation tiers measured and rejected
+
+The consequence above — the web paper pays WebKit's full-page SVG raster on select, rotation, and
+theme swap — was tested as a product change on the physical iPad (PR 1553, kept as the record):
+lossless WebP presentation tiers of every page SVG at whole-number 3:2 scales (max edges 1152, 1536,
+2304, 3072 px; 768 files, 44.7 MB) served through the paper's `srcset`, with the SVG kept as export
+and Magic authority. Concurrent A/B against `origin/main`, canonical full action sweeps, same rig
+and night: no scored frame moved in portrait (`select coloring page` 21 / 23 vs 21 / 22 ms) or
+landscape (26 / 28 vs 26 / 91), and select readiness P95 rose 131 → 229 / 235 ms because the tier
+decodes before the ready-gated swap. On the 12.9" iPad the 3072-wide tier's first paint costs the
+same order (24–91 ms) as the SVG raster it replaces (21–28 ms at 2732 px), and the matrix's 76–88 ms
+`clear coloring page` red the layer had targeted had already been fixed on `main` by
+39f75bf0928bfecba1aafae9cbf89d159ebd4029 (the picker retires before the page clears). The canonical
+SVG therefore remains the only paper presentation on every platform; the two appearance questions
+that could reopen this (a smaller top tier, decode on picker press) are issue #1562.

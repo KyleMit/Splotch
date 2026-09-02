@@ -430,6 +430,46 @@ report timeout. The tell in an unguarded capture is `ev 0, down 0` in the probe'
 ready page and a working network (issue 1294; the same landscape cell banked first try once the
 foreground was owned).
 
+## Safari that is not full-screen passes every check and misses every tap
+
+iPadOS **Windowed Apps** (Stage Manager) runs Safari in a floating window narrower than the screen.
+Nothing host-side can see it: the device enumerates, the tunnel is up, WebDriverAgent launches, the
+page loads and answers every readiness poll — in its compact layout — and `perf:preflight` reported
+ready. Then the first action of every sweep timed out with `eventType: 'uncaptured'` and no pointer
+event at all: the runner derives its native taps from page coordinates, and inside a 613 pt window
+on a 1024 pt screen those coordinates land on the wallpaper (2026-09-02, two identical failures
+before a screenshot over the automation session showed the window).
+
+The tell is the WebDriverAgent window rect: `GET /session/<id>/window/rect` reported a 613 pt width
+while the page's `screen.width` still reported the panel. `--verify-ios-launch` now compares the two
+during its rotation check and fails naming both remedies — the width alone cannot tell a Stage
+Manager window from a Split View pane, and the Full Screen Apps setting does not close a split. A
+runtime that reported pane-sized `screen` dimensions would escape the check. The fix is on the
+device — **Settings → Multitasking & Gestures → Full Screen Apps** — and it is reachable over the
+same automation session (activate `com.apple.Preferences`, tap the `Multitasking & Gestures` row,
+then the `…multitaskingAndGestures.fullScreenApps` accessibility id), which is how the 2026-09-02
+session restored it; record the mode you found so the owner can put it back.
+
+## An iPad with a software update scheduled will reboot into a locked screen
+
+`Settings → General → Software Update` can carry a scheduled overnight install ("Software Update
+Tonight" on the Settings root); the preflight does not look, and a rig that passes every check at
+23:00 reboots into the passcode screen a few hours later, failing every remaining cell as a
+discovery problem. Read the Settings root over the automation session when a campaign will run
+unattended — the same `com.apple.Preferences` activation used for the Stage Manager check lists it
+by name — and hand the decision to the owner; the 2026-09-02 rig showed it and was left alone on
+purpose, with the risk recorded in the campaign ledger.
+
+A scheduled update that **fails** is the worse case: the device does not reboot, so no cell reports
+a discovery problem, but iPadOS leaves a system alert ("iPadOS 26.6.1 Not Installed — The update
+will try again later — OK") over whatever is on screen, and every native tap lands on it. The
+signature is the Stage Manager one — a session that launches, a page that answers every poll, and
+the first action timing out with `eventType: 'uncaptured'` and an empty `armedEvents` — with a
+full-screen window rect, so the width check passes. A screenshot over the session shows the alert;
+`GET /session/<id>/alert/text` names it and `POST /session/<id>/alert/accept` clears it (the
+2026-09-02 rig produced exactly this at 06:36, after the rig had run clean all night). Read the
+alert text before dismissing anything: a passcode or automation prompt is not yours to accept.
+
 ## The device going to sleep
 
 Android sleeps mid-campaign and locks. `npm run perf:preflight -- --wake-android` wakes it and sets
@@ -1162,6 +1202,21 @@ npm run perf:rescore -- --corpus=<both arms> --target=<the cell's target>
 The historical arm is deliberately **not** this checkout's build, so it needs
 `--allow-foreign-build`; that flag exists for exactly this case. The invariant being protected is
 the *intended, independently verified* product commit — not current-worktree identity.
+
+The **action** runner (`perf:ios:xcuitest:actions`) carries no such override: pointed at a port
+serving another checkout's build it stops with "the port is held by another build" and no flag lets
+it through. For an action A/B, run the historical arm's sweep **from the historical worktree
+itself** against the port that worktree serves, after proving the two checkouts' harness is
+byte-identical (`git diff --stat <historical> <current> -- tools/perf` prints nothing); only the
+product then differs, and the artifact records the served entry module either way. The 2026-09-02
+raster-tier and backdrop-blur A/Bs ran their `origin/main` arms this way. Two more shell-level traps
+from the same night: the default shell is zsh, which does **not** word-split an unquoted `$ARGS`
+variable — the runner received one giant argument and asked for `--device-id` — spell the flags out
+or use `${=ARGS}`; and killing the `serve-profile-build` wrapper can leave its `vite
+preview` child
+holding the port with a manifest whose chunks a later rebuild has replaced (`manifest OK` fails on
+the entry fetch) — `lsof -nP -iTCP:<port> -sTCP:LISTEN` names the child, and its cwd
+(`lsof -p <pid>`) says whether it is yours to stop.
 
 The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
 `npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell

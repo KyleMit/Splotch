@@ -68,8 +68,8 @@ open one-time control.
 50 ms. Absolute milliseconds on purpose — a 50 ms hitch is perceptible at any refresh rate.
 
 **Action gates.** For discrete taps (open a dialog, switch theme): first frame after the tap, frame
-P95 during the transition (≤ 20 ms), and worst frame (≤ 33.5 ms), against per-action documented
-allowances where earned.
+P95 during the transition (≤ 20 ms), and worst frame (≤ 33.5 ms, a breach counting only when two of
+the three scored repeats show it — ADR-0156), against per-action documented allowances where earned.
 
 **Idle frame control.** A "do nothing" cell proving the target can hold frames at rest; a mode whose
 control fails has no action score attributable to the product (its cells are marked, not counted as

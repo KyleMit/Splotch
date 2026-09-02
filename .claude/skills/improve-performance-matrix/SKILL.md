@@ -6,8 +6,11 @@ description: Drive Splotch's deployment-target performance matrix from current e
 # Improve performance matrix
 
 Run a fresh evidence-led campaign against the authoritative deployment-target matrix. The campaign
-ends only when every current, scoreable cell is green, unless the user sends a control message that
-explicitly requests a merge-ready stopping point.
+ends only when every current, scoreable cell on a **release-gate row** is green, unless the user
+sends a control message that explicitly requests a merge-ready stopping point. ADR-0156 defines the
+rows: the physical iPad (web and native) and the physical Android phone (web and native) are the
+release gate; Mac rows are a regression tripwire; simulator and emulator rows are advisory and never
+count toward completion.
 
 This is the improvement sibling of `capture-performance-matrix`: that skill owns comparable capture
 mechanics and matrix refreshes; this skill owns inventory, causal attribution, product optimization,
@@ -27,11 +30,13 @@ capture coverage, richer metadata, another metric, or generalized tooling is not
 the product loop.
 
 Read the whole published matrix at the start, but do not block the first product experiment on
-making every stale target current. Full current coverage remains part of the completion gate. It is
-not a prerequisite for beginning product work when a calibrated physical target already provides a
-reproducible failure. Stale advisory Simulator, emulator, and desktop rows cannot delay that first
-experiment. Recapture a stale authoritative target first only when its result is necessary to
-distinguish the selected hypothesis or establish a calibrated failure.
+making every stale target current. Current coverage of the release-gate rows remains part of the
+completion gate (ADR-0156); advisory rows are recaptured for breadth when the rig is free, never as
+a completion requirement. Coverage is not a prerequisite for beginning product work when a
+calibrated physical target already provides a reproducible failure. Stale advisory Simulator,
+emulator, and desktop rows cannot delay that first experiment. Recapture a stale authoritative
+target first only when its result is necessary to distinguish the selected hypothesis or establish a
+calibrated failure.
 
 Treat `tools/perf/`, matrix schemas and generators, capture transports, scorers, evidence formats,
 and profiling documentation as stable supporting infrastructure while working a product cluster. A
@@ -120,6 +125,14 @@ candidate implementations against a gate a prior extraction had already fixed; t
 device and answers in seconds). The explicit `--base` matters: the default is `HEAD`, which from a
 campaign branch counts the branch's own commits as drift and reports STALE wrongly. Cells the check
 marks stale go in the recapture bucket, not the product bucket.
+
+The same check applies to numbers a campaign **prompt** calls established. A prompt is written from
+the matrix and the sessions before it, so its "measured" figures carry the commit they were measured
+at, not the trunk's; on 2026-09-02 a prompt's central cause (an ~86 ms `clear coloring page` raster
+on every physical iPad cell) had been fixed on `main` the day before by a commit the prompt's author
+never saw, and a full layer was built and A/B-tested against it before a concurrent control on
+`main` showed the cell already green. Run the staleness check and one concurrent control on the
+trunk before building on a prompt's figures, however authoritative their framing.
 
 As soon as a current calibrated physical failure exists, turn the remaining genuine failures into a
 compact causal-cluster inventory with a representative cell, affected blast radius, evidence
@@ -213,8 +226,8 @@ Then follow these invariants:
   number on an unproven path is undiagnosable.
 
 Simulator, emulator, desktop, and uncalibrated results are advisory unless the current profiling
-rules explicitly give them approval authority. Use them to reject or narrow hypotheses; do not let
-their passes overrule a calibrated physical failure.
+rules explicitly give them approval authority (ADR-0156 names the release-gate rows). Use them to
+reject or narrow hypotheses; do not let their passes overrule a calibrated physical failure.
 
 ## Work one causal cluster at a time
 
@@ -336,24 +349,33 @@ The workflow must not depend on provider-specific goal tracking. The matrix, raw
 history, live PR stack, and campaign ledger remain the durable source of truth.
 
 When Goal mode is available, use it only if the user explicitly requests Goal mode for this
-campaign. Create one objective for zero current, scoreable red cells and omit a token budget unless
-the user supplies one. Goal mode is useful for automatic continuation and for keeping the terminal
-condition visible across long tool runs. It is a poor fit for an ordinary campaign that may receive
-`pause` or `wrap up`: it supports completion or genuine blocking, not a merge-ready pause, permits
-only one active goal, and does not replace external checkpoints. Never mark the goal complete for an
-improvement, a green cluster, or a wrap-up that leaves current scoreable reds.
+campaign. Create one objective for zero current, scoreable red cells on the release-gate rows
+(ADR-0156) and omit a token budget unless the user supplies one. Goal mode is useful for automatic
+continuation and for keeping the terminal condition visible across long tool runs. It is a poor fit
+for an ordinary campaign that may receive `pause` or `wrap up`: it supports completion or genuine
+blocking, not a merge-ready pause, permits only one active goal, and does not replace external
+checkpoints. Never mark the goal complete for an improvement, a green cluster, or a wrap-up that
+leaves current scoreable reds on a release-gate row.
 
 ## Completion gate
 
 Complete the full campaign only when:
 
-* a freshly regenerated matrix has zero current, scoreable red cells;
-* every genuine product red that existed during the campaign has a recorded product outcome — a
+* a freshly regenerated matrix has zero current, scoreable red cells on the release-gate rows
+  (ADR-0156), and no release-gate cell that is unscoreable because its instrument is uncalibrated —
+  such a cell counts as red until the runtime is calibrated or recorded as uncalibratable; simulator
+  and emulator red is rendered and reported, never counted as remainder, and a Mac cell counts only
+  when it turned red on a change that was green on the trunk;
+* every genuine product red on a release-gate row (or a Mac cell that turned red on a change that
+  was green on the trunk) that existed during the campaign has a recorded product outcome — a
   verified improvement or an empirically rejected candidate followed by the next hypothesis; a
-  campaign with product reds and only harness, documentation, or capture commits is incomplete;
-* every stale or unavailable scoreable cell has a faithful current replacement;
-* capture-path blockers are fixed and every affected target is recaptured; a genuinely unsupported
-  mode stays explicitly unscoreable rather than being counted as a pass;
+  campaign with such reds and only harness, documentation, or capture commits is incomplete;
+* every stale or unavailable scoreable cell on a release-gate row has a faithful current
+  replacement; a stale advisory row is either recaptured or marked preserved so it stops claiming
+  currency;
+* capture-path blockers on release-gate rows are fixed and every affected release-gate target is
+  recaptured; an advisory target's blocker is filed as an issue, and a genuinely unsupported mode
+  stays explicitly unscoreable rather than being counted as a pass;
 * correctness, accessibility, visual behavior, native/web parity, persistence, rotation, undo, and
   export fidelity remain intact;
 * every authoritative generated output agrees;

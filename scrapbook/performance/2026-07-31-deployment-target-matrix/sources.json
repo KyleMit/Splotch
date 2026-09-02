@@ -1,13 +1,14 @@
 {
   "schemaVersion": 3,
-  "recordedOn": "2026-09-01",
-  "productCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+  "recordedOn": "2026-09-02",
+  "productCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
   "sourceRoot": "../../../",
   "limitations": [
-    "The 2026-09-01 campaign measured product commit c80fc3b240a3a7925257c9eea055cd83739c7eae. Later capture-time commits add only representative performance evidence, so their product staleness digest is equivalent.",
-    "All four orientation/theme modes were recaptured for physical iPad web, iPad Simulator web, and all three Mac engines in the 2026-09-01 campaign. The other six targets remain stale after 11 measured-surface commits and are not current product evidence; the aborted physical Android web run produced only four valid cells and was not folded.",
+    "The 2026-09-02 campaign measured product commit 31476d91d3ec8487d0fcad7492425cf0a6642584 (the coarse-pointer backdrop change, ADR-0157, on top of main at 6e1c8500104a076cd1abe2d41d8c0a2e6870667a). Later capture-time commits add only evidence and documentation, so their product staleness digest is equivalent.",
+    "All four orientation/theme modes were recaptured for physical iPad web and all three Mac engines on 2026-09-02 at 31476d91d3ec8487d0fcad7492425cf0a6642584 through their own transports (Appium XCUITest and the desktop probe driver). The iPad Simulator web rows are preserved from the 2026-09-01 capture at c80fc3b240a3a7925257c9eea055cd83739c7eae and no longer claim currency: under ADR-0156 simulator and emulator rows are advisory and never count toward campaign completion. The Android physical and emulator rows and the physical iPad native rows keep their earlier provenance and are stale product evidence; the physical Android and iPad native rows are release-gate rows whose recapture is the campaign's recorded remainder.",
+    "Action cells are scored under ADR-0156: a post-action max breach counts only when two of the three scored repeats show it; a single breaching repeat is recorded as unconfirmed rather than red. The 20 ms P95 and 33.5 ms thresholds are unchanged, and no published verdict flipped under the rule at regeneration.",
     "Android physical native undo remains preserved at 6961e50b685d441e88b37d20d3f38a27136572fb, while actions retain their prior per-mode provenance (6961e50b685d441e88b37d20d3f38a27136572fb in portrait and ce88c8e587ac45847c419e05ef7a79d282bc747a in landscape). This is blocked historical evidence, not current-equivalent carryover: the native action runner rejects the physical Android UDID through its iOS XCUITest path before capture. Those action sweeps predate ADR-0142's resize anchor, so their rotation first-frame numbers are not comparable with any other rotation row in this matrix. #1387 tracks teaching that sweep the compact Android shell and transport contract.",
     "Android physical web and native drawing use the ADR-0135 split input/measurement transport. Fresh artifacts record the driving cadence, input fidelity, and page identity used to decide whether a result is scoreable. Browser page identity is proven by URL; split-native page identity is unprovable because the installed app loads the remote probe-host URL, so those captures instead require native foreground-package attestation.",
     "The campaign accepted every faithful red drawing or action gate and did not rerun a valid result to turn it green. Retries were reserved for transport or input-fidelity failures. The iPad Simulator web landscape-dark eraser failed cadence on attempts 1-4 through the long-lived Appium server at port 4723, then passed every fidelity check with the same product, gesture, and scorer through a fresh server at port 4725; the campaign ledger retains all five attempts, and docs/PROFILING-IPAD.md records the stale-control-plane recovery.",
@@ -137,7 +138,7 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -147,7 +148,7 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -157,7 +158,7 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -167,7 +168,7 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -242,9 +243,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-          "drawing": "captured-untracked",
-          "undoSource": "captured-untracked",
-          "actionSources": "captured-untracked"
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -252,9 +253,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-          "drawing": "captured-untracked",
-          "undoSource": "captured-untracked",
-          "actionSources": "captured-untracked"
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -262,9 +263,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-          "drawing": "captured-untracked",
-          "undoSource": "captured-untracked",
-          "actionSources": "captured-untracked"
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -272,9 +273,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-          "drawing": "captured-untracked",
-          "undoSource": "captured-untracked",
-          "actionSources": "captured-untracked"
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
@@ -569,7 +570,7 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -579,7 +580,7 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -589,7 +590,7 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -599,7 +600,7 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -621,7 +622,7 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -631,7 +632,7 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -641,7 +642,7 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -651,7 +652,7 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -673,7 +674,7 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -683,7 +684,7 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -693,7 +694,7 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -703,7 +704,7 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
+          "drawingProductCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
           "drawing": "captured-untracked",
           "undoSource": "captured-untracked",
           "actionSources": "captured-untracked"
@@ -713,6 +714,6 @@
   ],
   "preservedEvidence": {
     "from": "data.json",
-    "reason": "Per-mode raw captures land in gitignored perf-profiles scratch. ADR-0138 deliberately tracks one whole representative capture per target and brush instead of every orientation-theme cell. The five targets refreshed on 2026-09-01 are marked captured-untracked; the six targets awaiting this campaign's recapture are preserved historical evidence. Both states regenerate from the last normalized data.json, but only captured-untracked sections claim currency and remain subject to check:matrix-staleness."
+    "reason": "Raw captures land in gitignored perf-profiles/ scratch, so the 2026-09-02 recapture of physical iPad web and the three Mac engines (four targets, captured at 31476d91d3ec8487d0fcad7492425cf0a6642584) is carried as captured-untracked: the generator preserves those modes from its own previous data.json. The other seven targets are preserved from earlier campaigns, including the iPad Simulator web rows marked preserved on 2026-09-02 because ADR-0156 makes simulator rows advisory. Representative drawing captures of the recapture are tracked under perf-profiles/evidence/2026-09-02-release-gate-recapture/."
   }
 }

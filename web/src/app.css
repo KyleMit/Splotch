@@ -194,13 +194,43 @@ body {
 }
 
 /* Shared dialog-modal treatment. Every <dialog>-based modal carries
-   .modal-dialog for the dimmed, blurred backdrop. Modals that fly in from
-   their opening button add .modal-fly-in; ones with their own open
-   choreography (e.g. AiImageResult) take .modal-dialog alone. */
+   .modal-dialog for the dimmed backdrop. Modals that fly in from their
+   opening button add .modal-fly-in; ones with their own open choreography
+   (e.g. AiImageResult) take .modal-dialog alone. */
 .modal-dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+/* Anyone who asked the OS for less transparency gets a plain, slightly deeper
+   dim instead of the frosted layer. */
+@media (prefers-reduced-transparency: reduce) {
+  .modal-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* The coloring picker is the one dialog whose backdrop was measured to cost
+   frames: it retires while the paper changes underneath it, and the blur
+   reads the whole canvas stack back on every one of those frames. Physical
+   iPad (Safari, portrait light, 2026-09-02, one warm-up plus three scored
+   repeats per arm, builds identical but for the blur): pooled post-action P95
+   for the picker's page select fell 31 -> 18 ms and its clear 28 -> 17 ms;
+   per-repeat maxima went 33 / 25 / 31 -> 17 / 32 / 18 and 17 / 28 / 17 ->
+   17 / 18 / 17, so the gain shows in some repeats and not others (ADR-0157).
+   Settings and the theme switches did not move, so every other dialog keeps
+   the blur. The coarse-pointer clause is an appearance choice, not a cost
+   proxy: touch devices are where the picker was measured and where the frame
+   matters, and the frosted look stays under a mouse. */
+@media (pointer: coarse) {
+  .coloring-book-modal::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .modal-dialog.modal-fly-in[open] {

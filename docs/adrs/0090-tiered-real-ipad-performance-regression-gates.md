@@ -47,8 +47,10 @@ between-stroke populations use their own elapsed-time denominators.
 
 The generic discrete-action budget established by ADR-0087 and ADR-0089 is a P95 frame interval at
 most 20 ms, an action-to-first-frame remainder at most 33.5 ms, and a worst action-attributed
-post-action interval at most 33.5 ms. The max admits two exact 60 Hz vsync intervals plus timer
-precision; the next 50 ms interval is the visible freeze.
+post-action interval at most 33.5 ms — a max breach counting only when two of the three scored
+repeats show it, since [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md).
+The max admits two exact 60 Hz vsync intervals plus timer precision; the next 50 ms interval is the
+visible freeze.
 
 ## Decision
 

@@ -1,0 +1,183 @@
+{
+  "campaign": "2026-09-02-release-gate-recapture",
+  "productCommit": "31476d91d3ec8487d0fcad7492425cf0a6642584",
+  "capturedFrom": "perf-profiles/recapture-20260902",
+  "kept": [
+    {
+      "file": "ipad-device-web-crayon.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-web-eraser.json",
+      "target": "ipad-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-web-magic.json",
+      "target": "ipad-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-web-pen.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-chrome-crayon.json",
+      "target": "mac-chrome",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-chrome-eraser.json",
+      "target": "mac-chrome",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-chrome-magic.json",
+      "target": "mac-chrome",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-chrome-pen.json",
+      "target": "mac-chrome",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-chrome/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-firefox-crayon.json",
+      "target": "mac-firefox",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-firefox-eraser.json",
+      "target": "mac-firefox",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-firefox-magic.json",
+      "target": "mac-firefox",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-firefox-pen.json",
+      "target": "mac-firefox",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-firefox/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-safari-crayon.json",
+      "target": "mac-safari",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-safari-eraser.json",
+      "target": "mac-safari",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-safari-magic.json",
+      "target": "mac-safari",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "mac-safari-pen.json",
+      "target": "mac-safari",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "mac-safari/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

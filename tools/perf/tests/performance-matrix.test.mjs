@@ -350,6 +350,57 @@ describe('deployment matrix report', () => {
     expect(actions.results.some((result) => result.label === warmupOnlyLabel)).toBe(false);
   });
 
+  // ADR-0156: a max breach in one of three scored repeats does not fail the
+  // cell, but it must not disappear either — data.json is the next regeneration's
+  // preservation source for a captured-untracked cell, so the state has to survive
+  // normalization and be visible in both renderers.
+  it('preserves and renders a passing cell whose max breached in one scored repeat', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const label = 'save screenshot';
+    const steady = Array.from({ length: 12 }, () => 16.7);
+    const sample = (gaps, warmup = false) => ({
+      ...actionSample(label, warmup),
+      postActionFrameGapsMs: gaps,
+    });
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [
+        { ...actionSample('idle frame control', true), postActionFrameGapsMs: steady },
+        { ...actionSample('idle frame control', false), postActionFrameGapsMs: steady },
+        { ...actionSample('idle frame control', false), postActionFrameGapsMs: steady },
+        { ...actionSample('idle frame control', false), postActionFrameGapsMs: steady },
+        sample(steady, true),
+        sample([...steady.slice(0, 6), 40, ...steady.slice(6)]),
+        sample(steady),
+        sample(steady),
+      ],
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find((r) => r.label === label);
+
+    expect(result.passed).toBe(true);
+    expect(result.postActionFrames).toMatchObject({
+      max: 40,
+      maxBreachSamples: 1,
+      maxUnconfirmed: true,
+    });
+    expect(matrix.targets[0].modes[0].actions.scoreable).not.toBe(false);
+    const html = renderReport(matrix);
+    expect(html).toContain('class="heat-cell unconfirmed" title=');
+    expect(html).toContain('PASS, max unconfirmed (over the gate in one scored repeat');
+    expect(renderMarkdown(matrix)).toContain('save screenshot (max 40 ms unconfirmed)');
+  });
+
   // ADR-0142 amendment (issue 1324): an iPad Safari rotation first frame is
   // 0-2 ms by construction, so it is declared N/A instead of publishing a green
   // 0. Applicability keys on the capture RUNTIME — `transport: "browser"` is
