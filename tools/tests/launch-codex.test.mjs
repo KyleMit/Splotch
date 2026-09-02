@@ -3,12 +3,10 @@ import {
   brokerServerToml,
   BROKER_SERVER_PATH,
   buildCodexArgs,
+  codexVendor,
   ISOLATION_FEATURES,
-  isRetryableResumeFailure,
-  ledgerKeyFor,
-  logPathForAttempt,
-  parseLaunchArgs,
   readConfiguredModel,
+  resolveCodexModel,
 } from '../../.claude/skills/run-rival-agent/scripts/launch-codex.mjs';
 import {
   API_BILLING_ENVIRONMENT_KEYS,
@@ -21,7 +19,6 @@ import {
 } from '../../.claude/skills/run-rival-agent/scripts/codex-subscription-auth.mjs';
 import { assertSubscriptionLogin } from '../../.claude/skills/run-rival-agent/scripts/codex-health.mjs';
 import { PENDING_REQUEST_TIMEOUT_MS } from '../rival-agent/spool.mjs';
-import { STREAM_FAILURE } from '../rival-agent/stream.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../rival-agent/validate-findings.mjs';
 
 const PLAN_AUTH = { auth_mode: 'chatgpt', tokens: { access_token: 'token' } };
@@ -62,68 +59,18 @@ describe('Codex rival billing guard', () => {
   });
 });
 
-describe('Codex rival launch arguments', () => {
-  it('reviews against main by default and accepts one scope at a time', () => {
-    expect(parseLaunchArgs([])).toMatchObject({ scope: { kind: 'base', base: 'main' } });
-    expect(parseLaunchArgs(['--pr', '7'])).toMatchObject({ scope: { kind: 'pr', number: 7 } });
-    expect(parseLaunchArgs(['--uncommitted'])).toMatchObject({ scope: { kind: 'uncommitted' } });
-    expect(parseLaunchArgs(['--commit', 'abc'])).toMatchObject({
-      scope: { kind: 'commit', commit: 'abc' },
-    });
-    expect(() => parseLaunchArgs(['--uncommitted', '--base', 'main'])).toThrow(
-      /mutually exclusive/
-    );
-    expect(() => parseLaunchArgs(['--pr', 'seven'])).toThrow(/--pr/);
-  });
-
-  it('rejects a model slug that could pass for a flag and an unsupported effort', () => {
-    expect(() => parseLaunchArgs(['--model', '--yolo'])).toThrow(/model/);
-    expect(parseLaunchArgs(['--model', 'gpt-5.6-sol'])).toMatchObject({ model: 'gpt-5.6-sol' });
-    expect(() => parseLaunchArgs(['--effort', 'max'])).toThrow(/effort/);
-  });
-
-  it('opts into a fresh reviewer and into ending the session', () => {
-    expect(parseLaunchArgs(['--fresh'])).toMatchObject({ fresh: true });
-    expect(parseLaunchArgs(['--end-session', '--pr', '7'])).toMatchObject({
-      endSession: true,
-      scope: { kind: 'pr', number: 7 },
-    });
-  });
-
-  it('keys the reviewer by PR, by resolved commit, or by branch', () => {
-    const repoRoot = '/repo';
-    const resolveCommit = (root, ref) =>
-      ref === 'HEAD' || ref === 'abc1234' ? 'a'.repeat(40) : ref;
-    const pr = ledgerKeyFor({ repoRoot, scope: { kind: 'pr', number: 7 }, branch: 'x' });
-    expect(pr).toBe(ledgerKeyFor({ repoRoot, scope: { kind: 'pr', number: 7 }, branch: 'y' }));
-    const branch = ledgerKeyFor({ repoRoot, scope: { kind: 'base', base: 'main' }, branch: 'x' });
-    expect(branch).toBe(ledgerKeyFor({ repoRoot, scope: { kind: 'uncommitted' }, branch: 'x' }));
-    expect(branch).not.toBe(pr);
-    const byHead = ledgerKeyFor({
-      repoRoot,
-      scope: { kind: 'commit', commit: 'HEAD' },
-      branch: 'x',
-      resolveCommit,
-    });
-    const byShort = ledgerKeyFor({
-      repoRoot,
-      scope: { kind: 'commit', commit: 'abc1234' },
-      branch: 'x',
-      resolveCommit,
-    });
-    expect(byHead).toBe(byShort);
-    expect(byHead).not.toBe(branch);
-  });
-
-  it('gives the one retry after a pruned resume its own stream log', () => {
-    expect(logPathForAttempt('/s', 1)).toBe('/s/rival.ndjson');
-    expect(logPathForAttempt('/s', 2)).toBe('/s/rival-retry.ndjson');
-  });
-
+describe('Codex rival model selection', () => {
   it('reads the configured model back because --ignore-user-config drops it', () => {
     expect(readConfiguredModel('model = "gpt-5.6-sol"\nsandbox_mode = "x"\n')).toBe('gpt-5.6-sol');
     expect(readConfiguredModel('[profiles.x]\nmodel = "other"\n')).toBeUndefined();
     expect(readConfiguredModel('')).toBeUndefined();
+  });
+
+  it('prefers the requested model, rejects a flag-shaped one, and demands one from somewhere', () => {
+    expect(resolveCodexModel('gpt-5.6-sol', 'model = "other"\n')).toBe('gpt-5.6-sol');
+    expect(resolveCodexModel(undefined, 'model = "other"\n')).toBe('other');
+    expect(() => resolveCodexModel('--yolo', '')).toThrow(/model/);
+    expect(() => resolveCodexModel(undefined, '')).toThrow(/no model/);
   });
 });
 
@@ -142,7 +89,10 @@ describe('Codex rival command construction', () => {
   it('applies every sandbox-escape control on a first round and on a resume', () => {
     for (const args of [
       buildCodexArgs(options),
-      buildCodexArgs({ ...options, resumeThreadId: '00000000-0000-4000-8000-000000000000' }),
+      buildCodexArgs({
+        ...options,
+        rivalSession: { mode: 'resume', id: '00000000-0000-4000-8000-000000000000' },
+      }),
     ]) {
       expect(args).toContain('--ignore-user-config');
       expect(args).toContain('approval_policy="never"');
@@ -200,20 +150,17 @@ describe('Codex rival command construction', () => {
   it('reads the prompt from stdin and resumes the recorded thread across worktrees', () => {
     expect(buildCodexArgs(options).slice(0, 1)).toEqual(['exec']);
     expect(buildCodexArgs(options).at(-1)).toBe('-');
-    const resumed = buildCodexArgs({ ...options, resumeThreadId: 'abc' });
+    const resumed = buildCodexArgs({ ...options, rivalSession: { mode: 'resume', id: 'abc' } });
     expect(resumed.slice(0, 3)).toEqual(['exec', 'resume', '--all']);
     expect(resumed.slice(-2)).toEqual(['abc', '-']);
     // `exec resume` rejects --cd with a usage error, which round two of the first real review hit.
     expect(resumed).not.toContain('-C');
   });
 
-  // Retrying a run the user stopped would spend plan usage they just tried to stop. Only Codex
-  // refusing the run earns a fresh attempt.
-  it('retries only when Codex itself refused the run', () => {
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.exited })).toBe(true);
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.cancelled })).toBe(false);
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.stalled })).toBe(false);
-    expect(isRetryableResumeFailure({ code: STREAM_FAILURE.logFailed })).toBe(false);
-    expect(isRetryableResumeFailure(new Error('something else'))).toBe(false);
+  it('exposes the vendor adapter the shared launcher drives', () => {
+    expect(codexVendor).toMatchObject({ rival: 'codex', command: 'codex' });
+    expect(typeof codexVendor.prepare).toBe('function');
+    expect(typeof codexVendor.resolveModel).toBe('function');
+    expect(codexVendor.buildArgs).toBe(buildCodexArgs);
   });
 });

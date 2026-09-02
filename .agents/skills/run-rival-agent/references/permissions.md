@@ -1,68 +1,88 @@
-# Permission installation
+# Permission installation and trust boundary
 
 Run `npm run run-claude:install` once from the trusted canonical checkout, approve that fixed Node
 command in Codex, and restart Codex so its config and rules reload. The installer:
 
 * sets `approval_policy = "on-request"`, `approvals_reviewer = "auto_review"`, and
   `sandbox_mode = "workspace-write"` in `~/.codex/config.toml`;
-* allows only the three fixed run, health, and PR-review wrappers at Codex's approval boundary while
-  forbidding raw Claude entry points;
-* installs those read-only wrappers and their subscription-authentication guard under
-  `/Users/kylemit/.local/libexec/`;
-* installs hashed Claude settings, task boundaries, and a manifest outside the reviewed repository.
+* copies the vendor-neutral core from `tools/rival-agent/` and this package's launcher, health
+  probe, publisher alias, and billing guard into `~/.local/libexec/splotch-rival-agent/`, repointing
+  the package files' core imports at their new siblings, and writes a manifest hashing every file;
+* writes the two fixed shims `implement-issue-stack` invokes,
+  `~/.local/libexec/splotch-claude-review-publish.mjs` and
+  `~/.local/libexec/splotch-claude-health.mjs`, and removes the files earlier installers wrote;
+* allows only the launcher, the poster, the publisher alias, and the health probe at Codex's
+  approval boundary while forbidding raw Claude entry points.
 
-The generic runner accepts only an absolute bounded prompt file, `ask|inspect` profile,
-`sonnet|opus` model, `low|medium|high` effort, the `--persist`/`--resume <uuid>`/
-`--end-session <uuid>` session controls, and—only for `inspect`—an absolute Splotch worktree root.
-`ask` has no tools. `inspect` has only `Read`, `Grep`, and `Glob`. Neither profile authorizes an
-external write. Prompt text never enters the parent shell command.
+Every installed wrapper hashes its siblings against the manifest before doing anything else; a byte
+that differs refuses to run. In the checkout there is no manifest and nothing to verify — the
+checkout is the source. The reviewed worktree is untrusted material, and the installed wrappers
+import nothing from it.
 
-Sessions are ephemeral unless `--persist` opts in. The runner keeps one owner-only record file per
-session it issues (so concurrent wrapper invocations never contend on shared ledger state) and
-refuses to resume or end any id it holds no record for, so resumption can never reach a session
-another process created. Resuming may widen a session's profile only from `ask` to `inspect`; every
-other transition is rejected, and each resumed turn re-applies its profile's tool list, trusted
-settings, and boundary prompt. `--end-session` deletes the session's transcript file and sidecar
-directory, then removes the record. The progress stream and stall watchdog change observability only
-— the owner-only stream log is exclusively created, terminating a stalled run signals Claude's whole
-process group, and no profile gains a tool or an external write from streaming; the PR publisher
-keeps a separate owner-only session record bound to one validated PR number. Its later invocations
-can resume only that PR's recorded session, and `--pr <number> --end-session` deletes the transcript
-and record after delivery or quarantine. Cleanup re-verifies the installed wrapper and validates the
-recorded UUID before recursive transcript removal; a corrupt record can remove only its own known
-record path. A recorded conversation that was never created or later disappeared self-heals once,
-and the wrapper refuses a fourth published review round.
+## What the rival can do
 
-The PR publisher accepts `--pr <positive-integer>` for `KyleMit/Splotch`, optionally with
-`--end-session`. It passes that same narrow authorization to Claude and runs with:
+The rival runs as `claude --print` with:
 
 ```text
---print --permission-mode auto --tools default --safe-mode
---no-chrome --strict-mcp-config --session-id <wrapper-issued-uuid>|--resume <recorded-uuid>
+--restricted --permission-mode dontAsk --tools Read,Grep,Glob
+--allowedTools Read,Grep,Glob,mcp__broker__run --mcp-config <broker only> --strict-mcp-config
+--no-chrome --add-dir <packet> --output-format stream-json --verbose --json-schema <findings>
+--session-id <wrapper-issued uuid> | --resume <recorded uuid>
 ```
 
-It never uses `--bare`, `--dangerously-skip-permissions`, or `bypassPermissions`. Claude's inner
-Bash sandbox stays enabled and keeps the Auto classifier involved. The disposable worktree protects
-the developer's checkout but does not make arbitrary external actions safe.
+`--restricted`, not `--safe-mode`: safe mode disables `--mcp-config` along with everything else,
+which is how the first probe of this design ran with no broker at all. Restricted mode removes the
+command-running tools, confines the file tools to the worktree and the packet, refuses
+`bypassPermissions`, and ignores user and project settings. `--strict-mcp-config` leaves the broker
+as the only MCP server. The rival has no Bash, no web, no edit tools, and no GitHub; the broker is
+the only door out, and `MCP_TOOL_TIMEOUT` is raised so a brokered call can wait through a handler
+turn and a long command.
 
-All three wrappers reject environment variables that select API-key, Bedrock, Vertex, or Foundry
+The worktree's dependency install runs with `--ignore-scripts`: the reviewed commit owns
+`package.json`, and a PR-controlled `postinstall` would otherwise run at launch before anyone read
+the diff.
+
+## What the handler does
+
+Every brokered command runs through this session's `exec_command` with the rival's command text
+inline, so the sandbox, the exec policy's `prefix_rule`s, and Auto-review judge it exactly as they
+would judge the handler's own command. The broker never executes anything and holds no allowlist or
+denylist; a request the handler would refuse for itself is refused for the rival, and the reason
+goes back to the rival as data.
+
+The launcher, the poster, and the health probe run escalated because the Claude login and the GitHub
+token live in the macOS Keychain, which the Seatbelt sandbox cannot read. A `prompt` decision in the
+installed policy reviews an explicitly escalated command; it does not turn a default sandboxed
+invocation into host execution, so a sandboxed health failure does not establish that the
+installation or Claude authentication is stale.
+
+Prompt text never enters the parent command line: the rival prompt, extra instructions, and
+questions are delivered on stdin, and instruction files are read from an absolute regular file
+capped at 256 KiB.
+
+## Billing
+
+Every wrapper rejects environment variables that select API-key, Bedrock, Vertex, or Foundry
 billing. `CLAUDE_CODE_OAUTH_TOKEN` remains allowed because it is a Claude plan token; local use
-normally authenticates through the macOS Keychain. The health wrapper additionally requires
+normally authenticates through the Keychain. The health probe additionally requires
 `claude auth status` to report a logged-in, non-API-key session.
+
+## Rounds and the alias
+
+A review is keyed to the checkout plus the PR number, the commit, or the branch, and the Claude
+session id is recorded owner-only under `~/.config/splotch-rival-agent/ledger/`. Three rounds is the
+budget. `--end-session` deletes the conversation's transcript and sidecar directory under
+`~/.claude/projects/` — only for an id the ledger holds, which only ever holds ids this launcher
+issued — and removes the record.
+
+The orchestrated alias `splotch-claude-review-publish.mjs --pr <n>` runs without a handler: it
+declines every broker request with one fixed reason, waits for the rival to finish, and posts. It
+keeps the fixed path, the `--pr`/`--end-session` contract, the one-`COMMENT`-review rule, the hidden
+marker, and the three-round budget that `implement-issue-stack` relies on.
 
 The prefix rules are not a complete remote security perimeter. Repository protections and narrowly
 scoped credentials remain the hard remote guarantees; Auto-review evaluates operations that reach
-the escalation boundary.
-
-The required wrapper invocation is authoritative in [Host execution](../SKILL.md#host-execution). A
-`prompt` decision in the installed policy reviews an explicitly escalated command; it does not turn
-a default sandboxed invocation into host execution. The sandbox cannot read the Keychain login, so a
-sandboxed health failure does not establish that the installation or Claude authentication is stale.
-
-Once installation and policy checks pass, ordinary `ask` and `inspect` executions require no manual
-user step. Their escalation requests go to Auto-review, while the fixed prefix rules and each
-wrapper's internal contract retain the narrow authority described above. A denial remains a real
-stop or safer-path signal; never route around it.
+the escalation boundary. A denial remains a real stop or safer-path signal; never route around it.
 
 Run `npm run run-claude:policy:check` before use. Use
 `codex execpolicy check --rules ~/.codex/rules/default.rules --pretty < command.txt` to inspect the

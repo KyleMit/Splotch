@@ -2,8 +2,12 @@
 
 import { createInterface } from 'node:readline';
 import { realpathSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { appendRequest, readFailed, waitForReply } from './spool.mjs';
+
+// The launchers hand this path to the rival's MCP config, so it must be wherever this file is —
+// the checkout for the Claude side, the installed copy for the Codex side.
+export const BROKER_SERVER_PATH = fileURLToPath(import.meta.url);
 
 // The one tool the rival sees. Its description is the rival's whole understanding of the broker,
 // so it states the economics (a handler turn per call) and that a decline is an ordinary answer.

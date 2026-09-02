@@ -172,7 +172,7 @@ same conversation.
 Resume the original implementer and instruct it to use `address-pr-review mode=autonomous` for the
 PR. It must fetch all review surfaces, validate every comment, fix valid findings, reply to every
 thread, resolve every resolvable thread, push, and return the disposition plus autonomous decision
-record. The Claude review carries a hidden `splotch-claude-review` marker and may share the
+record. The Claude review carries a hidden `splotch-rival-review` marker and may share the
 implementer's GitHub account; its comments remain in scope regardless of author. Append decisions to
 the PR body or a clearly titled PR comment. Fix concrete product defects; do not turn a suggestion,
 nit, or style preference into code churn merely because it appeared in a review. Give non-blocking
