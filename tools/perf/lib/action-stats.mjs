@@ -18,14 +18,18 @@ export const ACTION_FRAME_P95_GATE_MS = 20;
 const IOS_ACTION_FRAME_P95_ALLOWANCES_MS = {
   'open Settings': 26,
 };
-// Three 60 Hz vsync intervals: the first interval a toddler can see as a freeze
-// (ADR-0156). A matrix cell is one capture of three scored repeats, and a single
-// two-beat (33.3 ms) frame is what chance produces in one such capture — the
-// physical iPad's `clear drawing` read 37 ms max on one mode and 17–21 on the
-// other three at the same commit. A repeated two-beat frame still fails the
-// 20 ms P95; this gate catches the three-beat frame every sample can see. It
-// matches the drawing paint max gate (50 ms). Until ADR-0156 it was 33.5 ms.
-export const ACTION_FRAME_MAX_GATE_MS = 50;
+// Two exact 60 Hz vsync intervals are 33.33 ms; the next interval is the visible 50 ms freeze.
+export const ACTION_FRAME_MAX_GATE_MS = 33.5;
+// A matrix cell is one capture of three scored repeats, and a single two-beat
+// frame in one of them is what chance produces (ADR-0137; the physical iPad's
+// `clear drawing` read 37 ms max on one mode and 17-21 on the other three at
+// one commit). A max breach is therefore confirmed only when at least this many
+// scored samples of the group breach it (ADR-0156). Pooled P95 cannot stand in:
+// one 33 ms frame per repeat is 3 of ~120 gaps and never reaches it, so the
+// max is what catches a hitch that recurs on every activation - and it must
+// recur to count. A group without warm-up metadata (one bare sample) keeps the
+// direct rule.
+export const MAX_BREACH_CONFIRMING_SAMPLES = 2;
 // The max-frame counterpart, same rules (calibrated physical-iOS capture
 // ONLY, recorded into the capture, never a default). 'open Settings' has
 // breached the max gate at 44-55 ms on every theme-focused automated run
@@ -224,12 +228,22 @@ export function summarizeActionGroup(actions, label, allowances = {}, firstFrame
   activation.passed = activation.valid === actions.length;
   const minimumSamples = hasWarmupMetadata ? MIN_GATED_SAMPLES : 1;
   const gate = normalizedAllowances(allowances);
+  const maxGate = gate.max[label] ?? ACTION_FRAME_MAX_GATE_MS;
+  const maxBreachSamples = scoredActions.filter((action) =>
+    scoredActionFrameGaps(action).some((gapMs) => gapMs > maxGate)
+  ).length;
+  const maxBreachConfirmed =
+    hasWarmupMetadata && scoredActions.length >= MIN_GATED_SAMPLES
+      ? maxBreachSamples >= MAX_BREACH_CONFIRMING_SAMPLES
+      : frames.max > maxGate;
+  frames.maxBreachSamples = maxBreachSamples;
+  frames.maxUnconfirmed = !maxBreachConfirmed && frames.max > maxGate;
   const passed =
     scoredActions.length >= minimumSamples &&
     activation.passed &&
     (firstFrameNa || firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS) &&
     frames.p95 <= (gate.p95[label] ?? ACTION_FRAME_P95_GATE_MS) &&
-    frames.max <= (gate.max[label] ?? ACTION_FRAME_MAX_GATE_MS);
+    !maxBreachConfirmed;
   return {
     count: scoredActions.length,
     totalCount: actions.length,
