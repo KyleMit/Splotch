@@ -93,8 +93,9 @@ against the unfixed code is evidence about the test, not the fix. Either it asse
 or the behavior it describes is unobservable at that seam — both are worth knowing before the test
 is committed as protection.
 
-Two shapes in `tools/tests/run-codex.test.mjs` are the worked examples, because both passed in the
-broken state before the revert check caught them:
+Two shapes from the Codex rival wrapper (now `tools/rival-agent/tests/stream.test.mjs` and
+`tools/tests/launch-codex.test.mjs`) are the worked examples, because both passed in the broken
+state before the revert check caught them:
 
 * **The defect is real but unobservable through the seam under test.** Asserting that a log file was
   complete when a promise resolved passed either way, because in practice the flush always wins the

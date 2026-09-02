@@ -1,4 +1,4 @@
 interface:
   display_name: 'Run Rival Agent'
-  short_description: 'Run the rival agent: a fresh local Claude task, safely'
-  default_prompt: 'Use $run-rival-agent to run this task through a fresh local Claude Code process and return its result.'
+  short_description: 'Pair this session with a Claude rival agent for an independent review'
+  default_prompt: 'Use $run-rival-agent to get an independent Claude review of this work, serving its broker requests as the native handler.'

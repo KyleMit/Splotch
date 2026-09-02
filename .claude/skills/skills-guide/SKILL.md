@@ -64,9 +64,9 @@ staging file, `fix-audits` burns the issues down.
 
 ## Cross-agent execution
 
-| Skill             | Use when you are…                                                                                                             |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `run-rival-agent` | **Launching** the other vendor's local CLI for an independent second opinion or review — Codex from Claude, Claude from Codex |
+| Skill             | Use when you are…                                                                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run-rival-agent` | **Pairing** this session, as the native handler, with the other vendor's CLI as a rival agent for an independent review it can verify through you — Codex from Claude, Claude from Codex |
 
 One name, two packages: each provider tree carries the package that launches the *other* vendor, so
 a shared skill can name `run-rival-agent` without knowing which runner it is on.

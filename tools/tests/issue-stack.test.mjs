@@ -147,7 +147,7 @@ describe('skill contracts', () => {
     expect(leaveReview).not.toContain('git diff origin/main...HEAD');
     expect(addressReview).toContain('mode=autonomous');
     expect(addressReview).toContain('The default remains interactive');
-    expect(addressReview).toContain('<!-- splotch-claude-review:');
+    expect(addressReview).toContain('<!-- splotch-rival-review:');
     expect(addressReview).toMatch(
       /Include the marked review body\s+itself and every inline comment/
     );

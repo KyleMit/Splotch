@@ -154,13 +154,15 @@ Alternatives rejected:
   edit, and no fork exists yet to prove the path. Direct registration for both providers is the
   in-use precedent (`burn-down-audits`).
 
-Kept deliberately: the `run-claude:*` / `run-codex:*` npm namespaces, the installed
-`~/.local/libexec/splotch-claude-*.mjs` wrapper names, and the install/health log strings. Each
-names the process it launches, which is unambiguous from either side; a shared `run-rival-agent:*`
-namespace would have to answer "which rival?" in every variant name, and the exec-policy patterns
-key on the installed paths, so leaving them means the rename never touches the trust boundary.
+The Claude-handler package uses the vendor-neutral `rival:*` npm namespace. The Codex-handler
+package keeps `run-claude:*` only for installing and checking the host-trusted package because those
+commands specifically manage the Claude launcher. The trusted core lives under
+`~/.local/libexec/splotch-rival-agent/`; the fixed `splotch-claude-review-publish.mjs` and
+`splotch-claude-health.mjs` shims remain for existing orchestrator callers. Codex's exec-policy
+patterns follow those installed entry points, so this amendment deliberately moves the trust
+boundary rather than preserving the old wrapper paths.
 
-The two packages remain asymmetric in capability. Only the Codex side carries a write-capable
-profile (the fixed Splotch PR-review publisher); the Claude side is read-only by design. Giving the
-Claude side a publishing profile is a separate decision with its own trust-boundary consequences and
-is not part of this amendment.
+Both native handlers can post the rival's findings after validating the reviewed base and head. The
+rival agents remain read-only and are never told how to publish; separating review generation from
+the native handler's posting step keeps GitHub credentials and write authority outside the rival
+process.
