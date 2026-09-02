@@ -6,8 +6,11 @@ description: Drive Splotch's deployment-target performance matrix from current e
 # Improve performance matrix
 
 Run a fresh evidence-led campaign against the authoritative deployment-target matrix. The campaign
-ends only when every current, scoreable cell is green, unless the user sends a control message that
-explicitly requests a merge-ready stopping point.
+ends only when every current, scoreable cell on a **release-gate row** is green, unless the user
+sends a control message that explicitly requests a merge-ready stopping point. ADR-0156 defines the
+rows: the physical iPad (web and native) and the physical Android phone (web and native) are the
+release gate; Mac rows are a regression tripwire; simulator and emulator rows are advisory and never
+count toward completion.
 
 This is the improvement sibling of `capture-performance-matrix`: that skill owns comparable capture
 mechanics and matrix refreshes; this skill owns inventory, causal attribution, product optimization,
@@ -213,8 +216,8 @@ Then follow these invariants:
   number on an unproven path is undiagnosable.
 
 Simulator, emulator, desktop, and uncalibrated results are advisory unless the current profiling
-rules explicitly give them approval authority. Use them to reject or narrow hypotheses; do not let
-their passes overrule a calibrated physical failure.
+rules explicitly give them approval authority (ADR-0156 names the release-gate rows). Use them to
+reject or narrow hypotheses; do not let their passes overrule a calibrated physical failure.
 
 ## Work one causal cluster at a time
 
@@ -347,7 +350,9 @@ improvement, a green cluster, or a wrap-up that leaves current scoreable reds.
 
 Complete the full campaign only when:
 
-* a freshly regenerated matrix has zero current, scoreable red cells;
+* a freshly regenerated matrix has zero current, scoreable red cells on the release-gate rows
+  (ADR-0156); simulator and emulator red is rendered and reported, never counted as remainder, and a
+  Mac cell counts only when it turned red on a change that was green on the trunk;
 * every genuine product red that existed during the campaign has a recorded product outcome — a
   verified improvement or an empirically rejected candidate followed by the next hypothesis; a
   campaign with product reds and only harness, documentation, or capture commits is incomplete;
