@@ -12,8 +12,9 @@ The two 41-session transcript analyses (Claude lane:
 `analysis/2026-08-31-codex`) were distilled into stack \#1533 — PRs \#1530–\#1532, \#1534–\#1537 —
 covering ~28 findings. This packet holds what was deliberately NOT shipped, ranked, so a later
 session can pick it up without re-reading either aggregate. Non-goals: re-fixing anything the
-2026-08-31 mitigation wave already shipped (status protocol, stack pre-push guard, no-inheritance
-rules — all untested by the corpus but present); re-litigating the shipped stack.
+2026-08-31 mitigation wave already shipped (status protocol, no-inheritance rules — untested by the
+corpus but present; the stack pre-push guard that wave also shipped was removed in \#1549);
+re-litigating the shipped stack.
 
 ## State
 
@@ -76,9 +77,9 @@ round confirmed its earlier findings addressed. Tip empirically verified on the 
 
 ## Unverified assumptions
 
-* The 2026-08-31 mitigation wave (status protocol, stack pre-push guard, causal-order workflow)
-  works — untested by any corpus; the next campaign is its first exercise, and the analyses
-  recommend watching for exactly that.
+* The 2026-08-31 mitigation wave (status protocol, causal-order workflow) works — untested by any
+  corpus; the next campaign is its first exercise, and the analyses recommend watching for exactly
+  that. The stack pre-push guard that wave shipped was removed in \#1549, so its efficacy is moot.
 * The `focused-contradicts-sweep` and `blank-output` guards have not yet fired on a real bad capture
   — their known-bads are fixtures from the corpus incidents. The first live firing is worth a note
   in the catalogue.
