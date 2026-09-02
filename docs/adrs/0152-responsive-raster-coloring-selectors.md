@@ -1,7 +1,8 @@
 # ADR-0152: Keep Full Coloring Art Vector; Present Selectors as Responsive Rasters
 
 **Status:** Active — amends [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md) and
-[ADR-0129](0129-invariant-svg-overlays-in-coloring-packs.md)
+[ADR-0129](0129-invariant-svg-overlays-in-coloring-packs.md); amended 2026-09-02 (web paper
+presentation tiers)
 
 **Date:** 2026-08
 
@@ -89,3 +90,66 @@ file and requires pixel equality with a fresh canonical render at the same dimen
   raster tiers.
 * − Web distribution carries two selector files per theme/orientation instead of one, and the PWA
   fallback must understand the responsive tier root.
+
+## Amendment 2026-09-02: the web paper presents a whole-number raster tier of the SVG
+
+The consequence this decision accepted — "the web paper again pays the browser's full-page SVG
+rasterization cost when a page is selected, rotated, or theme-swapped" — is the remaining
+physical-iPad red in the deployment-target matrix: `select coloring page` and `clear coloring page`
+measured 76–88 ms post-action P95 on every physical iPad web mode at c80fc3b240a3, and 83 ms on
+physical iPad native. Chromium rasterizes an SVG `<img>` off the main thread; WebKit rasterizes it
+synchronously on the main thread at the displayed size, so the cost lands inside the frame the child
+is watching. Raster cost scales with outline length × linear size, not node count: tripling a page's
+path nodes with identical outlines moved a 2732 px raster by ~12%, so simplifying paths was
+rejected, as was pre-rasterizing at idle (memory, timing dependence, the first pick still pays).
+
+**Decision.** The paper keeps the canonical SVG as `src`, export authority, and Magic registration
+authority, and on web adds a `srcset` of deterministic, lossless, alpha-exact Resvg renders of that
+SVG at max edges **1152, 1536, 2304, and 3072 px** (1152/1536/2304/3072 wide, 768/1024/1536/2048
+tall) — every tier a whole-number 3:2 or 2:3 scale of the 1536×1024 viewBox, so registration against
+the SVG and the 1152×768 fills cannot drift, and 2732 (whose two-thirds is fractional) is
+deliberately absent. The SVG itself closes the `srcset` above the ladder so a paper wider than 3072
+px keeps vector art rather than an upscaled raster. `sizes` is written in `vmin`/`vmax`
+(`min(100vmax, 150vmin)` wide, `min(100vmin, calc(200vmax / 3))` tall) so a rotation with ink —
+where the paper locks its art and is only re-presented — never re-selects a candidate, and the same
+expressions warm the other orientation's art for a blank-canvas rotation. The decode-gated swap
+decodes the browser-selected candidate off-DOM with the same `sizes`/`srcset`, so the paint is a
+cache blit.
+
+The tiers are `{page}.{dark.}presentation.webp` under the existing `max-{edge}px/{book}/` resolution
+prefix — a name this ADR retired for the earlier lossy compression derivative, revived because the
+file is exactly that: the paper's presentation of the canonical art. Unlike the compression tiers, a
+presentation tier is larger than its SVG by design and is exempt from the generator's size and
+savings rules. Every tier is bound to the SHA-256 of the SVG it was rendered from in
+`tools/asset-gen/golden/presentation-sources.json`; the catalog test fails on a re-trace that leaves
+a stale raster, regenerates the 1152 tier pixel-for-pixel, and checks the larger tiers by digest.
+
+**Packs.** Web packs carry the tiers under their hosted tier URLs — the paper's `srcset` requests
+those URLs and the installed pack serves them from the cache — with the compact variant carrying the
+1152 tier and the full variant the whole ladder, since a full device selects a different tier per
+orientation (a tablet's tall art in landscape is height-limited to 1536, its wide art in portrait
+width-limited to 2304). Tier paths are the one part of a book's inventory that may differ between
+variants; the manifest format is version 4. The service worker's responsive route consults the cache
+before the network and falls back from a presentation raster to the canonical SVG it was rendered
+from.
+
+**Native stays on the canonical SVG in this amendment.** The WKWebView pays the same synchronous
+raster, so the physical-iPad native coloring cells stay red, and this is recorded rather than solved
+here: installed packs resolve `/coloring/{book}/` paths to a local root and carry no hosted tier
+URLs, the pack format's two-resolution axis cannot express a per-device tier, a single fixed tier
+would either bloat phones or soften the 12.9" iPad, and the native bundle check rejects presentation
+rasters. A native tier needs its own sizing evidence and a pack-resolution decision; it is a
+follow-up, not an omission.
+
+**Consequences.**
+
+* \+ The web paper's page select and clear no longer rasterize a vector tree on WebKit's main
+  thread; a lossless WebP decodes off it and paints as a blit. Registration is exact by
+  construction.
+* \+ The canonical SVG remains the only export and Magic authority on every platform.
+* − 768 committed files, 44.7 MB (6.1 / 8.3 / 12.8 / 17.5 MB per tier), roughly doubling the
+  committed coloring tree; a web full pack grows by about 5.6 MB per book, a compact pack by about
+  0.8 MB.
+* − Export re-fetches the canonical SVG when the paper displays a raster tier (one request, off the
+  frame path); it previously reused the decoded `<img>`.
+* − Native keeps the synchronous raster until a native tier decision is made.
