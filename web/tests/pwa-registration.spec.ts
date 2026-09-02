@@ -134,16 +134,25 @@ test.describe('responsive coloring offline fallback', () => {
     await gotoApp(page);
     expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 
-    const cachedPaths = await page.evaluate(async () => {
-      const paths: string[] = [];
+    const cached = await page.evaluate(async () => {
+      const entries: { cacheName: string; path: string }[] = [];
       for (const cacheName of await caches.keys()) {
         for (const request of await (await caches.open(cacheName)).keys()) {
-          paths.push(new URL(request.url).pathname);
+          entries.push({ cacheName, path: new URL(request.url).pathname });
         }
       }
-      return paths;
+      return entries;
     });
-    expect(cachedPaths.some((path) => /^\/coloring\/max-\d+px\//.test(path))).toBe(false);
+    const cachedPaths = cached.map((entry) => entry.path);
+    // Installed web packs hold the paper's presentation tiers under their tier URLs; the precache
+    // itself never holds a responsive tier.
+    expect(
+      cached.some(
+        (entry) =>
+          /^\/coloring\/max-\d+px\//.test(entry.path) &&
+          !entry.cacheName.startsWith('coloring-packs-v1-')
+      )
+    ).toBe(false);
     expect(cachedPaths).toEqual(
       expect.arrayContaining([
         '/coloring/farm/cover.thumb.webp',
@@ -159,13 +168,15 @@ test.describe('responsive coloring offline fallback', () => {
     await page.context().setOffline(true);
     await gotoApp(page);
 
+    // Offline, the browser still asks for the paper tier its density needs; the service worker
+    // answers with the precached canonical SVG's bytes under that URL.
     const dprOne = await selectFarmImages(page);
     expect(dprOne.pagePreview).toEqual({
       currentSrc: '/coloring/max-240px/farm/cat-tall.selector.webp',
       decodedWidth: 267,
     });
     expect(dprOne.overlay).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
+      currentSrc: '/coloring/max-1152px/farm/cat-tall.presentation.webp',
       decodedWidth: 1024,
     });
 
@@ -182,7 +193,7 @@ test.describe('responsive coloring offline fallback', () => {
       decodedWidth: 267,
     });
     expect(dprThree.overlay).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
+      currentSrc: '/coloring/max-2304px/farm/cat-tall.presentation.webp',
       decodedWidth: 1024,
     });
   });

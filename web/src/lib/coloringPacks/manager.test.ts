@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { COLORING_PACK_FORMAT_VERSION } from './manifest';
 import { COLORING_PACK_POLICY_EVENT, COLORING_PACK_REMOVE_EVENT } from './policy';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 
@@ -32,7 +33,7 @@ import { createColoringPackDownloader } from './manager';
 import { coloringPackState, resetDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
 
 const manifest = {
-  formatVersion: 3,
+  formatVersion: COLORING_PACK_FORMAT_VERSION,
   appVersion: '1.0.0-test',
   starterBookId: 'farm',
   books: ['farm', 'dinosaur', 'space'].map((id) => ({

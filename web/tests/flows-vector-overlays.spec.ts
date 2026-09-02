@@ -58,14 +58,20 @@ test('a canonical catalog SVG reveals with Magic across themes', async ({ page }
     'data-canonical-url',
     /\/coloring\/space\/station-wide\.overlay\.svg$/
   );
+  // 1180 css px of wide art at DPR 1 needs more than the 1152 tier: the 1536 tier, a whole-number
+  // scale of the SVG viewBox, so the Magic registration below is exact.
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/space\/station-wide\.overlay\.svg$/);
+    .toMatch(/\/coloring\/max-1536px\/space\/station-wide\.presentation\.webp$/);
+  // A width-descriptor candidate reports its natural size divided by the selected density, so
+  // the 3:2 ratio is the invariant; the tier's pixel dimensions are pinned by the catalog test.
   await expect
     .poll(() =>
-      overlay.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])
+      overlay.evaluate((image: HTMLImageElement) =>
+        Math.round((image.naturalWidth / image.naturalHeight) * 100)
+      )
     )
-    .toEqual([1536, 1024]);
+    .toBe(150);
 
   await pickBrush(page, '#magicBrushButton');
   await draw(page, [
@@ -86,7 +92,10 @@ test('a canonical catalog SVG reveals with Magic across themes', async ({ page }
     'data-canonical-url',
     /\/coloring\/space\/station-wide\.dark\.overlay\.svg$/
   );
-  await expect(overlay).not.toHaveAttribute('srcset');
+  await expect(overlay).toHaveAttribute(
+    'srcset',
+    /station-wide\.dark\.presentation\.webp 1536w, .*station-wide\.dark\.overlay\.svg 6144w$/
+  );
 });
 
 test('a dark canonical SVG decodes and exports through the live app', async ({ page }) => {
@@ -107,7 +116,7 @@ test('a dark canonical SVG decodes and exports through the live app', async ({ p
   );
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/);
+    .toMatch(/\/coloring\/max-1536px\/vehicles\/train-wide\.dark\.presentation\.webp$/);
 
   await draw(page, [
     { x: 180, y: 260 },

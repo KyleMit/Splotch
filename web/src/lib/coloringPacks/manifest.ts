@@ -87,7 +87,7 @@ export function isInvariantColoringPackAssetPath(path: string): boolean {
  * carries follows the device class, so these paths are the one part of the
  * inventory that may differ between the compact and full variants.
  */
-export function isPresentationTierColoringPackAssetPath(path: string, bookId: string): boolean {
+function isPresentationTierColoringPackAssetPath(path: string, bookId: string): boolean {
   const match = /^\/coloring\/max-\d+px\/([^/]+)\/[^/]+\.presentation\.webp$/.exec(path);
   return match?.[1] === bookId;
 }
