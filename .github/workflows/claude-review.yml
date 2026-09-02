@@ -63,7 +63,11 @@ concurrency:
 jobs:
   verify:
     name: Run the checks
-    if: github.event.label.name == 'claude-review'
+    # Same-repository PRs only. GitHub already withholds repository secrets and
+    # write scopes from a `pull_request` run triggered by a fork, so a fork PR
+    # could not reach the token; the guard makes that intent explicit and
+    # saves the runner minutes of a review that would fail to authenticate.
+    if: github.event.label.name == 'claude-review' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

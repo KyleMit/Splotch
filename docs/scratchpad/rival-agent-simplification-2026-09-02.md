@@ -44,9 +44,10 @@ cd "$WT" && codex sandbox -c 'sandbox_mode="workspace-write"' -- bash -c '…'
 **Holds.** Tests, type check, and build run without escalation; writes outside the worktree and the
 temp root are refused; a commit is refused because a linked worktree's gitdir lives under the
 canonical checkout's `.git`, which is outside the writable root. The one soft spot is the temp root:
-the rival can write into its own session directory. Nothing there is read as instructions, and the
-findings come from the stream's final message rather than from a file, so the launcher does not
-trust the spool for anything on the sandboxed path.
+the rival can write into its own session directory and every sibling session's. Both rival rounds
+below turned that into a blocking finding; the launcher now gives the sandboxed rival a private
+`TMPDIR` inside its session (measured afterwards: the spool root is unwritable from there) and stops
+reading the spool for liveness when no broker is attached.
 
 ## Probe 2 — both Codex sandboxes read the whole disk
 
@@ -243,9 +244,27 @@ Its one unverified item was `format:check`: dprint exited 12 trying to compile i
 under `~/Library/Caches`, outside the sandbox. The launcher now sets `DPRINT_CACHE_DIR` inside the
 rival's private `TMPDIR`; measured with `codex sandbox`, `format:check` then passes.
 
-### Hosted run 2 — the two-job workflow
+### Hosted runs 2 and 3 — the two-job workflow
 
-*Filled in below.*
+Run 2 (33674600075) ran all six gates in `verify` and then failed at the artifact upload:
+`upload-artifact` rejects a colon in a file name, and the logs were named after the npm scripts
+(`format:check.log`). Renamed with dashes. Run 3 (33675063475) on
+`c2e304cbc583e7fcccdeffdad71767a0a7c53f66` succeeded end to end: `verify` 3m06s with every gate at
+`exit=0` (3,349 tools tests, 2,180 unit tests), `review` 7m10s, one comment posted with the marker
+and the head check. So the split works and the reviewer reads the logs as intended.
+
+Its verdict was **BLOCKERS FOUND**, on one finding: because a `pull_request` event runs the workflow
+file from the PR head, a fork PR could edit the workflow and, once a maintainer labels it,
+exfiltrate `CLAUDE_CODE_OAUTH_TOKEN`. That is wrong: GitHub withholds repository secrets and write
+scopes from a `pull_request` run triggered from a fork, so the secret resolves to nothing there —
+the rule the *first* hosted run's own Unverified item had stated correctly. The reviewer listed
+"whether this repository accepts fork PRs" as unverified, which was the wrong question. A
+same-repository guard was added to the `verify` job's `if:` anyway, as explicit intent and to save
+runner minutes; that guard is the one change to the workflow after run 3, and it was not run again.
+
+Two hosted runs, then: one that missed three real defects in its own workflow, and one that raised a
+blocking finding on a premise GitHub's documentation rules out. Neither found anything a local round
+did not.
 
 ## Comparison
 
@@ -256,10 +275,11 @@ Same head, same Codex model both local rounds, one hosted Claude run.
 | A: Codex, broker          | 5m47s      | 1             | 1.40M (1.27M)         | 14.1k  | 3                       | via the handler      |
 | B: Codex, workspace-write | 7m20s      | 0             | 1.81M (1.68M)         | 19.9k  | 4 (A's three plus one)  | yes, 24 commands     |
 | Hosted Claude, single job | 9m30s      | 0             | not reported          | —      | 0                       | yes, in the action   |
+| Hosted Claude, two jobs   | 10m16s     | 0             | not reported          | —      | 1 (premise wrong)       | yes, in `verify`     |
 
 Round B cost about thirty percent more cached input than round A and produced a strictly better
-review with no handler involvement. The hosted run cost nothing local and found nothing, and its
-runner tree was not the PR's for the paths that mattered.
+review with no handler involvement. The hosted runs cost nothing local; one found nothing and its
+runner tree was not the PR's for the paths that mattered, the other found one thing that was not so.
 
 ## Recommendation
 
