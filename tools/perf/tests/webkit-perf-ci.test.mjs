@@ -130,10 +130,14 @@ describe('WebKit performance CI', () => {
     expect(retryJob).toContain("github.event_name == 'push' && github.ref == 'refs/heads/main'");
     expect(retryJob).toContain('needs: webkit-commit-gate-fast');
     // Filing keys on the RETRY's gate step outcome — a setup failure on the
-    // retry VM must not file either.
-    expect(retryJob).toContain(
-      "if: steps.gate.outcome == 'failure' && github.event_name == 'push'"
-    );
+    // retry VM must not file either — AND on the two runners having failed at
+    // the same thing. Both conditions, because either alone files a run that
+    // reproduced nothing: on 2026-09-02 the first runner skipped
+    // crayon-scribbles and measured multi-finger clean, the retry completed
+    // crayon-scribbles and breached multi-finger, and "failure, failure" filed.
+    expect(retryJob).toContain("steps.gate.outcome == 'failure' &&");
+    expect(retryJob).toContain("steps.compare.outputs.reproduced != ''");
+    expect(retryJob).toContain("github.event_name == 'push'");
     expect(retryJob).toContain('gh issue create');
     // One open issue collects every red commit; a broken main must not file one
     // issue per merge.
@@ -143,6 +147,12 @@ describe('WebKit performance CI', () => {
     // reproduced breach still lands a red retry job.
     expect(retryJob).toContain('Record the non-reproduction');
     expect(retryJob).toContain('Fail on a reproduced breach');
+    // The comparison the filing decision rests on: the first runner publishes
+    // WHAT failed, and the retry intersects its own failures with that list.
+    expect(fastJob).toContain('gate-failures: ${{ steps.verdict.outputs.failures }}');
+    expect(fastJob).toContain('tools/perf/report-undo-gate-failures.mjs');
+    expect(retryJob).toContain('needs.webkit-commit-gate-fast.outputs.gate-failures');
+    expect(retryJob).toContain('report-undo-gate-failures.mjs --first=');
     // The retry runs the IDENTICAL gate — a different command would measure a
     // different quantity and acquit nothing.
     expect(retryJob).toContain('npm run perf:web:undo:webkit:fast');

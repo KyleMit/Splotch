@@ -284,6 +284,35 @@ describe('undo scenario profiling', () => {
     expect(state.stop).toHaveBeenCalledOnce();
     expect(browser.close).toHaveBeenCalledOnce();
   });
+
+  it('does not time out a settled history on a host too slow to poll it', async () => {
+    // The 2026-09-02 post-merge gate on main: crayon-scribbles was skipped for a
+    // history that "never settled", and the reading it quoted was byte-identical
+    // to the settled reading a second runner reported for the same commit. On a
+    // saturated main thread the getUndoDebug() polls queue behind the very work
+    // being waited on, so the wall clock expires after two or three reads when
+    // four are needed to see quiescence at all. A clock that jumps several
+    // budgets per read is a poll that slow.
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
+    const page = fakePage();
+    fakeBrowser(page, { withCdp: false });
+    const SLOW_POLL_TICK_MS = 100;
+    let elapsed = 0;
+    vi.spyOn(Date, 'now').mockImplementation(() => (elapsed += SLOW_POLL_TICK_MS));
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
+    const gate = await runUndoScenarios();
+
+    const summary = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(summary.scenarios[0]).not.toHaveProperty('skipped');
+    expect(summary.scenarios[0]).toMatchObject({ key: 'multi-finger' });
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('never settled'));
+    expect(gate).toMatchObject({ gated: true, breaches: [] });
+    expect(gate).not.toHaveProperty('evaluated');
+    expect(process.exitCode).toBe(originalExitCode);
+  });
 });
 
 describe('engine selection', () => {

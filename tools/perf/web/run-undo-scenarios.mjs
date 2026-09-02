@@ -386,18 +386,30 @@ async function settleHistory(page, timeoutMs = 10_000) {
     a.pendingCommands === b.pendingCommands;
   let prev = null;
   let stable = 0;
+  let samples = 0;
   for (;;) {
     const d = await undoDebug(page);
     if (d == null) return null;
+    samples++;
     stable = sameHistory(prev, d) ? stable + 1 : 0;
     if (stable >= SETTLE_STABLE_SAMPLES - 1) return d;
-    if (Date.now() - t0 > timeoutMs) {
+    // The wall clock alone cannot expire this wait, because on a saturated main
+    // thread the polls themselves are what spend it: each getUndoDebug() round
+    // trip queues behind the work being waited on, so a slow host can burn the
+    // whole budget on two or three reads and time out on a history that has
+    // been quiescent throughout. Observed on the 2026-09-02 main gate, where
+    // the "never settled" reading was byte-identical to the settled reading a
+    // second runner reported for the same commit. Quiescence is only visible
+    // once SETTLE_STABLE_SAMPLES readings exist, so until that many have been
+    // taken there is nothing for a timeout to have been long enough for.
+    if (samples >= SETTLE_STABLE_SAMPLES && Date.now() - t0 > timeoutMs) {
       throw new Error(
         `history never settled within ${timeoutMs} ms: undoEntries=${d.snapshots} ` +
           `livePatchEntries=${d.liveRasters} patchBytes=${d.rasterBytes} ` +
           `baseTiles=${d.baseRasters} baseRasterBytes=${d.baseRasterBytes} ` +
-          `historyCommands=${d.historyLength} ` +
-          `(want ${SETTLE_STABLE_SAMPLES} consecutive identical samples)`
+          `historyCommands=${d.historyLength} pendingCommands=${d.pendingCommands} ` +
+          `(want ${SETTLE_STABLE_SAMPLES} consecutive identical samples; ` +
+          `took ${samples} in ${Date.now() - t0} ms)`
       );
     }
     prev = d;
@@ -710,7 +722,19 @@ export async function runUndoScenarios() {
       ...gate,
       breaches: gate.breaches.map((scenario) => scenario.key),
     };
-    const undoSummary = { settings, scenarios: results, gate: gateSummary, fastSetEvaluation };
+    // The confirmation passes are recorded whole, not just as the timings the gate
+    // scored. A confirmed breach is the claim that expensive stroke-end work
+    // reproduced, and the evidence for or against it is the sample distribution —
+    // two isolated spikes in an otherwise 0 ms run read very differently from a
+    // distribution that shifted. `confirmationTimings` carries the verdict; this
+    // carries what the verdict was reached from.
+    const undoSummary = {
+      settings,
+      scenarios: results,
+      confirmations: [...confirmations.values()],
+      gate: gateSummary,
+      fastSetEvaluation,
+    };
     writeFileSync(join(outDir, 'undo-scenarios.json'), JSON.stringify(undoSummary, null, 2));
     const md = renderUndoReport(undoSummary);
     writeFileSync(join(outDir, 'undo-scenarios.md'), md);
