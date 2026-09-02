@@ -23,7 +23,7 @@
   ],
   "preservedEvidence": {
     "from": "data.json",
-    "reason": "Per-mode raw captures land in gitignored perf-profiles scratch. ADR-0138 deliberately tracks one whole representative capture per target and brush instead of every orientation-theme cell. The five targets refreshed on 2026-09-01 are marked captured-untracked; the six targets awaiting this campaign's recapture are preserved historical evidence. Both states regenerate from the last normalized data.json, but only captured-untracked sections claim currency and remain subject to check:matrix-staleness."
+    "reason": "Raw captures land in gitignored perf-profiles/ scratch, so the 2026-09-02 recapture of physical iPad web and the three Mac engines (four targets, captured at 31476d91d3ec8487d0fcad7492425cf0a6642584) is carried as captured-untracked: the generator preserves those modes from its own previous data.json. The other seven targets are preserved from earlier campaigns, including the iPad Simulator web rows marked preserved on 2026-09-02 because ADR-0156 makes simulator rows advisory. Representative drawing captures of the recapture are tracked under perf-profiles/evidence/2026-09-02-release-gate-recapture/."
   },
   "candidateActions": [
     {
@@ -1882,7 +1882,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -3601,7 +3606,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -5345,7 +5355,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -7089,7 +7104,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -55340,7 +55360,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -57368,7 +57393,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -59421,7 +59451,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -61474,7 +61509,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -63518,7 +63558,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -65550,7 +65595,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -67607,7 +67657,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -69664,7 +69719,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -71704,7 +71764,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -73732,7 +73797,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -75785,7 +75855,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -77838,7 +77913,12 @@
             "controlLabel": "idle frame control",
             "scoreable": true,
             "controlEvidence": "passed"
-          }
+          },
+          "untrackedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     }

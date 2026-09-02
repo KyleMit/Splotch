@@ -111,33 +111,48 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 * The three Mac engines are not driven at the same input cadence: Chromium and Firefox deliver about
   120 contact moves per second while Playwright WebKit delivers about 60. Both are stable, but the
   three desktop rows are not strictly comparable to one another.
-* 28 cells carry historical results preserved from data.json rather than re-read raw captures:
-  Per-mode raw captures land in gitignored perf-profiles scratch. ADR-0138 deliberately tracks one
-  whole representative capture per target and brush instead of every orientation-theme cell. The
-  five targets refreshed on 2026-09-01 are marked captured-untracked; the six targets awaiting this
-  campaign's recapture are preserved historical evidence. Both states regenerate from the last
-  normalized data.json, but only captured-untracked sections claim currency and remain subject to
-  check:matrix-staleness. Preserved cells: iPad physical · native · portrait-light (drawing, undo,
-  actions); iPad physical · native · portrait-dark (drawing, undo, actions); iPad physical · native
-  · landscape-light (drawing, undo, actions); iPad physical · native · landscape-dark (drawing,
-  undo, actions); iPad simulator · web · portrait-light (drawing, undo, actions); iPad simulator ·
-  web · portrait-dark (drawing, undo, actions); iPad simulator · web · landscape-light (drawing,
-  undo, actions); iPad simulator · web · landscape-dark (drawing, undo, actions); iPad simulator ·
-  native · portrait-light (drawing, undo, actions); iPad simulator · native · portrait-dark
-  (drawing, undo, actions); iPad simulator · native · landscape-light (drawing, undo, actions); iPad
-  simulator · native · landscape-dark (drawing, undo, actions); Android physical · web ·
-  portrait-light (drawing, undo, actions); Android physical · web · portrait-dark (drawing, undo,
-  actions); Android physical · web · landscape-light (drawing, undo, actions); Android physical ·
-  web · landscape-dark (drawing, undo, actions); Android physical · native · portrait-light
-  (drawing, undo, actions); Android physical · native · portrait-dark (drawing, undo, actions);
-  Android physical · native · landscape-light (drawing, undo, actions); Android physical · native ·
-  landscape-dark (drawing, undo, actions); Android emulator · web · portrait-light (drawing, undo,
-  actions); Android emulator · web · portrait-dark (drawing, undo, actions); Android emulator · web
-  · landscape-light (drawing, undo, actions); Android emulator · web · landscape-dark (drawing,
-  undo, actions); Android emulator · native · portrait-light (drawing, undo, actions); Android
-  emulator · native · portrait-dark (drawing, undo, actions); Android emulator · native ·
-  landscape-light (drawing, undo, actions); Android emulator · native · landscape-dark (drawing,
-  undo, actions).
+* 28 cells carry historical results preserved from data.json rather than re-read raw captures: Raw
+  captures land in gitignored perf-profiles/ scratch, so the 2026-09-02 recapture of physical iPad
+  web and the three Mac engines (four targets, captured at 31476d91d3ec8487d0fcad7492425cf0a6642584)
+  is carried as captured-untracked: the generator preserves those modes from its own previous
+  data.json. The other seven targets are preserved from earlier campaigns, including the iPad
+  Simulator web rows marked preserved on 2026-09-02 because ADR-0156 makes simulator rows advisory.
+  Representative drawing captures of the recapture are tracked under
+  perf-profiles/evidence/2026-09-02-release-gate-recapture/. Preserved cells: iPad physical · native
+  · portrait-light (drawing, undo, actions); iPad physical · native · portrait-dark (drawing, undo,
+  actions); iPad physical · native · landscape-light (drawing, undo, actions); iPad physical ·
+  native · landscape-dark (drawing, undo, actions); iPad simulator · web · portrait-light (drawing,
+  undo, actions); iPad simulator · web · portrait-dark (drawing, undo, actions); iPad simulator ·
+  web · landscape-light (drawing, undo, actions); iPad simulator · web · landscape-dark (drawing,
+  undo, actions); iPad simulator · native · portrait-light (drawing, undo, actions); iPad simulator
+  · native · portrait-dark (drawing, undo, actions); iPad simulator · native · landscape-light
+  (drawing, undo, actions); iPad simulator · native · landscape-dark (drawing, undo, actions);
+  Android physical · web · portrait-light (drawing, undo, actions); Android physical · web ·
+  portrait-dark (drawing, undo, actions); Android physical · web · landscape-light (drawing, undo,
+  actions); Android physical · web · landscape-dark (drawing, undo, actions); Android physical ·
+  native · portrait-light (drawing, undo, actions); Android physical · native · portrait-dark
+  (drawing, undo, actions); Android physical · native · landscape-light (drawing, undo, actions);
+  Android physical · native · landscape-dark (drawing, undo, actions); Android emulator · web ·
+  portrait-light (drawing, undo, actions); Android emulator · web · portrait-dark (drawing, undo,
+  actions); Android emulator · web · landscape-light (drawing, undo, actions); Android emulator ·
+  web · landscape-dark (drawing, undo, actions); Android emulator · native · portrait-light
+  (drawing, undo, actions); Android emulator · native · portrait-dark (drawing, undo, actions);
+  Android emulator · native · landscape-light (drawing, undo, actions); Android emulator · native ·
+  landscape-dark (drawing, undo, actions).
+* 16 cells were captured for this campaign but their per-mode raw inputs remain untracked under
+  ADR-0138; regeneration carries their normalized sections from data.json, while
+  check:matrix-staleness still verifies their capture commits. Representative whole captures remain
+  tracked under perf-profiles/evidence/. Untracked-source cells: iPad physical · web ·
+  portrait-light (drawing, undo, actions); iPad physical · web · portrait-dark (drawing, undo,
+  actions); iPad physical · web · landscape-light (drawing, undo, actions); iPad physical · web ·
+  landscape-dark (drawing, undo, actions); Mac · Chrome · portrait-light (drawing, undo, actions);
+  Mac · Chrome · portrait-dark (drawing, undo, actions); Mac · Chrome · landscape-light (drawing,
+  undo, actions); Mac · Chrome · landscape-dark (drawing, undo, actions); Mac · Safari ·
+  portrait-light (drawing, undo, actions); Mac · Safari · portrait-dark (drawing, undo, actions);
+  Mac · Safari · landscape-light (drawing, undo, actions); Mac · Safari · landscape-dark (drawing,
+  undo, actions); Mac · Firefox · portrait-light (drawing, undo, actions); Mac · Firefox ·
+  portrait-dark (drawing, undo, actions); Mac · Firefox · landscape-light (drawing, undo, actions);
+  Mac · Firefox · landscape-dark (drawing, undo, actions).
 
 ## Candidate actions
 
