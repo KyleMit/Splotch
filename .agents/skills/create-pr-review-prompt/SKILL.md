@@ -1,9 +1,9 @@
 ---
-name: create-pr-feedback-handoff
-description: Build a copy-paste handoff prompt directing another agent to review every PR this session produced with the leave-pr-review skill — enumerating each PR (a stacked campaign has several), then adding the spots that deserve special attention and an adversarial pass on the overall strategy as extra focus areas layered on top of a full review sweep. Use when asked to create a PR feedback or review handoff, to hand this session's PRs to an independent reviewer, or to prep a second-opinion review prompt.
+name: create-pr-review-prompt
+description: Build a copy-paste prompt directing another agent to review every PR this session produced with the leave-pr-review skill — enumerating each PR (a stacked campaign has several), then adding the spots that deserve special attention and an adversarial pass on the overall strategy as extra focus areas layered on top of a full review sweep. Use when asked to create a PR review prompt, a PR review or feedback handoff, to hand this session's PRs to an independent reviewer, or to prep a second-opinion review prompt.
 ---
 
-# Create a PR feedback handoff prompt
+# Create a PR review prompt
 
 Package this session's PRs for an independent reviewer: one self-contained prompt the user can paste
 into a fresh agent session. The receiving agent reviews with the `leave-pr-review` skill; this
@@ -12,7 +12,7 @@ ordering rule that keeps those doubts from narrowing the review.
 
 The deliverable is the prompt itself, in a fenced block in the chat reply. It is **not** a
 `docs/handoff/` packet — that directory belongs to `create-handoff` and is consumed by
-`resume-handoff` to continue in-flight work; a review handoff is consumed by a different agent that
+`resume-handoff` to continue in-flight work; a review prompt is consumed by a different agent that
 starts from the PRs alone.
 
 ## 1. Enumerate the PRs
@@ -35,7 +35,7 @@ should still call it out — a reviewer who misses it reviews the same change N 
 ## 2. Pick the extra focus areas
 
 Two kinds, both drawn from the authoring session's privileged position — you know where this work is
-weakest, and the handoff is the place to say so. A handoff that lists only safe areas wastes the
+weakest, and the prompt is the place to say so. A prompt that lists only safe areas wastes the
 reviewer's independence.
 
 * **Specific attention areas** — the judgment calls that could have gone another way, workarounds
