@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -102,6 +102,39 @@ describe('scope resolution', () => {
 });
 
 describe('disposable worktree and packet', () => {
+  // `--ignore-scripts` alone left pnpmfile hooks running at launch; the control run proves the
+  // marker would appear without the pin, so the assertion is not vacuous.
+  it('installs without running a PR-controlled pnpmfile hook', () => {
+    const project = join(root, 'pnpmfile-project');
+    mkdirSync(project);
+    writeFileSync(
+      join(project, 'package.json'),
+      JSON.stringify({ name: 'probe', private: true, version: '0.0.0' })
+    );
+    writeFileSync(
+      join(project, '.pnpmfile.cjs'),
+      'const fs = require("node:fs");\nmodule.exports = { hooks: { readPackage(pkg) { fs.writeFileSync("hook.marker", "ran"); return pkg; } } };\n'
+    );
+    const pnpm = (args) =>
+      spawnSync('pnpm', args, {
+        cwd: project,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    const marker = join(project, 'hook.marker');
+    expect(pnpm(['install', '--lockfile-only', '--ignore-scripts']).status).toBe(0);
+    rmSync(marker, { force: true });
+
+    const withoutPin = WORKTREE_INSTALL_ARGS.filter((arg) => arg !== '--ignore-pnpmfile');
+    expect(pnpm(withoutPin).status).toBe(0);
+    expect(existsSync(marker)).toBe(true);
+    rmSync(marker, { force: true });
+    rmSync(join(project, 'node_modules'), { recursive: true, force: true });
+
+    pnpm([...WORKTREE_INSTALL_ARGS]);
+    expect(existsSync(marker)).toBe(false);
+  });
+
   it('checks the head out detached, writes the packet, and removes cleanly', () => {
     const scope = resolveScope(repo, { kind: 'base', base: 'main' });
     const directory = join(root, 'wt');
@@ -115,6 +148,7 @@ describe('disposable worktree and packet', () => {
     writeReviewPacket(repo, scope, packet);
     expect(readFileSync(join(packet, PACKET_FILES.diff), 'utf8')).toContain('+two');
     expect(WORKTREE_INSTALL_ARGS).toContain('--ignore-scripts');
+    expect(WORKTREE_INSTALL_ARGS).toContain('--ignore-pnpmfile');
     expect(WORKTREE_INSTALL_ARGS).toContain('--frozen-lockfile');
     expect(readFileSync(join(packet, PACKET_FILES.commits), 'utf8')).toContain('second');
     expect(readFileSync(join(packet, PACKET_FILES.files), 'utf8')).toMatch(/^M\ta\.txt/);

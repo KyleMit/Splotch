@@ -41,9 +41,11 @@ than a failure:
   configured `approvals_reviewer` approves it with no human in the loop. Measured: read-only alone
   created a file; with this pin the same command is denied.
 * `sandbox_mode="read-only"`, with the working root set to the disposable worktree. The worktree's
-  dependency install runs with `--ignore-scripts`: the reviewed commit owns `package.json`, and a
-  PR-controlled `postinstall` would otherwise run on this machine at launch, before anyone read the
-  diff. Native modules still arrive built from the pnpm store.
+  dependency install runs with `--ignore-scripts` and `--ignore-pnpmfile`: the reviewed commit owns
+  `package.json` and `.pnpmfile.cjs`, and a PR-controlled `postinstall` or pnpmfile hook would
+  otherwise run on this machine at launch, before anyone read the diff. Native modules still arrive
+  built from the pnpm store; a commit whose lockfile records a pnpmfile checksum fails the install
+  loudly instead.
 * `--disable apps`, `hooks`, `browser_use`, `browser_use_external`, `browser_use_full_cdp_access`,
   `computer_use`, `multi_agent`, and `image_generation`. `apps` is a built-in MCP server exposing
   GitHub read *and write* tools with its own credentials; hooks run before the first model turn and
