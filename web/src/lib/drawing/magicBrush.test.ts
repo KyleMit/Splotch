@@ -94,6 +94,8 @@ describe('magic sheet fill-load failure', () => {
     magic.initMagicBrush({
       paperSize: () => PAPER,
       sheetBounds: () => ({ x: 0, y: 0, ...PAPER }),
+      hasRetainedOps: () => false,
+      magicActive: () => false,
       repaint: () => {},
     });
     return magic;
@@ -211,6 +213,24 @@ describe('magic sheet fill-load failure', () => {
 
     expect(requested).toHaveLength(1);
     expect(lastRequest().src).toBe(PAGE_URL);
+  });
+
+  it('detaches a cleared fill before the overlay effect settles', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    lastRequest().naturalWidth = 200;
+    lastRequest().naturalHeight = 100;
+    lastRequest().onload!();
+    expect(magic.captureMagicSheet()).not.toBeNull();
+
+    magic.deferColorSheet(null);
+
+    expect(magic.captureMagicSheet()).toBeNull();
+    expect(requested).toHaveLength(1);
+
+    magic.setColorSheet(null);
+    expect(magic.captureMagicSheet()).toBeNull();
   });
 
   it('ignores a superseded error so it cannot clobber a newer page', async () => {
@@ -351,6 +371,8 @@ describe('magic sheet worker raster', () => {
     magic.initMagicBrush({
       paperSize: () => ({ width: 400, height: 300 }),
       sheetBounds: () => ({ x: 0, y: 0, width: 400, height: 300 }),
+      hasRetainedOps: () => false,
+      magicActive: () => false,
       repaint,
     });
     return { magic, repaint };

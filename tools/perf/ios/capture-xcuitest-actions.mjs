@@ -231,6 +231,13 @@ export function settingsSectionMeasurement(section, label, settingsModalUsesSide
   };
 }
 
+export function settingsSectionLabelSelector(section, settingsModalUsesSidebar) {
+  const selector = settingsSectionRow(section);
+  return settingsModalUsesSidebar
+    ? `${selector} [data-toc-label]`
+    : `${selector} .hub-title`;
+}
+
 export function settingsSectionSetupReady(section, ready, settingsModalUsesSidebar) {
   if (!settingsModalUsesSidebar) return ready;
   const selector = settingsSectionRow(section);
@@ -1177,7 +1184,7 @@ export async function runActionSweep({
       const selector = settingsSectionRow(section);
       const label = await execute(
         `return document.querySelector(${JSON.stringify(
-          settingsModalUsesSidebar ? selector : `${selector} .hub-title`
+          settingsSectionLabelSelector(section, settingsModalUsesSidebar)
         )})?.textContent?.trim();`
       );
       const measurement = settingsSectionMeasurement(section, label, settingsModalUsesSidebar);

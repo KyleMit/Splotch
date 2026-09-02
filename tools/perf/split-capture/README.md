@@ -4,13 +4,18 @@ Drives a drawing capture on a **physical** device where the touch input and the 
 on separate channels (ADR-0135). Input is the platform's own trusted injection; measurement is the
 page instrumenting itself and uploading a report over ordinary HTTP.
 
+`docs/PROFILING-MECHANICS.md` is the cross-cutting reference — every transport, what each drives,
+and the drivers ruled out. This file stays the detail on *this* transport's mechanics and failure
+modes.
+
 ## Why it exists
 
 Every other capture path drives input and reads measurement down the same debugger connection, and
 that connection is the fragile part:
 
-* **Android.** The Appium browser transport delivers **46.8 contact moves per second** against the
-  100–170 fidelity band, at 0.44 moves per frame with pressure and contact geometry reading zero.
+* **Android.** The Appium browser transport delivers **46.8 contact moves per second** — 0.44 moves
+  per frame, against the density floor `FIDELITY_MOVES_PER_FRAME_MIN` sets (ADR-0145 retired the
+  rate band this once quoted, because a rate encodes the panel's refresh rather than the stream).
   Cells captured that way fail the fidelity verdict and cannot be scored — and worse, they score
   ~11% lost frame time, because `lostFrameTimeShare` prices the gaps between sparse input as lost
   frames. A red cell produced that way looks like a catastrophic regression and means nothing.
@@ -30,9 +35,9 @@ only has to be able to touch the screen.
 
 Run the host first; it binds `0.0.0.0` because the device loads it over the LAN.
 
-`perf:campaign` drives this path for any target that declares `transport: 'split'` — today
-`android-device-web`. It asserts the probe host answers before its queue starts rather than starting
-one itself, so `perf:device:serve` still has to be running.
+`perf:campaign` drives this path for any target that declares `transport: 'split'` in
+`tools/perf/lib/campaign-plan.mjs`, which owns that list. It asserts the probe host answers before
+its queue starts rather than starting one itself, so `perf:device:serve` still has to be running.
 
 ```sh
 npm run perf:build

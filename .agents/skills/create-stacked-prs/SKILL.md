@@ -43,10 +43,10 @@ There is no documented or enforced maximum stack size — a 13-PR chain linked i
   on. Branch C was cut from B's head; a commit appended to B makes B no longer an ancestor of C,
   which breaks the linear-history requirement and forces a cascade of rebases up the stack. When you
   find a problem in A, B, or C — your own or from review — **do not fix it in place.** Ship the fix
-  as a new commit in the PR at the top of the stack. The repository's pre-push hook enforces this
-  against the live open-PR graph: a branch that is the base of another open PR is not a writable
-  tip. Agent session hooks install it automatically; human checkouts use the installer in Mechanics.
-  Never bypass it with `--no-verify`.
+  as a new commit in the PR at the top of the stack. **Nothing enforces this.** A pre-push hook used
+  to check it against the live open-PR graph and was removed for the friction it caused, so the rule
+  now rests entirely on whoever is pushing. Before pushing any branch, confirm it is not the base of
+  another open PR.
 * **Plan the sweep-up PR.** The final PR collects every surviving issue from the earlier ones in one
   pass. Expect to write it; plan for it rather than treating it as a failure. One carve-out: a
   finding against a **performance-gate or calibration change** is fixed in an immediate child of the
@@ -72,7 +72,6 @@ it is in the Notes).
 Create each PR against the branch below it:
 
 ```bash
-npm run stack:guard:install  # idempotent; agent sessions already ran it
 git checkout <previous-branch>
 git checkout -b <new-branch>
 git push -u origin <new-branch>
@@ -88,10 +87,14 @@ not call `gh stack push` directly; publish through:
 npm run stack:push:rebased
 ```
 
-That wrapper snapshots the live PR head/base identities before `gh stack push` starts its non-atomic
-per-branch updates. The pre-push hook then permits rewritten lower branches only when their patch
-IDs are unchanged relative to their rewritten parents. A lower-PR content fix remains blocked even
-if every descendant is rebased with it.
+A rebase may rewrite commit identities, but it must leave every lower PR's *content* untouched, and
+a bare `gh stack push` will publish one that does not. That wrapper reads the live PR head/base
+identities, compares each lower PR's original patch against the patch its rebased branch now
+carries, and refuses to push when any differs — naming the PR. It checks exactly the PRs another
+open PR is based on; the tip is excluded, because new commits legitimately land there.
+
+A refusal means the rebase changed that PR's content — the no-commits-below rule broken by another
+route. Put the change in a new commit at the tip instead.
 
 Branches follow the repo convention — `claude/issue-<NN>-<slug>`. When falling back to the CLI, use
 `--body-file`, not `--body`, for anything longer than a sentence: a body containing backticks, `$`,
@@ -169,7 +172,8 @@ supported for stacks — admin privileges do not override it. A red lower PR the
 merge, and a fix parked in the tip can never turn that lower check green. There the fix belongs in
 the layer that broke it, followed by a cascade rebase-and-push of every branch above — exactly the
 cost the no-commits-below rule exists to avoid, and the reason to check this before choosing where
-fixes go. Publish that exceptional cascade with the guarded wrapper above, not raw `gh stack push`.
+fixes go. Publish that exceptional cascade with the patch check above, since it rewrites lower PRs
+by design.
 
 `main` in this repo requires no status checks (its rules are `deletion` and `non_fast_forward`
 only), which is what makes the downstream-fix discipline workable here.

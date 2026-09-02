@@ -109,7 +109,7 @@
     </span>
   {/if}
   <span class="toc-text">
-    <span>{item.label}</span>
+    <span data-toc-label>{item.label}</span>
     {#if item.meta}
       <span class="toc-meta">{item.meta}</span>
     {/if}

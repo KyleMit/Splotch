@@ -69,14 +69,20 @@ campaign prompt, PR body, report, or memory.
    already owns the matrix work, verify its branch, PR, and checkpoint state and resume it instead
    of duplicating it. Otherwise fetch the trunk, verify prior campaign PRs are merged, switch to and
    fast-forward the trunk, then create a fresh campaign branch.
-3. Open a draft campaign PR as soon as the first coherent commit is pushed. Keep the current
-   stack-tip PR body as the live campaign ledger, copying the ledger forward whenever the stack
-   grows; older PR bodies remain scoped snapshots. Record the baseline inventory, shipped clusters,
-   current cluster, remaining work, exact product commits, raw artifact provenance, correctness
-   evidence, and matrix status.
-4. Read the `profiling`, `capture-performance-matrix`, `testing`, and `create-stacked-prs` skills.
+3. Treat the PR stack as the campaign's working structure, not an end-of-campaign packaging step.
+   Open the first draft PR as soon as its first coherent commit is pushed. For every later accepted
+   cluster, branch from the current stack tip, push and open its next draft PR immediately, and link
+   the expanded chain before starting another cluster. Never accumulate multiple accepted clusters
+   on one campaign branch for later decomposition; rejected or inconclusive experiments stay local
+   and are backed out. The campaign invocation already authorizes these draft PRs and stack links,
+   so do not wait for a later request to create them.
+4. Keep the current stack-tip PR body as the live campaign ledger, copying the ledger forward
+   whenever the stack grows; older PR bodies remain scoped snapshots. Record the baseline inventory,
+   shipped clusters, current cluster, remaining work, exact product commits, raw artifact
+   provenance, correctness evidence, and matrix status.
+5. Read the `profiling`, `capture-performance-matrix`, `testing`, and `create-stacked-prs` skills.
    Read `mobile` before any iOS, Android, or Capacitor work.
-5. Locate the authoritative matrix inputs, source manifest, and generator from the current
+6. Locate the authoritative matrix inputs, source manifest, and generator from the current
    repository rather than carrying paths or output names forward from an older campaign. Discover
    generator-owned JSON, Markdown, and HTML outputs from the generator or directory instructions.
    `scrapbook/performance/` contains several matrices: identify the deployment-target matrix by its
@@ -132,6 +138,31 @@ Never make the matrix green by:
 * publishing only a lucky retry or discarding a faithful red result;
 * copying a pass from another target or calibration tier;
 * treating stale, incomparable, or invalid evidence as current product approval.
+
+Frame pacing and readiness are separate acceptance dimensions. The action scorer's `passed` verdict
+covers first response and presented-frame continuity; `readyMs` records when the action-specific
+observable outcome actually arrived. A cluster is not accepted from a greener frame verdict alone.
+For every discrete-action A/B:
+
+* compare readiness P50/P95 from the same action, target, runtime, transport, polling cadence, and
+  ready predicate, alongside first-frame and post-action distributions;
+* reject a candidate that moves required work beyond the scored activity window, weakens the ready
+  predicate, or delays observable completion merely to protect animation frames;
+* treat a readiness regression larger than the capture path's measured resolution/noise as a product
+  tradeoff, not a performance win. Keep it only with explicit user approval and record the frame
+  benefit, latency cost, and why the deferred work is non-critical;
+* when an intentionally deferred action remains, apply an activation/busy state synchronously and
+  keep it visible until completion. A non-idempotent activation must be single-flight; repeatable,
+  idempotent choices such as selecting the current color need no artificial input lock;
+* capture normal-speed before/after video or GIF for any changed temporal behavior, cropped to the
+  control and affected surface, before asking for the appearance verdict.
+
+The committed matrix reports readiness P95 but does not assign one universal gate: “ready” ranges
+from a local state flip to a full-resolution download, and remote drivers add different polling
+floors. That is why the comparable A/B requirement above is mandatory rather than an invitation to
+ignore the number. If a capture path cannot resolve the proposed readiness difference, it cannot
+approve that experiment; use a finer in-page mark or another faithful path immediately serving the
+named product hypothesis.
 
 Stale red cells require faithful fresh captures. Harness work follows the product-first gate above:
 repair a demonstrated measurement defect or add a targeted diagnostic or validation capability only
@@ -237,17 +268,28 @@ that lower PR. Put review fixes and newly discovered issues in the current stack
 remain coherent, or create a feedback/findings PR stacked from the tip. Never rewrite lower history
 for an ordinary finding.
 
+Every newly opened PR gets a fresh independent cross-runner review before another stack layer is
+started:
+
+* when the campaign runs in Codex, use `run-claude`'s fixed PR-review publisher for that exact PR;
+* when the campaign runs in Claude, keep the checkout on that PR's head and use `run-codex` with
+  `--base <that PR's base branch>` before moving the checkout or starting the next layer. Validate
+  and address its findings locally. The read-only wrapper cannot reach GitHub; if a posted GitHub
+  review is also required, run `leave-pr-review` separately for its own checkout, verification, and
+  publication rather than treating it as a publisher for Codex's output.
+
+Do not substitute same-session self-review or postpone the reviews until wrap-up. If the required
+reviewer runner is unavailable, stop adding stack layers and report the blocker.
+
 For each delivered cluster:
 
-1. get an independent empirical review: from Codex, launch Claude through `run-claude`; otherwise
-   run `leave-pr-review` in a fresh independent session or hand the stack off with
-   `create-pr-feedback-handoff`;
-2. use `address-pr-review` for every inline thread, review summary, and conversation comment;
-3. reproduce findings, fix or rebut them with evidence, reply, and resolve every thread;
-4. rerun the same reviewer after material fixes;
-5. follow `pr-screenshots` when a PR changes visible UI;
-6. keep the current stack tip green, verify the live PR head matches the tested SHA, and do not
-   start the next stack layer until the current tip's CI is green.
+1. use `address-pr-review` for every inline thread, review summary, and conversation comment;
+2. reproduce findings, fix or rebut them with evidence, reply, and resolve every thread;
+3. rerun the same reviewer after material fixes;
+4. follow `pr-screenshots` when a PR changes visible UI;
+5. keep the current stack tip green, verify the live PR head matches the tested SHA, and do not
+   start the next stack layer until its independent review is complete and the current tip's CI is
+   green.
 
 Do not merge unless the user separately authorizes merging. A campaign completion or wrap-up request
 authorizes making the stack merge-ready, not landing it.

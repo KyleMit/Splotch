@@ -5,7 +5,7 @@
     type ColoringPage,
     type ResponsiveColoringImage,
   } from '$lib/state/books';
-  import { waitForPressFeedbackToSettle } from '$lib/actions/pressFeedback';
+  import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
 
   interface Props {
     page: ColoringPage;
@@ -16,10 +16,9 @@
 
   let { page, preview, hoverArmed, onclear }: Props = $props();
 
-  async function clearAfterPressFeedback(event: MouseEvent) {
+  function clearAfterPressFeedback(event: MouseEvent) {
     const button = event.currentTarget as HTMLButtonElement;
-    await waitForPressFeedbackToSettle(button);
-    onclear();
+    void runSingleFlightActivation(button, onclear);
   }
 </script>
 
@@ -63,12 +62,7 @@
     touch-action: manipulation;
     transition:
       border-color var(--duration-base) ease,
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .active-page-chip:active {
-    transform: scale(0.92);
+      background var(--duration-base) ease;
   }
 
   .active-page-thumbnail {
@@ -117,6 +111,29 @@
       background: var(--brand-wash);
       border-color: var(--brand);
     }
+  }
+
+  .active-page-chip:active,
+  .active-page-chip.hover-armed:active,
+  .active-page-chip:global(.activation-pending) {
+    background: var(--danger-wash);
+    border-color: var(--danger-text);
+  }
+
+  .active-page-chip:global(.activation-pending) {
+    transition: none;
+  }
+
+  .active-page-chip:active .active-page-clear,
+  .active-page-chip.hover-armed:active .active-page-clear,
+  .active-page-chip:global(.activation-pending) .active-page-clear {
+    background: var(--danger-text);
+  }
+
+  .active-page-chip:active :global(.active-page-clear-icon svg),
+  .active-page-chip.hover-armed:active :global(.active-page-clear-icon svg),
+  .active-page-chip:global(.activation-pending) :global(.active-page-clear-icon svg) {
+    fill: var(--surface);
   }
 
   @media (max-width: 360px) {

@@ -164,7 +164,7 @@ describe('grant log', () => {
   it('flattens multi-line Appium detail so a row stays one TSV line', () => {
     const line = grantLogLine({
       timestamp: '2026-08-25T02:06:14.384Z',
-      udid: 'udid',
+      device: 'device-test',
       outcome: 'blocked',
       detail: 'xcodebuild failed\twith code 65.\nRun the xcodebuild line by hand.',
     });
