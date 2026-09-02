@@ -191,3 +191,14 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   the files earlier installers wrote. The installer is fixed to the canonical checkout, so it was
   not run from this worktree; the Codex-side path was exercised from the checkout with this Claude
   session serving as the handler.
+* 2026-09-02 — Claude-rival smoke from the checkout, sonnet, this session as handler. Two defects
+  before the rival started: the ledger key lacked the vendor, so the Claude launcher tried to resume
+  the Codex thread recorded for the same PR (the key now includes the rival and `planRound` refuses
+  the other vendor's record), and Claude's `--json-schema` validator refuses the draft 2020-12
+  `$schema` key (stripped for Claude only). Once running, the prompt on stdin, restricted mode, the
+  packet under `--add-dir`, and the broker all worked; the rival's first requests were cheap git
+  reads, which is the broker-load asymmetry the plan review predicted showing up in practice. Eight
+  requests in all, seven of them `git diff`/`git show` of a range the packet already held and one
+  test run; every one approved. Zero findings, zero unverified, posted as review 5091158063. The
+  rival prompt now names those git reads as requests it must not make. Cost: about 2.1M cache-read
+  tokens and 20k output tokens on sonnet, roughly seven minutes.
