@@ -7,13 +7,14 @@ frame gaps, and the served entry module that identifies the build; the multi-meg
 stay in the capture host's gitignored `perf-profiles/`. The drawing recapture of the same night is
 in the tracked corpus `perf-profiles/evidence/2026-09-02-release-gate-recapture/`.
 
-| File                                 | Build                                                  | Sweep                               |
-| ------------------------------------ | ------------------------------------------------------ | ----------------------------------- |
-| `layer1-main-*`                      | `origin/main` 6e1c8500104a076cd1abe2d41d8c0a2e6870667a | canonical full sweep                |
-| `layer1-tiers-*`                     | raster presentation tiers, PR 1553 at f726d68c3        | canonical full sweep                |
-| `layer3-blur-on-portrait-light`      | `origin/main` (blur on)                                | `--actions=settings,theme,coloring` |
-| `layer3-blur-off-portrait-light`     | uncommitted B arm: no `backdrop-filter`, dim 0.7       | `--actions=settings,theme,coloring` |
-| `layer3-shipped-full-portrait-light` | 31476d91d3ec8487d0fcad7492425cf0a6642584 (ADR-0157)    | canonical full sweep                |
+| File                                 | Build                                                                              | Sweep                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------- |
+| `layer1-main-*`                      | `origin/main` 6e1c8500104a076cd1abe2d41d8c0a2e6870667a                             | canonical full sweep                |
+| `layer1-tiers-*`                     | raster presentation tiers, PR 1553 at f726d68c3                                    | canonical full sweep                |
+| `layer3-blur-on-portrait-light`      | `origin/main` (blur on)                                                            | `--actions=settings,theme,coloring` |
+| `layer3-blur-off-portrait-light`     | uncommitted B arm: no `backdrop-filter`, dim 0.7                                   | `--actions=settings,theme,coloring` |
+| `layer3-shipped-full-portrait-light` | 31476d91d3ec8487d0fcad7492425cf0a6642584 (ADR-0157)                                | canonical full sweep                |
+| `layer3-scoped-portrait-light`       | review-feedback form: picker-only no-blur under a coarse pointer, built on the tip | `--actions=settings,theme,coloring` |
 
 What they decided:
 
