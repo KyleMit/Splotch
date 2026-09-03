@@ -977,14 +977,31 @@ function withActionReadinessSummary(actions) {
   };
 }
 
-function withFinalProductCommitActionCount(actions, finalProductCommit) {
-  if (!actions || typeof actions !== 'object' || !Array.isArray(actions.results)) return actions;
+function countFinalProductCommitActions(results, finalProductCommit) {
+  return results.filter(
+    (result) =>
+      !ACTION_CONTROL_LABELS.has(result.label) && result.productCommit === finalProductCommit
+  ).length;
+}
+
+// A preserved action section carries the count computed for the report it came
+// from. Re-derive it against this report's product commit so historical rows
+// cannot claim current coverage.
+function withFinalProductCommitActionCount(actions, finalProductCommit, preserved) {
+  if (
+    !preserved ||
+    !actions ||
+    typeof actions !== 'object' ||
+    !Array.isArray(actions.results)
+  ) {
+    return actions;
+  }
   return {
     ...actions,
-    finalProductCommitActionCount: actions.results.filter(
-      (result) =>
-        !ACTION_CONTROL_LABELS.has(result.label) && result.productCommit === finalProductCommit
-    ).length,
+    finalProductCommitActionCount: countFinalProductCommitActions(
+      actions.results,
+      finalProductCommit
+    ),
   };
 }
 
@@ -1000,9 +1017,7 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, ta
     sources: captures.map(({ results: _results, ...capture }) => capture),
     fullSweepProductCommit: fullSweep?.productCommit ?? null,
     actionPlan: fullSweep?.actionPlan ?? null,
-    finalProductCommitActionCount: comparableResults.filter(
-      (result) => result.productCommit === finalProductCommit
-    ).length,
+    finalProductCommitActionCount: countFinalProductCommitActions(results, finalProductCommit),
     actionCount: results.length,
     passedActionCount: results.filter((result) => result.passed).length,
     worst: {
@@ -1102,7 +1117,8 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
           )
         )
       ),
-      finalProductCommit
+      finalProductCommit,
+      preservedSections.includes('actions')
     ),
     ...(preservedSections.length ? { preservedSections } : {}),
     ...(untrackedSections.length ? { untrackedSections } : {}),
