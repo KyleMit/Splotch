@@ -2,15 +2,15 @@ diff --git a/tools/rival-agent/acceptance/question.md b/tools/rival-agent/accept
 index 08d5ef75b..1b29d4a06 100644
 --- a/tools/rival-agent/acceptance/question.md
 +++ b/tools/rival-agent/acceptance/question.md
-@@ -37,7 +37,7 @@ nonce as the reply token.
- Ask the handler to run this command and expect exit 23:
+@@ -38,7 +38,7 @@ nonce as the reply token.
+ Run this command in your own shell and expect exit 23:
  
  ```sh
 -node --input-type=module -e 'process.stdout.write("STDOUT:{{NONCE}}\n"); process.stderr.write("STDERR:{{NONCE}}\n"); process.exit(23)'
 +node --input-type=module -e 'process.stdout.write("STDOUT:{{NONCE}}\\n"); process.stderr.write("STDERR:{{NONCE}}\\n"); process.exit(23)'
  ```
  
- Confirm that the reply preserves the exit code plus both output streams. A nonzero exit is data, not
+ Confirm that you observed the exit code plus both output streams. A nonzero exit is data, not a
 diff --git a/tools/rival-agent/tests/gen-acceptance-suite.test.mjs b/tools/rival-agent/tests/gen-acceptance-suite.test.mjs
 index f9018f084..a9544de96 100644
 --- a/tools/rival-agent/tests/gen-acceptance-suite.test.mjs
