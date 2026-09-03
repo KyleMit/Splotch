@@ -306,6 +306,51 @@ session's requests or audit data" — is the Linux `/tmp` exposure NOTES.md alre
 macOS it is false: the spool root is measured unwritable from the private `TMPDIR`. Not a blocker;
 the rival had read NOTES.md and rated it one anyway.
 
+### Round D — Claude rival with a sandboxed shell, broker attached
+
+The first round of the Claude rival on the shape the bench chose for Codex: `launch-claude.mjs` with
+`Bash` added and the sandbox pinned by `--settings`, opus, reviewing the whole three-PR stack
+against main from the checkout with this Claude session serving the broker —
+`node .agents/skills/run-rival-agent/scripts/launch-claude.mjs --fresh --base main`. Seventeen
+minutes fifty (22:56:13 → 23:14:05), **24 Bash calls of its own, zero broker requests**, five
+findings (three blocking, two suggestions), zero unverified. Usage: 3,814,387 cache-read tokens,
+135,987 cache-creation, 84 uncached input, 32,837 output (19,027 thinking).
+
+It ran the rival-agent Vitest tier (92 tests), `lint:dead`, and then the whole tools tier, which
+Claude's Bash tool cut off at its ten-minute cap with the same port-binding failures Round C saw in
+Codex's sandbox. Its heartbeat events every thirty seconds kept the launcher's watchdog fed through
+that call, which the Codex stream would not have done. It then probed the very sandbox this branch
+configures — the canonical `.git`, the packet, the session directory, `/tmp`, the session `tmp`, the
+spool root, `~/.codex` — and reported each result. Nothing it wanted was refused with a permission
+error it needed the handler for, so the escalation path did not fire on this side either.
+
+All five findings were real and reproduced, and all five landed as fixes on the stack:
+
+1. **Blocking.** Claude Code replaces its shell's `TMPDIR` with a directory of its own, so the
+   session `tmp` the launcher points `DPRINT_CACHE_DIR` at was unreachable and `format:check` failed
+   with `Operation not permitted`. The session `tmp` is now a second `--add-dir`.
+2. **Blocking.** The regenerated acceptance suite's escalation stage targeted the packet, which the
+   Claude rival can write because it arrives through `--add-dir`; a correct rival would have made
+   one request where the brief demanded two. The target is now the session directory, refused by
+   both sandboxes.
+3. **Blocking.** The bench's mechanical judge missed a path after `>`, `<`, or `~` and then ran the
+   command on the host. The prefix class now covers redirects, pipes, separators, and backticks, and
+   any `~` or `$HOME` is declined. The recorded decisions of every bench cell were checked for those
+   shapes afterwards.
+4. **Suggestion.** The bench's Claude-side failed-command count included every errored tool result,
+   a refused `Read` included, which inflated only the Claude column of a bench built to compare the
+   two rivals. Results are now matched to the Bash calls they answer.
+5. **Suggestion.** The Codex-side permissions reference listed a writable set the rival's probes
+   contradicted: the packet is writable, and the launcher's `TMPDIR` is not the shell's. Rewritten
+   to what was measured.
+
+What it establishes for the parity table: every deny-list pin held on opus from inside a real round,
+the sandbox proxy refused the network, Vitest and `git status` ran, and the one shape Claude handles
+better than Codex is the long local command — its heartbeats hold the watchdog open, where a Codex
+rival interrupts itself. One vendor gap surfaced in the Claude bench rather than here: a
+`StructuredOutput` call rejected by the schema validator ends the run with exit 1 instead of a
+retry, which the bench records as a failed cell.
+
 ## Comparison
 
 Same head for A, B, and the hosted runs; C reviewed the reworked branch, so its finding count is not
@@ -316,6 +361,7 @@ comparable with theirs. Same Codex model in every local round.
 | A: Codex, broker          | 5m47s      | 1             | 1.40M (1.27M)         | 14.1k  | 3                       | via the handler      |
 | B: Codex, workspace-write | 7m20s      | 0             | 1.81M (1.68M)         | 19.9k  | 4 (A's three plus one)  | yes, 24 commands     |
 | C: Codex, hybrid          | 7m05s      | 0             | 2.23M (2.12M)         | 11.2k  | 1 (half right)          | yes, 23 commands     |
+| D: Claude, sandboxed      | 17m52s     | 0             | 3.95M (3.81M)         | 32.8k  | 3 (all real) + 2        | yes, 24 commands     |
 | Hosted Claude, single job | 9m30s      | 0             | not reported          | —      | 0                       | yes, in the action   |
 | Hosted Claude, two jobs   | 10m16s     | 0             | not reported          | —      | 1 (premise wrong)       | yes, in `verify`     |
 
