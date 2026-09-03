@@ -51,28 +51,41 @@ describe('rival prompt', () => {
     expect(prompt).not.toContain('## Running commands');
   });
 
-  // A sandboxed rival has no broker: telling it about `run` would send it looking for a tool that
-  // does not exist, and telling it the worktree is read-only would stop it running the tests it
-  // was given a shell for.
-  it('drops every mention of the broker for a sandboxed rival', () => {
+  // A hybrid rival has a shell and the broker: it must be told to run locally first, that a
+  // sandbox refusal is the signal to escalate rather than a decline, and that the worktree is
+  // writable — the first real round filed its own sandbox's EPERM as a handler decline.
+  it('tells a hybrid rival to run locally first and escalate what the sandbox refuses', () => {
     const prompt = buildRivalPrompt({
       scope: SCOPE,
       worktree: '/wt',
       packetDir: '/p',
-      broker: false,
+      sandbox: 'workspace-write',
       toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
     expect(prompt).toContain('## Running commands');
     expect(prompt).toContain(TOOL_BOUNDARY);
-    expect(prompt).toContain('will not run commands for you');
+    expect(prompt).toContain('runs only what your sandbox refuses');
     expect(prompt).toContain('Your shell may write inside it');
-    expect(prompt).toContain('reproduced by running it');
-    expect(prompt).not.toContain('`run`');
-    expect(prompt).not.toContain('handler declined');
-    expect(Object.keys(describeExecutionMode(false))).toEqual(
-      Object.keys(describeExecutionMode(true))
+    expect(prompt).toContain('Run it here first');
+    expect(prompt).toContain('signal to escalate');
+    expect(prompt).toContain('device rig');
+    expect(prompt).toContain('through `run` when the sandbox refuses');
+    expect(prompt).not.toContain('## The `run` tool');
+    expect(prompt).not.toContain('It is read-only to you');
+    expect(Object.keys(describeExecutionMode('workspace-write'))).toEqual(
+      Object.keys(describeExecutionMode('read-only'))
     );
+    expect(() => describeExecutionMode('danger-full-access')).toThrow(/sandbox/);
+    expect(() =>
+      buildRivalPrompt({
+        scope: SCOPE,
+        worktree: '/wt',
+        packetDir: '/p',
+        sandbox: 'danger-full-access',
+        toolBoundary: TOOL_BOUNDARY,
+      })
+    ).toThrow(/sandbox/);
   });
 
   it('frames a question instead of a review when one is given', () => {

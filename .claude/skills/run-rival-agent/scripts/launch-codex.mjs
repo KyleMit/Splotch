@@ -23,13 +23,9 @@ export const LOCAL_TOOL_BOUNDARY =
 // directory and the canonical checkout are refused; a commit fails because the worktree's gitdir
 // lives under the canonical checkout's .git; DNS resolution fails with the network off.
 export const SANDBOXED_TOOL_BOUNDARY =
-  '* **Your shell is sandboxed to this worktree, with the network off, and it cannot escalate.** Tests, type checks, builds, and scripts that write inside the worktree run there. Writes anywhere else, and every network call, fail with a permission error — that is the sandbox, and it is never a finding.';
-// The workspace-write sandbox reads the whole disk (measured: `~/.codex/auth.json` and the
-// canonical checkout's `web/.env` are readable), and the reviewed diff is untrusted input. Web
-// search would be the one outbound channel a prompt injected through the diff could carry a read
-// file out on, so the sandboxed rival runs without it and reports vendor-documentation claims it
-// could not check under `unverified`.
-const SANDBOXED_SEARCH_PIN = 'web_search="disabled"';
+  '* **Your shell is sandboxed to this worktree, with the network off, and it cannot escalate on its own.** Tests, type checks, builds, and scripts that write inside the worktree run there. Writes anywhere else, and every network call, fail with a permission error — that is the sandbox, not a decline, and it is never a finding. It is the signal to send that exact command through `run`.';
+// The measured default, restated on the command line so the hybrid's network boundary is pinned
+// where the launcher test can see it rather than inherited from a Codex release.
 const SANDBOXED_NETWORK_PIN = 'sandbox_workspace_write.network_access=false';
 // Ambient tool surfaces that bypass the sandbox. `apps` is the one that matters most: it is a
 // built-in MCP server exposing GitHub read *and write* tools, and it is how a review of this very
@@ -84,20 +80,6 @@ export function buildCodexArgs({
   sandbox = 'read-only',
   rivalSession = { mode: 'create' },
 }) {
-  const execution =
-    sandbox === 'workspace-write'
-      ? ['-c', SANDBOXED_NETWORK_PIN, '-c', SANDBOXED_SEARCH_PIN]
-      : [
-          // MCP tool calls are auto-rejected under approval_policy="never" unless the server itself
-          // is marked approved; the broker is the one door the design opens.
-          '-c',
-          brokerServerToml({
-            session,
-            brokerServerPath,
-            nodePath,
-            toolTimeoutSeconds: PENDING_REQUEST_TIMEOUT_MS / 1000,
-          }),
-        ];
   const shared = [
     '--json',
     // A -c override of mcp_servers merges into the configured table instead of replacing it, so the
@@ -112,7 +94,16 @@ export function buildCodexArgs({
     // request. Verified — read-only alone created a file; this pin denies it.
     '-c',
     'approval_policy="never"',
-    ...execution,
+    // MCP tool calls are auto-rejected under approval_policy="never" unless the server itself is
+    // marked approved; the broker is the one door out of either sandbox.
+    '-c',
+    brokerServerToml({
+      session,
+      brokerServerPath,
+      nodePath,
+      toolTimeoutSeconds: PENDING_REQUEST_TIMEOUT_MS / 1000,
+    }),
+    ...(sandbox === 'workspace-write' ? ['-c', SANDBOXED_NETWORK_PIN] : []),
     '-c',
     `model_provider="${SUBSCRIPTION_MODEL_PROVIDER}"`,
     '-c',

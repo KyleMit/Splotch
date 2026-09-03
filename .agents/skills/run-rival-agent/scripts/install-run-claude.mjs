@@ -33,7 +33,7 @@ export const CORE_FILES = Object.freeze([
   'prompt.mjs',
   'rival-prompt.md',
   'rival-prompt-broker.md',
-  'rival-prompt-sandbox.md',
+  'rival-prompt-hybrid.md',
   'findings.schema.json',
   'validate-findings.mjs',
   'post-review.mjs',

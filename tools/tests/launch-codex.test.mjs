@@ -104,28 +104,29 @@ describe('Codex rival command construction', () => {
     }
   });
 
-  // The sandboxed path trades the broker for a shell confined to the worktree. Every other pin
-  // stays, the broker is absent rather than merely unapproved, and the two channels that would let
-  // a prompt injected through the diff carry a file off the disk — the sandbox's network and web
-  // search — are pinned off on the command line.
-  it('swaps the broker for a network-off workspace-write sandbox when asked', () => {
+  // The hybrid adds a shell confined to the worktree and keeps the broker as the door for what
+  // that shell's sandbox refuses. Every pin stays, the network is pinned off on the command line,
+  // and web search stays on in both modes: the findings document is already an outbound channel
+  // from a rival that reads the whole disk (NOTES.md, accepted exposures), so pinning search off
+  // closed nothing.
+  it('keeps the broker and pins the network off for the workspace-write hybrid', () => {
     const args = buildCodexArgs({ ...options, sandbox: 'workspace-write' });
     expect(args).toContain('sandbox_mode="workspace-write"');
     expect(args).toContain('sandbox_workspace_write.network_access=false');
-    expect(args).toContain('web_search="disabled"');
     expect(args).toContain('--ignore-user-config');
     expect(args).toContain('approval_policy="never"');
     for (const feature of ISOLATION_FEATURES) {
       expect(args.slice(args.indexOf('--disable'))).toContain(feature);
     }
-    expect(args.some((arg) => arg.startsWith('mcp_servers='))).toBe(false);
+    expect(args.filter((arg) => arg.startsWith('mcp_servers='))).toHaveLength(1);
+    expect(args.some((arg) => arg.startsWith('web_search'))).toBe(false);
     expect(args.slice(args.indexOf('-C'), args.indexOf('-C') + 2)).toEqual([
       '-C',
       '/tmp/session/worktree',
     ]);
     const brokered = buildCodexArgs(options);
-    expect(brokered).not.toContain('web_search="disabled"');
     expect(brokered).not.toContain('sandbox_workspace_write.network_access=false');
+    expect(brokered.some((arg) => arg.startsWith('web_search'))).toBe(false);
   });
 
   it('attaches exactly the broker, approved, with a tool timeout matching the pending budget', () => {
@@ -185,6 +186,7 @@ describe('Codex rival command construction', () => {
     expect(codexVendor).toMatchObject({ rival: 'codex', command: 'codex' });
     expect(codexVendor.localToolBoundary).toContain('read-only');
     expect(codexVendor.sandboxedToolBoundary).toContain('network off');
+    expect(codexVendor.sandboxedToolBoundary).toContain('`run`');
     expect(typeof codexVendor.prepare).toBe('function');
     expect(typeof codexVendor.resolveModel).toBe('function');
     expect(codexVendor.buildArgs).toBe(buildCodexArgs);

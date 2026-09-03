@@ -26,7 +26,7 @@ describe('shared launch arguments', () => {
     expect(() => parseLaunchArgs(['extra'])).toThrow(/positional/);
   });
 
-  it('pairs through the broker unless a workspace-write sandbox is asked for', () => {
+  it('defaults to the read-only pairing and accepts the workspace-write hybrid', () => {
     expect(parseLaunchArgs([])).toMatchObject({ sandbox: 'read-only' });
     expect(parseLaunchArgs(['--sandbox', 'workspace-write'])).toMatchObject({
       sandbox: 'workspace-write',
@@ -49,11 +49,11 @@ describe('shared launch arguments', () => {
   });
 
   // Measured on the first sandboxed round's review: a workspace-write rival created a request file
-  // in a sibling session, because the sandbox's writable temp root is the spool root.
-  it('gives a sandboxed rival a private TMPDIR and a brokered one the handler environment', () => {
+  // in a sibling session, because the sandbox's writable temp root is the spool root. One
+  // environment serves both modes; a read-only rival cannot write there anyway.
+  it('gives the rival a private TMPDIR and dprint cache inside its session', () => {
     const env = { PATH: '/usr/bin', TMPDIR: '/var/folders/x/T' };
-    expect(rivalEnvironment(env, { session: '/s', broker: true })).toBe(env);
-    expect(rivalEnvironment(env, { session: '/s', broker: false })).toEqual({
+    expect(rivalEnvironment(env, { session: '/s' })).toEqual({
       PATH: '/usr/bin',
       TMPDIR: '/s/tmp',
       DPRINT_CACHE_DIR: '/s/tmp/dprint-cache',

@@ -31,10 +31,11 @@ import {
 
 const EFFORTS = new Set(['low', 'medium', 'high']);
 // `read-only` is the pairing: the rival's shell cannot write and the broker is its one door.
-// `workspace-write` is the pilot alternative: no broker, the rival runs its own commands inside a
-// sandbox confined to the disposable worktree with the network off, and reports what it could not
-// run under `unverified`. The vocabulary is Codex's own sandbox_mode so the flag reads the same in
-// the launch arguments and in the pinned config.
+// `workspace-write` is the hybrid: the rival runs its own commands inside a sandbox confined to the
+// disposable worktree with the network off, and the broker is the door for what that sandbox
+// refuses. The broker is attached in both modes. The flag exists so the seeded-defect bench in
+// NOTES.md can compare the two before one is deleted; the vocabulary is Codex's own sandbox_mode so
+// it reads the same in the launch arguments and in the pinned config.
 export const SANDBOXES = Object.freeze(['read-only', 'workspace-write']);
 const DEFAULT_SANDBOX = 'read-only';
 const DEFAULT_BASE_REF = 'main';
@@ -136,13 +137,12 @@ export function logPathForAttempt(session, attempt) {
   return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
 }
 
-// A brokered rival inherits the handler's environment; a sandboxed one gets a TMPDIR of its own
-// inside the session, because the sandbox's writable temp root would otherwise be the directory
-// that holds every session's spool. `/tmp` itself stays writable to the sandbox, which matters on
-// a Linux host whose os.tmpdir() is `/tmp`; there the spool root should be moved before this path
-// is relied on.
-export function rivalEnvironment(env, { session, broker }) {
-  if (broker) return env;
+// The rival gets a TMPDIR of its own inside the session: Codex's workspace-write sandbox writes
+// anywhere under the process's TMPDIR, and the handler's TMPDIR is where every session's spool
+// lives. A read-only rival cannot write there anyway, so one environment serves both modes.
+// `/tmp` itself stays writable to the sandbox, which matters on a Linux host whose os.tmpdir() is
+// `/tmp`; NOTES.md records that as an accepted exposure.
+export function rivalEnvironment(env, { session }) {
   const tmp = sessionPath(session, SESSION_FILES.tmp);
   // dprint compiles its plugin cache under ~/Library/Caches, which the sandbox refuses (the first
   // sandboxed round's `format:check` exited 12 there); its cache directory is pointed inside too.
@@ -204,8 +204,8 @@ function finish(session, state, logPath, extra) {
 
 // A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
 // (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
-// `reducer`, `localToolBoundary` (what the rival's own shell can do under the broker), an optional
-// `sandboxedToolBoundary` (the same for the workspace-write path; absent means the vendor has no
+// `reducer`, `localToolBoundary` (what the rival's own read-only shell can do), an optional
+// `sandboxedToolBoundary` (the same for the workspace-write hybrid; absent means the vendor has no
 // such path), `newSessionId()` (a wrapper-issued id for CLIs that take one up front), and
 // `endSession(record)`. Everything else in a round is the same on both sides.
 export async function launch(
@@ -229,7 +229,6 @@ export async function launch(
 
   const model = vendor.resolveModel(options.model);
   const toolBoundary = toolBoundaryFor(vendor, options.sandbox);
-  const broker = options.sandbox === 'read-only';
   const question = options.questionFile ? readPromptFile(options.questionFile) : undefined;
   const extraInstructions = options.promptFile ? readPromptFile(options.promptFile) : undefined;
   // A question is one turn, not a review that a later round would verify.
@@ -257,7 +256,6 @@ export async function launch(
       worktree,
       packetDir,
       sandbox: options.sandbox,
-      broker,
       round: plan.round,
       resumed: Boolean(plan.resume),
       repoRoot,
@@ -289,7 +287,7 @@ export async function launch(
         previous: plan.previous,
         landedCommits: describeLandedCommits(repoRoot, plan.previous, scope.head),
         extraInstructions,
-        broker,
+        sandbox: options.sandbox,
         toolBoundary,
       });
       return runStreaming({
@@ -304,14 +302,12 @@ export async function launch(
           rivalSession,
         }),
         cwd: worktree,
-        env: rivalEnvironment(env, { session, broker }),
+        env: rivalEnvironment(env, { session }),
         stdin: prompt,
         logPath,
         onProgress,
         reducer: vendor.reducer,
-        // Spool traffic is liveness only while a broker can produce it; with none attached the
-        // watchdog reads nothing from the session directory.
-        activityProbe: broker ? () => spoolActivityAt(session) : undefined,
+        activityProbe: () => spoolActivityAt(session),
       });
     };
 

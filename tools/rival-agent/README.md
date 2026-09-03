@@ -2,10 +2,15 @@
 
 Everything the two `run-rival-agent` skill packages share. A **native handler** (the agent already
 running in the current runner, Claude Code or Codex) launches a **rival agent** (the other vendor's
-CLI) read-only inside a disposable worktree pinned to one commit id. The rival's only way to execute
-anything is the broker: it asks, the handler runs the command under its own permission rules or
-declines, and the answer flows back. The rival returns findings against one schema and the handler
-posts them verbatim.
+CLI) inside a disposable worktree pinned to one commit id, confined by the rival's own vendor's
+sandbox. The broker is the rival's door out of that sandbox: it asks, the handler runs the command
+under its own permission rules or declines, and the answer flows back. Under `--sandbox read-only`
+(the default while the flag exists) the rival's shell cannot write and every execution is brokered;
+under `--sandbox workspace-write` (the hybrid) the rival runs its own tests, checks, and repros in a
+network-off sandbox rooted at the worktree and brokers only what that sandbox refuses. The rival
+returns findings against one schema and the handler posts them verbatim. `NOTES.md` holds the design
+history: why this shape, what was rejected, the accepted exposures, and the Claude versus Codex
+parity table.
 
 The runtime files in this folder import nothing from outside it. The Codex-side installer copies
 those files into `~/.local/libexec` as hashed trusted bytes, where the rest of the checkout does not
@@ -13,33 +18,34 @@ exist. The checkout-only live acceptance generator and its templates are not ins
 
 ## Entry points
 
-| File                       | Role                                                                                                                                          |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `broker-server.mjs`        | The stdio MCP server the rival sees. One tool, `run(command, why)`. Reads `RIVAL_SESSION_DIR`. Child of the rival process.                    |
-| `broker.mjs`               | The handler's CLI: `next` blocks for the next request or the finished findings, `reply` answers one request or declines it, `status` reports. |
-| `post-review.mjs`          | Posts a session's findings to a PR as one `COMMENT` review with anchored comments and a hidden marker; adopts an existing marked review.      |
-| `validate-findings.mjs`    | Checks a findings document against `findings.schema.json`.                                                                                    |
-| `gen-acceptance-suite.mjs` | Generates a nonce-bearing real-agent acceptance question under the temp root.                                                                 |
+| File                       | Role                                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `broker-server.mjs`        | The stdio MCP server the rival sees. One tool, `run(command, why)`. Reads `RIVAL_SESSION_DIR`. Child of the rival process.                     |
+| `broker.mjs`               | The handler's CLI: `next` blocks for the next request or the finished findings, `reply` answers one request or declines it, `status` reports.  |
+| `post-review.mjs`          | Posts a session's findings to a PR as one `COMMENT` review with anchored comments and a hidden marker; adopts an existing marked review.       |
+| `validate-findings.mjs`    | Checks a findings document against `findings.schema.json`.                                                                                     |
+| `gen-acceptance-suite.mjs` | Generates a nonce-bearing real-agent acceptance question under the temp root.                                                                  |
+| `NOTES.md`                 | Design history for both packages: decisions and their rejected alternatives, accepted exposures, the vendor parity table, what is unvalidated. |
 
 ## Supporting modules
 
-| File                   | Owns                                                                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `spool.mjs`            | The session directory layout and the request/reply files both broker processes watch.                                      |
-| `worktree.mjs`         | Scope resolution to base/head OIDs (the uncommitted scope becomes a snapshot commit), the disposable worktree, the packet. |
-| `stream.mjs`           | One NDJSON runner with the stall watchdog, plus the Codex and Claude event renderers and reducers.                         |
-| `ledger.mjs`           | Rounds per unit of work, the rival's session id for resuming, the three-round cap.                                         |
-| `prompt.mjs`           | Assembles `rival-prompt.md` for a scope, round, execution mode, and any extra instructions.                                |
-| `rival-prompt.md`      | The rival's contract: where it is, how it executes, how to review, what to return.                                         |
-| `rival-prompt-*.md`    | The execution section: `broker` (the `run` tool is the one door) or `sandbox` (own shell, no broker).                      |
-| `findings.schema.json` | The findings document both CLIs' structured-output flags enforce and the poster consumes.                                  |
+| File                   | Owns                                                                                                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spool.mjs`            | The session directory layout and the request/reply files both broker processes watch.                                                                 |
+| `worktree.mjs`         | Scope resolution to base/head OIDs (the uncommitted scope becomes a snapshot commit), the disposable worktree, the packet.                            |
+| `stream.mjs`           | One NDJSON runner with the stall watchdog, plus the Codex and Claude event renderers and reducers.                                                    |
+| `ledger.mjs`           | Rounds per unit of work, the rival's session id for resuming, the three-round cap.                                                                    |
+| `prompt.mjs`           | Assembles `rival-prompt.md` for a scope, round, execution mode, and any extra instructions.                                                           |
+| `rival-prompt.md`      | The rival's contract: where it is, how it executes, how to review, what to return.                                                                    |
+| `rival-prompt-*.md`    | The execution section: `broker` (read-only shell, the `run` tool is the one door) or `hybrid` (own sandboxed shell first, `run` for what it refuses). |
+| `findings.schema.json` | The findings document both CLIs' structured-output flags enforce and the poster consumes.                                                             |
 
 ## Session layout
 
 A session lives under `os.tmpdir()/splotch-rival-agent/<uuid>/`, owner-only:
 
 ```text
-session.json        written by the launcher: rival, scope, worktree, round, log path
+session.json        written by the launcher: rival, scope, worktree, sandbox, round
 packet/             diff.patch, commits.txt, files.txt, scope.json — what the rival reads
 requests/<seq>.json the rival's run(command, why) calls, in order
 replies/<seq>.json  the handler's answers: exit + output, or declined + reason
@@ -48,6 +54,7 @@ findings.json       the validated findings document, once the rival finishes
 done.json           written by the launcher when findings validated
 failed.json         written by the launcher when the rival exited without valid findings
 rival.ndjson        the raw stream log (rival-retry.ndjson for the one retry after a pruned resume)
+tmp/                the rival's private TMPDIR and dprint cache, kept out of the sandbox's reach of the spool root
 ```
 
 The launchers live in the skill packages: `.claude/skills/run-rival-agent/scripts/` (Claude is the
