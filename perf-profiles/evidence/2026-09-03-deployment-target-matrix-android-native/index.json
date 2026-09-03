@@ -1,0 +1,51 @@
+{
+  "campaign": "2026-09-03-deployment-target-matrix-android-native",
+  "productCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
+  "capturedFrom": "perf-profiles/2026-09-03-deployment-target-matrix",
+  "kept": [
+    {
+      "file": "android-device-native-crayon.json",
+      "target": "android-device-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 9,
+      "passingCandidateCount": 9,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-native-eraser.json",
+      "target": "android-device-native",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-native-magic.json",
+      "target": "android-device-native",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-native-pen.json",
+      "target": "android-device-native",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    }
+  ]
+}
