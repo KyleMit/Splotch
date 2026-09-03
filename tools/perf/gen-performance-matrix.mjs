@@ -1857,7 +1857,14 @@ function formatGeneratedMarkdown(path) {
   }
 }
 
-export async function generateDeploymentMatrixReport(manifestArg = process.argv[2]) {
+// The manifest stays positional; `--strict` is the only flag, so the manifest is
+// the first argument that is not one.
+const positionalArguments = () => process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+
+export async function generateDeploymentMatrixReport(
+  manifestArg = positionalArguments()[0],
+  { strict = process.argv.includes('--strict') } = {}
+) {
   const manifestPath = manifestArg
     ? isAbsolute(manifestArg)
       ? manifestArg
@@ -1873,7 +1880,7 @@ export async function generateDeploymentMatrixReport(manifestArg = process.argv[
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'index.md'))}`);
   console.log(`Wrote ${relative(ROOT, join(outputDir, 'index.html'))}`);
 
-  await checkMatrixStaleness({ manifestPath: relative(ROOT, manifestPath) });
+  await checkMatrixStaleness({ manifestPath: relative(ROOT, manifestPath), strict });
 }
 
 if (isMain(import.meta.url)) runMain(generateDeploymentMatrixReport);

@@ -587,8 +587,9 @@ npm run perf:campaign:sources -- --target=android-device-web \
   --modes=landscape-light,landscape-dark \
   --manifest=scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 
-# 3. regenerate; every untouched cell keeps its preserved evidence
-npm run gen:performance-matrix -- scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
+# 3. regenerate; every untouched cell keeps its preserved evidence. --strict makes this
+#    regenerate a currency claim: any captured row left behind fails it (ADR-0159)
+npm run gen:performance-matrix -- --strict scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 
 Two properties of step 2 decide how small an increment can be:
@@ -616,8 +617,13 @@ Run `npm run perf:campaign:status -- --target=<id> --output-root=<root>` between
 decides completion from the runner's own artifact inspection rather than by counting ledger rows,
 which is what makes it trustworthy after a resumed run.
 
-Step 3 chains `check:matrix-staleness` in process, so a cell claiming to be a current measurement
-whose product source has since changed fails the regenerate rather than being published.
+Step 3 chains `check:matrix-staleness` in process. By default it reports which captured rows are
+behind the current product surface and exits 0: rows go stale by design between campaigns, since the
+suite cannot run on every product commit (ADR-0159). Pass `--strict`
+(`npm run gen:performance-matrix -- --strict`) at the regenerate where the campaign asserts that
+every captured row is current; a stale or unreachable row then fails that regenerate rather than
+being published as current. Rows the campaign did not recapture are marked preserved before that
+assertion, not silently carried as current.
 
 Three things about `perf:campaign` that each cost a launch:
 
@@ -1221,7 +1227,8 @@ the entry fetch) — `lsof -nP -iTCP:<port> -sTCP:LISTEN` names the child, and i
 The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
 `npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell
 currently claiming to be a measurement was taken from source that has since changed — without a
-device, and `gen:performance-matrix` now runs it for you.
+device, and `gen:performance-matrix` runs it for you. It reports rather than fails by default;
+`--strict` turns a stale row into a failure for the one regenerate that asserts currency (ADR-0159).
 
 **Mind the check's `--base`, which defaults to `HEAD`.** Run from a campaign branch, that counts the
 branch's own commits as product drift and reports STALE for cells that are current on the trunk —

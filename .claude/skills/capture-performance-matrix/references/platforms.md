@@ -426,9 +426,14 @@ all.
 Regenerate normalized JSON, Markdown, and HTML:
 
 ```sh
-npm run gen:performance-matrix -- \
+npm run gen:performance-matrix -- --strict \
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
+
+`--strict` is what makes this regenerate a currency claim: the chained staleness check fails it on
+any captured row whose product surface has moved (ADR-0159). Mark the rows this campaign did not
+recapture `preserved` first, then regenerate with the flag. Without it the check only reports, which
+is the right default between campaigns and the wrong one here.
 
 Every source must resolve locally while generating. The committed `data.json` is self-contained and
 must identify one product commit. Inspect all three outputs before committing.

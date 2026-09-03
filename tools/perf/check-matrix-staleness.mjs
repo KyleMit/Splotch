@@ -1,8 +1,9 @@
-// Fail when a matrix cell that CLAIMS to be a current measurement was captured
-// from product source that has since changed.
+// Report when a matrix cell that CLAIMS to be a current measurement was captured
+// from product source that has since changed; fail on it only under --strict.
 //
 //   npm run check:matrix-staleness
 //   npm run check:matrix-staleness -- --manifest=<sources.json> --base=HEAD
+//   npm run check:matrix-staleness -- --strict
 //
 // The performance matrix records the product commit each cell was captured at,
 // and nothing compared it to the branch. That gap is not theoretical: on
@@ -10,6 +11,15 @@
 // to the drawing engine landed the same evening, so the published rows — and the
 // epic citing them as the one target on the corrected metric — described a build
 // nobody was running. It took a physical-device A/B to notice.
+//
+// Rows go stale by design between campaigns: the suite is far too expensive to
+// run on every product commit, so the matrix is refreshed periodically by a
+// campaign (ADR-0159). A STALE row is therefore the normal state of a committed
+// matrix, and the default run reports it without failing. The failure this check
+// exists to end is a campaign CITING a stale row as current, and the remedy is
+// the drift being visible at every regeneration — not a generator that is red
+// for every commit between campaigns. `--strict` is for the regenerate where a
+// campaign asserts that every captured row is current.
 //
 // A PRESERVED cell is exempt by construction: it is already labelled historical
 // evidence carried forward. A CAPTURED-UNTRACKED cell is different: its raw source
@@ -219,9 +229,45 @@ function gitLine(args) {
   }
 }
 
+// The verdict-to-exit policy, kept pure so the default and --strict outcomes are
+// testable without a git repository or a process exit. Neither mode reports an
+// UNVERIFIABLE commit as current; only --strict turns it, or a STALE row, into
+// a failure.
+export function stalenessOutcome({ rows, resolvedBase, strict }) {
+  const unverifiable = rows.filter((row) => row.verdict === 'UNVERIFIABLE');
+  const stale = rows.filter((row) => row.verdict === 'STALE');
+  const list = (subset) => subset.map((row) => `${row.target} (${row.capturedAt})`).join(', ');
+  const lines = [];
+  if (unverifiable.length) {
+    lines.push(
+      `WARN  ${unverifiable.length} capture commit(s) are not reachable from ${resolvedBase}: ` +
+        `${list(unverifiable)}. A shallow clone is the usual cause — this needs the referenced ` +
+        'commits fetched. Not reported as "current".'
+    );
+  }
+  if (stale.length) {
+    lines.push(
+      `${stale.length} target(s) publish a capture taken from a product surface that has since ` +
+        `changed: ${list(stale)}. Expected between campaigns — the next campaign recaptures ` +
+        'them, or marks those modes preserved.'
+    );
+  } else if (!unverifiable.length) {
+    lines.push(`${rows.length} captured cell group(s), all from the current product surface.`);
+  }
+  const failed = strict && (unverifiable.length > 0 || stale.length > 0);
+  if (failed) {
+    lines.push(
+      '--strict asserts that every captured row is current. Recapture the rows above, or mark ' +
+        'them preserved, before asserting it.'
+    );
+  }
+  return { stale, unverifiable, lines, failed };
+}
+
 export async function checkMatrixStaleness({
   manifestPath = argFlag('manifest', DEFAULT_MANIFEST),
   base = argFlag('base'),
+  strict = process.argv.includes('--strict'),
 } = {}) {
   const explicitBase = base !== undefined;
   const resolvedBase = base ?? 'HEAD';
@@ -244,26 +290,10 @@ export async function checkMatrixStaleness({
   }
   console.table(rows);
 
-  const unverifiable = rows.filter((row) => row.verdict === 'UNVERIFIABLE');
-  if (unverifiable.length) {
-    fail(
-      `${unverifiable.length} capture commit(s) are not reachable from ${resolvedBase}: ` +
-        `${unverifiable.map((row) => `${row.target} (${row.capturedAt})`).join(', ')}. ` +
-        'A shallow clone is the usual cause — this needs the referenced commits fetched. ' +
-        'Refusing to report "current" for a commit that could not be checked.'
-    );
-  }
-
-  const stale = rows.filter((row) => row.verdict === 'STALE');
-  if (stale.length) {
-    fail(
-      `${stale.length} target(s) publish a capture taken from a product surface that has since ` +
-        `changed: ${stale.map((row) => `${row.target} (${row.capturedAt})`).join(', ')}. ` +
-        'Recapture them, or mark those modes preserved so they stop claiming currency.'
-    );
-  }
-  console.log(`\n${rows.length} captured cell group(s), all from the current product surface.`);
-  return { rows, stale };
+  const outcome = stalenessOutcome({ rows, resolvedBase, strict });
+  if (outcome.failed) fail(`\n${outcome.lines.join('\n')}`);
+  console.log(`\n${outcome.lines.join('\n')}`);
+  return { rows, stale: outcome.stale };
 }
 
 if (isMain(import.meta.url)) {
