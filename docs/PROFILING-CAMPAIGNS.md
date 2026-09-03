@@ -1083,6 +1083,30 @@ A control that ran an hour ago is a memory, not a control. When something fails 
 is the evidence that it should not have, re-run the working case **now**, on the same build and the
 same server — it costs one capture and it is the difference between a finding and a retraction.
 
+### A long run needs a control inside the run
+
+A physical-device campaign can drift within one session while every capture remains valid. Fixed
+cell order then turns the movement into systematic bias: the same late cells inherit it on every run
+and the result looks reproducible. The mechanism is not established; do not call it thermal or
+assign another cause the evidence did not isolate.
+
+`perf:campaign` repeats one reference cell at the start, middle, and end of a physical-device queue
+that captures drawing. Action-only queues add no drawing control. The controls use the same build,
+the first selected mode, and crayon. Their raw captures live in the target's `references/<mode>/`
+directory, and `references.json` beside `instrument.json` records each blank-phase
+`lostFrameTimeShare` measurement, artifact modification time, capture-session identity, and the
+across-run spread. References are ordinary resumable cells: an interrupted campaign keeps the
+reference it banked and fills the later positions when it resumes. A report whose
+`captureSessions.scope` is `mixed` or `unknown` does not prove within-session drift; the runner
+warns about that limitation rather than assigning a cause.
+
+The warning boundary is **0.5 percentage points**. Its evidence is the issue-1458 control: one
+same-build native crayon cell moved from a 0.03% median at the start to 0.47% at the end, a
+0.44-point spread; 0.5 is the rounded boundary that evidence supports, not a platform constant. The
+runner warns when the reference range exceeds it and still finishes the campaign. A sub-threshold
+spread is not an acquittal: read the recorded spread before deciding whether a cell difference of
+similar or smaller size is real.
+
 ## Gate-semantics changes ship as their own campaign
 
 Adopted 2026-08-26 from the stack-1365 review round (the strategy critique and its disposition are
@@ -1269,6 +1293,15 @@ validated sweep, not a substitute for one. A focused source without that confirm
 `productCommit` to prove it) refuses the whole fold with an `unconfirmed-focused-action` error
 naming the source and the full-sweep commits present, rather than publishing the replacement as
 matrix evidence.
+
+Every sweep also records an `actionPlan` beside its samples. The declaration names the requested
+action groups, the actions that the product surface offered, any observed exclusions and their
+reasons, plus the orientation and Settings shell that selected them. The runner compares those as
+sets, refuses a plan that changes between repeats, and names the changed labels. The matrix accepts
+a plan as a full sweep only when it includes the complete default action-group set, then uses the
+latest full plan to classify every global heatmap coordinate: an absent applicable action is
+missing, while an action outside that mode's declared plan is N/A. A capture predating this
+declaration stays missing rather than gaining an inferred N/A verdict.
 
 ## Before believing a result
 

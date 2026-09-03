@@ -7,6 +7,7 @@ import {
   instrumentChangeProblem,
   instrumentFilesFor,
   instrumentFingerprint,
+  overlappingInstrumentFingerprints,
 } from '../lib/instrument-fingerprint.mjs';
 import { CAMPAIGN_TARGETS, planCampaign } from '../lib/campaign-plan.mjs';
 
@@ -92,6 +93,39 @@ describe('the capture-instrument fingerprint', () => {
     expect(Object.keys(current.files)).toEqual(
       instrumentFilesFor(['perf:device:frames', 'perf:android:browser:actions'])
     );
+  });
+
+  it('recovers command-scoped fingerprints from a legacy union fingerprint', () => {
+    const readFile = read({});
+    const union = instrumentFingerprint(
+      ['perf:ios:xcuitest:actions', 'perf:ios:xcuitest:screen'],
+      readFile
+    );
+    const actions = instrumentFingerprint(['perf:ios:xcuitest:actions'], readFile);
+    const overlap = overlappingInstrumentFingerprints(union, actions, [
+      'perf:ios:xcuitest:actions',
+    ]);
+
+    expect(overlap).toEqual({ recorded: actions, current: actions });
+  });
+
+  it('keeps shared banked files guarded when the requested command set widens', () => {
+    const screenFile = 'tools/perf/ios/capture-xcuitest-screen.mjs';
+    const recorded = instrumentFingerprint(
+      ['perf:ios:xcuitest:screen'],
+      read({ [screenFile]: 'banked screen' })
+    );
+    const current = instrumentFingerprint(
+      ['perf:ios:xcuitest:screen', 'perf:ios:xcuitest:actions'],
+      read({ [screenFile]: 'current screen' })
+    );
+    const overlap = overlappingInstrumentFingerprints(recorded, current, [
+      'perf:ios:xcuitest:screen',
+      'perf:ios:xcuitest:actions',
+    ]);
+
+    expect(instrumentChangeProblem(overlap.recorded, overlap.current)).toContain(screenFile);
+    expect(Object.keys(overlap.current.files)).not.toContain('tools/perf/probes/action-probe.js');
   });
 });
 

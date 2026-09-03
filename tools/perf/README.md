@@ -41,7 +41,10 @@ complete flag and output descriptions.
   records exhausted ones as P1s while the queue continues. `lib/campaign-plan.mjs` owns which cells
   exist and where each writes; `lib/campaign-ledger.mjs` owns what the ledger rows mean. Host
   identity — device ids, capability files, preview URLs — stays a flag, so nothing device-specific
-  is committed.
+  is committed. Physical-device queues containing drawing cells also repeat one crayon cell at the
+  start, middle, and end. The raw reference captures live under the target's mode-scoped
+  `references/` directory and `references.json` beside `instrument.json` records their capture
+  times, capture-session scope, lost-frame spread, and warning threshold.
 * `report-undo-gate-failures.mjs` reports WHAT the WebKit undo gate failed at, read from the run's
   own `undo-scenarios.json` rather than from its exit code. It has no npm script because CI consumes
   its stdout verbatim: `webkit-commit-gate-fast` publishes the fingerprint as a job output, and the
@@ -92,6 +95,12 @@ The exact issue #975 manifest preserves two established cross-platform owners in
 new modules during this behavior-preserving move: `ios/capture-xcuitest-actions.mjs` owns the action
 plan consumed by the web and Android runners, and `ios/capture-webkit-frames.mjs` owns the probe
 configuration reused by local web capture.
+
+Each action sweep records its requested groups, applicable label plan, observed exclusions with
+reasons, and product-surface context separately from the measured summaries. Only the complete
+default group set may fold as a full sweep. The deployment matrix normalizes that declaration into
+measured, no-control, N/A, and missing coordinates; captures that predate the declaration fail
+closed as missing rather than having applicability guessed from whichever results happen to exist.
 
 `buildAndPreview` asserts the served build is fresh before returning. A preview server left from an
 earlier build keeps the port and keeps serving the manifest it loaded at startup, and the resulting

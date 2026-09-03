@@ -25,6 +25,7 @@ import {
   runToggleRoundTrip,
   screenshotActivation,
   selectedActions,
+  stableActionPlan,
   settingsSectionLabelSelector,
   settingsSectionMeasurement,
   settingsSectionSetupReady,
@@ -39,6 +40,7 @@ import {
 } from '../web/capture-desktop-actions.mjs';
 import { eraserFillFunctionSource } from '../lib/eraser-fill.mjs';
 import { loadedPageEntryProblem } from '../lib/profile-preview.mjs';
+import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
 const LIVE_SURFACE = readFileSync(
@@ -614,6 +616,13 @@ describe('desktop action options', () => {
       headless: true,
       theme: 'light',
       settingsShell: null,
+      actionPlan: {
+        schemaVersion: 1,
+        actionGroups: ['rotation'],
+        applicableLabels: ['with ink: PORTRAIT to LANDSCAPE rotation'],
+        notApplicable: [],
+        context: { orientation: 'PORTRAIT', settingsShell: null },
+      },
       actions: ['rotation'],
       repeats: 9,
       samples: [],
@@ -624,6 +633,45 @@ describe('desktop action options', () => {
     expect(artifact.captureRuntime).toBe('desktop-playwright');
     expect(artifact.engine).toBe('webkit');
     expect(artifact.viewport).toEqual({ width: 1366, height: 915, deviceScaleFactor: 2 });
+    expect(artifact.actionPlan.context.orientation).toBe('PORTRAIT');
+  });
+
+  it('refuses action applicability that changes between repeats', () => {
+    const first = {
+      schemaVersion: 1,
+      actionGroups: FULL_ACTION_GROUPS,
+      applicableLabels: ['open Settings', 'close Settings'],
+      notApplicable: [],
+      context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
+    };
+    expect(stableActionPlan(null, first)).toBe(first);
+    expect(
+      stableActionPlan(first, {
+        ...first,
+        actionGroups: [...first.actionGroups].reverse(),
+        applicableLabels: [...first.applicableLabels].reverse(),
+      })
+    ).toBe(first);
+    expect(() =>
+      stableActionPlan(first, {
+        ...first,
+        applicableLabels: ['open Settings', 'open Parent Center'],
+      })
+    ).toThrow(
+      'applicable action plan changed between scored repeats: +open Parent Center -close Settings'
+    );
+    expect(() =>
+      stableActionPlan(first, {
+        ...first,
+        applicableLabels: ['open Settings'],
+        notApplicable: [
+          {
+            label: 'close Settings',
+            reason: 'the action is unavailable in this product surface',
+          },
+        ],
+      })
+    ).toThrow('applicable action plan changed between scored repeats: ~close Settings');
   });
 });
 
@@ -984,7 +1032,7 @@ describe('compact settings shell', () => {
   });
 });
 describe('runActionSweep callers', () => {
-  // The sweep returns {samples, settingsShell} rather than a bare array, and it has
+  // The sweep returns {samples, settingsShell, actionPlan} rather than a bare array, and it has
   // three transports. Changing that shape broke the two callers that no test covers
   // and no local run exercises by default — the Android CDP runner failed with
   // "sweep is not iterable" only once a real Android capture ran, and the desktop
@@ -1002,11 +1050,19 @@ describe('runActionSweep callers', () => {
     expect(found).toEqual(CALLERS);
   });
 
+  it('records the optional coloring-grid scroll in the declared action plan', () => {
+    const source = readFileSync(join(ROOT, CALLERS[0]), 'utf8');
+    expect(source).toContain('notApplicable.set(COLORING_SCROLL_ACTION_LABEL');
+    expect(source).toContain('await record(scroll.sample)');
+    expect(source).not.toContain('samples.push(scroll.sample)');
+  });
+
   it('reads the sweep through its result shape in each caller', () => {
     for (const relative of CALLERS) {
       const source = readFileSync(join(ROOT, relative), 'utf8');
       expect(source).toContain('sweep.samples');
       expect(source).toContain('sweep.settingsShell');
+      expect(source).toContain('sweep.actionPlan');
       expect(source).not.toMatch(/for \(const sample of sweep\)/);
       expect(source).not.toMatch(/\.\.\.sweep\.map\(/);
     }

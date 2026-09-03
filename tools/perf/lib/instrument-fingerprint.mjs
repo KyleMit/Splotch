@@ -86,6 +86,28 @@ export function instrumentFingerprint(commands, readFile = defaultRead) {
   };
 }
 
+function fingerprintSubset(instrument, files) {
+  const perFile = Object.fromEntries(files.map((file) => [file, instrument.files[file]]));
+  return {
+    fingerprint: sha256(JSON.stringify(perFile)),
+    files: perFile,
+  };
+}
+
+export function overlappingInstrumentFingerprints(recorded, current, commands) {
+  if (!recorded) return null;
+  // A widened resume requests files for commands with no banked cells. Only the
+  // shared files can describe whether the already-banked instrument changed.
+  const files = instrumentFilesFor(commands).filter(
+    (file) => recorded.files?.[file] && current.files?.[file]
+  );
+  if (!files.length) return null;
+  return {
+    recorded: fingerprintSubset(recorded, files),
+    current: fingerprintSubset(current, files),
+  };
+}
+
 // Null when resuming is safe; otherwise the refusal, naming exactly which
 // instrument files changed since the campaign's cells were banked — and which
 // CELLS the ledger records as banked under a different fingerprint.

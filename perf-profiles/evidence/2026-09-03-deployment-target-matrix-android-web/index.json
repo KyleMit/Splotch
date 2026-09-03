@@ -1,0 +1,51 @@
+{
+  "campaign": "2026-09-03-deployment-target-matrix-android-web",
+  "productCommit": "d17100cb8e9cbd157960f352020e21a7a523fddd",
+  "capturedFrom": "perf-profiles/2026-09-03-deployment-target-matrix",
+  "kept": [
+    {
+      "file": "android-device-web-crayon.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 8,
+      "passingCandidateCount": 8,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-web-eraser.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-web-magic.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-web-pen.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    }
+  ]
+}

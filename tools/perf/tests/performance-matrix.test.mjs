@@ -14,6 +14,7 @@ import {
   renderReport,
 } from '../gen-performance-matrix.mjs';
 import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
+import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
 const distribution = { p50: 1, p95: 1, p99: 1, max: 1 };
@@ -23,6 +24,16 @@ const modeSpecs = [
   { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' },
   { id: 'landscape-dark', orientation: 'LANDSCAPE', theme: 'dark' },
 ];
+
+function fullActionPlan({ orientation, settingsShell, applicableLabels, notApplicable = [] }) {
+  return {
+    schemaVersion: 1,
+    actionGroups: FULL_ACTION_GROUPS,
+    applicableLabels,
+    notApplicable,
+    context: { orientation, settingsShell },
+  };
+}
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -165,7 +176,7 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport, captureRuntime, engine }
+  { orientation, theme, summaries, samples, transport, captureRuntime, engine, actionPlan }
 ) {
   const path = join(directory, name);
   writeFileSync(
@@ -179,6 +190,7 @@ function writeActionCapture(
       transport,
       captureRuntime,
       engine,
+      actionPlan,
     })
   );
   return name;
@@ -205,7 +217,7 @@ describe('deployment matrix report', () => {
     ]);
     const html = renderReport(matrix);
 
-    expect(html).toContain('<b>1</b> actions compared');
+    expect(html).toContain('<b>1</b> action columns charted');
     expect(html).toContain('<b>0/1</b>');
     expect(html).toContain('Action 1: expand action drawer');
     expect(html).toContain('Portrait · Light');
@@ -229,6 +241,111 @@ describe('deployment matrix report', () => {
     for (const [, cells] of grids) {
       expect(cells.match(/class="(?:action-number|heat-cell)/g)).toHaveLength(49);
     }
+  });
+
+  it('normalizes and renders measured, no-control, N/A, and missing action coordinates', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-applicability-'));
+    temporaryDirectories.push(manifestDirectory);
+    const repeated = (label, postActionFrameGapsMs = [1]) =>
+      Array.from({ length: 4 }, (_, index) => ({
+        ...actionSample(label, index === 0),
+        postActionFrameGapsMs,
+      }));
+    const portraitSource = writeActionCapture(manifestDirectory, 'portrait-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [...repeated('idle frame control'), ...repeated('expand action drawer')],
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
+        applicableLabels: ['idle frame control', 'expand action drawer', 'open coloring book'],
+        notApplicable: [
+          {
+            label: 'scroll coloring pages',
+            reason: 'the coloring-page grid fits without scrolling in this target mode',
+          },
+          {
+            label: 'not-applicable-only action',
+            reason: 'the capture explicitly excluded this fixture action',
+          },
+        ],
+      }),
+    });
+    const landscapeSource = writeActionCapture(manifestDirectory, 'landscape-actions.json', {
+      orientation: 'LANDSCAPE',
+      theme: 'light',
+      samples: [
+        ...repeated('idle frame control', [40]),
+        ...repeated('enable Night Mode in the compact shell'),
+        ...repeated('scroll coloring pages'),
+      ],
+      actionPlan: fullActionPlan({
+        orientation: 'LANDSCAPE',
+        settingsShell: 'compact',
+        applicableLabels: [
+          'idle frame control',
+          'enable Night Mode in the compact shell',
+          'scroll coloring pages',
+        ],
+      }),
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source: portraitSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[1]),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: landscapeSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[3]),
+      ]),
+      manifestDirectory
+    );
+    const portrait = matrix.targets[0].modes[0];
+    const landscape = matrix.targets[0].modes[2];
+    const coordinate = (mode, label) =>
+      mode.actionCoordinates.find((candidate) => candidate.label === label);
+
+    expect(coordinate(portrait, 'expand action drawer')).toEqual({
+      label: 'expand action drawer',
+      state: 'measured',
+    });
+    expect(coordinate(portrait, 'open coloring book')).toMatchObject({ state: 'missing' });
+    expect(coordinate(portrait, 'enable Night Mode in the compact shell')).toEqual({
+      label: 'enable Night Mode in the compact shell',
+      state: 'not-applicable',
+      reason: 'this target mode’s declared action plan does not offer the action',
+    });
+    expect(coordinate(portrait, 'scroll coloring pages')).toEqual({
+      label: 'scroll coloring pages',
+      state: 'not-applicable',
+      reason: 'the coloring-page grid fits without scrolling in this target mode',
+    });
+    expect(coordinate(portrait, 'not-applicable-only action')).toEqual({
+      label: 'not-applicable-only action',
+      state: 'not-applicable',
+      reason: 'the capture explicitly excluded this fixture action',
+    });
+    expect(coordinate(landscape, 'scroll coloring pages')).toMatchObject({
+      state: 'no-control',
+      reason: 'idle frame control failed',
+    });
+
+    const html = renderReport(matrix);
+    expect(html).toContain('class="heat-cell not-applicable"');
+    expect(html).toContain(
+      'N/A: this target mode’s declared action plan does not offer the action'
+    );
+    expect(html).toContain(
+      'N/A: the coloring-page grid fits without scrolling in this target mode'
+    );
+    expect(html).toContain('missing/unavailable: applicable action has no valid measurement');
+    expect(html).toContain('<i class="heat-cell unscoreable"></i>no control');
+    expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
+    expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
+    expect(html).toContain('<h2>5-action failure fingerprint</h2>');
+    expect(html).toContain('<b>5</b> action columns charted');
   });
 
   it('applies an agreeing focused capture only to its measured labels', () => {
@@ -820,6 +937,66 @@ describe('deployment matrix report', () => {
     ).toThrow('actions.json recorded dark theme; expected light');
   });
 
+  it('rejects a measured action omitted from the capture’s declared plan', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-plan-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) =>
+        actionSample('expand action drawer', index === 0)
+      ),
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
+        applicableLabels: ['open Settings'],
+      }),
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('measured actions outside its declared actionPlan: expand action drawer');
+  });
+
+  it('rejects a subset action run folded as a full sweep', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-plan-subset-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) =>
+        actionSample('idle frame control', index === 0)
+      ),
+      actionPlan: {
+        schemaVersion: 1,
+        actionGroups: ['idle'],
+        applicableLabels: ['idle frame control'],
+        notApplicable: [],
+        context: { orientation: 'PORTRAIT', settingsShell: null },
+      },
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('is marked full but its actionPlan records a subset action run');
+  });
+
   it('rejects captures without explicit theme metadata', () => {
     const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
     temporaryDirectories.push(manifestDirectory);
@@ -1025,6 +1202,27 @@ describe('deployment matrix report', () => {
 
       expect(matrix.targets[0].modes[0].actions.worst.readyP95).toBe(42);
       expect(renderMarkdown(matrix)).toContain('| 42 |');
+    });
+
+    it('recomputes final-commit coverage for preserved actions', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([
+        action('old action', true, 'old123'),
+        action('another old action', true, 'old123'),
+      ]);
+      actions.finalProductCommitActionCount = actions.results.length;
+      publishReport(manifestDirectory, { actions });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions.finalProductCommitActionCount).toBe(0);
+      expect(renderMarkdown(matrix)).toContain('| 0 / 2 |');
     });
 
     it('renders preserved action evidence that predates readiness samples', () => {

@@ -15,13 +15,23 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { ROOT, argFlag, fail, isMain, runMain } from '../lib/proc.mjs';
-import { campaignTarget, planCampaign } from './lib/campaign-plan.mjs';
+import {
+  campaignQueue,
+  campaignTarget,
+  planCampaign,
+  planCampaignReferences,
+} from './lib/campaign-plan.mjs';
 import { cellInspection } from './run-campaign.mjs';
 import { attemptsFor, completedCells, parseLedger } from './lib/campaign-ledger.mjs';
 
 const absolute = (path) => (isAbsolute(path) ? path : join(ROOT, path));
+const list = (value) =>
+  value
+    ?.split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 
-export function campaignProgress(plan, { runtime, ledgerRows, inspect }) {
+export function campaignProgress(plan, { ledgerRows, inspect }) {
   const recorded = completedCells(ledgerRows);
   const done = [];
   const outstanding = [];
@@ -51,10 +61,19 @@ export async function campaignStatus({
   targetId = argFlag('target'),
   outputRoot = argFlag('output-root', 'perf-profiles/campaign'),
   ledgerPath = argFlag('ledger'),
+  modes = list(argFlag('modes')),
+  items = list(argFlag('items')),
 } = {}) {
   if (!targetId) fail('--target= is required');
   const { runtime, refreshRegime, captureRuntime } = campaignTarget(targetId);
-  const plan = planCampaign(targetId, { outputRoot, host: {} });
+  const plan = planCampaign(targetId, { outputRoot, host: {}, modes, items });
+  const references = planCampaignReferences(targetId, {
+    modeId: plan[0].mode.id,
+    outputRoot,
+    host: {},
+    productCommands: plan.map((cell) => cell.command),
+  });
+  const queue = campaignQueue(plan, references);
   const ledger = absolute(ledgerPath ?? `${outputRoot}/${targetId}/ledger.tsv`);
   const ledgerRows = existsSync(ledger) ? parseLedger(readFileSync(ledger, 'utf8')) : [];
 
@@ -62,20 +81,29 @@ export async function campaignStatus({
   // reimplementation: rebuilding the options here has misreported twice — once
   // skipping the fidelity verdict (structurally rejected measurements counted
   // complete), once demanding a refresh regime of action sweeps that report none.
-  const { total, done, outstanding } = campaignProgress(plan, {
-    runtime,
+  const { total, done, outstanding } = campaignProgress(queue, {
     ledgerRows,
     inspect: (cell) => cellInspection(cell, { runtime, refreshRegime, captureRuntime }),
   });
 
-  console.log(`${targetId}: ${done.length}/${total} cells complete`);
+  const referenceSuffix = references.length ? ` + ${references.length} drift references` : '';
+  console.log(
+    `${targetId}: ${done.length}/${total} queued captures complete ` +
+      `(${plan.length} cells${referenceSuffix})`
+  );
   for (const entry of outstanding) {
     const drift = entry.ledgerDisagrees ? '  (ledger says complete — artifact does not)' : '';
     console.log(
       `  todo  ${entry.cell.padEnd(26)} ${entry.attempts} attempt(s) spent · ${entry.status}${drift}`
     );
   }
-  return { total, done, outstanding };
+  return {
+    total,
+    productCells: plan.length,
+    referenceCells: references.length,
+    done,
+    outstanding,
+  };
 }
 
 if (isMain(import.meta.url)) {

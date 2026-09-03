@@ -10,7 +10,12 @@ import {
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
-import { profilingUrl, runActionSweep, selectedActions } from '../ios/capture-xcuitest-actions.mjs';
+import {
+  profilingUrl,
+  runActionSweep,
+  selectedActions,
+  stableActionPlan,
+} from '../ios/capture-xcuitest-actions.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { assertServedBuildIsFresh, buildAndPreview } from '../lib/profile-preview.mjs';
 import { ROOT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
@@ -85,6 +90,7 @@ export function desktopActionsArtifact({
   headless,
   theme,
   settingsShell,
+  actionPlan,
   actions,
   repeats,
   samples,
@@ -107,6 +113,7 @@ export function desktopActionsArtifact({
     headless,
     theme,
     settingsShell,
+    actionPlan,
     actions,
     repeats,
     samples,
@@ -173,6 +180,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const originalOrientation = await client.orientation();
     let settingsShell = null;
+    let actionPlan = null;
     const samples = [];
     const expectedLabels = new Set();
     let baselineTheme;
@@ -202,8 +210,9 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         baselineTheme,
       });
       settingsShell = sweep.settingsShell;
+      actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep.samples) expectedLabels.add(sample.label);
+        for (const label of sweep.actionPlan.applicableLabels) expectedLabels.add(label);
       }
       samples.push(
         ...sweep.samples.map((sample) => ({
@@ -230,6 +239,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       headless,
       theme: baselineTheme,
       settingsShell,
+      actionPlan,
       actions: [...actions],
       repeats,
       samples,

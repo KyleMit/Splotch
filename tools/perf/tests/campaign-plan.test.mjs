@@ -15,7 +15,9 @@ import {
   commandReportsFidelity,
   artifactPath,
   campaignTarget,
+  campaignQueue,
   planCampaign,
+  planCampaignReferences,
   probeHostProblem,
   resolvedProbeHostProblem,
   splitTransportIdentityProblem,
@@ -31,7 +33,7 @@ import {
   servedBuildFingerprintProblem,
 } from '../lib/profile-preview.mjs';
 import { ROOT as ROOT_DIR } from '../../lib/proc.mjs';
-import { campaignProgress } from '../campaign-status.mjs';
+import { campaignProgress, campaignStatus } from '../campaign-status.mjs';
 import { probeHostAvailabilityProblem } from '../run-campaign.mjs';
 import { PROBE_HOST_PROTOCOL } from '../split-capture/lib/probe-host-protocol.mjs';
 import {
@@ -94,6 +96,78 @@ describe('campaign plan', () => {
       expect(`${result.stdout}${result.stderr}`).not.toContain('Unknown flag');
     }
   );
+
+  it('brackets physical-device cells with one same-mode crayon reference', () => {
+    const cells = plan('ipad-device-native', {
+      modes: ['landscape-dark'],
+      items: ['pen-undo', 'magic'],
+    });
+    const references = planCampaignReferences('ipad-device-native', {
+      modeId: cells[0].mode.id,
+      outputRoot: 'out',
+      host: HOST,
+      productCommands: cells.map((cell) => cell.command),
+    });
+
+    expect(references.map((cell) => cell.referencePosition)).toEqual(['start', 'middle', 'end']);
+    expect(references.every((cell) => cell.mode.id === 'landscape-dark')).toBe(true);
+    expect(references.every((cell) => cell.item === 'crayon')).toBe(true);
+    expect(campaignQueue(cells, references).map((cell) => cell.id)).toEqual([
+      'reference/landscape-dark/start',
+      'landscape-dark/pen-undo',
+      'reference/landscape-dark/middle',
+      'landscape-dark/magic',
+      'reference/landscape-dark/end',
+    ]);
+    expect(references.map((cell) => cell.artifact)).toEqual([
+      'out/ipad-device-native/references/landscape-dark/start.json',
+      'out/ipad-device-native/references/landscape-dark/middle.json',
+      'out/ipad-device-native/references/landscape-dark/end.json',
+    ]);
+  });
+
+  it('does not add physical-device drift references to simulator or desktop campaigns', () => {
+    for (const targetId of ['ipad-simulator-native', 'android-emulator-web', 'mac-safari']) {
+      expect(
+        planCampaignReferences(targetId, {
+          modeId: 'portrait-light',
+          outputRoot: 'out',
+          host: HOST,
+          productCommands: [],
+        })
+      ).toEqual([]);
+    }
+  });
+
+  it('requires the product commands used to decide whether drawing references apply', () => {
+    expect(() =>
+      planCampaignReferences('ipad-device-native', {
+        modeId: 'portrait-light',
+        outputRoot: 'out',
+        host: HOST,
+      })
+    ).toThrow("planCampaignReferences requires the plan's productCommands");
+  });
+
+  it('brackets a one-cell targeted run with all three campaign references', () => {
+    const cells = plan('ipad-device-native', {
+      modes: ['portrait-light'],
+      items: ['crayon'],
+    });
+    const references = planCampaignReferences('ipad-device-native', {
+      modeId: cells[0].mode.id,
+      outputRoot: 'out',
+      host: HOST,
+      productCommands: cells.map((cell) => cell.command),
+    });
+
+    expect(campaignQueue(cells, references).map((cell) => cell.id)).toEqual([
+      'reference/portrait-light/start',
+      'portrait-light/crayon',
+      'reference/portrait-light/middle',
+      'reference/portrait-light/end',
+    ]);
+  });
 
   it('keeps undo on pen only, because a non-pen undo probe is not requested', () => {
     const cells = plan('ipad-simulator-native', { modes: ['portrait-light'] });
@@ -868,6 +942,24 @@ describe('campaignProgress', () => {
     expect(progress.outstanding).toContainEqual(
       expect.objectContaining({ cell: 'portrait-light/crayon', ledgerDisagrees: true })
     );
+  });
+
+  it('reports the same physical-device reference queue the runner executes', async () => {
+    const progress = await campaignStatus({
+      targetId: 'ipad-device-web',
+      outputRoot: 'missing-campaign-status-fixture',
+      modes: ['portrait-light'],
+      items: ['crayon'],
+    });
+
+    expect(progress.productCells).toBe(1);
+    expect(progress.referenceCells).toBe(3);
+    expect(progress.outstanding.map(({ cell }) => cell)).toEqual([
+      'reference/portrait-light/start',
+      'portrait-light/crayon',
+      'reference/portrait-light/middle',
+      'reference/portrait-light/end',
+    ]);
   });
 });
 

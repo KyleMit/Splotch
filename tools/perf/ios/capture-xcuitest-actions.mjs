@@ -43,6 +43,11 @@ import {
   setNativeRotationLock,
   themeRoundTripPlan,
 } from '../lib/campaign-state.mjs';
+import {
+  COLORING_SCROLL_ACTION_LABEL,
+  FULL_ACTION_GROUPS,
+  compactSettingsActionLabel,
+} from '../lib/action-applicability.mjs';
 
 const APP_PATH = '/';
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
@@ -73,23 +78,7 @@ const COLORING_SCROLL_DISTANCE_PX = 400;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
-const ALL_ACTIONS = new Set([
-  'idle',
-  'drawer',
-  'palette',
-  'color-picker',
-  'brushes',
-  'stroke-width',
-  'settings',
-  'settings-sections',
-  'settings-controls',
-  'theme',
-  'coloring',
-  'screenshot',
-  'undo',
-  'clear',
-  'rotation',
-]);
+const ALL_ACTIONS = new Set(FULL_ACTION_GROUPS);
 
 function webContextForClient(client, contexts) {
   const webContext = selectWebContext(contexts, { nativeApp: client.nativeApp });
@@ -111,6 +100,46 @@ export function selectedActions(value) {
   const unknown = [...actions].filter((action) => !ALL_ACTIONS.has(action));
   if (unknown.length) fail(`Unknown --actions entries: ${unknown.join(', ')}`);
   return actions;
+}
+
+export function stableActionPlan(recorded, next) {
+  if (!recorded) return next;
+  const canonical = (plan) => ({
+    ...plan,
+    actionGroups: [...plan.actionGroups].sort(),
+    applicableLabels: [...plan.applicableLabels].sort(),
+    notApplicable: [...plan.notApplicable].sort((left, right) =>
+      left.label.localeCompare(right.label)
+    ),
+  });
+  if (JSON.stringify(canonical(recorded)) !== JSON.stringify(canonical(next))) {
+    const recordedApplicable = new Set(recorded.applicableLabels);
+    const nextApplicable = new Set(next.applicableLabels);
+    const recordedLabels = new Set([
+      ...recorded.applicableLabels,
+      ...recorded.notApplicable.map(({ label }) => label),
+    ]);
+    const nextLabels = new Set([
+      ...next.applicableLabels,
+      ...next.notApplicable.map(({ label }) => label),
+    ]);
+    const added = [...nextLabels].filter((label) => !recordedLabels.has(label));
+    const removed = [...recordedLabels].filter((label) => !nextLabels.has(label));
+    const moved = [...nextLabels].filter(
+      (label) =>
+        recordedLabels.has(label) && recordedApplicable.has(label) !== nextApplicable.has(label)
+    );
+    const labelChanges = [
+      added.length ? `+${added.join(', ')}` : null,
+      removed.length ? `-${removed.join(', ')}` : null,
+      moved.length ? `~${moved.join(', ')}` : null,
+    ].filter(Boolean);
+    const detail = labelChanges.length
+      ? labelChanges.join(' ')
+      : 'context, action groups, or recorded reasons changed';
+    throw new Error(`The applicable action plan changed between scored repeats: ${detail}`);
+  }
+  return recorded;
 }
 
 function actionPanelHasAttribute(attribute) {
@@ -502,17 +531,28 @@ async function measureClick({
 
 async function measureColoringPageScroll(client, sessionId, execute) {
   const selector = '#coloring-book-dialog';
-  const scrollable = await execute(`
+  const scrollability = await execute(`
     const dialog = document.querySelector(${JSON.stringify(selector)});
-    return !!dialog && dialog.scrollHeight > dialog.clientHeight;
+    return {
+      dialogOpen: !!dialog?.open,
+      scrollable: !!dialog?.open && dialog.scrollHeight > dialog.clientHeight
+    };
   `);
-  if (!scrollable) return null;
+  if (!scrollability.dialogOpen) {
+    throw new Error('The coloring-book dialog closed before its scrollability check');
+  }
+  if (!scrollability.scrollable) {
+    return {
+      sample: null,
+      notApplicableReason: 'the coloring-page grid fits without scrolling in this target mode',
+    };
+  }
 
   const transport = coloringScrollTransport(client);
   const useWheel = transport.activation === 'trusted-wheel';
   await ensureActionProbe(execute);
   await execute(
-    `return window.__actionProbe.begin('scroll coloring pages', ${JSON.stringify(selector)}, ${JSON.stringify(
+    `return window.__actionProbe.begin(${JSON.stringify(COLORING_SCROLL_ACTION_LABEL)}, ${JSON.stringify(selector)}, ${JSON.stringify(
       transport.eventTypes
     )});`
   );
@@ -550,7 +590,10 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
   await sleep(ACTION_SETTLE_MS);
-  return { ...sample, activation: transport.activation };
+  return {
+    sample: { ...sample, activation: transport.activation },
+    notApplicableReason: null,
+  };
 }
 
 async function measureIdle(execute) {
@@ -877,7 +920,13 @@ export async function runActionSweep({
   baselineTheme = 'dark',
 }) {
   const samples = [];
-  const record = async (promise) => samples.push(await promise);
+  const applicableLabels = new Set();
+  const notApplicable = new Map();
+  const record = async (promise) => {
+    const sample = await promise;
+    applicableLabels.add(sample.label);
+    samples.push(sample);
+  };
   const recordToggleRoundTrip = async ({
     label,
     selector,
@@ -1225,7 +1274,7 @@ export async function runActionSweep({
 
   if (actions.has('theme') && settingsShellIsCompact) {
     await recordToggleRoundTrip({
-      label: 'Night Mode in the compact shell',
+      label: compactSettingsActionLabel('Night Mode'),
       selector: '#quickNightToggle',
       baseline: baselineTheme === 'dark',
       readyFor: (enabled) =>
@@ -1290,12 +1339,12 @@ export async function runActionSweep({
 
   if (actions.has('settings-controls') && settingsShellIsCompact) {
     await recordToggleRoundTrip({
-      label: 'drawing sounds in the compact shell',
+      label: compactSettingsActionLabel('drawing sounds'),
       selector: '#quickSoundToggle',
       baseline: true,
     });
     await recordToggleRoundTrip({
-      label: 'advanced controls in the compact shell',
+      label: compactSettingsActionLabel('advanced controls'),
       selector: '#quickAdvancedControlsToggle',
       baseline: true,
       readyFor: (enabled) =>
@@ -1404,8 +1453,12 @@ export async function runActionSweep({
     );
     for (const step of coloringSelectionSteps(hasBookChoice)) {
       if (step.label === 'select coloring page') {
-        const scrollSample = await measureColoringPageScroll(client, sessionId, execute);
-        if (scrollSample) samples.push(scrollSample);
+        const scroll = await measureColoringPageScroll(client, sessionId, execute);
+        if (scroll.sample) {
+          await record(scroll.sample);
+        } else {
+          notApplicable.set(COLORING_SCROLL_ACTION_LABEL, scroll.notApplicableReason);
+        }
       }
       await record(measureClick({ client, sessionId, execute, ...step }));
     }
@@ -1579,6 +1632,20 @@ export async function runActionSweep({
   return {
     samples,
     settingsShell: settingsInScope ? (settingsShellIsCompact ? 'compact' : 'sectioned') : null,
+    actionPlan: {
+      schemaVersion: 1,
+      actionGroups: [...actions],
+      applicableLabels: [...applicableLabels],
+      notApplicable: [...notApplicable].map(([label, reason]) => ({ label, reason })),
+      context: {
+        orientation: originalOrientation,
+        settingsShell: settingsInScope
+          ? settingsShellIsCompact
+            ? 'compact'
+            : 'sectioned'
+          : null,
+      },
+    },
   };
 }
 
@@ -1785,6 +1852,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     }
 
     let settingsShell = null;
+    let actionPlan = null;
     const samples = [];
     const expectedLabels = new Set();
     const pageEntries = new Set();
@@ -1837,8 +1905,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         baselineTheme,
       });
       settingsShell = sweep.settingsShell;
+      actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep.samples) expectedLabels.add(sample.label);
+        for (const label of sweep.actionPlan.applicableLabels) expectedLabels.add(label);
       }
       samples.push(
         ...sweep.samples.map((sample) => ({
@@ -1899,6 +1968,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       // A landscape phone measures CompactShell's quick toggles instead of the
       // section list, so the label set differs by shell rather than by regression.
       settingsShell,
+      actionPlan,
       samples,
       summaries,
       // The gate exceptions this capture was scored under (ADR-0090 amendment):
