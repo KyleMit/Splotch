@@ -823,8 +823,11 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
 
 export function planCampaignReferences(
   targetId,
-  { modeId, outputRoot, host = {}, label, productCommands = [] } = {}
+  { modeId, outputRoot, host = {}, label, productCommands } = {}
 ) {
+  if (!productCommands) {
+    throw new Error("planCampaignReferences requires the plan's productCommands");
+  }
   const target = campaignTarget(targetId);
   if (!target.physicalDevice) return [];
   const base = planCampaign(targetId, {

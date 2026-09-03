@@ -133,9 +133,20 @@ describe('campaign plan', () => {
           modeId: 'portrait-light',
           outputRoot: 'out',
           host: HOST,
+          productCommands: [],
         })
       ).toEqual([]);
     }
+  });
+
+  it('requires the product commands used to decide whether drawing references apply', () => {
+    expect(() =>
+      planCampaignReferences('ipad-device-native', {
+        modeId: 'portrait-light',
+        outputRoot: 'out',
+        host: HOST,
+      })
+    ).toThrow("planCampaignReferences requires the plan's productCommands");
   });
 
   it('brackets a one-cell targeted run with all three campaign references', () => {

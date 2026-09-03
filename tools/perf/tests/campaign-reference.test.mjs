@@ -125,7 +125,9 @@ describe('physical-device campaign drift references', () => {
       ({ cell }) => cell.startsWith('reference/')
     );
     expect(referenceRows).toHaveLength(3);
-    expect(referenceRows.every(({ instrument }) => instrument !== null)).toBe(true);
+    expect(referenceRows.every(({ instrument }) => /^[0-9a-f]{64}$/.test(instrument ?? ''))).toBe(
+      true
+    );
   });
 
   it('captures fresh mode-scoped references when a campaign root is reused for another mode', async () => {
