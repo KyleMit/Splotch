@@ -10,7 +10,7 @@ const SCOPE = {
   description: 'pull request 7',
   range: `${'a'.repeat(40)}...${'b'.repeat(40)}`,
 };
-const LOCAL_TOOL_BOUNDARY = '* **Local tools.** Read only.';
+const TOOL_BOUNDARY = '* **Local tools.** Read only.';
 
 describe('rival prompt', () => {
   it('fills every placeholder for a first-round review', () => {
@@ -18,7 +18,7 @@ describe('rival prompt', () => {
       scope: SCOPE,
       worktree: '/wt',
       packetDir: '/wt/.packet',
-      localToolBoundary: LOCAL_TOOL_BOUNDARY,
+      toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
     expect(prompt).toContain('a review of pull request 7');
@@ -26,9 +26,32 @@ describe('rival prompt', () => {
     expect(prompt).toContain('`/wt/.packet`');
     expect(prompt).toContain(`git diff ${SCOPE.range}`);
     expect(prompt).toContain('Reporting no defects is a correct and expected outcome');
-    expect(prompt).toContain(LOCAL_TOOL_BOUNDARY);
+    expect(prompt).toContain(TOOL_BOUNDARY);
     expect(prompt).not.toContain('## Round');
     expect(prompt).not.toContain('Extra instructions');
+  });
+
+  // The rival has a shell and the broker: it must be told to run locally first, that a sandbox
+  // refusal is the signal to escalate rather than a decline, and that the worktree is writable —
+  // the first real round filed its own sandbox's EPERM as a handler decline.
+  it('tells the rival to run locally first and escalate what the sandbox refuses', () => {
+    const prompt = buildRivalPrompt({
+      scope: SCOPE,
+      worktree: '/wt',
+      packetDir: '/p',
+      toolBoundary: TOOL_BOUNDARY,
+    });
+    expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
+    expect(prompt).toContain('## Running commands');
+    expect(prompt).toContain(TOOL_BOUNDARY);
+    expect(prompt).toContain('runs only what your sandbox refuses');
+    expect(prompt).toContain('Your shell may write inside it');
+    expect(prompt).toContain('Run it here first');
+    expect(prompt).toContain('signal to escalate');
+    expect(prompt).toContain('device rig');
+    expect(prompt).toContain('through `run` when the sandbox refuses');
+    expect(prompt).not.toContain('It is read-only to you');
+    expect(prompt).not.toContain('waiting to run commands for you');
   });
 
   it('frames a question instead of a review when one is given', () => {
@@ -37,7 +60,7 @@ describe('rival prompt', () => {
       question: 'Does the retry loop terminate?',
       worktree: '/wt',
       packetDir: '/p',
-      localToolBoundary: LOCAL_TOOL_BOUNDARY,
+      toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).toContain('Does the retry loop terminate?');
     expect(prompt).toContain('`findings` may be empty');
@@ -53,7 +76,7 @@ describe('rival prompt', () => {
       previous: { lastHead: 'c'.repeat(40) },
       landedCommits: 'abc fix it',
       extraInstructions: 'Focus on the undo stack.',
-      localToolBoundary: LOCAL_TOOL_BOUNDARY,
+      toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).toContain('## Round 2');
     expect(prompt).toContain('abc fix it');

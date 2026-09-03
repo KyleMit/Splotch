@@ -1,0 +1,77 @@
+diff --git a/tools/rival-agent/launch.mjs b/tools/rival-agent/launch.mjs
+index 1aa16d32c..b4381a659 100644
+--- a/tools/rival-agent/launch.mjs
++++ b/tools/rival-agent/launch.mjs
+@@ -84,29 +84,15 @@ export function parseLaunchArgs(argv) {
+   };
+ }
+ 
+-const defaultResolveCommit = (repoRoot, ref) => git(repoRoot, ['rev-parse', `${ref}^{commit}`]);
+-
+-// A commit scope is keyed by its full OID, never by the ref as typed: `HEAD` names a different
+-// commit tomorrow, and a short hash typed one way and a full hash typed another must still find
+-// the same reviewer. The rival's vendor is part of the key because a Codex thread id and a Claude
+-// session id are not interchangeable — the first Claude smoke tried to resume a Codex thread.
+-export function ledgerKeyFor({
+-  repoRoot,
+-  rival,
+-  scope,
+-  branch,
+-  resolveCommit = defaultResolveCommit,
+-}) {
++// The rival's vendor is part of the key because a Codex thread id and a Claude session id are not
++// interchangeable — the first Claude smoke tried to resume a Codex thread.
++export function ledgerKeyFor({ repoRoot, rival, scope, branch }) {
+   const kindPrefix = `${rival}:`;
+   if (scope.kind === 'pr') {
+     return ledgerKey({ repoRoot, kind: `${kindPrefix}pr`, ref: String(scope.number) });
+   }
+   if (scope.kind === 'commit') {
+-    return ledgerKey({
+-      repoRoot,
+-      kind: `${kindPrefix}commit`,
+-      ref: resolveCommit(repoRoot, scope.commit),
+-    });
++    return ledgerKey({ repoRoot, kind: `${kindPrefix}commit`, ref: scope.commit });
+   }
+   return ledgerKey({ repoRoot, kind: `${kindPrefix}branch`, ref: branch });
+ }
+diff --git a/tools/rival-agent/tests/launch.test.mjs b/tools/rival-agent/tests/launch.test.mjs
+index a7ab9fb1e..b2489f38f 100644
+--- a/tools/rival-agent/tests/launch.test.mjs
++++ b/tools/rival-agent/tests/launch.test.mjs
+@@ -34,8 +34,6 @@ describe('shared launch arguments', () => {
+   it('keys the reviewer by vendor and by PR, resolved commit, or branch', () => {
+     const repoRoot = '/repo';
+     const rival = 'codex';
+-    const resolveCommit = (root, ref) =>
+-      ref === 'HEAD' || ref === 'abc1234' ? 'a'.repeat(40) : ref;
+     const pr = ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'x' });
+     expect(pr).toBe(
+       ledgerKeyFor({ repoRoot, rival, scope: { kind: 'pr', number: 7 }, branch: 'y' })
+@@ -54,22 +52,13 @@ describe('shared launch arguments', () => {
+       ledgerKeyFor({ repoRoot, rival, scope: { kind: 'uncommitted' }, branch: 'x' })
+     );
+     expect(branch).not.toBe(pr);
+-    const byHead = ledgerKeyFor({
++    const commit = ledgerKeyFor({
+       repoRoot,
+       rival,
+-      scope: { kind: 'commit', commit: 'HEAD' },
++      scope: { kind: 'commit', commit: 'a'.repeat(40) },
+       branch: 'x',
+-      resolveCommit,
+     });
+-    const byShort = ledgerKeyFor({
+-      repoRoot,
+-      rival,
+-      scope: { kind: 'commit', commit: 'abc1234' },
+-      branch: 'x',
+-      resolveCommit,
+-    });
+-    expect(byHead).toBe(byShort);
+-    expect(byHead).not.toBe(branch);
++    expect(commit).not.toBe(branch);
+   });
+ 
+   it('gives the one retry after a pruned resume its own stream log', () => {

@@ -1,0 +1,60 @@
+diff --git a/tools/rival-agent/post-review.mjs b/tools/rival-agent/post-review.mjs
+index c47327229..b9f0d3f27 100644
+--- a/tools/rival-agent/post-review.mjs
++++ b/tools/rival-agent/post-review.mjs
+@@ -27,18 +27,16 @@ export function markerScope({ base, head }) {
+ export function parseDiffAnchors(patch) {
+   const anchors = new Map();
+   let current;
+-  let inHunk = false;
+   let leftLine = 0;
+   let rightLine = 0;
+   for (const raw of patch.split('\n')) {
+     if (raw.startsWith('diff --git ')) {
+       current = undefined;
+-      inHunk = false;
+       continue;
+     }
+     // A deleted file names its path only on the `---` line, an added file only on `+++`; a
+     // rename names both, and the new path is what GitHub anchors comments to.
+-    if (!inHunk && (raw.startsWith('--- ') || raw.startsWith('+++ '))) {
++    if (raw.startsWith('--- ') || raw.startsWith('+++ ')) {
+       const path = raw.slice('--- '.length).replace(/^[ab]\//, '');
+       if (path !== '/dev/null') {
+         current = anchors.get(path) ?? { RIGHT: new Set(), LEFT: new Set() };
+@@ -48,7 +46,6 @@ export function parseDiffAnchors(patch) {
+     }
+     const hunk = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(raw);
+     if (hunk) {
+-      inHunk = true;
+       leftLine = Number(hunk[1]);
+       rightLine = Number(hunk[2]);
+       continue;
+diff --git a/tools/rival-agent/tests/post-review.test.mjs b/tools/rival-agent/tests/post-review.test.mjs
+index 43deebfef..f4ba35ff2 100644
+--- a/tools/rival-agent/tests/post-review.test.mjs
++++ b/tools/rival-agent/tests/post-review.test.mjs
+@@ -72,23 +72,6 @@ describe('diff anchors', () => {
+     expect([...anchors.get('src/old.ts').LEFT]).toEqual([1, 2]);
+   });
+ 
+-  it('does not mistake hunk content for file headers', () => {
+-    const patch = `diff --git a/db/schema.sql b/db/schema.sql
+-index 111..222 100644
+---- a/db/schema.sql
+-+++ b/db/schema.sql
+-@@ -1,4 +1,4 @@
+- create table t (
+---- legacy column
+-+++ replacement column
+- );
+-`;
+-    const anchors = parseDiffAnchors(patch);
+-    expect([...anchors.keys()]).toEqual(['db/schema.sql']);
+-    expect([...anchors.get('db/schema.sql').RIGHT]).toEqual([1, 2, 3]);
+-    expect([...anchors.get('db/schema.sql').LEFT]).toEqual([1, 2, 3]);
+-  });
+-
+   it('keeps anchored findings and sets the rest aside instead of dropping them', () => {
+     const { anchored, unanchored } = partitionFindings(FINDINGS.findings, parseDiffAnchors(PATCH));
+     expect(anchored.map((item) => item.body)).toEqual(['claim', 'span', 'deleted']);

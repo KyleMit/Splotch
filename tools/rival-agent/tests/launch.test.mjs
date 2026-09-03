@@ -4,6 +4,7 @@ import {
   ledgerKeyFor,
   logPathForAttempt,
   parseLaunchArgs,
+  rivalEnvironment,
 } from '../launch.mjs';
 import { STREAM_FAILURE } from '../stream.mjs';
 
@@ -21,6 +22,23 @@ describe('shared launch arguments', () => {
     expect(() => parseLaunchArgs(['--pr', 'seven'])).toThrow(/--pr/);
     expect(() => parseLaunchArgs(['--effort', 'max'])).toThrow(/effort/);
     expect(() => parseLaunchArgs(['extra'])).toThrow(/positional/);
+  });
+
+  // The flag that once selected a read-only pairing was collapsed after the seeded-defect bench;
+  // an old launch line must fail loudly rather than run in a mode that no longer exists.
+  it('refuses the retired --sandbox flag', () => {
+    expect(() => parseLaunchArgs(['--sandbox', 'read-only'])).toThrow(/sandbox/);
+  });
+
+  // Measured on the first sandboxed round's review: a workspace-write rival created a request file
+  // in a sibling session, because the sandbox's writable temp root is the spool root.
+  it('gives the rival a private TMPDIR and dprint cache inside its session', () => {
+    const env = { PATH: '/usr/bin', TMPDIR: '/var/folders/x/T' };
+    expect(rivalEnvironment(env, { session: '/s' })).toEqual({
+      PATH: '/usr/bin',
+      TMPDIR: '/s/tmp',
+      DPRINT_CACHE_DIR: '/s/tmp/dprint-cache',
+    });
   });
 
   it('opts into a fresh reviewer and into ending the session', () => {

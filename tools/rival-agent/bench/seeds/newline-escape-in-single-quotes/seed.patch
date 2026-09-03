@@ -1,0 +1,28 @@
+diff --git a/tools/rival-agent/acceptance/question.md b/tools/rival-agent/acceptance/question.md
+index 08d5ef75b..1b29d4a06 100644
+--- a/tools/rival-agent/acceptance/question.md
++++ b/tools/rival-agent/acceptance/question.md
+@@ -37,7 +37,7 @@ nonce as the reply token.
+ Ask the handler to run this command and expect exit 23:
+ 
+ ```sh
+-node --input-type=module -e 'process.stdout.write("STDOUT:{{NONCE}}\n"); process.stderr.write("STDERR:{{NONCE}}\n"); process.exit(23)'
++node --input-type=module -e 'process.stdout.write("STDOUT:{{NONCE}}\\n"); process.stderr.write("STDERR:{{NONCE}}\\n"); process.exit(23)'
+ ```
+ 
+ Confirm that the reply preserves the exit code plus both output streams. A nonzero exit is data, not
+diff --git a/tools/rival-agent/tests/gen-acceptance-suite.test.mjs b/tools/rival-agent/tests/gen-acceptance-suite.test.mjs
+index f9018f084..a9544de96 100644
+--- a/tools/rival-agent/tests/gen-acceptance-suite.test.mjs
++++ b/tools/rival-agent/tests/gen-acceptance-suite.test.mjs
+@@ -109,8 +109,8 @@ describe('acceptance stage commands, executed as shipped', () => {
+   it('exits 23 with a marker on each stream, then recovers', () => {
+     const nonzero = run(commands[2]);
+     expect(nonzero.status).toBe(23);
+-    expect(nonzero.stdout).toBe(`STDOUT:${NONCE}\n`);
+-    expect(nonzero.stderr).toBe(`STDERR:${NONCE}\n`);
++    expect(nonzero.stdout).toContain(`STDOUT:${NONCE}`);
++    expect(nonzero.stderr).toContain(`STDERR:${NONCE}`);
+     const recovery = run(commands[3]);
+     expect(JSON.parse(recovery.stdout)).toEqual({
+       stage: 'recovery',

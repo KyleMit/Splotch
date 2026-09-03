@@ -2,7 +2,12 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const RIVAL_PROMPT_PATH = join(dirname(fileURLToPath(import.meta.url)), 'rival-prompt.md');
+const PROMPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+export const RIVAL_PROMPT_PATH = join(PROMPT_DIRECTORY, 'rival-prompt.md');
+// The execution section: the rival's own shell runs inside its vendor's sandbox confined to the
+// worktree, and `run` is the door for what that sandbox refuses. The vendor's tool boundary is
+// filled into it.
+export const EXECUTION_PARTIAL_PATH = join(PROMPT_DIRECTORY, 'rival-prompt-hybrid.md');
 export const MAX_PROMPT_BYTES = 256 * 1024;
 
 export function readPromptFile(path) {
@@ -50,6 +55,15 @@ function fill(template, values) {
   });
 }
 
+// Who the handler is to the rival, what it may do to the worktree, and how it reproduces a claim.
+const EXECUTION_MODE = Object.freeze({
+  HANDLER:
+    'A **native handler** — the agent that launched you — holds every permission you lack and runs only what your sandbox refuses.',
+  WORKTREE_RULES:
+    'Nobody else will ever see it. Your shell may write inside it — test caches, build output, a scratch script — and nowhere else. Do not commit, and do not try to reach outside it yourself.',
+  VERIFY_HOW: 'by running it — in your own shell first, through `run` when the sandbox refuses',
+});
+
 export function buildRivalPrompt({
   scope,
   question,
@@ -59,15 +73,17 @@ export function buildRivalPrompt({
   previous,
   landedCommits,
   extraInstructions,
-  localToolBoundary,
+  toolBoundary,
   template = readFileSync(RIVAL_PROMPT_PATH, 'utf8'),
+  executionTemplate = readFileSync(EXECUTION_PARTIAL_PATH, 'utf8'),
 }) {
   return fill(template, {
     TASK: describeTask({ scope, question }),
     WORKTREE: worktree,
     PACKET_DIR: packetDir,
     RANGE: scope.range,
-    LOCAL_TOOL_BOUNDARY: localToolBoundary,
+    ...EXECUTION_MODE,
+    EXECUTION: fill(executionTemplate, { TOOL_BOUNDARY: toolBoundary }).trim(),
     ROUND: describeRound({ round, previous, landedCommits }),
     EXTRA: extraInstructions
       ? `## Extra instructions from the handler\n\n${extraInstructions}`

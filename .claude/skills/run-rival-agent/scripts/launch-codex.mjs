@@ -16,8 +16,17 @@ import { FINDINGS_SCHEMA_PATH } from '../../../../tools/rival-agent/validate-fin
 
 export { BROKER_SERVER_PATH };
 export const RIVAL = 'codex';
-export const LOCAL_TOOL_BOUNDARY =
-  "* **Your own shell is sandboxed read-only and cannot escalate.** `git`, `rg`, `sed`, `cat`, and other reads work there. A test runner, a type check, a build, an install, a script that writes a temp file, or anything that needs the network will fail there with a permission error — that is the sandbox, not the handler, and it is never a finding. Do not try such a command locally first and do not report the sandbox's refusal as a decline. Send it through `run` the first time.";
+// Measured with the model-free `codex sandbox` runner on 2026-09-02: a targeted Vitest file,
+// `npm run check`, and `npm run build` all pass inside the disposable worktree; writes to the home
+// directory and the canonical checkout are refused; a commit fails because the worktree's gitdir
+// lives under the canonical checkout's .git; DNS resolution fails with the network off.
+export const TOOL_BOUNDARY =
+  '* **Your shell is sandboxed to this worktree, with the network off, and it cannot escalate on its own.** Tests, type checks, builds, and scripts that write inside the worktree or under your own `$TMPDIR` run there. Writes anywhere else fail with a permission error, except that the sandbox also leaves `/tmp` writable — use `$TMPDIR` for scratch and leave `/tmp` alone. Every network call fails, and so does binding a local port, which surfaces as a failing test rather than a permission error. None of that is a decline and none of it is a finding: it is the signal to send that exact command through `run`.';
+// The rival's shell runs inside Codex's workspace-write profile rooted at the disposable worktree;
+// the network pin restates the measured default on the command line so the boundary is pinned
+// where the launcher test can see it rather than inherited from a Codex release.
+const SANDBOX_MODE_PIN = 'sandbox_mode="workspace-write"';
+const NETWORK_PIN = 'sandbox_workspace_write.network_access=false';
 // Ambient tool surfaces that bypass the sandbox. `apps` is the one that matters most: it is a
 // built-in MCP server exposing GitHub read *and write* tools, and it is how a review of this very
 // skill once posted a review to its own pull request while claiming it could not reach GitHub.
@@ -78,14 +87,14 @@ export function buildCodexArgs({
     '--ignore-user-config',
     ...ISOLATION_FEATURES.flatMap((feature) => ['--disable', feature]),
     '-c',
-    'sandbox_mode="read-only"',
-    // sandbox_mode alone is not read-only: with an on-request approval policy Codex escalates out
+    SANDBOX_MODE_PIN,
+    // sandbox_mode alone is not a boundary: with an on-request approval policy Codex escalates out
     // of the sandbox, and a configured auto-reviewer approves it without a human ever seeing the
     // request. Verified — read-only alone created a file; this pin denies it.
     '-c',
     'approval_policy="never"',
     // MCP tool calls are auto-rejected under approval_policy="never" unless the server itself is
-    // marked approved; the broker is the one door the design opens.
+    // marked approved; the broker is the one door out of the sandbox.
     '-c',
     brokerServerToml({
       session,
@@ -93,6 +102,8 @@ export function buildCodexArgs({
       nodePath,
       toolTimeoutSeconds: PENDING_REQUEST_TIMEOUT_MS / 1000,
     }),
+    '-c',
+    NETWORK_PIN,
     '-c',
     `model_provider="${SUBSCRIPTION_MODEL_PROVIDER}"`,
     '-c',
@@ -119,7 +130,7 @@ export const codexVendor = Object.freeze({
   rival: RIVAL,
   command: 'codex',
   reducer: codexReducer,
-  localToolBoundary: LOCAL_TOOL_BOUNDARY,
+  toolBoundary: TOOL_BOUNDARY,
   prepare() {
     const { env, stripped } = assertSubscriptionBilling();
     const notes =

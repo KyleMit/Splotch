@@ -1,0 +1,16 @@
+{
+  "name": "newline-escape-in-single-quotes",
+  "control": false,
+  "title": "a \\\\n inside shell single quotes reaches Node as two characters, so the stream markers share one line",
+  "path": "tools/rival-agent/acceptance/question.md",
+  "lines": [40, 40],
+  "severity": "suggestion",
+  "keywords": [
+    "\\\\n",
+    "single quote",
+    "two characters",
+    "literal backslash",
+    "escape",
+    "same line"
+  ]
+}

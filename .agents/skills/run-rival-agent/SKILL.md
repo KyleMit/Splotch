@@ -8,9 +8,11 @@ description: Pair this Codex session, as the native handler, with a rival agent 
 This is the Codex-side package of `run-rival-agent`. You are the **native handler**: the agent
 already running here, with Codex's sandbox, exec policy, and Auto-review as your permission system.
 The **rival agent** is a Claude Code process holding none of that. It reads a disposable worktree
-pinned to the exact commit under review with file tools only, and its one way to execute anything is
-to ask you through a broker. You run each command or decline it, and the rival's findings post to
-the PR verbatim through a fixed wrapper. The rival never learns that posting exists.
+pinned to the exact commit under review and runs its own tests, checks, and repros there inside
+Claude's sandbox — no network, no writes outside the worktree, the canonical `.git` and the
+credential stores off limits — and its one way past that sandbox is to ask you through a broker. You
+run each such command or decline it, and the rival's findings post to the PR verbatim through a
+fixed wrapper. The rival never learns that posting exists.
 
 The Claude-side package of the same name mirrors this with the roles swapped, so shared prose can
 name `run-rival-agent` without knowing which runner it is on.
@@ -82,15 +84,17 @@ grammar.
 The launcher resolves the scope to base and head commit ids (the uncommitted scope becomes a
 snapshot commit), creates a worktree at the head with dependencies installed, writes the diff and
 commit list into a packet the rival reads with its own file tools, and starts Claude in restricted
-print mode with `Read`, `Grep`, `Glob`, and the broker as its only tools. It stays alive until the
-rival finishes. Launch it escalated with output redirected to files, let the `exec_command` yield
-(retain the returned session so the process keeps running), and read the log with plain sandboxed
-`tail`. Its first stderr line is `session: <dir>` — that directory is the handle for everything
-below.
+print mode with `Read`, `Grep`, `Glob`, a sandboxed `Bash`, and the broker as its only tools. It
+stays alive until the rival finishes. Launch it escalated with output redirected to files, let the
+`exec_command` yield (retain the returned session so the process keeps running), and read the log
+with plain sandboxed `tail`. Its first stderr line is `session: <dir>` — that directory is the
+handle for everything below.
 
 ## Serve the broker loop
 
-The rival asks for commands one at a time. In the normal sandbox:
+The rival asks only for what its own sandbox refused — the network, a local port bind, a write
+outside the worktree — so most rounds make few requests or none. Serve the loop anyway; the one
+request a round does make is the one that needed you. In the normal sandbox:
 
 ```sh
 node /Users/kylemit/.local/libexec/splotch-rival-agent/broker.mjs next --session <dir> --timeout-seconds 60
@@ -159,8 +163,9 @@ rather than meeting the code cold. Three rounds is the budget; `--fresh` starts 
 ```
 
 It launches the rival, declines every request it makes with a fixed reason, and posts the result.
-That review is what the rival can establish by reading alone; its unverified list says what it
-wanted to run. `--end-session` on the same path ends the PR's conversation.
+The rival still runs its tests and repros in its own sandbox, so that review is empirical; its
+unverified list says only what needed the handler. `--end-session` on the same path ends the PR's
+conversation.
 
 ## Options
 

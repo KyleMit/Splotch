@@ -96,12 +96,19 @@ describe('Codex rival command construction', () => {
     ]) {
       expect(args).toContain('--ignore-user-config');
       expect(args).toContain('approval_policy="never"');
-      expect(args).toContain('sandbox_mode="read-only"');
+      expect(args).toContain('sandbox_mode="workspace-write"');
+      expect(args).toContain('sandbox_workspace_write.network_access=false');
       for (const feature of ISOLATION_FEATURES) {
         expect(args.slice(args.indexOf('--disable'))).toContain(feature);
       }
       expect(args.filter((arg) => arg.startsWith('mcp_servers='))).toHaveLength(1);
     }
+  });
+
+  // Web search stays on: the findings document is already an outbound channel from a rival that
+  // reads the whole disk (NOTES.md, accepted exposures), so the pilot's search pin closed nothing.
+  it('leaves web search on', () => {
+    expect(buildCodexArgs(options).some((arg) => arg.startsWith('web_search'))).toBe(false);
   });
 
   it('attaches exactly the broker, approved, with a tool timeout matching the pending budget', () => {
@@ -159,6 +166,8 @@ describe('Codex rival command construction', () => {
 
   it('exposes the vendor adapter the shared launcher drives', () => {
     expect(codexVendor).toMatchObject({ rival: 'codex', command: 'codex' });
+    expect(codexVendor.toolBoundary).toContain('network off');
+    expect(codexVendor.toolBoundary).toContain('`run`');
     expect(typeof codexVendor.prepare).toBe('function');
     expect(typeof codexVendor.resolveModel).toBe('function');
     expect(codexVendor.buildArgs).toBe(buildCodexArgs);

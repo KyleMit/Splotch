@@ -1,0 +1,9 @@
+{
+  "name": "commit-scope-keyed-as-typed",
+  "control": false,
+  "title": "a commit scope is keyed by the ref as typed rather than its resolved OID",
+  "path": "tools/rival-agent/launch.mjs",
+  "lines": [95, 95],
+  "severity": "suggestion",
+  "keywords": ["as typed", "rev-parse", "OID", "resolveCommit", "short hash", "HEAD names"]
+}

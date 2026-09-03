@@ -115,6 +115,19 @@ export function logPathForAttempt(session, attempt) {
   return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
 }
 
+// The rival gets a TMPDIR of its own inside the session: Codex's workspace-write sandbox writes
+// anywhere under the process's TMPDIR, and the handler's TMPDIR is where every session's spool
+// lives. Claude Code replaces its shell's TMPDIR with a directory of its own, so for that rival the
+// session tmp matters only as the dprint cache location, which the Claude launcher grants as a
+// working directory. `/tmp` itself stays writable to Codex's sandbox, which matters on a Linux
+// host whose os.tmpdir() is `/tmp`; NOTES.md records that as an accepted exposure.
+export function rivalEnvironment(env, { session }) {
+  const tmp = sessionPath(session, SESSION_FILES.tmp);
+  // dprint compiles its plugin cache under ~/Library/Caches, which the sandbox refuses (the first
+  // sandboxed round's `format:check` exited 12 there); its cache directory is pointed inside too.
+  return { ...env, TMPDIR: tmp, DPRINT_CACHE_DIR: join(tmp, 'dprint-cache') };
+}
+
 // Only the rival refusing the run is worth a second attempt; every other failure is either the
 // user's decision or a condition a retry would repeat.
 export function isRetryableResumeFailure(error) {
@@ -170,8 +183,9 @@ function finish(session, state, logPath, extra) {
 
 // A vendor adapter supplies what differs between the two rivals: `rival`, `command`, `prepare()`
 // (the billing guard; returns the child env), `resolveModel(requested)`, `buildArgs(...)`,
-// `reducer`, `localToolBoundary`, `newSessionId()` (a wrapper-issued id for CLIs that take one up
-// front), and `endSession(record)`. Everything else in a round is the same on both sides.
+// `reducer`, `toolBoundary` (what the rival's own sandboxed shell can and cannot do, in the
+// vendor's words), `newSessionId()` (a wrapper-issued id for CLIs that take one up front), and
+// `endSession(record)`. Everything else in a round is the same on both sides.
 export async function launch(
   options,
   vendor,
@@ -249,7 +263,7 @@ export async function launch(
         previous: plan.previous,
         landedCommits: describeLandedCommits(repoRoot, plan.previous, scope.head),
         extraInstructions,
-        localToolBoundary: vendor.localToolBoundary,
+        toolBoundary: vendor.toolBoundary,
       });
       return runStreaming({
         command: vendor.command,
@@ -262,7 +276,7 @@ export async function launch(
           rivalSession,
         }),
         cwd: worktree,
-        env,
+        env: rivalEnvironment(env, { session }),
         stdin: prompt,
         logPath,
         onProgress,

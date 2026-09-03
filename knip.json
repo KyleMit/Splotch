@@ -21,6 +21,8 @@
     "tools/centerline-tracing/*.mjs",
     "tools/mobile/{android,ios}/*.mjs",
     "tools/perf/{web,android,ios,split-capture}/*.mjs",
+    "tools/rival-agent/bench/*.mjs",
+    "tools/rival-agent/bench/seeds/*/repro.mjs",
     "!tools/lib/*.mjs",
     "tools/scrapbook/clear-sound-sheet/*.mjs",
     "tools/*/tests/*.test.mjs",

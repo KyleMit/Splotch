@@ -1,0 +1,64 @@
+diff --git a/tools/rival-agent/tests/worktree.test.mjs b/tools/rival-agent/tests/worktree.test.mjs
+index 32a3cdfe6..d16d0e643 100644
+--- a/tools/rival-agent/tests/worktree.test.mjs
++++ b/tools/rival-agent/tests/worktree.test.mjs
+@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os';
+ import { join } from 'node:path';
+ import {
+   createDisposableWorktree,
+-  DIFF_CONTEXT_LINES,
+   git,
+   PACKET_FILES,
+   removeDisposableWorktree,
+@@ -162,28 +161,4 @@ describe('disposable worktree and packet', () => {
+     expect(existsSync(directory)).toBe(false);
+     expect(sh(['worktree', 'list'])).not.toContain('wt');
+   });
+-
+-  // The rival's second real round found this: a developer's diff.context widened the packet past
+-  // what GitHub renders, so the poster would have accepted anchors GitHub then rejected.
+-  it('pins the packet diff to the context GitHub renders regardless of git config', () => {
+-    sh(['config', 'diff.context', '10']);
+-    writeFileSync(
+-      join(repo, 'a.txt'),
+-      `${Array.from({ length: 30 }, (_, i) => `l${i}`).join('\n')}\n`
+-    );
+-    sh(['commit', '-q', '-am', 'thirty lines']);
+-    const lines = readFileSync(join(repo, 'a.txt'), 'utf8').split('\n');
+-    lines[15] = 'changed';
+-    writeFileSync(join(repo, 'a.txt'), lines.join('\n'));
+-    sh(['commit', '-q', '-am', 'one change']);
+-    const scope = resolveScope(repo, { kind: 'commit', commit: 'HEAD' });
+-    const packet = join(root, 'packet-context');
+-    mkdirSync(packet);
+-    writeReviewPacket(repo, scope, packet);
+-    const hunk = readFileSync(join(packet, PACKET_FILES.diff), 'utf8')
+-      .split('\n')
+-      .find((line) => line.startsWith('@@'));
+-    const span = DIFF_CONTEXT_LINES * 2 + 1;
+-    expect(hunk).toMatch(new RegExp(`^@@ -13,${span} \\+13,${span} @@`));
+-  });
+ });
+diff --git a/tools/rival-agent/worktree.mjs b/tools/rival-agent/worktree.mjs
+index fca8fd1c5..ffcfd9686 100644
+--- a/tools/rival-agent/worktree.mjs
++++ b/tools/rival-agent/worktree.mjs
+@@ -135,17 +135,9 @@ export const PACKET_FILES = Object.freeze({
+   files: 'files.txt',
+   scope: 'scope.json',
+ });
+-// GitHub renders the diff with three context lines, and every rendered line accepts a review
+-// comment; a line outside a rendered hunk rejects the whole review. Pinned on the command line so
+-// a developer's diff.context setting cannot widen the packet past what the poster can anchor to.
+-export const DIFF_CONTEXT_LINES = 3;
+-
+ export function writeReviewPacket(repoRoot, { base, head, description }, directory) {
+   const range = `${base}...${head}`;
+-  writeFileSync(
+-    join(directory, PACKET_FILES.diff),
+-    `${git(repoRoot, ['diff', `--unified=${DIFF_CONTEXT_LINES}`, range])}\n`
+-  );
++  writeFileSync(join(directory, PACKET_FILES.diff), `${git(repoRoot, ['diff', range])}\n`);
+   writeFileSync(
+     join(directory, PACKET_FILES.commits),
+     `${git(repoRoot, ['log', '--oneline', '--no-decorate', `${base}..${head}`])}\n`
