@@ -977,6 +977,17 @@ function withActionReadinessSummary(actions) {
   };
 }
 
+function withFinalProductCommitActionCount(actions, finalProductCommit) {
+  if (!actions || typeof actions !== 'object' || !Array.isArray(actions.results)) return actions;
+  return {
+    ...actions,
+    finalProductCommitActionCount: actions.results.filter(
+      (result) =>
+        !ACTION_CONTROL_LABELS.has(result.label) && result.productCommit === finalProductCommit
+    ).length,
+  };
+}
+
 function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, targetId) {
   if (!sources?.length) return null;
   const captures = sources.map((source) =>
@@ -1077,18 +1088,21 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
         normalizedMode
       )
     ),
-    actions: withActionReadinessSummary(
-      withActionControlScoreability(
-        resolveSection(normalizedMode.actionSources, 'actions', () =>
-          normalizeActions(
-            normalizedMode.actionSources,
-            finalProductCommit,
-            sourceDirectory,
-            normalizedMode,
-            target.id
+    actions: withFinalProductCommitActionCount(
+      withActionReadinessSummary(
+        withActionControlScoreability(
+          resolveSection(normalizedMode.actionSources, 'actions', () =>
+            normalizeActions(
+              normalizedMode.actionSources,
+              finalProductCommit,
+              sourceDirectory,
+              normalizedMode,
+              target.id
+            )
           )
         )
-      )
+      ),
+      finalProductCommit
     ),
     ...(preservedSections.length ? { preservedSections } : {}),
     ...(untrackedSections.length ? { untrackedSections } : {}),

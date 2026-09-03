@@ -1204,6 +1204,27 @@ describe('deployment matrix report', () => {
       expect(renderMarkdown(matrix)).toContain('| 42 |');
     });
 
+    it('recomputes final-commit coverage for preserved actions', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const actions = normalizedActions([
+        action('old action', true, 'old123'),
+        action('another old action', true, 'old123'),
+      ]);
+      actions.finalProductCommitActionCount = actions.results.length;
+      publishReport(manifestDirectory, { actions });
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: {}, actionSources: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = { from: 'data.json', reason: 'Raw captures are gone.' };
+
+      const matrix = normalizeMatrix(source, manifestDirectory);
+
+      expect(matrix.targets[0].modes[0].actions.finalProductCommitActionCount).toBe(0);
+      expect(renderMarkdown(matrix)).toContain('| 0 / 2 |');
+    });
+
     it('renders preserved action evidence that predates readiness samples', () => {
       const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
       temporaryDirectories.push(manifestDirectory);
