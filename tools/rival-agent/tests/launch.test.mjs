@@ -5,8 +5,6 @@ import {
   logPathForAttempt,
   parseLaunchArgs,
   rivalEnvironment,
-  SANDBOXES,
-  toolBoundaryFor,
 } from '../launch.mjs';
 import { STREAM_FAILURE } from '../stream.mjs';
 
@@ -26,31 +24,14 @@ describe('shared launch arguments', () => {
     expect(() => parseLaunchArgs(['extra'])).toThrow(/positional/);
   });
 
-  it('defaults to the read-only pairing and accepts the workspace-write hybrid', () => {
-    expect(parseLaunchArgs([])).toMatchObject({ sandbox: 'read-only' });
-    expect(parseLaunchArgs(['--sandbox', 'workspace-write'])).toMatchObject({
-      sandbox: 'workspace-write',
-    });
-    expect(SANDBOXES).toEqual(['read-only', 'workspace-write']);
-    expect(() => parseLaunchArgs(['--sandbox', 'danger-full-access'])).toThrow(/sandbox/);
-  });
-
-  // The Claude rival has no sandboxed launch shape yet, and a vendor without one must be refused
-  // before a worktree is provisioned rather than launched with the broker's instructions.
-  it('refuses a sandbox the vendor has no tool boundary for', () => {
-    const vendor = { rival: 'claude', localToolBoundary: 'read only' };
-    expect(toolBoundaryFor(vendor, 'read-only')).toBe('read only');
-    expect(() => toolBoundaryFor(vendor, 'workspace-write')).toThrow(
-      /claude rival has no workspace-write/
-    );
-    expect(
-      toolBoundaryFor({ ...vendor, sandboxedToolBoundary: 'own shell' }, 'workspace-write')
-    ).toBe('own shell');
+  // The flag that once selected a read-only pairing was collapsed after the seeded-defect bench;
+  // an old launch line must fail loudly rather than run in a mode that no longer exists.
+  it('refuses the retired --sandbox flag', () => {
+    expect(() => parseLaunchArgs(['--sandbox', 'read-only'])).toThrow(/sandbox/);
   });
 
   // Measured on the first sandboxed round's review: a workspace-write rival created a request file
-  // in a sibling session, because the sandbox's writable temp root is the spool root. One
-  // environment serves both modes; a read-only rival cannot write there anyway.
+  // in a sibling session, because the sandbox's writable temp root is the spool root.
   it('gives the rival a private TMPDIR and dprint cache inside its session', () => {
     const env = { PATH: '/usr/bin', TMPDIR: '/var/folders/x/T' };
     expect(rivalEnvironment(env, { session: '/s' })).toEqual({

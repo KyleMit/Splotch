@@ -37,7 +37,9 @@ const vendor = {
   command: 'true',
   prepare: () => ({ env: process.env }),
   resolveModel: () => 'none',
+  // Both names, because the seeded tree under test may predate the single-boundary adapter.
   localToolBoundary: 'none',
+  toolBoundary: 'none',
   buildArgs: () => [],
   reducer: { initial: () => ({}), reduce: (state) => state, render: () => null },
 };

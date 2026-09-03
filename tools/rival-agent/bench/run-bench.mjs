@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { isEntryPoint } from '../broker-server.mjs';
-import { launch, SANDBOXES } from '../launch.mjs';
+import { launch } from '../launch.mjs';
 import { readJson, sessionPath, SESSION_FILES } from '../spool.mjs';
 import { git } from '../worktree.mjs';
 import { serveSession } from './lib/handler.mjs';
@@ -26,7 +26,7 @@ const RIVALS = Object.freeze({
 const DEFAULT_BASE = 'main';
 const DEFAULT_REPS = 2;
 const USAGE =
-  'usage: run-bench.mjs [--rival codex|claude] [--modes read-only,workspace-write] [--reps <n>] [--seeds a,b] [--base <ref>] [--out <dir>] [--report <path>] [--model <slug>] [--effort low|medium|high] [--validate]';
+  'usage: run-bench.mjs [--rival codex|claude] [--reps <n>] [--seeds a,b] [--base <ref>] [--out <dir>] [--report <path>] [--model <slug>] [--effort low|medium|high] [--validate]';
 
 export function parseBenchArgs(argv) {
   const { values, positionals } = parseArgs({
@@ -35,7 +35,6 @@ export function parseBenchArgs(argv) {
     allowPositionals: false,
     options: {
       rival: { type: 'string', default: 'codex' },
-      modes: { type: 'string', default: SANDBOXES.join(',') },
       reps: { type: 'string', default: String(DEFAULT_REPS) },
       seeds: { type: 'string' },
       base: { type: 'string', default: DEFAULT_BASE },
@@ -48,15 +47,10 @@ export function parseBenchArgs(argv) {
   });
   if (positionals.length > 0) throw new Error(USAGE);
   if (!(values.rival in RIVALS)) throw new Error(`unsupported rival: ${values.rival}`);
-  const modes = values.modes.split(',').filter(Boolean);
-  for (const mode of modes) {
-    if (!SANDBOXES.includes(mode)) throw new Error(`unsupported sandbox: ${mode}`);
-  }
   const reps = Number(values.reps);
   if (!Number.isInteger(reps) || reps < 1) throw new Error('--reps must be a positive integer');
   return {
     rival: values.rival,
-    modes,
     reps,
     seeds: values.seeds?.split(',').filter(Boolean),
     base: values.base,
@@ -68,16 +62,14 @@ export function parseBenchArgs(argv) {
   };
 }
 
-export const cellId = ({ seed, mode, rep }) => `${seed}__${mode}__r${rep}`;
+export const cellId = ({ seed, rep }) => `${seed}__r${rep}`;
 
 // Repetition-major so an interrupted overnight run leaves a complete first pass over every cell
 // rather than every repetition of the first few seeds.
-export function planCells({ seeds, modes, reps }) {
+export function planCells({ seeds, reps }) {
   const cells = [];
   for (let rep = 1; rep <= reps; rep += 1) {
-    for (const seed of seeds) {
-      for (const mode of modes) cells.push({ seed: seed.name, mode, rep });
-    }
+    for (const seed of seeds) cells.push({ seed: seed.name, rep });
   }
   return cells;
 }
@@ -87,7 +79,7 @@ async function loadVendor(rival) {
   return rival === 'codex' ? module.codexVendor : module.claudeVendor;
 }
 
-function launchOptions({ cwd, mode, model, effort, endSession = false }) {
+function launchOptions({ cwd, model, effort, endSession = false }) {
   return {
     scope: { kind: 'uncommitted', base: undefined, commit: undefined, number: undefined },
     questionFile: undefined,
@@ -95,7 +87,6 @@ function launchOptions({ cwd, mode, model, effort, endSession = false }) {
     cwd,
     model,
     effort,
-    sandbox: mode,
     fresh: true,
     endSession,
   };
@@ -104,15 +95,15 @@ function launchOptions({ cwd, mode, model, effort, endSession = false }) {
 // One cell: a bench worktree at the base with the seed applied, one fresh rival round on its
 // working tree with the bench serving the broker, the findings scored against the key, and the
 // ledger record the round wrote removed again so the bench leaves nothing behind.
-async function runCell({ repoRoot, base, seed, mode, rep, vendor, options, worktreesDir, log }) {
-  const id = cellId({ seed: seed.name, mode, rep });
+async function runCell({ repoRoot, base, seed, rep, vendor, options, worktreesDir, log }) {
+  const id = cellId({ seed: seed.name, rep });
   const directory = join(worktreesDir, id);
   const startedAt = Date.now();
   const result = {
     id,
     seed: seed.name,
     control: seed.control,
-    mode,
+    rival: vendor.rival,
     rep,
     startedAt: new Date(startedAt).toISOString(),
   };
@@ -121,7 +112,6 @@ async function runCell({ repoRoot, base, seed, mode, rep, vendor, options, workt
     applySeed(directory, seed);
     const cellOptions = launchOptions({
       cwd: directory,
-      mode,
       model: options.model,
       effort: options.effort,
     });
@@ -178,7 +168,6 @@ async function runCell({ repoRoot, base, seed, mode, rep, vendor, options, workt
       await launch(
         launchOptions({
           cwd: directory,
-          mode,
           model: options.model,
           effort: options.effort,
           endSession: true,
@@ -227,7 +216,7 @@ export async function runBench(
 
   const vendor = await loadVendor(options.rival);
   const model = vendor.resolveModel(options.model);
-  const plan = planCells({ seeds, modes: options.modes, reps: options.reps });
+  const plan = planCells({ seeds, reps: options.reps });
   const startedAt = new Date().toISOString();
   log(`bench ${runId}: ${plan.length} cells, results under ${resultsDir}`);
   for (const planned of plan) {
@@ -242,7 +231,6 @@ export async function runBench(
       repoRoot,
       base,
       seed,
-      mode: planned.mode,
       rep: planned.rep,
       vendor,
       options,
@@ -255,7 +243,7 @@ export async function runBench(
     );
   }
   const cells = readResults(resultsDir).sort(
-    (a, b) => a.rep - b.rep || a.seed.localeCompare(b.seed) || a.mode.localeCompare(b.mode)
+    (a, b) => a.rep - b.rep || a.seed.localeCompare(b.seed)
   );
   const summary = summarize(cells);
   const report = renderReport({

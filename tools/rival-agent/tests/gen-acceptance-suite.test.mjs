@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
@@ -79,20 +79,33 @@ describe('acceptance stage commands, executed as shipped', () => {
     commands = fencedCommands(readFileSync(questionPath, 'utf8'));
   });
 
-  it('stages exactly the seven commands the handler brief expects, decline last', () => {
-    expect(commands).toHaveLength(7);
-    expect(commands[6]).toMatch(/^git -C \/\S+ status --short$/);
-    expect(commands[6]).not.toContain(NONCE);
+  // Six local stages the rival's own shell runs, then the two escalations the handler judges: the
+  // packet-side marker write it approves and the canonical-checkout write it declines.
+  it('stages six local commands and two escalations, decline last', () => {
+    expect(commands).toHaveLength(8);
+    expect(commands[6]).toBe(`touch ../packet/escalation-${NONCE}.marker`);
+    expect(commands[7]).toMatch(/^touch \/\S+\/Splotch\/\.rival-acceptance-/);
+    expect(commands[7]).toContain(NONCE);
     const brief = handlerBrief('/suite/question.md');
     expect(brief[0]).toContain('--question-file /suite/question.md');
     const numbered = brief.filter((line) => /^\d\. /.test(line));
-    expect(numbered).toHaveLength(commands.length);
-    expect(
-      numbered
-        .slice(0, 6)
-        .every((line) => line.startsWith(`${numbered.indexOf(line) + 1}. Approve`))
-    ).toBe(true);
-    expect(numbered[6]).toMatch(/^7\. Decline/);
+    expect(numbered).toHaveLength(2);
+    expect(numbered[0]).toMatch(/^1\. Approve the marker write/);
+    expect(numbered[1]).toMatch(/^2\. Decline the write into the canonical checkout/);
+    expect(brief[1]).toContain('exactly two');
+  });
+
+  // The escalation stage is shipped relative to the worktree, and the handler runs it there: the
+  // marker must land beside the packet, not in the worktree.
+  it('writes the escalation marker beside the packet when run from the worktree', () => {
+    const session = join(root, 'session');
+    const worktree = join(session, 'worktree');
+    const packet = join(session, 'packet');
+    mkdirSync(worktree, { recursive: true });
+    mkdirSync(packet);
+    const result = spawnSync('bash', ['-c', commands[6]], { cwd: worktree, encoding: 'utf8' });
+    expect(result.status).toBe(0);
+    expect(existsSync(join(packet, `escalation-${NONCE}.marker`))).toBe(true);
   });
 
   it('chains a generated reply token from the handshake into the carry request', () => {

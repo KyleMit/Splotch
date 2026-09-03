@@ -10,8 +10,7 @@ already running here, holding every permission this session has. The **rival age
 process confined to its own sandbox in a disposable worktree pinned to the exact commit under
 review. Its door out of that sandbox is a broker: it asks you to run a command, you run it under
 your own permission mode or decline it, and the rival's findings post to the PR verbatim through a
-script. The rival never learns that posting exists. Two sandboxes exist while a flag does (see "The
-two modes" below); the broker is attached in both.
+script. The rival never learns that posting exists.
 
 The Codex-side package of the same name mirrors this with the roles swapped, so shared prose can
 name `run-rival-agent` without knowing which runner it is on.
@@ -138,47 +137,36 @@ by earlier rounds. A question (`--question-file`) is always a fresh, unrecorded 
 
 `--cwd <dir>` (defaults to the current directory; must be inside a git worktree), `--model <slug>`
 (defaults to the top-level `model` in `~/.codex/config.toml`, the one key the launcher reads back
-after ignoring the rest), `--effort low|medium|high` (defaults to `high`), and
-`--sandbox read-only|workspace-write` (defaults to `read-only`; temporary, see below).
+after ignoring the rest), and `--effort low|medium|high` (defaults to `high`).
 
-## The two modes
+## How the rival executes
 
-The `--sandbox` flag is temporary: it exists so a seeded-defect bench can compare the two modes on
-evidence, after which the loser is deleted (`tools/rival-agent/NOTES.md`). Until then:
+The rival gets Codex's workspace-write sandbox rooted at the disposable worktree with the network
+off. It runs its own tests, type checks, builds, and repros there, and sends you only what that
+sandbox refuses: the network, a local port bind (a dev server, a test that starts one), the full
+Playwright suite, a performance capture or anything touching the device rig, anything that writes
+outside the worktree and its own temp directory. Most rounds make no request at all; the loop above
+is still yours to serve, because the one request a round does make is the one that needed you.
 
-* **`read-only`, the pairing.** The rival's own shell can read and run `git`, `rg`, and the like,
-  and nothing else; every test, check, build, and repro comes to you through the broker. You judge
-  every command the rival executes.
-* **`workspace-write`, the hybrid.** The rival gets Codex's workspace-write sandbox rooted at the
-  disposable worktree with the network off. It runs its own tests, type checks, builds, and repros
-  there, and sends you only what that sandbox refuses: the network, the full Playwright suite, a
-  performance capture or anything touching the device rig, anything that writes outside the
-  worktree. You serve the same broker loop; it is just quieter.
-
-```bash
-npm run --silent rival:launch -- --sandbox workspace-write --base main
-```
-
-The trust contract changes between them, and it is worth saying plainly. On the pairing path your
-permission system judges everything the rival runs. On the hybrid path Codex's Seatbelt profile
-judges the routine work — a sandbox this repository did not write and cannot inspect from the
-outside, measured to hold at the worktree boundary, the home directory, the canonical checkout's
-`.git`, and the network — and your permission system judges only the escalations. What both modes
-share: the rival reads the whole disk either way (no Codex sandbox restricts reads), web search
-stays on, and the findings document is posted verbatim, so a prompt injected through the diff could
-carry a readable file out in a finding on either path. That exposure is accepted on the grounds in
-the notes; read a rival's findings before trusting the post. Only the Codex rival has the hybrid
-path today; the Claude-side launcher refuses the flag.
+The trust contract is worth saying plainly. Codex's Seatbelt profile judges the routine work — a
+sandbox this repository did not write and cannot inspect from the outside, measured to hold at the
+worktree boundary, the home directory, the canonical checkout's `.git`, and the network — and your
+permission system judges only the escalations. The rival reads the whole disk (no Codex sandbox
+restricts reads), web search stays on, and the findings document is posted verbatim, so a prompt
+injected through the diff could carry a readable file out in a finding. That exposure is accepted on
+the grounds in `tools/rival-agent/NOTES.md`; read a rival's findings before trusting the post. A
+read-only pairing, in which every command came to you, existed for one PR cycle and was retired on
+the seeded-defect bench's evidence, recorded in the same notes.
 
 ## Reading the result
 
 The launcher's stdout is one JSON document: the session directory, round, findings and unverified
 counts, the Codex thread id, usage, and the log path. stderr carries timestamped progress — one line
-per command the rival runs in its own read-only shell and per broker request — and the raw NDJSON
-stream lives at `rival.ndjson` inside the session. Keep the `--silent`: without it npm prints its
-own banner ahead of the JSON. On the hybrid path, `cmd` lines are the rival's own shell and `broker`
-lines are its escalations; a `cmd failed` line that is never followed by a `broker` line for the
-same command is a refusal the rival swallowed rather than escalated.
+per command the rival runs in its own shell and per broker request — and the raw NDJSON stream lives
+at `rival.ndjson` inside the session. Keep the `--silent`: without it npm prints its own banner
+ahead of the JSON. `cmd` lines are the rival's own shell and `broker` lines are its escalations; a
+`cmd failed` line that is never followed by a `broker` line for the same command is a refusal the
+rival swallowed rather than escalated.
 
 ## Handling the findings
 

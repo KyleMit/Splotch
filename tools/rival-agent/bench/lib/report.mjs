@@ -4,11 +4,11 @@ const cell = (value) => String(value).replaceAll('|', '\\|').replaceAll('\n', ' 
 
 function summaryTable(summary) {
   const header =
-    '| Mode | Seeds detected | Severity met | Seeded false positives | Control false positives | Unverified | Handler turns (declined) | Local commands (failed) | Wall | Input (cached) | Output | Failed cells |';
+    '| Rival | Seeds detected | Severity met | Seeded false positives | Control false positives | Unverified | Handler turns (declined) | Local commands (failed) | Wall | Input (cached) | Output | Failed cells |';
   const rule = '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |';
   const rows = summary.map(
     (row) =>
-      `| ${row.mode} | ${row.detected}/${row.seededCells} | ${row.severityMet}/${row.seededCells} | ${row.seededFalsePositives} | ${row.controlFalsePositives} over ${row.controlCells} | ${row.unverified} | ${row.meanTurns.toFixed(1)} (${row.meanDeclined.toFixed(1)}) | ${row.meanLocalCommands.toFixed(1)} (${row.meanLocalFailed.toFixed(1)}) | ${seconds(row.meanWallSeconds)} | ${tokens(row.meanInput)} (${tokens(row.meanCached)}) | ${(row.meanOutput / 1000).toFixed(1)}k | ${row.failedCells} |`
+      `| ${row.rival} | ${row.detected}/${row.seededCells} | ${row.severityMet}/${row.seededCells} | ${row.seededFalsePositives} | ${row.controlFalsePositives} over ${row.controlCells} | ${row.unverified} | ${row.meanTurns.toFixed(1)} (${row.meanDeclined.toFixed(1)}) | ${row.meanLocalCommands.toFixed(1)} (${row.meanLocalFailed.toFixed(1)}) | ${seconds(row.meanWallSeconds)} | ${tokens(row.meanInput)} (${tokens(row.meanCached)}) | ${(row.meanOutput / 1000).toFixed(1)}k | ${row.failedCells} |`
   );
   return [header, rule, ...rows].join('\n');
 }
@@ -23,12 +23,12 @@ function describeDetection(row) {
 
 function cellsTable(cells) {
   const header =
-    '| Seed | Mode | Rep | Result | Findings | Unverified | Turns (approved/declined) | Local (failed) | Wall | Input (cached) | Output |';
-  const rule = '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |';
+    '| Seed | Rep | Result | Findings | Unverified | Turns (approved/declined) | Local (failed) | Wall | Input (cached) | Output |';
+  const rule = '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |';
   const rows = cells.map((row) =>
     row.failed
-      ? `| ${row.seed} | ${row.mode} | ${row.rep} | ${describeDetection(row)} | — | — | — | — | ${seconds(row.wallSeconds ?? 0)} | — | — |`
-      : `| ${row.seed} | ${row.mode} | ${row.rep} | ${describeDetection(row)} | ${row.findingsCount} | ${row.unverified} | ${row.turns.approved}/${row.turns.declined} | ${row.localCommands.started} (${row.localCommands.failed}) | ${seconds(row.wallSeconds)} | ${tokens(row.usage.input)} (${tokens(row.usage.cached)}) | ${(row.usage.output / 1000).toFixed(1)}k |`
+      ? `| ${row.seed} | ${row.rep} | ${describeDetection(row)} | — | — | — | — | ${seconds(row.wallSeconds ?? 0)} | — | — |`
+      : `| ${row.seed} | ${row.rep} | ${describeDetection(row)} | ${row.findingsCount} | ${row.unverified} | ${row.turns.approved}/${row.turns.declined} | ${row.localCommands.started} (${row.localCommands.failed}) | ${seconds(row.wallSeconds)} | ${tokens(row.usage.input)} (${tokens(row.usage.cached)}) | ${(row.usage.output / 1000).toFixed(1)}k |`
   );
   return [header, rule, ...rows].join('\n');
 }
@@ -40,9 +40,7 @@ function decisionsList(cells) {
       const verdict = decision.approved
         ? `approved, exit ${decision.exit}`
         : `declined: ${decision.reason}`;
-      lines.push(
-        `* \`${row.seed}\` ${row.mode} r${row.rep} — ${verdict} — \`${cell(decision.command)}\``
-      );
+      lines.push(`* \`${row.seed}\` r${row.rep} — ${verdict} — \`${cell(decision.command)}\``);
     }
   }
   return lines.length > 0 ? lines.join('\n') : '_The rival made no broker request in any cell._';

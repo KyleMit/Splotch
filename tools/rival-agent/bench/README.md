@@ -1,8 +1,10 @@
 # tools/rival-agent/bench — the seeded-defect bench
 
-Measures a rival configuration against a corpus of real defects rather than against one diff. Each
-seed under `seeds/` reintroduces a defect the rival found while the pairing was built (their fixes
-are in the history of PR 1575 and 1576, and the build log in
+Measures a rival against a corpus of real defects rather than against one diff. Its first run
+compared the two `--sandbox` modes the pairing carried for one PR cycle and collapsed the flag (the
+run's report is in `docs/scratchpad/`, its summary in `NOTES.md`); since then it compares rivals.
+Each seed under `seeds/` reintroduces a defect the rival found while the pairing was built (their
+fixes are in the history of PR 1575 and 1576, and the build log in
 `docs/scratchpad/rival-agent-pairing-2026-09-02.md`), and the bench asks: launched on that seeded
 tree, does the rival find it, at what severity, at what cost in handler turns and tokens? Controls
 carry no defect and measure false positives. `NOTES.md` one level up records why the bench exists
@@ -12,8 +14,8 @@ and what it decided.
 
 ```sh
 npm run rival:bench -- --validate
-npm run rival:bench -- --rival codex --modes read-only,workspace-write --reps 2
-npm run rival:bench -- --rival claude --modes read-only --reps 1 --seeds paginate-without-slurp
+npm run rival:bench -- --rival codex --reps 2
+npm run rival:bench -- --rival claude --reps 1 --seeds paginate-without-slurp
 ```
 
 `--validate` proves the corpus before anything is spent: every seed's repro must exit zero on the

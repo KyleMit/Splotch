@@ -3,12 +3,10 @@
 Everything the two `run-rival-agent` skill packages share. A **native handler** (the agent already
 running in the current runner, Claude Code or Codex) launches a **rival agent** (the other vendor's
 CLI) inside a disposable worktree pinned to one commit id, confined by the rival's own vendor's
-sandbox. The broker is the rival's door out of that sandbox: it asks, the handler runs the command
-under its own permission rules or declines, and the answer flows back. Under `--sandbox read-only`
-(the default while the flag exists) the rival's shell cannot write and every execution is brokered;
-under `--sandbox workspace-write` (the hybrid) the rival runs its own tests, checks, and repros in a
-network-off sandbox rooted at the worktree and brokers only what that sandbox refuses. The rival
-returns findings against one schema and the handler posts them verbatim. `NOTES.md` holds the design
+sandbox rooted at that worktree with the network off. The rival runs its own tests, checks, and
+repros there; the broker is its door out for what the sandbox refuses: it asks, the handler runs the
+command under its own permission rules or declines, and the answer flows back. The rival returns
+findings against one schema and the handler posts them verbatim. `NOTES.md` holds the design
 history: why this shape, what was rejected, the accepted exposures, and the Claude versus Codex
 parity table.
 
@@ -29,23 +27,23 @@ exist. The checkout-only live acceptance generator and its templates are not ins
 
 ## Supporting modules
 
-| File                   | Owns                                                                                                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `spool.mjs`            | The session directory layout and the request/reply files both broker processes watch.                                                                 |
-| `worktree.mjs`         | Scope resolution to base/head OIDs (the uncommitted scope becomes a snapshot commit), the disposable worktree, the packet.                            |
-| `stream.mjs`           | One NDJSON runner with the stall watchdog, plus the Codex and Claude event renderers and reducers.                                                    |
-| `ledger.mjs`           | Rounds per unit of work, the rival's session id for resuming, the three-round cap.                                                                    |
-| `prompt.mjs`           | Assembles `rival-prompt.md` for a scope, round, execution mode, and any extra instructions.                                                           |
-| `rival-prompt.md`      | The rival's contract: where it is, how it executes, how to review, what to return.                                                                    |
-| `rival-prompt-*.md`    | The execution section: `broker` (read-only shell, the `run` tool is the one door) or `hybrid` (own sandboxed shell first, `run` for what it refuses). |
-| `findings.schema.json` | The findings document both CLIs' structured-output flags enforce and the poster consumes.                                                             |
+| File                     | Owns                                                                                                                       |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `spool.mjs`              | The session directory layout and the request/reply files both broker processes watch.                                      |
+| `worktree.mjs`           | Scope resolution to base/head OIDs (the uncommitted scope becomes a snapshot commit), the disposable worktree, the packet. |
+| `stream.mjs`             | One NDJSON runner with the stall watchdog, plus the Codex and Claude event renderers and reducers.                         |
+| `ledger.mjs`             | Rounds per unit of work, the rival's session id for resuming, the three-round cap.                                         |
+| `prompt.mjs`             | Assembles `rival-prompt.md` for a scope, round, the vendor's tool boundary, and any extra instructions.                    |
+| `rival-prompt.md`        | The rival's contract: where it is, how it executes, how to review, what to return.                                         |
+| `rival-prompt-hybrid.md` | The execution section: the rival's own sandboxed shell first, `run` for what that sandbox refuses.                         |
+| `findings.schema.json`   | The findings document both CLIs' structured-output flags enforce and the poster consumes.                                  |
 
 ## Session layout
 
 A session lives under `os.tmpdir()/splotch-rival-agent/<uuid>/`, owner-only:
 
 ```text
-session.json        written by the launcher: rival, scope, worktree, sandbox, round
+session.json        written by the launcher: rival, scope, worktree, round
 packet/             diff.patch, commits.txt, files.txt, scope.json — what the rival reads
 requests/<seq>.json the rival's run(command, why) calls, in order
 replies/<seq>.json  the handler's answers: exit + output, or declined + reason
@@ -71,14 +69,15 @@ the test acting as a fake rival over real stdio JSON-RPC.
 
 `npm run gen:rival-acceptance` creates a unique owner-only directory under the system temp root with
 `question.md`. Give its absolute path to a Codex or Claude Code native handler for one non-posting
-`run-rival-agent` question round: the handler serves the broker normally and judges a multi-stage
-exchange covering chained replies, nonzero output, stdout/stderr, truncation, instruction-as-data, a
-targeted Vitest write inside the disposable worktree, and a real decline. The command's JSON output
-carries `handlerBrief` beside `questionPath`: the seven requests to expect in order, the one to
-decline, and what to judge afterwards, so the handler's side of the exchange travels with the
-question. Without it a handler judging on merits alone approves the final harmless `git status` and
-the decline stage silently goes unexercised. The parser probe and targeted test command are
-preserved from the first real Codex-native-handler review.
+`run-rival-agent` question round: the rival runs six stages in its own sandboxed shell (chained
+outputs, a nonzero exit with both streams, instruction-as-data, the parser probe plus a targeted
+Vitest write inside the disposable worktree) and then meets two commands its sandbox refuses — a
+marker write beside the packet the handler approves, and a write into the canonical checkout the
+handler declines. The command's JSON output carries `handlerBrief` beside `questionPath`: the two
+requests to expect in order, which to decline, and what to judge afterwards, so the handler's side
+of the exchange travels with the question. A request for any local stage means the rival did not use
+its shell. The parser probe and targeted test command are preserved from the first real
+Codex-native-handler review.
 
 This suite intentionally uses the real rival CLI and plan login. It is manual, nondeterministic in
 wording, and never part of `npm test` or CI. The generated nonce and the broker spool provide the

@@ -15,7 +15,6 @@ import {
   summarize,
 } from '../bench/lib/score.mjs';
 import { loadSeeds, SEEDS_DIRECTORY, validateSeed } from '../bench/lib/seeds.mjs';
-import { SANDBOXES } from '../launch.mjs';
 
 const KEY = {
   name: 'x',
@@ -37,19 +36,19 @@ const finding = (overrides) => ({
 });
 
 describe('bench arguments and plan', () => {
-  it('defaults to both modes, two repetitions, and the Codex rival', () => {
+  it('defaults to two repetitions and the Codex rival', () => {
     expect(parseBenchArgs([])).toMatchObject({
       rival: 'codex',
-      modes: [...SANDBOXES],
       reps: 2,
       base: 'main',
       validate: false,
     });
-    expect(parseBenchArgs(['--seeds', 'a,b', '--reps', '1', '--modes', 'read-only'])).toMatchObject(
-      { seeds: ['a', 'b'], reps: 1, modes: ['read-only'] }
-    );
+    expect(parseBenchArgs(['--seeds', 'a,b', '--reps', '1', '--rival', 'claude'])).toMatchObject({
+      seeds: ['a', 'b'],
+      reps: 1,
+      rival: 'claude',
+    });
     expect(() => parseBenchArgs(['--rival', 'gemini'])).toThrow(/rival/);
-    expect(() => parseBenchArgs(['--modes', 'danger-full-access'])).toThrow(/sandbox/);
     expect(() => parseBenchArgs(['--reps', '0'])).toThrow(/reps/);
     expect(() => parseBenchArgs(['extra'])).toThrow();
   });
@@ -57,17 +56,8 @@ describe('bench arguments and plan', () => {
   // An interrupted overnight run should leave a complete first pass over every cell.
   it('orders cells repetition-major', () => {
     const seeds = [{ name: 'a' }, { name: 'b' }];
-    const cells = planCells({ seeds, modes: ['read-only', 'workspace-write'], reps: 2 });
-    expect(cells.map(cellId)).toEqual([
-      'a__read-only__r1',
-      'a__workspace-write__r1',
-      'b__read-only__r1',
-      'b__workspace-write__r1',
-      'a__read-only__r2',
-      'a__workspace-write__r2',
-      'b__read-only__r2',
-      'b__workspace-write__r2',
-    ]);
+    const cells = planCells({ seeds, reps: 2 });
+    expect(cells.map(cellId)).toEqual(['a__r1', 'b__r1', 'a__r2', 'b__r2']);
   });
 });
 
@@ -204,7 +194,7 @@ describe('scoring', () => {
     }
   });
 
-  it('summarizes per mode and renders a report without leaking table syntax', () => {
+  it('summarizes per rival and renders a report without leaking table syntax', () => {
     const base = {
       turns: { approved: 1, declined: 1 },
       localCommands: { started: 4, failed: 1 },
@@ -217,7 +207,7 @@ describe('scoring', () => {
     const cells = [
       {
         seed: 's',
-        mode: 'read-only',
+        rival: 'codex',
         rep: 1,
         control: false,
         score: { detected: true, severityMet: true, falsePositives: 0 },
@@ -225,7 +215,7 @@ describe('scoring', () => {
       },
       {
         seed: 's',
-        mode: 'workspace-write',
+        rival: 'claude',
         rep: 1,
         control: false,
         score: { detected: false, severityMet: false, falsePositives: 1 },
@@ -233,7 +223,7 @@ describe('scoring', () => {
       },
       {
         seed: 'c',
-        mode: 'read-only',
+        rival: 'codex',
         rep: 1,
         control: true,
         score: { detected: null, severityMet: null, falsePositives: 2 },
@@ -241,7 +231,7 @@ describe('scoring', () => {
       },
       {
         seed: 'c',
-        mode: 'workspace-write',
+        rival: 'claude',
         rep: 1,
         control: true,
         failed: 'exited 2',
@@ -250,9 +240,9 @@ describe('scoring', () => {
     ];
     const summary = summarize(cells);
     expect(summary).toMatchObject([
-      { mode: 'read-only', detected: 1, severityMet: 1, controlFalsePositives: 2, failedCells: 0 },
+      { rival: 'codex', detected: 1, severityMet: 1, controlFalsePositives: 2, failedCells: 0 },
       {
-        mode: 'workspace-write',
+        rival: 'claude',
         detected: 0,
         seededFalsePositives: 1,
         controlCells: 0,
@@ -272,7 +262,7 @@ describe('scoring', () => {
       summary,
     });
     expect(report).toContain('# Rival-agent bench — 2026-09-03');
-    expect(report).toContain('| read-only | 1/1 | 1/1 |');
+    expect(report).toContain('| codex | 1/1 | 1/1 |');
     expect(report).toContain('| found |');
     expect(report).toContain('| missed |');
     expect(report).toContain('2 false');

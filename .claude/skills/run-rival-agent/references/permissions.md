@@ -23,11 +23,9 @@ exit as a failure — output that merely looks right does not pass.
 
 ## What the rival can do
 
-The rival runs inside Codex's own sandbox and reaches the handler through the broker for what that
-sandbox refuses. Under `--sandbox read-only` (the default) its shell can read and nothing else, so
-every execution is brokered; under `--sandbox workspace-write` (the hybrid) its shell can also write
-inside the disposable worktree with the network off, so only escalations are brokered. Both modes
-take these pins, each asserted by `tools/tests/launch-codex.test.mjs` because each one that went
+The rival runs inside Codex's workspace-write sandbox rooted at the disposable worktree with the
+network off, and reaches the handler through the broker for what that sandbox refuses. The launch
+takes these pins, each asserted by `tools/tests/launch-codex.test.mjs` because each one that went
 missing was a silent escape rather than a failure:
 
 * `--ignore-user-config`. A `-c mcp_servers=…` override **merges** into the configured table; the
@@ -42,51 +40,50 @@ missing was a silent escape rather than a failure:
 * `approval_policy="never"`. With an on-request policy Codex escalates out of the sandbox, and a
   configured `approvals_reviewer` approves it with no human in the loop. Measured: read-only alone
   created a file; with this pin the same command is denied.
-* `sandbox_mode="<mode>"`, with the working root set to the disposable worktree. The worktree's
-  dependency install runs with `--ignore-scripts` and `--ignore-pnpmfile`: the reviewed commit owns
-  `package.json` and `.pnpmfile.cjs`, and a PR-controlled `postinstall` or pnpmfile hook would
-  otherwise run on this machine at launch, before anyone read the diff. Native modules still arrive
-  built from the pnpm store; a commit whose lockfile records a pnpmfile checksum fails the install
-  loudly instead.
-* `sandbox_workspace_write.network_access=false` on the hybrid path: the measured default, pinned
-  where the launcher test can see it.
+* `sandbox_mode="workspace-write"`, with the working root set to the disposable worktree. The
+  worktree's dependency install runs with `--ignore-scripts` and `--ignore-pnpmfile`: the reviewed
+  commit owns `package.json` and `.pnpmfile.cjs`, and a PR-controlled `postinstall` or pnpmfile hook
+  would otherwise run on this machine at launch, before anyone read the diff. Native modules still
+  arrive built from the pnpm store; a commit whose lockfile records a pnpmfile checksum fails the
+  install loudly instead.
+* `sandbox_workspace_write.network_access=false`: the measured default, pinned where the launcher
+  test can see it.
 * `--disable apps`, `hooks`, `browser_use`, `browser_use_external`, `browser_use_full_cdp_access`,
   `computer_use`, `multi_agent`, and `image_generation`. `apps` is a built-in MCP server exposing
   GitHub read *and write* tools with its own credentials; hooks run before the first model turn and
   outside the sandbox.
 
-Web search stays enabled in both modes: it cannot write, and a reviewer that can check vendor
-documentation gives better findings. A query is outbound traffic, so treat the reviewed code as
-visible to a search provider. Measured on 2026-09-02: both Codex sandboxes read the whole disk
-(`~/.codex/auth.json` included; `sandbox_permissions=[]` changes nothing), so the reach of a query
-is every readable file, not only the reviewed code; the disposable worktree omitting
-`.worktreeinclude` secrets protects nothing against the rival itself.
+Web search stays enabled: it cannot write, and a reviewer that can check vendor documentation gives
+better findings. A query is outbound traffic, so treat the reviewed code as visible to a search
+provider. Measured on 2026-09-02: both Codex sandboxes read the whole disk (`~/.codex/auth.json`
+included; `sandbox_permissions=[]` changes nothing), so the reach of a query is every readable file,
+not only the reviewed code; the disposable worktree omitting `.worktreeinclude` secrets protects
+nothing against the rival itself.
 
-## The workspace-write hybrid
+## The sandbox
 
-`--sandbox workspace-write` keeps the broker and adds a shell. Measured with the model-free
-`codex sandbox` runner: a targeted Vitest file, `npm run check`, and `npm run build` pass inside the
-disposable worktree; writes to the home directory and the canonical checkout are refused; a commit
-fails because the worktree's gitdir lives under the canonical checkout's `.git`; DNS fails with the
-network off. The sandbox also writes anywhere under the rival's `TMPDIR`, and the handler's `TMPDIR`
-is where every session's spool lives — the first sandboxed round's own review reproduced a request
-file written into a sibling session — so the launcher gives the rival a private `TMPDIR` inside its
-session (in both modes; the read-only rival cannot write there anyway), and the spool root is
-measured unwritable from there. `/tmp` itself stays writable, which is the spool root on a Linux
-host; `tools/rival-agent/NOTES.md` records that as an accepted integrity exposure.
+Measured with the model-free `codex sandbox` runner: a targeted Vitest file, `npm run check`, and
+`npm run build` pass inside the disposable worktree; writes to the home directory and the canonical
+checkout are refused; a commit fails because the worktree's gitdir lives under the canonical
+checkout's `.git`; DNS fails with the network off. The sandbox also writes anywhere under the
+rival's `TMPDIR`, and the handler's `TMPDIR` is where every session's spool lives — the first
+sandboxed round's own review reproduced a request file written into a sibling session — so the
+launcher gives the rival a private `TMPDIR` inside its session, and the spool root is measured
+unwritable from there. `/tmp` itself stays writable, which is the spool root on a Linux host;
+`tools/rival-agent/NOTES.md` records that as an accepted integrity exposure.
 
-The trust contract is different from the pairing's and the skill says so: on the hybrid the routine
-work is judged by Codex's Seatbelt profile and only the escalations by the handler's permission
-system. The flag is temporary; the seeded-defect bench decides which mode survives.
+The trust contract: the routine work is judged by Codex's Seatbelt profile and only the escalations
+by the handler's permission system. A read-only pairing in which the handler judged every command
+existed for one PR cycle; the seeded-defect bench retired it (`tools/rival-agent/NOTES.md`).
 
-One exposure is shared by both modes and closed by neither: the findings document itself is an
-outbound channel. It is streamed to the handler and, for a PR scope, posted verbatim, and finding
-bodies accept any text, so a prompt injected through the diff can copy a readable credential into a
-finding. The sandboxed round of the 2026-09-02 pilot named it; no Codex sandbox setting restricts
-reads. It is accepted on the grounds recorded in `tools/rival-agent/NOTES.md` — every diff here is
-authored by the owner, the owner's own agent sessions, or Dependabot — and the real fix if the
-threat ever becomes real is a credential-free account or container for the rival. Until then, read a
-rival's findings before trusting the post, on either path.
+One exposure the sandbox does not close: the findings document itself is an outbound channel. It is
+streamed to the handler and, for a PR scope, posted verbatim, and finding bodies accept any text, so
+a prompt injected through the diff can copy a readable credential into a finding. The sandboxed
+round of the 2026-09-02 pilot named it; no Codex sandbox setting restricts reads. It is accepted on
+the grounds recorded in `tools/rival-agent/NOTES.md` — every diff here is authored by the owner, the
+owner's own agent sessions, or Dependabot — and the real fix if the threat ever becomes real is a
+credential-free account or container for the rival. Until then, read a rival's findings before
+trusting the post.
 
 ## What the handler does
 

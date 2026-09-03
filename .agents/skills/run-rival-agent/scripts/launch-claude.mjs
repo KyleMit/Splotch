@@ -17,7 +17,7 @@ export const CLAUDE_PATH = '/Users/kylemit/.local/bin/claude';
 export const CLAUDE_PROJECTS = '/Users/kylemit/.claude/projects';
 const MODELS = new Set(['sonnet', 'opus']);
 const DEFAULT_MODEL = 'opus';
-export const LOCAL_TOOL_BOUNDARY =
+export const TOOL_BOUNDARY =
   '* **You have no shell of your own.** `Read`, `Grep`, and `Glob` are your only local tools. Send any command through `run` the first time; do not report the absence of a shell as a decline.';
 // The rival's tools: file reads confined to the worktree and the packet, plus the broker. No Bash,
 // no web, no edits — the broker is the only door out.
@@ -119,7 +119,7 @@ export const claudeVendor = Object.freeze({
   rival: RIVAL,
   command: CLAUDE_PATH,
   reducer: claudeReducer,
-  localToolBoundary: LOCAL_TOOL_BOUNDARY,
+  toolBoundary: TOOL_BOUNDARY,
   prepare() {
     assertNoApiBillingEnvironment();
     verifyInstalledBytes(dirname(fileURLToPath(import.meta.url)));

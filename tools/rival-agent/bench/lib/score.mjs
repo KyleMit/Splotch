@@ -88,18 +88,18 @@ export function countLocalCommands(logPath, rival) {
 const mean = (values) =>
   values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 
-// One row per mode: recall over the seeded cells, false positives over the controls, and the cost
+// One row per rival: recall over the seeded cells, false positives over the controls, and the cost
 // side (handler turns, local commands, wall clock, tokens) over every finished cell.
 export function summarize(cells) {
-  const modes = [...new Set(cells.map((cell) => cell.mode))];
-  return modes.map((mode) => {
-    const finished = cells.filter((cell) => cell.mode === mode && !cell.failed);
+  const rivals = [...new Set(cells.map((cell) => cell.rival))];
+  return rivals.map((rival) => {
+    const finished = cells.filter((cell) => cell.rival === rival && !cell.failed);
     const seeded = finished.filter((cell) => !cell.control);
     const controls = finished.filter((cell) => cell.control);
     return {
-      mode,
-      cells: cells.filter((cell) => cell.mode === mode).length,
-      failedCells: cells.filter((cell) => cell.mode === mode && cell.failed).length,
+      rival,
+      cells: cells.filter((cell) => cell.rival === rival).length,
+      failedCells: cells.filter((cell) => cell.rival === rival && cell.failed).length,
       seededCells: seeded.length,
       detected: seeded.filter((cell) => cell.score.detected).length,
       severityMet: seeded.filter((cell) => cell.score.severityMet).length,

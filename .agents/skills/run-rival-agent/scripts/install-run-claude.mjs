@@ -32,7 +32,6 @@ export const CORE_FILES = Object.freeze([
   'ledger.mjs',
   'prompt.mjs',
   'rival-prompt.md',
-  'rival-prompt-broker.md',
   'rival-prompt-hybrid.md',
   'findings.schema.json',
   'validate-findings.mjs',

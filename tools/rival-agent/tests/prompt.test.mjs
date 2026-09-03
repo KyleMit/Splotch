@@ -2,13 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  buildRivalPrompt,
-  describeExecutionMode,
-  describeRound,
-  MAX_PROMPT_BYTES,
-  readPromptFile,
-} from '../prompt.mjs';
+import { buildRivalPrompt, describeRound, MAX_PROMPT_BYTES, readPromptFile } from '../prompt.mjs';
 
 const SCOPE = {
   base: 'a'.repeat(40),
@@ -37,29 +31,14 @@ describe('rival prompt', () => {
     expect(prompt).not.toContain('Extra instructions');
   });
 
-  it('describes the broker as the one door by default', () => {
+  // The rival has a shell and the broker: it must be told to run locally first, that a sandbox
+  // refusal is the signal to escalate rather than a decline, and that the worktree is writable —
+  // the first real round filed its own sandbox's EPERM as a handler decline.
+  it('tells the rival to run locally first and escalate what the sandbox refuses', () => {
     const prompt = buildRivalPrompt({
       scope: SCOPE,
       worktree: '/wt',
       packetDir: '/p',
-      toolBoundary: TOOL_BOUNDARY,
-    });
-    expect(prompt).toContain('## The `run` tool');
-    expect(prompt).toContain('waiting to run commands for you');
-    expect(prompt).toContain('It is read-only to you');
-    expect(prompt).toContain('reproduced through `run`');
-    expect(prompt).not.toContain('## Running commands');
-  });
-
-  // A hybrid rival has a shell and the broker: it must be told to run locally first, that a
-  // sandbox refusal is the signal to escalate rather than a decline, and that the worktree is
-  // writable — the first real round filed its own sandbox's EPERM as a handler decline.
-  it('tells a hybrid rival to run locally first and escalate what the sandbox refuses', () => {
-    const prompt = buildRivalPrompt({
-      scope: SCOPE,
-      worktree: '/wt',
-      packetDir: '/p',
-      sandbox: 'workspace-write',
       toolBoundary: TOOL_BOUNDARY,
     });
     expect(prompt).not.toMatch(/\{\{[A-Z_]+\}\}/);
@@ -71,21 +50,8 @@ describe('rival prompt', () => {
     expect(prompt).toContain('signal to escalate');
     expect(prompt).toContain('device rig');
     expect(prompt).toContain('through `run` when the sandbox refuses');
-    expect(prompt).not.toContain('## The `run` tool');
     expect(prompt).not.toContain('It is read-only to you');
-    expect(Object.keys(describeExecutionMode('workspace-write'))).toEqual(
-      Object.keys(describeExecutionMode('read-only'))
-    );
-    expect(() => describeExecutionMode('danger-full-access')).toThrow(/sandbox/);
-    expect(() =>
-      buildRivalPrompt({
-        scope: SCOPE,
-        worktree: '/wt',
-        packetDir: '/p',
-        sandbox: 'danger-full-access',
-        toolBoundary: TOOL_BOUNDARY,
-      })
-    ).toThrow(/sandbox/);
+    expect(prompt).not.toContain('waiting to run commands for you');
   });
 
   it('frames a question instead of a review when one is given', () => {

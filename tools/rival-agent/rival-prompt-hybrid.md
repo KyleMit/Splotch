@@ -4,7 +4,7 @@ Your own shell is the first place a command runs, and the `run` tool is the seco
 `run(command, why)` sends a command to the native handler, who runs it in the worktree under its own
 permission rules and returns the exit code and output — or declines with a reason.
 
-{{LOCAL_TOOL_BOUNDARY}}
+{{TOOL_BOUNDARY}}
 
 * **Run it here first.** A targeted test file, `npm run check`, a build, a script that reproduces a
   claimed bug: all of that runs in your shell inside the worktree, which already has its
