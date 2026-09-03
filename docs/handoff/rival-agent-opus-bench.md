@@ -56,8 +56,9 @@ Anthropic's public status page still reported operational.
 
 ## Unverified assumptions
 
-* Opus capacity will recover on the next session. Three fresh recovery probes between 09:23 and
-  09:47 EDT exhausted the CLI's ten retries with HTTP 500/529.
+* Opus capacity will recover on the next session. Three fresh recovery probes started between 09:23
+  and 09:47 EDT; each exhausted the CLI's ten retries with HTTP 500/529, and the last ended at
+  09:50.
 * The complete twelve-cell repetition will finish without a vendor-side structured-output failure.
   If one cell alone fails that way, rerun that seed in a fresh output and record the retry honestly.
 * `format:check` works through the installed Claude launcher. The live review instead tried
