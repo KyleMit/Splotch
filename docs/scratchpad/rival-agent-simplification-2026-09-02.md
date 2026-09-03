@@ -351,6 +351,42 @@ rival interrupts itself. One vendor gap surfaced in the Claude bench rather than
 `StructuredOutput` call rejected by the schema validator ends the run with exit 1 instead of a
 retry, which the bench records as a failed cell.
 
+### Round E — Claude rival with Codex as the native handler
+
+The first round launched and served by Codex itself, through the installed v5 wrappers, reviewed PR
+1598 at 5fc5e5b723b5a2d4a1e4007dd2c2e9f0fd0628dd against d86ccc3ee016c7f91c4e2139907f94c5f897c888.
+Opus finished in 161 seconds with **10 Bash calls of its own and one broker request**. The request
+was a read-only `gh pr view` plus issue search: the diff was only the required handoff deletion, so
+the rival needed the draft PR body to distinguish a consumed packet from abandoned work. Codex
+approved it through Auto-review; the launcher survived both 60-second broker waits with one
+follow-up poll apiece. Usage was 32 uncached input tokens, 42,756 cache-creation, 517,740
+cache-read, and 10,047 output (4,693 thinking).
+
+The round returned one blocking finding and one nit, both correct. The durable `NOTES.md` still
+pointed at the handoff being deleted, and the two clean scratch worktrees plus
+`tmp/rival-collapse-dev` had not been removed. The scratch state was cleaned up; the NOTES.md item
+stays until this validation records the acceptance and bench verdicts, then leaves in the same PR.
+The review posted successfully as two inline comments. This establishes the installed launcher,
+mostly idle broker loop, handler command, poster, policy boundary, and plan login with Codex holding
+the handler role.
+
+Two local calls failed without becoming findings: macOS has no `timeout` command, so the rival
+immediately retried without it; then `ruler:check` reached Ruler's generated-provider rewrite and
+Claude's sandbox refused an unlink under the worktree's `.claude/skills/`. The rival did not
+escalate that whole-repository drift gate because it could not change the verdict on a handoff-only
+diff. This is a real sandbox boundary in the measurement, not a handler decline; focused checks and
+the acceptance suite still ran in the worktree without escalation.
+
+### Live acceptance — Codex handling Claude
+
+The generated suite with nonce `f71b44b80d0f5291b7983457` passed all eight stages in 92 seconds.
+Claude read the packet with its file tool, carried a generated UUID between shell calls, preserved
+exit 23 and both streams, treated the 60 kB instruction-shaped output as data, reproduced the diff
+parser anchors, and ran 10 Vitest files / 92 tests inside its sandbox. It made exactly the two
+expected broker calls: Codex approved the session-directory marker write, which returned exit 0,
+then declined the canonical-checkout write. The marker exists in the session directory; there were
+no extra requests, findings, retries, or attempts to route around the decline.
+
 ## Comparison
 
 Same head for A, B, and the hosted runs; C reviewed the reworked branch, so its finding count is not
@@ -362,6 +398,7 @@ comparable with theirs. Same Codex model in every local round.
 | B: Codex, workspace-write | 7m20s      | 0             | 1.81M (1.68M)         | 19.9k  | 4 (A's three plus one)  | yes, 24 commands     |
 | C: Codex, hybrid          | 7m05s      | 0             | 2.23M (2.12M)         | 11.2k  | 1 (half right)          | yes, 23 commands     |
 | D: Claude, sandboxed      | 17m52s     | 0             | 3.95M (3.81M)         | 32.8k  | 3 (all real) + 2        | yes, 24 commands     |
+| E: Claude, Codex handles  | 2m41s      | 1             | 0.56M (0.52M)         | 10.0k  | 1 (real) + 1 nit        | yes, 10 commands     |
 | Hosted Claude, single job | 9m30s      | 0             | not reported          | —      | 0                       | yes, in the action   |
 | Hosted Claude, two jobs   | 10m16s     | 0             | not reported          | —      | 1 (premise wrong)       | yes, in `verify`     |
 
