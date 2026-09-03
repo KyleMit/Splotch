@@ -173,6 +173,14 @@ and the reason it is slower to a verdict. Controls were clean in both modes. So 
 to the hybrid; the recall difference is one cell and inside noise, the cost difference is the whole
 point.
 
+The Claude rival on the same corpus, one repetition (opus, high effort), after it gained the same
+shape: 9/9 found, 8/9 at or above the severity floor, two control findings (a nit and a suggestion,
+both defensible), one unverified, 0.1 handler turns per cell (one network request, declined), 8.5
+own commands per cell, 162 s and 0.42M input per cell — slower and costlier per cell than Codex,
+more findings per seed (seven extra findings on seeded cells against none for Codex), and one cell
+that had to be rerun because a `StructuredOutput` call rejected by the schema validator ended the
+run with exit 1 rather than a retry.
+
 ## Accepted exposures
 
 Both accepted on 2026-09-02 under the same premise: every diff in this repository is authored by the

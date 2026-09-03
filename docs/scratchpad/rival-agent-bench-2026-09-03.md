@@ -175,3 +175,58 @@ the key's floor.
 What the run does not show: anything about diffs larger than a seed (every seed is one or two
 files), anything about rounds two and three on the same reviewer (every cell is `--fresh`), or how
 either mode behaves when the rig or the network genuinely matters (no seed needs them, by rule).
+
+## Claude rival, one repetition
+
+Opus at high effort, launched from the checkout with the sandboxed-shell launcher the third PR of
+the stack adds, the same corpus, the same base, the same handler rule. Twelve cells; one
+(`hunk-content-read-as-file-header`) ended with the Claude CLI exiting 1 after its
+`StructuredOutput` call was rejected by the schema validator for lacking `findings` and `unverified`
+— a vendor behaviour, no retry — and was rerun into the same results directory, where it found the
+seed. The original failed cell's record is kept beside the results.
+
+### Summary
+
+| Rival  | Seeds detected | Severity met | Seeded false positives | Control false positives | Unverified | Handler turns (declined) | Local commands (failed) | Wall | Input (cached) | Output | Failed cells |
+| ------ | -------------- | ------------ | ---------------------- | ----------------------- | ---------- | ------------------------ | ----------------------- | ---- | -------------- | ------ | ------------ |
+| claude | 9/9            | 8/9          | 7                      | 2 over 3                | 1          | 0.1 (0.1)                | 8.5 (0.6)               | 162s | 0.42M (0.42M)  | 10.5k  | 0            |
+
+"Seeds detected" counts a finding anchored to the seeded file at the seeded lines (within three
+lines) or naming the defect; "severity met" additionally requires the finding's severity at or above
+the key's floor.
+
+### Cells
+
+| Seed                              | Rep | Result                      | Findings | Unverified | Turns (approved/declined) | Local (failed) | Wall | Input (cached) | Output |
+| --------------------------------- | --- | --------------------------- | -------- | ---------- | ------------------------- | -------------- | ---- | -------------- | ------ |
+| commit-scope-keyed-as-typed       | 1   | found                       | 2        | 0          | 0/0                       | 3 (1)          | 121s | 0.22M (0.22M)  | 7.9k   |
+| control-comment-reword            | 1   | clean                       | 0        | 0          | 0/0                       | 6 (0)          | 81s  | 0.19M (0.19M)  | 5.0k   |
+| control-readme-wording            | 1   | 1 false                     | 1        | 0          | 0/0                       | 13 (0)         | 178s | 0.56M (0.55M)  | 11.4k  |
+| control-test-title                | 1   | 1 false                     | 1        | 0          | 0/0                       | 1 (0)          | 66s  | 0.11M (0.11M)  | 3.8k   |
+| hunk-content-read-as-file-header  | 1   | found                       | 1        | 0          | 0/0                       | 11 (2)         | 226s | 0.44M (0.44M)  | 14.9k  |
+| newline-escape-in-single-quotes   | 1   | found                       | 2        | 0          | 0/0                       | 7 (0)          | 124s | 0.26M (0.26M)  | 7.9k   |
+| packet-inherits-diff-context      | 1   | found                       | 2        | 0          | 0/0                       | 5 (0)          | 154s | 0.41M (0.41M)  | 10.1k  |
+| paginate-without-slurp            | 1   | found, severity under floor | 3        | 1          | 0/1                       | 15 (1)         | 325s | 0.69M (0.69M)  | 22.2k  |
+| retry-reuses-log-path             | 1   | found                       | 2        | 0          | 0/0                       | 4 (0)          | 153s | 0.46M (0.46M)  | 9.2k   |
+| session-record-written-late       | 1   | found                       | 1        | 0          | 0/0                       | 9 (1)          | 119s | 0.41M (0.41M)  | 8.2k   |
+| stale-request-after-exit          | 1   | found                       | 2        | 0          | 0/0                       | 15 (0)         | 200s | 0.74M (0.74M)  | 12.8k  |
+| worktree-install-runs-postinstall | 1   | found                       | 3        | 0          | 0/0                       | 13 (2)         | 193s | 0.56M (0.56M)  | 13.2k  |
+
+### Broker requests
+
+* `paginate-without-slurp` r1 — declined: needs the network or a host-exclusive resource —
+  `printf '== no slurp ==\n'; gh api --paginate 'repos/cli/cli/labels?per_page=2' 2>/dev/null \| node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const v=JSON.parse(s);console.log("PARSE OK; isArray="+Array.isArray(v)+" len="+v.length+" firstElemIsArray="+Array.isArray(v[0]))}catch(e){console.log("PARSE FAIL: "+e.message);console.log("HEAD:"+JSON.stringify(s.slice(0,80)));console.log("BYTES:"+s.length)}})'; printf '== slurp ==\n'; gh api --paginate --slurp 'repos/cli/cli/labels?per_page=2' 2>/dev/null \| node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const v=JSON.parse(s);console.log("PARSE OK; isArray="+Array.isArray(v)+" len="+v.length+" firstElemIsArray="+Array.isArray(v[0]))}catch(e){console.log("PARSE FAIL: "+e.message)}})'`
+
+### Reading it beside the Codex run
+
+* **Recall.** Nine of nine found; eight at or above the floor. The one under the floor is
+  `paginate-without-slurp`, where the rival named the defect at `nit` while it chased the `gh api`
+  behaviour it could not reach (the one declined request of the run).
+* **More findings per seed.** Seven findings on seeded cells beyond the seeded one, against none for
+  Codex, and two on controls (a nit on a README sentence, a suggestion on a test title). Read them
+  before calling them noise: several are real observations about the seeded tree. But a bench built
+  on one seeded defect per patch counts them as false positives, and the Codex rival made none.
+* **Cost.** About 160 s and 0.42M input per cell against Codex's 98 s and 0.35M: slower and
+  costlier, with three times the output tokens.
+* **Handler turns.** One request in twelve cells, the network probe, declined. The sandboxed shell
+  did the rest.
