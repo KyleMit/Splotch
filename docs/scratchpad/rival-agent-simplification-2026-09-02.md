@@ -271,14 +271,51 @@ Two hosted runs, then: one that missed three real defects in its own workflow, a
 blocking finding on a premise GitHub's documentation rules out. Neither found anything a local round
 did not.
 
+### Round C — Codex rival in the workspace-write hybrid, broker attached
+
+The first round on the hybrid shape, on the reworked branch at
+faac09b7cf5679bab355b3e0586c87110f919f06 against main (the hybrid semantics, the prompt partial, the
+workflow removal, NOTES.md, the rewritten docs), `gpt-5.6-sol` at high effort:
+`npm run --silent rival:launch -- --fresh --sandbox workspace-write --base main`, this session
+serving the broker. Seven minutes five (22:15:45 → 22:22:50), **23 shell commands of its own, zero
+broker requests, zero handler turns**, one blocking finding, zero unverified. Usage: 2,230,533 input
+tokens (2,120,320 cached), 11,237 output (6,782 reasoning).
+
+Routing, read from the stream log against the two questions the hybrid had to answer:
+
+* **Did it escalate spuriously?** No. It ran the three focused suites, ESLint, Prettier, dprint,
+  `lint:dead`, and its own reads locally, and asked for nothing.
+* **Did it file a sandbox refusal as a decline?** No — but it also did not escalate one. Its one
+  failed command was `npm run test:tools && npm run lint`, which it interrupted itself (exit 130)
+  after two minutes when the perf harness tests started failing: `split-capture`,
+  `hand-capture-dispatch`, `vite-server-release`, and part of `capture-readiness` bind local
+  listeners, which the network-off sandbox refuses, and the refusal surfaces as a test timeout
+  rather than a permission error. The rival correctly separated those from the changed paths and
+  said so in its summary, but the prompt's rule ("a permission error is the signal to escalate")
+  never fired because no permission error appeared. The hybrid partial and the tool boundary now
+  name a local port bind as a door, so the whole tools tier is something to ask the handler for
+  rather than to run and discount.
+
+The finding, against `rival-prompt-hybrid.md`: the escalation rule said every write outside the
+worktree needs the handler, while `rivalEnvironment()` gives the rival a writable `$TMPDIR` and
+Codex's profile leaves `/tmp` writable, so a rival can write outside the worktree with no permission
+error. Half right. The wording was inaccurate and is fixed: the boundary now says the worktree and
+`$TMPDIR` are writable, that `/tmp` is too and is not to be used, and that a port bind fails as a
+test rather than as a permission error. The other half — that this lets a rival "modify another
+session's requests or audit data" — is the Linux `/tmp` exposure NOTES.md already accepts, and on
+macOS it is false: the spool root is measured unwritable from the private `TMPDIR`. Not a blocker;
+the rival had read NOTES.md and rated it one anyway.
+
 ## Comparison
 
-Same head, same Codex model both local rounds, one hosted Claude run.
+Same head for A, B, and the hosted runs; C reviewed the reworked branch, so its finding count is not
+comparable with theirs. Same Codex model in every local round.
 
 | Reviewer                  | Wall clock | Handler turns | Input tokens (cached) | Output | Blocking findings, real | Ran the gates itself |
 | ------------------------- | ---------- | ------------- | --------------------- | ------ | ----------------------- | -------------------- |
 | A: Codex, broker          | 5m47s      | 1             | 1.40M (1.27M)         | 14.1k  | 3                       | via the handler      |
 | B: Codex, workspace-write | 7m20s      | 0             | 1.81M (1.68M)         | 19.9k  | 4 (A's three plus one)  | yes, 24 commands     |
+| C: Codex, hybrid          | 7m05s      | 0             | 2.23M (2.12M)         | 11.2k  | 1 (half right)          | yes, 23 commands     |
 | Hosted Claude, single job | 9m30s      | 0             | not reported          | —      | 0                       | yes, in the action   |
 | Hosted Claude, two jobs   | 10m16s     | 0             | not reported          | —      | 1 (premise wrong)       | yes, in `verify`     |
 

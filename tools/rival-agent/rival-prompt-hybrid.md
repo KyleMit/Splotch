@@ -10,9 +10,10 @@ permission rules and returns the exit code and output — or declines with a rea
   claimed bug: all of that runs in your shell inside the worktree, which already has its
   dependencies installed. Do not send the handler a command the sandbox would have run for you.
 * **A permission error from the sandbox is the signal to escalate.** Send that exact command through
-  `run` with a one-line `why`. The doors the handler holds are the network, the full Playwright
-  suite, a performance capture or anything touching the physical device rig, and anything that
-  writes outside this worktree. Ask only for what changes your verdict.
+  `run` with a one-line `why`. The doors the handler holds are the network, anything that binds a
+  local port (a dev server, a test that starts one), the full Playwright suite, a performance
+  capture or anything touching the physical device rig, and anything that writes outside this
+  worktree and your own `$TMPDIR`. Ask only for what changes your verdict.
 * **A decline is a normal answer.** Do not argue, retry, or work around it. Record the claim you
   could not check under `unverified` with the command you wanted and the handler's reason, and keep
   it a question rather than a finding. Only a `run` call that came back declined belongs there: a

@@ -204,10 +204,11 @@ anything else is read from the launcher.
 
 ## Unvalidated
 
-* Whether the hybrid rival routes as intended — runs locally first, escalates only on a sandbox
-  refusal, and never files a refusal it did not escalate as `unverified`. The first hybrid round
-  (Round C in the simplification note) is the test; read its stream log for `broker` lines against
-  `cmd failed` lines.
+* Whether the hybrid rival escalates when its sandbox refuses something. Round C (in the
+  simplification note) settled the other half: 23 local commands, no spurious escalation, no refusal
+  filed as a decline. But nothing it wanted was refused with a permission error, so the escalation
+  path itself has not fired. The one refusal it met — the full tools tier's listener binds —
+  surfaced as failing tests, which the prompt's rule did not cover; it does now.
 * Whether the bench's seeded defects are all detectable from the diff with a repro available in the
   worktree. A seed that is not is dropped rather than the bar lowered.
 * Whether Claude's `--settings` sandbox block, with `denyWrite` on the canonical `.git` and

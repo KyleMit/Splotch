@@ -23,7 +23,7 @@ export const LOCAL_TOOL_BOUNDARY =
 // directory and the canonical checkout are refused; a commit fails because the worktree's gitdir
 // lives under the canonical checkout's .git; DNS resolution fails with the network off.
 export const SANDBOXED_TOOL_BOUNDARY =
-  '* **Your shell is sandboxed to this worktree, with the network off, and it cannot escalate on its own.** Tests, type checks, builds, and scripts that write inside the worktree run there. Writes anywhere else, and every network call, fail with a permission error — that is the sandbox, not a decline, and it is never a finding. It is the signal to send that exact command through `run`.';
+  '* **Your shell is sandboxed to this worktree, with the network off, and it cannot escalate on its own.** Tests, type checks, builds, and scripts that write inside the worktree or under your own `$TMPDIR` run there. Writes anywhere else fail with a permission error, except that the sandbox also leaves `/tmp` writable — use `$TMPDIR` for scratch and leave `/tmp` alone. Every network call fails, and so does binding a local port, which surfaces as a failing test rather than a permission error. None of that is a decline and none of it is a finding: it is the signal to send that exact command through `run`.';
 // The measured default, restated on the command line so the hybrid's network boundary is pinned
 // where the launcher test can see it rather than inherited from a Codex release.
 const SANDBOXED_NETWORK_PIN = 'sandbox_workspace_write.network_access=false';
