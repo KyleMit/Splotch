@@ -46,10 +46,13 @@ required (`failIfUnavailable`) and nothing opts out of it (`allowUnsandboxedComm
 network proxy has an empty strict allowlist, `denyWrite` names the canonical checkout's `.git` (a
 linked worktree's gitdir lives under it, and the default sandbox otherwise lets the rival push a
 branch there — measured), and `denyRead` names `~/.codex` and every path `.worktreeinclude` carries
-into agent worktrees, at its canonical location. Measured on opus: the worktree and the rival's own
-`$TMPDIR` are writable, the home directory, the canonical checkout, and `/tmp` are not, the denied
-reads fail, the proxy answers every host with a 403, a port bind fails, and Vitest and `git status`
-run. The rival's own `~/.claude` is never on the deny list.
+into agent worktrees, at its canonical location. Measured on opus, and re-measured by the first
+Claude rival round from inside the sandbox: the worktree, the packet and the session's `tmp` (both
+granted through `--add-dir`; dprint's cache lives in the latter), and the temp directory Claude Code
+hands its shell (Claude Code replaces the launcher's `TMPDIR`) are writable; the home directory, the
+canonical checkout, the session directory itself, the spool root, and `/tmp` are not; the denied
+reads fail; the proxy answers every host with a 403; a port bind fails; Vitest and `git status` run.
+The rival's own `~/.claude` is never on the deny list.
 
 The worktree's dependency install runs with `--ignore-scripts` and `--ignore-pnpmfile`: the reviewed
 commit owns `package.json` and `.pnpmfile.cjs`, and a PR-controlled `postinstall` or pnpmfile hook

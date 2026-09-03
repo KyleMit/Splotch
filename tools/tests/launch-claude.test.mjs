@@ -106,10 +106,8 @@ describe('Claude rival command construction', () => {
     expect(RIVAL_TOOLS.split(',')).not.toContain('Write');
     expect(args).toContain('--strict-mcp-config');
     expect(args).toContain('--no-chrome');
-    expect(args.slice(args.indexOf('--add-dir'), args.indexOf('--add-dir') + 2)).toEqual([
-      '--add-dir',
-      '/tmp/session/packet',
-    ]);
+    const addDirs = args.flatMap((arg, index) => (arg === '--add-dir' ? [args[index + 1]] : []));
+    expect(addDirs).toEqual(['/tmp/session/packet', '/tmp/session/tmp']);
     expect(args).toContain('stream-json');
     expect(args).toContain('--verbose');
   });

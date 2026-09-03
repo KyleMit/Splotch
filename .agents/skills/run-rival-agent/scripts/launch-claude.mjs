@@ -9,7 +9,11 @@ import { assertNoApiBillingEnvironment } from './splotch-claude-subscription-aut
 import { verifyInstalledBytes } from './claude-health.mjs';
 import { BROKER_SERVER_PATH, isEntryPoint } from '../../../../tools/rival-agent/broker-server.mjs';
 import { runLaunchCli } from '../../../../tools/rival-agent/launch.mjs';
-import { PENDING_REQUEST_TIMEOUT_MS } from '../../../../tools/rival-agent/spool.mjs';
+import {
+  PENDING_REQUEST_TIMEOUT_MS,
+  SESSION_FILES,
+  sessionPath,
+} from '../../../../tools/rival-agent/spool.mjs';
 import { claudeReducer } from '../../../../tools/rival-agent/stream.mjs';
 import { FINDINGS_SCHEMA_PATH } from '../../../../tools/rival-agent/validate-findings.mjs';
 import { git } from '../../../../tools/rival-agent/worktree.mjs';
@@ -25,7 +29,7 @@ const DEFAULT_MODEL = 'opus';
 // the sandbox proxy with a 403; binding a local port fails with an ordinary error rather than a
 // permission error; Vitest and `git status` run.
 export const TOOL_BOUNDARY =
-  '* **Your Bash is sandboxed to this worktree and your own `$TMPDIR`, with the network off, and it cannot escalate on its own.** Tests, type checks, builds, and scripts that write inside the worktree run there. Writes anywhere else, reads of the credential stores, and every network call fail with a permission error or a `sandbox_violations` note — that is the sandbox, not a decline, and it is never a finding. It is the signal to send that exact command through `run`. Binding a local port fails as an ordinary error rather than a permission error and is a door too. A `failed to copy trust settings` line is the sandbox proxy, not your command.';
+  '* **Your Bash is sandboxed to this worktree, the review packet, and your temp directories, with the network off, and it cannot escalate on its own.** Tests, type checks, builds, and scripts that write inside the worktree run there. Writes anywhere else, reads of the credential stores, and every network call fail with a permission error or a `sandbox_violations` note — that is the sandbox, not a decline, and it is never a finding. It is the signal to send that exact command through `run`. Binding a local port fails as an ordinary error rather than a permission error and is a door too. A `failed to copy trust settings` line is the sandbox proxy, not your command.';
 // The rival's tools: file reads confined to the worktree and the packet, a Bash confined by the
 // sandbox settings below, and the broker for what that sandbox refuses. No web, no edits.
 export const RIVAL_TOOLS = 'Read,Grep,Glob,Bash';
@@ -129,6 +133,11 @@ export function buildClaudeArgs({
     '--no-chrome',
     '--add-dir',
     packetDir,
+    // Claude Code hands its shell a TMPDIR of its own, so the session's private tmp — where the
+    // launcher points dprint's cache — is reachable only as a working directory (the first Claude
+    // rival round: format:check failed with "Operation not permitted" on that cache path).
+    '--add-dir',
+    sessionPath(session, SESSION_FILES.tmp),
     '--output-format',
     'stream-json',
     '--verbose',

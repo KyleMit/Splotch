@@ -115,10 +115,12 @@ export function logPathForAttempt(session, attempt) {
   return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
 }
 
-// The rival gets a TMPDIR of its own inside the session: a workspace-write sandbox writes anywhere
-// under the process's TMPDIR, and the handler's TMPDIR is where every session's spool lives.
-// `/tmp` itself stays writable to Codex's sandbox, which matters on a Linux host whose os.tmpdir()
-// is `/tmp`; NOTES.md records that as an accepted exposure.
+// The rival gets a TMPDIR of its own inside the session: Codex's workspace-write sandbox writes
+// anywhere under the process's TMPDIR, and the handler's TMPDIR is where every session's spool
+// lives. Claude Code replaces its shell's TMPDIR with a directory of its own, so for that rival the
+// session tmp matters only as the dprint cache location, which the Claude launcher grants as a
+// working directory. `/tmp` itself stays writable to Codex's sandbox, which matters on a Linux
+// host whose os.tmpdir() is `/tmp`; NOTES.md records that as an accepted exposure.
 export function rivalEnvironment(env, { session }) {
   const tmp = sessionPath(session, SESSION_FILES.tmp);
   // dprint compiles its plugin cache under ~/Library/Caches, which the sandbox refuses (the first
