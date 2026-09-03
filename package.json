@@ -457,7 +457,7 @@
     "perf:campaign:status": "How far along is a campaign, and what is left. Exists because both obvious ways to read this off ledger.tsv are wrong: it is an append-only log with skip and retry rows, so `wc -l` is not a cell count, and a resumed run records `already-valid` rather than `valid-json`, so grepping the latter undercounts a finished target. Completion is decided by the RUNNER'S OWN artifact inspection — matching runtime AND the fidelity verdict where the transport writes one — so status cannot call a structurally rejected measurement complete, and a ledger row cannot certify a cell whose artifact was deleted or replaced. Physical-device status includes the same drift-reference queue the runner executes. The ledger supplies attempts spent and is reported when it disagrees with disk. Flags: --target= (required), --modes=, --items=, --output-root=, --ledger="
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
+    "@axe-core/playwright": "^4.13.0",
     "@capacitor/android": "^8.4.1",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
