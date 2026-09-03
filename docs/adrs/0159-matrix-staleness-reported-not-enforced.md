@@ -1,4 +1,4 @@
-# ADR-0158: Matrix Staleness Is Reported by Default and Enforced Only on Request
+# ADR-0159: Matrix Staleness Is Reported by Default and Enforced Only on Request
 
 **Status:** Active **Date:** 2026-09
 

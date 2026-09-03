@@ -49,11 +49,11 @@ destructive data changes, spending money, or acting outside the named PR; those 
    your own comments elsewhere, but treat bot reviews (Copilot, CI annotations) the same as human
    ones — triage them on merit, not on author.
 
-   One orchestrated exception is load-bearing: a standalone Claude reviewer may authenticate as the
-   same GitHub user as the implementer. In `mode=autonomous`, a review body containing
-   `<!-- splotch-claude-review:` identifies that independent review. Include the marked review body
-   itself and every inline comment belonging to that review ID even though GitHub reports your own
-   account as its author.
+   One orchestrated exception is load-bearing: the rival agent (`run-rival-agent`) posts its review
+   through the handler's own GitHub account, so it may share the implementer's identity. In
+   `mode=autonomous`, a review body containing `<!-- splotch-rival-review:` identifies that
+   independent review. Include the marked review body itself and every inline comment belonging to
+   that review ID even though GitHub reports your own account as its author.
 
 ## In a stacked campaign — sweep the whole stack, fix at the tip
 

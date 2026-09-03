@@ -32,7 +32,7 @@ overrides:
   # retained vulnerable browserslist. Lift only those resolved versions; the
   # high-severity audit gate verifies their replacements stay clean.
   minimatch@3.0.5: ^3.1.4
-  fast-uri@3.1.2: ^3.1.5
+  fast-uri@3.1.2: ^3.1.6
   browserslist@4.28.4: ^4.28.7
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.

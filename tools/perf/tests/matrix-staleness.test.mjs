@@ -220,7 +220,7 @@ describe('implicitBaseWarning', () => {
 // product commit — so a STALE row is the committed matrix's normal state and
 // must not fail the default run. On 2026-09-02 one CSS commit after the
 // campaign's capture marked four rows stale and turned every regeneration red
-// (ADR-0158). Only the regenerate that asserts currency, --strict, fails on it.
+// (ADR-0159). Only the regenerate that asserts currency, --strict, fails on it.
 describe('stalenessOutcome', () => {
   const stale = { target: 'ipad-device-web', capturedAt: '31476d91d3ec', verdict: 'STALE' };
   const current = { target: 'mac-chrome', capturedAt: 'abc', verdict: 'current' };

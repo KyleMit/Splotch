@@ -4,7 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { installRunClaude } from './install-run-claude.mjs';
+import { INSTALL_ROOT, INSTALL_SHIMS, installRunClaude } from './install-run-claude.mjs';
 
 const CODEX_DIRECTORY = join(homedir(), '.codex');
 const CONFIG_PATH = join(CODEX_DIRECTORY, 'config.toml');
@@ -14,24 +14,38 @@ const END_MARKER = '# END SPLOTCH RUN CLAUDE';
 
 export const CODEX_POLICY_PATHS = { config: CONFIG_PATH, rules: RULES_PATH };
 
+// The escalated entry points, in the order the handler meets them. The broker CLI needs no rule:
+// it only reads and writes the spool under tmp, which the sandbox allows.
+export const ESCALATED_WRAPPERS = Object.freeze({
+  launch: join(INSTALL_ROOT, 'launch-claude.mjs'),
+  post: join(INSTALL_ROOT, 'post-review.mjs'),
+  reviewPublish: INSTALL_SHIMS.reviewPublish,
+  health: INSTALL_SHIMS.health,
+});
+
 export const POLICY_RULES = `${START_MARKER}
 prefix_rule(
-    pattern = ["/Users/kylemit/.local/libexec/splotch-claude-run.mjs"],
+    pattern = ["${ESCALATED_WRAPPERS.launch}"],
     decision = "prompt",
-    justification = "Launch the fixed output-only local Claude runner with a validated prompt file.",
+    justification = "Launch the Claude rival agent read-only in a disposable worktree with the broker attached; needs the Keychain login.",
 )
 prefix_rule(
-    pattern = ["/Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs"],
+    pattern = ["${ESCALATED_WRAPPERS.post}"],
     decision = "prompt",
-    justification = "Launch the fixed Claude reviewer authorized to comment on one validated Splotch PR.",
+    justification = "Post a finished rival session's findings to one validated Splotch PR as a COMMENT review through gh.",
 )
 prefix_rule(
-    pattern = ["/Users/kylemit/.local/libexec/splotch-claude-health.mjs"],
+    pattern = ["${ESCALATED_WRAPPERS.reviewPublish}"],
     decision = "prompt",
-    justification = "Check local Claude plan authentication through a fixed read-only wrapper.",
+    justification = "The orchestrated PR-review alias implement-issue-stack invokes: launch, auto-decline, post.",
 )
-prefix_rule(pattern = ["claude"], decision = "forbidden", justification = "Use the fixed run-claude wrappers instead of a raw Claude invocation.")
-prefix_rule(pattern = ["/Users/kylemit/.local/bin/claude"], decision = "forbidden", justification = "Use the fixed run-claude wrappers instead of a raw Claude invocation.")
+prefix_rule(
+    pattern = ["${ESCALATED_WRAPPERS.health}"],
+    decision = "prompt",
+    justification = "Check local Claude plan authentication and the installed bytes through a fixed read-only wrapper.",
+)
+prefix_rule(pattern = ["claude"], decision = "forbidden", justification = "Use the fixed rival-agent wrappers instead of a raw Claude invocation.")
+prefix_rule(pattern = ["/Users/kylemit/.local/bin/claude"], decision = "forbidden", justification = "Use the fixed rival-agent wrappers instead of a raw Claude invocation.")
 ${END_MARKER}`;
 
 export function upsertTopLevelToml(content, key, value) {
@@ -71,7 +85,7 @@ export function installCodexPolicy() {
   const rules = existsSync(RULES_PATH) ? readFileSync(RULES_PATH, 'utf8') : '';
   writeFileSync(RULES_PATH, replaceManagedRules(rules));
   installRunClaude();
-  console.log('installed Codex run-claude policy; restart Codex before using the wrappers');
+  console.log('installed Codex rival-agent policy; restart Codex before using the wrappers');
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

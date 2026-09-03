@@ -257,7 +257,7 @@ For each cluster:
     the campaign did not recapture `preserved`, then regenerate with
     `npm run gen:performance-matrix -- --strict <manifest>`; that command runs the staleness check
     in-process against the manifest it resolved, and `--strict` is what turns a row left behind into
-    a failure rather than a report (ADR-0158). Validate every generator-owned output and prove
+    a failure rather than a report (ADR-0159). Validate every generator-owned output and prove
     JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified product improvement separately, update raw
     evidence and remaining status in the current stack-tip PR body, and proceed only from a clean
@@ -286,13 +286,9 @@ for an ordinary finding.
 Every newly opened PR gets a fresh independent cross-runner review before another stack layer is
 started:
 
-* when the campaign runs in Codex, use `run-rival-agent`'s fixed PR-review publisher for that exact
-  PR;
-* when the campaign runs in Claude, keep the checkout on that PR's head and use `run-rival-agent`
-  with `--base <that PR's base branch>` before moving the checkout or starting the next layer.
-  Validate and address its findings locally. The read-only wrapper cannot reach GitHub; if a posted
-  GitHub review is also required, run `leave-pr-review` separately for its own checkout,
-  verification, and publication rather than treating it as a publisher for Codex's output.
+* on either runner, use `run-rival-agent` with `--pr <that PR>`: serve the rival's broker requests
+  as the native handler, then post its findings with the poster. Validate and address the posted
+  findings before moving the checkout or starting the next layer.
 
 Do not substitute same-session self-review or postpone the reviews until wrap-up. If the required
 reviewer runner is unavailable, stop adding stack layers and report the blocker.

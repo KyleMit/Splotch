@@ -93,8 +93,9 @@ against the unfixed code is evidence about the test, not the fix. Either it asse
 or the behavior it describes is unobservable at that seam — both are worth knowing before the test
 is committed as protection.
 
-Two shapes in `tools/tests/run-codex.test.mjs` are the worked examples, because both passed in the
-broken state before the revert check caught them:
+Two shapes from the Codex rival wrapper (now `tools/rival-agent/tests/stream.test.mjs` and
+`tools/tests/launch-codex.test.mjs`) are the worked examples, because both passed in the broken
+state before the revert check caught them:
 
 * **The defect is real but unobservable through the seam under test.** Asserting that a log file was
   complete when a promise resolved passed either way, because in practice the flush always wins the
@@ -734,8 +735,19 @@ retired instead of passing vacuously.
 P95 verdict over `multi-finger` (the sole multi-pointer exerciser) and `crayon-scribbles` (the sole
 mid-stroke pass-split exerciser) on `macos-latest`. That verdict genuinely needs a faithful engine
 and absolute milliseconds, and it is expensive: it was the wall-clock floor of a pull-request run,
-so it remains off that path. A failure opens a GitHub issue with the run link and diagnostics,
-commenting on the existing open one rather than filing per red commit.
+so it remains off that path.
+
+A failure does not file on its own. `webkit-commit-gate-fast-retry` re-runs the identical gate on a
+fresh `macos-latest` VM, and an issue opens only when **the same scenario failed the same way on
+both runners** — a shared runner can stall long enough to span one whole job, measurement and in-job
+confirmation together, so a second VM is the only rerun that changes the environment the failure
+happened in. Each runner publishes a failure fingerprint derived from its own `undo-scenarios.json`
+(`multi-finger:breach`, `crayon-scribbles:incomplete`, `run:no-commit-samples`) via
+`tools/perf/report-undo-gate-failures.mjs`, and the retry files the intersection. Comparing job
+outcomes instead filed a 2026-09-02 run where one runner skipped `crayon-scribbles` and the other
+breached `multi-finger` — two failures with nothing in common (ADR-0158). A pair that cannot be
+compared at all files, which is the fail-closed direction. The issue comments on the existing open
+one rather than filing per red commit, and the first job stays red either way as telemetry.
 
 **Release tags** run all seven scenarios.
 
@@ -749,12 +761,17 @@ collapse per ref so a new push cancels the run it supersedes, but back-to-back m
 cancel each other — which would drop a commit's only WebKit coverage exactly when merge traffic is
 highest.
 
-The fast tier evaluates `multi-finger` against raw `engine.commit` P95. For `crayon-scribbles`, it
-divides raw commit P95 by the same run's renderer slowdown from `engine.draw total / calls` against
-the controlled healthy reference. That control distinguishes a new commit-only full-raster shape
-from a shared macOS host slowing every crayon canvas operation. The 25 ms gate remains unchanged;
-the release and on-demand full tiers continue to use raw absolute timing for every scenario. The
-JSON and Markdown diagnostics retain raw P95, maximum, samples, control, factor, and gate value.
+Every tier scores the **raw** `engine.commit` P95 against the 25 ms gate — nothing is normalized.
+ADR-0140 retired the crayon divisor: its calibration rested on a single run, and `Math.max(1, …)`
+meant it could only ever move a score toward passing. The host slowdown it was derived from is still
+measured and reported per run (`hostSlowdown` in the artifact), so the multi-run `macos-latest`
+distribution a real calibration needs can be collected from ordinary runs; `NORMALIZATION_ENABLED`
+turns it back on once someone has. What replaced it is confirmation: a scenario whose first pass
+breached is re-measured through the same `runUndoScenario` and fails only if it breaches again, and
+a confirmation that could not be scored acquits nothing. The JSON and Markdown diagnostics retain
+raw P95, maximum, every sample, the measured host slowdown, and the gate value; `confirmations`
+holds each re-measured scenario's full result, so a confirmed breach can be read as a distribution
+rather than as two numbers.
 
 `FAST_UNDO_SCENARIO_KEYS` is the fast set's only declaration. A repo-script unit test derives sole
 exercisers from every scenario's declared paths and requires each one in that set. Release runs also

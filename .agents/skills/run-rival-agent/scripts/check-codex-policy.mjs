@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CODEX_POLICY_PATHS, POLICY_RULES } from './install-codex-policy.mjs';
+import { CODEX_POLICY_PATHS, ESCALATED_WRAPPERS, POLICY_RULES } from './install-codex-policy.mjs';
 import { installRunClaude } from './install-run-claude.mjs';
 
 const EXPECTED_CONFIG = {
@@ -12,35 +12,29 @@ const EXPECTED_CONFIG = {
   approvals_reviewer: 'auto_review',
   sandbox_mode: 'workspace-write',
 };
-// Consumed only by the CI drift guard in tools/tests/run-claude.test.mjs. It is deliberately not
-// part of checkCodexPolicy(), whose reinstall recovery cannot repair skill prose.
+// Consumed only by the CI drift guard in tools/tests/launch-claude.test.mjs. It is deliberately
+// not part of checkCodexPolicy(), whose reinstall recovery cannot repair skill prose.
 export const REQUIRED_SKILL_EXECUTION_CONTRACT = new Map([
   [
     'seamless invocation instruction',
-    'After one-time setup, complete ordinary `ask` and `inspect` invocations without manual user steps.',
+    'After one-time setup, run an ordinary review without manual user steps.',
   ],
   ['host escalation instruction', '`sandbox_permissions: "require_escalated"`'],
-  ['sandbox-first prohibition', 'Never run an installed wrapper in the sandbox first.'],
+  [
+    'sandbox-first prohibition',
+    'Never run the launcher, the poster, or the health probe in the sandbox first.',
+  ],
 ]);
 
 // Exported so the installer-path drift guard covers the commands evaluated by Codex.
 export const POLICY_CASES = [
+  { command: [ESCALATED_WRAPPERS.launch, '--pr', '1'], expected: 'prompt' },
   {
-    command: [
-      '/Users/kylemit/.local/libexec/splotch-claude-run.mjs',
-      '--prompt-file',
-      '/private/tmp/ping.txt',
-    ],
+    command: [ESCALATED_WRAPPERS.post, '--pr', '1', '--session', '/private/tmp/s'],
     expected: 'prompt',
   },
-  {
-    command: ['/Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs', '--pr', '1'],
-    expected: 'prompt',
-  },
-  {
-    command: ['/Users/kylemit/.local/libexec/splotch-claude-health.mjs'],
-    expected: 'prompt',
-  },
+  { command: [ESCALATED_WRAPPERS.reviewPublish, '--pr', '1'], expected: 'prompt' },
+  { command: [ESCALATED_WRAPPERS.health], expected: 'prompt' },
   { command: ['claude', '--print', 'review'], expected: 'forbidden' },
 ];
 
@@ -55,7 +49,7 @@ export function validateCodexConfig(content) {
 
 export function validateManagedRules(content) {
   if (!content.includes(POLICY_RULES)) {
-    throw new Error('managed run-claude rules are missing or stale');
+    throw new Error('managed rival-agent rules are missing or stale');
   }
 }
 
@@ -94,7 +88,7 @@ export function checkCodexPolicy() {
     }
   }
   installRunClaude({ check: true });
-  console.log('Codex run-claude policy and trusted wrappers are ready');
+  console.log('Codex rival-agent policy and trusted wrappers are ready');
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

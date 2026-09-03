@@ -14,7 +14,7 @@
 //
 // Rows go stale by design between campaigns: the suite is far too expensive to
 // run on every product commit, so the matrix is refreshed periodically by a
-// campaign (ADR-0158). A STALE row is therefore the normal state of a committed
+// campaign (ADR-0159). A STALE row is therefore the normal state of a committed
 // matrix, and the default run reports it without failing. The failure this check
 // exists to end is a campaign CITING a stale row as current, and the remedy is
 // the drift being visible at every regeneration — not a generator that is red
