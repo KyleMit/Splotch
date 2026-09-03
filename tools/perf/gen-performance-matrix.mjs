@@ -1928,7 +1928,7 @@ function renderReport(matrix) {
     (count, row) => count + (row.actions?.finalProductCommitActionCount ?? 0),
     0
   );
-  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> actions compared</span><span class="chip"><b>${finalActionCount}</b> action rows at measured commit</span>`;
+  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> action columns charted</span><span class="chip"><b>${finalActionCount}</b> action rows at measured commit</span>`;
   const header = masthead({
     title: 'Deployment-target performance matrix',
     tagline:

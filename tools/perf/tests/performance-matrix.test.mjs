@@ -217,7 +217,7 @@ describe('deployment matrix report', () => {
     ]);
     const html = renderReport(matrix);
 
-    expect(html).toContain('<b>1</b> actions compared');
+    expect(html).toContain('<b>1</b> action columns charted');
     expect(html).toContain('<b>0/1</b>');
     expect(html).toContain('Action 1: expand action drawer');
     expect(html).toContain('Portrait · Light');
@@ -345,7 +345,7 @@ describe('deployment matrix report', () => {
     expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
     expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
     expect(html).toContain('<h2>5-action failure fingerprint</h2>');
-    expect(html).toContain('<b>5</b> actions compared');
+    expect(html).toContain('<b>5</b> action columns charted');
   });
 
   it('applies an agreeing focused capture only to its measured labels', () => {
