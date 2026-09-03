@@ -14,6 +14,7 @@ import {
   renderReport,
 } from '../gen-performance-matrix.mjs';
 import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
+import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
 const distribution = { p50: 1, p95: 1, p99: 1, max: 1 };
@@ -23,6 +24,16 @@ const modeSpecs = [
   { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' },
   { id: 'landscape-dark', orientation: 'LANDSCAPE', theme: 'dark' },
 ];
+
+function fullActionPlan({ orientation, settingsShell, applicableLabels, notApplicable = [] }) {
+  return {
+    schemaVersion: 1,
+    actionGroups: FULL_ACTION_GROUPS,
+    applicableLabels,
+    notApplicable,
+    context: { orientation, settingsShell },
+  };
+}
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -244,11 +255,17 @@ describe('deployment matrix report', () => {
       orientation: 'PORTRAIT',
       theme: 'light',
       samples: [...repeated('idle frame control'), ...repeated('expand action drawer')],
-      actionPlan: {
-        schemaVersion: 1,
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
         applicableLabels: ['idle frame control', 'expand action drawer', 'open coloring book'],
-        context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
-      },
+        notApplicable: [
+          {
+            label: 'scroll coloring pages',
+            reason: 'the coloring-page grid fits without scrolling in this target mode',
+          },
+        ],
+      }),
     });
     const landscapeSource = writeActionCapture(manifestDirectory, 'landscape-actions.json', {
       orientation: 'LANDSCAPE',
@@ -258,15 +275,15 @@ describe('deployment matrix report', () => {
         ...repeated('enable Night Mode in the compact shell'),
         ...repeated('scroll coloring pages'),
       ],
-      actionPlan: {
-        schemaVersion: 1,
+      actionPlan: fullActionPlan({
+        orientation: 'LANDSCAPE',
+        settingsShell: 'compact',
         applicableLabels: [
           'idle frame control',
           'enable Night Mode in the compact shell',
           'scroll coloring pages',
         ],
-        context: { orientation: 'LANDSCAPE', settingsShell: 'compact' },
-      },
+      }),
     });
     const matrix = normalizeMatrix(
       manifest([
@@ -294,12 +311,12 @@ describe('deployment matrix report', () => {
     expect(coordinate(portrait, 'enable Night Mode in the compact shell')).toEqual({
       label: 'enable Night Mode in the compact shell',
       state: 'not-applicable',
-      reason: 'the compact Settings shell is not used in this target mode',
+      reason: 'this target mode’s declared action plan does not offer the action',
     });
     expect(coordinate(portrait, 'scroll coloring pages')).toEqual({
       label: 'scroll coloring pages',
       state: 'not-applicable',
-      reason: 'the coloring-page grid does not scroll in portrait',
+      reason: 'the coloring-page grid fits without scrolling in this target mode',
     });
     expect(coordinate(landscape, 'scroll coloring pages')).toMatchObject({
       state: 'no-control',
@@ -308,12 +325,18 @@ describe('deployment matrix report', () => {
 
     const html = renderReport(matrix);
     expect(html).toContain('class="heat-cell not-applicable"');
-    expect(html).toContain('N/A: the compact Settings shell is not used in this target mode');
-    expect(html).toContain('N/A: the coloring-page grid does not scroll in portrait');
+    expect(html).toContain(
+      'N/A: this target mode’s declared action plan does not offer the action'
+    );
+    expect(html).toContain(
+      'N/A: the coloring-page grid fits without scrolling in this target mode'
+    );
     expect(html).toContain('missing/unavailable: applicable action has no valid measurement');
     expect(html).toContain('<i class="heat-cell unscoreable"></i>no control');
     expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
     expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
+    expect(html).toContain('<h2>4-action failure fingerprint</h2>');
+    expect(html).toContain('<b>4</b> actions compared');
   });
 
   it('applies an agreeing focused capture only to its measured labels', () => {
@@ -914,11 +937,11 @@ describe('deployment matrix report', () => {
       samples: Array.from({ length: 4 }, (_, index) =>
         actionSample('expand action drawer', index === 0)
       ),
-      actionPlan: {
-        schemaVersion: 1,
+      actionPlan: fullActionPlan({
+        orientation: 'PORTRAIT',
+        settingsShell: 'sectioned',
         applicableLabels: ['open Settings'],
-        context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
-      },
+      }),
     });
 
     expect(() =>
@@ -932,6 +955,37 @@ describe('deployment matrix report', () => {
         manifestDirectory
       )
     ).toThrow('measured actions outside its declared actionPlan: expand action drawer');
+  });
+
+  it('rejects a subset action run folded as a full sweep', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-plan-subset-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) =>
+        actionSample('idle frame control', index === 0)
+      ),
+      actionPlan: {
+        schemaVersion: 1,
+        actionGroups: ['idle'],
+        applicableLabels: ['idle frame control'],
+        notApplicable: [],
+        context: { orientation: 'PORTRAIT', settingsShell: null },
+      },
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('is marked full but its actionPlan records a subset action run');
   });
 
   it('rejects captures without explicit theme metadata', () => {

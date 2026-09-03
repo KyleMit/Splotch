@@ -1294,12 +1294,14 @@ validated sweep, not a substitute for one. A focused source without that confirm
 naming the source and the full-sweep commits present, rather than publishing the replacement as
 matrix evidence.
 
-Every sweep also records an `actionPlan` beside its samples. The declaration names the actions that
-the product surface offered plus the orientation and Settings shell that selected them, and the
-runner refuses a plan that changes between repeats. The matrix uses the latest full sweep's plan to
-classify every global heatmap coordinate: an absent applicable action is missing, while an action
-outside that mode's declared plan is N/A. A capture predating this declaration stays missing rather
-than gaining an inferred N/A verdict.
+Every sweep also records an `actionPlan` beside its samples. The declaration names the requested
+action groups, the actions that the product surface offered, any observed exclusions and their
+reasons, plus the orientation and Settings shell that selected them. The runner compares those as
+sets, refuses a plan that changes between repeats, and names the changed labels. The matrix accepts
+a plan as a full sweep only when it includes the complete default action-group set, then uses the
+latest full plan to classify every global heatmap coordinate: an absent applicable action is
+missing, while an action outside that mode's declared plan is N/A. A capture predating this
+declaration stays missing rather than gaining an inferred N/A verdict.
 
 ## Before believing a result
 

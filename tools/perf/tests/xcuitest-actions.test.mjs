@@ -40,6 +40,7 @@ import {
 } from '../web/capture-desktop-actions.mjs';
 import { eraserFillFunctionSource } from '../lib/eraser-fill.mjs';
 import { loadedPageEntryProblem } from '../lib/profile-preview.mjs';
+import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
 const LIVE_SURFACE = readFileSync(
@@ -617,7 +618,9 @@ describe('desktop action options', () => {
       settingsShell: null,
       actionPlan: {
         schemaVersion: 1,
+        actionGroups: ['rotation'],
         applicableLabels: ['with ink: PORTRAIT to LANDSCAPE rotation'],
+        notApplicable: [],
         context: { orientation: 'PORTRAIT', settingsShell: null },
       },
       actions: ['rotation'],
@@ -636,16 +639,27 @@ describe('desktop action options', () => {
   it('refuses action applicability that changes between repeats', () => {
     const first = {
       schemaVersion: 1,
-      applicableLabels: ['open Settings'],
+      actionGroups: FULL_ACTION_GROUPS,
+      applicableLabels: ['open Settings', 'close Settings'],
+      notApplicable: [],
       context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
     };
     expect(stableActionPlan(null, first)).toBe(first);
+    expect(
+      stableActionPlan(first, {
+        ...first,
+        actionGroups: [...first.actionGroups].reverse(),
+        applicableLabels: [...first.applicableLabels].reverse(),
+      })
+    ).toBe(first);
     expect(() =>
       stableActionPlan(first, {
         ...first,
         applicableLabels: ['open Settings', 'open Parent Center'],
       })
-    ).toThrow('applicable action plan changed between scored repeats');
+    ).toThrow(
+      'applicable action plan changed between scored repeats: +open Parent Center -close Settings'
+    );
   });
 });
 
@@ -1026,8 +1040,9 @@ describe('runActionSweep callers', () => {
 
   it('records the optional coloring-grid scroll in the declared action plan', () => {
     const source = readFileSync(join(ROOT, CALLERS[0]), 'utf8');
-    expect(source).toContain('if (scrollSample) await record(scrollSample)');
-    expect(source).not.toContain('if (scrollSample) samples.push(scrollSample)');
+    expect(source).toContain('notApplicable.set(COLORING_SCROLL_ACTION_LABEL');
+    expect(source).toContain('await record(scroll.sample)');
+    expect(source).not.toContain('samples.push(scroll.sample)');
   });
 
   it('reads the sweep through its result shape in each caller', () => {

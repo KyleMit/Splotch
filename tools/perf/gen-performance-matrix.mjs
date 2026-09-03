@@ -46,7 +46,7 @@ import {
   UNDO_NEXT_FRAME_MAX_GATE_MS,
   UNDO_NEXT_FRAME_P95_GATE_MS,
 } from './lib/undo-action-stats.mjs';
-import { actionNotApplicableReason } from './lib/action-applicability.mjs';
+import { FULL_ACTION_GROUPS, actionNotApplicableReason } from './lib/action-applicability.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -712,25 +712,45 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
 
 function normalizeActionPlan(plan, source) {
   if (plan === undefined) return null;
-  if (plan?.schemaVersion !== 1 || !Array.isArray(plan.applicableLabels)) {
+  if (
+    plan?.schemaVersion !== 1 ||
+    !Array.isArray(plan.actionGroups) ||
+    !Array.isArray(plan.applicableLabels) ||
+    !Array.isArray(plan.notApplicable)
+  ) {
     throw new Error(`${source} has an invalid actionPlan declaration`);
   }
+  const actionGroups = plan.actionGroups;
   const labels = plan.applicableLabels;
+  const notApplicable = plan.notApplicable;
   const validOrientation = ['PORTRAIT', 'LANDSCAPE'].includes(plan.context?.orientation);
   const validSettingsShell = [null, 'compact', 'sectioned'].includes(plan.context?.settingsShell);
   if (
+    actionGroups.some((group) => !FULL_ACTION_GROUPS.includes(group)) ||
+    new Set(actionGroups).size !== actionGroups.length ||
     labels.some((label) => typeof label !== 'string' || !label.trim()) ||
     new Set(labels).size !== labels.length ||
+    notApplicable.some(
+      (entry) =>
+        typeof entry?.label !== 'string' ||
+        !entry.label.trim() ||
+        typeof entry.reason !== 'string' ||
+        !entry.reason.trim()
+    ) ||
+    new Set(notApplicable.map(({ label }) => label)).size !== notApplicable.length ||
+    notApplicable.some(({ label }) => labels.includes(label)) ||
     !validOrientation ||
     !validSettingsShell
   ) {
     throw new Error(
-      `${source} actionPlan must declare unique labels and its product-surface context`
+      `${source} actionPlan must declare unique groups, labels, recorded exclusions, and product-surface context`
     );
   }
   return {
     schemaVersion: 1,
+    actionGroups: [...actionGroups],
     applicableLabels: [...labels],
+    notApplicable: notApplicable.map(({ label, reason }) => ({ label, reason })),
     context: {
       orientation: plan.context.orientation,
       settingsShell: plan.context.settingsShell,
@@ -810,6 +830,13 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
     throw new Error(`${spec.source} does not contain: ${missingLabels.join(', ')}`);
   }
   const actionPlan = normalizeActionPlan(profile.actionPlan, spec.source);
+  if (
+    spec.kind === 'full' &&
+    actionPlan &&
+    !FULL_ACTION_GROUPS.every((group) => actionPlan.actionGroups.includes(group))
+  ) {
+    throw new Error(`${spec.source} is marked full but its actionPlan records a subset action run`);
+  }
   if (actionPlan && actionPlan.context.orientation !== String(mode.orientation).toUpperCase()) {
     throw new Error(
       `${spec.source} actionPlan records ${actionPlan.context.orientation}, but the mode is ${mode.orientation}`
@@ -1202,7 +1229,7 @@ function actionCoordinates(mode, labels) {
       return {
         label,
         state: 'not-applicable',
-        reason: actionNotApplicableReason(label, mode.actions.actionPlan.context),
+        reason: actionNotApplicableReason(label, mode.actions.actionPlan),
       };
     }
     const reason =
@@ -1895,7 +1922,7 @@ function renderReport(matrix) {
     target.modes.some((mode) => mode.status === 'captured')
   ).length;
   const capturedModeCount = rows.filter((row) => row.status === 'captured').length;
-  const actionCount = comparableActionLabels(rows).length;
+  const actionCount = (matrix.actionLabels ?? comparableActionLabels(rows)).length;
   const finalActionCount = rows.reduce(
     (count, row) => count + (row.actions?.finalProductCommitActionCount ?? 0),
     0

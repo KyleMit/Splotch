@@ -45,6 +45,7 @@ import {
 } from '../lib/campaign-state.mjs';
 import {
   COLORING_SCROLL_ACTION_LABEL,
+  FULL_ACTION_GROUPS,
   compactSettingsActionLabel,
 } from '../lib/action-applicability.mjs';
 
@@ -77,23 +78,7 @@ const COLORING_SCROLL_DISTANCE_PX = 400;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
-const ALL_ACTIONS = new Set([
-  'idle',
-  'drawer',
-  'palette',
-  'color-picker',
-  'brushes',
-  'stroke-width',
-  'settings',
-  'settings-sections',
-  'settings-controls',
-  'theme',
-  'coloring',
-  'screenshot',
-  'undo',
-  'clear',
-  'rotation',
-]);
+const ALL_ACTIONS = new Set(FULL_ACTION_GROUPS);
 
 function webContextForClient(client, contexts) {
   const webContext = selectWebContext(contexts, { nativeApp: client.nativeApp });
@@ -119,8 +104,33 @@ export function selectedActions(value) {
 
 export function stableActionPlan(recorded, next) {
   if (!recorded) return next;
-  if (JSON.stringify(recorded) !== JSON.stringify(next)) {
-    throw new Error('The applicable action plan changed between scored repeats');
+  const canonical = (plan) => ({
+    ...plan,
+    actionGroups: [...plan.actionGroups].sort(),
+    applicableLabels: [...plan.applicableLabels].sort(),
+    notApplicable: [...plan.notApplicable].sort((left, right) =>
+      left.label.localeCompare(right.label)
+    ),
+  });
+  if (JSON.stringify(canonical(recorded)) !== JSON.stringify(canonical(next))) {
+    const recordedLabels = new Set([
+      ...recorded.applicableLabels,
+      ...recorded.notApplicable.map(({ label }) => label),
+    ]);
+    const nextLabels = new Set([
+      ...next.applicableLabels,
+      ...next.notApplicable.map(({ label }) => label),
+    ]);
+    const added = [...nextLabels].filter((label) => !recordedLabels.has(label));
+    const removed = [...recordedLabels].filter((label) => !nextLabels.has(label));
+    const labelChanges = [
+      added.length ? `+${added.join(', ')}` : null,
+      removed.length ? `-${removed.join(', ')}` : null,
+    ].filter(Boolean);
+    const detail = labelChanges.length
+      ? labelChanges.join(' ')
+      : 'context, action groups, or recorded reasons changed';
+    throw new Error(`The applicable action plan changed between scored repeats: ${detail}`);
   }
   return recorded;
 }
@@ -514,11 +524,22 @@ async function measureClick({
 
 async function measureColoringPageScroll(client, sessionId, execute) {
   const selector = '#coloring-book-dialog';
-  const scrollable = await execute(`
+  const scrollability = await execute(`
     const dialog = document.querySelector(${JSON.stringify(selector)});
-    return !!dialog && dialog.scrollHeight > dialog.clientHeight;
+    return {
+      dialogPresent: !!dialog,
+      scrollable: !!dialog && dialog.scrollHeight > dialog.clientHeight
+    };
   `);
-  if (!scrollable) return null;
+  if (!scrollability.dialogPresent) {
+    throw new Error('The coloring-book dialog disappeared before its scrollability check');
+  }
+  if (!scrollability.scrollable) {
+    return {
+      sample: null,
+      notApplicableReason: 'the coloring-page grid fits without scrolling in this target mode',
+    };
+  }
 
   const transport = coloringScrollTransport(client);
   const useWheel = transport.activation === 'trusted-wheel';
@@ -562,7 +583,10 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
   await sleep(ACTION_SETTLE_MS);
-  return { ...sample, activation: transport.activation };
+  return {
+    sample: { ...sample, activation: transport.activation },
+    notApplicableReason: null,
+  };
 }
 
 async function measureIdle(execute) {
@@ -890,6 +914,7 @@ export async function runActionSweep({
 }) {
   const samples = [];
   const applicableLabels = new Set();
+  const notApplicable = new Map();
   const record = async (promise) => {
     const sample = await promise;
     applicableLabels.add(sample.label);
@@ -1421,8 +1446,12 @@ export async function runActionSweep({
     );
     for (const step of coloringSelectionSteps(hasBookChoice)) {
       if (step.label === 'select coloring page') {
-        const scrollSample = await measureColoringPageScroll(client, sessionId, execute);
-        if (scrollSample) await record(scrollSample);
+        const scroll = await measureColoringPageScroll(client, sessionId, execute);
+        if (scroll.sample) {
+          await record(scroll.sample);
+        } else {
+          notApplicable.set(COLORING_SCROLL_ACTION_LABEL, scroll.notApplicableReason);
+        }
       }
       await record(measureClick({ client, sessionId, execute, ...step }));
     }
@@ -1598,7 +1627,9 @@ export async function runActionSweep({
     settingsShell: settingsInScope ? (settingsShellIsCompact ? 'compact' : 'sectioned') : null,
     actionPlan: {
       schemaVersion: 1,
+      actionGroups: [...actions],
       applicableLabels: [...applicableLabels],
+      notApplicable: [...notApplicable].map(([label, reason]) => ({ label, reason })),
       context: {
         orientation: originalOrientation,
         settingsShell: settingsInScope
