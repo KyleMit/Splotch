@@ -1,5 +1,10 @@
 # Rival agent simplification — pilot probes and rounds (2026-09-02)
 
+> **Outcome.** The hosted first-party reviewers were ruled out on the evidence in probe 4 and the
+> hosted-run sections below; the workflow and label they needed were removed the same day. The
+> broker stayed, as the escalation door of a sandbox-first hybrid. The decisions and their rejected
+> alternatives are in `tools/rival-agent/NOTES.md`; this note is the measurement record behind them.
+
 Working notes for the pilot that asks whether two hand-rolled layers of `run-rival-agent` can be
 replaced by things the vendors ship. The pairing itself and its build log are in
 `rival-agent-pairing-2026-09-02.md`; this note records only what the pilot measured. Vocabulary is
