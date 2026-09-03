@@ -96,6 +96,11 @@ new modules during this behavior-preserving move: `ios/capture-xcuitest-actions.
 plan consumed by the web and Android runners, and `ios/capture-webkit-frames.mjs` owns the probe
 configuration reused by local web capture.
 
+Each full action sweep records its applicable label plan and product-surface context separately from
+the measured summaries. The deployment matrix normalizes that declaration into measured, no-control,
+N/A, and missing coordinates; captures that predate the declaration fail closed as missing rather
+than having applicability guessed from whichever results happen to exist.
+
 `buildAndPreview` asserts the served build is fresh before returning. A preview server left from an
 earlier build keeps the port and keeps serving the manifest it loaded at startup, and the resulting
 failure is invisible: the HTML names chunks that 404, the route never hydrates, and because the

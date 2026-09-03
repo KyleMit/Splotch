@@ -43,6 +43,10 @@ import {
   setNativeRotationLock,
   themeRoundTripPlan,
 } from '../lib/campaign-state.mjs';
+import {
+  COLORING_SCROLL_ACTION_LABEL,
+  compactSettingsActionLabel,
+} from '../lib/action-applicability.mjs';
 
 const APP_PATH = '/';
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
@@ -111,6 +115,14 @@ export function selectedActions(value) {
   const unknown = [...actions].filter((action) => !ALL_ACTIONS.has(action));
   if (unknown.length) fail(`Unknown --actions entries: ${unknown.join(', ')}`);
   return actions;
+}
+
+export function stableActionPlan(recorded, next) {
+  if (!recorded) return next;
+  if (JSON.stringify(recorded) !== JSON.stringify(next)) {
+    throw new Error('The applicable action plan changed between scored repeats');
+  }
+  return recorded;
 }
 
 function actionPanelHasAttribute(attribute) {
@@ -512,7 +524,7 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   const useWheel = transport.activation === 'trusted-wheel';
   await ensureActionProbe(execute);
   await execute(
-    `return window.__actionProbe.begin('scroll coloring pages', ${JSON.stringify(selector)}, ${JSON.stringify(
+    `return window.__actionProbe.begin(${JSON.stringify(COLORING_SCROLL_ACTION_LABEL)}, ${JSON.stringify(selector)}, ${JSON.stringify(
       transport.eventTypes
     )});`
   );
@@ -877,7 +889,12 @@ export async function runActionSweep({
   baselineTheme = 'dark',
 }) {
   const samples = [];
-  const record = async (promise) => samples.push(await promise);
+  const applicableLabels = new Set();
+  const record = async (promise) => {
+    const sample = await promise;
+    applicableLabels.add(sample.label);
+    samples.push(sample);
+  };
   const recordToggleRoundTrip = async ({
     label,
     selector,
@@ -1225,7 +1242,7 @@ export async function runActionSweep({
 
   if (actions.has('theme') && settingsShellIsCompact) {
     await recordToggleRoundTrip({
-      label: 'Night Mode in the compact shell',
+      label: compactSettingsActionLabel('Night Mode'),
       selector: '#quickNightToggle',
       baseline: baselineTheme === 'dark',
       readyFor: (enabled) =>
@@ -1290,12 +1307,12 @@ export async function runActionSweep({
 
   if (actions.has('settings-controls') && settingsShellIsCompact) {
     await recordToggleRoundTrip({
-      label: 'drawing sounds in the compact shell',
+      label: compactSettingsActionLabel('drawing sounds'),
       selector: '#quickSoundToggle',
       baseline: true,
     });
     await recordToggleRoundTrip({
-      label: 'advanced controls in the compact shell',
+      label: compactSettingsActionLabel('advanced controls'),
       selector: '#quickAdvancedControlsToggle',
       baseline: true,
       readyFor: (enabled) =>
@@ -1405,7 +1422,7 @@ export async function runActionSweep({
     for (const step of coloringSelectionSteps(hasBookChoice)) {
       if (step.label === 'select coloring page') {
         const scrollSample = await measureColoringPageScroll(client, sessionId, execute);
-        if (scrollSample) samples.push(scrollSample);
+        if (scrollSample) await record(scrollSample);
       }
       await record(measureClick({ client, sessionId, execute, ...step }));
     }
@@ -1579,6 +1596,18 @@ export async function runActionSweep({
   return {
     samples,
     settingsShell: settingsInScope ? (settingsShellIsCompact ? 'compact' : 'sectioned') : null,
+    actionPlan: {
+      schemaVersion: 1,
+      applicableLabels: [...applicableLabels],
+      context: {
+        orientation: originalOrientation,
+        settingsShell: settingsInScope
+          ? settingsShellIsCompact
+            ? 'compact'
+            : 'sectioned'
+          : null,
+      },
+    },
   };
 }
 
@@ -1785,6 +1814,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     }
 
     let settingsShell = null;
+    let actionPlan = null;
     const samples = [];
     const expectedLabels = new Set();
     const pageEntries = new Set();
@@ -1837,8 +1867,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         baselineTheme,
       });
       settingsShell = sweep.settingsShell;
+      actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep.samples) expectedLabels.add(sample.label);
+        for (const label of sweep.actionPlan.applicableLabels) expectedLabels.add(label);
       }
       samples.push(
         ...sweep.samples.map((sample) => ({
@@ -1899,6 +1930,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       // A landscape phone measures CompactShell's quick toggles instead of the
       // section list, so the label set differs by shell rather than by regression.
       settingsShell,
+      actionPlan,
       samples,
       summaries,
       // The gate exceptions this capture was scored under (ADR-0090 amendment):

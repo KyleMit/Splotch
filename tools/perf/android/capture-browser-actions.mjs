@@ -13,7 +13,12 @@ import {
 } from '../lib/action-stats.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
-import { profilingUrl, runActionSweep, selectedActions } from '../ios/capture-xcuitest-actions.mjs';
+import {
+  profilingUrl,
+  runActionSweep,
+  selectedActions,
+  stableActionPlan,
+} from '../ios/capture-xcuitest-actions.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
@@ -366,6 +371,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     const originalOrientation = await client.orientation();
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     let settingsShell = null;
+    let actionPlan = null;
     const samples = [];
     const expectedLabels = new Set();
     let baselineTheme;
@@ -391,8 +397,9 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         baselineTheme,
       });
       settingsShell = sweep.settingsShell;
+      actionPlan = stableActionPlan(actionPlan, sweep.actionPlan);
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep.samples) expectedLabels.add(sample.label);
+        for (const label of sweep.actionPlan.applicableLabels) expectedLabels.add(label);
       }
       samples.push(
         ...sweep.samples.map((sample) => ({
@@ -430,6 +437,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       orientation: originalOrientation,
       theme: baselineTheme,
       settingsShell,
+      actionPlan,
       samples,
       summaries,
       passed: failures.length === 0,

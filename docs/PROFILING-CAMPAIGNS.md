@@ -1294,6 +1294,13 @@ validated sweep, not a substitute for one. A focused source without that confirm
 naming the source and the full-sweep commits present, rather than publishing the replacement as
 matrix evidence.
 
+Every sweep also records an `actionPlan` beside its samples. The declaration names the actions that
+the product surface offered plus the orientation and Settings shell that selected them, and the
+runner refuses a plan that changes between repeats. The matrix uses the latest full sweep's plan to
+classify every global heatmap coordinate: an absent applicable action is missing, while an action
+outside that mode's declared plan is N/A. A capture predating this declaration stays missing rather
+than gaining an inferred N/A verdict.
+
 ## Before believing a result
 
 1. Fidelity verdict passed, and the input cadence is in band.

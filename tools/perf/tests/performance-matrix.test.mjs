@@ -165,7 +165,7 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport, captureRuntime, engine }
+  { orientation, theme, summaries, samples, transport, captureRuntime, engine, actionPlan }
 ) {
   const path = join(directory, name);
   writeFileSync(
@@ -179,6 +179,7 @@ function writeActionCapture(
       transport,
       captureRuntime,
       engine,
+      actionPlan,
     })
   );
   return name;
@@ -229,6 +230,90 @@ describe('deployment matrix report', () => {
     for (const [, cells] of grids) {
       expect(cells.match(/class="(?:action-number|heat-cell)/g)).toHaveLength(49);
     }
+  });
+
+  it('normalizes and renders measured, no-control, N/A, and missing action coordinates', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-applicability-'));
+    temporaryDirectories.push(manifestDirectory);
+    const repeated = (label, postActionFrameGapsMs = [1]) =>
+      Array.from({ length: 4 }, (_, index) => ({
+        ...actionSample(label, index === 0),
+        postActionFrameGapsMs,
+      }));
+    const portraitSource = writeActionCapture(manifestDirectory, 'portrait-actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [...repeated('idle frame control'), ...repeated('expand action drawer')],
+      actionPlan: {
+        schemaVersion: 1,
+        applicableLabels: ['idle frame control', 'expand action drawer', 'open coloring book'],
+        context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
+      },
+    });
+    const landscapeSource = writeActionCapture(manifestDirectory, 'landscape-actions.json', {
+      orientation: 'LANDSCAPE',
+      theme: 'light',
+      samples: [
+        ...repeated('idle frame control', [40]),
+        ...repeated('enable Night Mode in the compact shell'),
+        ...repeated('scroll coloring pages'),
+      ],
+      actionPlan: {
+        schemaVersion: 1,
+        applicableLabels: [
+          'idle frame control',
+          'enable Night Mode in the compact shell',
+          'scroll coloring pages',
+        ],
+        context: { orientation: 'LANDSCAPE', settingsShell: 'compact' },
+      },
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source: portraitSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[1]),
+        capturedManifestMode(modeSpecs[2], {
+          actionSources: [{ source: landscapeSource, productCommit: 'final123', kind: 'full' }],
+        }),
+        unavailableMode(modeSpecs[3]),
+      ]),
+      manifestDirectory
+    );
+    const portrait = matrix.targets[0].modes[0];
+    const landscape = matrix.targets[0].modes[2];
+    const coordinate = (mode, label) =>
+      mode.actionCoordinates.find((candidate) => candidate.label === label);
+
+    expect(coordinate(portrait, 'expand action drawer')).toEqual({
+      label: 'expand action drawer',
+      state: 'measured',
+    });
+    expect(coordinate(portrait, 'open coloring book')).toMatchObject({ state: 'missing' });
+    expect(coordinate(portrait, 'enable Night Mode in the compact shell')).toEqual({
+      label: 'enable Night Mode in the compact shell',
+      state: 'not-applicable',
+      reason: 'the compact Settings shell is not used in this target mode',
+    });
+    expect(coordinate(portrait, 'scroll coloring pages')).toEqual({
+      label: 'scroll coloring pages',
+      state: 'not-applicable',
+      reason: 'the coloring-page grid does not scroll in portrait',
+    });
+    expect(coordinate(landscape, 'scroll coloring pages')).toMatchObject({
+      state: 'no-control',
+      reason: 'idle frame control failed',
+    });
+
+    const html = renderReport(matrix);
+    expect(html).toContain('class="heat-cell not-applicable"');
+    expect(html).toContain('N/A: the compact Settings shell is not used in this target mode');
+    expect(html).toContain('N/A: the coloring-page grid does not scroll in portrait');
+    expect(html).toContain('missing/unavailable: applicable action has no valid measurement');
+    expect(html).toContain('<i class="heat-cell unscoreable"></i>no control');
+    expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
+    expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
   });
 
   it('applies an agreeing focused capture only to its measured labels', () => {
@@ -818,6 +903,35 @@ describe('deployment matrix report', () => {
         manifestDirectory
       )
     ).toThrow('actions.json recorded dark theme; expected light');
+  });
+
+  it('rejects a measured action omitted from the capture’s declared plan', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-plan-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: Array.from({ length: 4 }, (_, index) =>
+        actionSample('expand action drawer', index === 0)
+      ),
+      actionPlan: {
+        schemaVersion: 1,
+        applicableLabels: ['open Settings'],
+        context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
+      },
+    });
+
+    expect(() =>
+      normalizeMatrix(
+        manifest([
+          capturedManifestMode(modeSpecs[0], {
+            actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+          }),
+          ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+        ]),
+        manifestDirectory
+      )
+    ).toThrow('measured actions outside its declared actionPlan: expand action drawer');
   });
 
   it('rejects captures without explicit theme metadata', () => {

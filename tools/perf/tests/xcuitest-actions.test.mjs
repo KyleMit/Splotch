@@ -25,6 +25,7 @@ import {
   runToggleRoundTrip,
   screenshotActivation,
   selectedActions,
+  stableActionPlan,
   settingsSectionLabelSelector,
   settingsSectionMeasurement,
   settingsSectionSetupReady,
@@ -614,6 +615,11 @@ describe('desktop action options', () => {
       headless: true,
       theme: 'light',
       settingsShell: null,
+      actionPlan: {
+        schemaVersion: 1,
+        applicableLabels: ['with ink: PORTRAIT to LANDSCAPE rotation'],
+        context: { orientation: 'PORTRAIT', settingsShell: null },
+      },
       actions: ['rotation'],
       repeats: 9,
       samples: [],
@@ -624,6 +630,22 @@ describe('desktop action options', () => {
     expect(artifact.captureRuntime).toBe('desktop-playwright');
     expect(artifact.engine).toBe('webkit');
     expect(artifact.viewport).toEqual({ width: 1366, height: 915, deviceScaleFactor: 2 });
+    expect(artifact.actionPlan.context.orientation).toBe('PORTRAIT');
+  });
+
+  it('refuses action applicability that changes between repeats', () => {
+    const first = {
+      schemaVersion: 1,
+      applicableLabels: ['open Settings'],
+      context: { orientation: 'PORTRAIT', settingsShell: 'sectioned' },
+    };
+    expect(stableActionPlan(null, first)).toBe(first);
+    expect(() =>
+      stableActionPlan(first, {
+        ...first,
+        applicableLabels: ['open Settings', 'open Parent Center'],
+      })
+    ).toThrow('applicable action plan changed between scored repeats');
   });
 });
 
@@ -984,7 +1006,7 @@ describe('compact settings shell', () => {
   });
 });
 describe('runActionSweep callers', () => {
-  // The sweep returns {samples, settingsShell} rather than a bare array, and it has
+  // The sweep returns {samples, settingsShell, actionPlan} rather than a bare array, and it has
   // three transports. Changing that shape broke the two callers that no test covers
   // and no local run exercises by default — the Android CDP runner failed with
   // "sweep is not iterable" only once a real Android capture ran, and the desktop
@@ -1002,11 +1024,18 @@ describe('runActionSweep callers', () => {
     expect(found).toEqual(CALLERS);
   });
 
+  it('records the optional coloring-grid scroll in the declared action plan', () => {
+    const source = readFileSync(join(ROOT, CALLERS[0]), 'utf8');
+    expect(source).toContain('if (scrollSample) await record(scrollSample)');
+    expect(source).not.toContain('if (scrollSample) samples.push(scrollSample)');
+  });
+
   it('reads the sweep through its result shape in each caller', () => {
     for (const relative of CALLERS) {
       const source = readFileSync(join(ROOT, relative), 'utf8');
       expect(source).toContain('sweep.samples');
       expect(source).toContain('sweep.settingsShell');
+      expect(source).toContain('sweep.actionPlan');
       expect(source).not.toMatch(/for \(const sample of sweep\)/);
       expect(source).not.toMatch(/\.\.\.sweep\.map\(/);
     }

@@ -46,6 +46,7 @@ import {
   UNDO_NEXT_FRAME_MAX_GATE_MS,
   UNDO_NEXT_FRAME_P95_GATE_MS,
 } from './lib/undo-action-stats.mjs';
+import { actionNotApplicableReason } from './lib/action-applicability.mjs';
 
 const DEFAULT_MANIFEST = join(
   ROOT,
@@ -709,6 +710,34 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
   };
 }
 
+function normalizeActionPlan(plan, source) {
+  if (plan === undefined) return null;
+  if (plan?.schemaVersion !== 1 || !Array.isArray(plan.applicableLabels)) {
+    throw new Error(`${source} has an invalid actionPlan declaration`);
+  }
+  const labels = plan.applicableLabels;
+  const validOrientation = ['PORTRAIT', 'LANDSCAPE'].includes(plan.context?.orientation);
+  const validSettingsShell = [null, 'compact', 'sectioned'].includes(plan.context?.settingsShell);
+  if (
+    labels.some((label) => typeof label !== 'string' || !label.trim()) ||
+    new Set(labels).size !== labels.length ||
+    !validOrientation ||
+    !validSettingsShell
+  ) {
+    throw new Error(
+      `${source} actionPlan must declare unique labels and its product-surface context`
+    );
+  }
+  return {
+    schemaVersion: 1,
+    applicableLabels: [...labels],
+    context: {
+      orientation: plan.context.orientation,
+      settingsShell: plan.context.settingsShell,
+    },
+  };
+}
+
 function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   const profile = readJson(sourcePath(spec.source, sourceDirectory));
   validateCaptureMode(profile, mode, spec.source);
@@ -780,12 +809,29 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   if (missingLabels?.length) {
     throw new Error(`${spec.source} does not contain: ${missingLabels.join(', ')}`);
   }
+  const actionPlan = normalizeActionPlan(profile.actionPlan, spec.source);
+  if (actionPlan && actionPlan.context.orientation !== String(mode.orientation).toUpperCase()) {
+    throw new Error(
+      `${spec.source} actionPlan records ${actionPlan.context.orientation}, but the mode is ${mode.orientation}`
+    );
+  }
+  const undeclaredResults = actionPlan
+    ? results.filter((result) => !actionPlan.applicableLabels.includes(result.label))
+    : [];
+  if (undeclaredResults.length) {
+    throw new Error(
+      `${spec.source} measured actions outside its declared actionPlan: ${undeclaredResults
+        .map(({ label }) => label)
+        .join(', ')}`
+    );
+  }
   return {
     source: spec.source,
     productCommit: spec.productCommit,
     kind: spec.kind,
     selectedLabels: spec.labels ?? null,
     repeatCount: profile.repeats,
+    actionPlan,
     results,
   };
 }
@@ -910,11 +956,12 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode, ta
     normalizeActionCapture(source, sourceDirectory, mode, targetId)
   );
   const results = mergeActionResults(captures);
+  const fullSweep = captures.findLast((capture) => capture.kind === 'full');
   const comparableResults = results.filter((result) => !ACTION_CONTROL_LABELS.has(result.label));
   return {
     sources: captures.map(({ results: _results, ...capture }) => capture),
-    fullSweepProductCommit:
-      captures.findLast((capture) => capture.kind === 'full')?.productCommit ?? null,
+    fullSweepProductCommit: fullSweep?.productCommit ?? null,
+    actionPlan: fullSweep?.actionPlan ?? null,
     finalProductCommitActionCount: comparableResults.filter(
       (result) => result.productCommit === finalProductCommit
     ).length,
@@ -955,6 +1002,9 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preser
     theme: normalizedMode.theme,
     status: normalizedMode.status,
     fidelity: normalizedMode.fidelity ?? target.fidelity,
+    ...(normalizedMode.actionsUnavailableReason
+      ? { actionsUnavailableReason: normalizedMode.actionsUnavailableReason }
+      : {}),
   };
   if (normalizedMode.status !== 'captured') {
     return { ...shared, reason: normalizedMode.reason };
@@ -1120,11 +1170,73 @@ function normalizeTarget(target, finalProductCommit, sourceDirectory, preserved)
   };
 }
 
+function matrixActionLabels(targets) {
+  return [
+    ...new Set(
+      targets.flatMap((target) =>
+        target.modes.flatMap((mode) => [
+          ...(mode.actions?.results.map(({ label }) => label) ?? []),
+          ...(mode.actions?.actionPlan?.applicableLabels ?? []),
+        ])
+      )
+    ),
+  ].filter((label) => !ACTION_CONTROL_LABELS.has(label));
+}
+
+function actionCoordinates(mode, labels) {
+  const results = new Set(mode.actions?.results.map(({ label }) => label) ?? []);
+  const applicable = mode.actions?.actionPlan
+    ? new Set(mode.actions.actionPlan.applicableLabels)
+    : null;
+  return labels.map((label) => {
+    if (results.has(label)) {
+      return mode.actions.scoreable === false
+        ? {
+            label,
+            state: 'no-control',
+            reason: `idle frame control ${mode.actions.controlEvidence ?? 'absent'}`,
+          }
+        : { label, state: 'measured' };
+    }
+    if (applicable && !applicable.has(label)) {
+      return {
+        label,
+        state: 'not-applicable',
+        reason: actionNotApplicableReason(label, mode.actions.actionPlan.context),
+      };
+    }
+    const reason =
+      mode.status !== 'captured'
+        ? `target mode unavailable: ${mode.reason}`
+        : mode.actionsUnavailableReason
+          ? `action capture unavailable: ${mode.actionsUnavailableReason}`
+          : applicable
+            ? 'applicable action has no valid measurement'
+            : 'capture predates explicit action applicability';
+    return { label, state: 'missing', reason };
+  });
+}
+
+function withActionCoordinates(matrix) {
+  const actionLabels = matrixActionLabels(matrix.targets);
+  return {
+    ...matrix,
+    actionLabels,
+    targets: matrix.targets.map((target) => ({
+      ...target,
+      modes: target.modes.map((mode) => ({
+        ...mode,
+        actionCoordinates: actionCoordinates(mode, actionLabels),
+      })),
+    })),
+  };
+}
+
 function normalizeMatrix(manifest, sourceDirectory = ROOT) {
   validateManifest(manifest);
   const resolvedSourceDirectory = resolve(sourceDirectory, manifest.sourceRoot ?? '.');
   const preserved = loadPreservedEvidence(manifest, sourceDirectory);
-  return {
+  return withActionCoordinates({
     schemaVersion: 3,
     recordedOn: manifest.recordedOn,
     productCommit: manifest.productCommit,
@@ -1156,7 +1268,7 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
     targets: manifest.targets.map((target) =>
       normalizeTarget(target, manifest.productCommit, resolvedSourceDirectory, preserved)
     ),
-  };
+  });
 }
 
 // Preservation is a provenance claim about the evidence, so the report states it
@@ -1308,7 +1420,7 @@ function comparableActionLabels(targets) {
 
 function actionHeatmap(matrix) {
   const targets = modeRows(matrix);
-  const labels = comparableActionLabels(targets);
+  const labels = matrix.actionLabels ?? comparableActionLabels(targets);
   const columns = labels
     .map(
       (label, index) =>
@@ -1323,6 +1435,12 @@ function actionHeatmap(matrix) {
           result,
         ])
       );
+      const coordinatesByLabel = new Map(
+        (target.actionCoordinates ?? actionCoordinates(target, labels)).map((coordinate) => [
+          coordinate.label,
+          coordinate,
+        ])
+      );
       // A mode whose idle control failed cannot attribute any action score to the
       // product, so its cells are marked rather than coloured by ratio — the same
       // treatment a fidelity-failed drawing cell gets, for the same reason.
@@ -1331,10 +1449,12 @@ function actionHeatmap(matrix) {
         .map((label, index) => {
           const result = resultsByLabel.get(label);
           if (!result) {
-            const availability =
-              target.status === 'captured' ? 'not measured' : `unavailable: ${target.reason}`;
-            const tooltip = `${index + 1}. ${label} · ${rowLabel(target)} · ${availability}`;
-            return `<span class="heat-cell missing" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+            const coordinate = coordinatesByLabel.get(label);
+            const notApplicable = coordinate?.state === 'not-applicable';
+            const state = notApplicable ? 'N/A' : 'missing/unavailable';
+            const tooltip = `${index + 1}. ${label} · ${rowLabel(target)} · ${state}: ${coordinate?.reason ?? 'no normalized coordinate'}`;
+            const cellClass = notApplicable ? 'not-applicable' : 'missing';
+            return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
           }
           const ratio = actionRatio(result, matrix.gates.actions);
           const provenance = result.productCommit ? ` · measured at ${result.productCommit}` : '';
@@ -1751,7 +1871,7 @@ function releaseGateSentence(matrix) {
 }
 
 const EXTRA_CSS = `
-.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.target-modes{list-style:none;padding:0;margin:12px 0 0}.target-modes li{padding:8px 0;border-top:1px solid var(--hair)}.target-modes li>div{display:flex;justify-content:space-between;gap:8px;align-items:center}.target-modes b{font-size:.72rem}.target-modes small{display:block;margin-top:3px;color:var(--muted);font-size:.68rem}.target-modes .unavailable{opacity:.72}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-row.target-break,.heat-row.target-break{margin-top:10px}.plot-row.unavailable{opacity:.65}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.plot-dot.unscoreable{background:transparent;border-color:var(--dot);box-shadow:0 0 0 1px var(--card);opacity:.75}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:210px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label span small{display:block;color:var(--faint);font-weight:400}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block}.heat-cell.missing{background:var(--card-2)}.heat-cell.unscoreable{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--hair-strong)}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-cell.unconfirmed{background:color-mix(in srgb,var(--warn) 78%,var(--card));box-shadow:inset 0 0 0 2px var(--card),inset 0 0 0 3px var(--warn)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:170px max-content}.heat-label span{max-width:140px;overflow:hidden;text-overflow:ellipsis}}
+.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.target-modes{list-style:none;padding:0;margin:12px 0 0}.target-modes li{padding:8px 0;border-top:1px solid var(--hair)}.target-modes li>div{display:flex;justify-content:space-between;gap:8px;align-items:center}.target-modes b{font-size:.72rem}.target-modes small{display:block;margin-top:3px;color:var(--muted);font-size:.68rem}.target-modes .unavailable{opacity:.72}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-row.target-break,.heat-row.target-break{margin-top:10px}.plot-row.unavailable{opacity:.65}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.plot-dot.unscoreable{background:transparent;border-color:var(--dot);box-shadow:0 0 0 1px var(--card);opacity:.75}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:210px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label span small{display:block;color:var(--faint);font-weight:400}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block;position:relative}.heat-cell.missing{background:var(--card-2)}.heat-cell.not-applicable{background:transparent;box-shadow:inset 0 0 0 1px var(--hair)}.heat-cell.not-applicable:after{content:"";position:absolute;left:2px;right:2px;top:7px;border-top:1px solid var(--faint);transform:rotate(-45deg)}.heat-cell.unscoreable{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--hair-strong)}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-cell.unconfirmed{background:color-mix(in srgb,var(--warn) 78%,var(--card));box-shadow:inset 0 0 0 2px var(--card),inset 0 0 0 3px var(--warn)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:170px max-content}.heat-label span{max-width:140px;overflow:hidden;text-overflow:ellipsis}}
 .candidate-actions th,.candidate-actions td{text-align:left;vertical-align:top}
 `;
 
@@ -1813,7 +1933,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>${actionCount}-action failure fingerprint</h2><span class="desc">Color is the worst ratio across first P95, post P95, and post max</span></div>
-  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span><span><i class="heat-cell unconfirmed"></i>pass, max over gate in one repeat</span><span><i class="heat-cell unscoreable"></i>no control</span></div>
+  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span><span><i class="heat-cell unconfirmed"></i>pass, max over gate in one repeat</span><span><i class="heat-cell unscoreable"></i>no control</span><span><i class="heat-cell not-applicable"></i>N/A</span><span><i class="heat-cell missing"></i>missing/unavailable</span></div>
   ${actionHeatmap(matrix)}
 
   <div class="ranked-grid">
@@ -1822,7 +1942,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode; each freshly-normalized dot's tooltip states how many captures back it, because a gate verdict from a single capture is one draw from that cell's run-to-run spread and is provisional rather than established (ADR-0136; issue 1290's own spread figures were retracted, leaving the question standing). Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode, and only when the mode also carries a full sweep at the same product commit — the fold refuses an unconfirmed focused source; all other labels retain their earlier measurement and provenance. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
+  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode; each freshly-normalized dot's tooltip states how many captures back it, because a gate verdict from a single capture is one draw from that cell's run-to-run spread and is provisional rather than established (ADR-0136; issue 1290's own spread figures were retracted, leaving the question standing). Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode, and only when the mode also carries a full sweep at the same product commit — the fold refuses an unconfirmed focused source; all other labels retain their earlier measurement and provenance. Each full sweep records the action plan the product surface offered. A struck ghost cell is <b>N/A</b> under that plan; a filled pale cell is <b>missing/unavailable</b>, and both tooltips retain the reason. A capture predating the declaration stays missing rather than being guessed N/A. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those measured cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({
