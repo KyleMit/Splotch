@@ -988,12 +988,7 @@ function countFinalProductCommitActions(results, finalProductCommit) {
 // from. Re-derive it against this report's product commit so historical rows
 // cannot claim current coverage.
 function withFinalProductCommitActionCount(actions, finalProductCommit, preserved) {
-  if (
-    !preserved ||
-    !actions ||
-    typeof actions !== 'object' ||
-    !Array.isArray(actions.results)
-  ) {
+  if (!preserved || !actions || typeof actions !== 'object' || !Array.isArray(actions.results)) {
     return actions;
   }
   return {
