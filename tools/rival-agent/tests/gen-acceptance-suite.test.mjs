@@ -83,7 +83,7 @@ describe('acceptance stage commands, executed as shipped', () => {
   // packet-side marker write it approves and the canonical-checkout write it declines.
   it('stages six local commands and two escalations, decline last', () => {
     expect(commands).toHaveLength(8);
-    expect(commands[6]).toBe(`touch ../packet/escalation-${NONCE}.marker`);
+    expect(commands[6]).toBe(`touch ../escalation-${NONCE}.marker`);
     expect(commands[7]).toMatch(/^touch \/\S+\/Splotch\/\.rival-acceptance-/);
     expect(commands[7]).toContain(NONCE);
     const brief = handlerBrief('/suite/question.md');
@@ -96,8 +96,9 @@ describe('acceptance stage commands, executed as shipped', () => {
   });
 
   // The escalation stage is shipped relative to the worktree, and the handler runs it there: the
-  // marker must land beside the packet, not in the worktree.
-  it('writes the escalation marker beside the packet when run from the worktree', () => {
+  // marker must land in the session directory, which neither vendor's sandbox lets the rival write
+  // (the packet is writable for the Claude rival, so it cannot be the target).
+  it('writes the escalation marker into the session directory when run from the worktree', () => {
     const session = join(root, 'session');
     const worktree = join(session, 'worktree');
     const packet = join(session, 'packet');
@@ -105,7 +106,8 @@ describe('acceptance stage commands, executed as shipped', () => {
     mkdirSync(packet);
     const result = spawnSync('bash', ['-c', commands[6]], { cwd: worktree, encoding: 'utf8' });
     expect(result.status).toBe(0);
-    expect(existsSync(join(packet, `escalation-${NONCE}.marker`))).toBe(true);
+    expect(existsSync(join(session, `escalation-${NONCE}.marker`))).toBe(true);
+    expect(existsSync(join(packet, `escalation-${NONCE}.marker`))).toBe(false);
   });
 
   it('chains a generated reply token from the handshake into the carry request', () => {

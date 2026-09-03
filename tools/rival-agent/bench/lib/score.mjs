@@ -58,6 +58,10 @@ export function normalizeUsage(rival, usage) {
 export function countLocalCommands(logPath, rival) {
   let started = 0;
   let failed = 0;
+  // Claude's failed results are matched to the Bash calls they answer; a refused Read or an
+  // errored broker call is not a failed local command (the first Claude rival round found the
+  // count inflated by both).
+  const bashCalls = new Set();
   for (const line of readFileSync(logPath, 'utf8').split('\n')) {
     if (!line.trim()) continue;
     let event;
@@ -69,11 +73,16 @@ export function countLocalCommands(logPath, rival) {
     if (rival === 'claude') {
       if (event.type === 'assistant') {
         for (const block of event.message?.content ?? []) {
-          if (block.type === 'tool_use' && block.name === 'Bash') started += 1;
+          if (block.type === 'tool_use' && block.name === 'Bash') {
+            started += 1;
+            bashCalls.add(block.id);
+          }
         }
       } else if (event.type === 'user') {
         for (const block of event.message?.content ?? []) {
-          if (block.type === 'tool_result' && block.is_error) failed += 1;
+          if (block.type === 'tool_result' && block.is_error && bashCalls.has(block.tool_use_id)) {
+            failed += 1;
+          }
         }
       }
       continue;

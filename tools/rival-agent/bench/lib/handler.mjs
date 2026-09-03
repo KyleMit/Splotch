@@ -8,7 +8,10 @@ import { outputPath, readSession, waitForPendingOrEnd } from '../../spool.mjs';
 // host-exclusive suites, and dependency installs are the shapes a real handler declines too.
 const HOST_ONLY_COMMAND =
   /\b(curl|wget|gh|ssh|scp|adb|xcrun|idevice\w*|netlify|playwright)\b|\bgit\s+(push|fetch|pull|remote)\b|\b(npm|pnpm|npx)\s+(install|add|i|ci)\b|test:e2e|perf:|dev:netlify/;
-const ABSOLUTE_PATH = /(?:^|[\s'"=(])(\/[^\s'"`;)&|]*)/g;
+// A path can follow a redirect, a pipe, a separator, or a backtick as easily as a space (the
+// first Claude rival round showed `>/abs`, `</abs`, and `~/x` slipping past a narrower class).
+const ABSOLUTE_PATH = /(?:^|[\s'"=(<>|&;`])(\/[^\s'"`;)&|<>]*)/g;
+const HOME_REFERENCE = /(?:^|[\s'"=(<>|&;`])~|\$\{?HOME\b/;
 const ALWAYS_ALLOWED_PATHS = new Set(['/dev/null']);
 export const DECLINE_REASONS = Object.freeze({
   outside: 'reaches outside the disposable worktree',
@@ -22,6 +25,9 @@ const POLL_MS = 1000;
 export function judgeRequest(request, { session }) {
   if (HOST_ONLY_COMMAND.test(request.command)) {
     return { approved: false, reason: DECLINE_REASONS.hostOnly };
+  }
+  if (HOME_REFERENCE.test(request.command)) {
+    return { approved: false, reason: DECLINE_REASONS.outside };
   }
   for (const [, path] of request.command.matchAll(ABSOLUTE_PATH)) {
     if (ALWAYS_ALLOWED_PATHS.has(path)) continue;

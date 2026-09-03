@@ -72,12 +72,12 @@ the test acting as a fake rival over real stdio JSON-RPC.
 `run-rival-agent` question round: the rival runs six stages in its own sandboxed shell (chained
 outputs, a nonzero exit with both streams, instruction-as-data, the parser probe plus a targeted
 Vitest write inside the disposable worktree) and then meets two commands its sandbox refuses — a
-marker write beside the packet the handler approves, and a write into the canonical checkout the
-handler declines. The command's JSON output carries `handlerBrief` beside `questionPath`: the two
-requests to expect in order, which to decline, and what to judge afterwards, so the handler's side
-of the exchange travels with the question. A request for any local stage means the rival did not use
-its shell. The parser probe and targeted test command are preserved from the first real
-Codex-native-handler review.
+marker write into the session directory the handler approves, and a write into the canonical
+checkout the handler declines. The command's JSON output carries `handlerBrief` beside
+`questionPath`: the two requests to expect in order, which to decline, and what to judge afterwards,
+so the handler's side of the exchange travels with the question. A request for any local stage means
+the rival did not use its shell. The parser probe and targeted test command are preserved from the
+first real Codex-native-handler review.
 
 This suite intentionally uses the real rival CLI and plan login. It is manual, nondeterministic in
 wording, and never part of `npm test` or CI. The generated nonce and the broker spool provide the

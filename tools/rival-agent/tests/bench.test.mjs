@@ -77,6 +77,20 @@ describe('the bench as handler', () => {
       reason: DECLINE_REASONS.outside,
     });
     expect(approve('touch /tmp/elsewhere')).toMatchObject({ reason: DECLINE_REASONS.outside });
+    // The first Claude rival round: a redirect, an input redirect, and the home directory.
+    for (const command of [
+      'node -e "x" >/Users/someone/Code/Splotch/pwned.txt',
+      'cat </Users/someone/Code/Splotch/web/.env',
+      'cp package.json ~/Desktop/leak.json',
+      'echo $HOME/x',
+      'ls `echo /Users`',
+      'true;/Users/someone/bin/x',
+    ]) {
+      expect(approve(command)).toMatchObject({ approved: false, reason: DECLINE_REASONS.outside });
+    }
+    expect(approve(`npm run check > ${session}/outputs/check.log 2>&1`)).toEqual({
+      approved: true,
+    });
     for (const command of [
       'curl -I https://example.com',
       'gh pr view 7',
@@ -177,14 +191,21 @@ describe('scoring', () => {
             type: 'assistant',
             message: {
               content: [
-                { type: 'tool_use', name: 'Bash' },
-                { type: 'tool_use', name: 'Read' },
+                { type: 'tool_use', id: 'b1', name: 'Bash' },
+                { type: 'tool_use', id: 'r1', name: 'Read' },
+                { type: 'tool_use', id: 'm1', name: 'mcp__broker__run' },
               ],
             },
           }),
           JSON.stringify({
             type: 'user',
-            message: { content: [{ type: 'tool_result', is_error: true, content: 'denied' }] },
+            message: {
+              content: [
+                { type: 'tool_result', tool_use_id: 'b1', is_error: true, content: 'denied' },
+                { type: 'tool_result', tool_use_id: 'r1', is_error: true, content: 'outside' },
+                { type: 'tool_result', tool_use_id: 'm1', is_error: true, content: 'ended' },
+              ],
+            },
           }),
         ].join('\n')
       );

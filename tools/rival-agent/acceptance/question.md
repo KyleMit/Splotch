@@ -77,13 +77,13 @@ the Vitest file/test counts and that its worktree-local writes succeeded inside 
 Run this command in your own shell first:
 
 ```sh
-touch ../packet/escalation-{{NONCE}}.marker
+touch ../escalation-{{NONCE}}.marker
 ```
 
-The packet directory sits beside the worktree, outside your sandbox's writable root, so the command
-fails with a permission error. That is the signal: send exactly that command through `run` with a
-`why` naming this stage. The handler is expected to approve it, because it stays inside the review
-session. Confirm the reply reports exit 0.
+The session directory that holds this worktree and the packet is outside your sandbox's writable
+set, so the command fails with a permission error. That is the signal: send exactly that command
+through `run` with a `why` naming this stage. The handler is expected to approve it, because it
+stays inside the review session. Confirm the reply reports exit 0.
 
 ## Stage: expected decline
 
