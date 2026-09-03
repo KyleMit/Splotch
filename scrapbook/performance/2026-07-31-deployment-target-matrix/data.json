@@ -8,6 +8,7 @@
     "The 2026-09-03 campaign measured product commit d17100cb8e9cbd157960f352020e21a7a523fddd. Its two earlier stack commits change only the performance harness; the matrix commit adds only evidence and documentation.",
     "All four orientation/theme modes were freshly captured for physical iPad web, physical iPad native, and the three Mac engines. Every drawing and action artifact in those five targets comes from the campaign product commit.",
     "Both physical Android targets have fresh, fidelity-passing drawings in all four modes. Android web has fresh actions in both light modes; its dark-mode direct-CDP sweeps are preserved because theme setup waited for the lazy Settings modal before clicking the button that requests its mount (#1595). Android native actions are preserved in all modes after the same wait-before-demand ordering blocked setup even after the campaign moved from the borrowed Appium to an SDK-configured owned server; landscape modes also retain #1387's separate compact rotation-picker blocker.",
+    "The ADR-0135 split input/measurement transport records no undo phase, so all eight physical Android undo cells are preserved from 6961e50b685d441e88b37d20d3f38a27136572fb; their Pass verdicts are historical rather than current campaign measurements.",
     "The current scorer can score physical iPad native and both physical Android drawing transports: every fresh phase passed the runtime's measured fidelity checks and matched its declared refresh regime. Their manifest fidelity classes remain advisory because ADR-0156 separates instrument calibration from the rule that all four physical rows gate campaign completion; a preserved action section on either Android row therefore remains explicitly historical release-gate evidence.",
     "Simulator and emulator rows are advisory and never count toward campaign completion under ADR-0156. Both iPad Simulator rows are preserved after fresh Safari attempts failed input cadence. Android emulator web is preserved because portrait content-offset geometry is uncalibrated and landscape non-pen brushes produced unchanged-canvas verdicts. Android emulator native portrait is preserved for the same geometry gap; its two landscape drawing modes are fresh and fidelity-passing, with actions preserved because the compact Settings shell cannot perform rotation setup.",
     "Action cells are scored under ADR-0156: a post-action max breach counts only when two of the three scored repeats show it; a single breaching repeat is recorded as unconfirmed rather than red. Read each artifact's scoredActionFrameGaps rather than treating the pooled P95/P99/max triple as three repeats.",
@@ -22,7 +23,7 @@
   ],
   "preservedEvidence": {
     "from": "data.json",
-    "reason": "The 2026-09-03 campaign preserves only sections it could not recapture faithfully: both iPad Simulator rows; Android emulator web; Android emulator native portrait and both landscape action sections; Android physical web dark-mode actions; and every Android physical native action section. The physical Android action blocks are #1595's lazy-Settings wait-before-demand ordering plus #1387's compact rotation-picker contract in native landscape modes; advisory targets also hit uncalibrated content geometry, unchanged-canvas, or input-cadence failures. Preserved sections retain their original product commits and do not claim currency. Representative fresh evidence is promoted under the perf-profiles/evidence/2026-09-03-deployment-target-matrix* campaign directories."
+    "reason": "The 2026-09-03 campaign preserves only sections it could not recapture faithfully: both iPad Simulator rows; Android emulator web; Android emulator native portrait and both landscape action sections; all physical Android undo sections; Android physical web dark-mode actions; and every Android physical native action section. The split Android transport records no undo phase. The physical Android action blocks are #1595's lazy-Settings wait-before-demand ordering plus #1387's compact rotation-picker contract in native landscape modes; advisory targets also hit uncalibrated content geometry, unchanged-canvas, or input-cadence failures. Preserved sections retain their original product commits and do not claim currency. Representative fresh evidence is promoted under the perf-profiles/evidence/2026-09-03-deployment-target-matrix* campaign directories."
   },
   "candidateActions": [
     {
@@ -18112,7 +18113,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 47,
+            "finalProductCommitActionCount": 0,
             "actionCount": 48,
             "passedActionCount": 38,
             "worst": {
@@ -20074,7 +20075,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 47,
+            "finalProductCommitActionCount": 0,
             "actionCount": 48,
             "passedActionCount": 39,
             "worst": {
@@ -22036,7 +22037,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 48,
+            "finalProductCommitActionCount": 0,
             "actionCount": 49,
             "passedActionCount": 41,
             "worst": {
@@ -24022,7 +24023,7 @@
               }
             ],
             "fullSweepProductCommit": "c80fc3b240a3a7925257c9eea055cd83739c7eae",
-            "finalProductCommitActionCount": 48,
+            "finalProductCommitActionCount": 0,
             "actionCount": 49,
             "passedActionCount": 39,
             "worst": {
@@ -33418,7 +33419,7 @@
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "web",
-      "environment": "Samsung SM-G990U1 · Android 16 · Chrome 151.0.0.0",
+      "environment": "Samsung SM-G990U1 · Android 16 · Chrome 152.0.0.0",
       "fidelity": "physical-web-advisory",
       "modes": [
         {
@@ -36525,7 +36526,7 @@
               }
             ],
             "fullSweepProductCommit": "e4877a1065dc3441df0c023141fbf3ef66787dff",
-            "finalProductCommitActionCount": 48,
+            "finalProductCommitActionCount": 0,
             "actionCount": 49,
             "passedActionCount": 45,
             "worst": {
@@ -40725,7 +40726,7 @@
               }
             ],
             "fullSweepProductCommit": "e4877a1065dc3441df0c023141fbf3ef66787dff",
-            "finalProductCommitActionCount": 34,
+            "finalProductCommitActionCount": 0,
             "actionCount": 35,
             "passedActionCount": 34,
             "worst": {
@@ -41872,7 +41873,7 @@
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "Samsung SM-G990U1 · Android 16 · Capacitor WebView (Chrome 150.0.7871.181)",
+      "environment": "Samsung SM-G990U1 · Android 16 · Capacitor WebView (Chrome 151.0.7922.199)",
       "fidelity": "physical-native-advisory",
       "modes": [
         {
@@ -42594,7 +42595,7 @@
               }
             ],
             "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-            "finalProductCommitActionCount": 49,
+            "finalProductCommitActionCount": 0,
             "actionCount": 50,
             "passedActionCount": 46,
             "worst": {
@@ -44811,7 +44812,7 @@
               }
             ],
             "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-            "finalProductCommitActionCount": 49,
+            "finalProductCommitActionCount": 0,
             "actionCount": 50,
             "passedActionCount": 46,
             "worst": {
