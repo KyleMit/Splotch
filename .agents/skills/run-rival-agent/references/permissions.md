@@ -25,8 +25,9 @@ the installed wrappers import nothing from it.
 The rival runs as `claude --print` with:
 
 ```text
---restricted --permission-mode dontAsk --tools Read,Grep,Glob
---allowedTools Read,Grep,Glob,mcp__broker__run --mcp-config <broker only> --strict-mcp-config
+--restricted --permission-mode dontAsk --tools Read,Grep,Glob,Bash
+--allowedTools Read,Grep,Glob,Bash,mcp__broker__run --settings <sandbox json>
+--mcp-config <broker only> --strict-mcp-config
 --no-chrome --add-dir <packet> --output-format stream-json --verbose --json-schema <findings>
 --session-id <wrapper-issued uuid> | --resume <recorded uuid>
 ```
@@ -35,9 +36,20 @@ The rival runs as `claude --print` with:
 which is how the first probe of this design ran with no broker at all. Restricted mode removes the
 command-running tools, confines the file tools to the worktree and the packet, refuses
 `bypassPermissions`, and ignores user and project settings. `--strict-mcp-config` leaves the broker
-as the only MCP server. The rival has no Bash, no web, no edit tools, and no GitHub; the broker is
-the only door out, and `MCP_TOOL_TIMEOUT` is raised so a brokered call can wait through a handler
-turn and a long command.
+as the only MCP server. The rival has no web, no edit tools, and no GitHub; the broker is the only
+door out of the sandbox, and `MCP_TOOL_TIMEOUT` is raised so a brokered call can wait through a
+handler turn and a long command.
+
+The shell is confined by a `--settings` block the launcher computes from the worktree it is launched
+in (restricted mode ignores settings *files* but honours the flag, measured): the sandbox is
+required (`failIfUnavailable`) and nothing opts out of it (`allowUnsandboxedCommands: false`), the
+network proxy has an empty strict allowlist, `denyWrite` names the canonical checkout's `.git` (a
+linked worktree's gitdir lives under it, and the default sandbox otherwise lets the rival push a
+branch there — measured), and `denyRead` names `~/.codex` and every path `.worktreeinclude` carries
+into agent worktrees, at its canonical location. Measured on opus: the worktree and the rival's own
+`$TMPDIR` are writable, the home directory, the canonical checkout, and `/tmp` are not, the denied
+reads fail, the proxy answers every host with a 403, a port bind fails, and Vitest and `git status`
+run. The rival's own `~/.claude` is never on the deny list.
 
 The worktree's dependency install runs with `--ignore-scripts` and `--ignore-pnpmfile`: the reviewed
 commit owns `package.json` and `.pnpmfile.cjs`, and a PR-controlled `postinstall` or pnpmfile hook
@@ -78,9 +90,12 @@ budget. `--end-session` deletes the conversation's transcript and sidecar direct
 issued — and removes the record.
 
 The orchestrated alias `splotch-claude-review-publish.mjs --pr <n>` runs without a handler: it
-declines every broker request with one fixed reason, waits for the rival to finish, and posts. It
-keeps the fixed path, the `--pr`/`--end-session` contract, the one-`COMMENT`-review rule, the hidden
-marker, and the three-round budget that `implement-issue-stack` relies on.
+declines every broker request with one fixed reason, waits for the rival to finish, and posts. With
+the sandboxed shell the rival verifies its claims itself, so the alias's reviews are empirical; the
+installed copy under `~/.local/libexec` carries that only after `npm run run-claude:install` is run
+again from the canonical checkout. It keeps the fixed path, the `--pr`/`--end-session` contract, the
+one-`COMMENT`-review rule, the hidden marker, and the three-round budget that
+`implement-issue-stack` relies on.
 
 The prefix rules are not a complete remote security perimeter. Repository protections and narrowly
 scoped credentials remain the hard remote guarantees; Auto-review evaluates operations that reach

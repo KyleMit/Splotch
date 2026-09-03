@@ -202,21 +202,21 @@ in every unattended post those sessions make.
 What differs between the two rivals, as built. "Measured" means a probe was run on 2026-09-02;
 anything else is read from the launcher.
 
-| Aspect            | Codex rival (Claude handles)                                                                                                 | Claude rival (Codex handles)                                                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Shell             | Its own, confined by Codex's Seatbelt profile: `read-only`, or `workspace-write` rooted at the worktree with the network off | None under `--restricted`; `Read`, `Grep`, `Glob` only. A sandboxed Bash is the third PR of the stack                              |
-| Read restriction  | None; `sandbox_permissions=[]` does not restrict reads (measured)                                                            | `--restricted` confines the file tools to the worktree and `--add-dir`; a sandboxed Bash needs `denyRead` on the credential stores |
-| Writes            | Worktree, `$TMPDIR`, `/tmp` (measured); the canonical `.git` refused                                                         | Under a default sandbox the canonical `.git` is **writable** from a linked worktree (measured: a push landed); needs `denyWrite`   |
-| Network           | Off: `sandbox_workspace_write.network_access=false`, DNS fails (measured)                                                    | Off by the sandbox proxy with an empty allowlist (measured: `403`)                                                                 |
-| Web search        | On; a query is outbound traffic (accepted exposure)                                                                          | None under `--restricted`; not added                                                                                               |
-| Escalation        | The broker, `run(command, why)`                                                                                              | The broker, the same tool                                                                                                          |
-| Resume            | Codex thread id from `thread.started`; `exec resume --all` because the worktree moves                                        | Wrapper-issued session id (`--session-id`, then `--resume`); Claude reports none of its own                                        |
-| Structured output | `--output-schema <file>`                                                                                                     | `--json-schema <json>` with the draft 2020-12 `$schema` key stripped (its validator refuses it)                                    |
-| Launch location   | The checkout; Claude Code's Bash runs on the host                                                                            | A trusted install under `~/.local/libexec`, because Codex's sandbox cannot read the Keychain holding the Claude login              |
-| Billing guard     | `auth_mode: "chatgpt"` in `~/.codex/auth.json`, API-key env stripped, provider and base URL pinned on the command line       | API-billing env refused (`ANTHROPIC_API_KEY`, Bedrock, Vertex, Foundry); `claude auth status` must report a plan login             |
-| Isolation pins    | `--ignore-user-config`, `approval_policy="never"`, `--disable apps hooks browser_use …`                                      | `--restricted`, `--strict-mcp-config`, `--no-chrome`, `--permission-mode dontAsk`                                                  |
-| Known vendor gaps | `codex sandbox` refuses `-C` without `--permission-profile`; the process cwd is the root instead                             | `--safe-mode` drops `--mcp-config`; the sonnet probe once refused a credential-reading command on its own judgement                |
-| Orchestrated use  | None; a Claude session is always the handler                                                                                 | `splotch-claude-review-publish.mjs` declines every request; `implement-issue-stack` calls it by fixed path                         |
+| Aspect            | Codex rival (Claude handles)                                                                                           | Claude rival (Codex handles)                                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell             | Its own, confined by Codex's Seatbelt `workspace-write` profile rooted at the worktree with the network off            | Its own `Bash`, confined by Claude's sandbox with `--settings` computed by the launcher: worktree and `$TMPDIR` writable, network off |
+| Read restriction  | None; `sandbox_permissions=[]` does not restrict reads (measured)                                                      | `denyRead` on `~/.codex` and every `.worktreeinclude` path at its canonical location (measured on opus)                               |
+| Writes            | Worktree, `$TMPDIR`, `/tmp` (measured); the canonical `.git` refused                                                   | Worktree, packet, `$TMPDIR` (measured); `/tmp` refused; the canonical `.git` refused by `denyWrite`, which the default sandbox lacks  |
+| Network           | Off: `sandbox_workspace_write.network_access=false`, DNS fails (measured)                                              | Off by the sandbox proxy with an empty strict allowlist (measured: `403`); port binds fail                                            |
+| Web search        | On; a query is outbound traffic (accepted exposure)                                                                    | None under `--restricted`; not added                                                                                                  |
+| Escalation        | The broker, `run(command, why)`                                                                                        | The broker, the same tool                                                                                                             |
+| Resume            | Codex thread id from `thread.started`; `exec resume --all` because the worktree moves                                  | Wrapper-issued session id (`--session-id`, then `--resume`); Claude reports none of its own                                           |
+| Structured output | `--output-schema <file>`                                                                                               | `--json-schema <json>` with the draft 2020-12 `$schema` key stripped (its validator refuses it)                                       |
+| Launch location   | The checkout; Claude Code's Bash runs on the host                                                                      | A trusted install under `~/.local/libexec`, because Codex's sandbox cannot read the Keychain holding the Claude login                 |
+| Billing guard     | `auth_mode: "chatgpt"` in `~/.codex/auth.json`, API-key env stripped, provider and base URL pinned on the command line | API-billing env refused (`ANTHROPIC_API_KEY`, Bedrock, Vertex, Foundry); `claude auth status` must report a plan login                |
+| Isolation pins    | `--ignore-user-config`, `approval_policy="never"`, `--disable apps hooks browser_use …`                                | `--restricted`, `--strict-mcp-config`, `--no-chrome`, `--permission-mode dontAsk`                                                     |
+| Known vendor gaps | `codex sandbox` refuses `-C` without `--permission-profile`; the process cwd is the root instead                       | `--safe-mode` drops `--mcp-config`; the sonnet probe once refused a credential-reading command on its own judgement                   |
+| Orchestrated use  | None; a Claude session is always the handler                                                                           | `splotch-claude-review-publish.mjs` declines every request; `implement-issue-stack` calls it by fixed path                            |
 
 ## Unvalidated
 
@@ -227,9 +227,9 @@ anything else is read from the launcher.
   surfaced as failing tests, which the prompt's rule did not cover; it does now.
 * Whether the bench's seeded defects are all detectable from the diff with a repro available in the
   worktree. A seed that is not is dropped rather than the bar lowered.
-* Whether Claude's `--settings` sandbox block, with `denyWrite` on the canonical `.git` and
-  `denyRead` on `~/.codex`, behaves the same on opus as on the sonnet probe, and whether it leaves
-  the rival's own state under `~/.claude` intact. Never `denyRead` `~/.claude`; the rival is Claude.
+* Whether Claude's sandbox behaves the same across Claude Code releases. Measured on 2.1.251 on both
+  sonnet and opus: every pin in the parity table held, and `~/.claude` stayed readable. Never
+  `denyRead` `~/.claude`; the rival is Claude.
 * Whether Codex's `exec_command` ergonomics around a mostly idle broker loop (the Codex-handler
   side) are unchanged by the hybrid. Not re-exercised; a Claude session cannot.
 * The posting identity. Both sides post as the user's `gh` account with a hidden marker naming the

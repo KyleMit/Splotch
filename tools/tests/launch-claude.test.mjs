@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import {
   BROKER_TOOL,
   buildClaudeArgs,
   claudeEnvironment,
   claudeVendor,
+  DENIED_READ_DIRECTORIES,
   removeClaudeTranscripts,
   resolveClaudeModel,
+  resolveSandboxPaths,
   RIVAL_TOOLS,
 } from '../../.agents/skills/run-rival-agent/scripts/launch-claude.mjs';
 import {
@@ -63,11 +66,14 @@ const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const canonicalHome = (path) => resolve(EXPECTED_HOME, relative(homedir(), path));
 
 describe('Claude rival command construction', () => {
+  const sandboxPaths = { denyWrite: ['/repo/.git'], denyRead: ['/home/.codex', '/repo/web/.env'] };
   const options = {
+    worktree: '/tmp/session/worktree',
     session: '/tmp/session',
     packetDir: '/tmp/session/packet',
     brokerServerPath: '/core/broker-server.mjs',
     nodePath: '/usr/local/bin/node',
+    sandboxPaths,
     model: 'opus',
     effort: 'high',
     rivalSession: { mode: 'create', id: SESSION_ID },
@@ -75,7 +81,7 @@ describe('Claude rival command construction', () => {
 
   // --safe-mode silently dropped --mcp-config in the first probe; restricted mode is the shape
   // that attached the broker and still refused every write path.
-  it('runs restricted with read tools and the broker only, never safe mode or bypass', () => {
+  it('runs restricted with read tools, a sandboxed Bash, and the broker, never safe mode or bypass', () => {
     const args = buildClaudeArgs(options);
     expect(args).toContain('--print');
     expect(args).toContain('--restricted');
@@ -94,8 +100,10 @@ describe('Claude rival command construction', () => {
       '--allowedTools',
       `${RIVAL_TOOLS},${BROKER_TOOL}`,
     ]);
-    expect(RIVAL_TOOLS.split(',')).not.toContain('Bash');
+    expect(RIVAL_TOOLS.split(',')).toContain('Bash');
     expect(RIVAL_TOOLS.split(',')).not.toContain('WebSearch');
+    expect(RIVAL_TOOLS.split(',')).not.toContain('Edit');
+    expect(RIVAL_TOOLS.split(',')).not.toContain('Write');
     expect(args).toContain('--strict-mcp-config');
     expect(args).toContain('--no-chrome');
     expect(args.slice(args.indexOf('--add-dir'), args.indexOf('--add-dir') + 2)).toEqual([
@@ -104,6 +112,67 @@ describe('Claude rival command construction', () => {
     ]);
     expect(args).toContain('stream-json');
     expect(args).toContain('--verbose');
+  });
+
+  // Claude's default sandbox writes into the canonical .git from a linked worktree (measured: a
+  // push landed there) and reads every credential store; both lists are pinned on the command
+  // line, where --restricted still honours them, and the sandbox is required rather than optional.
+  it('confines Bash with a required sandbox, no network, and the two deny lists', () => {
+    const args = buildClaudeArgs(options);
+    const settings = JSON.parse(args[args.indexOf('--settings') + 1]);
+    expect(settings.sandbox).toMatchObject({
+      enabled: true,
+      failIfUnavailable: true,
+      allowUnsandboxedCommands: false,
+      autoAllowBashIfSandboxed: true,
+      network: { strictAllowlist: true, allowedDomains: [] },
+      filesystem: sandboxPaths,
+    });
+    expect(args).not.toContain('--dangerously-skip-permissions');
+  });
+
+  it('derives the deny lists from the worktree: the canonical .git and the carried-in secrets', () => {
+    const root = mkdtempSync(join(tmpdir(), 'rival-claude-sandbox-'));
+    try {
+      const canonical = join(root, 'canonical');
+      mkdirSync(canonical);
+      const git = (cwd, args) =>
+        execFileSync('git', args, {
+          cwd,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 't',
+            GIT_AUTHOR_EMAIL: 't@t',
+            GIT_COMMITTER_NAME: 't',
+            GIT_COMMITTER_EMAIL: 't@t',
+          },
+        }).trim();
+      git(canonical, ['init', '-q', '-b', 'main']);
+      writeFileSync(
+        join(canonical, '.worktreeinclude'),
+        '# secrets\nweb/.env\n\nios/local.xcconfig\n'
+      );
+      git(canonical, ['add', '.worktreeinclude']);
+      git(canonical, ['commit', '-q', '-m', 'one']);
+      const linked = join(root, 'linked');
+      git(canonical, ['worktree', 'add', '-q', '--detach', linked, 'HEAD']);
+      const paths = resolveSandboxPaths(linked);
+      const realCanonical = git(canonical, [
+        'rev-parse',
+        '--path-format=absolute',
+        '--git-common-dir',
+      ]);
+      expect(paths.denyWrite).toEqual([realCanonical]);
+      expect(paths.denyRead).toEqual([
+        ...DENIED_READ_DIRECTORIES,
+        join(dirname(realCanonical), 'web/.env'),
+        join(dirname(realCanonical), 'ios/local.xcconfig'),
+      ]);
+      expect(DENIED_READ_DIRECTORIES.some((path) => path.endsWith('.claude'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('attaches exactly the broker server pointed at the session', () => {

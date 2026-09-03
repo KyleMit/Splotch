@@ -41,9 +41,15 @@ plugins, and hooks, which is how the first probe of this design attached no brok
 reported the tool absent. Restricted mode removes the command-running tools, confines the file tools
 to the working directories (`--add-dir` for the packet), refuses `bypassPermissions`, and ignores
 user and project settings *files* — which also retired the hashed `settings.json` the previous
-runner carried. It still honours `--settings` on the command line, which is how a sandboxed Bash can
-be added later. `--tools Read,Grep,Glob` plus `--allowedTools` naming the broker tool, under
-`--permission-mode dontAsk`, gives the rival exactly reads and the one door. `--json-schema` with
+runner carried. It still honours `--settings` on the command line, which is how the sandboxed Bash
+is pinned: `--tools Read,Grep,Glob,Bash` plus `--allowedTools` naming the broker tool, under
+`--permission-mode dontAsk`, gives the rival reads, one confined shell, and the one door. The
+confinement is computed, not hard-coded: `denyWrite` on the canonical `.git` resolved through
+`git rev-parse --git-common-dir` from the worktree, and `denyRead` on `~/.codex` plus every path
+`.worktreeinclude` names, at its canonical location. Claude's default sandbox grants a linked
+worktree write access to the whole canonical `.git` (measured: a push from the rival created a
+branch there), which is the one place Claude's sandbox is looser than Codex's, and the reason the
+deny list exists. Never `denyRead` `~/.claude`; it is the rival's own state. `--json-schema` with
 the findings schema puts the document on the result event as `structured_output`, which the reducer
 prefers over the prose result.
 
@@ -66,12 +72,13 @@ the rival can establish by reading alone; its unverified list says what it wante
 the fixed path, the `--pr`/`--end-session` contract, the one-`COMMENT`-review rule, the hidden
 marker, and the three-round budget the orchestrator relies on.
 
-This is a deliberate downgrade from the Auto-mode publisher it replaces, which gave Claude its full
-tool set in the disposable worktree and let it post its own review. That publisher was the second
-policy engine the pairing exists to remove. Once the Claude rival has a sandboxed shell of its own,
-the alias gains empirical reviews for free — the rival runs its tests locally and the alias keeps
-declining only the escalations. Giving the orchestrator a real handler is the step after that and is
-out of scope here.
+This replaced the Auto-mode publisher, which gave Claude its full tool set in the disposable
+worktree and let it post its own review — the second policy engine the pairing exists to remove.
+With the sandboxed shell the alias gained empirical reviews for free: the rival runs its tests
+locally and the alias keeps declining only the escalations. The installed copy under
+`~/.local/libexec` is stale until the owner runs `npm run run-claude:install` from the canonical
+checkout; nothing else can run that installer. Giving the orchestrator a real handler is the step
+after that and is out of scope here.
 
 ## What was deleted and why
 
@@ -95,5 +102,6 @@ out of scope here.
   quiet wait needed one follow-up poll.
 * The whole Codex-as-handler loop has been exercised from the checkout with a Claude session serving
   as the handler, which proves the launcher, the rival, the broker, and the poster, but not Codex's
-  own `exec_command` ergonomics around them. The installer is fixed to the canonical checkout and is
+  own `exec_command` ergonomics around them — and not yet with the sandboxed shell, whose rounds so
+  far were all served by a Claude session. The installer is fixed to the canonical checkout and is
   only ever run there by the owner.
