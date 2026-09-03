@@ -2,7 +2,7 @@ diff --git a/tools/rival-agent/launch.mjs b/tools/rival-agent/launch.mjs
 index 1aa16d32c..7f55b0204 100644
 --- a/tools/rival-agent/launch.mjs
 +++ b/tools/rival-agent/launch.mjs
-@@ -111,8 +111,8 @@ export function ledgerKeyFor({
+@@ -111,6 +111,6 @@ export function ledgerKeyFor({
    return ledgerKey({ repoRoot, kind: `${kindPrefix}branch`, ref: branch });
  }
  
@@ -11,8 +11,6 @@ index 1aa16d32c..7f55b0204 100644
 +export function logPathForAttempt(session) {
 +  return sessionPath(session, SESSION_FILES.log);
  }
- 
- // Only the rival refusing the run is worth a second attempt; every other failure is either the
 diff --git a/tools/rival-agent/spool.mjs b/tools/rival-agent/spool.mjs
 index 3883c89db..8d231f3f6 100644
 --- a/tools/rival-agent/spool.mjs
