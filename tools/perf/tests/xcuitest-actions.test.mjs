@@ -660,6 +660,18 @@ describe('desktop action options', () => {
     ).toThrow(
       'applicable action plan changed between scored repeats: +open Parent Center -close Settings'
     );
+    expect(() =>
+      stableActionPlan(first, {
+        ...first,
+        applicableLabels: ['open Settings'],
+        notApplicable: [
+          {
+            label: 'close Settings',
+            reason: 'the action is unavailable in this product surface',
+          },
+        ],
+      })
+    ).toThrow('applicable action plan changed between scored repeats: ~close Settings');
   });
 });
 

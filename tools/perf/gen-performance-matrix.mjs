@@ -1204,6 +1204,7 @@ function matrixActionLabels(targets) {
         target.modes.flatMap((mode) => [
           ...(mode.actions?.results.map(({ label }) => label) ?? []),
           ...(mode.actions?.actionPlan?.applicableLabels ?? []),
+          ...(mode.actions?.actionPlan?.notApplicable.map(({ label }) => label) ?? []),
         ])
       )
     ),

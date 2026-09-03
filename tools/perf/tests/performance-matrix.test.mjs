@@ -264,6 +264,10 @@ describe('deployment matrix report', () => {
             label: 'scroll coloring pages',
             reason: 'the coloring-page grid fits without scrolling in this target mode',
           },
+          {
+            label: 'not-applicable-only action',
+            reason: 'the capture explicitly excluded this fixture action',
+          },
         ],
       }),
     });
@@ -318,6 +322,11 @@ describe('deployment matrix report', () => {
       state: 'not-applicable',
       reason: 'the coloring-page grid fits without scrolling in this target mode',
     });
+    expect(coordinate(portrait, 'not-applicable-only action')).toEqual({
+      label: 'not-applicable-only action',
+      state: 'not-applicable',
+      reason: 'the capture explicitly excluded this fixture action',
+    });
     expect(coordinate(landscape, 'scroll coloring pages')).toMatchObject({
       state: 'no-control',
       reason: 'idle frame control failed',
@@ -335,8 +344,8 @@ describe('deployment matrix report', () => {
     expect(html).toContain('<i class="heat-cell unscoreable"></i>no control');
     expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
     expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
-    expect(html).toContain('<h2>4-action failure fingerprint</h2>');
-    expect(html).toContain('<b>4</b> actions compared');
+    expect(html).toContain('<h2>5-action failure fingerprint</h2>');
+    expect(html).toContain('<b>5</b> actions compared');
   });
 
   it('applies an agreeing focused capture only to its measured labels', () => {

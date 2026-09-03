@@ -113,6 +113,8 @@ export function stableActionPlan(recorded, next) {
     ),
   });
   if (JSON.stringify(canonical(recorded)) !== JSON.stringify(canonical(next))) {
+    const recordedApplicable = new Set(recorded.applicableLabels);
+    const nextApplicable = new Set(next.applicableLabels);
     const recordedLabels = new Set([
       ...recorded.applicableLabels,
       ...recorded.notApplicable.map(({ label }) => label),
@@ -123,9 +125,14 @@ export function stableActionPlan(recorded, next) {
     ]);
     const added = [...nextLabels].filter((label) => !recordedLabels.has(label));
     const removed = [...recordedLabels].filter((label) => !nextLabels.has(label));
+    const moved = [...nextLabels].filter(
+      (label) =>
+        recordedLabels.has(label) && recordedApplicable.has(label) !== nextApplicable.has(label)
+    );
     const labelChanges = [
       added.length ? `+${added.join(', ')}` : null,
       removed.length ? `-${removed.join(', ')}` : null,
+      moved.length ? `~${moved.join(', ')}` : null,
     ].filter(Boolean);
     const detail = labelChanges.length
       ? labelChanges.join(' ')
@@ -527,12 +534,12 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   const scrollability = await execute(`
     const dialog = document.querySelector(${JSON.stringify(selector)});
     return {
-      dialogPresent: !!dialog,
-      scrollable: !!dialog && dialog.scrollHeight > dialog.clientHeight
+      dialogOpen: !!dialog?.open,
+      scrollable: !!dialog?.open && dialog.scrollHeight > dialog.clientHeight
     };
   `);
-  if (!scrollability.dialogPresent) {
-    throw new Error('The coloring-book dialog disappeared before its scrollability check');
+  if (!scrollability.dialogOpen) {
+    throw new Error('The coloring-book dialog closed before its scrollability check');
   }
   if (!scrollability.scrollable) {
     return {
