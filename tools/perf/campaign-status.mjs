@@ -31,7 +31,7 @@ const list = (value) =>
     .map((entry) => entry.trim())
     .filter(Boolean);
 
-export function campaignProgress(plan, { runtime, ledgerRows, inspect }) {
+export function campaignProgress(plan, { ledgerRows, inspect }) {
   const recorded = completedCells(ledgerRows);
   const done = [];
   const outstanding = [];

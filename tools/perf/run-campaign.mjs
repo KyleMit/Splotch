@@ -472,10 +472,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // instrument with the full run that banked it, and the union differs there
   // without a single file having moved.
   const fingerprintByCommand = new Map(
-    productCommands.map((command) => [
-      command,
-      instrumentFingerprint([command]).fingerprint,
-    ])
+    productCommands.map((command) => [command, instrumentFingerprint([command]).fingerprint])
   );
   const cellInstrument = (cell) => fingerprintByCommand.get(cell.command);
   const recordedInstrument = existsSync(fingerprintPath)
