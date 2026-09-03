@@ -238,8 +238,10 @@ anything else is read from the launcher.
 * Whether Claude's sandbox behaves the same across Claude Code releases. Measured on 2.1.251 on both
   sonnet and opus: every pin in the parity table held, and `~/.claude` stayed readable. Never
   `denyRead` `~/.claude`; the rival is Claude.
-* Whether Codex's `exec_command` ergonomics around a mostly idle broker loop (the Codex-handler
-  side) are unchanged by the hybrid. Not re-exercised; a Claude session cannot.
+* The Codex-handler side of the new shape: `exec_command` around a mostly idle broker loop, the
+  installed policy against a launcher that now spawns `claude` with a sandboxed shell, and the bench
+  run escalated from Codex. A Claude session cannot exercise any of it; the validation is handed to
+  a Codex session in `docs/handoff/rival-agent-codex-validation.md`.
 * The posting identity. Both sides post as the user's `gh` account with a hidden marker naming the
   rival and the range; nobody has yet had to tell a rival review from a human one at a glance.
 * The economics at scale. Two full-diff rounds cost about 1.8M input tokens each, 1.7M of them
