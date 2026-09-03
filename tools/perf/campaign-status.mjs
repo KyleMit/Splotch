@@ -71,7 +71,7 @@ export async function campaignStatus({
     modeId: plan[0].mode.id,
     outputRoot,
     host: {},
-    productCellCount: plan.length,
+    productCommands: plan.map((cell) => cell.command),
   });
   const queue = campaignQueue(plan, references);
   const ledger = absolute(ledgerPath ?? `${outputRoot}/${targetId}/ledger.tsv`);
@@ -82,7 +82,6 @@ export async function campaignStatus({
   // skipping the fidelity verdict (structurally rejected measurements counted
   // complete), once demanding a refresh regime of action sweeps that report none.
   const { total, done, outstanding } = campaignProgress(queue, {
-    runtime,
     ledgerRows,
     inspect: (cell) => cellInspection(cell, { runtime, refreshRegime, captureRuntime }),
   });

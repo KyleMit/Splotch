@@ -41,11 +41,10 @@ complete flag and output descriptions.
   records exhausted ones as P1s while the queue continues. `lib/campaign-plan.mjs` owns which cells
   exist and where each writes; `lib/campaign-ledger.mjs` owns what the ledger rows mean. Host
   identity — device ids, capability files, preview URLs — stays a flag, so nothing device-specific
-  is committed. Physical-device queues also repeat one crayon cell at the start, middle, and end; a
-  targeted one-cell queue uses only the meaningful start/end bracket. The raw reference captures
-  live under the target's mode-scoped `references/` directory and `references.json` beside
-  `instrument.json` records their capture times, capture-session scope, lost-frame spread, and
-  warning threshold.
+  is committed. Physical-device queues containing drawing cells also repeat one crayon cell at the
+  start, middle, and end. The raw reference captures live under the target's mode-scoped
+  `references/` directory and `references.json` beside `instrument.json` records their capture
+  times, capture-session scope, lost-frame spread, and warning threshold.
 * `report-undo-gate-failures.mjs` reports WHAT the WebKit undo gate failed at, read from the run's
   own `undo-scenarios.json` rather than from its exit code. It has no npm script because CI consumes
   its stdout verbatim: `webkit-commit-gate-fast` publishes the fingerprint as a job output, and the

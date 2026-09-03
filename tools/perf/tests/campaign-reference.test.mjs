@@ -57,8 +57,19 @@ vi.mock('node:child_process', async () => {
 });
 
 const { runCampaign } = await import('../run-campaign.mjs');
+const { parseLedger } = await import('../lib/campaign-ledger.mjs');
 
 const roots = [];
+const campaignArgs = (root, mode = 'portrait-light') => [
+  '--target=ipad-device-web',
+  `--modes=${mode}`,
+  '--items=pen-undo,crayon',
+  `--output-root=${root}/out`,
+  `--ledger=${root}/ledger.tsv`,
+  '--url=http://127.0.0.1:4173/',
+  '--capabilities-file=/tmp/caps.json',
+  '--max-attempts=1',
+];
 
 afterEach(() => {
   capture.calls.length = 0;
@@ -67,17 +78,6 @@ afterEach(() => {
 });
 
 describe('physical-device campaign drift references', () => {
-  const campaignArgs = (root, mode = 'portrait-light') => [
-    '--target=ipad-device-web',
-    `--modes=${mode}`,
-    '--items=pen-undo,crayon',
-    `--output-root=${root}/out`,
-    `--ledger=${root}/ledger.tsv`,
-    '--url=http://127.0.0.1:4173/',
-    '--capabilities-file=/tmp/caps.json',
-    '--max-attempts=1',
-  ];
-
   it('captures start, middle, and end references and records a threshold warning beside the instrument', async () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-'));
     roots.push(root);
@@ -121,6 +121,11 @@ describe('physical-device campaign drift references', () => {
     );
     expect(log.mock.calls.flat().filter((line) => line.startsWith('WARN  '))).toHaveLength(1);
     expect(readFileSync(join(root, 'instrument.json'), 'utf8')).toContain('fingerprint');
+    const referenceRows = parseLedger(readFileSync(join(root, 'ledger.tsv'), 'utf8')).filter(
+      ({ cell }) => cell.startsWith('reference/')
+    );
+    expect(referenceRows).toHaveLength(3);
+    expect(referenceRows.every(({ instrument }) => instrument !== null)).toBe(true);
   });
 
   it('captures fresh mode-scoped references when a campaign root is reused for another mode', async () => {
@@ -174,30 +179,71 @@ describe('physical-device campaign drift references', () => {
     expect(log.mock.calls.flat().filter((line) => line.startsWith('WARN  '))).toHaveLength(1);
   });
 
-  it('keeps product and reference instruments separate for an action-only campaign', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-instrument-'));
+  it('keeps all recorded references when a finished campaign resumes with one product cell', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-narrow-resume-'));
     roots.push(root);
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
+    await runCampaign(campaignArgs(root));
+    capture.calls.length = 0;
     await runCampaign(
-      campaignArgs(root).map((arg) => (arg === '--items=pen-undo,crayon' ? '--items=actions' : arg))
+      campaignArgs(root).map((arg) => (arg === '--items=pen-undo,crayon' ? '--items=crayon' : arg))
     );
 
-    const productInstrument = JSON.parse(readFileSync(join(root, 'instrument.json'), 'utf8'));
-    const referenceInstrument = JSON.parse(
-      readFileSync(join(root, 'references.json'), 'utf8')
-    ).instrument;
-    expect(Object.keys(productInstrument.files)).toContain('tools/perf/probes/action-probe.js');
-    expect(Object.keys(productInstrument.files)).not.toContain(
-      'tools/perf/probes/real-screen-probe.js'
-    );
-    expect(Object.keys(referenceInstrument.files)).toContain(
-      'tools/perf/probes/real-screen-probe.js'
-    );
+    const report = JSON.parse(readFileSync(join(root, 'references.json'), 'utf8'));
+    expect(capture.calls).toEqual([]);
+    expect(report.measurements.map(({ position }) => position)).toEqual(['start', 'middle', 'end']);
+    expect(report.drift.percentagePoints).toBe(0.61);
+    expect(report.drift.exceedsWarningThreshold).toBe(true);
+  });
+
+  it('does not inject drawing references into an action-only physical campaign', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-actions-only-'));
+    roots.push(root);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await runCampaign([
+      '--target=android-device-web',
+      '--modes=portrait-light',
+      '--items=actions',
+      `--output-root=${root}/out`,
+      `--ledger=${root}/ledger.tsv`,
+      '--device-id=DEVICE',
+      '--cdp-port=9222',
+      '--url=http://127.0.0.1:4173/',
+      '--dry-run',
+    ]);
+
+    expect(result.references).toEqual([]);
+    expect(result.plan).toHaveLength(1);
   });
 });
 
 describe('campaign instrument resume guard', () => {
+  it('refuses when a reference row was banked under a different instrument', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-reference-row-instrument-'));
+    roots.push(root);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await runCampaign(campaignArgs(root));
+
+    const ledgerPath = join(root, 'ledger.tsv');
+    const rows = readFileSync(ledgerPath, 'utf8').trimEnd().split('\n');
+    const referenceRow = rows.findIndex((row) =>
+      row.includes('\treference/portrait-light/start\t')
+    );
+    const fields = rows[referenceRow].split('\t');
+    fields[6] = 'banked-before-reference-change';
+    rows[referenceRow] = fields.join('\t');
+    writeFileSync(ledgerPath, `${rows.join('\n')}\n`);
+    vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('blocked resume');
+    });
+
+    await expect(runCampaign(campaignArgs(root))).rejects.toThrow('blocked resume');
+    expect(error.mock.calls.flat().join('\n')).toContain('reference/portrait-light/start');
+  });
+
   it('refuses a widened no-reference campaign when a shared banked instrument file changed', async () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-campaign-instrument-widened-'));
     roots.push(root);

@@ -373,7 +373,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     outputRoot,
     host,
     label: flag('label'),
-    productCellCount: plan.length,
+    productCommands: plan.map((cell) => cell.command),
   });
   const queue = campaignQueue(plan, references);
 
@@ -471,8 +471,9 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   // union — a resume narrowed with --items shares every included cell's
   // instrument with the full run that banked it, and the union differs there
   // without a single file having moved.
+  const allCommands = [...new Set([...productCommands, ...referenceCommands])];
   const fingerprintByCommand = new Map(
-    productCommands.map((command) => [command, instrumentFingerprint([command]).fingerprint])
+    allCommands.map((command) => [command, instrumentFingerprint([command]).fingerprint])
   );
   const cellInstrument = (cell) => fingerprintByCommand.get(cell.command);
   const recordedInstrument = existsSync(fingerprintPath)
@@ -480,7 +481,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
     : null;
   const bankedElsewhere = cellsBankedUnderDifferentInstrument(
     spentRows,
-    new Map(plan.map((cell) => [cell.id, cellInstrument(cell)]))
+    new Map(queue.map((cell) => [cell.id, cellInstrument(cell)]))
   );
   const productInstrumentOverlap = overlappingInstrumentFingerprints(
     recordedInstrument,

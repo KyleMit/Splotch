@@ -823,7 +823,7 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
 
 export function planCampaignReferences(
   targetId,
-  { modeId, outputRoot, host = {}, label, productCellCount } = {}
+  { modeId, outputRoot, host = {}, label, productCommands = [] } = {}
 ) {
   const target = campaignTarget(targetId);
   if (!target.physicalDevice) return [];
@@ -834,12 +834,9 @@ export function planCampaignReferences(
     host,
     label,
   })[0];
+  if (!productCommands.includes(base.command)) return [];
 
-  const positions =
-    productCellCount === 1
-      ? CAMPAIGN_REFERENCE_POSITIONS.filter((position) => position !== 'middle')
-      : CAMPAIGN_REFERENCE_POSITIONS;
-  return positions.map((position) => {
+  return CAMPAIGN_REFERENCE_POSITIONS.map((position) => {
     const artifact = referenceArtifactPath(outputRoot, targetId, modeId, position);
     const args = base.args.map((arg) => {
       if (arg.startsWith('--output=')) return `--output=${artifact}`;
@@ -865,9 +862,6 @@ export function campaignQueue(plan, references) {
   const end = references.find((cell) => cell.referencePosition === 'end');
   if (!start || !end) {
     throw new Error('campaign references must contain one start and end cell');
-  }
-  if (plan.length === 1 && !middle && references.length === 2) {
-    return [start, ...plan, end];
   }
   if (!middle || references.length !== CAMPAIGN_REFERENCE_POSITIONS.length) {
     throw new Error('campaign references must contain exactly one start, middle, and end cell');

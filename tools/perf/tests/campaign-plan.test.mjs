@@ -106,6 +106,7 @@ describe('campaign plan', () => {
       modeId: cells[0].mode.id,
       outputRoot: 'out',
       host: HOST,
+      productCommands: cells.map((cell) => cell.command),
     });
 
     expect(references.map((cell) => cell.referencePosition)).toEqual(['start', 'middle', 'end']);
@@ -137,7 +138,7 @@ describe('campaign plan', () => {
     }
   });
 
-  it('brackets a one-cell targeted run with boundaries and omits a meaningless midpoint', () => {
+  it('brackets a one-cell targeted run with all three campaign references', () => {
     const cells = plan('ipad-device-native', {
       modes: ['portrait-light'],
       items: ['crayon'],
@@ -146,12 +147,13 @@ describe('campaign plan', () => {
       modeId: cells[0].mode.id,
       outputRoot: 'out',
       host: HOST,
-      productCellCount: cells.length,
+      productCommands: cells.map((cell) => cell.command),
     });
 
     expect(campaignQueue(cells, references).map((cell) => cell.id)).toEqual([
       'reference/portrait-light/start',
       'portrait-light/crayon',
+      'reference/portrait-light/middle',
       'reference/portrait-light/end',
     ]);
   });
@@ -940,10 +942,11 @@ describe('campaignProgress', () => {
     });
 
     expect(progress.productCells).toBe(1);
-    expect(progress.referenceCells).toBe(2);
+    expect(progress.referenceCells).toBe(3);
     expect(progress.outstanding.map(({ cell }) => cell)).toEqual([
       'reference/portrait-light/start',
       'portrait-light/crayon',
+      'reference/portrait-light/middle',
       'reference/portrait-light/end',
     ]);
   });

@@ -1090,13 +1090,13 @@ cell order then turns the movement into systematic bias: the same late cells inh
 and the result looks reproducible. The mechanism is not established; do not call it thermal or
 assign another cause the evidence did not isolate.
 
-`perf:campaign` repeats one reference cell at the start, middle, and end of a physical-device queue.
-A targeted one-cell queue has no meaningful midpoint, so it uses only the start and end controls.
-The controls use the same build, the first selected mode, and crayon. Their raw captures live in the
-target's `references/<mode>/` directory, and `references.json` beside `instrument.json` records each
-blank-phase `lostFrameTimeShare` measurement, artifact modification time, capture-session identity,
-and the across-run spread. References are ordinary resumable cells: an interrupted campaign keeps
-the reference it banked and fills the later positions when it resumes. A report whose
+`perf:campaign` repeats one reference cell at the start, middle, and end of a physical-device queue
+that captures drawing. Action-only queues add no drawing control. The controls use the same build,
+the first selected mode, and crayon. Their raw captures live in the target's `references/<mode>/`
+directory, and `references.json` beside `instrument.json` records each blank-phase
+`lostFrameTimeShare` measurement, artifact modification time, capture-session identity, and the
+across-run spread. References are ordinary resumable cells: an interrupted campaign keeps the
+reference it banked and fills the later positions when it resumes. A report whose
 `captureSessions.scope` is `mixed` or `unknown` does not prove within-session drift; the runner
 warns about that limitation rather than assigning a cause.
 
