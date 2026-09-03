@@ -46,6 +46,8 @@ function decisionsList(cells) {
   return lines.length > 0 ? lines.join('\n') : '_The rival made no broker request in any cell._';
 }
 
+// Counted from the recorded cells, not the run's seed list: a resumed run that names one seed
+// still reports the whole directory of results it renders.
 export function renderReport({
   runId,
   startedAt,
@@ -54,12 +56,13 @@ export function renderReport({
   model,
   effort,
   reps,
-  seeds,
   cells,
   summary,
 }) {
-  const seededCount = seeds.filter((seed) => !seed.control).length;
-  const controlCount = seeds.length - seededCount;
+  const seedNames = new Set(cells.filter((cell) => !cell.control).map((cell) => cell.seed));
+  const controlNames = new Set(cells.filter((cell) => cell.control).map((cell) => cell.seed));
+  const seededCount = seedNames.size;
+  const controlCount = controlNames.size;
   return `# Rival-agent bench — ${startedAt.slice(0, 10)}
 
 Run \`${runId}\`, rival **${rival}** (\`${model}\`, effort \`${effort}\`), base ${base}, ${seededCount} seeds and ${controlCount} controls, ${reps} repetition${reps === 1 ? '' : 's'} per cell. Each cell launches the rival on the seeded working tree with \`--fresh\` and the bench serving the broker: requests that stay inside the worktree are approved and run, everything else is declined.

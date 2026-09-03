@@ -278,11 +278,11 @@ describe('scoring', () => {
       model: 'm',
       effort: 'high',
       reps: 1,
-      seeds: [{ control: false }, { control: true }],
       cells,
       summary,
     });
     expect(report).toContain('# Rival-agent bench — 2026-09-03');
+    expect(report).toContain('1 seeds and 1 controls');
     expect(report).toContain('| codex | 1/1 | 1/1 |');
     expect(report).toContain('| found |');
     expect(report).toContain('| missed |');

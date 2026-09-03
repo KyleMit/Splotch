@@ -254,7 +254,6 @@ export async function runBench(
     model,
     effort: options.effort,
     reps: options.reps,
-    seeds,
     cells,
     summary,
   });
