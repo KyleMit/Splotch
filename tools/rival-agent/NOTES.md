@@ -136,11 +136,11 @@ reasons are here so they are not re-litigated; the measurements are in the simpl
    paths and `mirror-skill-notes.mjs` preserves them in place) and shrink to a pointer plus what is
    genuinely handler-side-specific. No ADR: ADRs are reserved for product decisions; tooling
    decisions live in notes beside the code.
-9. **The `--sandbox` flag lives for exactly one PR cycle.** Rejected: deleting it at once (no A/B
-   possible afterwards, the flip rests on n=1); keeping it permanently (two contracts to maintain, a
-   knob nobody would use, the second-policy-engine smell). It stays until the seeded-defect bench
-   has run, then collapses to the winner with evidence. The default stays `read-only` until then, so
-   nothing changes behaviour before the bench.
+9. **The `--sandbox` flag lived for exactly one PR cycle.** Rejected: deleting it at once (no A/B
+   possible afterwards, the flip rested on n=1); keeping it permanently (two contracts to maintain,
+   a knob nobody would use, the second-policy-engine smell). It stayed until the seeded-defect bench
+   had run, then collapsed to the winner: the sandbox-first hybrid, on the numbers in the bench
+   section below. The read-only pairing, its prompt partial, and the flag are gone.
 10. **Sequencing.** One PR for the hybrid under the flag with these notes; one for the bench and the
     collapse; one for the Claude rival on the winning shape.
 
@@ -152,10 +152,26 @@ escape inside shell single quotes from the acceptance suite), each a patch that 
 defect on top of `main` with an answer key naming the path, the expected line range, a severity
 floor, and a repro command that fails on the seeded tree and passes on `main`. Two or three clean
 patches are controls. A seed whose repro needs the network or the rig is not a valid seed. The
-runner launches the rival on each seed under each mode, serves the broker itself (approving requests
-that stay inside the worktree, declining the rest, recording both), and scores recall by anchor
-match, false positives on controls, unverified count, usage, turns, and wall clock. Its results are
-recorded in this file when it has run.
+runner launches the rival on each seed, serves the broker itself (approving requests that stay
+inside the worktree, declining the rest, recording both), and scores recall by anchor match, false
+positives on controls, unverified count, usage, turns, and wall clock. Full tables, every cell, and
+every broker request are in `docs/scratchpad/rival-agent-bench-2026-09-03.md`.
+
+**The first run, 2026-09-03, decided the flag.** The Codex rival (`gpt-5.6-sol`, high effort) on all
+twelve seeds, both modes, two repetitions, 48 cells, nothing failed:
+
+| Mode                       | Seeds found | Severity met | Control false positives | Unverified | Handler turns per cell | Own commands per cell | Wall  | Input (cached) |
+| -------------------------- | ----------- | ------------ | ----------------------- | ---------- | ---------------------- | --------------------- | ----- | -------------- |
+| `read-only` (pairing)      | 17/18       | 17/18        | 0 over 6                | 8          | 1.0                    | 6.0                   | 101 s | 0.34M (0.29M)  |
+| `workspace-write` (hybrid) | 18/18       | 18/18        | 0 over 6                | 1          | 0.0                    | 8.5                   | 98 s  | 0.35M (0.31M)  |
+
+The hybrid found everything, filed one claim unverified against the pairing's eight, and needed the
+handler for nothing, at the same wall clock and token cost. The pairing's one miss was the bench's
+own mechanical handler declining a repro because its command text quoted a `/tmp` path, and the
+rival correctly filing the claim as unverified — which is the pairing's shape working as designed
+and the reason it is slower to a verdict. Controls were clean in both modes. So the flag collapsed
+to the hybrid; the recall difference is one cell and inside noise, the cost difference is the whole
+point.
 
 ## Accepted exposures
 
