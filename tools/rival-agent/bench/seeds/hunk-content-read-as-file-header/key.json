@@ -1,0 +1,9 @@
+{
+  "name": "hunk-content-read-as-file-header",
+  "control": false,
+  "title": "the diff-anchor parser mistakes --- and +++ lines inside a hunk for file headers",
+  "path": "tools/rival-agent/post-review.mjs",
+  "lines": [39, 39],
+  "severity": "suggestion",
+  "keywords": ["inHunk", "inside a hunk", "hunk content", "file header", "---", "+++"]
+}

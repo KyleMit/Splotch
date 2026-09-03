@@ -1,0 +1,16 @@
+{
+  "name": "session-record-written-late",
+  "control": false,
+  "title": "session.json is written after provisioning, so a failed install is invisible through broker next",
+  "path": "tools/rival-agent/launch.mjs",
+  "lines": [225, 225],
+  "severity": "blocking",
+  "keywords": [
+    "session.json",
+    "before provisioning",
+    "no session",
+    "provisioning",
+    "writeSessionRecord",
+    "observable"
+  ]
+}

@@ -1,0 +1,44 @@
+diff --git a/tools/rival-agent/launch.mjs b/tools/rival-agent/launch.mjs
+index 1aa16d32c..7f55b0204 100644
+--- a/tools/rival-agent/launch.mjs
++++ b/tools/rival-agent/launch.mjs
+@@ -111,8 +111,8 @@ export function ledgerKeyFor({
+   return ledgerKey({ repoRoot, kind: `${kindPrefix}branch`, ref: branch });
+ }
+ 
+-export function logPathForAttempt(session, attempt) {
+-  return sessionPath(session, attempt === 1 ? SESSION_FILES.log : SESSION_FILES.retryLog);
++export function logPathForAttempt(session) {
++  return sessionPath(session, SESSION_FILES.log);
+ }
+ 
+ // Only the rival refusing the run is worth a second attempt; every other failure is either the
+diff --git a/tools/rival-agent/spool.mjs b/tools/rival-agent/spool.mjs
+index 3883c89db..8d231f3f6 100644
+--- a/tools/rival-agent/spool.mjs
++++ b/tools/rival-agent/spool.mjs
+@@ -23,8 +23,6 @@ export const SESSION_FILES = Object.freeze({
+   findings: 'findings.json',
+   rawResult: 'rival-result.txt',
+   log: 'rival.ndjson',
+-  // The stream log is exclusively created, so the one retry after a pruned resume needs its own.
+-  retryLog: 'rival-retry.ndjson',
+   packet: 'packet',
+   requests: 'requests',
+   replies: 'replies',
+diff --git a/tools/rival-agent/tests/launch.test.mjs b/tools/rival-agent/tests/launch.test.mjs
+index a7ab9fb1e..75d4219cb 100644
+--- a/tools/rival-agent/tests/launch.test.mjs
++++ b/tools/rival-agent/tests/launch.test.mjs
+@@ -72,9 +72,8 @@ describe('shared launch arguments', () => {
+     expect(byHead).not.toBe(branch);
+   });
+ 
+-  it('gives the one retry after a pruned resume its own stream log', () => {
+-    expect(logPathForAttempt('/s', 1)).toBe('/s/rival.ndjson');
+-    expect(logPathForAttempt('/s', 2)).toBe('/s/rival-retry.ndjson');
++  it('names the stream log inside the session', () => {
++    expect(logPathForAttempt('/s')).toBe('/s/rival.ndjson');
+   });
+ 
+   // Retrying a run the user stopped would spend plan usage they just tried to stop. Only the rival

@@ -1,0 +1,9 @@
+{
+  "name": "packet-inherits-diff-context",
+  "control": false,
+  "title": "the packet diff inherits the developer's diff.context instead of the three lines GitHub renders",
+  "path": "tools/rival-agent/worktree.mjs",
+  "lines": [140, 140],
+  "severity": "blocking",
+  "keywords": ["--unified", "diff.context", "context lines", "three lines", "renders", "anchor"]
+}

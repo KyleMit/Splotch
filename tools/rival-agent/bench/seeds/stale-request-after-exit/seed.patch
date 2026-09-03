@@ -1,0 +1,47 @@
+diff --git a/tools/rival-agent/spool.mjs b/tools/rival-agent/spool.mjs
+index 3883c89db..9f9e5a353 100644
+--- a/tools/rival-agent/spool.mjs
++++ b/tools/rival-agent/spool.mjs
+@@ -185,14 +185,12 @@ export async function waitForPendingOrEnd(
+ ) {
+   const deadline = now() + timeoutMs;
+   for (;;) {
+-    // A terminal file outranks a pending request: once the rival has exited, nobody is waiting
+-    // for the answer, and handing the command out would run it for no one.
++    const pending = pendingRequests(session);
++    if (pending.length > 0) return { state: 'request', request: pending[0] };
+     const failed = readFailed(session);
+     if (failed) return { state: 'failed', failed };
+     const done = readDone(session);
+     if (done) return { state: 'done', done };
+-    const pending = pendingRequests(session);
+-    if (pending.length > 0) return { state: 'request', request: pending[0] };
+     if (now() >= deadline) return { state: 'waiting' };
+     await sleep(pollMs);
+   }
+diff --git a/tools/rival-agent/tests/broker.test.mjs b/tools/rival-agent/tests/broker.test.mjs
+index da0ce5b12..6e12e6987 100644
+--- a/tools/rival-agent/tests/broker.test.mjs
++++ b/tools/rival-agent/tests/broker.test.mjs
+@@ -224,21 +224,6 @@ describe('broker CLI', () => {
+     );
+   });
+ 
+-  // The rival's second real round probed this: a stale request behind a terminal file must not be
+-  // handed to the handler, who would run it for a reviewer that has already exited.
+-  it('never hands out a request once the rival is gone', async () => {
+-    appendRequest(session, { command: 'touch /tmp/should-not-run', why: 'stale' });
+-    writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), { reason: 'rival exited' });
+-    expect(await nextRequest({ session, timeoutSeconds: 0, brokerPath: BROKER_CLI })).toMatchObject(
+-      { state: 'failed' }
+-    );
+-    rmSync(sessionPath(session, SESSION_FILES.failed));
+-    writeJsonAtomic(sessionPath(session, SESSION_FILES.done), {});
+-    expect(await nextRequest({ session, timeoutSeconds: 0, brokerPath: BROKER_CLI })).toMatchObject(
+-      { state: 'done' }
+-    );
+-  });
+-
+   it('summarizes the session', () => {
+     appendRequest(session, { command: 'a', why: 'x' });
+     expect(sessionStatus(session)).toMatchObject({

@@ -1,0 +1,9 @@
+{
+  "name": "retry-reuses-log-path",
+  "control": false,
+  "title": "the retry after a pruned resume reuses the exclusively-created stream log path",
+  "path": "tools/rival-agent/launch.mjs",
+  "lines": [114, 116],
+  "severity": "suggestion",
+  "keywords": ["retry", "wx", "EEXIST", "rival-retry", "exclusive"]
+}
