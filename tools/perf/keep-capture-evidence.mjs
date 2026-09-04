@@ -33,15 +33,17 @@ export function redactDeviceIdentifiers(parsed) {
   if (parsed.handCapture === true && typeof parsed.device === 'string') {
     return { ...parsed, device: REDACTED_DEVICE_IDENTIFIER };
   }
-  if (
-    parsed.device &&
-    typeof parsed.device === 'object' &&
-    !Array.isArray(parsed.device) &&
-    typeof parsed.device.id === 'string'
-  ) {
+  if (parsed.device && typeof parsed.device === 'object' && !Array.isArray(parsed.device)) {
+    const identifier = parsed.device.id;
+    if (typeof identifier !== 'string' || !identifier) return parsed;
     return {
       ...parsed,
-      device: { ...parsed.device, id: REDACTED_DEVICE_IDENTIFIER },
+      device: Object.fromEntries(
+        Object.entries(parsed.device).map(([key, value]) => [
+          key,
+          value === identifier ? REDACTED_DEVICE_IDENTIFIER : value,
+        ])
+      ),
     };
   }
   return parsed;

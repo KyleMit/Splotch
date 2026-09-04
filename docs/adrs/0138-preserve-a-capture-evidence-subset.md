@@ -104,7 +104,8 @@ corpus.
 capture from an unscoreable one without the session that took it — the single discipline this
 campaign concluded matters most.
 
-\+ Tracked evidence does not disclose the hardware serial or UDID of the physical capture rig.
+\+ Evidence promoted after the 2026-09 amendment does not disclose the hardware serial or UDID of
+the physical capture rig. Earlier evidence still requires the cleanup tracked in issue 1645.
 
 \+ Bounded and predictable weight: one target × brush grid per campaign, at a size that is known
 rather than discovered.

@@ -296,11 +296,15 @@ describe('keep-capture-evidence', () => {
   it('redacts only identifying device fields from promoted capture shapes', () => {
     expect(
       redactDeviceIdentifiers({
-        device: { name: 'tablet', os: '18.6', id: 'hardware-id' },
+        device: { name: 'hardware-id', os: '18.6', id: 'hardware-id' },
         report,
       })
     ).toMatchObject({
-      device: { name: 'tablet', os: '18.6', id: REDACTED_DEVICE_IDENTIFIER },
+      device: {
+        name: REDACTED_DEVICE_IDENTIFIER,
+        os: '18.6',
+        id: REDACTED_DEVICE_IDENTIFIER,
+      },
       report,
     });
     expect(
