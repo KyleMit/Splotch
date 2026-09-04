@@ -4,6 +4,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 10
     groups:
       github-actions:
         patterns: ['*']
@@ -14,3 +15,4 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 30
