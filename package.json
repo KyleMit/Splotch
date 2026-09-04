@@ -461,7 +461,7 @@
     "@capacitor/android": "^8.4.1",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.1",
-    "@capacitor/ios": "^8.4.2",
+    "@capacitor/ios": "^8.5.1",
     "@dprint/json": "^0.23.0",
     "@dprint/markdown": "^0.22.1",
     "@dprint/typescript": "^0.96.1",
