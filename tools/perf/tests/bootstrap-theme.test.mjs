@@ -193,6 +193,7 @@ function paintUndoShell() {
     measures.push({ duration: 2 });
   });
   document.body.append(undo);
+  return canvas;
 }
 
 beforeEach(() => {
@@ -205,7 +206,7 @@ describe('the bootstrap actually capturing undo', () => {
   it(
     'records canonical timing plus history and pixel restoration evidence',
     async () => {
-      paintUndoShell();
+      const canvas = paintUndoShell();
       const run = runBootstrap({
         brush: 'pen',
         theme: 'light',
@@ -215,6 +216,7 @@ describe('the bootstrap actually capturing undo', () => {
       });
 
       await run.readyPosted;
+      canvas.pixelVersion = 4;
       run.finish();
       const payload = await run.reportPosted;
 
@@ -229,6 +231,7 @@ describe('the bootstrap actually capturing undo', () => {
         ],
       });
       expect(payload.undoVisual.samples).toHaveLength(3);
+      expect(payload.report.paintedOutput).toMatchObject({ changed: true });
     },
     BOOTSTRAP_TIMEOUT_MS
   );

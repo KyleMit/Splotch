@@ -33,6 +33,7 @@ import {
   UNDO_ACTION_PAUSE_MS,
   UNDO_BUTTON_SELECTOR,
   undoActionFunctionSource,
+  undoActionProblem,
 } from '../../lib/undo-driver.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
@@ -66,7 +67,7 @@ const FNV_PRIME = 16777619;
 // ~3790 measures). This proves the canvas CHANGED during the pass — any pixel
 // delta, which covers the eraser's removals as well as the brushes' additions —
 // by hashing a downscale of every drawing surface before contact banking starts
-// and again after the probe stops. The reads go through a small
+// and again after drawing ends, before any optional undo. The reads go through a small
 // willReadFrequently scratch (the product's emptyScan.ts pattern, same as the
 // eraser fill's verifier) so the accelerated tiles are never read back directly:
 // a check must not change the thing being measured, and both samples run outside
@@ -432,6 +433,8 @@ export function pageBootstrapSource() {
       await wait(${PLAN_POLL_MS});
     }
 
+    const paintedAfterDrawing = sampleCanvasDelta();
+
     const undoActions = [];
     let historyBeforeUndo = null;
     let historyAfterUndo = null;
@@ -451,22 +454,25 @@ export function pageBootstrapSource() {
       if (!undoReady) throw new Error('the action drawer did not expose an enabled undo button');
 
       const runUndoAction = ${undoActionFunctionSource()};
-      const visualSamples = [sampleCanvasDelta()];
+      const actionProblem = ${undoActionProblem};
+      const visualSamples = [paintedAfterDrawing];
       const visualSteps = [];
+      await wait(undoPauseMs);
       for (let index = 0; index < undoCount; index++) {
         const action = await runUndoAction(index);
-        if (!action) throw new Error('undo action ' + (index + 1) + ' produced no engine.undo measure');
+        const problem = actionProblem(action, index);
+        if (problem) throw new Error(problem);
         undoActions.push(action);
-        await wait(undoPauseMs);
         const before = visualSamples.at(-1);
         const after = sampleCanvasDelta();
-        const changed = !before.error && !after.error &&
+        const changed = !before.error && !after.error && before.surfaces === after.surfaces &&
           JSON.stringify(before.digests) !== JSON.stringify(after.digests);
         visualSamples.push(after);
         visualSteps.push({ index, changed });
         if (!changed) {
           throw new Error('undo action ' + (index + 1) + ' did not restore different pixels');
         }
+        await wait(undoPauseMs);
       }
       historyAfterUndo = window.__drawingDebug.getUndoDebug();
       const afterDepth = historyAfterUndo.historyLength ?? historyAfterUndo.snapshots;
@@ -504,13 +510,12 @@ export function pageBootstrapSource() {
     // Any pixel delta between the two samples counts — additions and the
     // eraser's removals alike. A sample that could not be taken records its
     // error rather than a verdict; acceptance refuses what it cannot prove.
-    const paintedAfter = sampleCanvasDelta();
-    report.paintedOutput = paintedBaseline.error || paintedAfter.error
-      ? { error: paintedBaseline.error || paintedAfter.error }
+    report.paintedOutput = paintedBaseline.error || paintedAfterDrawing.error
+      ? { error: paintedBaseline.error || paintedAfterDrawing.error }
       : {
-          changed: JSON.stringify(paintedBaseline) !== JSON.stringify(paintedAfter),
+          changed: JSON.stringify(paintedBaseline) !== JSON.stringify(paintedAfterDrawing),
           before: paintedBaseline,
-          after: paintedAfter,
+          after: paintedAfterDrawing,
         };
     await log({ kind: 'uploading', nonce, events: report.events.length });
     await post('/__probe/report', {
