@@ -26,6 +26,7 @@
   import {
     cancelImageRequest,
     cancelImagePrefetchesExcept,
+    predecodeImage,
     prefetchImages,
     type ResponsiveImageRequest,
   } from '$lib/imagePrefetch';
@@ -92,7 +93,7 @@
     );
   }
   function prefetchPageOverlay(page: ColoringPage) {
-    prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
+    predecodeImage(pageOverlayImage(page, orientation, resolvedTheme()));
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the

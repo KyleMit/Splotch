@@ -18,6 +18,32 @@ export interface ResponsiveImageRequest {
   sizes: string;
 }
 
+function prefetchImage(
+  request: string | ResponsiveImageRequest,
+  retainUntilDecoded: boolean
+): void {
+  const url = typeof request === 'string' ? request : request.src;
+  if (!url || warmed.has(url)) return;
+  warmed.add(url);
+  const img = new Image();
+  img.decoding = 'async';
+  if (typeof request !== 'string') {
+    img.sizes = request.sizes;
+    img.srcset = request.srcset;
+  }
+  const release = () => {
+    if (activePrefetches.get(url) === img) activePrefetches.delete(url);
+  };
+  img.onerror = release;
+  activePrefetches.set(url, img);
+  img.src = url;
+  if (retainUntilDecoded) {
+    void img.decode().catch(() => undefined).finally(release);
+  } else {
+    img.onload = release;
+  }
+}
+
 export function cancelImageRequest(img: HTMLImageElement): void {
   if (img.srcset) img.removeAttribute('srcset');
   img.removeAttribute('src');
@@ -26,23 +52,13 @@ export function cancelImageRequest(img: HTMLImageElement): void {
 export function prefetchImages(requests: Iterable<string | ResponsiveImageRequest>): void {
   if (typeof Image === 'undefined') return;
   for (const request of requests) {
-    const url = typeof request === 'string' ? request : request.src;
-    if (!url || warmed.has(url)) continue;
-    warmed.add(url);
-    const img = new Image();
-    img.decoding = 'async';
-    if (typeof request !== 'string') {
-      img.sizes = request.sizes;
-      img.srcset = request.srcset;
-    }
-    const release = () => {
-      if (activePrefetches.get(url) === img) activePrefetches.delete(url);
-    };
-    img.onload = release;
-    img.onerror = release;
-    activePrefetches.set(url, img);
-    img.src = url;
+    prefetchImage(request, false);
   }
+}
+
+export function predecodeImage(url: string): void {
+  if (typeof Image === 'undefined') return;
+  prefetchImage(url, true);
 }
 
 export function cancelImagePrefetchesExcept(preservedUrl: string): void {

@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requested: FakeImage[] = [];
 
+interface DeferredDecode {
+  resolve: () => void;
+}
+
 class FakeImage {
   decoding = '';
   onload: (() => void) | null = null;
@@ -11,6 +15,8 @@ class FakeImage {
   srcset = '';
   sizes = '';
   removedAttributes: string[] = [];
+  decodeCalls = 0;
+  deferredDecode: DeferredDecode | null = null;
 
   constructor() {
     requested.push(this);
@@ -20,6 +26,13 @@ class FakeImage {
     this.removedAttributes.push(name);
     if (name === 'src') this.src = '';
     if (name === 'srcset') this.srcset = '';
+  }
+
+  decode() {
+    this.decodeCalls += 1;
+    return new Promise<void>((resolve) => {
+      this.deferredDecode = { resolve };
+    });
   }
 }
 
@@ -100,5 +113,19 @@ describe('image prefetch cancellation', () => {
     cancelImagePrefetchesExcept('/selected.webp');
 
     expect(requested[0].removedAttributes).toEqual([]);
+  });
+
+  it('retains a selected image until its decode completes', async () => {
+    const { cancelImagePrefetchesExcept, predecodeImage } = await import('./imagePrefetch');
+
+    predecodeImage('/selected.svg');
+    requested[0].onload?.();
+    cancelImagePrefetchesExcept('/other.svg');
+
+    expect(requested[0].decodeCalls).toBe(1);
+    expect(requested[0].removedAttributes).toEqual(['src']);
+
+    requested[0].deferredDecode?.resolve();
+    await Promise.resolve();
   });
 });
