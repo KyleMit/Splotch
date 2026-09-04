@@ -1,0 +1,51 @@
+{
+  "campaign": "2026-09-04-epic-1567-control-android-native",
+  "productCommit": "3c017796622f374d428ee91c74b731b00964a63f",
+  "capturedFrom": "perf-profiles/epic-1567-final-3c017796-native-retry",
+  "kept": [
+    {
+      "file": "android-device-native-crayon.json",
+      "target": "android-device-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 7,
+      "passingCandidateCount": 7,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-native-eraser.json",
+      "target": "android-device-native",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-native-magic.json",
+      "target": "android-device-native",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-device-native-pen.json",
+      "target": "android-device-native",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-native/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    }
+  ]
+}

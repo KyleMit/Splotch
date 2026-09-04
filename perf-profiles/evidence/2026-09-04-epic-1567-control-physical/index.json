@@ -1,0 +1,51 @@
+{
+  "campaign": "2026-09-04-epic-1567-control-physical",
+  "productCommit": "3c017796622f374d428ee91c74b731b00964a63f",
+  "capturedFrom": "perf-profiles/epic-1567-final-3c017796",
+  "kept": [
+    {
+      "file": "ipad-device-web-crayon.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 7,
+      "passingCandidateCount": 7,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-web-eraser.json",
+      "target": "ipad-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-web-magic.json",
+      "target": "ipad-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/magic-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "ipad-device-web-pen.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-web/landscape-dark/pen-real-screen.json",
+      "candidateCount": 4,
+      "passingCandidateCount": 4,
+      "failedCandidateCount": 0
+    }
+  ]
+}
