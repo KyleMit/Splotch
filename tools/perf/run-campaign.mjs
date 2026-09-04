@@ -679,6 +679,8 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         console.log(
           `RETRY ${cell.id} — the eraser's between-pass refills did not prove ink (${reason})`
         );
+      } else if (inspected.undoProblem) {
+        console.log(`RETRY ${cell.id} — ${inspected.undoProblem}`);
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);
       }

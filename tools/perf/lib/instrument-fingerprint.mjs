@@ -32,6 +32,7 @@ const APPIUM_SCREEN_CAPTURE = 'tools/perf/ios/capture-xcuitest-screen.mjs';
 // imported by the CDP and desktop action runners alike.
 const APPIUM_ACTIONS_CAPTURE = 'tools/perf/ios/capture-xcuitest-actions.mjs';
 const ERASER_FILL = 'tools/perf/lib/eraser-fill.mjs';
+const UNDO_DRIVER = 'tools/perf/lib/undo-driver.mjs';
 
 export const INSTRUMENT_FILES_BY_COMMAND = {
   'perf:device:frames': [
@@ -45,15 +46,21 @@ export const INSTRUMENT_FILES_BY_COMMAND = {
     APPIUM_SCREEN_CAPTURE,
     SHARED_SCREEN_PROBE,
     ERASER_FILL,
+    UNDO_DRIVER,
   ],
-  'perf:ios:xcuitest:screen': [APPIUM_SCREEN_CAPTURE, SHARED_SCREEN_PROBE, ERASER_FILL],
+  'perf:ios:xcuitest:screen': [
+    APPIUM_SCREEN_CAPTURE,
+    SHARED_SCREEN_PROBE,
+    ERASER_FILL,
+    UNDO_DRIVER,
+  ],
   'perf:ios:xcuitest:actions': [APPIUM_ACTIONS_CAPTURE, SHARED_ACTION_PROBE],
   'perf:android:browser:actions': [
     'tools/perf/android/capture-browser-actions.mjs',
     APPIUM_ACTIONS_CAPTURE,
     SHARED_ACTION_PROBE,
   ],
-  'perf:web:frames': ['tools/perf/web/capture-local-frames.mjs', SHARED_SCREEN_PROBE],
+  'perf:web:frames': ['tools/perf/web/capture-local-frames.mjs', SHARED_SCREEN_PROBE, UNDO_DRIVER],
   'perf:web:actions': [
     'tools/perf/web/capture-desktop-actions.mjs',
     APPIUM_ACTIONS_CAPTURE,

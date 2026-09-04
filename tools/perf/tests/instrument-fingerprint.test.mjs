@@ -56,6 +56,12 @@ describe('the per-command instrument file lists', () => {
     expect(files).toContain('tools/perf/split-capture/lib/probe-host-protocol.mjs');
     expect(files).toContain('tools/perf/android/capture-browser-actions.mjs');
   });
+
+  it('invalidates every undo-capable screen command when the shared undo driver changes', () => {
+    for (const command of ['perf:device:frames', 'perf:ios:xcuitest:screen', 'perf:web:frames']) {
+      expect(INSTRUMENT_FILES_BY_COMMAND[command]).toContain('tools/perf/lib/undo-driver.mjs');
+    }
+  });
 });
 
 describe('the capture-instrument fingerprint', () => {
