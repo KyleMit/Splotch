@@ -268,6 +268,8 @@
       if (e.key !== 'Escape' || !openFlyout) return;
       closeFlyout({ restoreFocus: true });
     };
+    // The shared layout orientation settles after resize; this marker must clear
+    // first so the CSS breakpoint cannot animate a stale drawer transition.
     const stopDrawerMotionForRotation = () => {
       drawerMotion = false;
     };

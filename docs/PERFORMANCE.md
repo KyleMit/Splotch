@@ -470,6 +470,12 @@ entry 87. Paths under `web/src/` unless noted.*
     reduced-motion overrides at matching specificity. Measured: 5,847 → 0 Animation invalidations;
     emulator theme-flip post-p95 median 100.1 → 66.7 ms (n=3/arm). `ClearCoachmark.svelte`, pinned
     by `clear-tutorial.spec.ts`.
+88. **Action Drawer motion canceled before device rotation** — `orientationchange` clears an armed
+    drawer transition before the viewport breakpoint flips, so a stale motion marker cannot animate
+    the drawer's axis margins through the drawing's rotation frames. A physical Android Chrome
+    canonical A/B removed all drawer transition events from both with-ink directions and reduced
+    portrait-to-landscape P95/max from 33.4/66.7 to 16.7/16.8 ms. `ActionsPanel.svelte`,
+    `docs/scratchpad/perf/2026-09-04-issue-1632-rotation-drawer-motion.md`.
 
 ### Documented rejections — perf machinery deliberately absent
 
@@ -498,6 +504,6 @@ a hidden element — is the inverse of idea two, and its fix (entry 87) is the n
   both trace-attributed on the issue.
 * **#1322** — the campaign-end recapture and matrix regeneration, where the trust ledger, the
   recalibrated gates, and the eraser column's supersession all land in the published matrix.
-* **#1197 / #1130** — device-bound rotation and Settings-frame cells; **#1344** — spread and
+* **#1632 / #1130** — device-bound rotation and Settings-frame cells; **#1344** — spread and
   repeat-count measurement; **#1304** — the host-quiet measurement behind the trust ledger's one
   permanently-unrecorded row.
