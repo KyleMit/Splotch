@@ -3,10 +3,11 @@
 // one stays. Plans by default; `--apply` deletes. Two proofs of death:
 //
 //   merged      the tip is an ancestor of the base — `git branch -d` accepts it
-//   equivalent  every commit's patch-id is on the base (rebase-merged), or the
-//               PR's squash commit carries the branch's exact diff — `-d`
-//               refuses these because ancestry says no, so they are deleted
-//               with `-D` only behind `--include-equivalent`, proof printed
+//   equivalent  a patch-id match (rebase-merged, or the PR's squash commit)
+//               *and* every file the branch touched byte-identical on the base,
+//               because patch-ids ignore whitespace. `-d` refuses these since
+//               ancestry says no, so they are deleted only behind
+//               `--include-equivalent`, at the proven commit id, proof printed
 //
 // Everything else is a judgment call for the prune-git-workspace skill.
 //
@@ -18,11 +19,14 @@ import { parseArgs } from 'node:util';
 
 import { isMain, parseOrFail, ROOT, runMain } from '../lib/proc.mjs';
 import {
+  branchLandedVerbatim,
   currentBranchOf,
+  deleteRefAtCommit,
   fetchBase,
   isAncestor,
   isPatchEquivalent,
   listBranchRefs,
+  listRemotes,
   listWorktrees,
   squashMatches,
   tryGit,
@@ -54,15 +58,19 @@ export function parsePruneBranchesArgs(argv) {
   };
 }
 
-// The local branch the base tracks (`origin/main` → `main`) is never a candidate.
-export function protectedBranchName(base) {
-  return base.split('/').pop();
+// The local branch the base tracks is never a candidate. Only a remote's own
+// prefix comes off: `origin/release/1.x` is the remote branch of local
+// `release/1.x`, and taking the last path component instead would protect a
+// branch named `1.x` while leaving the real one deletable.
+export function protectedBranchName(base, remotes = ['origin']) {
+  const remote = remotes.find((name) => base.startsWith(`${name}/`));
+  return remote ? base.slice(remote.length + 1) : base;
 }
 
 export function classifyLocalBranch(branch, ctx) {
-  const { base, currentBranch, heldBy, prIndex, proofs } = ctx;
+  const { base, currentBranch, heldBy, prIndex, proofs, remotes } = ctx;
   const upstreamNote = branch.upstreamGone ? ', upstream gone' : '';
-  if (branch.name === protectedBranchName(base)) {
+  if (branch.name === protectedBranchName(base, remotes)) {
     return { tier: 'skip', reason: 'protected base branch' };
   }
   if (branch.name === currentBranch) {
@@ -79,18 +87,29 @@ export function classifyLocalBranch(branch, ctx) {
   if (branch.ahead === 0 || proofs.isAncestor(branch.tip)) {
     return { tier: 'merged', reason: `merged into ${base}${upstreamNote}` };
   }
+  // A patch-id match is whitespace-blind, so it only nominates a branch; the
+  // verbatim per-commit proof is what admits it to a force-deletable tier.
   if (proofs.isPatchEquivalent(branch.tip)) {
     const via = pr?.state === 'MERGED' ? `, PR #${pr.number} merged` : '';
+    if (proofs.branchLandedVerbatim(branch.tip)) {
+      return {
+        tier: 'equivalent',
+        reason: `every commit landed on ${base} byte for byte (rebase-merged${via})`,
+      };
+    }
     return {
-      tier: 'equivalent',
-      reason: `every commit has a patch-equivalent on ${base} (rebase-merged${via})`,
+      tier: 'keep',
+      reason: `patch-ids match ${base} but at least one commit has no byte-identical counterpart there, whitespace included (rebase-merged${via}) — judgment pass`,
     };
   }
+  // A squash collapses the branch's commits into one, so no individual commit
+  // has a counterpart to find; the whole-branch diff against the squash commit
+  // is the byte-exact proof here, and `squashMatches` computes it verbatim.
   if (pr?.state === 'MERGED') {
     if (proofs.squashMatches(branch.tip, pr.mergeCommit)) {
       return {
         tier: 'equivalent',
-        reason: `squash-merged as PR #${pr.number} (branch diff matches ${pr.mergeCommit.slice(0, 12)})`,
+        reason: `squash-merged as PR #${pr.number} (branch diff matches ${pr.mergeCommit.slice(0, 12)} byte for byte)`,
       };
     }
     return {
@@ -110,6 +129,7 @@ export function classifyLocalBranch(branch, ctx) {
 
 export function planLocalBranchPrune({ cwd, base, prIndex, prLookupOk, onProgress }) {
   const currentBranch = currentBranchOf(cwd);
+  const remotes = listRemotes(cwd);
   const heldBy = new Map(
     listWorktrees(cwd)
       .filter((worktree) => worktree.branch)
@@ -118,9 +138,10 @@ export function planLocalBranchPrune({ cwd, base, prIndex, prLookupOk, onProgres
   const proofs = {
     isAncestor: (tip) => isAncestor(tip, base, cwd),
     isPatchEquivalent: (tip) => isPatchEquivalent(base, tip, cwd),
+    branchLandedVerbatim: (tip) => branchLandedVerbatim(base, tip, cwd),
     squashMatches: (tip, mergeCommit) => squashMatches(base, tip, mergeCommit, cwd),
   };
-  const ctx = { base, currentBranch, heldBy, prIndex, prLookupOk, proofs };
+  const ctx = { base, currentBranch, heldBy, prIndex, prLookupOk, proofs, remotes };
   const branches = listBranchRefs(cwd, { base, namespace: 'refs/heads' });
   return branches.map((branch, index) => {
     if (onProgress && index > 0 && index % PROGRESS_EVERY === 0) onProgress(index, branches.length);
@@ -132,19 +153,30 @@ function firstLine(text) {
   return text.split('\n')[0];
 }
 
+// Every forced deletion goes through the proven commit id, never the branch
+// name: `git branch -D` would resolve the name again at deletion time and
+// destroy whatever it points at now. `git branch -d` needs no such guard — it
+// re-derives merged-ness itself and refuses a branch that moved somewhere
+// unmerged, which is exactly the check being raced.
+function forceDeleteAtProvenTip(row, cwd, reason) {
+  const forced = deleteRefAtCommit(row.name, row.tip, cwd);
+  if (forced.ok) return { outcome: 'deleted', reason };
+  return {
+    outcome: 'kept',
+    reason: `refusing to force-delete: ${row.name} no longer points at the proven ${row.tip.slice(0, 12)} (${firstLine(forced.stderr)})`,
+  };
+}
+
 export function deleteLocalBranch(row, { cwd, base, includeEquivalent }) {
   if (row.tier === 'merged') {
     const safe = tryGit(['branch', '-d', row.name], { cwd });
     if (safe.ok) return { outcome: 'deleted', reason: row.reason };
     if (includeEquivalent) {
-      const forced = tryGit(['branch', '-D', row.name], { cwd });
-      if (forced.ok) {
-        return {
-          outcome: 'deleted',
-          reason: `${row.reason}; -d refused because HEAD is behind ${base}, -D after proof`,
-        };
-      }
-      return { outcome: 'kept', reason: `git branch -D refused: ${firstLine(forced.stderr)}` };
+      return forceDeleteAtProvenTip(
+        row,
+        cwd,
+        `${row.reason}; -d refused because HEAD is behind ${base}, deleted at the proven commit`
+      );
     }
     return {
       outcome: 'kept',
@@ -155,12 +187,10 @@ export function deleteLocalBranch(row, { cwd, base, includeEquivalent }) {
     if (!includeEquivalent) {
       return {
         outcome: 'kept',
-        reason: `${row.reason} — pass --include-equivalent to delete with -D`,
+        reason: `${row.reason} — pass --include-equivalent to delete at the proven commit`,
       };
     }
-    const forced = tryGit(['branch', '-D', row.name], { cwd });
-    if (forced.ok) return { outcome: 'deleted', reason: `${row.reason}; -D after proof` };
-    return { outcome: 'kept', reason: `git branch -D refused: ${firstLine(forced.stderr)}` };
+    return forceDeleteAtProvenTip(row, cwd, `${row.reason}; deleted at the proven commit`);
   }
   return null;
 }

@@ -33,13 +33,15 @@ the base already contains.
 
 The resolution is the two-tier plan. `delete` rows are ancestors of `origin/main` and go through
 `-d`, so git's own check stays as the second opinion. `proven` rows carry a proof git does not
-compute — every commit patch-equivalent on the base (`git cherry`), or the branch's diff against
-its merge base matching the merged PR's squash commit's diff under `git patch-id --stable` — and are
-deleted with `-D` only behind `--include-equivalent`, each row printing its proof and PR. The same
-flag lets a `-d` refusal from a stale HEAD fall through to `-D`, because ancestry of `origin/main`
-is a stronger proof than the one the flag already accepts. The spec invited exactly this kind of
-explicit decision ("the local pass may be able to relax that"); the default run still honours the
-letter — no `-D` without the flag — and the flag's name says what it relaxes.
+compute, and are deleted only behind `--include-equivalent`, each row printing its proof and PR. The
+same flag lets a `-d` refusal from a stale HEAD fall through, because ancestry of `origin/main` is a
+stronger proof than the one the flag already accepts. The spec invited exactly this kind of explicit
+decision ("the local pass may be able to relax that"); the default run still honours the letter and
+the flag's name says what it relaxes.
+
+What that proof consists of, and why the forced deletion names a commit rather than a branch, both
+changed in round 1 of the rival review — see below. `git patch-id --stable` and a bare
+`git branch -D` are what this section originally described, and neither survived.
 
 Numbers from the first dry run (2026-09-04): 511 `delete`, 7 `proven` (all rebase-merged; this
 repo merges PRs with merge commits, so the squash proof had zero hits and is covered only by the
@@ -81,6 +83,66 @@ identity, inside the same second. Git produced a byte-identical commit — same 
 message, author and committer timestamps — so the "rebase-merged" branch was an ancestor of main
 and the equivalence proof was never exercised. Every cherry-pick in the tests now lands on a main
 that has moved by an unrelated commit first. Worth knowing before adding a scenario.
+
+## What round 1 of the rival review found (2026-09-04)
+
+Four blocking defects, each reproduced on a throwaway repo before it was believed, and all four in
+the same family: a *proof* that was weaker than the deletion it authorized.
+
+* **Every patch-id git computes ignores whitespace.** `git cherry` and `git patch-id` — with or
+  without `--stable` — strip whitespace before hashing. A branch whose `message.txt` reads `a  b`
+  against a base's `ab` produced `-` from `git cherry` and entered the `equivalent` tier. That is
+  not academic here: dprint reflows Markdown, so a reformat branch is a branch that differs from
+  main in *nothing but* whitespace, and the worked example in the skill (`bump-dprint-markdown`) is
+  exactly such a branch. `git cherry` now only nominates; `branchLandedVerbatim` redoes its
+  per-commit search with `--verbatim` patch-ids and is the actual proof. A nomination with no
+  verbatim counterpart is demoted to `keep` with that reason, which is a more useful row than
+  either a silent delete or a bare "unique commits".
+
+  **The first fix for this was wrong in an instructive way, and the real checkout caught it.**
+  It compared the branch's touched files to the base's files *as they are now*. That is sound
+  logically and useless in practice: main had moved `engine.ts` twenty-five times since the branch
+  landed, so every one of the seven genuinely rebase-merged branches was demoted and the `proven`
+  tier silently emptied. A tier that never fires is a tier that does not exist, and the dry-run
+  count (`7 proven` → `0 proven`) was the only thing that said so — the suite was green either way.
+  The question a deletion proof has to ask is whether the work *landed*, not whether the base still
+  looks like the branch. `git merge-tree --write-tree` was tried before the per-commit search and
+  rejected: on branches this old it reports a conflict rather than an answer, and a conflict does
+  not distinguish "work missing" from "base moved on".
+
+  Squash merges take the other path. Their commits were collapsed into one, so no individual commit
+  has a counterpart to find and the per-commit proof cannot pass; there the verbatim comparison of
+  the whole branch diff against the squash commit is the byte-exact proof on its own.
+* **`git branch -D` re-resolves the name at deletion time.** The proof is computed for a commit, so
+  a branch that gained a commit between planning and applying — tens of seconds, on a checkout with
+  700 branches while other sessions run — was deleted on the strength of a proof about a commit it
+  no longer carried. Reproduced by planning at SHA A, committing unique work to reach SHA B, and
+  watching `deleteLocalBranch` report `deleted`. Every forced deletion now goes through
+  `git update-ref -d refs/heads/<name> <proven tip>`, which fails when the ref moved. `-d` needs no
+  guard: it re-derives merged-ness and refuses a branch that moved somewhere unmerged, which is
+  precisely the check being raced. The judgment pass in the skill was changed the same way — it is
+  the step most likely to sit between reading a delta and deleting.
+* **`protectedBranchName` took the last path component.** `--base=origin/release/1.x` protected a
+  branch named `1.x` and left `release/1.x` deletable; an end-to-end fixture deleted the base
+  branch with `-d`. It now strips only a configured remote's prefix, which also handles a base
+  that is already a local name.
+* **The salvage pass honoured none of the prune's guards.** It planned a move out of a worktree
+  locked as `capture running` with a live `perf-profiles/` directory. Both passes now share
+  `worktreeHold`, and both recheck with `stillHeld` immediately before acting, because a plan is
+  minutes old by the time `--apply` runs and the salvage's cross-filesystem path deletes the source
+  after copying.
+
+The through-line worth keeping: the first three all read as safe because a git command said so, and
+in each case the git command was answering a slightly different question than the one being asked.
+`git cherry` answers "was this patch applied", not "is this content present"; `git branch -D`
+answers "delete this name", not "delete this commit". A proof used to authorize a deletion has to
+be read for what it literally establishes.
+
+Two fixture traps surfaced alongside them, both the same SHA-collision shape already noted below:
+a control commit made with the fixture's pinned identity, the same tree, parent, and message inside
+one second **is** the other commit, so a branch built that way is an ancestor rather than a
+patch-equivalent and the test proves nothing. Build equivalence cases by cherry-picking onto a base
+that has moved.
 
 ## Rejected
 

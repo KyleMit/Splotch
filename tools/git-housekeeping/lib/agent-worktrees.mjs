@@ -8,6 +8,7 @@ import { homedir } from 'node:os';
 import { join, relative } from 'node:path';
 
 import { currentWorktreeOf, git, listWorktrees } from './git-facts.mjs';
+import { listProcessCwds, processesUsing } from './process-cwds.mjs';
 
 // Gitignored paths worth moving out before a worktree is removed. Everything
 // else ignored (node_modules, env copies, sync output, screenshots) is
@@ -72,6 +73,31 @@ export function discoverAgentWorktrees({ cwd, roots }) {
     candidates.push({ ...worktree, real, root, id: relative(root, real) });
   }
   return { mainCheckout, current, roots: realRoots, candidates, excluded };
+}
+
+// Why a worktree must not be touched right now, or null. Both passes ask this
+// same question: the prune before removing a directory, the salvage before
+// moving files out of one. A locked worktree or one some process is sitting in
+// is a session mid-flight — moving a capture's output out from under it splits
+// the run, and a cross-filesystem salvage deletes the source after copying.
+export function worktreeHold(worktree, processCwds) {
+  if (worktree.locked) return { outcome: 'skip (locked)', reason: worktree.locked };
+  const users = processesUsing(worktree.real, processCwds);
+  if (users.length > 0) {
+    return {
+      outcome: 'skip (in use)',
+      reason: users
+        .map(({ pid, command }) => (command ? `pid ${pid} ${command}` : `pid ${pid}`))
+        .join(', '),
+    };
+  }
+  return null;
+}
+
+// Re-read the live process list for one worktree. The plan is minutes old by
+// the time --apply runs and a session can start inside a worktree in between.
+export function stillHeld(worktree) {
+  return worktreeHold(worktree, listProcessCwds());
 }
 
 // `git status --porcelain --ignored=matching` marks ignored entries with `!!`

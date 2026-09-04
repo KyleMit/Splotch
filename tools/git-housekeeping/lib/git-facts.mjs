@@ -128,10 +128,15 @@ export function isAncestor(commit, base, cwd) {
   throw new GitError(result.stderr);
 }
 
-// `git cherry` prints `-` for a commit whose patch-id already exists on the
-// base and `+` for one that does not. Equivalent means every commit is a `-`:
-// the branch was merged by rebase or cherry-pick, so ancestry says no while
-// the content is entirely on the base.
+// Every patch-id comparison git offers is whitespace-blind: `git cherry` and
+// `git patch-id` (with or without `--stable`) strip whitespace before hashing,
+// so a branch whose only difference from what landed is `a  b` against `ab`
+// reads as already-merged. `--verbatim` is the whitespace-respecting variant,
+// and this is a repository where whitespace is content: dprint reflows
+// Markdown, and a reformat branch differs from main in nothing else.
+//
+// So a patch-id match is only ever a *hypothesis* here, and every caller must
+// confirm it with `branchLandedVerbatim` before anything is deleted.
 export function isPatchEquivalent(base, tip, cwd) {
   const cherry = git(['cherry', base, tip], { cwd });
   if (cherry.length === 0) return false;
@@ -140,15 +145,66 @@ export function isPatchEquivalent(base, tip, cwd) {
 
 function patchIdOf(diff, cwd) {
   if (!diff) return null;
-  const out = git(['patch-id', '--stable'], { cwd, input: diff });
+  const out = git(['patch-id', '--verbatim'], { cwd, input: diff });
   return out ? out.split(' ')[0] : null;
+}
+
+// The proof that deleting a branch loses nothing: every commit unique to the
+// branch has a byte-identical counterpart on the base. `git cherry` answers
+// this question already, but whitespace-blindly, so this redoes its work with
+// `--verbatim` patch-ids.
+//
+// Doing that naively would mean hashing every commit on the base the branch is
+// behind — thousands, for a branch a year old. Instead each branch commit is
+// compared only against base commits touching the same files, which is a
+// handful, and the whole check only ever runs on a branch `git cherry` has
+// already nominated. Measured on the 2026-09-04 checkout: 0.1s to 8.3s for the
+// seven nominated branches, nothing for the other seven hundred.
+//
+// It deliberately does not compare the branch's files to the base's *current*
+// ones. A branch whose work landed and whose files the base then edited twenty
+// more times is still fully recovered from the base, and demanding present-tense
+// equality would refuse every such branch — which is every real rebase-merge in
+// a repository that keeps moving.
+export function branchLandedVerbatim(base, tip, cwd) {
+  const mergeBase = tryGit(['merge-base', base, tip], { cwd });
+  if (!mergeBase.ok) return false;
+  const ownCommits = tryGit(['rev-list', `${base}..${tip}`], { cwd });
+  if (!ownCommits.ok) return false;
+  const commits = ownCommits.stdout.split('\n').filter(Boolean);
+  if (commits.length === 0) return false;
+
+  for (const commit of commits) {
+    const files = tryGit(['diff', '--name-only', `${commit}^`, commit], { cwd });
+    if (!files.ok) return false;
+    const paths = files.stdout.split('\n').filter(Boolean);
+    if (paths.length === 0) return false;
+    const wanted = commitPatchId(commit, cwd);
+    if (!wanted) return false;
+    const candidates = tryGit(['rev-list', `${mergeBase.stdout}..${base}`, '--', ...paths], {
+      cwd,
+    });
+    if (!candidates.ok) return false;
+    const landed = candidates.stdout
+      .split('\n')
+      .filter(Boolean)
+      .some((candidate) => commitPatchId(candidate, cwd) === wanted);
+    if (!landed) return false;
+  }
+  return true;
+}
+
+function commitPatchId(commit, cwd) {
+  const diff = tryGit(['diff', `${commit}^`, commit], { cwd });
+  if (!diff.ok) return null;
+  return patchIdOf(diff.stdout, cwd);
 }
 
 // A squash merge leaves no commit of the branch on the base, but the squash
 // commit's diff against its parent is the branch's whole diff against the merge
-// base. `git patch-id` ignores line numbers and whitespace, so the two match
-// whenever the squash was faithful, and differ when conflict resolution or a
-// later commit changed what actually landed.
+// base, so a faithful squash produces the same verbatim patch-id and conflict
+// resolution or a later commit produces a different one. Like every patch-id
+// test here this is a hypothesis; `branchLandedVerbatim` is the proof.
 export function squashMatches(base, tip, mergeCommit, cwd) {
   if (!mergeCommit) return false;
   const mergeBase = tryGit(['merge-base', base, tip], { cwd });
@@ -158,6 +214,19 @@ export function squashMatches(base, tip, mergeCommit, cwd) {
   if (!branchDiff.ok || !landedDiff.ok) return false;
   const branchId = patchIdOf(branchDiff.stdout, cwd);
   return branchId !== null && branchId === patchIdOf(landedDiff.stdout, cwd);
+}
+
+// Delete a ref only while it still points at the commit a proof was computed
+// against. `git branch -D` resolves the name at deletion time, so a branch that
+// gained a commit between planning and applying — tens of seconds, on a
+// checkout with 700 branches and other sessions running — is destroyed on the
+// strength of a proof about a commit it no longer carries.
+export function deleteRefAtCommit(name, expectedTip, cwd) {
+  return tryGit(['update-ref', '-d', `refs/heads/${name}`, expectedTip], { cwd });
+}
+
+export function listRemotes(cwd) {
+  return git(['remote'], { cwd }).split('\n').filter(Boolean);
 }
 
 export function fetchBase(cwd, { remote = 'origin', prune = true } = {}) {

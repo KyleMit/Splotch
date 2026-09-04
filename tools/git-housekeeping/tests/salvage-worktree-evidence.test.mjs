@@ -104,6 +104,40 @@ describe('planSalvage and moveTree on a real repository', () => {
     expect(existsSync(join(real, 'node_modules', 'pkg', 'index.js'))).toBe(true);
   });
 
+  // The prune's never-touch set is the salvage's too: moving a capture's output
+  // out from under a running session splits the run, and a cross-filesystem
+  // move deletes the source after copying.
+  it('skips a locked worktree and one a process is sitting in, without planning a move', () => {
+    const { repo, sh } = fixture;
+    const locked = join(agents, 'locked');
+    sh(['worktree', 'add', '-q', locked, '--detach', 'main']);
+    const lockedReal = realpathSync(locked);
+    mkdirSync(join(lockedReal, 'perf-profiles', 'live'), { recursive: true });
+    writeFileSync(join(lockedReal, 'perf-profiles', 'live', 'trace.json'), '{}');
+    sh(['worktree', 'lock', '--reason', 'capture running', locked]);
+
+    const busy = join(agents, 'busy');
+    sh(['worktree', 'add', '-q', busy, '--detach', 'main']);
+    const busyReal = realpathSync(busy);
+    mkdirSync(join(busyReal, 'perf-profiles', 'run-1'), { recursive: true });
+    writeFileSync(join(busyReal, 'perf-profiles', 'run-1', 'trace.json'), '{}');
+
+    const plan = planSalvage({
+      cwd: repo,
+      roots: [agents],
+      dest,
+      processCwds: [{ pid: 424242, command: 'node', cwd: join(busyReal, 'perf-profiles') }],
+    });
+
+    expect(plan.rows.map((row) => [row.id, row.outcome, row.reason])).toEqual([
+      ['busy', 'skip (in use)', 'pid 424242 node'],
+      ['locked', 'skip (locked)', 'capture running'],
+    ]);
+    expect(plan.rows.every((row) => row.path === null)).toBe(true);
+    expect(existsSync(join(lockedReal, 'perf-profiles', 'live', 'trace.json'))).toBe(true);
+    expect(existsSync(join(busyReal, 'perf-profiles', 'run-1', 'trace.json'))).toBe(true);
+  });
+
   it('refuses to plan over an existing destination', () => {
     const { repo, sh } = fixture;
     const wt = join(agents, 'wt1');

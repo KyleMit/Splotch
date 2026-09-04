@@ -11,10 +11,15 @@
 import { parseArgs } from 'node:util';
 
 import { isMain, parseOrFail, ROOT, runMain } from '../lib/proc.mjs';
-import { discoverAgentWorktrees, unsalvagedEvidence } from './lib/agent-worktrees.mjs';
+import {
+  discoverAgentWorktrees,
+  stillHeld,
+  unsalvagedEvidence,
+  worktreeHold,
+} from './lib/agent-worktrees.mjs';
 import { fetchBase, git, isAncestor, tryGit } from './lib/git-facts.mjs';
 import { formatOutcomeLine, formatSummary, outcomeWidth } from './lib/outcome-report.mjs';
-import { listProcessCwds, processesUsing } from './lib/process-cwds.mjs';
+import { listProcessCwds } from './lib/process-cwds.mjs';
 
 export const DEFAULT_BASE = 'origin/main';
 
@@ -39,21 +44,12 @@ export function parsePruneWorktreesArgs(argv) {
   };
 }
 
-function describeProcess({ pid, command }) {
-  return command ? `pid ${pid} ${command}` : `pid ${pid}`;
-}
-
 export function classifyWorktree(worktree, { base, processCwds, cwd }) {
   if (worktree.prunable) {
     return { outcome: 'prunable', reason: `${worktree.prunable} — git worktree prune` };
   }
-  if (worktree.locked) {
-    return { outcome: 'skip (locked)', reason: worktree.locked };
-  }
-  const users = processesUsing(worktree.real, processCwds);
-  if (users.length > 0) {
-    return { outcome: 'skip (in use)', reason: users.map(describeProcess).join(', ') };
-  }
+  const held = worktreeHold(worktree, processCwds);
+  if (held) return held;
   const evidence = unsalvagedEvidence(worktree.real);
   if (evidence.length > 0) {
     return {
@@ -91,6 +87,10 @@ export function planWorktreePrune({ cwd, roots, base, processCwds, onProgress })
 }
 
 export function removeWorktree(row, { mainCheckout }) {
+  // Same reason the salvage rechecks: the plan is minutes old and removing a
+  // directory under a live session fails strangely later.
+  const held = stillHeld(row);
+  if (held) return held;
   const result = tryGit(['worktree', 'remove', row.real], { cwd: mainCheckout });
   if (result.ok) return { outcome: 'removed', reason: row.reason };
   return {

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  branchLandedVerbatim,
+  deleteRefAtCommit,
   isAncestor,
   isPatchEquivalent,
   listBranchRefs,
@@ -175,6 +177,70 @@ describe('merged-ness proofs on a real repository', () => {
     expect(squashMatches('origin/main', drifted, squash, repo)).toBe(false);
     expect(squashMatches('origin/main', drifted, null, repo)).toBe(false);
     expect(squashMatches('origin/main', drifted, 'not-a-commit', repo)).toBe(false);
+  });
+
+  // Every patch-id git computes ignores whitespace, and this repo reformats
+  // Markdown, so a reformat branch can match a base it genuinely differs from.
+  it('content proof: whitespace-only difference is NOT on the base, though patch-ids match', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'spaced']);
+    commit('message.txt', 'a  b\n', 'add message');
+    sh(['checkout', '-q', 'main']);
+    commit('message.txt', 'ab\n', 'add message');
+    pushMain();
+
+    expect(isPatchEquivalent('origin/main', 'spaced', repo)).toBe(true);
+    expect(branchLandedVerbatim('origin/main', 'spaced', repo)).toBe(false);
+  });
+
+  it('content proof: accepts a branch whose touched files are byte-identical on the base', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'same']);
+    const picked = commit('same.txt', 'same\n', 'add same');
+    sh(['checkout', '-q', 'main']);
+    commit('filler.txt', 'main moves on', 'unrelated main commit');
+    sh(['cherry-pick', picked]);
+    pushMain();
+
+    expect(isAncestor(picked, 'origin/main', repo)).toBe(false);
+    expect(branchLandedVerbatim('origin/main', 'same', repo)).toBe(true);
+  });
+
+  it('squash match uses a verbatim patch-id, so a whitespace-differing squash does not match', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'sq']);
+    commit('sq.txt', 'one   two\n', 'sq work');
+    sh(['checkout', '-q', 'main']);
+    sh(['merge', '-q', '--squash', 'sq']);
+    sh(['commit', '-q', '-m', 'squash']);
+    const squash = sh(['rev-parse', 'HEAD']);
+    pushMain();
+    expect(squashMatches('origin/main', 'sq', squash, repo)).toBe(true);
+
+    sh(['checkout', '-q', 'sq']);
+    commit('sq.txt', 'one two\n', 'respace the same change');
+    expect(squashMatches('origin/main', 'sq', squash, repo)).toBe(false);
+  });
+
+  // `git branch -D` re-resolves the name, so a branch that moved between
+  // planning and applying is destroyed on a proof about a commit it left.
+  it('deleteRefAtCommit removes the ref only while it still points at the proven commit', () => {
+    const { sh, commit, repo } = fixture;
+    sh(['checkout', '-q', '-b', 'topic']);
+    const proven = commit('t.txt', 't', 'proven work');
+    sh(['checkout', '-q', 'main']);
+
+    sh(['checkout', '-q', 'topic']);
+    commit('later.txt', 'unique', 'work added after planning');
+    sh(['checkout', '-q', 'main']);
+
+    const stale = deleteRefAtCommit('topic', proven, repo);
+    expect(stale.ok).toBe(false);
+    expect(sh(['branch', '--list', 'topic'])).toContain('topic');
+
+    const current = sh(['rev-parse', 'topic']);
+    expect(deleteRefAtCommit('topic', current, repo).ok).toBe(true);
+    expect(sh(['branch', '--list', 'topic'])).toBe('');
   });
 
   it('listBranchRefs counts ahead/behind against the requested base for every local branch', () => {

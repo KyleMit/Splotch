@@ -27,9 +27,12 @@ and consider only those under a **root**: the main checkout's `.claude/worktrees
 main checkout, the worktree the command runs from, and anything outside every root are reported as
 excluded and never touched. Neither script deletes a branch.
 
-`worktrees:salvage` lists each worktree's ignored paths (`git status --ignored=matching`) and
-partitions them by the `SALVAGE_PREFIXES` allowlist in `lib/agent-worktrees.mjs`: raw performance
-captures under `perf-profiles/` and red-team material under `tools/redteam/{decrypted,output}/` and
+`worktrees:salvage` skips a locked worktree and one some process has as its cwd, exactly as the
+prune does, and rechecks both immediately before each move — a plan is minutes old by the time
+`--apply` runs, and moving a running capture's output out from under it splits the run. For the rest
+it lists the ignored paths (`git status --ignored=matching`) and partitions them by the
+`SALVAGE_PREFIXES` allowlist in `lib/agent-worktrees.mjs`: raw performance captures under
+`perf-profiles/` and red-team material under `tools/redteam/{decrypted,output}/` and
 `web/tests/redteam/{decrypted,output}/` are moved to
 `~/Code/splotch-worktree-evidence/<worktree
 id>/<path>` (`--dest=<dir>` overrides); everything else
@@ -56,34 +59,56 @@ classifies each local branch against `origin/main` (`--base=` overrides). The ne
 reported as `skip`: the base branch, the current checkout, any branch checked out in a worktree
 (with the path), and any branch with an open PR. The rest sorts into three tiers:
 
-| Plan row | Proof                                                                                            | On `--apply`                          |
-| -------- | ------------------------------------------------------------------------------------------------ | ------------------------------------- |
-| `delete` | Tip is an ancestor of `origin/main` (`--merged` semantics; a gone upstream is noted)             | `git branch -d`                       |
-| `proven` | Every commit has a patch-id equivalent on the base (rebase-merged), or the branch's diff matches | `git branch -D`, only with            |
-|          | its merged PR's squash commit (`git patch-id --stable` on both diffs)                            | `--include-equivalent`; proof printed |
-| `keep`   | Unique commits: PR merged but content differs, PR closed unmerged, or no PR at all               | Nothing — the skill's judgment pass   |
+| Plan row | Proof                                                                                           | On `--apply`                        |
+| -------- | ----------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `delete` | Tip is an ancestor of `origin/main` (`--merged` semantics; a gone upstream is noted)            | `git branch -d`                     |
+| `proven` | Every commit has a **verbatim** counterpart on the base, or the branch's whole diff matches its | Deleted at the proven commit id,    |
+|          | merged PR's squash commit verbatim                                                              | only with `--include-equivalent`    |
+| `keep`   | Unique commits, or a whitespace-blind patch-id match with no verbatim counterpart               | Nothing — the skill's judgment pass |
+
+**Every patch-id git computes ignores whitespace.** `git cherry` and `git patch-id` both strip it
+before hashing, so a branch that differs from what landed only in whitespace reads as already merged
+— and in a repository where dprint reflows Markdown, a reformat branch differs in nothing else. So
+`git cherry` only nominates a branch. `branchLandedVerbatim` is the proof: it redoes that per-commit
+search with `--verbatim` patch-ids, comparing each branch commit only against base commits touching
+the same files, so the search stays small. A squash merge has no per-commit counterpart to find —
+its commits were collapsed into one — so there the verbatim comparison of the whole branch diff
+against the squash commit is itself the byte-exact proof.
+
+The proof deliberately asks whether each commit *landed*, not whether the branch's files match the
+base's files today. A branch whose work landed and whose files the base then edited twenty more
+times is still fully recoverable from the base; demanding present-tense equality would refuse every
+real rebase-merge in a repository that keeps moving, which on this checkout was all seven of them.
+
+Forced deletion goes through `git update-ref -d refs/heads/<name> <proven tip>`, never
+`git branch -D`. The name would be resolved again at deletion time, so a branch that gained a commit
+during the tens of seconds classification takes would be destroyed on the strength of a proof about
+a commit it no longer carries. `git branch -d` needs no such guard: it re-derives merged-ness itself
+and refuses a branch that moved somewhere unmerged.
 
 `git branch -d` is the safety mechanism and the script never bypasses it for the `delete` tier. It
 judges merged-ness against the invoking checkout's `HEAD`, so a checkout behind `origin/main`
 refuses a branch the base already contains; the row then reads `kept (git branch -d refused …)` and
-`--include-equivalent` — the flag that permits `-D` after the script's own proof — is the documented
-way past it. `--apply` refuses to run without PR state, because an open PR is in the never-delete
-set and cannot be excluded blind; fix `gh auth status` and rerun.
+`--include-equivalent` — the flag that permits deletion after the script's own proof — is the
+documented way past it. `--apply` refuses to run without PR state, because an open PR is in the
+never-delete set and cannot be excluded blind; fix `gh auth status` and rerun.
 
 `branches:gather` is the remote half's fact table (ahead, behind, `inbase`, age, tip subject, and a
 `*` on the current checkout's branch), oldest first. `inbase=yes` means every commit already has a
 patch-equivalent on the base; a squash-merged branch shows `no` and needs the PR check the skill
-performs. It deletes nothing: remote deletion is outward-facing and stays the user's, via the script
-the skill hands back.
+performs. Like every patch-id here it is whitespace-blind, which is why it feeds a triage the skill
+performs rather than a deletion the script performs. It deletes nothing: remote deletion is
+outward-facing and stays the user's, via the script the skill hands back.
 
 ## Libraries
 
-`lib/git-facts.mjs` owns the worktree and branch-ref parsers and the three merged-ness proofs;
-`lib/github-prs.mjs` the one-call PR index (open beats merged beats closed when a head is reused);
-`lib/process-cwds.mjs` the live-cwd detection; `lib/agent-worktrees.mjs` root filtering and the
-salvage allowlist; `lib/outcome-report.mjs` the per-row output. Entry points take injected proofs
-and process lists so every guard is exercised by `tests/` on a throwaway repository with a bare
-`origin` (`tests/fixtures/temp-repo.mjs`).
+`lib/git-facts.mjs` owns the worktree and branch-ref parsers, the merged-ness proofs, and the
+commit-pinned ref delete; `lib/github-prs.mjs` the one-call PR index (open beats merged beats closed
+when a head is reused); `lib/process-cwds.mjs` the live-cwd detection; `lib/agent-worktrees.mjs`
+root filtering, the salvage allowlist, and the `worktreeHold` guard both worktree passes share;
+`lib/outcome-report.mjs` the per-row output. Entry points take injected proofs and process lists so
+every guard is exercised by `tests/` on a throwaway repository with a bare `origin`
+(`tests/fixtures/temp-repo.mjs`).
 
 ## Failure behavior
 

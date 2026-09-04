@@ -19,8 +19,11 @@ import {
   discoverAgentWorktrees,
   listIgnoredPaths,
   partitionIgnoredPaths,
+  stillHeld,
+  worktreeHold,
 } from './lib/agent-worktrees.mjs';
 import { formatOutcomeLine, formatSummary, outcomeWidth } from './lib/outcome-report.mjs';
+import { listProcessCwds } from './lib/process-cwds.mjs';
 
 const DISPOSABLE_PREVIEW_COUNT = 6;
 
@@ -38,12 +41,18 @@ export function parseSalvageArgs(argv) {
   return { apply: values.apply, roots: values.root ?? null, dest: values.dest, json: values.json };
 }
 
-export function planSalvage({ cwd, roots, dest, onProgress }) {
+export function planSalvage({ cwd, roots, dest, processCwds, onProgress }) {
   const discovered = discoverAgentWorktrees({ cwd, roots });
+  const liveCwds = processCwds ?? listProcessCwds();
   const rows = [];
   for (const [index, worktree] of discovered.candidates.entries()) {
     if (onProgress) onProgress(index + 1, discovered.candidates.length, worktree.id);
     if (worktree.prunable) continue;
+    const held = worktreeHold(worktree, liveCwds);
+    if (held) {
+      rows.push({ worktree: worktree.real, id: worktree.id, path: null, ...held });
+      continue;
+    }
     const { salvage, disposable } = partitionIgnoredPaths(listIgnoredPaths(worktree.real));
     for (const path of salvage) {
       const from = join(worktree.real, path);
@@ -114,6 +123,13 @@ export async function salvageWorktreeEvidence(options, { cwd = ROOT } = {}) {
   if (apply) {
     for (const row of plan.rows) {
       if (row.outcome !== 'salvage') continue;
+      // The plan is minutes old; a session can have started in this worktree
+      // since, and a cross-filesystem move deletes the source after copying.
+      const held = stillHeld({ real: row.worktree, locked: row.locked ?? null });
+      if (held) {
+        Object.assign(row, held);
+        continue;
+      }
       try {
         moveTree(row.from, row.to);
         row.outcome = 'salvaged';

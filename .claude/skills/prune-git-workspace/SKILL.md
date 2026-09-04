@@ -38,9 +38,11 @@ live session's cwd. Salvage first, then prune.
 
 1. `npm run worktrees:salvage` — lists each agent worktree's ignored paths and plans the allowlisted
    evidence (`perf-profiles/`, red-team `decrypted/` and `output/`) out to
-   `~/Code/splotch-worktree-evidence/<worktree id>/`, reporting the rest as `leave`. Skim the
-   `salvage` rows, then `npm run worktrees:salvage -- --apply`. Anything worth more than a stash
-   belongs in `docs/scratchpad/` or the scrapbook afterwards, not in that directory forever.
+   `~/Code/splotch-worktree-evidence/<worktree id>/`, reporting the rest as `leave`. A locked or
+   in-use worktree is skipped with its reason and rechecked again at move time, so a capture that
+   starts between the plan and the apply keeps its output. Skim the `salvage` rows, then
+   `npm run worktrees:salvage -- --apply`. Anything worth more than a stash belongs in
+   `docs/scratchpad/` or the scrapbook afterwards, not in that directory forever.
 2. `npm run worktrees:prune` — one row per agent worktree under `.claude/worktrees/`,
    `~/.codex/worktrees/`, and `/tmp` (`--root=<dir>` to add or replace). `remove` rows are clean,
    merged into `origin/main`, salvaged, and nobody's cwd. Every `keep` and `skip (in use)` row says
@@ -57,19 +59,27 @@ branches.
 `npm run branches:prune` fetches with `--prune`, loads every PR's state through `gh`, and classifies
 each local branch:
 
-| Row      | Meaning                                                                                          | `--apply` does                                    |
-| -------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
-| `delete` | Tip is an ancestor of `origin/main`                                                              | `git branch -d` — the safety valve stays in place |
-| `proven` | Every commit has a patch-equivalent on main (rebase-merged), or the diff matches its PR's squash | Nothing, until `--include-equivalent` adds `-D`   |
-| `keep`   | Unique commits: PR merged but content differs, PR closed unmerged, or no PR                      | Nothing — the judgment pass below                 |
-| `skip`   | The never-touch set, with the worktree path or PR number                                         | Nothing                                           |
+| Row      | Meaning                                                                         | `--apply` does                                    |
+| -------- | ------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `delete` | Tip is an ancestor of `origin/main`                                             | `git branch -d` — the safety valve stays in place |
+| `proven` | Every commit has a **verbatim** counterpart on main, or a verbatim squash match | Nothing, until `--include-equivalent`             |
+| `keep`   | Unique commits, or a patch-id match with no verbatim counterpart                | Nothing — the judgment pass below                 |
+| `skip`   | The never-touch set, with the worktree path or PR number                        | Nothing                                           |
+
+A plain patch-id match proves nothing here: every patch-id git computes ignores whitespace, and this
+repository reformats Markdown, so a reformat branch can match a main it genuinely differs from. The
+`proven` rows are re-proved with `--verbatim` patch-ids, and a branch that matches
+whitespace-blindly but has no byte-identical counterpart is demoted to `keep` with that reason —
+read those rows, they are the interesting ones.
 
 Run `npm run branches:prune -- --apply` for the `delete` tier. Glance at the `proven` rows — each
 carries its proof and PR — then `npm run branches:prune -- --apply --include-equivalent`. That flag
-is the one place the scripted pass reaches for `-D`, and only behind the script's own proof; it is
-also the way past a `kept (git branch -d refused …)` row, which means the current checkout's `HEAD`
-is behind `origin/main`, not that the branch is unmerged. Without PR state the script plans but
-refuses to apply — an open PR is in the never-touch set and cannot be excluded blind.
+is the one place the scripted pass deletes a branch git itself would refuse, and only behind the
+script's own two-part proof; it is also the way past a `kept (git branch -d refused …)` row, which
+means the current checkout's `HEAD` is behind `origin/main`, not that the branch is unmerged. Those
+deletions name the proven commit id, so a branch another session pushed to since the plan was made
+is reported as `kept` rather than destroyed. Without PR state the script plans but refuses to apply
+— an open PR is in the never-touch set and cannot be excluded blind.
 
 ### Judgment pass (agent)
 
@@ -95,9 +105,14 @@ then for each branch:
 4. **Present a decide table** — one row per branch: branch · last active · PR state · one-sentence
    summary of the change · durable home written (or "none needed") · recoverable from (`origin`, the
    PR, or **nowhere**) · proposed action. Default to delete; ask the user which to preserve.
-5. After approval, delete each with `git branch -D <name>` and the reason from the table. A branch
-   recoverable from nowhere — upstream gone, no PR — gets an explicit per-branch confirmation, since
-   this is the only step in the skill that can lose commits.
+5. After approval, delete each with
+   `git update-ref -d refs/heads/<name> <the sha you read in step
+   1>`, not
+   `git branch -D <name>`. The named form resolves the branch again at deletion time, so a commit
+   pushed onto it while you were writing the table is destroyed without a word; the ref form fails
+   instead, which is the answer you want. A branch recoverable from nowhere — upstream gone, no PR —
+   gets an explicit per-branch confirmation, since this is the only step in the skill that can lose
+   commits.
 
 ## Part 3 — Remote branches on `origin`
 

@@ -62,8 +62,23 @@ describe('classifyLocalBranch', () => {
     heldBy: new Map(),
     prIndex: new Map(),
     prLookupOk: true,
-    proofs: { isAncestor: () => false, isPatchEquivalent: () => false, squashMatches: () => false },
+    remotes: ['origin'],
+    proofs: {
+      isAncestor: () => false,
+      isPatchEquivalent: () => false,
+      branchLandedVerbatim: () => true,
+      squashMatches: () => false,
+    },
     ...overrides,
+  });
+
+  it('protects the base branch by its full name, not its last path component', () => {
+    expect(protectedBranchName('origin/main', ['origin'])).toBe('main');
+    expect(protectedBranchName('origin/release/1.x', ['origin'])).toBe('release/1.x');
+    expect(protectedBranchName('upstream/release/1.x', ['origin', 'upstream'])).toBe('release/1.x');
+    // A base that names no remote is already a local branch name.
+    expect(protectedBranchName('main', ['origin'])).toBe('main');
+    expect(protectedBranchName('release/1.x', ['origin'])).toBe('release/1.x');
   });
 
   it('never touches the base branch, the current checkout, a worktree-held branch, or an open PR', () => {
@@ -104,11 +119,18 @@ describe('classifyLocalBranch', () => {
     expect(
       classifyLocalBranch(
         branch(),
-        ctx({ prIndex: merged, proofs: { isAncestor: () => false, isPatchEquivalent: () => true } })
+        ctx({
+          prIndex: merged,
+          proofs: {
+            isAncestor: () => false,
+            isPatchEquivalent: () => true,
+            branchLandedVerbatim: () => true,
+          },
+        })
       )
     ).toEqual({
       tier: 'equivalent',
-      reason: 'every commit has a patch-equivalent on origin/main (rebase-merged, PR #9 merged)',
+      reason: 'every commit landed on origin/main byte for byte (rebase-merged, PR #9 merged)',
     });
     expect(
       classifyLocalBranch(
@@ -124,7 +146,7 @@ describe('classifyLocalBranch', () => {
       )
     ).toEqual({
       tier: 'equivalent',
-      reason: 'squash-merged as PR #9 (branch diff matches deadbeefdead)',
+      reason: 'squash-merged as PR #9 (branch diff matches deadbeefdead byte for byte)',
     });
   });
 
@@ -147,6 +169,19 @@ describe('classifyLocalBranch', () => {
     expect(classifyLocalBranch(branch(), ctx({ prLookupOk: false })).reason).toBe(
       '1 unique commit, PR state unknown — judgment pass'
     );
+  });
+
+  it('demotes a patch-id match with no byte-identical counterpart to the judgment pass', () => {
+    const failsVerbatim = {
+      isAncestor: () => false,
+      isPatchEquivalent: () => true,
+      branchLandedVerbatim: () => false,
+    };
+    expect(classifyLocalBranch(branch(), ctx({ proofs: failsVerbatim }))).toEqual({
+      tier: 'keep',
+      reason:
+        'patch-ids match origin/main but at least one commit has no byte-identical counterpart there, whitespace included (rebase-merged) — judgment pass',
+    });
   });
 
   it('plans the equivalent tier as proven until the -D flag is given', () => {
@@ -216,6 +251,35 @@ describe('planning and deleting on a real repository', () => {
     return prIndex;
   }
 
+  it('protects a slashed base branch end to end', () => {
+    const { sh, commit, repo } = fixture;
+    sh(['checkout', '-q', '-b', 'release/1.x']);
+    commit('rel.txt', 'r', 'release work');
+    sh(['push', '-q', '-u', 'origin', 'release/1.x']);
+    sh(['branch', '-q', '1.x', 'main']);
+    sh(['checkout', '-q', 'main']);
+
+    const rows = planLocalBranchPrune({
+      cwd: repo,
+      base: 'origin/release/1.x',
+      prIndex: new Map(),
+      prLookupOk: true,
+    });
+    const tiers = Object.fromEntries(rows.map((row) => [row.name, row.tier]));
+    expect(tiers['release/1.x']).toBe('skip');
+    expect(rows.find((row) => row.name === 'release/1.x').reason).toBe('protected base branch');
+    // The similarly named branch is judged on its own merits, not protected by accident.
+    expect(tiers['1.x']).not.toBe('skip');
+
+    expect(
+      deleteLocalBranch(
+        rows.find((row) => row.name === 'release/1.x'),
+        { cwd: repo, base: 'origin/release/1.x', includeEquivalent: true }
+      )
+    ).toBeNull();
+    expect(sh(['branch', '--list', 'release/1.x'])).toContain('release/1.x');
+  });
+
   it('classifies every shape of branch and deletes only what its tier allows', () => {
     const prIndex = buildScenario();
     const { repo, sh } = fixture;
@@ -270,6 +334,40 @@ describe('planning and deleting on a real repository', () => {
     );
   });
 
+  // Classifying 700 branches takes tens of seconds, during which another
+  // session can push a commit onto one of them.
+  it('refuses to force-delete a branch that moved between planning and applying', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'topic']);
+    const picked = commit('r.txt', 'r', 'rebased work');
+    sh(['checkout', '-q', 'main']);
+    commit('filler.txt', 'main moves on', 'unrelated main commit');
+    sh(['cherry-pick', picked]);
+    pushMain();
+    sh(['checkout', '-q', '-b', 'current', 'main']);
+
+    const row = planLocalBranchPrune({
+      cwd: repo,
+      base: 'origin/main',
+      prIndex: new Map(),
+      prLookupOk: true,
+    }).find((r) => r.name === 'topic');
+    expect(row.tier).toBe('equivalent');
+
+    sh(['checkout', '-q', 'topic']);
+    const newWork = commit('brand-new.txt', 'unique', 'work added after planning');
+    sh(['checkout', '-q', 'current']);
+
+    const applied = deleteLocalBranch(row, {
+      cwd: repo,
+      base: 'origin/main',
+      includeEquivalent: true,
+    });
+    expect(applied.outcome).toBe('kept');
+    expect(applied.reason).toMatch(/no longer points at the proven/);
+    expect(sh(['rev-parse', 'topic'])).toBe(newWork);
+  });
+
   // `git branch -d` judges merged-ness against HEAD, so a checkout that is
   // behind origin/main refuses branches origin/main already contains.
   it('reports a -d refusal from a stale HEAD instead of forcing, unless asked to', () => {
@@ -305,7 +403,7 @@ describe('planning and deleting on a real repository', () => {
       includeEquivalent: true,
     });
     expect(forced.outcome).toBe('deleted');
-    expect(forced.reason).toMatch(/-D after proof/);
+    expect(forced.reason).toMatch(/deleted at the proven commit/);
     expect(sh(['branch', '--list', 'merged-later'])).toBe('');
   });
 });
