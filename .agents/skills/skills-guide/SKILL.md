@@ -21,19 +21,24 @@ Standalone lookups; none depend on another skill.
 | `mobile`       | Android/iOS/Capacitor toolchain, on-device testing, store-release checklists     |
 | `testing`      | Three-tier test strategy (Vitest, Playwright, Maestro), commands, CI triggers    |
 
-## Decisions — weigh → consult → document → reconcile
+## Decisions — consult → weigh → document → reconcile
 
 | Skill                   | Role in the chain                                                              |
 | ----------------------- | ------------------------------------------------------------------------------ |
-| `walk-through-decision` | Weigh an open decision in plain language: stakes, real options, one pick       |
 | `adrs`                  | Entry point: index of all ADRs; read before proposing any architectural change |
+| `walk-through-decision` | Weigh an open decision in plain language: stakes, real options, one pick       |
 | `create-adr`            | Document a significant decision just made — adds a new ADR                     |
 | `update-adrs`           | End-of-session sweep: verify existing ADRs still match reality, amend drift    |
 
-`walk-through-decision` runs *before* a decision exists — it explains one and recommends an option,
-and deliberately stops there: it writes nothing and implements nothing, so recording the outcome
-stays an explicit later ask to `create-adr`. It is not ADR-only; it fits any open question with real
-alternatives, architectural or not.
+`adrs` stays first for architectural decisions, and the ordering is not a formality: what has
+already been decided is an input to weighing anything, which is why `walk-through-decision`'s own
+grounding step sends you to `docs/adrs/` before the first trade-off is written. A decision the ADRs
+have nothing to say about — a naming call, a process change, a product question — skips straight to
+weighing.
+
+`walk-through-decision` then runs *before* a decision exists: it explains one and recommends an
+option, and deliberately stops there. It writes nothing and implements nothing, so recording the
+outcome stays an explicit later ask to `create-adr`.
 
 ## Performance — interaction matrices and page load
 
