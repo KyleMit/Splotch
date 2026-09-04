@@ -32,6 +32,7 @@ import { entryModulePath, loadedPageEntryProblem } from '../lib/profile-preview.
 import { profilePath } from '../lib/profile-paths.mjs';
 import { rethrowIfBroken } from '../lib/error-classification.mjs';
 import {
+  PLATFORM_OWNS_ROTATION,
   SETTINGS_SECTION_ROWS,
   RESOLVED_THEME_EXPRESSION,
   clickSetupElement,
@@ -39,8 +40,9 @@ import {
   ensureCampaignTheme,
   parseCampaignTheme,
   readResolvedTheme,
+  releaseNativeRotationLock,
+  restoreNativeRotationLock,
   settingsSectionRow,
-  setNativeRotationLock,
   themeRoundTripPlan,
 } from '../lib/campaign-state.mjs';
 import {
@@ -1708,7 +1710,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   let restoreOrientation;
   let session;
   let execute;
-  let restoreNativeRotationLock;
+  let nativeRotationLockRestore;
   let cleanupPromise;
 
   function cleanup() {
@@ -1722,14 +1724,14 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
             console.warn(`cleanup: orientation restore failed (${error.message})`)
           );
       }
-      if (sessionId && execute && restoreNativeRotationLock) {
+      if (sessionId && execute && nativeRotationLockRestore) {
         // A silent failure here leaves the iPad rotation-unlocked, which
         // changes what the NEXT cell measures with no record anywhere
         // (issue 1296) — the warning is the record.
         await switchToWebContext(client, sessionId).catch((error) =>
           console.warn(`cleanup: web-context switch failed (${error.message})`)
         );
-        await setNativeRotationLock(execute, true).catch((error) =>
+        await restoreNativeRotationLock(execute, nativeRotationLockRestore).catch((error) =>
           console.warn(
             `cleanup: rotation-lock restore failed (${error.message}) — the device may measure the next cell unlocked`
           )
@@ -1810,14 +1812,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       (actions.has('rotation') ||
         (requestedOrientation && requestedOrientation !== restoreOrientation));
     if (needsNativeRotationUnlock) {
-      const initialRotationLock = await setNativeRotationLock(execute, false);
-      if (initialRotationLock === null) {
-        throw new Error(
-          'Native orientation capture is unavailable: Settings does not expose the persisted rotation lock control required by ADR-0090'
-        );
-      }
-      restoreNativeRotationLock = initialRotationLock === true;
-      if (initialRotationLock) {
+      const initialRotationLock = await releaseNativeRotationLock(execute);
+      nativeRotationLockRestore =
+        initialRotationLock === PLATFORM_OWNS_ROTATION ? null : initialRotationLock;
+      if (nativeRotationLockRestore?.lockedOrientation) {
         await execute(`location.reload(); return true;`).catch(() => null);
         await switchToWebContext(client, sessionId);
         const unlockedReady = await pollUntil(

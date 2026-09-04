@@ -26,6 +26,10 @@ export const SETTINGS_MODAL = '#settingsModal';
 export const SETTINGS_BUTTON = 'button[aria-label="Settings"]';
 export const SETTINGS_CLOSE_BUTTON = '#settingsModal button[aria-label="Close"]';
 export const QUICK_NIGHT_TOGGLE = '#quickNightToggle';
+export const QUICK_LOCK_PORTRAIT = '#quickLockPortrait';
+export const QUICK_LOCK_LANDSCAPE = '#quickLockLandscape';
+export const LOCK_ROTATION_TOGGLE = '#lockRotationToggle';
+export const FORCE_LANDSCAPE_TOGGLE = '#forceLandscapeToggle';
 export const themeOption = (theme) => `#themeOption-${theme}`;
 
 export async function settingsShellIsCompact(execute) {
@@ -196,35 +200,133 @@ export async function ensureCampaignTheme(execute, theme) {
 // a native capture may rotate the device at all.
 export const PLATFORM_OWNS_ROTATION = 'platform-owns-rotation';
 
-export async function setNativeRotationLock(execute, locked) {
-  const compact = await openAppearanceSettings(execute, 'rotation setup');
-  try {
-    // In the compact shell the lock is a Portrait/Landscape picker, so a missing
-    // #lockRotationToggle there means "different control", not "no control" —
-    // reading it as the latter would rotate the device past a lock the product
-    // really does persist. Restoring that picker needs the locked side as well as
-    // the fact of the lock, which this boolean contract cannot carry, so refuse
-    // rather than silently lose it: orientation is prepared before rotating.
-    if (compact) {
-      throw new Error(
-        'Rotation setup cannot run from the compact Settings shell; prepare orientation before rotating into it'
-      );
-    }
-    const initial = await execute(`
-      const toggle = document.querySelector('#lockRotationToggle');
-      return toggle ? toggle.getAttribute('aria-checked') === 'true' : null;
-    `);
-    if (initial === null) return PLATFORM_OWNS_ROTATION;
-    if (initial !== locked) {
-      await clickSetupElement(execute, '#lockRotationToggle');
+async function readCompactLockedOrientation(execute) {
+  const selected = await execute(`
+    const portrait = document.querySelector('${QUICK_LOCK_PORTRAIT}');
+    const landscape = document.querySelector('${QUICK_LOCK_LANDSCAPE}');
+    if (!portrait || !landscape) return null;
+    return [
+      portrait.getAttribute('aria-pressed') === 'true' ? 'portrait' : null,
+      landscape.getAttribute('aria-pressed') === 'true' ? 'landscape' : null,
+    ].filter(Boolean);
+  `);
+  if (selected === null) return PLATFORM_OWNS_ROTATION;
+  if (selected.length > 1) {
+    throw new Error('Compact Settings reports both rotation-lock orientations selected');
+  }
+  return { lockedOrientation: selected[0] ?? null };
+}
+
+async function readSectionedLockedOrientation(execute) {
+  const state = await execute(`
+    const lock = document.querySelector('${LOCK_ROTATION_TOGGLE}');
+    if (!lock) return null;
+    const locked = lock.getAttribute('aria-checked') === 'true';
+    const forceLandscape = document.querySelector('${FORCE_LANDSCAPE_TOGGLE}');
+    return {
+      locked,
+      forceLandscape: forceLandscape?.getAttribute('aria-checked') === 'true',
+      forceControlPresent: forceLandscape !== null,
+    };
+  `);
+  if (state === null) return PLATFORM_OWNS_ROTATION;
+  if (state.locked && !state.forceControlPresent) {
+    throw new Error('Settings reports rotation locked without its orientation control');
+  }
+  return {
+    lockedOrientation: state.locked ? (state.forceLandscape ? 'landscape' : 'portrait') : null,
+  };
+}
+
+async function setCompactLockedOrientation(execute, desired) {
+  const initial = await readCompactLockedOrientation(execute);
+  if (initial === PLATFORM_OWNS_ROTATION) {
+    throw new Error('Compact Settings no longer exposes its rotation picker');
+  }
+  if (initial.lockedOrientation === desired) return;
+  if (initial.lockedOrientation) {
+    await clickSetupElement(
+      execute,
+      initial.lockedOrientation === 'landscape' ? QUICK_LOCK_LANDSCAPE : QUICK_LOCK_PORTRAIT
+    );
+    await waitForUi(
+      execute,
+      `document.querySelector('${QUICK_LOCK_PORTRAIT}') !== null && document.querySelector('${QUICK_LOCK_LANDSCAPE}') !== null && document.querySelector('${QUICK_LOCK_PORTRAIT}').getAttribute('aria-pressed') !== 'true' && document.querySelector('${QUICK_LOCK_LANDSCAPE}').getAttribute('aria-pressed') !== 'true'`,
+      'compact rotation lock to become disabled'
+    );
+  }
+  if (desired) {
+    const selector = desired === 'landscape' ? QUICK_LOCK_LANDSCAPE : QUICK_LOCK_PORTRAIT;
+    await clickSetupElement(execute, selector);
+    await waitForUi(
+      execute,
+      `document.querySelector('${selector}')?.getAttribute('aria-pressed') === 'true'`,
+      `compact rotation lock to select ${desired}`
+    );
+  }
+}
+
+async function setSectionedLockedOrientation(execute, desired) {
+  let current = await readSectionedLockedOrientation(execute);
+  if (current === PLATFORM_OWNS_ROTATION) {
+    throw new Error('Settings no longer exposes its rotation lock controls');
+  }
+  if (!desired) {
+    if (current.lockedOrientation) {
+      await clickSetupElement(execute, LOCK_ROTATION_TOGGLE);
       await waitForUi(
         execute,
-        `document.querySelector('#lockRotationToggle')?.getAttribute('aria-checked') === '${locked}'`,
-        `rotation lock to become ${locked ? 'enabled' : 'disabled'}`
+        `document.querySelector('${LOCK_ROTATION_TOGGLE}')?.getAttribute('aria-checked') === 'false'`,
+        'rotation lock to become disabled'
       );
+    }
+    return;
+  }
+  if (!current.lockedOrientation) {
+    await clickSetupElement(execute, LOCK_ROTATION_TOGGLE);
+    await waitForUi(
+      execute,
+      `document.querySelector('${LOCK_ROTATION_TOGGLE}')?.getAttribute('aria-checked') === 'true' && document.querySelector('${FORCE_LANDSCAPE_TOGGLE}') !== null`,
+      'rotation lock controls to become enabled'
+    );
+    current = await readSectionedLockedOrientation(execute);
+  }
+  if (current.lockedOrientation !== desired) {
+    await clickSetupElement(execute, FORCE_LANDSCAPE_TOGGLE);
+    await waitForUi(
+      execute,
+      `document.querySelector('${FORCE_LANDSCAPE_TOGGLE}')?.getAttribute('aria-checked') === '${desired === 'landscape'}'`,
+      `rotation lock to select ${desired}`
+    );
+  }
+}
+
+async function setLockedOrientation(execute, compact, desired) {
+  if (compact) return setCompactLockedOrientation(execute, desired);
+  return setSectionedLockedOrientation(execute, desired);
+}
+
+export async function releaseNativeRotationLock(execute) {
+  const compact = await openAppearanceSettings(execute, 'rotation setup');
+  try {
+    const initial = compact
+      ? await readCompactLockedOrientation(execute)
+      : await readSectionedLockedOrientation(execute);
+    if (initial !== PLATFORM_OWNS_ROTATION) {
+      await setLockedOrientation(execute, compact, null);
     }
     return initial;
   } finally {
     await closeSettings(execute, 'rotation setup');
+  }
+}
+
+export async function restoreNativeRotationLock(execute, initial) {
+  if (initial === PLATFORM_OWNS_ROTATION || !initial?.lockedOrientation) return;
+  const compact = await openAppearanceSettings(execute, 'rotation restore');
+  try {
+    await setLockedOrientation(execute, compact, initial.lockedOrientation);
+  } finally {
+    await closeSettings(execute, 'rotation restore');
   }
 }

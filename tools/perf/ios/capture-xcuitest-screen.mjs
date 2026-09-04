@@ -50,7 +50,8 @@ import {
   parseCampaignOrientation,
   parseCampaignTheme,
   readResolvedTheme,
-  setNativeRotationLock,
+  releaseNativeRotationLock,
+  restoreNativeRotationLock,
 } from '../lib/campaign-state.mjs';
 
 const APP_PATH = '/';
@@ -718,7 +719,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   let originalOrientation;
   let execute;
   let executeAsync;
-  let restoreNativeRotationLock = false;
+  let nativeRotationLockRestore;
   // Three-valued on purpose: null means the rotation path was never exercised
   // (the device already sat in the requested orientation), which is not the same
   // claim as the product owning an in-app lock.
@@ -746,14 +747,14 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
             console.warn(`cleanup: orientation restore failed (${error.message})`)
           );
       }
-      if (sessionId && execute && restoreNativeRotationLock) {
+      if (sessionId && execute && nativeRotationLockRestore) {
         // A silent failure here leaves the iPad rotation-unlocked, which
         // changes what the NEXT cell measures with no record anywhere
         // (issue 1296) — the warning is the record.
         await switchToWebContext(client, sessionId).catch((error) =>
           console.warn(`cleanup: web-context switch failed (${error.message})`)
         );
-        await setNativeRotationLock(execute, true).catch((error) =>
+        await restoreNativeRotationLock(execute, nativeRotationLockRestore).catch((error) =>
           console.warn(
             `cleanup: rotation-lock restore failed (${error.message}) — the device may measure the next cell unlocked`
           )
@@ -835,13 +836,13 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       originalOrientation,
     });
     if (needsRotationUnlock) {
-      const initialRotationLock = await setNativeRotationLock(execute, false);
+      const initialRotationLock = await releaseNativeRotationLock(execute);
       // No in-app lock to release means nothing to bypass: rotating the device is
       // the only orientation path the product offers on this platform, so ADR-0090's
       // persisted-setting rule is satisfied rather than skipped.
       platformOwnsRotation = initialRotationLock === PLATFORM_OWNS_ROTATION;
-      restoreNativeRotationLock = platformOwnsRotation ? false : initialRotationLock;
-      if (restoreNativeRotationLock) {
+      nativeRotationLockRestore = platformOwnsRotation ? null : initialRotationLock;
+      if (nativeRotationLockRestore?.lockedOrientation) {
         await execute('location.reload(); return true;').catch(() => null);
         await switchToWebContext(client, sessionId);
         const unlockedReady = await pollUntil(
