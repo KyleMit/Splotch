@@ -94,10 +94,15 @@ export function worktreeHold(worktree, processCwds) {
   return null;
 }
 
-// Re-read the live process list for one worktree. The plan is minutes old by
-// the time --apply runs and a session can start inside a worktree in between.
-export function stillHeld(worktree) {
-  return worktreeHold(worktree, listProcessCwds());
+// Re-ask the hold question for one worktree from scratch. Both halves have to
+// come from the live system: a plan is minutes old by the time `--apply` runs,
+// so a session can have started inside the worktree *and* a capture can have
+// locked it since. Reusing the plan's `locked` value would answer the second
+// half with a stale snapshot, which is the same class of mistake as trusting a
+// branch name to still point where it did.
+export function stillHeld(worktreePath, cwd = worktreePath) {
+  const live = listWorktrees(cwd).find((worktree) => worktree.path === worktreePath);
+  return worktreeHold({ ...(live ?? {}), real: worktreePath }, listProcessCwds());
 }
 
 // `git status --porcelain --ignored=matching` marks ignored entries with `!!`

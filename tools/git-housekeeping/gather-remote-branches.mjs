@@ -10,16 +10,25 @@
 // Columns:
 //   ahead   commits on the branch that are NOT on the base (unique work)
 //   behind  commits on the base that the branch is missing (how stale)
-//   inbase  "yes" when every commit already has an equivalent on the base
-//           (patch-id match — catches ordinary and rebase merges; a squash
-//           merge shows inbase=no and still needs a PR-status check)
+//   inbase  "yes" when the tip is already on the base, or every commit has a
+//           byte-identical counterpart there. Git's own patch-id ignores
+//           whitespace, so the match is re-proved with --verbatim before this
+//           says yes — the skill kills an inbase=yes branch on sight, and this
+//           repo reformats Markdown. A squash merge shows inbase=no and still
+//           needs a PR-status check.
 //   age     days since the branch tip was last committed to
 //   date    tip commit date (ISO, local)
 
 import { parseArgs } from 'node:util';
 
 import { isMain, parseOrFail, ROOT, runMain } from '../lib/proc.mjs';
-import { currentBranchOf, fetchBase, isPatchEquivalent, listBranchRefs } from './lib/git-facts.mjs';
+import {
+  branchLandedVerbatim,
+  currentBranchOf,
+  fetchBase,
+  isPatchEquivalent,
+  listBranchRefs,
+} from './lib/git-facts.mjs';
 
 const SECONDS_PER_DAY = 86400;
 const MAX_NAME_WIDTH = 48;
@@ -54,7 +63,9 @@ export function gatherRemoteBranches({ cwd, base, remote, now = Date.now() }) {
       branch: ref.branch,
       ahead: ref.ahead,
       behind: ref.behind,
-      inbase: ref.ahead === 0 || isPatchEquivalent(baseRef, ref.name, cwd),
+      inbase:
+        ref.ahead === 0 ||
+        (isPatchEquivalent(baseRef, ref.name, cwd) && branchLandedVerbatim(baseRef, ref.name, cwd)),
       ageDays: Math.floor((nowSeconds - ref.committedAt) / SECONDS_PER_DAY),
       date: ref.date,
       author: ref.author,

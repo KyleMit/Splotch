@@ -368,6 +368,38 @@ describe('planning and deleting on a real repository', () => {
     expect(sh(['rev-parse', 'topic'])).toBe(newWork);
   });
 
+  it('refuses to force-delete a branch a worktree claimed after planning', () => {
+    const { sh, commit, repo, pushMain, root } = fixture;
+    sh(['checkout', '-q', '-b', 'topic']);
+    const picked = commit('r.txt', 'r', 'rebased work');
+    sh(['checkout', '-q', 'main']);
+    commit('filler.txt', 'main moves on', 'unrelated main commit');
+    sh(['cherry-pick', picked]);
+    pushMain();
+    sh(['checkout', '-q', '-b', 'current', 'main']);
+
+    const row = planLocalBranchPrune({
+      cwd: repo,
+      base: 'origin/main',
+      prIndex: new Map(),
+      prLookupOk: true,
+    }).find((r) => r.name === 'topic');
+    expect(row.tier).toBe('equivalent');
+
+    // A session checks the branch out *after* the plan was made.
+    const worktree = join(root, 'live-session');
+    sh(['worktree', 'add', '-q', worktree, 'topic']);
+
+    const applied = deleteLocalBranch(row, {
+      cwd: repo,
+      base: 'origin/main',
+      includeEquivalent: true,
+    });
+    expect(applied.outcome).toBe('kept');
+    expect(applied.reason).toMatch(/checked out in/);
+    expect(sh(['rev-parse', 'HEAD'], { cwd: worktree })).toBe(row.tip);
+  });
+
   // `git branch -d` judges merged-ness against HEAD, so a checkout that is
   // behind origin/main refuses branches origin/main already contains.
   it('reports a -d refusal from a stale HEAD instead of forcing, unless asked to', () => {

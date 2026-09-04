@@ -1,7 +1,9 @@
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   branchLandedVerbatim,
   deleteRefAtCommit,
+  worktreeHoldingBranch,
   isAncestor,
   isPatchEquivalent,
   listBranchRefs,
@@ -241,6 +243,28 @@ describe('merged-ness proofs on a real repository', () => {
     const current = sh(['rev-parse', 'topic']);
     expect(deleteRefAtCommit('topic', current, repo).ok).toBe(true);
     expect(sh(['branch', '--list', 'topic'])).toBe('');
+  });
+
+  // `update-ref` is lower-level than `git branch -D` and drops its refusal to
+  // delete a branch checked out elsewhere, which would leave that session's
+  // HEAD pointing at a ref that no longer exists.
+  it('deleteRefAtCommit refuses a branch checked out in a worktree, even at the right commit', () => {
+    const { sh, commit, repo, root } = fixture;
+    sh(['checkout', '-q', '-b', 'topic']);
+    const tip = commit('t.txt', 't', 'topic work');
+    sh(['checkout', '-q', 'main']);
+    const worktree = join(root, 'live-session');
+    sh(['worktree', 'add', '-q', worktree, 'topic']);
+
+    expect(worktreeHoldingBranch('topic', repo)).toContain('live-session');
+    const refused = deleteRefAtCommit('topic', tip, repo);
+    expect(refused.ok).toBe(false);
+    expect(refused.stderr).toMatch(/checked out in/);
+    expect(sh(['branch', '--list', 'topic'])).toContain('topic');
+    expect(sh(['rev-parse', 'HEAD'], { cwd: worktree })).toBe(tip);
+
+    sh(['worktree', 'remove', worktree]);
+    expect(deleteRefAtCommit('topic', tip, repo).ok).toBe(true);
   });
 
   it('listBranchRefs counts ahead/behind against the requested base for every local branch', () => {

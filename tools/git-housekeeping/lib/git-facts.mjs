@@ -216,12 +216,27 @@ export function squashMatches(base, tip, mergeCommit, cwd) {
   return branchId !== null && branchId === patchIdOf(landedDiff.stdout, cwd);
 }
 
+// The worktree currently holding a branch, read fresh from git, or null.
+export function worktreeHoldingBranch(name, cwd) {
+  return listWorktrees(cwd).find((worktree) => worktree.branch === name)?.path ?? null;
+}
+
 // Delete a ref only while it still points at the commit a proof was computed
 // against. `git branch -D` resolves the name at deletion time, so a branch that
 // gained a commit between planning and applying — tens of seconds, on a
 // checkout with 700 branches and other sessions running — is destroyed on the
 // strength of a proof about a commit it no longer carries.
+//
+// `update-ref` is the atomic form, but it is also lower-level than
+// `git branch -D` and drops that command's refusal to delete a branch checked
+// out in another worktree. Deleting one leaves that session's HEAD pointing at
+// a ref that no longer exists, so the check `update-ref` does not make is made
+// here, against a worktree list read at deletion time rather than planning time.
 export function deleteRefAtCommit(name, expectedTip, cwd) {
+  const holder = worktreeHoldingBranch(name, cwd);
+  if (holder) {
+    return { ok: false, status: null, stdout: '', stderr: `checked out in ${holder}` };
+  }
   return tryGit(['update-ref', '-d', `refs/heads/${name}`, expectedTip], { cwd });
 }
 

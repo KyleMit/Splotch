@@ -125,7 +125,7 @@ export async function salvageWorktreeEvidence(options, { cwd = ROOT } = {}) {
       if (row.outcome !== 'salvage') continue;
       // The plan is minutes old; a session can have started in this worktree
       // since, and a cross-filesystem move deletes the source after copying.
-      const held = stillHeld({ real: row.worktree, locked: row.locked ?? null });
+      const held = stillHeld(row.worktree, cwd);
       if (held) {
         Object.assign(row, held);
         continue;

@@ -7,6 +7,7 @@ import {
   SALVAGE_PREFIXES,
 } from '../lib/agent-worktrees.mjs';
 import { moveTree, parseSalvageArgs, planSalvage } from '../salvage-worktree-evidence.mjs';
+import { stillHeld } from '../lib/agent-worktrees.mjs';
 import { createTempRepo } from './fixtures/temp-repo.mjs';
 
 describe('parseSalvageArgs', () => {
@@ -136,6 +137,27 @@ describe('planSalvage and moveTree on a real repository', () => {
     expect(plan.rows.every((row) => row.path === null)).toBe(true);
     expect(existsSync(join(lockedReal, 'perf-profiles', 'live', 'trace.json'))).toBe(true);
     expect(existsSync(join(busyReal, 'perf-profiles', 'run-1', 'trace.json'))).toBe(true);
+  });
+
+  // The recheck has to re-read git, not reuse the plan's snapshot: a capture can
+  // lock the worktree in the window between planning and moving.
+  it('sees a lock acquired after the plan was made', () => {
+    const { repo, sh } = fixture;
+    const wt = join(agents, 'cap');
+    sh(['worktree', 'add', '-q', wt, '--detach', 'main']);
+    const real = realpathSync(wt);
+    mkdirSync(join(real, 'perf-profiles', 'live'), { recursive: true });
+    writeFileSync(join(real, 'perf-profiles', 'live', 'trace.json'), '{}');
+
+    const plan = planSalvage({ cwd: repo, roots: [agents], dest, processCwds: [] });
+    expect(plan.rows.map((row) => row.outcome)).toContain('salvage');
+    expect(stillHeld(real, repo)).toBeNull();
+
+    sh(['worktree', 'lock', '--reason', 'capture reserved', wt]);
+    expect(stillHeld(real, repo)).toEqual({
+      outcome: 'skip (locked)',
+      reason: 'capture reserved',
+    });
   });
 
   it('refuses to plan over an existing destination', () => {

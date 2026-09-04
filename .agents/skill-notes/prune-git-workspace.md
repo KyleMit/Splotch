@@ -147,6 +147,32 @@ one second **is** the other commit, so a branch built that way is an ancestor ra
 patch-equivalent and the test proves nothing. Build equivalence cases by cherry-picking onto a base
 that has moved.
 
+## What round 2 found (2026-09-04)
+
+The four round-1 fixes held. Three more, and the shape of two of them is the lesson: **a fix can
+carry its own defect in, and the reviewer that found the first one is the cheapest way to catch
+that.**
+
+* **The remote pass still used the whitespace-blind proof.** `gather-remote-branches` computed
+  `inbase` from `git cherry` alone, and the skill sends every `inbase=yes` branch straight to the
+  kill bucket — so the whitespace defect survived on the surface that produces a deletion script for
+  `origin`. Fixing the local pass and not this one was a failure to ask where else the same proof
+  was used. It now carries `branchLandedVerbatim` too, and the cost turned out to be nothing: only a
+  branch with `ahead > 0` needs the proof at all, which was 5 of 419.
+* **`git update-ref -d` dropped a guarantee `git branch -D` had been providing.** `-D` refuses to
+  delete a branch checked out in another worktree; `update-ref` is lower-level and does not. So the
+  round-1 fix for the stale-tip race introduced a worse failure than the one it closed: deleting a
+  branch out from under a live session, leaving its `HEAD` pointing at a ref that no longer exists.
+  Reproduced by checking the branch out into a worktree after planning. The worktree check is now
+  made explicitly, against a list read at deletion time. Worth stating the general form: replacing a
+  high-level command with a lower-level one to gain a property silently gives up whatever else the
+  high-level command was doing, and that set is rarely written down anywhere the substitution is
+  visible.
+* **`stillHeld` re-read only half the world.** It refreshed process cwds but took the lock state
+  from the plan — and salvage rows never carried one, so it was always `null`. A capture that locks
+  a worktree in the window between planning and moving was invisible to exactly the recheck added to
+  catch it. It now re-reads `git worktree list` as well.
+
 ## Rejected
 
 * **`git branch --merged` as the classifier.** Same ancestry test as `-d`, misses every rebase and

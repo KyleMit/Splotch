@@ -83,8 +83,10 @@ real rebase-merge in a repository that keeps moving, which on this checkout was 
 Forced deletion goes through `git update-ref -d refs/heads/<name> <proven tip>`, never
 `git branch -D`. The name would be resolved again at deletion time, so a branch that gained a commit
 during the tens of seconds classification takes would be destroyed on the strength of a proof about
-a commit it no longer carries. `git branch -d` needs no such guard: it re-derives merged-ness itself
-and refuses a branch that moved somewhere unmerged.
+a commit it no longer carries. `update-ref` is also lower-level than `git branch -D` and drops that
+command's refusal to delete a branch checked out in another worktree, so that check is made
+explicitly against a worktree list read at deletion time. `git branch -d` needs neither guard: it
+re-derives merged-ness itself and refuses a branch that moved somewhere unmerged.
 
 `git branch -d` is the safety mechanism and the script never bypasses it for the `delete` tier. It
 judges merged-ness against the invoking checkout's `HEAD`, so a checkout behind `origin/main`
@@ -94,10 +96,11 @@ documented way past it. `--apply` refuses to run without PR state, because an op
 never-delete set and cannot be excluded blind; fix `gh auth status` and rerun.
 
 `branches:gather` is the remote half's fact table (ahead, behind, `inbase`, age, tip subject, and a
-`*` on the current checkout's branch), oldest first. `inbase=yes` means every commit already has a
-patch-equivalent on the base; a squash-merged branch shows `no` and needs the PR check the skill
-performs. Like every patch-id here it is whitespace-blind, which is why it feeds a triage the skill
-performs rather than a deletion the script performs. It deletes nothing: remote deletion is
+`*` on the current checkout's branch), oldest first. `inbase=yes` means the tip is already on the
+base, or every commit has a byte-identical counterpart there — it carries the same verbatim proof
+the local pass uses, because the skill kills an `inbase=yes` branch on sight. Only a branch with
+`ahead > 0` pays for that proof; on the 2026-09-04 checkout that was 5 of 419. A squash-merged
+branch shows `no` and needs the PR check the skill performs. It deletes nothing: remote deletion is
 outward-facing and stays the user's, via the script the skill hands back.
 
 ## Libraries

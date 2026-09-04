@@ -35,6 +35,25 @@ describe('gatherRemoteBranches on a real repository', () => {
     fixture.cleanup();
   });
 
+  // inbase=yes sends a branch straight to the skill's kill bucket, so it carries
+  // the verbatim proof too — git's own patch-id would call this one merged.
+  it('does not call a whitespace-only difference inbase', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    sh(['checkout', '-q', '-b', 'spaced']);
+    commit('message.txt', 'a  b\n', 'add message');
+    sh(['push', '-q', '-u', 'origin', 'spaced']);
+    sh(['checkout', '-q', 'main']);
+    commit('message.txt', 'ab\n', 'add message');
+    pushMain();
+    sh(['fetch', '-q', 'origin']);
+
+    const row = gatherRemoteBranches({ cwd: repo, base: 'main', remote: 'origin' }).find(
+      (r) => r.branch === 'spaced'
+    );
+    expect(row.ahead).toBe(1);
+    expect(row.inbase).toBe(false);
+  });
+
   it('reports ahead/behind/inbase per remote branch, oldest first, marking the current one', () => {
     const { sh, commit, repo, pushMain } = fixture;
     sh(['checkout', '-q', '-b', 'stale']);

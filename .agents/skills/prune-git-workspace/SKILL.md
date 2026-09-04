@@ -77,9 +77,10 @@ carries its proof and PR — then `npm run branches:prune -- --apply --include-e
 is the one place the scripted pass deletes a branch git itself would refuse, and only behind the
 script's own two-part proof; it is also the way past a `kept (git branch -d refused …)` row, which
 means the current checkout's `HEAD` is behind `origin/main`, not that the branch is unmerged. Those
-deletions name the proven commit id, so a branch another session pushed to since the plan was made
-is reported as `kept` rather than destroyed. Without PR state the script plans but refuses to apply
-— an open PR is in the never-touch set and cannot be excluded blind.
+deletions name the proven commit id and re-check the worktree list, so a branch another session
+pushed to or checked out since the plan was made is reported as `kept` rather than destroyed.
+Without PR state the script plans but refuses to apply — an open PR is in the never-touch set and
+cannot be excluded blind.
 
 ### Judgment pass (agent)
 
@@ -117,9 +118,9 @@ then for each branch:
 ## Part 3 — Remote branches on `origin`
 
 `npm run branches:gather` prints one row per remote branch, oldest first: `ahead`, `behind`,
-`inbase` (`yes` = every commit has a patch-equivalent on main; **squash merges show `no`** and need
-the PR check), `age`, `date`, `subject`, and `*` on the current checkout. Add `--json` for
-machine-readable rows, `--no-fetch` to skip the round-trip on a rerun.
+`inbase` (`yes` = the tip is on main, or every commit has a byte-identical counterpart there;
+**squash merges show `no`** and need the PR check), `age`, `date`, `subject`, and `*` on the current
+checkout. Add `--json` for machine-readable rows, `--no-fetch` to skip the round-trip on a rerun.
 
 Sort every branch (minus the never-touch set) into a bucket:
 

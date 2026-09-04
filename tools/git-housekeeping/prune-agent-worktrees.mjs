@@ -89,7 +89,7 @@ export function planWorktreePrune({ cwd, roots, base, processCwds, onProgress })
 export function removeWorktree(row, { mainCheckout }) {
   // Same reason the salvage rechecks: the plan is minutes old and removing a
   // directory under a live session fails strangely later.
-  const held = stillHeld(row);
+  const held = stillHeld(row.real, mainCheckout);
   if (held) return held;
   const result = tryGit(['worktree', 'remove', row.real], { cwd: mainCheckout });
   if (result.ok) return { outcome: 'removed', reason: row.reason };
