@@ -1,29 +1,53 @@
 {
   "schemaVersion": 1,
   "profileVersion": 1,
-  "sourceDigest": "14e979d69b7242ec5eee84725c476c9e4d6f69e5fa55bdf142b66cc4d2c09d95",
-  "calibratedOn": "2026-08-27",
-  "lighthouseVersion": "13.4.0",
+  "sourceDigest": "d45f9ec71044d80a4eddf3512609d98e24787d7a4286efe61969a8625b6f60db",
+  "calibratedOn": "2026-09-03",
+  "lighthouseVersion": "13.4.1",
   "samplesPerProfile": 3,
   "profiles": {
     "phone-portrait": {
       "first": {
-        "baseline": { "fcpMs": 1599, "lcpMs": 3022 },
-        "limits": { "fcpMs": 2600, "lcpMs": 5500 }
+        "baseline": {
+          "fcpMs": 1973,
+          "lcpMs": 4412
+        },
+        "limits": {
+          "fcpMs": 2600,
+          "lcpMs": 5500
+        }
       },
       "repeat": {
-        "baseline": { "fcpMs": 705, "lcpMs": 822 },
-        "limits": { "fcpMs": 1200, "lcpMs": 2000 }
+        "baseline": {
+          "fcpMs": 706,
+          "lcpMs": 931
+        },
+        "limits": {
+          "fcpMs": 1200,
+          "lcpMs": 2000
+        }
       }
     },
     "tablet-landscape": {
       "first": {
-        "baseline": { "fcpMs": 1599, "lcpMs": 3022 },
-        "limits": { "fcpMs": 2600, "lcpMs": 5500 }
+        "baseline": {
+          "fcpMs": 1972,
+          "lcpMs": 4414
+        },
+        "limits": {
+          "fcpMs": 2600,
+          "lcpMs": 5500
+        }
       },
       "repeat": {
-        "baseline": { "fcpMs": 705, "lcpMs": 825 },
-        "limits": { "fcpMs": 1200, "lcpMs": 2000 }
+        "baseline": {
+          "fcpMs": 706,
+          "lcpMs": 931
+        },
+        "limits": {
+          "fcpMs": 1200,
+          "lcpMs": 2000
+        }
       }
     }
   }
