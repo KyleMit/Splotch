@@ -59,8 +59,11 @@ Secondary findings, recorded so a revisit does not re-derive them:
 * Stamp spacing is not a lever: 5× fewer stamps buys 8% at authored scale (1.8% at iPad scale) and
   costs 12× the pixel change.
 
-The spike code survives on `origin/spike/gpu-crayon` (tip 13c152be033b36feaf6047b3256fd7be493eb963,
-with `-stamp`/`-ciallo`/`-sdf` sibling branches); the campaign context is
+The spike code survives on `origin/spike/gpu-crayon` (tip 13c152be033b36feaf6047b3256fd7be493eb963),
+which carries all three GPU architectures plus the CPU baseline as renderers selectable in the
+`/dev/gpu-crayon` harness — that one branch is the whole record. The per-architecture
+`-stamp`/`-ciallo`/`-sdf` branches were single-renderer presentation variants of it, subtractive and
+never pushed to origin. The campaign context is
 `docs/scratchpad/perf/crayon-elimination-campaign-2026-08-26.md` (idea i15).
 
 ## Consequences
@@ -71,7 +74,7 @@ with `-stamp`/`-ciallo`/`-sdf` sibling branches); the campaign context is
   attachment-area economics) starts by formulating a **behavior-preserving** glaze — the spike's
   `gl.MIN` renderers are the appearance-rejected `m = 1` form (ADR-0148), so its timings are a lower
   bound — then re-measures attachment-area scaling and the software-rasterizer floor.
-* − The spike branches are unmerged and will rot against the moving engine; they document the
+* − The spike branch is unmerged and will rot against the moving engine; it documents the
   architectures, not a mergeable implementation.
 * − The three per-runtime deposition pipelines ADR-0146–0148 describe stay, with their maintenance
   cost — this ADR closes the cheapest-looking escape from them.
