@@ -1724,7 +1724,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
             console.warn(`cleanup: orientation restore failed (${error.message})`)
           );
       }
-      if (sessionId && execute && nativeRotationLockRestore) {
+      if (sessionId && execute && nativeRotationLockRestore?.lockedOrientation) {
         // A silent failure here leaves the iPad rotation-unlocked, which
         // changes what the NEXT cell measures with no record anywhere
         // (issue 1296) — the warning is the record.
