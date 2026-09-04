@@ -158,12 +158,10 @@ describe('opening Settings', () => {
     };
 
     try {
-      const result = expect(setNativeRotationLock(execute, false)).resolves.toBe(
-        PLATFORM_OWNS_ROTATION
-      );
+      const result = setNativeRotationLock(execute, false);
       await vi.runAllTimersAsync();
 
-      await result;
+      await expect(result).resolves.toBe(PLATFORM_OWNS_ROTATION);
       expect(clicked).toContain(SETTINGS_BUTTON);
     } finally {
       vi.useRealTimers();

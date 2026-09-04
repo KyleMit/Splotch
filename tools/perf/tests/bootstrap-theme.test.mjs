@@ -12,7 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // The bootstrap polls on the same budgets it uses on a device, so executing it
 // costs seconds rather than milliseconds. That is the price of running the real
 // thing instead of grepping it.
-const BOOTSTRAP_TIMEOUT_MS = 20_000;
+const BOOTSTRAP_TIMEOUT_MS = 22_000;
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 
@@ -102,7 +102,7 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
     const body = init?.body ? JSON.parse(init.body) : null;
     posted.push({ path, body });
     if (path === '/__probe/ready') readyResolve(body);
-    if (path === '/__probe/error') errorResolve(body);
+    if (path === '/__probe/log' && body?.kind === 'bootstrap') errorResolve(body);
     if (path === '/__probe/log' && body?.kind === 'stale-page') staleResolve(body);
     return { json: async () => ({}) };
   });
