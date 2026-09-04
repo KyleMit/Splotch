@@ -27,15 +27,26 @@ belongs to `create-pr-review-prompt`.
 ## Before either mode: refresh the live state
 
 Handoff content assembled from memory hands off a state that no longer exists. Immediately before
-writing, re-read the facts you are about to assert — the current branch, the log, the working tree,
-the PR and its CI, and any background processes or servers this session started:
+writing, re-read the facts you are about to assert — the branch and how it stands against its
+upstream, the working tree, the PR and its CI, and any background processes or servers this session
+started:
 
 ```
-git branch --show-current && git status --short && git log --oneline -10
+git status --short --branch
+git log --oneline @{u}..HEAD || git log --oneline -10
 ```
 
-**Push the working branch if it has unpushed commits** — in both modes. A handoff pointing at
-commits that live only on this container's disk is a dead link.
+`--branch` is load-bearing. Plain `git status --short` lists modified files and says nothing about
+`[ahead N]`, and a plain `git log` never compares against the upstream, so between them a branch
+whose commits exist only on this disk looks identical to one that is fully pushed. `@{u}..HEAD`
+fails outright when the branch has no upstream, which is itself the answer: nothing is pushed.
+
+**A handoff carries only what is pushed** — in both modes, and this is what the portability above
+rests on. Commit and push everything the next session needs before writing either output; to a
+receiver on another machine an unpushed commit and an uncommitted edit are equally invisible, and a
+handoff pointing at either is a dead link. If something is deliberately staying behind — a scratch
+file, a half-finished experiment worth abandoning — name it in the handoff as work the receiver does
+*not* have, so the gap is stated rather than discovered.
 
 ## What the handoff carries
 
