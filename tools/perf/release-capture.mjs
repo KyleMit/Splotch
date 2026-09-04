@@ -92,11 +92,14 @@ export function rigPorts(roles = PORT_ROLES) {
   );
 }
 
+// A path that no longer exists is the pruned-worktree case and keeps its
+// spelling; anything else realpath refuses is a real fault.
 function realPath(path) {
   try {
     return realpathSync(path);
-  } catch {
-    return path;
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return path;
+    throw error;
   }
 }
 
@@ -273,26 +276,33 @@ export function collectInventory({
   return [...byPid.values()].sort((a, b) => a.pid - b.pid);
 }
 
+// ESRCH is the only "gone". EPERM is a process this user cannot signal — alive,
+// and never one this release should have been aiming at.
 const alive = (pid) => {
   try {
     process.kill(pid, 0);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error.code === 'ESRCH') return false;
+    if (error.code === 'EPERM') return true;
+    throw error;
   }
 };
+
+const isGone = (error) => error.code === 'ESRCH';
 
 function signalGroup(pid, signal) {
   // Every rig server is spawned into its own process group so the vite
   // grandchild goes with the wrapper; a plain kill is the fallback for the
-  // ones that were not.
+  // ones that were not (no group of their own reads as ESRCH on the group).
   try {
     process.kill(-pid, signal);
-  } catch {
+  } catch (error) {
+    if (!isGone(error)) throw error;
     try {
       process.kill(pid, signal);
-    } catch {
-      // already gone
+    } catch (fallbackError) {
+      if (!isGone(fallbackError)) throw fallbackError;
     }
   }
 }
@@ -316,7 +326,9 @@ async function drainAppiumSessions(port) {
   const get = async (path, timeout) => {
     try {
       const response = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(timeout) });
-      return response.ok ? await response.json().catch(() => null) : null;
+      // A body that is not JSON is something other than Appium answering on
+      // the port; that reads as no sessions, the same as a refused connection.
+      return response.ok ? await response.json() : null;
     } catch (error) {
       rethrowIfBroken(error);
       return null;
