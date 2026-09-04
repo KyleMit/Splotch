@@ -247,11 +247,6 @@
       stopDrawerMotion();
   }
 
-  function recoverDrawerMotionAfterCancellation(event: TransitionEvent) {
-    if (event.target === event.currentTarget && event.propertyName.startsWith('grid-template-'))
-      scheduleDrawerMotionProbe();
-  }
-
   function openFlyoutWrapper() {
     if (!openFlyout) return undefined;
     return openFlyout === 'brush' ? brushWrapperEl : strokeWrapperEl;
@@ -446,12 +441,7 @@
   <!-- Always rendered; the drawer's open/closed state and each control's toggle
        in Settings are driven purely by CSS. app.html's <html> seed owns
        first paint; the panel-local publish effect owns hydrated changes. -->
-  <div
-    class="actions-drawer"
-    bind:this={drawerEl}
-    ontransitionend={finishDrawerMotion}
-    ontransitioncancel={recoverDrawerMotionAfterCancellation}
-  >
+  <div class="actions-drawer" bind:this={drawerEl} ontransitionend={finishDrawerMotion}>
     <div class="actions-drawer-inner">
       <BrushControl
         bind:wrapperEl={brushWrapperEl}

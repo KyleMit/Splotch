@@ -461,32 +461,6 @@ test('the drawer motion marker clears when a state change starts no transition',
   await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
 });
 
-test('the drawer motion marker clears after its transition is canceled', async ({ page }) => {
-  await gotoApp(page);
-  await openDrawer(page);
-  await page.addStyleTag({
-    content: `:root { --duration-fast: ${STALLED_DRAWER_TRANSITION_DURATION} !important; }`,
-  });
-
-  const panel = page.locator('.actions-panel');
-  const drawer = page.locator('.actions-drawer');
-  await page.getByRole('button', { name: 'Collapse controls' }).click();
-  await expect(panel).toHaveAttribute('data-drawer-motion', '');
-  await expect
-    .poll(() => drawer.evaluate((element) => element.getAnimations().length))
-    .toBeGreaterThan(0);
-  await drawer.evaluate((element) => {
-    for (const animation of element.getAnimations()) animation.cancel();
-    element.dispatchEvent(
-      new TransitionEvent('transitioncancel', {
-        bubbles: true,
-        propertyName: 'grid-template-columns',
-      })
-    );
-  });
-  await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
-});
-
 // Tapping the trigger again is the third path that closes a flyout, and the
 // only one whose focus handling a real Chromium click hides: the click focuses
 // the trigger before the handler runs, so focus has already left the menu.

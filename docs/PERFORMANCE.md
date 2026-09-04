@@ -470,12 +470,14 @@ entry 87. Paths under `web/src/` unless noted.*
     reduced-motion overrides at matching specificity. Measured: 5,847 → 0 Animation invalidations;
     emulator theme-flip post-p95 median 100.1 → 66.7 ms (n=3/arm). `ClearCoachmark.svelte`, pinned
     by `clear-tutorial.spec.ts`.
-88. **Action Drawer motion canceled before device rotation** — the standard and legacy orientation
-    signals clear an armed drawer transition before the viewport breakpoint flips, so a stale motion
-    marker cannot animate the drawer's axis margins through the drawing's rotation frames. A
-    physical Android Chrome canonical A/B removed all drawer transition events from both with-ink
-    directions and reduced portrait-to-landscape P95/max from 33.4/66.7 to 16.7/16.8 ms.
-    `ActionsPanel.svelte`, `docs/scratchpad/perf/2026-09-04-issue-1632-rotation-drawer-motion.md`.
+88. **Action Drawer motion canceled before device rotation** — `orientationchange` clears an armed
+    drawer transition before the viewport breakpoint flips, so a stale motion marker cannot animate
+    the drawer's axis margins through the drawing's rotation frames. A physical Android Chrome
+    canonical A/B removed all drawer transition events from both with-ink directions and reduced
+    portrait-to-landscape P95/max from 33.4/66.7 to 16.7/16.8 ms. The reviewed implementation also
+    handles the standard Screen Orientation signal and releases a marker that starts no transition;
+    those post-capture hardenings await the final matrix recapture. `ActionsPanel.svelte`,
+    `docs/scratchpad/perf/2026-09-04-issue-1632-rotation-drawer-motion.md`.
 
 ### Documented rejections — perf machinery deliberately absent
 

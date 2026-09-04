@@ -9,9 +9,8 @@ Repeats: one warm-up plus three scored
 
 The canonical Settings round-trip can leave `data-drawer-motion` armed while the Action Panel is
 behind the modal. Later device rotations then animate the drawer's portrait/landscape margin change
-inside the scored rotation window. Clearing that marker on the standard and legacy orientation
-signals, before `resize`, should retain deliberate drawer open/close motion while removing
-rotation-only work.
+inside the scored rotation window. Clearing that marker on `orientationchange`, before `resize`,
+should retain deliberate drawer open/close motion while removing rotation-only work.
 
 ## Control
 
@@ -46,8 +45,9 @@ Product commit: fc2153436e17d6c9dbe7f38fadaaa28d9539cf1a
 | empty after clear: landscape → portrait | `[16.8, 16.8, 16.8]`   | `16.8 / 16.8`  | pass   |
 | idle frame control                      | `[16.8, 16.8, 16.8]`   | `16.8 / 16.8`  | pass   |
 
-No scored treatment rotation sample recorded an Action Drawer transition. The regression test holds
-a drawer transition open, fails when the product handler is removed, and passes when it is restored.
+No scored treatment rotation sample recorded an Action Drawer transition. The captured treatment's
+regression test holds a drawer transition open, fails when its product handler is removed, and
+passes when it is restored.
 
 The treatment canonical sweep separately put `scroll coloring pages` red at maxima
 `[33.2, 33.3, 33.3]` ms and pooled P95/max `33.2/33.3`; the control canonical sweep had passed it.
@@ -57,6 +57,8 @@ scroll result is preserved as run variance rather than attributed to the rotatio
 ## Result
 
 Keep the treatment. It removes the attributed drawer animation from the affected rotation window,
-makes both with-ink directions green in the canonical sweep, preserves normal drawer interaction
-motion, and has a source-level regression test. The final single-commit physical matrix recapture
-remains authoritative for closing #1632.
+makes both with-ink directions green in the canonical sweep, and preserves normal drawer interaction
+motion. Post-capture review hardening in affbf94c8f67ce9073b9fdd64caa00dc6b160358 adds the standard
+Screen Orientation signal and a next-frame animation-state probe for state changes that start no
+transition. The final single-commit physical matrix recapture remains authoritative for that shipped
+composite and for closing #1632.
