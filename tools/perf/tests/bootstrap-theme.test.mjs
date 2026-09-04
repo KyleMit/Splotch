@@ -18,7 +18,7 @@ import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 
 const CANVAS_RECT = { x: 0, y: 0, width: 800, height: 600 };
 
-function paintShell({ compact, startingTheme }) {
+function paintShell({ compact, startingTheme, lazySettings = false }) {
   document.documentElement.dataset.theme = startingTheme ?? '';
   document.body.innerHTML = `
     <canvas id="drawingCanvas"></canvas>
@@ -27,46 +27,55 @@ function paintShell({ compact, startingTheme }) {
     <button id="brushButton"></button>
     <button id="penBrushButton" hidden></button>
     <button aria-label="Settings"></button>
-    <dialog id="settingsModal">
+  `;
+  const mountSettings = () => {
+    const existing = document.querySelector('#settingsModal');
+    if (existing) return existing;
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `
+      <dialog id="settingsModal">
       ${compact ? '<div class="quick-toggles"><button id="quickNightToggle" aria-checked="false"></button></div>' : ''}
       ${compact ? '' : '<button data-section="appearance"></button>'}
-    </dialog>
-  `;
+      </dialog>
+    `
+    );
+    const modal = document.querySelector('#settingsModal');
+    if (compact) {
+      const toggle = document.querySelector('#quickNightToggle');
+      toggle.addEventListener('click', () => {
+        const next = toggle.getAttribute('aria-checked') === 'true' ? 'light' : 'dark';
+        toggle.setAttribute('aria-checked', String(next === 'dark'));
+        document.documentElement.dataset.theme = next;
+      });
+    } else {
+      document.querySelector('button[data-section="appearance"]').addEventListener('click', () => {
+        for (const theme of ['light', 'dark']) {
+          const option = document.createElement('button');
+          option.id = `themeOption-${theme}`;
+          option.addEventListener('click', () => {
+            document.documentElement.dataset.theme = theme;
+          });
+          modal.append(option);
+        }
+      });
+    }
+    const close = document.createElement('button');
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => (modal.open = false));
+    modal.append(close);
+    return modal;
+  };
   const canvas = document.querySelector('#drawingCanvas');
   canvas.getBoundingClientRect = () => CANVAS_RECT;
   document.elementFromPoint = () => document.querySelector('.canvas-stack');
   window.__committedBrushMode = () => 'pen';
 
-  const modal = document.querySelector('#settingsModal');
   document.querySelector('button[aria-label="Settings"]').addEventListener('click', () => {
+    const modal = mountSettings();
     modal.open = true;
-    if (!compact && !document.querySelector('#themeOption-light')) return;
   });
-
-  if (compact) {
-    const toggle = document.querySelector('#quickNightToggle');
-    toggle.addEventListener('click', () => {
-      const next = toggle.getAttribute('aria-checked') === 'true' ? 'light' : 'dark';
-      toggle.setAttribute('aria-checked', String(next === 'dark'));
-      document.documentElement.dataset.theme = next;
-    });
-  } else {
-    // The sectioned shell reveals the options only after the Appearance row.
-    document.querySelector('button[data-section="appearance"]').addEventListener('click', () => {
-      for (const theme of ['light', 'dark']) {
-        const option = document.createElement('button');
-        option.id = `themeOption-${theme}`;
-        option.addEventListener('click', () => {
-          document.documentElement.dataset.theme = theme;
-        });
-        modal.append(option);
-      }
-    });
-  }
-  const close = document.createElement('button');
-  close.setAttribute('aria-label', 'Close');
-  close.addEventListener('click', () => (modal.open = false));
-  modal.append(close);
+  if (!lazySettings) mountSettings();
 }
 
 // The bootstrap now refuses to act for a page it was not opened for, so the
@@ -82,6 +91,8 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   const posted = [];
   let readyResolve;
   const readyPosted = new Promise((resolve) => (readyResolve = resolve));
+  let errorResolve;
+  const errorPosted = new Promise((resolve) => (errorResolve = resolve));
   let staleResolve;
   const stalePosted = new Promise((resolve) => (staleResolve = resolve));
   const eventRows = [];
@@ -91,6 +102,7 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
     const body = init?.body ? JSON.parse(init.body) : null;
     posted.push({ path, body });
     if (path === '/__probe/ready') readyResolve(body);
+    if (path === '/__probe/error') errorResolve(body);
     if (path === '/__probe/log' && body?.kind === 'stale-page') staleResolve(body);
     return { json: async () => ({}) };
   });
@@ -117,6 +129,7 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   new Function(pageBootstrapSource())();
   return {
     readyPosted,
+    errorPosted,
     stalePosted,
     posted,
     recordTrustedCanvasPointerUp() {
@@ -160,6 +173,28 @@ describe('the bootstrap actually setting the theme', () => {
 
       expect((await readyPosted).resolvedTheme).toBe('light');
       expect(document.documentElement.dataset.theme).toBe('light');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'opens Settings when the dialog mounts only after the eager trigger is clicked',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light', lazySettings: true });
+      expect(document.querySelector('#settingsModal')).toBeNull();
+
+      const { readyPosted, errorPosted } = runBootstrap({
+        brush: 'pen',
+        theme: 'dark',
+        nonce: 'lazy-settings-dark',
+      });
+
+      const outcome = await Promise.race([
+        readyPosted.then((ready) => ({ kind: 'ready', ready })),
+        errorPosted.then((error) => ({ kind: 'error', error })),
+      ]);
+      expect(outcome).toMatchObject({ kind: 'ready', ready: { resolvedTheme: 'dark' } });
+      expect(document.querySelector('#settingsModal')).not.toBeNull();
     },
     BOOTSTRAP_TIMEOUT_MS
   );

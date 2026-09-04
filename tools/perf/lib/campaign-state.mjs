@@ -118,16 +118,9 @@ export async function clickSetupElement(execute, selector) {
 }
 
 async function openAppearanceSettings(execute, hint) {
-  // A sized #drawingCanvas is what callers wait for, and it appears before the
-  // shell finishes hydrating. Clicking Settings in that window is a silent no-op
-  // that only surfaces as a modal which never opened, so wait for the dialog
-  // itself — it mounts closed (ADR-0049 amendment) — and keep re-clicking while
-  // it stays closed rather than trusting one click to land.
-  await waitForUi(
-    execute,
-    `document.querySelector('${SETTINGS_MODAL}') !== null`,
-    `Settings shell for ${hint}`
-  );
+  // The trigger is eager but the dialog may still be waiting on the lazy overlay
+  // chunk. Clicking first latches the state-driven open request (ADR-0049), and
+  // retries also cover a trigger whose hydration has not landed yet.
   const opened = await pollUntil(
     async () => {
       if (await execute(`return document.querySelector('${SETTINGS_MODAL}')?.open === true;`)) {

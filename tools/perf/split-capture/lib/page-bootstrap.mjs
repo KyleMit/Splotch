@@ -245,12 +245,9 @@ export function pageBootstrapSource() {
     // rather than by writing state the UI cannot reach.
     const resolvedTheme = () => ${RESOLVED_THEME_EXPRESSION};
     if (plan.theme && resolvedTheme() !== plan.theme) {
-      if (!(await until(() => document.querySelector('${SETTINGS_MODAL}')))) {
-        throw new Error('no Settings shell to set the theme with');
-      }
-      // The dialog mounts closed, and a click before the shell hydrates is a
-      // silent no-op — so keep clicking while it stays shut rather than trusting
-      // one to land.
+      // The trigger is eager but the dialog may still be waiting on the lazy
+      // overlay chunk. The first click latches the state-driven open request;
+      // retries also cover a trigger whose hydration has not landed yet.
       const opened = await until(() => {
         if (document.querySelector('${SETTINGS_MODAL}')?.open === true) return true;
         document.querySelector('${SETTINGS_BUTTON}')?.click();

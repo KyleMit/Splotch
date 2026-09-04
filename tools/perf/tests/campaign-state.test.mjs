@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   PLATFORM_OWNS_ROTATION,
   RESOLVED_THEME_EXPRESSION,
@@ -130,6 +130,44 @@ describe('opening Settings', () => {
 
     // One open click, plus the close click that closeSettings sends.
     expect(clickCount()).toBe(2);
+  });
+
+  it('opens a dialog that mounts only after the eager trigger is clicked', async () => {
+    vi.useFakeTimers();
+    let modalMounted = false;
+    let modalOpen = false;
+    const clicked = [];
+    const execute = async (script) => {
+      if (script.includes('target.click()')) {
+        const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
+        const selector = serializedSelector ? JSON.parse(serializedSelector) : null;
+        clicked.push(selector);
+        if (selector === SETTINGS_BUTTON) {
+          modalMounted = true;
+          modalOpen = true;
+        }
+        if (selector === SETTINGS_CLOSE_BUTTON) modalOpen = false;
+        return true;
+      }
+      if (script.includes("'#settingsModal') !== null")) return modalMounted;
+      if (script.includes("'#settingsModal')?.open === true")) return modalOpen;
+      if (script.includes("'#settingsModal')?.open !== true")) return !modalOpen;
+      if (script.includes("'#themeOption-light') !== null")) return true;
+      if (script.includes('return toggle ?')) return null;
+      return false;
+    };
+
+    try {
+      const result = expect(setNativeRotationLock(execute, false)).resolves.toBe(
+        PLATFORM_OWNS_ROTATION
+      );
+      await vi.runAllTimersAsync();
+
+      await result;
+      expect(clicked).toContain(SETTINGS_BUTTON);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 describe('the compact Settings shell', () => {
