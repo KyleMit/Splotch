@@ -210,7 +210,8 @@ describe('the compact Settings shell', () => {
     const state = { theme, lockedOrientation, clicked: [] };
     const execute = async (script) => {
       if (script.includes('target.click()')) {
-        const selector = script.match(/querySelector\("(.*?)"\)/)?.[1];
+        const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
+        const selector = serializedSelector ? JSON.parse(serializedSelector) : null;
         state.clicked.push(selector);
         if (selector === '#quickNightToggle') {
           state.theme = state.theme === 'dark' ? 'light' : 'dark';
@@ -249,13 +250,19 @@ describe('the compact Settings shell', () => {
   }
 
   function shellFlippingRotationStub({ lockedOrientation, physicalOrientation }) {
-    const state = { lockedOrientation, persistedOrientation: lockedOrientation, clicked: [] };
+    const state = {
+      lockedOrientation,
+      persistedOrientation: lockedOrientation,
+      view: 'hub',
+      clicked: [],
+    };
     const compact = () =>
       state.lockedOrientation === 'landscape' ||
       (state.lockedOrientation === null && physicalOrientation === 'landscape');
     const execute = async (script) => {
       if (script.includes('target.click()')) {
-        const selector = script.match(/querySelector\("(.*?)"\)/)?.[1];
+        const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
+        const selector = serializedSelector ? JSON.parse(serializedSelector) : null;
         state.clicked.push(selector);
         if (selector === QUICK_LOCK_PORTRAIT || selector === QUICK_LOCK_LANDSCAPE) {
           const selected = selector === QUICK_LOCK_LANDSCAPE ? 'landscape' : 'portrait';
@@ -272,24 +279,30 @@ describe('the compact Settings shell', () => {
             state.persistedOrientation === 'landscape' ? 'portrait' : 'landscape';
           state.lockedOrientation = state.persistedOrientation;
         }
+        if (selector?.includes('data-section')) state.view = 'appearance';
+        if (selector === SETTINGS_CLOSE_BUTTON) state.view = 'hub';
         return true;
       }
       if (script.includes("'#settingsModal')?.open === true")) return true;
       if (script.includes("'#settingsModal')?.open !== true")) return true;
       if (script.includes(COMPACT_SHELL_MARKER)) return compact();
-      if (script.includes("'#themeOption-light') !== null")) return !compact();
+      if (script.includes("'#themeOption-light') !== null")) {
+        return !compact() && state.view === 'appearance';
+      }
+      if (script.includes('button[data-section') && !compact() && state.view === 'hub') return true;
       if (script.includes('const portrait =')) {
         if (!compact()) return null;
         return state.lockedOrientation ? [state.lockedOrientation] : [];
       }
       if (script.includes('const lock =')) {
-        if (compact()) return null;
+        if (compact() || state.view !== 'appearance') return null;
         return {
           locked: state.lockedOrientation !== null,
           forceLandscape: state.persistedOrientation === 'landscape',
           forceControlPresent: state.lockedOrientation !== null,
         };
       }
+      if (!compact() && state.view !== 'appearance') return false;
       if (
         script.includes("aria-checked') === 'false'") &&
         script.includes(QUICK_LOCK_PORTRAIT) &&
@@ -352,10 +365,14 @@ describe('the compact Settings shell', () => {
     expect(initial).toEqual({ lockedOrientation: 'landscape' });
     expect(state.lockedOrientation).toBeNull();
     expect(compact()).toBe(false);
+    expect(state.clicked).toContain(settingsSectionRow('appearance'));
 
     await restoreNativeRotationLock(execute, initial);
     expect(state.lockedOrientation).toBe('landscape');
     expect(compact()).toBe(true);
+    expect(
+      state.clicked.filter((selector) => selector === settingsSectionRow('appearance'))
+    ).toHaveLength(2);
   });
 
   it('restores a portrait lock across a compact-to-sectioned shell change', async () => {

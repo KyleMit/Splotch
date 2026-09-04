@@ -264,6 +264,18 @@ function rotationLockMatchesExpression(desired) {
   )`;
 }
 
+async function waitForRotationLockState(execute, expression, hint) {
+  const appearanceRow = settingsSectionRow('appearance');
+  await waitForUi(
+    execute,
+    `(${expression}) || document.querySelector(${JSON.stringify(appearanceRow)}) !== null`,
+    `${hint} or the Appearance row after a Settings shell change`
+  );
+  if (await execute(`return !!(${expression});`)) return;
+  await openAppearanceSettings(execute, hint);
+  await waitForUi(execute, expression, hint);
+}
+
 async function setCompactLockedOrientation(execute, desired) {
   const initial = await readCompactLockedOrientation(execute);
   if (initial === PLATFORM_OWNS_ROTATION) {
@@ -278,7 +290,7 @@ async function setCompactLockedOrientation(execute, desired) {
       ? QUICK_LOCK_LANDSCAPE
       : QUICK_LOCK_PORTRAIT;
   await clickSetupElement(execute, selector);
-  await waitForUi(
+  await waitForRotationLockState(
     execute,
     desired ? rotationLockMatchesExpression(desired) : ROTATION_LOCK_DISABLED_EXPRESSION,
     desired ? `rotation lock to select ${desired}` : 'rotation lock to become disabled'
@@ -293,7 +305,7 @@ async function setSectionedLockedOrientation(execute, desired) {
   if (!desired) {
     if (current.lockedOrientation) {
       await clickSetupElement(execute, LOCK_ROTATION_TOGGLE);
-      await waitForUi(
+      await waitForRotationLockState(
         execute,
         ROTATION_LOCK_DISABLED_EXPRESSION,
         'rotation lock to become disabled'
@@ -303,12 +315,16 @@ async function setSectionedLockedOrientation(execute, desired) {
   }
   if (!current.lockedOrientation) {
     await clickSetupElement(execute, LOCK_ROTATION_TOGGLE);
-    await waitForUi(execute, ROTATION_LOCK_ENABLED_EXPRESSION, 'rotation lock to become enabled');
+    await waitForRotationLockState(
+      execute,
+      ROTATION_LOCK_ENABLED_EXPRESSION,
+      'rotation lock to become enabled'
+    );
     return setLockedOrientation(execute, desired);
   }
   if (current.lockedOrientation !== desired) {
     await clickSetupElement(execute, FORCE_LANDSCAPE_TOGGLE);
-    await waitForUi(
+    await waitForRotationLockState(
       execute,
       rotationLockMatchesExpression(desired),
       `rotation lock to select ${desired}`
