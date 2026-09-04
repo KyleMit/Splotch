@@ -19,6 +19,8 @@ import {
   failedRepresentativeProblem,
   keepCaptureEvidence,
   modeOf,
+  redactDeviceIdentifiers,
+  REDACTED_DEVICE_IDENTIFIER,
   selectEvidence,
 } from '../keep-capture-evidence.mjs';
 import { evidenceIndexTargets, targetOf } from '../rescore-captures.mjs';
@@ -291,6 +293,29 @@ describe('the rescorer honours cellAttributable', () => {
 });
 
 describe('keep-capture-evidence', () => {
+  it('redacts only identifying device fields from promoted capture shapes', () => {
+    expect(
+      redactDeviceIdentifiers({
+        device: { name: 'tablet', os: '18.6', id: 'hardware-id' },
+        report,
+      })
+    ).toMatchObject({
+      device: { name: 'tablet', os: '18.6', id: REDACTED_DEVICE_IDENTIFIER },
+      report,
+    });
+    expect(
+      redactDeviceIdentifiers({ handCapture: true, device: 'hardware-id', report })
+    ).toMatchObject({
+      handCapture: true,
+      device: REDACTED_DEVICE_IDENTIFIER,
+      report,
+    });
+    expect(redactDeviceIdentifiers({ device: 'desktop viewport', report })).toMatchObject({
+      device: 'desktop viewport',
+      report,
+    });
+  });
+
   it('requires an exact product commit before reading the corpus', () => {
     const result = spawnSync(
       process.execPath,
@@ -466,25 +491,30 @@ describe('keep-capture-evidence', () => {
     const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-keep-corpus-'));
     const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-keep-evidence-'));
     mkdirSync(join(corpusDir, 'ipad-device-web', 'portrait-light'), { recursive: true });
-    const cell = (name, fidelity) =>
+    const cell = (name, fidelity) => {
+      const path = join(corpusDir, 'ipad-device-web', 'portrait-light', name);
       writeFileSync(
-        join(corpusDir, 'ipad-device-web', 'portrait-light', name),
+        path,
         JSON.stringify({
           brush: 'crayon',
           orientation: 'PORTRAIT',
           theme: 'light',
+          device: { name: 'tablet', os: '18.6', id: 'hardware-id' },
           fidelity,
           report,
         })
       );
+      return path;
+    };
     cell('crayon-real-screen.json', {
       passed: false,
       checks: { trustedTouch: true, cadence: false },
     });
-    cell('crayon-retry-real-screen.json', {
+    const selectedSource = cell('crayon-retry-real-screen.json', {
       passed: true,
       checks: { trustedTouch: true, cadence: true },
     });
+    const selectedSourceBefore = readFileSync(selectedSource, 'utf8');
     const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     try {
@@ -507,7 +537,55 @@ describe('keep-capture-evidence', () => {
         passingCandidateCount: 1,
         failedCandidateCount: 1,
       });
-      expect(existsSync(join(evidenceDir, 'e2e-test', 'ipad-device-web-crayon.json'))).toBe(true);
+      const promotedPath = join(evidenceDir, 'e2e-test', 'ipad-device-web-crayon.json');
+      expect(existsSync(promotedPath)).toBe(true);
+      expect(JSON.parse(readFileSync(promotedPath, 'utf8')).device).toEqual({
+        name: 'tablet',
+        os: '18.6',
+        id: REDACTED_DEVICE_IDENTIFIER,
+      });
+      expect(readFileSync(selectedSource, 'utf8')).toBe(selectedSourceBefore);
+    } finally {
+      quiet.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+      rmSync(evidenceDir, { recursive: true, force: true });
+    }
+  });
+
+  it('redacts a hand-capture identifier in both the artifact and index', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-hand-corpus-'));
+    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-hand-evidence-'));
+    const source = join(corpusDir, 'hand-pen.json');
+    writeFileSync(
+      source,
+      JSON.stringify({
+        handCapture: true,
+        runtime: 'ios-capacitor-webview',
+        brush: 'pen',
+        device: 'hardware-id',
+        reading: { movesPerSecond: 60 },
+        report,
+      })
+    );
+    const sourceBefore = readFileSync(source, 'utf8');
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    try {
+      const { selected } = await keepCaptureEvidence({
+        corpus: relative(ROOT, corpusDir),
+        campaign: 'hand-redaction-test',
+        productCommit: PRODUCT_COMMIT,
+        evidenceRoot: relative(ROOT, evidenceDir),
+      });
+      const destination = join(evidenceDir, 'hand-redaction-test');
+      const index = JSON.parse(readFileSync(join(destination, 'index.json'), 'utf8'));
+      const promoted = JSON.parse(
+        readFileSync(join(destination, evidenceFileName(selected[0])), 'utf8')
+      );
+
+      expect(promoted.device).toBe(REDACTED_DEVICE_IDENTIFIER);
+      expect(index.kept[0].device).toBe(REDACTED_DEVICE_IDENTIFIER);
+      expect(readFileSync(source, 'utf8')).toBe(sourceBefore);
     } finally {
       quiet.mockRestore();
       rmSync(corpusDir, { recursive: true, force: true });
