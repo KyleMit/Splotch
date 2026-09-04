@@ -84,6 +84,10 @@
     position: relative;
   }
 
+  .action-button {
+    will-change: transform;
+  }
+
   :global(
       html[data-off-crayon][data-off-magic][data-off-eraser]
         .actions-panel:not([data-action-panel-live])
