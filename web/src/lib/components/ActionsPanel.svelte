@@ -268,12 +268,17 @@
       if (e.key !== 'Escape' || !openFlyout) return;
       closeFlyout({ restoreFocus: true });
     };
+    const stopDrawerMotionForRotation = () => {
+      drawerMotion = false;
+    };
     document.addEventListener('pointerdown', onDocPointerDown);
     document.addEventListener('keydown', onDocKeyDown);
+    window.addEventListener('orientationchange', stopDrawerMotionForRotation);
 
     return () => {
       document.removeEventListener('pointerdown', onDocPointerDown);
       document.removeEventListener('keydown', onDocKeyDown);
+      window.removeEventListener('orientationchange', stopDrawerMotionForRotation);
     };
   });
 
