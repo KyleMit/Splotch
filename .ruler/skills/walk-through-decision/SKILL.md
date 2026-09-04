@@ -23,20 +23,29 @@ request — wait to be asked.
 An unverified claim in a pros-and-cons list is worse than a missing one: on the page it looks
 exactly like a verified one, and the user cannot tell them apart.
 
-Before listing a single trade-off:
+So before listing a single trade-off, go to whatever counts as primary evidence for *this* decision
+and check the claims you are about to make. Two rules hold whatever the decision is about:
+
+* **Measure what is cheap to measure.** A number beats an adjective. "This touches 7 components,
+  listed below" is a fact and takes one command; "this would touch a lot of components" is a guess
+  in a confident tone.
+* **Say when you do not know.** Mark an estimate as an estimate, inline, in the sentence that makes
+  the claim — not in a caveat at the bottom that the reader has already stopped reading.
+
+**When the decision is about this codebase**, the repo is the primary evidence and these are not
+optional:
 
 * **Read the actual code.** Grep for the call sites, open the files, count what there is to count.
-  "This would touch a lot of components" is a guess; "this touches 7 components, listed below" is a
-  fact, and it takes one command.
 * **Check whether it was already decided.** `docs/adrs/` for architectural decisions and
   `docs/audit-deferred/decisions/` for findings that were triaged rather than fixed. A prior verdict
   is evidence, not a veto — verify its premises still hold and say so either way. If one is stale,
   that is worth surfacing on its own.
-* **Measure what is cheap to measure.** Bundle size, test runtime, file counts, an actual profile.
-  Reach for the `profiling`, `testing`, or `architecture` skills when the decision hinges on
-  something they cover.
-* **Say when you do not know.** Mark an estimate as an estimate, inline, in the sentence that makes
-  the claim — not in a caveat at the bottom that the reader has already stopped reading.
+* **Reach for the skill that owns the question** — `profiling`, `testing`, `architecture`, `design`
+  — when the decision turns on something it covers.
+
+**When it is not** — a naming call, a process change, a product or copy question — the same standard
+applies to different evidence: the real constraint, the actual words, the numbers that exist. Do not
+run a repo search to look rigorous about a decision the repo has nothing to say about.
 
 ## The walkthrough
 
