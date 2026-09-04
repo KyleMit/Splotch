@@ -502,7 +502,8 @@ export function pageBootstrapSource() {
     const read = (accessor, expected) => {
       const rows = [];
       while (rows.length < expected) {
-        const slice = window.__probe[accessor](rows.length, ${REPORT_SLICE_ROWS});
+        const remaining = expected - rows.length;
+        const slice = window.__probe[accessor](rows.length, Math.min(remaining, ${REPORT_SLICE_ROWS}));
         if (!slice || !slice.length) break;
         rows.push(...slice);
       }

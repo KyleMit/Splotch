@@ -99,6 +99,8 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   let reportResolve;
   const reportPosted = new Promise((resolve) => (reportResolve = resolve));
   const eventRows = [];
+  const frameRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
+  const measureRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
 
   global.fetch = vi.fn(async (path, init) => {
     if (path === '/__probe/plan') return { json: async () => currentPlan };
@@ -117,11 +119,27 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   document.head.append = (element) => {
     if (element.tagName === 'SCRIPT') {
       window.__probe = {
-        counts: () => ({ frames: 0, events: eventRows.length, measures: 0 }),
-        frames: () => [],
+        counts: () => ({
+          frames: frameRows.length,
+          events: eventRows.length,
+          measures: measureRows.length,
+        }),
+        frames: (from, count) => frameRows.slice(from, from + count),
         events: (from, count) => eventRows.slice(from, from + count),
-        measures: () => [],
-        finish: vi.fn(() => ({ meta: { counts: {} } })),
+        measures: (from, count) => measureRows.slice(from, from + count),
+        finish: vi.fn(() => ({
+          meta: {
+            counts: {
+              frames: frameRows.length,
+              events: eventRows.length,
+              measures: measureRows.length,
+            },
+          },
+        })),
+        addPostFinishRows() {
+          frameRows.push([frameRows.length]);
+          measureRows.push([measureRows.length]);
+        },
         stop: () => {},
       };
       queueMicrotask(() => element.onload?.());
@@ -192,6 +210,7 @@ function paintUndoShell() {
   undo.id = 'undoButton';
   undo.addEventListener('click', () => {
     probeFinishedAtUndo.push(window.__probe.finish.mock.calls.length > 0);
+    window.__probe.addPostFinishRows();
     undoClicks += 1;
     historyLength -= undoClicks === 1 ? 3 : 1;
     snapshots -= 1;
@@ -227,6 +246,8 @@ describe('the bootstrap actually capturing undo', () => {
       const payload = await run.reportPosted;
 
       expect(payload.undoActions).toHaveLength(2);
+      expect(payload.report.frames).toHaveLength(5_001);
+      expect(payload.report.measures).toHaveLength(5_001);
       expect(payload.historyBeforeUndo).toMatchObject({ historyLength: 14, snapshots: 12 });
       expect(payload.historyAfterUndo.historyLength).toBe(10);
       expect(payload.historyAfterUndo.snapshots).toBe(10);
