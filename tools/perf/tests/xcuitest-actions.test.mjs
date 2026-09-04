@@ -69,6 +69,10 @@ const IPAD_ACTIONS = readFileSync(
   join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
   'utf8'
 );
+const IPAD_SCREEN = readFileSync(
+  join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-screen.mjs'),
+  'utf8'
+);
 const CAMPAIGN_STATE = readFileSync(
   join(ROOT, 'tools', 'perf', 'lib', 'campaign-state.mjs'),
   'utf8'
@@ -680,14 +684,32 @@ describe('trusted action setup', () => {
     const setupStart = IPAD_ACTIONS.indexOf('const needsNativeRotationUnlock =');
     const setupEnd = IPAD_ACTIONS.indexOf('const appUrl =', setupStart);
     const setup = IPAD_ACTIONS.slice(setupStart, setupEnd);
-    const unlock = setup.indexOf('setNativeRotationLock(execute, false)');
+    const unlock = setup.indexOf('releaseNativeRotationLock(execute)');
     const rotate = setup.indexOf('orientation: requestedOrientation');
 
     expect(setupStart).toBeGreaterThan(-1);
     expect(setupEnd).toBeGreaterThan(setupStart);
     expect(unlock).toBeGreaterThan(-1);
     expect(rotate).toBeGreaterThan(unlock);
-    expect(setup).toContain('Settings does not expose the persisted rotation lock control');
+    expect(setup).toContain('initialRotationLock === PLATFORM_OWNS_ROTATION');
+  });
+
+  it('rechecks live orientation after releasing a native lock', () => {
+    for (const [source, unlockDecision] of [
+      [IPAD_ACTIONS, 'const needsNativeRotationUnlock ='],
+      [IPAD_SCREEN, 'const needsRotationUnlock ='],
+    ]) {
+      const setupStart = source.indexOf(unlockDecision);
+      const setupEnd = source.indexOf('const appUrl =', setupStart);
+      const setup = source.slice(setupStart, setupEnd);
+      const unlock = setup.indexOf('releaseNativeRotationLock(execute)');
+      const liveRead = setup.indexOf("currentOrientation = await client.request('GET'");
+      const comparison = setup.indexOf('requestedOrientation !== currentOrientation');
+
+      expect(unlock).toBeGreaterThan(-1);
+      expect(liveRead).toBeGreaterThan(unlock);
+      expect(comparison).toBeGreaterThan(liveRead);
+    }
   });
 
   // ADR-0142: rotation's clock starts at resize alone — which of the two
@@ -717,7 +739,7 @@ describe('trusted action setup', () => {
     const cleanupEnd = IPAD_ACTIONS.indexOf('const onSignal', cleanupStart);
     const cleanup = IPAD_ACTIONS.slice(cleanupStart, cleanupEnd);
     const restoreOrientation = cleanup.indexOf('orientation: restoreOrientation');
-    const restoreLock = cleanup.indexOf('setNativeRotationLock(execute, true)');
+    const restoreLock = cleanup.indexOf('restoreNativeRotationLock(execute,');
 
     expect(cleanupStart).toBeGreaterThan(-1);
     expect(cleanupEnd).toBeGreaterThan(cleanupStart);

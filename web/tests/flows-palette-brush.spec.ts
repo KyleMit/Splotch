@@ -62,6 +62,7 @@ test('palette colors and custom hexagons activate from the keyboard', async ({ p
 // ColorPicker's 40px snap radius (half the 69px hexagon height plus slop) and
 // nearer that hexagon than any other — the pencil-tip miss the snap exists for.
 const PICKER_GAP_PROBE_PX = 39;
+const STALLED_DRAWER_TRANSITION_DURATION = '100s';
 
 // The gap point beside `target`, plus whether an element hit-test still finds a
 // hexagon there, so a caller can prove the point really is in a gap.
@@ -425,6 +426,39 @@ test('a keyboard pick closes the flyout and restores focus to its trigger', asyn
   await page.keyboard.press('Enter');
   await expect(page.locator('.stroke-width-menu')).toBeHidden();
   await expect(page.locator('#strokeWidthButton')).toBeFocused();
+});
+
+for (const rotationSignal of ['screen orientation', 'legacy window orientation'] as const) {
+  test(`${rotationSignal} cancels an in-flight action drawer transition`, async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await page.addStyleTag({
+      content: `:root { --duration-fast: ${STALLED_DRAWER_TRANSITION_DURATION} !important; }`,
+    });
+
+    const panel = page.locator('.actions-panel');
+    await page.getByRole('button', { name: 'Collapse controls' }).click();
+    await expect(panel).toHaveAttribute('data-drawer-motion', '');
+
+    await page.evaluate((signal) => {
+      const event = new Event(signal === 'screen orientation' ? 'change' : 'orientationchange');
+      if (signal === 'screen orientation') screen.orientation.dispatchEvent(event);
+      else window.dispatchEvent(event);
+    }, rotationSignal);
+    await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
+  });
+}
+
+test('the drawer motion marker clears when a state change starts no transition', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await page.addStyleTag({ content: '.actions-drawer { transition: none !important; }' });
+
+  const panel = page.locator('.actions-panel');
+  await page.getByRole('button', { name: 'Collapse controls' }).click();
+  await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
 });
 
 // Tapping the trigger again is the third path that closes a flyout, and the

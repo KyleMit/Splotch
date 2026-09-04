@@ -28,6 +28,13 @@ import {
   ERASER_REFILL_IDLE_FRAMES,
   eraserFillFunctionSource,
 } from '../../lib/eraser-fill.mjs';
+import {
+  EXPAND_CONTROLS_SELECTOR,
+  UNDO_ACTION_PAUSE_MS,
+  UNDO_BUTTON_SELECTOR,
+  undoActionFunctionSource,
+  undoActionProblem,
+} from '../../lib/undo-driver.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
 // enough not to spin, short enough that a finished gesture is not left banking
@@ -47,10 +54,10 @@ const ERASER_FILL_SETTLE_MS = 400;
 // size, not a cap on the capture.
 const REPORT_SLICE_ROWS = 5_000;
 // Each drawing surface is downscaled into a scratch this many pixels on a side
-// before its pixels are hashed. Small enough that both samples cost microseconds
-// outside the measured window; a stroke that survives a 16x downscale of every
-// surface it touched is not going to vanish from the hash.
-const CANVAS_DELTA_GRID_PX = 16;
+// before its pixels are hashed. The same sampler proves whole-pass output and
+// that each undo changed rendered pixels; 64 px keeps a narrow pen stroke visible
+// while the reads stay outside both measured windows.
+const CANVAS_DELTA_GRID_PX = 64;
 // FNV-1a's offset basis and prime — algorithm constants, not tuning.
 const FNV_OFFSET_BASIS = 2166136261;
 const FNV_PRIME = 16777619;
@@ -60,7 +67,7 @@ const FNV_PRIME = 16777619;
 // ~3790 measures). This proves the canvas CHANGED during the pass — any pixel
 // delta, which covers the eraser's removals as well as the brushes' additions —
 // by hashing a downscale of every drawing surface before contact banking starts
-// and again after the probe stops. The reads go through a small
+// and again after drawing ends, before any optional undo. The reads go through a small
 // willReadFrequently scratch (the product's emptyScan.ts pattern, same as the
 // eraser fill's verifier) so the accelerated tiles are never read back directly:
 // a check must not change the thing being measured, and both samples run outside
@@ -197,6 +204,22 @@ export function pageBootstrapSource() {
       throw new Error('route never hydrated');
     }
 
+    const undoCount = plan.undoCount ?? 0;
+    const undoPauseMs = plan.undoPauseMs ?? ${UNDO_ACTION_PAUSE_MS};
+    if (!Number.isSafeInteger(undoCount) || undoCount < 0) {
+      throw new Error('the split capture received an invalid undo count');
+    }
+    if (!Number.isSafeInteger(undoPauseMs) || undoPauseMs < 0) {
+      throw new Error('the split capture received an invalid undo pause');
+    }
+    if (undoCount > 0 && plan.brush !== 'pen') {
+      throw new Error('split undo capture is supported only for the pen cell');
+    }
+    if (undoCount > 0) {
+      const historyReady = await until(() => !!window.__drawingDebug?.getUndoDebug);
+      if (!historyReady) throw new Error('the production route did not expose __drawingDebug');
+    }
+
     // Every brush is selected explicitly, pen included: the tool choice is
     // persisted, so a capture that assumed pen was the default drew its "pen"
     // strokes with whatever the previous capture had left selected.
@@ -245,12 +268,9 @@ export function pageBootstrapSource() {
     // rather than by writing state the UI cannot reach.
     const resolvedTheme = () => ${RESOLVED_THEME_EXPRESSION};
     if (plan.theme && resolvedTheme() !== plan.theme) {
-      if (!(await until(() => document.querySelector('${SETTINGS_MODAL}')))) {
-        throw new Error('no Settings shell to set the theme with');
-      }
-      // The dialog mounts closed, and a click before the shell hydrates is a
-      // silent no-op — so keep clicking while it stays shut rather than trusting
-      // one to land.
+      // The trigger is eager but the dialog may still be waiting on the lazy
+      // overlay chunk. The first click latches the state-driven open request;
+      // retries also cover a trigger whose hydration has not landed yet.
       const opened = await until(() => {
         if (document.querySelector('${SETTINGS_MODAL}')?.open === true) return true;
         document.querySelector('${SETTINGS_BUTTON}')?.click();
@@ -413,6 +433,64 @@ export function pageBootstrapSource() {
       await wait(${PLAN_POLL_MS});
     }
 
+    // Close the drawing phase before readback or undo. The split plan's long
+    // contact bank never ends the phase itself, so delaying finish() would fold
+    // the undo tail into the drawing artifact's between-stroke and engine rows.
+    await log({ kind: 'finish-observed', nonce });
+    const report = window.__probe.finish();
+    const paintedAfterDrawing = sampleCanvasDelta();
+
+    const undoActions = [];
+    let historyBeforeUndo = null;
+    let historyAfterUndo = null;
+    let undoVisual = null;
+    if (undoCount > 0) {
+      historyBeforeUndo = window.__drawingDebug.getUndoDebug();
+      // The idle fold can remove retained, non-undoable commands while the
+      // clicks run. snapshots is the undoable depth each click must reduce.
+      const beforeDepth = historyBeforeUndo.snapshots ?? historyBeforeUndo.historyLength;
+      if (!Number.isSafeInteger(beforeDepth) || beforeDepth < undoCount) {
+        throw new Error('the drawing did not create enough undo history');
+      }
+
+      document.querySelector(${JSON.stringify(EXPAND_CONTROLS_SELECTOR)})?.click();
+      const undoReady = await until(() => {
+        const button = document.querySelector(${JSON.stringify(UNDO_BUTTON_SELECTOR)});
+        return !!button && !button.disabled;
+      });
+      if (!undoReady) throw new Error('the action drawer did not expose an enabled undo button');
+
+      const runUndoAction = ${undoActionFunctionSource()};
+      const actionProblem = ${undoActionProblem};
+      const visualSamples = [paintedAfterDrawing];
+      const visualSteps = [];
+      await wait(undoPauseMs);
+      for (let index = 0; index < undoCount; index++) {
+        const action = await runUndoAction(index);
+        const problem = actionProblem(action, index);
+        if (problem) throw new Error(problem);
+        undoActions.push(action);
+        const before = visualSamples.at(-1);
+        const after = sampleCanvasDelta();
+        const changed = !before.error && !after.error && before.surfaces === after.surfaces &&
+          JSON.stringify(before.digests) !== JSON.stringify(after.digests);
+        visualSamples.push(after);
+        visualSteps.push({ index, changed });
+        if (!changed) {
+          throw new Error('undo action ' + (index + 1) + ' did not restore different pixels');
+        }
+        await wait(undoPauseMs);
+      }
+      historyAfterUndo = window.__drawingDebug.getUndoDebug();
+      const afterDepth = historyAfterUndo.snapshots ?? historyAfterUndo.historyLength;
+      if (afterDepth !== beforeDepth - undoCount) {
+        throw new Error(
+          'undo history changed by ' + (beforeDepth - afterDepth) + ', expected ' + undoCount
+        );
+      }
+      undoVisual = { samples: visualSamples, steps: visualSteps, changedEveryStep: true };
+    }
+
     // The heartbeat issue 1300 asked for. A ready page that never uploads was
     // indistinguishable between four states: it never saw finish, finish()
     // threw, the upload failed, or the page was suspended first. These two log
@@ -420,13 +498,12 @@ export function pageBootstrapSource() {
     // finish()/serialization, one ending at uploading died in the POST or was
     // suspended mid-flight, and neither line at all means the page never saw
     // the plan flip.
-    await log({ kind: 'finish-observed', nonce });
-    const report = window.__probe.finish();
     const counts = report.meta.counts;
     const read = (accessor, expected) => {
       const rows = [];
       while (rows.length < expected) {
-        const slice = window.__probe[accessor](rows.length, ${REPORT_SLICE_ROWS});
+        const remaining = expected - rows.length;
+        const slice = window.__probe[accessor](rows.length, Math.min(remaining, ${REPORT_SLICE_ROWS}));
         if (!slice || !slice.length) break;
         rows.push(...slice);
       }
@@ -439,13 +516,12 @@ export function pageBootstrapSource() {
     // Any pixel delta between the two samples counts — additions and the
     // eraser's removals alike. A sample that could not be taken records its
     // error rather than a verdict; acceptance refuses what it cannot prove.
-    const paintedAfter = sampleCanvasDelta();
-    report.paintedOutput = paintedBaseline.error || paintedAfter.error
-      ? { error: paintedBaseline.error || paintedAfter.error }
+    report.paintedOutput = paintedBaseline.error || paintedAfterDrawing.error
+      ? { error: paintedBaseline.error || paintedAfterDrawing.error }
       : {
-          changed: JSON.stringify(paintedBaseline) !== JSON.stringify(paintedAfter),
+          changed: JSON.stringify(paintedBaseline) !== JSON.stringify(paintedAfterDrawing),
           before: paintedBaseline,
-          after: paintedAfter,
+          after: paintedAfterDrawing,
         };
     await log({ kind: 'uploading', nonce, events: report.events.length });
     await post('/__probe/report', {
@@ -458,6 +534,10 @@ export function pageBootstrapSource() {
       topology: window.__drawingDebug?.getLiveSurfaceTopology?.() ?? null,
       // Per-pass refill evidence (issue 1292); null for every non-eraser run.
       eraserRefills,
+      undoActions,
+      historyBeforeUndo,
+      historyAfterUndo,
+      undoVisual,
     });
   } catch (error) {
     await log({ kind: 'bootstrap', message: String(error?.message ?? error) });

@@ -18,9 +18,11 @@ import { ROOT, fail, isMain, runMain } from '../lib/proc.mjs';
 import {
   CAMPAIGN_MODES,
   SPLIT_TRANSPORT,
+  UNDO_COUNT,
   artifactMatchesRuntime,
   artifactPath,
   campaignTarget,
+  splitUndoEvidenceProblem,
 } from './lib/campaign-plan.mjs';
 
 const BRUSH_BY_ITEM = { 'pen-undo': 'pen', crayon: 'crayon', magic: 'magic', eraser: 'eraser' };
@@ -121,7 +123,6 @@ export function campaignModeSources(
   { outputRoot, productCommit, modes, actionsUnavailableReason, preserveActions = false }
 ) {
   const target = campaignTarget(targetId);
-  const capturesUndo = target.transport !== SPLIT_TRANSPORT;
   const selected = modes?.length
     ? CAMPAIGN_MODES.filter((mode) => modes.includes(mode.id))
     : CAMPAIGN_MODES;
@@ -149,6 +150,13 @@ export function campaignModeSources(
     const missing = Object.entries(brushArtifacts)
       .filter(([, artifact]) => artifact === null)
       .map(([brush]) => brush);
+    if (
+      target.transport === SPLIT_TRANSPORT &&
+      brushArtifacts.pen &&
+      splitUndoEvidenceProblem(brushArtifacts.pen, UNDO_COUNT)
+    ) {
+      missing.push('undo');
+    }
     if (!preserveActions && !actionsArtifact) missing.push('actions');
     // A mode whose only gap is the action sweep still carries four scored brushes and an
     // undo probe. The manifest already has a shape for that — `actionsUnavailableReason`,
@@ -190,11 +198,7 @@ export function campaignModeSources(
         // reader can re-assert which build every number in the mode describes.
         ...(buildIdentity ?? {}),
         drawing: Object.fromEntries(Object.entries(paths).map(([brush, path]) => [brush, [path]])),
-        // The split transport is drawing-only — its pen cell has no undo phase, so
-        // naming that artifact as the undo source normalizes to null and silently
-        // drops the mode's undo row. Omitting it lets applyCampaignModes carry the
-        // existing measurement forward instead.
-        ...(capturesUndo ? { undoSource: paths.pen } : {}),
+        undoSource: paths.pen,
         ...(preserveActions
           ? {}
           : actionsOnly

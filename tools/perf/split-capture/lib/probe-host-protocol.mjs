@@ -1,5 +1,6 @@
-// v2 adds GET /__probe/report. Bump when a runner-required route appears or changes shape.
-export const PROBE_HOST_PROTOCOL = 'splotch-perf-probe-v2';
+// v3 adds the runner-required undo plan and its timing/history/pixel proof to the report.
+// Bump when a runner-required route appears or changes shape.
+export const PROBE_HOST_PROTOCOL = 'splotch-perf-probe-v3';
 export const PROBE_REPORT_PATH = '/__probe/report';
 
 export function probeHostProtocolProblem(protocol) {

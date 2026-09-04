@@ -1,11 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   PLATFORM_OWNS_ROTATION,
+  FORCE_LANDSCAPE_TOGGLE,
+  LOCK_ROTATION_TOGGLE,
+  QUICK_LOCK_LANDSCAPE,
+  QUICK_LOCK_PORTRAIT,
   RESOLVED_THEME_EXPRESSION,
   ensureCampaignTheme,
-  setNativeRotationLock,
+  releaseNativeRotationLock,
+  restoreNativeRotationLock,
   parseCampaignTheme,
   parseCampaignOrientation,
   settingsSectionRow,
@@ -54,45 +59,72 @@ describe('performance campaign state', () => {
     );
   });
   describe('native rotation lock', () => {
-    // Settings is already proven open on the Appearance pane before the toggle is
-    // read, so these stubs answer only what the setup helpers ask along the way.
-    function settingsStub(toggleState) {
-      const clicked = [];
+    function settingsStub({ locked = false, orientation = 'portrait', controls = true } = {}) {
+      const state = { locked, orientation, clicked: [] };
       const execute = async (script) => {
         if (script.includes('target.click()')) {
-          clicked.push(script.match(/querySelector\((".*?")\)/)?.[1]);
+          const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
+          const selector = serializedSelector ? JSON.parse(serializedSelector) : null;
+          state.clicked.push(selector);
+          if (selector === '#lockRotationToggle') state.locked = !state.locked;
+          if (selector === '#forceLandscapeToggle') {
+            state.orientation = state.orientation === 'landscape' ? 'portrait' : 'landscape';
+          }
           return true;
         }
-        if (script.includes("'#settingsModal') !== null")) return true;
         if (script.includes("'#settingsModal')?.open === true")) return true;
         if (script.includes("'#settingsModal')?.open !== true")) return true;
+        if (script.includes('.quick-toggles')) return false;
         if (script.includes("'#themeOption-light') !== null")) return true;
-        if (script.includes('return toggle ?')) return toggleState;
-        if (script.includes("'#lockRotationToggle')?.getAttribute")) return true;
+        if (script.includes('const lock =')) {
+          if (!controls) return null;
+          return {
+            locked: state.locked,
+            forceLandscape: state.orientation === 'landscape',
+            forceControlPresent: state.locked,
+          };
+        }
+        if (script.includes("'#lockRotationToggle')?.getAttribute")) {
+          return script.includes("=== 'true'") ? state.locked : !state.locked;
+        }
+        if (script.includes("'#forceLandscapeToggle')?.getAttribute")) {
+          return (
+            String(state.orientation === 'landscape') === script.match(/=== '(true|false)'/)?.[1]
+          );
+        }
         return null;
       };
-      return { execute, clicked };
+      return { execute, state };
     }
 
     it('reports that the platform owns rotation when the product renders no toggle', async () => {
-      const { execute, clicked } = settingsStub(null);
+      const { execute, state } = settingsStub({ controls: false });
 
-      await expect(setNativeRotationLock(execute, false)).resolves.toBe(PLATFORM_OWNS_ROTATION);
-      expect(clicked).not.toContain('"#lockRotationToggle"');
+      await expect(releaseNativeRotationLock(execute)).resolves.toBe(PLATFORM_OWNS_ROTATION);
+      expect(state.clicked).not.toContain('#lockRotationToggle');
     });
 
     it('returns the prior lock state without touching an already-correct toggle', async () => {
-      const { execute, clicked } = settingsStub(false);
+      const { execute, state } = settingsStub();
 
-      await expect(setNativeRotationLock(execute, false)).resolves.toBe(false);
-      expect(clicked).not.toContain('"#lockRotationToggle"');
+      await expect(releaseNativeRotationLock(execute)).resolves.toEqual({
+        lockedOrientation: null,
+      });
+      expect(state.clicked).not.toContain('#lockRotationToggle');
     });
 
-    it('flips a locked toggle and reports the state it must restore', async () => {
-      const { execute, clicked } = settingsStub(true);
+    it('releases and restores the sectioned shell lock with its exact side', async () => {
+      const { execute, state } = settingsStub({ locked: true, orientation: 'landscape' });
 
-      await expect(setNativeRotationLock(execute, false)).resolves.toBe(true);
-      expect(clicked).toContain('"#lockRotationToggle"');
+      const initial = await releaseNativeRotationLock(execute);
+      expect(initial).toEqual({ lockedOrientation: 'landscape' });
+      expect(state.locked).toBe(false);
+
+      await restoreNativeRotationLock(execute, initial);
+      expect(state).toMatchObject({ locked: true, orientation: 'landscape' });
+      expect(state.clicked.filter((selector) => selector === '#lockRotationToggle')).toHaveLength(
+        2
+      );
     });
   });
 });
@@ -110,7 +142,7 @@ describe('opening Settings', () => {
       if (script.includes("'#settingsModal')?.open === true")) return clicks > clicksBeforeOpen;
       if (script.includes("'#settingsModal')?.open !== true")) return true;
       if (script.includes("'#themeOption-light') !== null")) return true;
-      if (script.includes('return toggle ?')) return null;
+      if (script.includes('const lock =')) return null;
       return null;
     };
     return { execute, clickCount: () => clicks };
@@ -119,17 +151,53 @@ describe('opening Settings', () => {
   it('re-clicks until the dialog actually opens', async () => {
     const { execute, clickCount } = hydratingStub({ clicksBeforeOpen: 2 });
 
-    await expect(setNativeRotationLock(execute, false)).resolves.toBe(PLATFORM_OWNS_ROTATION);
+    await expect(releaseNativeRotationLock(execute)).resolves.toBe(PLATFORM_OWNS_ROTATION);
     expect(clickCount()).toBeGreaterThan(2);
   });
 
   it('does not click again once the dialog is open', async () => {
     const { execute, clickCount } = hydratingStub({ clicksBeforeOpen: 0 });
 
-    await setNativeRotationLock(execute, false);
+    await releaseNativeRotationLock(execute);
 
     // One open click, plus the close click that closeSettings sends.
     expect(clickCount()).toBe(2);
+  });
+
+  it('opens a dialog that mounts only after the eager trigger is clicked', async () => {
+    vi.useFakeTimers();
+    let modalMounted = false;
+    let modalOpen = false;
+    const clicked = [];
+    const execute = async (script) => {
+      if (script.includes('target.click()')) {
+        const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
+        const selector = serializedSelector ? JSON.parse(serializedSelector) : null;
+        clicked.push(selector);
+        if (selector === SETTINGS_BUTTON) {
+          modalMounted = true;
+          modalOpen = true;
+        }
+        if (selector === SETTINGS_CLOSE_BUTTON) modalOpen = false;
+        return true;
+      }
+      if (script.includes("'#settingsModal') !== null")) return modalMounted;
+      if (script.includes("'#settingsModal')?.open === true")) return modalOpen;
+      if (script.includes("'#settingsModal')?.open !== true")) return !modalOpen;
+      if (script.includes("'#themeOption-light') !== null")) return true;
+      if (script.includes('const lock =')) return null;
+      return false;
+    };
+
+    try {
+      const result = releaseNativeRotationLock(execute);
+      await vi.runAllTimersAsync();
+
+      await expect(result).resolves.toBe(PLATFORM_OWNS_ROTATION);
+      expect(clicked).toContain(SETTINGS_BUTTON);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 describe('the compact Settings shell', () => {
@@ -138,14 +206,21 @@ describe('the compact Settings shell', () => {
   // Portrait/Landscape picker rather than #lockRotationToggle. Both are different
   // elements, not absent ones — reading them as absent is what stalled every
   // Android landscape cell.
-  function compactStub({ theme = 'light' } = {}) {
-    const state = { theme, clicked: [] };
+  function compactStub({ theme = 'light', lockedOrientation = null } = {}) {
+    const state = { theme, lockedOrientation, clicked: [] };
     const execute = async (script) => {
       if (script.includes('target.click()')) {
-        const selector = script.match(/querySelector\("(.*?)"\)/)?.[1];
+        const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
+        const selector = serializedSelector ? JSON.parse(serializedSelector) : null;
         state.clicked.push(selector);
         if (selector === '#quickNightToggle') {
           state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        }
+        if (selector === '#quickLockPortrait') {
+          state.lockedOrientation = state.lockedOrientation === 'portrait' ? null : 'portrait';
+        }
+        if (selector === '#quickLockLandscape') {
+          state.lockedOrientation = state.lockedOrientation === 'landscape' ? null : 'landscape';
         }
         return true;
       }
@@ -157,10 +232,98 @@ describe('the compact Settings shell', () => {
       if (script.includes('#quickNightToggle')) {
         return String(state.theme === 'dark') === script.match(/=== '(\w+)'/)?.[1];
       }
-      if (script.includes('return toggle ?')) return null;
+      if (script.includes('const portrait =')) {
+        return state.lockedOrientation ? [state.lockedOrientation] : [];
+      }
+      if (script.includes('#quickLockPortrait') && script.includes("!== 'true'")) {
+        return state.lockedOrientation === null;
+      }
+      if (script.includes('#quickLockPortrait') && script.includes("=== 'true'")) {
+        return state.lockedOrientation === 'portrait';
+      }
+      if (script.includes('#quickLockLandscape') && script.includes("=== 'true'")) {
+        return state.lockedOrientation === 'landscape';
+      }
       return null;
     };
     return { execute, state };
+  }
+
+  function shellFlippingRotationStub({ lockedOrientation, physicalOrientation }) {
+    const state = {
+      lockedOrientation,
+      persistedOrientation: lockedOrientation,
+      view: 'hub',
+      clicked: [],
+    };
+    const compact = () =>
+      state.lockedOrientation === 'landscape' ||
+      (state.lockedOrientation === null && physicalOrientation === 'landscape');
+    const execute = async (script) => {
+      if (script.includes('target.click()')) {
+        const serializedSelector = script.match(/querySelector\((".*?")\)/)?.[1];
+        const selector = serializedSelector ? JSON.parse(serializedSelector) : null;
+        state.clicked.push(selector);
+        if (selector === QUICK_LOCK_PORTRAIT || selector === QUICK_LOCK_LANDSCAPE) {
+          const selected = selector === QUICK_LOCK_LANDSCAPE ? 'landscape' : 'portrait';
+          state.persistedOrientation = selected;
+          state.lockedOrientation = state.lockedOrientation === selected ? null : selected;
+        }
+        if (selector === LOCK_ROTATION_TOGGLE) {
+          state.lockedOrientation = state.lockedOrientation
+            ? null
+            : (state.persistedOrientation ?? 'portrait');
+        }
+        if (selector === FORCE_LANDSCAPE_TOGGLE) {
+          state.persistedOrientation =
+            state.persistedOrientation === 'landscape' ? 'portrait' : 'landscape';
+          state.lockedOrientation = state.persistedOrientation;
+        }
+        if (selector?.includes('data-section')) state.view = 'appearance';
+        if (selector === SETTINGS_CLOSE_BUTTON) state.view = 'hub';
+        return true;
+      }
+      if (script.includes("'#settingsModal')?.open === true")) return true;
+      if (script.includes("'#settingsModal')?.open !== true")) return true;
+      if (script.includes(COMPACT_SHELL_MARKER)) return compact();
+      if (script.includes("'#themeOption-light') !== null")) {
+        return !compact() && state.view === 'appearance';
+      }
+      if (script.includes('button[data-section') && !compact() && state.view === 'hub') return true;
+      if (script.includes('const portrait =')) {
+        if (!compact()) return null;
+        return state.lockedOrientation ? [state.lockedOrientation] : [];
+      }
+      if (script.includes('const lock =')) {
+        if (compact() || state.view !== 'appearance') return null;
+        return {
+          locked: state.lockedOrientation !== null,
+          forceLandscape: state.persistedOrientation === 'landscape',
+          forceControlPresent: state.lockedOrientation !== null,
+        };
+      }
+      if (!compact() && state.view !== 'appearance') return false;
+      if (
+        script.includes("aria-checked') === 'false'") &&
+        script.includes(QUICK_LOCK_PORTRAIT) &&
+        script.includes(QUICK_LOCK_LANDSCAPE)
+      ) {
+        return state.lockedOrientation === null;
+      }
+      if (script.includes(FORCE_LANDSCAPE_TOGGLE)) {
+        const desired = script.includes("aria-checked') === 'false'") ? 'portrait' : 'landscape';
+        return state.lockedOrientation === desired;
+      }
+      if (
+        script.includes(QUICK_LOCK_PORTRAIT) &&
+        script.includes(QUICK_LOCK_LANDSCAPE) &&
+        script.includes(LOCK_ROTATION_TOGGLE)
+      ) {
+        return state.lockedOrientation !== null;
+      }
+      return null;
+    };
+    return { execute, state, compact };
   }
 
   it('reaches the requested theme through the Night Mode toggle', async () => {
@@ -180,12 +343,48 @@ describe('the compact Settings shell', () => {
     expect(state.clicked.some((selector) => selector?.includes('data-section'))).toBe(false);
   });
 
-  it('refuses to read a missing toggle as the platform owning rotation', async () => {
-    const { execute } = compactStub();
+  it('releases and restores the compact picker with its exact selected side', async () => {
+    const { execute, state } = compactStub({ lockedOrientation: 'landscape' });
 
-    await expect(setNativeRotationLock(execute, false)).rejects.toThrow(
-      'Rotation setup cannot run from the compact Settings shell'
-    );
+    const initial = await releaseNativeRotationLock(execute);
+    expect(initial).toEqual({ lockedOrientation: 'landscape' });
+    expect(state.lockedOrientation).toBeNull();
+
+    await restoreNativeRotationLock(execute, initial);
+    expect(state.lockedOrientation).toBe('landscape');
+    expect(state.clicked.filter((selector) => selector === '#quickLockLandscape')).toHaveLength(2);
+  });
+
+  it('releases and restores across a compact-to-sectioned shell change', async () => {
+    const { execute, state, compact } = shellFlippingRotationStub({
+      lockedOrientation: 'landscape',
+      physicalOrientation: 'portrait',
+    });
+
+    const initial = await releaseNativeRotationLock(execute);
+    expect(initial).toEqual({ lockedOrientation: 'landscape' });
+    expect(state.lockedOrientation).toBeNull();
+    expect(compact()).toBe(false);
+    expect(state.clicked).toContain(settingsSectionRow('appearance'));
+
+    await restoreNativeRotationLock(execute, initial);
+    expect(state.lockedOrientation).toBe('landscape');
+    expect(compact()).toBe(true);
+    expect(
+      state.clicked.filter((selector) => selector === settingsSectionRow('appearance'))
+    ).toHaveLength(2);
+  });
+
+  it('restores a portrait lock across a compact-to-sectioned shell change', async () => {
+    const { execute, state, compact } = shellFlippingRotationStub({
+      lockedOrientation: null,
+      physicalOrientation: 'landscape',
+    });
+
+    await restoreNativeRotationLock(execute, { lockedOrientation: 'portrait' });
+
+    expect(state.lockedOrientation).toBe('portrait');
+    expect(compact()).toBe(false);
   });
 });
 describe('resolved theme expression', () => {
@@ -263,6 +462,17 @@ describe('the Settings selectors both transports share', () => {
     expect(compactShell).toContain('class="quick-toggles"');
     expect(QUICK_NIGHT_TOGGLE).toBe('#quickNightToggle');
     expect(compactShell).toContain('id="quickNightToggle"');
+  });
+
+  it("finds both shells' rotation controls", () => {
+    expect(QUICK_LOCK_PORTRAIT).toBe('#quickLockPortrait');
+    expect(QUICK_LOCK_LANDSCAPE).toBe('#quickLockLandscape');
+    expect(compactShell).toContain("id: 'quickLockPortrait'");
+    expect(compactShell).toContain("id: 'quickLockLandscape'");
+    expect(LOCK_ROTATION_TOGGLE).toBe('#lockRotationToggle');
+    expect(FORCE_LANDSCAPE_TOGGLE).toBe('#forceLandscapeToggle');
+    expect(appearanceSection).toContain('id="lockRotationToggle"');
+    expect(appearanceSection).toContain('id="forceLandscapeToggle"');
   });
 
   // The sectioned shell's options carry literal ids, so the constant and the

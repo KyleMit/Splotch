@@ -70,6 +70,15 @@ because it will be believed. Minified and packed this measured **104 KB per capt
 first two campaigns promoted this way (20 captures, 2.3 MB), against 2.4 MB pretty-printed on disk.
 A desktop capture is the heavier end, because it carries all nine renderer phases.
 
+Whole means the complete measurement and fidelity payload, not host-local identity. Promotion
+replaces a structured capture's `device.id` and any sibling field holding that same value, such as
+an Android `device.name` that is the serial. It also replaces a hand capture's string `device` in
+the tracked copy and index. The gitignored source artifact remains byte-for-byte unchanged; a
+descriptive device name where it is not itself the identifier, OS, transport, frames, events,
+measures, and verdicts remain in the promoted copy. Hardware identifiers do not participate in
+scoring or establish provenance, so retaining them adds disclosure risk without making the evidence
+more reproducible.
+
 **One capture per target × brush per campaign**, not per matrix cell. A metric change's effect
 varies with the display and transport (the target) and with the workload (the brush); orientation
 and theme are the axes least likely to interact with the *metric*, as against the product. That cut
@@ -96,6 +105,9 @@ corpus.
 \+ The preserved captures carry their own fidelity verdict, so a future reader can tell a scoreable
 capture from an unscoreable one without the session that took it — the single discipline this
 campaign concluded matters most.
+
+\+ Evidence promoted after the 2026-09 amendment does not disclose the hardware serial or UDID of
+the physical capture rig. Earlier evidence still requires the cleanup tracked in issue 1645.
 
 \+ Bounded and predictable weight: one target × brush grid per campaign, at a size that is known
 rather than discovered.

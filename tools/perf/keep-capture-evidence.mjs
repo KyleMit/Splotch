@@ -26,6 +26,28 @@ import { numberInvalidatingFailure } from './lib/input-fidelity.mjs';
 import { attributionOf } from './lib/capture-attribution.mjs';
 
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
+export const REDACTED_DEVICE_IDENTIFIER = '[redacted]';
+
+export function redactDeviceIdentifiers(parsed) {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return parsed;
+  if (parsed.handCapture === true && typeof parsed.device === 'string') {
+    return { ...parsed, device: REDACTED_DEVICE_IDENTIFIER };
+  }
+  if (parsed.device && typeof parsed.device === 'object' && !Array.isArray(parsed.device)) {
+    const identifier = parsed.device.id;
+    if (typeof identifier !== 'string' || !identifier) return parsed;
+    return {
+      ...parsed,
+      device: Object.fromEntries(
+        Object.entries(parsed.device).map(([key, value]) => [
+          key,
+          value === identifier ? REDACTED_DEVICE_IDENTIFIER : value,
+        ])
+      ),
+    };
+  }
+  return parsed;
+}
 
 export function modeOf(parsed) {
   const orientation =
@@ -189,6 +211,7 @@ export async function keepCaptureEvidence({
       continue;
     }
     if (!rawReportOf(parsed)) continue;
+    const promoted = redactDeviceIdentifiers(parsed);
     const relativePath = relative(root, file);
     candidates.push({
       file,
@@ -216,7 +239,7 @@ export async function keepCaptureEvidence({
         ? {
             runtime: parsed.runtime ?? null,
             reading: parsed.reading ?? null,
-            device: parsed.device ?? null,
+            device: promoted.device ?? null,
             pageDelivery: parsed.pageDelivery ?? null,
             drawSeconds: parsed.drawSeconds ?? null,
           }
@@ -248,9 +271,10 @@ export async function keepCaptureEvidence({
   }
   mkdirSync(destination, { recursive: true });
 
-  // Minified, not copied: a capture is ~2.4 MB pretty-printed and ~620 KB dense,
-  // and the tracked corpus is sized in ADR-0138 on the dense form. Nothing is
-  // dropped — only the whitespace.
+  // Minified rather than copied: a capture is ~2.4 MB pretty-printed and ~620 KB
+  // dense, and the tracked corpus is sized in ADR-0138 on the dense form. The
+  // measurement payload stays whole; host-local device identifiers are replaced
+  // only in the tracked copy, while the source capture remains untouched.
   // The digest makes collisions astronomically unlikely, not impossible — and
   // a collision here is the silent paid-for-capture overwrite this naming
   // exists to prevent, so it fails loudly instead.
@@ -263,7 +287,7 @@ export async function keepCaptureEvidence({
     emitted.add(name);
     writeFileSync(
       join(destination, name),
-      JSON.stringify(JSON.parse(readFileSync(entry.file, 'utf8')))
+      JSON.stringify(redactDeviceIdentifiers(JSON.parse(readFileSync(entry.file, 'utf8'))))
     );
   }
   // The index is what makes the corpus readable without opening a frame table:

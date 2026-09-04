@@ -42,6 +42,8 @@ import { ANDROID_NATIVE_PACKAGE, GESTURE_REPEATS, gesturePlanFor } from '../lib/
 import { captureRuntime, describeFidelityFailures, inputFidelity } from '../lib/input-fidelity.mjs';
 import { describeRefreshRegime, refreshRegimeVerdict } from '../lib/refresh-regime.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
+import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
+import { UNDO_ACTION_PAUSE_MS } from '../lib/undo-driver.mjs';
 import {
   engineRows,
   inputRows,
@@ -387,6 +389,8 @@ export function drivenCaptureArtifact({
   theme,
   gestureRepeats,
   gesturePlan,
+  undoCount,
+  undoPauseMs,
   ready,
   nativeApp,
   nativePackage = null,
@@ -394,6 +398,7 @@ export function drivenCaptureArtifact({
   servedBuild = null,
   fidelity,
   drawing,
+  undo,
   summaries,
   payload,
 }) {
@@ -422,6 +427,8 @@ export function drivenCaptureArtifact({
     // the comparability boundary (issue 1292). (A 'per-repeat-offsets' value
     // existed briefly inside the unmerged stack and never captured a cell.)
     gesturePlan: gesturePlan ?? null,
+    undoCount,
+    undoPauseMs,
     // The verified eraser-fill evidence (issue 1302); null for other brushes
     // and for captures predating verification.
     eraserFill: ready?.eraserFill ?? null,
@@ -451,6 +458,11 @@ export function drivenCaptureArtifact({
     hostQuiet,
     fidelity,
     drawing,
+    undo,
+    undoActions: payload?.undoActions ?? [],
+    historyBeforeUndo: payload?.historyBeforeUndo ?? null,
+    historyAfterUndo: payload?.historyAfterUndo ?? null,
+    undoVisual: payload?.undoVisual ?? null,
     summaries,
     report: payload?.report,
     topology: payload?.topology ?? null,
@@ -463,6 +475,8 @@ export async function captureDeviceFrames({
   orientation = argFlag('orientation', 'PORTRAIT'),
   theme = argFlag('theme', 'light'),
   repeats = Number(argFlag('gesture-repeats', GESTURE_REPEATS)),
+  undoCount = Number(argFlag('undo-count', '0')),
+  undoPauseMs = Number(argFlag('undo-pause-ms', String(UNDO_ACTION_PAUSE_MS))),
   host = argFlag('host'),
   serial = argFlag('device-serial'),
   cdpPort = parsePositivePort(argFlag('cdp-port', PORT_ROLES.androidCdp.port), 'cdp-port'),
@@ -482,6 +496,15 @@ export async function captureDeviceFrames({
   if (!BRUSHES.includes(brush)) fail(`--brush must be one of ${BRUSHES.join(', ')}`);
   if (!Number.isSafeInteger(repeats) || repeats < 1) {
     fail('--gesture-repeats must be a positive integer');
+  }
+  if (!Number.isSafeInteger(undoCount) || undoCount < 0) {
+    fail('--undo-count must be a non-negative integer');
+  }
+  if (!Number.isSafeInteger(undoPauseMs) || undoPauseMs < 0) {
+    fail('--undo-pause-ms must be a non-negative integer');
+  }
+  if (undoCount > 0 && brush !== 'pen') {
+    fail('--undo-count is supported only with --brush=pen');
   }
   if (!ORIENTATIONS.includes(orientation)) {
     fail(`--orientation must be one of ${ORIENTATIONS.join(', ')}`);
@@ -509,6 +532,8 @@ export async function captureDeviceFrames({
     nonce,
     requirePageIdentity,
     contactMs: CONTACT_BANK_MS,
+    undoCount,
+    undoPauseMs,
     eraserRefillRequest: null,
     finish: false,
     reset: true,
@@ -609,6 +634,8 @@ export async function captureDeviceFrames({
 
   const summaries = summarizeRun(payload.report);
   const drawing = scoreDrawingRun(summaries.phases);
+  const undo =
+    undoCount > 0 ? summarizeUndoActions(payload.undoActions ?? [], payload.report.frames) : null;
   const fidelity = inputFidelity(
     summaries.phases?.[0]?.input ?? {},
     captureRuntime(platform, nativeApp)
@@ -623,6 +650,10 @@ export async function captureDeviceFrames({
   console.table(engineRows(summaries.phases));
   console.table(starvationRows(summaries.phases));
   console.table(drawingGateRows(drawing));
+  if (undo) {
+    console.log('\nUndo response');
+    console.table(undoActionRows(undo));
+  }
   console.log(
     `\nFidelity: ${fidelity.passed ? 'PASS' : 'FAIL'} (${fidelity.runtime}) · ` +
       `${JSON.stringify(fidelity.checks)}`
@@ -641,6 +672,8 @@ export async function captureDeviceFrames({
     theme,
     gestureRepeats: repeats,
     gesturePlan: gesturePlanFor(brush),
+    undoCount,
+    undoPauseMs,
     ready,
     nativeApp,
     nativePackage: runtimeIdentity?.nativePackage ?? null,
@@ -648,6 +681,7 @@ export async function captureDeviceFrames({
     servedBuild,
     fidelity,
     drawing,
+    undo,
     summaries,
     payload,
   });

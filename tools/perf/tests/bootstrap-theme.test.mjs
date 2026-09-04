@@ -12,13 +12,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // The bootstrap polls on the same budgets it uses on a device, so executing it
 // costs seconds rather than milliseconds. That is the price of running the real
 // thing instead of grepping it.
-const BOOTSTRAP_TIMEOUT_MS = 20_000;
+const BOOTSTRAP_TIMEOUT_MS = 22_000;
 import { pageBootstrapSource } from '../split-capture/lib/page-bootstrap.mjs';
 import { readinessThemeProblem } from '../lib/campaign-state.mjs';
 
 const CANVAS_RECT = { x: 0, y: 0, width: 800, height: 600 };
 
-function paintShell({ compact, startingTheme }) {
+function paintShell({ compact, startingTheme, lazySettings = false }) {
   document.documentElement.dataset.theme = startingTheme ?? '';
   document.body.innerHTML = `
     <canvas id="drawingCanvas"></canvas>
@@ -27,46 +27,55 @@ function paintShell({ compact, startingTheme }) {
     <button id="brushButton"></button>
     <button id="penBrushButton" hidden></button>
     <button aria-label="Settings"></button>
-    <dialog id="settingsModal">
+  `;
+  const mountSettings = () => {
+    const existing = document.querySelector('#settingsModal');
+    if (existing) return existing;
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `
+      <dialog id="settingsModal">
       ${compact ? '<div class="quick-toggles"><button id="quickNightToggle" aria-checked="false"></button></div>' : ''}
       ${compact ? '' : '<button data-section="appearance"></button>'}
-    </dialog>
-  `;
+      </dialog>
+    `
+    );
+    const modal = document.querySelector('#settingsModal');
+    if (compact) {
+      const toggle = document.querySelector('#quickNightToggle');
+      toggle.addEventListener('click', () => {
+        const next = toggle.getAttribute('aria-checked') === 'true' ? 'light' : 'dark';
+        toggle.setAttribute('aria-checked', String(next === 'dark'));
+        document.documentElement.dataset.theme = next;
+      });
+    } else {
+      document.querySelector('button[data-section="appearance"]').addEventListener('click', () => {
+        for (const theme of ['light', 'dark']) {
+          const option = document.createElement('button');
+          option.id = `themeOption-${theme}`;
+          option.addEventListener('click', () => {
+            document.documentElement.dataset.theme = theme;
+          });
+          modal.append(option);
+        }
+      });
+    }
+    const close = document.createElement('button');
+    close.setAttribute('aria-label', 'Close');
+    close.addEventListener('click', () => (modal.open = false));
+    modal.append(close);
+    return modal;
+  };
   const canvas = document.querySelector('#drawingCanvas');
   canvas.getBoundingClientRect = () => CANVAS_RECT;
   document.elementFromPoint = () => document.querySelector('.canvas-stack');
   window.__committedBrushMode = () => 'pen';
 
-  const modal = document.querySelector('#settingsModal');
   document.querySelector('button[aria-label="Settings"]').addEventListener('click', () => {
+    const modal = mountSettings();
     modal.open = true;
-    if (!compact && !document.querySelector('#themeOption-light')) return;
   });
-
-  if (compact) {
-    const toggle = document.querySelector('#quickNightToggle');
-    toggle.addEventListener('click', () => {
-      const next = toggle.getAttribute('aria-checked') === 'true' ? 'light' : 'dark';
-      toggle.setAttribute('aria-checked', String(next === 'dark'));
-      document.documentElement.dataset.theme = next;
-    });
-  } else {
-    // The sectioned shell reveals the options only after the Appearance row.
-    document.querySelector('button[data-section="appearance"]').addEventListener('click', () => {
-      for (const theme of ['light', 'dark']) {
-        const option = document.createElement('button');
-        option.id = `themeOption-${theme}`;
-        option.addEventListener('click', () => {
-          document.documentElement.dataset.theme = theme;
-        });
-        modal.append(option);
-      }
-    });
-  }
-  const close = document.createElement('button');
-  close.setAttribute('aria-label', 'Close');
-  close.addEventListener('click', () => (modal.open = false));
-  modal.append(close);
+  if (!lazySettings) mountSettings();
 }
 
 // The bootstrap now refuses to act for a page it was not opened for, so the
@@ -80,18 +89,27 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   if (openedWithoutProbe) window.happyDOM?.setURL?.('http://probe-host.test/');
   else openedFor(plan.nonce);
   const posted = [];
+  const currentPlan = plan;
   let readyResolve;
   const readyPosted = new Promise((resolve) => (readyResolve = resolve));
+  let errorResolve;
+  const errorPosted = new Promise((resolve) => (errorResolve = resolve));
   let staleResolve;
   const stalePosted = new Promise((resolve) => (staleResolve = resolve));
+  let reportResolve;
+  const reportPosted = new Promise((resolve) => (reportResolve = resolve));
   const eventRows = [];
+  const frameRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
+  const measureRows = plan.undoCount ? Array.from({ length: 5_001 }, (_, index) => [index]) : [];
 
   global.fetch = vi.fn(async (path, init) => {
-    if (path === '/__probe/plan') return { json: async () => plan };
+    if (path === '/__probe/plan') return { json: async () => currentPlan };
     const body = init?.body ? JSON.parse(init.body) : null;
     posted.push({ path, body });
     if (path === '/__probe/ready') readyResolve(body);
+    if (path === '/__probe/log' && body?.kind === 'bootstrap') errorResolve(body);
     if (path === '/__probe/log' && body?.kind === 'stale-page') staleResolve(body);
+    if (path === '/__probe/report') reportResolve(body);
     return { json: async () => ({}) };
   });
 
@@ -101,11 +119,27 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   document.head.append = (element) => {
     if (element.tagName === 'SCRIPT') {
       window.__probe = {
-        counts: () => ({ frames: 0, events: eventRows.length, measures: 0 }),
-        frames: () => [],
+        counts: () => ({
+          frames: frameRows.length,
+          events: eventRows.length,
+          measures: measureRows.length,
+        }),
+        frames: (from, count) => frameRows.slice(from, from + count),
         events: (from, count) => eventRows.slice(from, from + count),
-        measures: () => [],
-        finish: () => ({ meta: { counts: {} } }),
+        measures: (from, count) => measureRows.slice(from, from + count),
+        finish: vi.fn(() => ({
+          meta: {
+            counts: {
+              frames: frameRows.length,
+              events: eventRows.length,
+              measures: measureRows.length,
+            },
+          },
+        })),
+        addPostFinishRows() {
+          frameRows.push([frameRows.length]);
+          measureRows.push([measureRows.length]);
+        },
         stop: () => {},
       };
       queueMicrotask(() => element.onload?.());
@@ -117,17 +151,119 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   new Function(pageBootstrapSource())();
   return {
     readyPosted,
+    errorPosted,
     stalePosted,
+    reportPosted,
     posted,
+    finish() {
+      currentPlan.finish = true;
+    },
     recordTrustedCanvasPointerUp() {
       eventRows.push([0, 0, 2, 1, 0, 0, 1, 0, 1]);
     },
   };
 }
 
+function paintUndoShell() {
+  paintShell({ compact: true, startingTheme: 'light' });
+  const canvas = document.querySelector('#drawingCanvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  canvas.pixelVersion = 3;
+
+  const createElement = document.createElement.bind(document);
+  document.createElement = (tag) => {
+    const element = createElement(tag);
+    if (tag === 'canvas') {
+      let sampledVersion = 0;
+      element.getContext = () => ({
+        clearRect() {
+          sampledVersion = 0;
+        },
+        drawImage(source) {
+          sampledVersion = source.pixelVersion ?? 0;
+        },
+        getImageData() {
+          const data = new Uint8ClampedArray(64 * 64 * 4);
+          data.fill(sampledVersion);
+          return { data };
+        },
+      });
+    }
+    return element;
+  };
+
+  let historyLength = 14;
+  let snapshots = 12;
+  let undoClicks = 0;
+  window.__drawingDebug = {
+    getUndoDebug: () => ({ historyLength, snapshots }),
+    getLiveSurfaceTopology: () => [],
+  };
+  const measures = [];
+  const probeFinishedAtUndo = [];
+  Object.defineProperty(window.performance, 'getEntriesByName', {
+    configurable: true,
+    value: () => measures,
+  });
+  const undo = document.createElement('button');
+  undo.id = 'undoButton';
+  undo.addEventListener('click', () => {
+    probeFinishedAtUndo.push(window.__probe.finish.mock.calls.length > 0);
+    window.__probe.addPostFinishRows();
+    undoClicks += 1;
+    historyLength -= undoClicks === 1 ? 3 : 1;
+    snapshots -= 1;
+    canvas.pixelVersion -= 1;
+    measures.push({ duration: 2 });
+  });
+  document.body.append(undo);
+  return { canvas, probeFinishedAtUndo };
+}
+
 beforeEach(() => {
   window.matchMedia = () => ({ matches: false, addEventListener() {} });
   delete window.__probe;
+  delete window.__drawingDebug;
+});
+
+describe('the bootstrap actually capturing undo', () => {
+  it(
+    'records canonical timing plus history and pixel restoration evidence',
+    async () => {
+      const { canvas, probeFinishedAtUndo } = paintUndoShell();
+      const run = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'undo-run',
+        undoCount: 2,
+        undoPauseMs: 0,
+      });
+
+      await run.readyPosted;
+      canvas.pixelVersion = 4;
+      run.finish();
+      const payload = await run.reportPosted;
+
+      expect(payload.undoActions).toHaveLength(2);
+      expect(payload.report.frames).toHaveLength(5_001);
+      expect(payload.report.measures).toHaveLength(5_001);
+      expect(payload.historyBeforeUndo).toMatchObject({ historyLength: 14, snapshots: 12 });
+      expect(payload.historyAfterUndo.historyLength).toBe(10);
+      expect(payload.historyAfterUndo.snapshots).toBe(10);
+      expect(payload.undoVisual).toMatchObject({
+        changedEveryStep: true,
+        steps: [
+          { index: 0, changed: true },
+          { index: 1, changed: true },
+        ],
+      });
+      expect(payload.undoVisual.samples).toHaveLength(3);
+      expect(payload.report.paintedOutput).toMatchObject({ changed: true });
+      expect(probeFinishedAtUndo).toEqual([true, true]);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
 });
 
 describe('the bootstrap actually setting the theme', () => {
@@ -160,6 +296,28 @@ describe('the bootstrap actually setting the theme', () => {
 
       expect((await readyPosted).resolvedTheme).toBe('light');
       expect(document.documentElement.dataset.theme).toBe('light');
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
+
+  it(
+    'opens Settings when the dialog mounts only after the eager trigger is clicked',
+    async () => {
+      paintShell({ compact: true, startingTheme: 'light', lazySettings: true });
+      expect(document.querySelector('#settingsModal')).toBeNull();
+
+      const { readyPosted, errorPosted } = runBootstrap({
+        brush: 'pen',
+        theme: 'dark',
+        nonce: 'lazy-settings-dark',
+      });
+
+      const outcome = await Promise.race([
+        readyPosted.then((ready) => ({ kind: 'ready', ready })),
+        errorPosted.then((error) => ({ kind: 'error', error })),
+      ]);
+      expect(outcome).toMatchObject({ kind: 'ready', ready: { resolvedTheme: 'dark' } });
+      expect(document.querySelector('#settingsModal')).not.toBeNull();
     },
     BOOTSTRAP_TIMEOUT_MS
   );

@@ -195,8 +195,10 @@
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide composition. Hide art when
   // the composition changes, decode the browser-selected file off-DOM, and show
-  // it only once ready. A theme sibling has identical registration, so it
-  // keeps the current art visible until the sibling is ready.
+  // it only once ready. The DOM image still decodes asynchronously because
+  // WebKit can otherwise block the selection frame while rasterizing that
+  // decoded source at its paper-sized layout. A theme sibling has identical
+  // registration, so it keeps the current art visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
 
   $effect(() => {
@@ -278,6 +280,7 @@
       class:overlay-ready={!!displayedOverlayUrl}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
+      decoding="async"
       data-canonical-url={themedOverlayUrl ?? undefined}
       alt=""
       hidden={!overlayUrl()}

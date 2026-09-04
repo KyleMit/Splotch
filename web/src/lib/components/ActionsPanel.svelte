@@ -51,6 +51,7 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
   let panelEl: HTMLDivElement | undefined = $state();
+  let drawerEl: HTMLDivElement | undefined = $state();
   // Only the focus-restore path reads this, but a bound component prop has to be
   // reactive for the child's write to land.
   let brushTriggerEl: HTMLButtonElement | undefined = $state();
@@ -61,6 +62,8 @@
   let drawerMotion = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
+  // Intentionally untracked: this frame only verifies the imperative animation state.
+  let drawerMotionProbeFrame: number | undefined;
   // Intentionally untracked: this only memoizes the save-time chunk after the first screenshot press.
   let screenshotModulePromise: Promise<typeof import('$lib/drawing/screenshot')> | null = null;
   const refreshFreeGenerationGrant = createFreeGenerationGrantRefresher();
@@ -160,6 +163,23 @@
     (settings.advancedControlsEnabled && settings.drawerOpen) || ui.resizingActionButtons
   );
 
+  function stopDrawerMotion() {
+    if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
+    drawerMotionProbeFrame = undefined;
+    drawerMotion = false;
+  }
+
+  function scheduleDrawerMotionProbe() {
+    if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
+    drawerMotionProbeFrame = requestAnimationFrame(() => {
+      drawerMotionProbeFrame = undefined;
+      const hasActiveTransition = drawerEl
+        ?.getAnimations()
+        .some((animation) => animation.pending || animation.playState === 'running');
+      if (!hasActiveTransition) drawerMotion = false;
+    });
+  }
+
   $effect(() => {
     const expanded = drawerExpanded;
     if (lastDrawerExpanded === undefined) {
@@ -169,6 +189,7 @@
     if (lastDrawerExpanded === expanded) return;
     lastDrawerExpanded = expanded;
     drawerMotion = true;
+    scheduleDrawerMotionProbe();
   });
 
   const buttonScale = $derived(settings.actionButtonScale / 100);
@@ -223,7 +244,7 @@
     // One grid track owns the collapse in each orientation; unlike the decorative
     // gap margins, that transition cannot disappear without replacing the drawer.
     if (event.target === event.currentTarget && event.propertyName.startsWith('grid-template-'))
-      drawerMotion = false;
+      stopDrawerMotion();
   }
 
   function openFlyoutWrapper() {
@@ -268,12 +289,22 @@
       if (e.key !== 'Escape' || !openFlyout) return;
       closeFlyout({ restoreFocus: true });
     };
+    // The shared layout orientation settles after resize; this marker must clear
+    // first so the CSS breakpoint cannot animate a stale drawer transition.
+    const screenOrientation = window.screen?.orientation;
     document.addEventListener('pointerdown', onDocPointerDown);
     document.addEventListener('keydown', onDocKeyDown);
+    window.addEventListener('orientationchange', stopDrawerMotion);
+    if (typeof screenOrientation?.addEventListener === 'function')
+      screenOrientation.addEventListener('change', stopDrawerMotion);
 
     return () => {
       document.removeEventListener('pointerdown', onDocPointerDown);
       document.removeEventListener('keydown', onDocKeyDown);
+      window.removeEventListener('orientationchange', stopDrawerMotion);
+      if (typeof screenOrientation?.removeEventListener === 'function')
+        screenOrientation.removeEventListener('change', stopDrawerMotion);
+      if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
     };
   });
 
@@ -410,7 +441,7 @@
   <!-- Always rendered; the drawer's open/closed state and each control's toggle
        in Settings are driven purely by CSS. app.html's <html> seed owns
        first paint; the panel-local publish effect owns hydrated changes. -->
-  <div class="actions-drawer" ontransitionend={finishDrawerMotion}>
+  <div class="actions-drawer" bind:this={drawerEl} ontransitionend={finishDrawerMotion}>
     <div class="actions-drawer-inner">
       <BrushControl
         bind:wrapperEl={brushWrapperEl}

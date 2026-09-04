@@ -50,6 +50,7 @@ import {
   planCampaign,
   planCampaignReferences,
   splitTransportIdentityProblem,
+  splitUndoEvidenceProblem,
 } from './lib/campaign-plan.mjs';
 import { campaignReferenceReport, campaignReferenceWarning } from './lib/campaign-reference.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
@@ -160,6 +161,7 @@ export function cellInspection(cell, { runtime, refreshRegime, captureRuntime = 
     expectedRefreshRegime: cell.reportsRefreshRegime ? refreshRegime : null,
     expectedGestureRepeats: cell.gestureRepeats ?? null,
     expectedGesturePlan: cell.gesturePlan ?? null,
+    expectedUndoCount: cell.expectedUndoCount ?? null,
   });
 }
 
@@ -172,6 +174,7 @@ export function inspectArtifact(
     expectedRefreshRegime = null,
     expectedGestureRepeats = null,
     expectedGesturePlan = null,
+    expectedUndoCount = null,
   } = {}
 ) {
   const full = absolute(path);
@@ -296,6 +299,8 @@ export function inspectArtifact(
   if (paintedOutput !== null && paintedOutput.changed !== true) {
     return { ok: false, status: BLANK_OUTPUT, paintedOutput };
   }
+  const undoProblem = splitUndoEvidenceProblem(artifact, expectedUndoCount);
+  if (undoProblem) return { ok: false, status: FAILED, undoProblem };
   return { ok: true, status: COMPLETE, regime };
 }
 
@@ -674,6 +679,8 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         console.log(
           `RETRY ${cell.id} — the eraser's between-pass refills did not prove ink (${reason})`
         );
+      } else if (inspected.undoProblem) {
+        console.log(`RETRY ${cell.id} — ${inspected.undoProblem}`);
       } else {
         console.log(`${landed ? 'OK   ' : 'RETRY'} ${cell.id}`);
       }

@@ -24,6 +24,32 @@ const PRODUCT_COMMIT = 'ce88c8e587ac45847c419e05ef7a79d282bc747a';
 const MODE = { id: 'landscape-light', orientation: 'LANDSCAPE', theme: 'light' };
 const ITEMS = ['pen-undo', 'crayon', 'magic', 'eraser', 'actions'];
 
+function splitUndoEvidence(count = 10) {
+  return {
+    undoCount: count,
+    undo: {
+      count,
+      engine: { p50: 1, p95: 1, p99: 1, max: 1 },
+      nextFrame: { p50: 2, p95: 2, p99: 2, max: 2 },
+      passed: true,
+    },
+    undoActions: Array.from({ length: count }, (_, index) => ({
+      index,
+      beforeCount: index,
+      afterCount: index + 1,
+      engineMs: 1,
+      nextFrameMs: 2,
+    })),
+    historyBeforeUndo: { historyLength: 20 },
+    historyAfterUndo: { historyLength: 20 - count },
+    undoVisual: {
+      changedEveryStep: true,
+      samples: Array.from({ length: count + 1 }, (_, index) => ({ digests: [index] })),
+      steps: Array.from({ length: count }, (_, index) => ({ index, changed: true })),
+    },
+  };
+}
+
 function writeCampaign(
   targetId,
   transport,
@@ -40,6 +66,9 @@ function writeCampaign(
       JSON.stringify({
         transport,
         ...(transport === 'native-capacitor-webview' ? { appUrl: 'capacitor://localhost' } : {}),
+        ...(transport === 'split-input-measurement' && item === 'pen-undo'
+          ? splitUndoEvidence()
+          : {}),
         ...artifact,
         ...artifactForItem[item],
       })
@@ -326,14 +355,28 @@ describe('campaign sources', () => {
     expect(manifest.targets[0].modes[1].status).toBe('captured');
   });
 
-  it('names no undo source for the split transport, which captures drawing only', () => {
+  it('names the split pen artifact as its undo source', () => {
     const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
     const [entry] = sourcesFor('android-device-web', outputRoot);
 
-    // Its pen cell has no undo phase, so naming that artifact normalizes to null
-    // and drops the row rather than measuring it.
-    expect(entry.mode.undoSource).toBeUndefined();
+    expect(entry.mode.undoSource).toBe(entry.mode.drawing.pen[0]);
     expect(entry.mode.drawing.pen).toHaveLength(1);
+  });
+
+  it('fails closed when split pen evidence omits or contradicts the undo contract', () => {
+    for (const invalid of [
+      { undo: null },
+      { undoCount: 9 },
+      { undoVisual: { changedEveryStep: false, samples: [], steps: [] } },
+    ]) {
+      const outputRoot = writeCampaign('android-device-web', 'split-input-measurement', {
+        artifactForItem: { 'pen-undo': invalid },
+      });
+      const [entry] = sourcesFor('android-device-web', outputRoot);
+
+      expect(entry.mode).toBeUndefined();
+      expect(entry.missing).toContain('undo');
+    }
   });
 
   it('requires measured package identity before folding split-native drawing', () => {
@@ -365,7 +408,7 @@ describe('campaign sources', () => {
     expect(Object.keys(accepted.mode.drawing)).toEqual(['pen', 'crayon', 'magic', 'eraser']);
   });
 
-  it('carries a published undo measurement forward when the entry names none', () => {
+  it('replaces a published preserved undo section with fresh split evidence', () => {
     const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
     const entries = sourcesFor('android-device-web', outputRoot);
     const manifest = {
@@ -386,9 +429,9 @@ describe('campaign sources', () => {
 
     applyCampaignModes(manifest, 'android-device-web', entries);
 
-    expect(manifest.targets[0].modes[0].undoSource).toBe('preserved');
-    expect(manifest.targets[0].modes[0].undoProductCommit).toBe('abc');
-    expect(manifest.targets[0].modes[0].drawing.pen).toHaveLength(1);
+    const merged = manifest.targets[0].modes[0];
+    expect(merged.undoSource).toBe(merged.drawing.pen[0]);
+    expect(merged).not.toHaveProperty('undoProductCommit');
   });
 
   it('carries the published action section forward when requested', () => {
@@ -525,12 +568,9 @@ describe('campaign sources', () => {
     );
   });
 
-  it('pins implicit undo provenance before the drawing commit moves under it', () => {
+  it('does not inherit preserved undo provenance when fresh split evidence replaces it', () => {
     const outputRoot = writeCampaign('android-device-web', 'split-input-measurement');
     const entries = sourcesFor('android-device-web', outputRoot);
-    // The shape every android-device-web mode actually has: an undo source with
-    // no commit of its own, so the report reads provenance off drawingProductCommit
-    // — which this merge is about to replace with the recapture's commit.
     const manifest = {
       targets: [
         {
@@ -551,7 +591,8 @@ describe('campaign sources', () => {
 
     const merged = manifest.targets[0].modes[0];
     expect(merged.drawingProductCommit).toBe(PRODUCT_COMMIT);
-    expect(merged.undoProductCommit).toBe('aaaaaaaaaaaa');
+    expect(merged.undoSource).toBe(merged.drawing.pen[0]);
+    expect(merged).not.toHaveProperty('undoProductCommit');
   });
 });
 

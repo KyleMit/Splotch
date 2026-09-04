@@ -421,10 +421,16 @@ entry 87. Paths under `web/src/` unless noted.*
     bandwidth. `lib/imagePrefetch.ts`. *ADR-0045*
 74. **Tiered warms** — cover thumbs at idle on open (re-run on theme change); a book's pages on tile
     press/hover; the *other orientation's* art at idle only after the picked page decodes.
-    `ColoringBook.svelte:63-79`, `DrawingCanvas.svelte:223-240`. *ADR-0045*
+    `ColoringBook.svelte:63-79`, `DrawingCanvas.svelte:231-251`. *ADR-0045*
 75. **Decode-gated overlay swap** — new line art decodes off-DOM (`img.decode()`,
     `fetchPriority='high'`) and swaps by opacity only when ready; current art stays visible
-    meanwhile. `DrawingCanvas.svelte:186-218`. *ADR-0087, commit 2392ee40*
+    meanwhile. The displayed image keeps `decoding="async"` so WebKit can rasterize the decoded
+    source at its paper-sized layout without blocking the selection frame. A 2026-09-04 physical
+    iPad Safari A/B (one warm-up plus three scored repeats) reduced landscape-light P95/max from
+    25/31 to 19/20 ms and landscape-dark from 29/30 to 19/21 ms; a preceding focused dark treatment
+    scored 22/31 ms. `DrawingCanvas.svelte:195-229, 278-287`,
+    `docs/scratchpad/perf/2026-09-04-issue-1569-async-overlay-decode.md`. *ADR-0087, commit
+    2392ee40*
 76. **`loading="lazy"`/`decoding="async"`** on grid tiles and AI imagery.
 
 ### XIII. Fonts, audio, storage
@@ -464,6 +470,14 @@ entry 87. Paths under `web/src/` unless noted.*
     reduced-motion overrides at matching specificity. Measured: 5,847 → 0 Animation invalidations;
     emulator theme-flip post-p95 median 100.1 → 66.7 ms (n=3/arm). `ClearCoachmark.svelte`, pinned
     by `clear-tutorial.spec.ts`.
+88. **Action Drawer motion canceled before device rotation** — `orientationchange` clears an armed
+    drawer transition before the viewport breakpoint flips, so a stale motion marker cannot animate
+    the drawer's axis margins through the drawing's rotation frames. A physical Android Chrome
+    canonical A/B removed all drawer transition events from both with-ink directions and reduced
+    portrait-to-landscape P95/max from 33.4/66.7 to 16.7/16.8 ms. The reviewed implementation also
+    handles the standard Screen Orientation signal and releases a marker that starts no transition;
+    those post-capture hardenings await the final matrix recapture. `ActionsPanel.svelte`,
+    `docs/scratchpad/perf/2026-09-04-issue-1632-rotation-drawer-motion.md`.
 
 ### Documented rejections — perf machinery deliberately absent
 
@@ -482,7 +496,7 @@ halos, section mounts, tile migration); **do it at idle, never while a finger is
 `scheduleIdle` substrate under ~15 mechanisms); **touch only what changed** (tiles, dirty rects,
 culling, the hidden-tile invariant); and **keep it off the startup bundle** (test-pinned
 boundaries). The one anti-pattern this inventory's own sweep later caught — an infinite animation on
-a hidden element — is the inverse of idea two, and its fix (entry 87) is the newest entry.
+a hidden element — is the inverse of idea two, and its fix is entry 87.
 
 ### Known open performance work (as of 2026-08-26)
 
@@ -492,6 +506,6 @@ a hidden element — is the inverse of idea two, and its fix (entry 87) is the n
   both trace-attributed on the issue.
 * **#1322** — the campaign-end recapture and matrix regeneration, where the trust ledger, the
   recalibrated gates, and the eraser column's supersession all land in the published matrix.
-* **#1197 / #1130** — device-bound rotation and Settings-frame cells; **#1344** — spread and
+* **#1632 / #1130** — device-bound rotation and Settings-frame cells; **#1344** — spread and
   repeat-count measurement; **#1304** — the host-quiet measurement behind the trust ledger's one
   permanently-unrecorded row.
