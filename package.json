@@ -508,7 +508,7 @@
     "@netlify/blobs": "^10.7.13",
     "@sveltejs/adapter-netlify": "^6.0.4",
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.70.1",
+    "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "idb": "^8.0.3",
     "marked": "^18.0.11",
