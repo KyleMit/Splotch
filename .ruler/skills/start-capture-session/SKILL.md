@@ -200,7 +200,9 @@ Leave the rig up unless you are told otherwise — verified and idle is a valid 
 campaign needs to be started to make takeover count. What does **not** clean itself up is the state
 `--wake-android` wrote: the phone keeps `stayon` and a 30-minute screen timeout until something
 changes them back. Say so when you hand off, rather than leaving a phone that behaves oddly for
-reasons nobody can trace.
+reasons nobody can trace. When the user does want the rig torn down — every port freed and the phone
+back to stock, including ports a previous session's servers are still holding — that is the
+`release-capture-session` skill, not an ad-hoc kill.
 
 End with a **rig-state block** in the wrap-up reply — one line per row, so the next session inherits
 facts instead of re-deriving them:

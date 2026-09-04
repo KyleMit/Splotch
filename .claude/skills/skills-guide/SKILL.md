@@ -45,6 +45,7 @@ outcome stays an explicit later ask to `create-adr`.
 | Skill                        | Measures or drives                                                                                             |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `start-capture-session`      | **Start here for physical-device work** — takes the iPad/Android rig over and proves it will capture           |
+| `release-capture-session`    | The mirror image — stops every rig process any checkout owns and resets the phone, for a clean next start      |
 | `profiling`                  | Drawing/canvas **interaction** performance (`npm run perf:*` harness, jank, regressions)                       |
 | `capture-performance-matrix` | Serial cross-target drawing, undo, and discrete-action capture across web/native targets                       |
 | `improve-performance-matrix` | Freshly inventory the matrix, improve current scoreable reds, and ship causal clusters as reviewed stacked PRs |
