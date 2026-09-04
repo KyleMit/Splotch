@@ -177,13 +177,20 @@ its own decisions under `tools/asset-gen/docs/`.
 | `burn-down-backlog`           | Claim the newest unclaimed open issue (`in-progress` label) and drive it to a push |
 | `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them     |
 | `reconcile-with-main`         | Merge current `main` into a long-running branch and hunt the *semantic* conflicts  |
-| `prune-remote-branches`       | Triage stale `origin` branches and hand back an approved deletion script           |
+| `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`     |
 | `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports        |
 | `skills-guide`                | This guide                                                                         |
 
 `analyze-session-transcripts` has independent registered Claude and Codex packages because their
 session stores and record envelopes differ. It is user-invoked only — a batch run spawns a subagent
 per session, so it never fires on model initiative.
+
+`prune-git-workspace` runs three cleanups in a fixed order — worktrees, then local branches, then
+remote branches — because each frees something the next one classifies. Its scripts under
+`tools/git-housekeeping/` are dry runs by default; the local-branch judgment pass exists to give any
+finding on an unmerged branch a durable home (an issue, an ADR via `create-adr`, a scratchpad note —
+the `self-heal` judgment) *before* the branch goes, and the remote pass still hands the user a
+deletion script rather than deleting `origin` refs itself.
 
 `reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
 has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
