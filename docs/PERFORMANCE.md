@@ -421,14 +421,16 @@ entry 87. Paths under `web/src/` unless noted.*
     bandwidth. `lib/imagePrefetch.ts`. *ADR-0045*
 74. **Tiered warms** — cover thumbs at idle on open (re-run on theme change); a book's pages on tile
     press/hover; the *other orientation's* art at idle only after the picked page decodes.
-    `ColoringBook.svelte:63-79`, `DrawingCanvas.svelte:223-240`. *ADR-0045*
+    `ColoringBook.svelte:63-79`, `DrawingCanvas.svelte:231-251`. *ADR-0045*
 75. **Decode-gated overlay swap** — new line art decodes off-DOM (`img.decode()`,
     `fetchPriority='high'`) and swaps by opacity only when ready; current art stays visible
     meanwhile. The displayed image keeps `decoding="async"` so WebKit can rasterize the decoded
     source at its paper-sized layout without blocking the selection frame. A 2026-09-04 physical
-    iPad Safari A/B reduced landscape-light P95/max from 25/31 to 19/20 ms and landscape-dark from
-    29/30 to 19/21 ms; a preceding focused dark treatment scored 22/31 ms and remains preserved as
-    variance evidence. `DrawingCanvas.svelte:195-229, 276-287`. *ADR-0087, commit 2392ee40*
+    iPad Safari A/B (one warm-up plus three scored repeats) reduced landscape-light P95/max from
+    25/31 to 19/20 ms and landscape-dark from 29/30 to 19/21 ms; a preceding focused dark treatment
+    scored 22/31 ms. `DrawingCanvas.svelte:195-229, 278-287`,
+    `docs/scratchpad/perf/2026-09-04-issue-1569-async-overlay-decode.md`. *ADR-0087, commit
+    2392ee40*
 76. **`loading="lazy"`/`decoding="async"`** on grid tiles and AI imagery.
 
 ### XIII. Fonts, audio, storage
