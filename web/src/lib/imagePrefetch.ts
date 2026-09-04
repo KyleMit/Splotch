@@ -56,9 +56,15 @@ export function prefetchImages(requests: Iterable<string | ResponsiveImageReques
   }
 }
 
-export function predecodeImage(url: string): void {
+export function predecodeImages(requests: Iterable<string | ResponsiveImageRequest>): void {
   if (typeof Image === 'undefined') return;
-  prefetchImage(url, true);
+  for (const request of requests) {
+    prefetchImage(request, true);
+  }
+}
+
+export function predecodeImage(url: string): void {
+  predecodeImages([url]);
 }
 
 export function cancelImagePrefetchesExcept(preservedUrl: string): void {

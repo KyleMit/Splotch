@@ -27,6 +27,7 @@
     cancelImageRequest,
     cancelImagePrefetchesExcept,
     predecodeImage,
+    predecodeImages,
     prefetchImages,
     type ResponsiveImageRequest,
   } from '$lib/imagePrefetch';
@@ -83,7 +84,7 @@
   // Pressing/hovering a book tile warms that book's screen-sized selectors before
   // the sub-grid renders. Hovering a page warms its canonical canvas SVG.
   function prefetchBookPages(book: Book) {
-    prefetchImages(
+    predecodeImages(
       book.pages.map((page) =>
         imageRequest(
           pageSelectorImageSource(page, orientation, resolvedTheme()),

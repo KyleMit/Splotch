@@ -128,4 +128,16 @@ describe('image prefetch cancellation', () => {
     requested[0].deferredDecode?.resolve();
     await Promise.resolve();
   });
+
+  it('decodes every responsive selector in a requested set', async () => {
+    const { predecodeImages } = await import('./imagePrefetch');
+
+    predecodeImages([
+      { src: '/cat.webp', srcset: '/cat-240.webp 240w', sizes: '120px' },
+      { src: '/cow.webp', srcset: '/cow-240.webp 240w', sizes: '120px' },
+    ]);
+
+    expect(requested).toHaveLength(2);
+    expect(requested.map((image) => image.decodeCalls)).toEqual([1, 1]);
+  });
 });
