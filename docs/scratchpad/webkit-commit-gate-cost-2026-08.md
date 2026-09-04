@@ -35,11 +35,10 @@ runs on `macos-latest` (arm64).
 * Run B — [31159768570](https://github.com/KyleMit/Splotch/actions/runs/31159768570), 2026-08-07,
   job 92807215422, 2m28s
 
-The harness prints a `▶ <scenario label>` banner when a scenario starts and a
-`snapshots=… commit
-p95 …` line when it ends, so the gap between them is that scenario's wall clock;
-the gap *after* a result line is `collectMeasures` marshalling that scenario's user-timing entries
-across the Playwright bridge (WebKit has no CDP, so the report's trace is synthesized from them).
+The harness prints a `▶ <scenario label>` banner when a scenario starts and a `snapshots=… commit
+p95 …` line when it ends, so the gap between them is that scenario's wall clock; the gap *after* a
+result line is `collectMeasures` marshalling that scenario's user-timing entries across the
+Playwright bridge (WebKit has no CDP, so the report's trace is synthesized from them).
 
 `engine.draw total` and `draw() calls` come from the run's own report table, so draw cost inside a
 scenario is measured, not inferred.

@@ -56,8 +56,8 @@ context creation onto the child's first pointerdown.
   canvas is stroke-ready sooner.
 * \+ A place to put the *next* boot-hidden overlay: add it to `lib/components/overlayChunk.ts` and
   to the idle queue in `lib/boot/bootHiddenOverlays.ts`, and it stays off the load path by
-  construction. Re-importing one eagerly in `+page.svelte` silently reverts the win —
-  `npm run perf:mount` is the regression check.
+  construction. Re-importing one eagerly in `+page.svelte` silently reverts the win — `npm run
+  perf:mount` is the regression check.
 * − Settings' first open pays its mount (~50 ms on a real phone, masked by the fly-in animation).
   Deliberate: a parent-facing, once-per-visit cost.
 * − The overlays' SSR markup is gone (they client-render at idle). All were invisible at boot, so
@@ -91,14 +91,14 @@ fill.
 
 The shipping iPad path exposed two things the desktop numbers could not. First, `scheduleIdle`'s iOS
 fallback was a bare 200 ms `setTimeout` — not idleness at all — so the prewarm's work landed inside
-the post-boot interaction window and failed the physical-device idle frame gate
-(`npm run perf:ios:xcuitest:actions`). The fallback is now cooperative (`lib/idle.ts`): it requeues
-while a pointer is down, input is recent, or the latest frame gap ran long, and each prewarm slice
-is one section's construction and nothing more (the closed mount starts empty). Second, revealing a
-fully prewarmed pane put its entire first paint on the open edge, degrading the fly-in (33 ms post
-P95 / 45 ms max against the 20/33.5 gates). Presentation is therefore staged separately from layout:
-while closed every section is laid out but `visibility: hidden`, the fold paints one frame after the
-flip (inside the fly-in's launch-scale moments), the rest reveal one section per frame after the
+the post-boot interaction window and failed the physical-device idle frame gate (`npm run
+perf:ios:xcuitest:actions`). The fallback is now cooperative (`lib/idle.ts`): it requeues while a
+pointer is down, input is recent, or the latest frame gap ran long, and each prewarm slice is one
+section's construction and nothing more (the closed mount starts empty). Second, revealing a fully
+prewarmed pane put its entire first paint on the open edge, degrading the fly-in (33 ms post P95 /
+45 ms max against the 20/33.5 gates). Presentation is therefore staged separately from layout: while
+closed every section is laid out but `visibility: hidden`, the fold paints one frame after the flip
+(inside the fly-in's launch-scale moments), the rest reveal one section per frame after the
 animation lands — with one breathing frame so `animationend` cleanup is not stacked on the heaviest
 reveal — and sections re-stage one per idle slice after a close. Hiding the closed card by `opacity`
 instead was measured and rejected: WebKit keeps painting inside an opacity-0 card, which moved the
@@ -107,8 +107,7 @@ gain.
 
 Measured end state (iPadOS 26.5, 120 Hz, warmup + 3 scored): idle 17 ms P95 / 26 max PASS, close
 18/26 PASS, open 21 P95 / 25 max — two irreducible ~21-25 ms frames remain (the `showModal` flip
-itself, paint-independent by the opacity A/B, and the heaviest section's reveal), so `open
-Settings`
+itself, paint-independent by the opacity A/B, and the heaviest section's reveal), so `open Settings`
 carries a **documented 26 ms P95 allowance** in `tools/perf/lib/action-stats.mjs`
 (`IOS_ACTION_FRAME_P95_ALLOWANCES_MS`, scoped to the calibrated physical-iOS capture and recorded
 into each capture as `gateAllowances` — ADR-0090's amendment) — an accepted exception, not a
@@ -166,8 +165,8 @@ task in a `perf:mount` trace. If a *second* SettingsModal-scale overlay is ever 
 that one eval would start reliably crossing the 50 ms long-task line at idle.
 
 The documented fix at that point — measured neutral now (2026-07), so **not adopted yet**: change
-`lib/components/overlayChunk.ts` from static re-exports to a list of per-component lazy loaders
-(`() => import('./X.svelte')`) and have the pump walk them **one loader per idle callback**, so each
+`lib/components/overlayChunk.ts` from static re-exports to a list of per-component lazy loaders (`()
+=> import('./X.svelte')`) and have the pump walk them **one loader per idle callback**, so each
 overlay's chunk loads, evaluates, and mounts in its own slice. Cost: one idle request per overlay
 instead of one for the set (precached on repeat visits). Verify with `npm run perf:mount` that no
 per-overlay slice exceeds ~50 ms before adopting it.

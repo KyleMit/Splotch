@@ -175,8 +175,8 @@ npm run vectorize:postprocess -- vectorized/page.svg --fill '#fff' --out vectori
 The pass runs pinned SVGO `preset-default` to its byte-stable fixed point, then restores `width` and
 `height` from the optimized `viewBox`. Without those attributes, Chromium and WebKit report the
 Vectorizer output at its 100×150 default intrinsic size. No-input mode normalizes the committed
-`tools/vectorize/pilot/*.optimized.svg` and `web/static/coloring/**/*.svg` inventory in place;
-`npm run vectorize:postprocess:check` is the read-only drift guard. The repo-script unit suite also
+`tools/vectorize/pilot/*.optimized.svg` and `web/static/coloring/**/*.svg` inventory in place; `npm
+run vectorize:postprocess:check` is the read-only drift guard. The repo-script unit suite also
 checks every committed result so a new runtime SVG cannot bypass the invariant. `--fill` bakes a
 root ink color into a themed derivative; use `#fff` for a dark overlay so runtime presentation stays
 ordinary source-over composition without a CSS filter (ADR-0091).

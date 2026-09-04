@@ -19,9 +19,9 @@ this one. Edit this package in place, never through `.ruler/`.
 * `~/.claude/projects/<munged-cwd>/<session-id>.jsonl` — one file per session, `<munged-cwd>` is the
   absolute working directory with `/` replaced by `-` (this repo: `-Users-kylemit-Code-Splotch`).
   Worktrees and other checkouts get their own directories.
-* Cloud (claude.ai/code) sessions have no local transcript until teleported
-  (`claude --teleport <id>` — note it *moves* the session local rather than copying it, and archived
-  sessions must be unarchived first).
+* Cloud (claude.ai/code) sessions have no local transcript until teleported (`claude --teleport
+  <id>` — note it *moves* the session local rather than copying it, and archived sessions must be
+  unarchived first).
 * Skip stub files: a transcript of a few KB holding only a `/clear` or `/resume` command has nothing
   to report on.
 

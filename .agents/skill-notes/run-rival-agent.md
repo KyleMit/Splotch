@@ -44,8 +44,8 @@ user and project settings *files* — which also retired the hashed `settings.js
 runner carried. It still honours `--settings` on the command line, which is how the sandboxed Bash
 is pinned: `--tools Read,Grep,Glob,Bash` plus `--allowedTools` naming the broker tool, under
 `--permission-mode dontAsk`, gives the rival reads, one confined shell, and the one door. The
-confinement is computed, not hard-coded: `denyWrite` on the canonical `.git` resolved through
-`git rev-parse --git-common-dir` from the worktree, and `denyRead` on `~/.codex` plus every path
+confinement is computed, not hard-coded: `denyWrite` on the canonical `.git` resolved through `git
+rev-parse --git-common-dir` from the worktree, and `denyRead` on `~/.codex` plus every path
 `.worktreeinclude` names, at its canonical location. Claude's default sandbox grants a linked
 worktree write access to the whole canonical `.git` (measured: a push from the rival created a
 branch there), which is the one place Claude's sandbox is looser than Codex's, and the reason the
@@ -96,10 +96,10 @@ after that and is out of scope here.
 * Whether the workspace-write sandbox lets a brokered command write inside the disposable worktree
   under the temp root without escalation on every Codex version. The skill tells the handler to try
   the sandbox first and escalate only a legitimate denial through Auto-review.
-* Whether `exec_command`'s yield and `write_stdin` polling stay comfortable with
-  `broker next --timeout-seconds 60`; the number was chosen to sit under the yield, not measured
-  against it. One real Codex-handler round found the 30-second yield shorter than the wait, so each
-  quiet wait needed one follow-up poll.
+* Whether `exec_command`'s yield and `write_stdin` polling stay comfortable with `broker next
+  --timeout-seconds 60`; the number was chosen to sit under the yield, not measured against it. One
+  real Codex-handler round found the 30-second yield shorter than the wait, so each quiet wait
+  needed one follow-up poll.
 * The whole Codex-as-handler loop has been exercised from the checkout with a Claude session serving
   as the handler, which proves the launcher, the rival, the broker, and the poster, but not Codex's
   own `exec_command` ergonomics around them — and not yet with the sandboxed shell, whose rounds so

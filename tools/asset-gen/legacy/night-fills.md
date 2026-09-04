@@ -18,8 +18,8 @@ migrated to `../pipeline.md`).
 > fill with it. Generate the chalk BEFORE the night fill. The "eyes-are-line-art-driven" /
 > canonical-eye guidance below predates the fork and applies only to un-chalked categories; the gate
 > documentation and the ship/wire steps are still accurate (wire `chalk` orientations in `books.ts`
-> alongside `night` —
-> `book('nature', 'Nature', ['web', 'mobile'], (page) => [page('ant', 'Ant')])`).
+> alongside `night` — `book('nature', 'Nature', ['web', 'mobile'], (page) => [page('ant',
+> 'Ant')])`).
 
 ## What a night fill is
 
@@ -92,8 +92,8 @@ registers the result back onto the original outline, and scores it.
    cleanly white — eyeball borderline pages in the contact sheet.
 
 Each page retries (rising temperature) until a take passes all three gates, keeping the
-least-drifted take that reads as night AND keeps white outlines; it warns (`⚠ still drifting` /
-`⚠ too bright/daytime` / `⚠ dark outlines`) if none do — eyeball those in the contact sheet.
+least-drifted take that reads as night AND keeps white outlines; it warns (`⚠ still drifting` / `⚠
+too bright/daytime` / `⚠ dark outlines`) if none do — eyeball those in the contact sheet.
 
 ### Prompt lessons (already baked into `DARK_FILL_PROMPT`)
 
@@ -187,8 +187,8 @@ contact sheet's Combined view in **both** light and dark (the eye lesson applies
 2. `node tools/asset-gen/gen-coloring-thumbs.mjs <cat>` (picker thumbnail).
 3. `gen-coloring-fills.mjs <cat>/<page>-tall <cat>/<page>-wide` (light `.light.webp` fill).
 4. `gen-coloring-fills-dark.mjs <cat>/<page>-tall <cat>/<page>-wide --max-attempts 4`, then copy the
-   samples to `fill-src/<cat>/<page>-<orient>.night.raw.webp` and
-   `npm run gen:coloring-punch -- <cat>/<page>`.
+   samples to `fill-src/<cat>/<page>-<orient>.night.raw.webp` and `npm run gen:coloring-punch --
+   <cat>/<page>`.
 5. Rebuild the contact sheet `--source shipped`, verify eyes read well in Combined light AND dark,
    then `npm run check:assets && npm run check && npm run test:unit` and commit.
 
@@ -197,8 +197,7 @@ blobs in dark mode; opening them into an outlined iris then over-corrected to a 
 that stuck was the canonical form — solid pupil + one enlarged glare, no iris — with the whole
 light+dark+thumb suite regenerated and verified in Combined light and dark.) 3. **Iterate**:
 regenerate any that look off (higher `-t`, or a prompt tweak). Kids' faces and the night background
-are the usual issues. For a page the `⚠ dark
-   outlines` gate flags, the reliable fix is **more
+are the usual issues. For a page the `⚠ dark outlines` gate flags, the reliable fix is **more
 attempts against a stricter gate** so the retry loop keeps hunting for a genuinely-white take
 instead of settling at the boundary:
 
@@ -217,12 +216,11 @@ thickens the WHITE input lines by N px (a separable max filter) before the model
 a pale subject (whose own light fill tempts the model to re-ink thin outlines dark to define the
 body) gets a bold white band that survives as white, and the gate has a wider white target to
 sample. `--dilate-lines 2` fixed Creatures' unicorn-wide (a cream unicorn stuck at lineW 138 through
-every temperature) in one pass → lineW 218. Pair it with a low `-t` and the strict gate:
-`... unicorn-wide -t 0.3 --dilate-lines 2 --max-attempts 6
-   --line-white-min 175`. The fill's
-outlines come back a touch bolder than an undilated page's — harmless, since they only ever sit
-(white) under the app's chalk line art. Reach for it only for the stubborn pale outliers; the
-default 0 keeps the input pixel-faithful. 4. **On the user's approval**, ship:
+every temperature) in one pass → lineW 218. Pair it with a low `-t` and the strict gate: `...
+unicorn-wide -t 0.3 --dilate-lines 2 --max-attempts 6 --line-white-min 175`. The fill's outlines
+come back a touch bolder than an undilated page's — harmless, since they only ever sit (white) under
+the app's chalk line art. Reach for it only for the stubborn pale outliers; the default 0 keeps the
+input pixel-faithful. 4. **On the user's approval**, ship:
 
 * Copy each fill from samples to its RAW source path in `fill-src/` (strip the sample suffix, add
   `.night.raw`), then punch the shipped fills-only images:

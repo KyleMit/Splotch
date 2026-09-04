@@ -39,11 +39,9 @@ keeps it out of later pickups.
      yourself is just as effective and doesn't depend on the search index.)
    * In cloud/MCP sessions `search_issues` may return 0 even when open issues exist (the search
      index isn't always available); never conclude the backlog is empty from an empty
-     `search_issues` — confirm with `list_issues` first. `search_issues`
-     (`repo:kylemit/splotch is:issue is:open
-     -label:in-progress -label:wont-do`,
-     `sort: created`, `order: desc`) is a convenience when it works, but `list_issues` is the source
-     of truth.
+     `search_issues` — confirm with `list_issues` first. `search_issues` (`repo:kylemit/splotch
+     is:issue is:open -label:in-progress -label:wont-do`, `sort: created`, `order: desc`) is a
+     convenience when it works, but `list_issues` is the source of truth.
    * Also skip an issue you can't act on without a decision — one labelled `needs-triage`,
      `needs-scoping`, or `needs-adr` — and move to the next-newest. If the only candidates are
      blocked like that, say so and stop rather than forcing shaky work.

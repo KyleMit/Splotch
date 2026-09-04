@@ -26,9 +26,9 @@ config's `model` is gone too, so the launcher passes `-m` explicitly.
 
 ### 2. MCP tool calls are auto-rejected under `approval_policy="never"`
 
-With the broker attached, the rival's first `run` call failed with
-`MCP tool call requires approval, but approval policy is never`. The `never` pin the plan keeps for
-sandbox escapes also closes the one door the design opens.
+With the broker attached, the rival's first `run` call failed with `MCP tool call requires approval,
+but approval policy is never`. The `never` pin the plan keeps for sandbox escapes also closes the
+one door the design opens.
 
 **Fix (verified):** `mcp_servers.broker.default_tools_approval_mode = "approve"` (per-tool
 `tools.run.approval_mode` also exists). With that key the call completed and returned the broker's
@@ -56,10 +56,9 @@ tool list). `--safe-mode` disables MCP along with CLAUDE.md, skills, plugins, an
 
 **Fix (verified):** `--restricted --strict-mcp-config --mcp-config <json>` attaches exactly the
 broker, confines the file tools to the worktree, refuses `bypassPermissions`, and ignores user and
-project settings. With
-`--permission-mode dontAsk --tools Read,Grep,Glob --allowedTools
-Read,Grep,Glob,mcp__broker__run`
-the rival called the broker and `--json-schema` returned `structured_output` on the result.
+project settings. With `--permission-mode dontAsk --tools Read,Grep,Glob --allowedTools
+Read,Grep,Glob,mcp__broker__run` the rival called the broker and `--json-schema` returned
+`structured_output` on the result.
 
 ### 6. Broker load is asymmetric between the two rivals
 
@@ -80,8 +79,7 @@ therefore moot.
 
 ### 8. Worktree provisioning is cheap
 
-Measured in this checkout: `git worktree add` 1 s, `pnpm install --frozen-lockfile
---prefer-offline`
+Measured in this checkout: `git worktree add` 1 s, `pnpm install --frozen-lockfile --prefer-offline`
 3 s (1060 reused, 0 downloaded), `npm run info` 1 s. The rival's worktree gets none of the
 `.worktreeinclude` secrets (`web/.env` and the native signing files) on purpose.
 
@@ -164,12 +162,10 @@ claude -p --restricted --permission-mode dontAsk --tools Read,Grep,Glob \
   findings, two unverified, posted through the new poster as review 5090705253. The rival never
   called the broker: it ran Vitest in its own read-only sandbox, hit `EPERM` on
   `node_modules/.vite-temp`, and reported that as a handler decline. Its unverified list still named
-  three real defects that landed as fixes — `gh api
-  --paginate` without `--slurp` concatenates
-  pages into non-JSON, the one retry after a pruned resume reused the exclusively-created log path,
-  and a commit scope was keyed by the ref as typed rather than its OID. The rival prompt now says
-  outright that the sandbox cannot escalate and that anything that writes goes through `run` the
-  first time.
+  three real defects that landed as fixes — `gh api --paginate` without `--slurp` concatenates pages
+  into non-JSON, the one retry after a pruned resume reused the exclusively-created log path, and a
+  commit scope was keyed by the ref as typed rather than its OID. The rival prompt now says outright
+  that the sandbox cannot escalate and that anything that writes goes through `run` the first time.
 * 2026-09-02 — second real round at 57415c7b971bb02150e40bb132bfed0c67ddbd65. The resume failed
   first (`codex exec resume` rejects `--cd` with a usage error and filters recorded threads by
   directory, so the launcher now drops `-C` and passes `--all` on resume) and the launcher fell back

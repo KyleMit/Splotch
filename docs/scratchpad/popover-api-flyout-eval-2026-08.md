@@ -77,9 +77,9 @@ Playwright), at three viewports:
 The popover variants needed two CSS repairs before they even rendered plausibly, both worth noting
 because they are adoption cost rather than harness noise:
 
-* `.flyout-menu { display: flex }` outranks the UA sheet's
-  `[popover]:not(:popover-open) { display: none }`, so a *closed* popover keeps laying out and
-  covers its own trigger — Playwright's click was intercepted by the menu's first option.
+* `.flyout-menu { display: flex }` outranks the UA sheet's `[popover]:not(:popover-open) { display:
+  none }`, so a *closed* popover keeps laying out and covers its own trigger — Playwright's click
+  was intercepted by the menu's first option.
 * The UA sheet's `[popover] { inset: 0 }` leaves `top`/`right` set, over-constraining the author's
   `left`/`bottom` placement; the menu pins to the top edge until both are reset to `auto`.
 

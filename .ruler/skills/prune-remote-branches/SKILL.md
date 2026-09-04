@@ -59,11 +59,10 @@ is available:
 
 Batch these lookups — you only need PR state for branches with `ahead > 0`.
 
-**Bucket C judgment.** Don't kill on staleness alone. Look at the delta
-(`git log --oneline origin/main..origin/<branch>` and
-`git diff --stat origin/main...origin/<branch>`) and decide whether the idea already landed some
-other way — the same idea is often explored across several branches, and once one lands the siblings
-are dead. If you can't tell, it's bucket D, not C.
+**Bucket C judgment.** Don't kill on staleness alone. Look at the delta (`git log --oneline
+origin/main..origin/<branch>` and `git diff --stat origin/main...origin/<branch>`) and decide
+whether the idea already landed some other way — the same idea is often explored across several
+branches, and once one lands the siblings are dead. If you can't tell, it's bucket D, not C.
 
 ## Step 3 — Present the plan, then hand off a deletion script
 
@@ -78,8 +77,8 @@ Show the user a single consolidated plan before touching anything:
 
 ## Step 4 — Produce the script; the user runs it
 
-**Do NOT delete branches yourself — you can't, and you shouldn't.** This skill never runs
-`git push origin --delete`. There are two reasons, and both point to the same workflow:
+**Do NOT delete branches yourself — you can't, and you shouldn't.** This skill never runs `git push
+origin --delete`. There are two reasons, and both point to the same workflow:
 
 * **You can't, in a cloud session.** In a Claude Code on the web session the git relay permits
   creating/updating refs but returns `HTTP 403` on ref *deletion*, and the GitHub MCP server has no

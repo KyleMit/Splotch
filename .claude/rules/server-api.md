@@ -19,8 +19,8 @@ paths:
   export in its `apiHandler(...)`, which converts every thrown failure into the same shape at the
   boundary — a SvelteKit `error(...)` keeps its status and message; an unexpected non-HttpError
   becomes `fail(500, GENERIC_ERROR_MESSAGE)` with the standard `[server error]` log line (the
-  wrapper bypasses `handleError`, so it carries that logging duty itself) — never let SvelteKit's
-  `{ message }` body reach a client. `csp-report` is the one exemption (deliberately bodyless
+  wrapper bypasses `handleError`, so it carries that logging duty itself) — never let SvelteKit's `{
+  message }` body reach a client. `csp-report` is the one exemption (deliberately bodyless
   responses; browsers ignore them) and stays unwrapped.
 * Any unauthenticated oracle (login, code/key verification) must be rate-limited per IP via
   `src/lib/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from

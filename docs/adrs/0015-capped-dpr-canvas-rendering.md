@@ -39,8 +39,8 @@ How the factor propagates — most surfaces inherit it for free:
 
 * **Backing store:** `resizeCanvas()` sets `canvas.width/height = rect × renderScale`, and the undo
   baseline's `squareSide` scales the same way.
-* **Pointer input:** adapts automatically — `rectScaleX/Y` is computed as
-  `canvas.width / rect.width`, so `pointerToCanvas()` needs no change.
+* **Pointer input:** adapts automatically — `rectScaleX/Y` is computed as `canvas.width /
+  rect.width`, so `pointerToCanvas()` needs no change.
 * **Undo baseline + command-log replay:** inherit automatically — the baseline is sized off
   `canvas.width/height` and replayed ops are in backing-store coordinates (ADR-0033/0034).
 * **Stroke widths:** authored in CSS pixels (`strokeWidth.svelte.ts` levels); `startDrawing()`
@@ -48,9 +48,9 @@ How the factor propagates — most surfaces inherit it for free:
   the dot radius derives from it.
 * **Empty scan:** scan dimensions divide by `renderScale` so the CPU readback loop stays the same
   size regardless of DPR.
-* **Export:** `exportCanvasBlob` composes in CSS-pixel coordinates at
-  `exportScale = max(devicePixelRatio, 2)`; the paper texture and overlay keep their on-screen
-  proportions while the now-high-res strokes pass through with minimal resampling.
+* **Export:** `exportCanvasBlob` composes in CSS-pixel coordinates at `exportScale =
+  max(devicePixelRatio, 2)`; the paper texture and overlay keep their on-screen proportions while
+  the now-high-res strokes pass through with minimal resampling.
 
 Non-obvious invariants:
 

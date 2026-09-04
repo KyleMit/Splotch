@@ -86,11 +86,9 @@ instead of paying twice.
   `compact` classification is identical before and after the trace, checked across the scribble and
   filled categories.
 
-  To add one: author or capture into `inputs/`, then
-  `npm run vectorize -- <input> --out
-  tools/model-eval/samples/<id>.svg --production` and keep the
-  SVG only if it is meaningfully smaller than the PNG — otherwise commit the PNG to `samples/`
-  instead.
+  To add one: author or capture into `inputs/`, then `npm run vectorize -- <input> --out
+  tools/model-eval/samples/<id>.svg --production` and keep the SVG only if it is meaningfully
+  smaller than the PNG — otherwise commit the PNG to `samples/` instead.
 * The **reference report** lives in the committed `/scrapbook` tree (ADR-0059), not here, so GitHub
   Pages serves it rendered: [`scrapbook/model-eval/report/`](../../../scrapbook/model-eval/report/)
   → <https://kylemit.github.io/Splotch/model-eval/report/>. It's a folder — `index.html` plus an
@@ -245,9 +243,9 @@ rewording `DEFAULT_PROMPT` — composition adherence is one stray sentence away 
 
 ## Not covered
 
-Full safety re-validation of the **block-\*** corpus still needs `REDTEAM_FIXTURE_KEY` and
-`npm run redteam`. This harness covers quality/cost/latency plus a pretend-play false-positive
-probe; run the red-team suite before any production model swap.
+Full safety re-validation of the **block-\*** corpus still needs `REDTEAM_FIXTURE_KEY` and `npm run
+redteam`. This harness covers quality/cost/latency plus a pretend-play false-positive probe; run the
+red-team suite before any production model swap.
 
 ## Failure behavior and maintenance
 

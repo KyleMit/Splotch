@@ -20,13 +20,13 @@ campaign lost 20 cells to them:
   simulator's native landscape drawing and all four of its action modes unmeasured. The same guard
   would have blocked the physical iPad, so the campaign's framing of this as a simulator limitation
   was wrong.
-* `SettingsModal.svelte` selects `CompactShell` under
-  `(orientation: landscape) and (max-height: 599px)`, and that shell deliberately offers quick
-  toggles plus "Switch to portrait for the full settings" instead of a section list. The sweep
-  waited for section rows that a correct product does not draw, and the timeout discarded the entire
-  capture — including the drawer, palette, brush, coloring, screenshot, undo, clear, and rotation
-  actions that never touch Settings. Every Android landscape action cell failed this way, three
-  attempts each, across physical and emulated, web and native.
+* `SettingsModal.svelte` selects `CompactShell` under `(orientation: landscape) and (max-height:
+  599px)`, and that shell deliberately offers quick toggles plus "Switch to portrait for the full
+  settings" instead of a section list. The sweep waited for section rows that a correct product does
+  not draw, and the timeout discarded the entire capture — including the drawer, palette, brush,
+  coloring, screenshot, undo, clear, and rotation actions that never touch Settings. Every Android
+  landscape action cell failed this way, three attempts each, across physical and emulated, web and
+  native.
 
 The alternatives were worse. Adding a profiling-only orientation seam or mutating the persisted
 preference directly is exactly what ADR-0090 forbids, and it would measure a path no child can take.

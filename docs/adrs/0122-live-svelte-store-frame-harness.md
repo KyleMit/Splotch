@@ -89,13 +89,12 @@ the hero art, opening dialogs, seeding settings), which no live page can replay.
 
 The frame design system moves into the app as the **`/dev/store-frames` harness**
 (`web/src/routes/dev/store-frames/`), gated like every other dev route by `routes/dev/+layout.ts`
-(404 in production). The runtime gate alone is not enough for the native bundle —
-`prerender =
-false` drops a route's HTML but its client chunks still ship — so the `dev` route tree
-joins `web/nativeExcludedRoutes.ts`: the Capacitor build blanks every `routes/dev/**` client module,
-and `tools/mobile/check-static-bundle.mjs` scans the export for a sentinel derived from the store
-pages' own copy. The generator keeps the capture stage and shrinks its render stage to
-screenshotting the harness:
+(404 in production). The runtime gate alone is not enough for the native bundle — `prerender =
+false` drops a route's HTML but its client chunks still ship — so the `dev` route tree joins
+`web/nativeExcludedRoutes.ts`: the Capacitor build blanks every `routes/dev/**` client module, and
+`tools/mobile/check-static-bundle.mjs` scans the export for a sentinel derived from the store pages'
+own copy. The generator keeps the capture stage and shrinks its render stage to screenshotting the
+harness:
 
 * **Spec modules are shared, not duplicated.** `lib/targets.ts`, `geometry.ts`, `pages.ts`, and
   `paths.ts` are imported both by the Svelte components and by `gen-store-assets.mjs` (which already
@@ -113,17 +112,17 @@ screenshotting the harness:
   `--frames-only` / `npm run gen:store-assets:frames` re-renders every final from the committed
   captures without driving the app — a copy tweak no longer costs a single app boot.
 * **The port is faithful, not restyled.** The components keep the per-value `Math.round(v * k)`
-  scaling as inline-computed custom properties rather than switching to one CSS
-  `transform: scale(k)`: the capture must map into the frame slot pixel-for-pixel, and the committed
-  sets were rendered under per-value rounding. A pixel diff against the committed screenshots
-  verified alignment (differences confined to text antialiasing — the fonts now come from the app's
-  own `@fontsource-variable/quicksand` pipeline — and canvas stroke AA).
+  scaling as inline-computed custom properties rather than switching to one CSS `transform:
+  scale(k)`: the capture must map into the frame slot pixel-for-pixel, and the committed sets were
+  rendered under per-value rounding. A pixel diff against the committed screenshots verified
+  alignment (differences confined to text antialiasing — the fonts now come from the app's own
+  `@fontsource-variable/quicksand` pipeline — and canvas stroke AA).
 
 ## Alternatives considered
 
-* **Keep the HTML in `tools/` and add a static preview server.** Rejected: it duplicates what
-  `vite dev` already does (HMR, the app's font/token pipeline) and leaves the frame tokens forked
-  from the design system they visually imitate.
+* **Keep the HTML in `tools/` and add a static preview server.** Rejected: it duplicates what `vite
+  dev` already does (HMR, the app's font/token pipeline) and leaves the frame tokens forked from the
+  design system they visually imitate.
 * **Iframe the live app inside the harness instead of committing captures.** Rejected: the scenes
   are gesture sessions (canvas strokes, dialog choreography, `localStorage` seeding) — replaying
   them client-side means rebuilding the app driver in the page. Committed captures keep the
@@ -143,9 +142,8 @@ screenshotting the harness:
   as typed labels), so the feature graphic now renders genuine Quicksand — the old
   `local('Quicksand')` declaration silently fell back to system fonts in headless Chromium.
 * The dev-harness surface grows a server route with `node:fs` access. It is gated, reads only a
-  closed file map, and resolves paths relative to `process.cwd()` — which is `web/` under both
-  `vite dev` and `vite preview`, the only servers that can open the gate with the filesystem
-  present.
+  closed file map, and resolves paths relative to `process.cwd()` — which is `web/` under both `vite
+  dev` and `vite preview`, the only servers that can open the gate with the filesystem present.
 * `tools/marketing-assets/` still owns scene composition and the app-driving loop; a change to app
   markup or drawer mechanics still rots the driver silently, and `test:driver:smoke` remains the
   guard (this ADR does not change that seam).

@@ -86,11 +86,10 @@ their solid regions are harmless noise.
 
 ### The normalizer
 
-`npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N] [--dry-run]`
-— Gemini image-edit (`gemini-3.1-flash-image`) redraws solid regions as thin outlined shapes (eyes:
-exactly one pupil ring + one catchlight circle), keep-best-of-N with a rising temperature ladder,
-candidates land in `.coloring-samples-dark/normalize/`. Six gates per candidate:
+`npm run gen:coloring-outlines:normalize -- <page…> [--apply] [--notes "…"] [-t F] [--max-attempts
+N] [--dry-run]` — Gemini image-edit (`gemini-3.1-flash-image`) redraws solid regions as thin
+outlined shapes (eyes: exactly one pupil ring + one catchlight circle), keep-best-of-N with a rising
+temperature ladder, candidates land in `.coloring-samples-dark/normalize/`. Six gates per candidate:
 
 1. **solidity** — the point of the exercise;
 2. **ring depth** ≤ 4 — no swirl eyes;
@@ -118,26 +117,24 @@ refresh the light ledger before regenerating anything downstream.
 
 ### The from-scratch alternative
 
-`npm run gen:coloring-outlines:fresh -- <page> --scene "…" [--eyes] [--apply]
-[--max-attempts N] [-t F] [--notes "…"]`
-— when the pen's *anatomy* is the root problem (solid-ink pupils, a motif the fill model keeps
-misreading), don't edit the drawing — replace it. Text-to-image with a baseline style prompt
-matching the shipped catalog plus a 1–2 sentence scene (same subject, deliberately NOT the same
-composition), gated offline on solidity, ring depth, eye-core presence (`--eyes`), border whiteness,
-frame detection (four-sided ink and single-side ghost), and ink density; candidates land in
-`.coloring-samples/fresh/`. Here too, `--apply` only stages a light trace source. A fresh pen
+`npm run gen:coloring-outlines:fresh -- <page> --scene "…" [--eyes] [--apply] [--max-attempts N] [-t
+F] [--notes "…"]` — when the pen's *anatomy* is the root problem (solid-ink pupils, a motif the fill
+model keeps misreading), don't edit the drawing — replace it. Text-to-image with a baseline style
+prompt matching the shipped catalog plus a 1–2 sentence scene (same subject, deliberately NOT the
+same composition), gated offline on solidity, ring depth, eye-core presence (`--eyes`), border
+whiteness, frame detection (four-sided ink and single-side ghost), and ink density; candidates land
+in `.coloring-samples/fresh/`. Here too, `--apply` only stages a light trace source. A fresh pen
 invalidates the page's entire suite — regenerate pen SVG → chalk SVG → light → night → punch.
 Decision record + the 2026-07-13 five-page pass: [fresh-outline-regen.md](fresh-outline-regen.md).
 
 ## Stage 1.5 — Chalk outlines
 
-`npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N] [--ink-diff-max N] [--force] [--dry-run]`
-— Gemini image-edit redraws the inverted pen as a chalk line drawing (`gen-chalk-outlines.mjs`),
-keep-best-of-N with a rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
-with a `.display.webp` preview of what dark mode will show and a registration overlay). Five gates
-per candidate (`--rescore` re-runs them over saved candidates offline — no API — after a gate
-change):
+`npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"] [-t F] [--max-attempts N]
+[--ink-diff-max N] [--force] [--dry-run]` — Gemini image-edit redraws the inverted pen as a chalk
+line drawing (`gen-chalk-outlines.mjs`), keep-best-of-N with a rising temperature ladder, candidates
+in `.coloring-samples-dark/chalk/` (each with a `.display.webp` preview of what dark mode will show
+and a registration overlay). Five gates per candidate (`--rescore` re-runs them over saved
+candidates offline — no API — after a gate change):
 
 1. **keep ≥ 92% / worst-tile ≥ 80%** (`lib/outline-match.mjs`) — every pen STROKE is still traced in
    place. The reference is the pen with its SOLID INTERIORS whitened out (rim kept — the same
@@ -406,18 +403,17 @@ generation.
    but don't rely on that: delete any it reports.) Never copy a lined fill straight into
    `web/static/coloring/` — the shipped `.night.webp` must be the punched (fills-only) derivation of
    the raw.
-3. Wire the catalog in `web/src/lib/state/books.ts` —
-   `book('nature', 'Nature', ['web', 'mobile'],
-   (page) => [...])` binds every page to its book.
-   Inside that builder, `page()` binds both canonical light/dark SVG overlays and defaults `night`
-   fills to both orientations, so a fully-generated page is just `page('ant', 'Ant')`. Only pass the
-   `{ nightExcept }` options object to subtract an orientation whose night fill isn't generated yet,
-   e.g. `page('ant', 'Ant', { nightExcept: ['portrait'] })`.
+3. Wire the catalog in `web/src/lib/state/books.ts` — `book('nature', 'Nature', ['web', 'mobile'],
+   (page) => [...])` binds every page to its book. Inside that builder, `page()` binds both
+   canonical light/dark SVG overlays and defaults `night` fills to both orientations, so a
+   fully-generated page is just `page('ant', 'Ant')`. Only pass the `{ nightExcept }` options object
+   to subtract an orientation whose night fill isn't generated yet, e.g. `page('ant', 'Ant', {
+   nightExcept: ['portrait'] })`.
 4. Refresh the committed regression fixtures: `npm run check:coloring-golden-scores` (review the
-   report — the changed pages should be exactly the ones you shipped), then
-   `npm run update:coloring-golden-scores` to adopt the new baseline and
-   `npm run gen:assets:manifest` to re-hash the changed bytes; commit both fixture updates with the
-   assets (CI's `check:assets:manifest` fails otherwise).
+   report — the changed pages should be exactly the ones you shipped), then `npm run
+   update:coloring-golden-scores` to adopt the new baseline and `npm run gen:assets:manifest` to
+   re-hash the changed bytes; commit both fixture updates with the assets (CI's
+   `check:assets:manifest` fails otherwise).
 5. `npm run check:coloring-assets` + `npm run check` + `npm run test:unit` + `npm run build`,
    rebuild the coloring-book proof sheet `--source shipped`, optionally verify live with the
    `run-splotch` skill (dark mode → apply page → magic-brush reveal), commit. The build regenerates

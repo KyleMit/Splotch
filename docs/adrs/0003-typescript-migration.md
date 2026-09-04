@@ -31,7 +31,7 @@ errors before build or test.
 * **+** IDE autocompletion and inline error detection across all modules.
 * **+** Callback interfaces between the imperative engine and Svelte components are explicitly typed
   (`InitOptions`, `ExportOptions`), preventing silent signature drift.
-* **-** Adds a compile step for scripts that previously ran with bare `node`; workaround is
-  `node --experimental-strip-types` for lightweight one-off scripts.
+* **-** Adds a compile step for scripts that previously ran with bare `node`; workaround is `node
+  --experimental-strip-types` for lightweight one-off scripts.
 * **-** Capacitor plugin types (e.g., `@aparajita/capacitor-secure-storage`) sometimes lag behind
   API changes and require manual type assertions.

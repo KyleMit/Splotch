@@ -39,16 +39,15 @@ an identical post-step for all three):
 | Top-level `node_modules` layout                 | flat  | **symlinked** | flat   |
 
 * **pnpm** — fastest cold/warm of the npm-compatible options and disk-efficient, but its default
-  symlinked `node_modules` is a known Capacitor footgun: `cap
-  sync` reads plugins out of a flat
+  symlinked `node_modules` is a known Capacitor footgun: `cap sync` reads plugins out of a flat
   tree, so pnpm needs `node-linker=hoisted`, which gives back much of the speed/disk advantage.
   Wrong tradeoff for a Capacitor app.
 * **bun** — dramatically fastest (≈9× cold, ≈33× warm) and produces a flat `node_modules`
   (Capacitor-safe). But its win is **install** speed, not **run** speed: scripts spawn their real
   work (`vite`, `svelte-check`, Playwright, Gradle, xcodebuild) as subprocesses, so bun only shaves
   launcher overhead (`npm run` ~170ms → `bun run` ~37ms; `npx` ~0.5–0.9s → `bunx` ~0.22s) — noise
-  next to multi-second/multi-minute builds. Capturing even that requires rewriting the
-  `npx`/`npm run` graph to `bunx`/`bun run`, dropping the Node-only
+  next to multi-second/multi-minute builds. Capturing even that requires rewriting the `npx`/`npm
+  run` graph to `bunx`/`bun run`, dropping the Node-only
   `--experimental-strip-types`/`--disable-warning` flags in `build:cap` and `check:assets` (bun
   rejects them), and re-validating the native matrix (ADR-0017). bun also skips *dependency*
   lifecycle scripts unless allowlisted in `trustedDependencies`.

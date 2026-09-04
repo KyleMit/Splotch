@@ -180,11 +180,11 @@ named product hypothesis.
 Stale red cells require faithful fresh captures. Harness work follows the product-first gate above:
 repair a demonstrated measurement defect or add a targeted diagnostic or validation capability only
 when the named product experiment will use it immediately. Do not create a freestanding harness
-roadmap inside the campaign. Promote representative raw captures with
-`npm run perf:evidence:keep -- --corpus=<dir> --campaign=<name> --product-commit=<capture-product-sha>`
-so they remain rescoreable, and trial a scorer change across that preserved corpus with
-`npm run perf:rescore -- --corpus=perf-profiles/evidence/<name>` before treating it as valid.
-Preserve or strengthen coverage and add a regression test for the exact measurement failure.
+roadmap inside the campaign. Promote representative raw captures with `npm run perf:evidence:keep --
+--corpus=<dir> --campaign=<name> --product-commit=<capture-product-sha>` so they remain rescoreable,
+and trial a scorer change across that preserved corpus with `npm run perf:rescore --
+--corpus=perf-profiles/evidence/<name>` before treating it as valid. Preserve or strengthen coverage
+and add a regression test for the exact measurement failure.
 
 Preserve drawing output, undo semantics, coloring selection and clearing, settings and persistence,
 rotation restoration, export fidelity, native/web parity, accessibility, and toddler-facing visual
@@ -245,8 +245,8 @@ For each cluster:
 5. Make one causally coherent product change. Back out rejected or inconclusive experiments instead
    of stacking speculation; a measured rejection is still the product outcome that closes the
    experiment loop.
-6. Run focused correctness tests and the exact failing performance case, plus `npm run check`,
-   `npm run lint`, and `npm run format:check` before any commit that touches code or scripts.
+6. Run focused correctness tests and the exact failing performance case, plus `npm run check`, `npm
+   run lint`, and `npm run format:check` before any commit that touches code or scripts.
 7. Compare raw before/after traces and generated summaries from faithful runs. Preserve the first
    valid red after a change rather than retrying it away.
 8. Verify the real app visually and behaviorally, including every interaction contract the change
@@ -254,10 +254,10 @@ For each cluster:
 9. Broaden across all affected themes, orientations, brushes/actions, and web/native targets.
 10. Recapture complete affected modes, not only the original sample.
 11. Fold only faithful, comparable captures into the authoritative matrix. Mark every captured row
-    the campaign did not recapture `preserved`, then regenerate with
-    `npm run gen:performance-matrix -- --strict <manifest>`; that command runs the staleness check
-    in-process against the manifest it resolved, and `--strict` is what turns a row left behind into
-    a failure rather than a report (ADR-0159). Validate every generator-owned output and prove
+    the campaign did not recapture `preserved`, then regenerate with `npm run
+    gen:performance-matrix -- --strict <manifest>`; that command runs the staleness check in-process
+    against the manifest it resolved, and `--strict` is what turns a row left behind into a failure
+    rather than a report (ADR-0159). Validate every generator-owned output and prove
     JSON/Markdown/HTML agreement where present.
 12. Commit and push each causally coherent verified product improvement separately, update raw
     evidence and remaining status in the current stack-tip PR body, and proceed only from a clean
@@ -266,9 +266,9 @@ For each cluster:
 
 ## Stack and review discipline
 
-Deliver causally distinct product clusters as sequential PRs and link the real chain with
-`gh stack`. Do not create a standalone harness-improvement cluster unless the user explicitly asks
-for one; an incidental repair stays subordinate to the product cluster it unblocks. Every PR body
+Deliver causally distinct product clusters as sequential PRs and link the real chain with `gh
+stack`. Do not create a standalone harness-improvement cluster unless the user explicitly asks for
+one; an incidental repair stays subordinate to the product cluster it unblocks. Every PR body
 includes:
 
 * root cause and causal scope;

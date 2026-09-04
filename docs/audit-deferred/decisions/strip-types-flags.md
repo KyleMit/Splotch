@@ -40,8 +40,7 @@ Empirical checks run in this triage session (Node v22.22.2):
 * `node scripts/gen-tokens.mjs --check` (imports `web/src/lib/design/tokens.ts`) — exits 0
   flag-free, no warning on stderr.
 * `GEMINI_API_KEY=test node tools/asset-gen/bin/gen-coloring-chalk.mjs nature/ant-tall --dry-run
-  --invented-max invalid`
-  — flag-free, produces byte-exact the canonical diagnostic that
+  --invented-max invalid` — flag-free, produces byte-exact the canonical diagnostic that
   `tools/asset-gen/tests/cli.test.mjs` asserts, exit 1 as expected.
 * The rolled-back draft patch
   (`docs/audit-deferred/p2-duplication-experimental-strip-types-disable-warning-experimentalwarn.patch`)
@@ -55,9 +54,9 @@ Empirical checks run in this triage session (Node v22.22.2):
 
 Node-floor bump safety, checked at every site the reviewer never mentioned:
 
-* **CI:** every workflow uses the composite `.github/actions/setup-node`, which pins
-  `node-version: 24`. Node 24 strips types by default. (CI already doesn't exercise the 22.x floor —
-  pre-existing, unchanged by this fix.)
+* **CI:** every workflow uses the composite `.github/actions/setup-node`, which pins `node-version:
+  24`. Node 24 strips types by default. (CI already doesn't exercise the 22.x floor — pre-existing,
+  unchanged by this fix.)
 * **Netlify:** the root `netlify.toml` sets no `NODE_VERSION`, and the production build path
   (`prebuild` = `svelte-kit sync` + `gen:icons` + `gen:releases`, then `vite build` +
   `stage-netlify.mjs`) executes **zero** `.ts`-importing scripts — Netlify never needs type
@@ -90,15 +89,15 @@ Ranking: **A over B**, decisively. B is the fallback only if the owner vetoes th
 ## Decision / lean
 
 **FIX — finish the sweep that the draft already 80% completed.** Start from the clean-applying draft
-patch, then add the genuinely missing sites. The complete checklist at HEAD (from
-`git grep -n experimental-strip-types`), so no further round can discover a new site:
+patch, then add the genuinely missing sites. The complete checklist at HEAD (from `git grep -n
+experimental-strip-types`), so no further round can discover a new site:
 
 **Covered by the existing draft patch (apply it, or redo equivalently):**
 
 1. `package.json` — `engines.node` → `">=22.18"`; drop the flag pair from all 16 script lines (20,
    25, 62, 68, 69, 70, 73, 74, 75, 76, 77, 78, 79, 86, 87, 92).
-2. `package-lock.json:63` — sync the root package's `engines.node` (run
-   `npm install --package-lock-only` rather than hand-editing).
+2. `package-lock.json:63` — sync the root package's `engines.node` (run `npm install
+   --package-lock-only` rather than hand-editing).
 3. `tools/asset-gen/package.json:8,9,10,11,14` — drop the pair from the five aliases.
 4. `scripts/.ruler/AGENTS.md:19-20` — reword to "TypeScript-flavored scripts run directly via
    `node`; the `>=22.18` engine floor strips types by default", then `npm run ruler:apply` to
@@ -157,8 +156,8 @@ patch, then add the genuinely missing sites. The complete checklist at HEAD (fro
 **Verification for the implementing session:**
 
 * `git grep -l 'experimental-strip-types' -- ':!docs/audit-deferred' ':!docs/AUDIT*'
-  ':!tools/asset-gen/ideas-exploration' ':!docs/adrs'`
-  → empty (ADRs keep the term only in historical-note context).
+  ':!tools/asset-gen/ideas-exploration' ':!docs/adrs'` → empty (ADRs keep the term only in
+  historical-note context).
 * `npm run ruler:check` → no drift. `npm run gen:tokens:check`, `npm run check:assets`, `npm test`
   (includes the asset-pipeline `cli.test.mjs`) → green.
 

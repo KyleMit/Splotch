@@ -98,13 +98,13 @@ Do them in order.
 
 `--out` holds `<device>-<visit>.report.{json,html}`. Open the HTML for the full report; the console
 summary covers the headline scores. For attribution beyond the headline (which node blew up DOM
-size, LCP phase breakdown, main-thread cost by category) read the JSON — e.g.
-`node -e 'const a=require("./lighthouse-reports/phone-portrait-first.report.json").audits; …'` lets
-you pull `dom-size`, `largest-contentful-paint-element`, `mainthread-work-breakdown`, and
-`bootup-time` `details.items` without opening the 464 KB HTML. Always inspect `long-tasks` too. If
-every item is attributed to `_lighthouse-eval.js`, the reported TBT and derived performance score
-include Lighthouse's own injected work; the driver marks those TBT values with `*`. Do not turn that
-value into an app finding — use `npm run perf:web:mount` for an independent startup trace first.
+size, LCP phase breakdown, main-thread cost by category) read the JSON — e.g. `node -e 'const
+a=require("./lighthouse-reports/phone-portrait-first.report.json").audits; …'` lets you pull
+`dom-size`, `largest-contentful-paint-element`, `mainthread-work-breakdown`, and `bootup-time`
+`details.items` without opening the 464 KB HTML. Always inspect `long-tasks` too. If every item is
+attributed to `_lighthouse-eval.js`, the reported TBT and derived performance score include
+Lighthouse's own injected work; the driver marks those TBT values with `*`. Do not turn that value
+into an app finding — use `npm run perf:web:mount` for an independent startup trace first.
 
 ### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 

@@ -122,9 +122,9 @@ It:
   install has settled into `waiting`, and is abandoned if the waiting worker is replaced while the
   version fetch is in flight.
   * **Equal** — every online cold launch, since navigations are NetworkFirst and fresh HTML boots
-    under the old SW while the new one installs. The waiting worker is activated **silently**
-    (`{ type: 'SKIP_WAITING' }`, no reload, regardless of canvas state): same-version precache means
-    no asset skew, so nothing visible needs to happen. Before this amendment the app reloaded an
+    under the old SW while the new one installs. The waiting worker is activated **silently** (`{
+    type: 'SKIP_WAITING' }`, no reload, regardless of canvas state): same-version precache means no
+    asset skew, so nothing visible needs to happen. Before this amendment the app reloaded an
     already-current page here — the refresh users saw seconds after every post-deploy launch.
   * **Different, or `version.json` unreachable** — the page is stale, typically a resumed PWA that
     predates a deploy. The update holds in a `ready` state and `applyPendingUpdate()` posts
@@ -155,8 +155,8 @@ It:
 ### Build output
 
 A `emit-version-json` Vite plugin emits `version.json` into the build output on every build. The
-file is excluded from the SW precache (`.json` is not in `globPatterns`) and carries a
-`no-cache, no-store, must-revalidate` Netlify header so the CDN never serves a stale copy.
+file is excluded from the SW precache (`.json` is not in `globPatterns`) and carries a `no-cache,
+no-store, must-revalidate` Netlify header so the CDN never serves a stale copy.
 
 ## Consequences
 
@@ -167,8 +167,8 @@ with their HTTP `Cache-Control`, is documented in
 [ADR-0042](0042-static-media-cache-invalidation.md).
 
 **+** The canvas-empty guard is reliably enforced: the new SW cannot activate itself (no
-`skipWaiting: true`), and vite-plugin-pwa's auto-reload injection is disabled
-(`registerType: 'prompt'`), so `updates.ts` is the only code path that can trigger a reload.
+`skipWaiting: true`), and vite-plugin-pwa's auto-reload injection is disabled (`registerType:
+'prompt'`), so `updates.ts` is the only code path that can trigger a reload.
 
 **+** Manual browser refresh always hits the network for HTML (NetworkFirst), so a user can unstick
 themselves without clearing the SW cache manually.

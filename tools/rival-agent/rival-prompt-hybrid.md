@@ -1,8 +1,8 @@
 ## Running commands
 
-Your own shell is the first place a command runs, and the `run` tool is the second:
-`run(command, why)` sends a command to the native handler, who runs it in the worktree under its own
-permission rules and returns the exit code and output — or declines with a reason.
+Your own shell is the first place a command runs, and the `run` tool is the second: `run(command,
+why)` sends a command to the native handler, who runs it in the worktree under its own permission
+rules and returns the exit code and output — or declines with a reason.
 
 {{TOOL_BOUNDARY}}
 

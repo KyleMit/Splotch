@@ -67,8 +67,8 @@ load-bearing for storage, not just routing.
 **Two separate stores** (`web/src/lib/server/`):
 
 * `tokens.ts` — store `access-tokens`, single key `list` holding the token array.
-* `usage.ts` — store `ai-usage`, keyed by a dedicated-secret HMAC grant ID, value
-  `{ count, firstUsed, lastUsed, deleteAfter, lastStyle, lastOutcome }`.
+* `usage.ts` — store `ai-usage`, keyed by a dedicated-secret HMAC grant ID, value `{ count,
+  firstUsed, lastUsed, deleteAfter, lastStyle, lastOutcome }`.
 
 They are kept in distinct stores so audit writes (one per generation) never contend with allowlist
 mutations.
@@ -83,11 +83,11 @@ so it reads strongly — see ADR-0105's 2026-08-11 amendment, which also confirm
 that the V2 function's Blobs context supplies the `uncachedEdgeURL` a strong read needs.
 
 **Env-seeded, clobber-safe first run.** `ALLOWED_TOKENS_LIST` seeds the allowlist exactly once: on
-the first read against an empty store, `tokens.ts` writes the env-derived list with
-`setJSON(KEY, seeded, { onlyIfNew: true })`. The `onlyIfNew` guard makes the seed atomic — under
-eventual consistency a lagging replica can report the key absent and re-trip the seed branch, and
-`onlyIfNew` ensures that write returns `{ modified: false }` instead of clobbering tokens an admin
-already saved.
+the first read against an empty store, `tokens.ts` writes the env-derived list with `setJSON(KEY,
+seeded, { onlyIfNew: true })`. The `onlyIfNew` guard makes the seed atomic — under eventual
+consistency a lagging replica can report the key absent and re-trip the seed branch, and `onlyIfNew`
+ensures that write returns `{ modified: false }` instead of clobbering tokens an admin already
+saved.
 
 **Degrade, never throw.** `getStore()` failure latches `blobsUnavailable` (a permanent property of
 the instance) and `tokens.ts` serves a per-instance in-memory list seeded from the env var; a
@@ -160,10 +160,10 @@ an older pending one, while an in-flight run is allowed to finish its cleanup.
 ## Amendment (2026-08-19): Automated production persistence checks are read-only
 
 The unattended production schedule no longer performs the token write/read/delete round-trip
-described above. Its decisive ADR-0025 signal is the authenticated token snapshot's
-`persistent: true`, which is a read and still fails when a V1 function loses the Blobs context.
-Deploy previews retain the full round-trip so adapter and Netlify configuration changes prove that
-writes durably land before merge.
+described above. Its decisive ADR-0025 signal is the authenticated token snapshot's `persistent:
+true`, which is a read and still fails when a V1 function loses the Blobs context. Deploy previews
+retain the full round-trip so adapter and Netlify configuration changes prove that writes durably
+land before merge.
 
 Both deployed smoke entry points fail closed: only HTTPS Netlify preview/branch hostnames and
 loopback test servers take the write path; production aliases and every unrecognized remote target

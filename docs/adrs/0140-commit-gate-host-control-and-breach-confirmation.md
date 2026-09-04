@@ -63,14 +63,12 @@ single passing rerun quoted in issue 1247, nothing measured supported the cap, a
 same suite reported **8,135 / 9,685 / 13,843 ms** — host dependence far larger than the evidence the
 constants rested on.
 
-A divisor derived from one number can divide a real commit breach down to a pass, and
-`Math.max(1,
-…)` means it can only ever move a score in that direction. So the host control is
-**measured and reported and not applied**: every run records how slow its host was on the scenario
-the reference describes, which is how the multi-run `macos-latest` distribution gets collected from
-ordinary runs rather than from a special one. Every scenario timing in the artifact carries its
-measured slowdown, which is where that distribution comes from; `NORMALIZATION_ENABLED` turns it on
-once they have.
+A divisor derived from one number can divide a real commit breach down to a pass, and `Math.max(1,
+…)` means it can only ever move a score in that direction. So the host control is **measured and
+reported and not applied**: every run records how slow its host was on the scenario the reference
+describes, which is how the multi-run `macos-latest` distribution gets collected from ordinary runs
+rather than from a special one. Every scenario timing in the artifact carries its measured slowdown,
+which is where that distribution comes from; `NORMALIZATION_ENABLED` turns it on once they have.
 
 That leaves the gate scoring the raw P95 — which is what it always did for five-finger, and which on
 a healthy runner sits at 1–2 ms against a 25 ms budget on both scenarios.

@@ -463,7 +463,7 @@
     "@capacitor/cli": "^8.5.1",
     "@capacitor/ios": "^8.4.2",
     "@dprint/json": "^0.23.0",
-    "@dprint/markdown": "^0.22.1",
+    "@dprint/markdown": "^0.23.2",
     "@dprint/typescript": "^0.96.1",
     "@eslint/js": "^10.0.1",
     "@google/genai": "^2.20.0",

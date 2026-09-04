@@ -11,12 +11,12 @@ duplicate index entries, and local ADR links whose label or target is wrong.
 | ------------------------- | -------------------- | --------------------------------------------------------- |
 | `check-adr-integrity.mjs` | `npm run check:adrs` | Validate the working tree and compare additions to a base |
 
-Pass `--base=<ref>` to select the comparison ref, keeping npm's separator
-(`npm run check:adrs -- --base=<ref>`) so npm forwards the flag. The default is `origin/main`. The
-standalone [ADR Integrity workflow](../../.github/workflows/adr-integrity.yml) invokes the script
-directly because it deliberately uses the runner's built-in Node installation and does not install
-project dependencies. Its prerequisites are Node, a Git checkout containing the requested base ref,
-and `tools/lib/proc.mjs` — the single cross-capability import, which is why the workflow's sparse
+Pass `--base=<ref>` to select the comparison ref, keeping npm's separator (`npm run check:adrs --
+--base=<ref>`) so npm forwards the flag. The default is `origin/main`. The standalone
+[ADR Integrity workflow](../../.github/workflows/adr-integrity.yml) invokes the script directly
+because it deliberately uses the runner's built-in Node installation and does not install project
+dependencies. Its prerequisites are Node, a Git checkout containing the requested base ref, and
+`tools/lib/proc.mjs` — the single cross-capability import, which is why the workflow's sparse
 checkout lists `tools/lib` beside `tools/adrs`.
 
 ## Inputs and outputs

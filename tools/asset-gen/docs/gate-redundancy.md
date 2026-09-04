@@ -85,8 +85,8 @@ regression-locked by its own broken/good fixtures:
 
 * `outlineMatch` (`tests/outline-match.test.mjs`) — `(source, candidate)`; the localized-drift class
   the global keep buries.
-* `scoreEyeFill` / `judgeLightEyes` / `judgeNightEyes` (`tests/eye-fill.test.mjs`) —
-  `(source, fill)` pair(s); flat-flooded and dead-sclera eyes.
+* `scoreEyeFill` / `judgeLightEyes` / `judgeNightEyes` (`tests/eye-fill.test.mjs`) — `(source,
+  fill)` pair(s); flat-flooded and dead-sclera eyes.
 * `scoreNightHalo` (`tests/night-halo.test.mjs`) — `(raw, line art, shipped)`; a **ranking**, not a
   pass/fail gate, so its test asserts a haloed fill ranks above a clean punch.
 * `scoreCompositeEyes` (`tests/composite-eye.test.mjs`) — `(comp, light, pen)`; the blank-orb class,

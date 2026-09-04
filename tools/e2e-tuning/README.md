@@ -59,9 +59,9 @@ output together. Do not hand-edit the generated page.
 
 The [Worker Sweep workflow](../../.github/workflows/worker-sweep.yml) provides CI hardware, invokes
 the same runner for each worker count, and uploads raw reports. Keep the build, repetition loop, and
-aggregation in the runner so local and CI measurements cannot drift into different protocols.
-`npm run test:sweep:smoke` runs one grepped repetition on every pull request (test.yml, shard 1) so
-a Playwright-config change that breaks the harness surfaces immediately instead of at the next
+aggregation in the runner so local and CI measurements cannot drift into different protocols. `npm
+run test:sweep:smoke` runs one grepped repetition on every pull request (test.yml, shard 1) so a
+Playwright-config change that breaks the harness surfaces immediately instead of at the next
 re-tune.
 
 Run focused verification with:

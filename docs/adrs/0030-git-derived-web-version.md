@@ -36,10 +36,10 @@ existing `CAPACITOR` build flag (ADR-0001), the single web-vs-native signal:
 * **Native** (`CAPACITOR=true`): use the `package.json` version verbatim. Store submissions need
   deliberate numbers; `capacitor-set-version` keeps Android/iOS in sync from the same source.
 * **Web**: `major.minor.<commits-since-last-release-tag>`, e.g. `1.2.45`. `major.minor` comes from
-  `package.json` (so a "big release" is a manual minor/ major bump); the patch is
-  `git describe --tags --long --match "v*"`, whose `…-<n>-g<sha>` suffix is the commit count since
-  the last `v*` tag. `release.mjs` already creates and pushes that tag, so the patch resets to `0`
-  at each release and climbs by one per commit after.
+  `package.json` (so a "big release" is a manual minor/ major bump); the patch is `git describe
+  --tags --long --match "v*"`, whose `…-<n>-g<sha>` suffix is the commit count since the last `v*`
+  tag. `release.mjs` already creates and pushes that tag, so the patch resets to `0` at each release
+  and climbs by one per commit after.
 
 `__APP_VERSION__` and the emitted `version.json` both flow from this value unchanged, so the About
 tab and the `updates.ts` mismatch check pick it up with no other code changes. The mismatch redirect
@@ -57,12 +57,11 @@ docs/tooling-only commit, so repository `HEAD` is not always the deployed commit
 
 **This relies on git history + tags at build time.** Netlify's deploy is **not** a shallow clone —
 it is a *blobless* clone (`git clone --filter=blob:none`), which carries the full commit graph and
-defers only file blobs, so `git
-rev-parse`/`git rev-list` work. But the blobless clone does **not**
-fetch tags (verified: an early deploy rendered `1.2.0+c5707ce`, the SHA fallback, because
-`git describe` found no tag). The root `netlify.toml` build command therefore runs
-`git fetch --tags --force || true` before `npm run build` so the release tag is present and
-`git describe` resolves the commit count.
+defers only file blobs, so `git rev-parse`/`git rev-list` work. But the blobless clone does **not**
+fetch tags (verified: an early deploy rendered `1.2.0+c5707ce`, the SHA fallback, because `git
+describe` found no tag). The root `netlify.toml` build command therefore runs `git fetch --tags
+--force || true` before `npm run build` so the release tag is present and `git describe` resolves
+the commit count.
 
 Tiered fallback, so the marker degrades informatively rather than silently:
 

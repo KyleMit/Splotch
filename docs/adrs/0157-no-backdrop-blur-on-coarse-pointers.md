@@ -29,8 +29,8 @@ Read the per-repeat column, not only the pooled one: `select coloring page` impr
 and worsened in one, and `clear coloring page` improved in one repeat and was already at the frame
 beat in the other two. The pooled P95 gain is real (31 → 18 and 28 → 17 ms) and the maxima moved the
 same way, but three repeats do not show a change on every activation, and the campaign's first
-write-up misread the pooled P95/P99/max triple as three repeats; the review caught it.
-`open Settings` and the theme switches did not move, so the Settings 56 ms capture-environment max
+write-up misread the pooled P95/P99/max triple as three repeats; the review caught it. `open
+Settings` and the theme switches did not move, so the Settings 56 ms capture-environment max
 allowance (ADR-0090's amendment) keeps its reopen condition. The Mac showed no difference on any
 action (19 ms P95 everywhere).
 

@@ -47,13 +47,13 @@ If VALID, write `.audit-work/current-brief.md` containing:
 * A section headed "Acceptance criteria": the exact commands that must pass, and the behaviour that
   must not change
 
-**Name only the commands the driver actually gates on:** `npm run check`, `npm run test:unit`,
-`npx eslint` on the changed files, and the specific Playwright spec(s) you list in `e2e_specs`.
-**Never put the full suite (`npm test`) in the acceptance criteria** — it drags in the whole
-Playwright, asset-pipeline, and repo-script suites, takes far longer than an implementer's budget
-allows, and is deliberately CI's job rather than the implementer's. An implementer that cannot
-finish a command you named will decline to commit, so a criterion it has no time to run **throws
-away a finished, fully-green fix** and the finding is re-paid on a later run.
+**Name only the commands the driver actually gates on:** `npm run check`, `npm run test:unit`, `npx
+eslint` on the changed files, and the specific Playwright spec(s) you list in `e2e_specs`. **Never
+put the full suite (`npm test`) in the acceptance criteria** — it drags in the whole Playwright,
+asset-pipeline, and repo-script suites, takes far longer than an implementer's budget allows, and is
+deliberately CI's job rather than the implementer's. An implementer that cannot finish a command you
+named will decline to commit, so a criterion it has no time to run **throws away a finished,
+fully-green fix** and the finding is re-paid on a later run.
 
 Then decide the finding's **runtime surface**. If the fix could change what the app renders, how it
 handles input, or any user-visible flow (essentially any change under `web/src/` that isn't a

@@ -7,8 +7,8 @@ the network constraints that shape what's possible.
 ## The cloud environment
 
 A cloud session runs in an ephemeral, Anthropic-managed container: the repo is cloned fresh on start
-and the container is reclaimed after inactivity, so commit and push anything worth keeping.
-`pnpm install` + `npm run dev` work as usual — with one install-script caveat covered under "Getting
+and the container is reclaimed after inactivity, so commit and push anything worth keeping. `pnpm
+install` + `npm run dev` work as usual — with one install-script caveat covered under "Getting
 dependencies ready" below.
 
 The constraint that matters here is **networking**:
@@ -238,8 +238,7 @@ assuming a local pass covers Safari.
 > from `package.json` for exactly this reason: Playwright pins a specific Chromium *revision* (e.g.
 > `@playwright/test@1.61.x` → Chromium 1228), and a hard-coded install version (or a stale env
 > snapshot) leaves that revision absent — every E2E run and `run-splotch` screenshot then dies with
-> `Executable doesn't
-> exist … chromium-<rev>`. As a backstop, `playwright.config.ts` and
+> `Executable doesn't exist … chromium-<rev>`. As a backstop, `playwright.config.ts` and
 > `.claude/skills/run-splotch/driver.mjs` self-heal: if the pinned binary is missing they fall back
 > to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`), overridable with
 > `PLAYWRIGHT_CHROMIUM`. **Never** run `npx playwright install` in a session — it's forbidden here
@@ -255,9 +254,9 @@ paste from it. Secret **values** stay in the dialog and are never committed.
 A second environment records only its **deltas** from that file, so the shared parts stay in one
 place:
 [`.claude/cloud/environment.android.example`](../../.claude/cloud/environment.android.example) is
-the worked example. Both point the dialog's Setup script field at the same
-`bash .claude/cloud/setup.sh`; what differs is `SPLOTCH_CLOUD_PROFILE`, which the script dispatches
-on. Add a profile rather than a second setup script when a use case needs extra tooling.
+the worked example. Both point the dialog's Setup script field at the same `bash
+.claude/cloud/setup.sh`; what differs is `SPLOTCH_CLOUD_PROFILE`, which the script dispatches on.
+Add a profile rather than a second setup script when a use case needs extra tooling.
 
 ### Allowlist additions for E2E
 
@@ -302,8 +301,8 @@ host you can allowlist, reached by a Go client that trusts the system CA. We use
 `dev:tunnel` defaults `TUNNEL_HOST` to the relay host and injects it into vite, so it runs plain
 `npm run dev` under the hood — **`--host` is not needed in the cloud** (no LAN; chisel forwards via
 localhost). The only thing the tunnel needs from vite is `server.allowedHosts`, which `TUNNEL_HOST`
-drives (`web/vite.config.ts`). Set `TUNNEL_HOST` in the env config too if you want a bare
-`npm run dev` to accept the tunnel host.
+drives (`web/vite.config.ts`). Set `TUNNEL_HOST` in the env config too if you want a bare `npm run
+dev` to accept the tunnel host.
 
 > **One live tunnel at a time, and it's public while live.** The relay binds the reverse port once:
 > the *first* session to connect owns the URL; a second session's client just retries forever
@@ -313,6 +312,6 @@ drives (`web/vite.config.ts`). Set `TUNNEL_HOST` in the env config too if you wa
 > unattended.
 
 > **Off-cloud this is all unnecessary** — on a machine with normal internet, any quick tunnel works
-> with no account and no allowlist, e.g. `cloudflared tunnel --url http://localhost:5173` or
-> `ngrok http 5173`. The cloud sandbox is the only hostile case; the chisel relay above exists
-> solely to satisfy its egress gateway.
+> with no account and no allowlist, e.g. `cloudflared tunnel --url http://localhost:5173` or `ngrok
+> http 5173`. The cloud sandbox is the only hostile case; the chisel relay above exists solely to
+> satisfy its egress gateway.

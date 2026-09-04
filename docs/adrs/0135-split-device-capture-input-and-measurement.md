@@ -22,8 +22,8 @@ this campaign, for different reasons and with different weight:
 * `ios_webkit_debug_proxy` listed the device but zero inspectable pages. **This is the tool being
   obsolete, not the device lacking a setting.** Apple moved the web inspector service behind
   RemoteXPC on iOS 17, and `ios_webkit_debug_proxy` still asks the old lockdown service. Safari's
-  own Develop menu on a Mac reaches the same iPad's tabs fine, and so does
-  `pymobiledevice3 webinspector opened-tabs`, which speaks the modern path:
+  own Develop menu on a Mac reaches the same iPad's tabs fine, and so does `pymobiledevice3
+  webinspector opened-tabs`, which speaks the modern path:
 
   ```
   <Safari(3091) TYPE:WIRTypeWebPage URL:http://…:4173/?perf-run=…>
@@ -55,10 +55,10 @@ A physical-device drawing capture takes its input and its measurement from separ
 **Input** is the platform's own trusted injection, running the harness's existing
 `trustedGestureActions` plan unchanged:
 
-* iPadOS — WebDriverAgent's own HTTP API. The runner is launched with
-  `xcrun devicectl device process launch` and reached over `iproxy`, so it needs no RemoteXPC tunnel
-  and no Appium session. This is the same XCUITest touch ADR-0084 calibrated against; only the thing
-  that dispatches it changes.
+* iPadOS — WebDriverAgent's own HTTP API. The runner is launched with `xcrun devicectl device
+  process launch` and reached over `iproxy`, so it needs no RemoteXPC tunnel and no Appium session.
+  This is the same XCUITest touch ADR-0084 calibrated against; only the thing that dispatches it
+  changes.
 * Android — `adb shell input swipe` segments. Unlike CDP's `Input.dispatchTouchEvent` this is an OS
   touchscreen event stream, which is what Chrome's display frame-rate boost responds to.
 

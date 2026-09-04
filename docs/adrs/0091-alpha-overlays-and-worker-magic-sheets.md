@@ -172,9 +172,9 @@ native result above is the retained gate.
 ### Overlay Isolation
 
 Suppress `setColorSheet()` while leaving the real page image and ready gate in place. If the maximum
-remains above 33.5 ms, the overlay is independently expensive. Then set only
-`.paper-view { mix-blend-mode: normal; }`; the resulting opaque white rectangle is deliberately
-visually invalid but proves whether blend composition is causal.
+remains above 33.5 ms, the overlay is independently expensive. Then set only `.paper-view {
+mix-blend-mode: normal; }`; the resulting opaque white rectangle is deliberately visually invalid
+but proves whether blend composition is causal.
 
 When changing selectors, inspect the final diff before measuring. `.live-crayon-tile` must retain
 `darken`, `.live-crayon-tile-top` must retain `normal`, and only `.paper-view` is the coloring
@@ -196,11 +196,11 @@ Exercise three races before retaining a worker change:
 
 ### Asset and Export Equivalence
 
-The canonical `.overlay.svg` and `.dark.overlay.svg` files must pass
-`npm run vectorize:coloring:check` and `npm run vectorize:postprocess:check`. Run
-`npm run check:assets`, the asset-gen unit suite, export tests, and the coloring proof sheet for
-every affected category. Verify a light and dark screenshot/export; source-over must be the only
-overlay composition in both export paths.
+The canonical `.overlay.svg` and `.dark.overlay.svg` files must pass `npm run
+vectorize:coloring:check` and `npm run vectorize:postprocess:check`. Run `npm run check:assets`, the
+asset-gen unit suite, export tests, and the coloring proof sheet for every affected category. Verify
+a light and dark screenshot/export; source-over must be the only overlay composition in both export
+paths.
 
 ### Native-Export Pruning
 

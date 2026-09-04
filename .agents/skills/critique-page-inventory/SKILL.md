@@ -64,8 +64,8 @@ Add a note when a reviewer flags something the design intends, not to suppress a
 disagree with: the notes travel with every future run.
 
 A checkpoint binds the description it was reviewed against, so editing a note is not free and is not
-silent: it makes every review whose description changed stale. Regenerate the inventory first
-(`npm run capture:page-inventory`) — the binding compares the manifest's stored description, so a
+silent: it makes every review whose description changed stale. Regenerate the inventory first (`npm
+run capture:page-inventory`) — the binding compares the manifest's stored description, so a
 re-review against an un-regenerated manifest faithfully re-runs the old wording — then `-- --status`
 reports the affected reviews under `stale_reviews` and the review command re-runs them. General
 notes reach every capture, so editing one restages the whole inventory.

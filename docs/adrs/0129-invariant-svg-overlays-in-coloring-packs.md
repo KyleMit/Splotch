@@ -76,11 +76,11 @@ and raw bytes for native. A watermarked free test trace can rehearse geometry, b
 becomes traced geometry and cannot approve production size or fidelity.
 
 The exact production recipe and every trace-source/output digest live in
-`tools/vectorize/coloring-overlays.json` and `tools/vectorize/coloring-dark-overlays.json`.
-`npm run vectorize:coloring:check` is the derivation drift guard, while
-`npm run vectorize:coloring:analyze` re-rasterizes either SVG catalog against its authoring sources
-when those temporary sources are present. The committed ledger continues to verify the canonical
-output inventory after those uncommitted trace sources are removed.
+`tools/vectorize/coloring-overlays.json` and `tools/vectorize/coloring-dark-overlays.json`. `npm run
+vectorize:coloring:check` is the derivation drift guard, while `npm run vectorize:coloring:analyze`
+re-rasterizes either SVG catalog against its authoring sources when those temporary sources are
+present. The committed ledger continues to verify the canonical output inventory after those
+uncommitted trace sources are removed.
 
 ## Consequences
 

@@ -15,10 +15,9 @@ train-wide, 2 on cat-wide).
 
 Built a measurable definition of "the rim" first: for every pixel at chebyshev distance 1–3 from the
 chalk ink (the punch mask), compare its luma against a **reference punch** whose mask was dilated 4
-px (so the whole collar is inpainted from fill color beyond any plausible rim).
-`rimΔ = luma(ref) −
-luma(shipped)`; a re-inked rim shows as a large positive Δ, a legit dark fill
-shows ≈0 because the reference is equally dark. (`code/analyze-rim.mjs`.)
+px (so the whole collar is inpainted from fill color beyond any plausible rim). `rimΔ = luma(ref) −
+luma(shipped)`; a re-inked rim shows as a large positive Δ, a legit dark fill shows ≈0 because the
+reference is equally dark. (`code/analyze-rim.mjs`.)
 
 Baseline measurements (shipped punches):
 

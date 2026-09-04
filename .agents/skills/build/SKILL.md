@@ -47,11 +47,11 @@ and skip iOS with a note if it doesn't).
    on success. On success that one line is all you'll see. If it fails, the script dumps the full
    jarsigner output and exits non-zero — surface that and stop.
 
-5. **Verify the bundle carries the version you expected.** Run
-   `npm run release:publish -- --only=android --dry-run`. It reads the versionName/versionCode out
-   of the `.aab` itself and checks them against `releases/<version>.md`. If it reports a mismatch,
-   the Gradle build did not actually produce a new bundle (a failed or skipped build leaves the
-   previous version's file in place) — surface that and stop rather than reporting success.
+5. **Verify the bundle carries the version you expected.** Run `npm run release:publish --
+   --only=android --dry-run`. It reads the versionName/versionCode out of the `.aab` itself and
+   checks them against `releases/<version>.md`. If it reports a mismatch, the Gradle build did not
+   actually produce a new bundle (a failed or skipped build leaves the previous version's file in
+   place) — surface that and stop rather than reporting success.
 
 6. **Report.** Tell the user:
    * the version + versionCode read back out of the built `.aab` and its path
@@ -79,11 +79,10 @@ and skip iOS with a note if it doesn't).
    exports per `ios/App/ExportOptions.plist`. Slow (minutes) — let it finish. If xcodebuild fails,
    surface the error and stop.
 
-4. **Verify the `.ipa` carries the version you expected.** Run
-   `npm run release:publish -- --only=ios --dry-run`, which reads
-   `CFBundleShortVersionString`/`CFBundleVersion` out of the exported `.ipa` and checks them against
-   `releases/<version>.md`. A mismatch means the export reused an older archive — surface it and
-   stop rather than reporting success.
+4. **Verify the `.ipa` carries the version you expected.** Run `npm run release:publish --
+   --only=ios --dry-run`, which reads `CFBundleShortVersionString`/`CFBundleVersion` out of the
+   exported `.ipa` and checks them against `releases/<version>.md`. A mismatch means the export
+   reused an older archive — surface it and stop rather than reporting success.
 
 5. **Report.** Tell the user:
    * the version + build number read back out of the exported `.ipa` and its path

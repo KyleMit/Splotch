@@ -85,14 +85,14 @@ cutout iPhone is 44.
 
 ## Not reproduced — the 3-button-nav side inset
 
-`android-native-punch-3button` claims `landscape-left: {left: 38, right: 48}` at
-`confidence: 'high'` — both sides non-zero, the deeper one being the nav bar. That is the scenario
-that motivated the whole fix.
+`android-native-punch-3button` claims `landscape-left: {left: 38, right: 48}` at `confidence:
+'high'` — both sides non-zero, the deeper one being the nav bar. That is the scenario that motivated
+the whole fix.
 
-With 3-button navigation actually enabled
-(`cmd overlay enable com.android.internal.systemui.navbar.threebutton`, gestural disabled), `env()`
-carried **only the cutout**: 42 on the cutout side, 0 on the other, in both rotations. The nav bar
-contributed no inset, even with `mNavigationBarPosition=1` confirming it had moved to a side.
+With 3-button navigation actually enabled (`cmd overlay enable
+com.android.internal.systemui.navbar.threebutton`, gestural disabled), `env()` carried **only the
+cutout**: 42 on the cutout side, 0 on the other, in both rotations. The nav bar contributed no
+inset, even with `mNavigationBarPosition=1` confirming it had moved to a side.
 
 The fix behaves correctly either way — an asymmetric pair plus a usable angle resolves the same
 whether the other side is 0 or 48. But the profile's premise is unverified, and `high` confidence
@@ -158,10 +158,10 @@ measurement.
 iPad. There is no CDP-equivalent path to a simulator WKWebView here, which is why the iOS numbers in
 this note are measured off screenshots while the Android ones are read from the live DOM.
 
-**Maestro's text selectors do not reach into the WebView.** `tapOn: Settings` and
-`tapOn: Appearance` both failed against controls that are plainly present and labelled. Coordinate
-taps (`tapOn: {point: "92%,88%"}`) work. Note the percentages are relative to the *device* frame, so
-they stop matching what you see once the interface is rotated relative to the device.
+**Maestro's text selectors do not reach into the WebView.** `tapOn: Settings` and `tapOn:
+Appearance` both failed against controls that are plainly present and labelled. Coordinate taps
+(`tapOn: {point: "92%,88%"}`) work. Note the percentages are relative to the *device* frame, so they
+stop matching what you see once the interface is rotated relative to the device.
 
 **The app must be launched with `am start`, not `monkey`.** `adb shell monkey -p art.splotch.app 1`
 reported success and started nothing; `am start -n art.splotch.app/.MainActivity` works.

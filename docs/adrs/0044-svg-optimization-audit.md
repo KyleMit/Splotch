@@ -9,8 +9,7 @@
 ## Context
 
 The Splotch logo and the whole `web/src/lib/icons/*.svg` set are inlined into the DOM via `{@html}`
-in `Icon.svelte` (`import.meta.glob('../icons/*.svg', {query:
-'?raw'})`). Every vector node is
+in `Icon.svelte` (`import.meta.glob('../icons/*.svg', {query: '?raw'})`). Every vector node is
 therefore a real mount-time DOM element and every byte ships to the client, so SVG size is both a
 DOM-size and a payload concern — `splotchy.svg` alone was the dominant node-count culprit in a
 page-weight report.
@@ -27,8 +26,8 @@ done" in a log — i.e. whether re-running an optimizer on already-optimized fil
 
 **Empirical finding:** SVGO's output for a given input under a fixed config is a stable fixed point.
 Across all 52 audited SVGs, a second SVGO pass over the first pass's output is **byte-for-byte
-identical** (verified before adopting the approach). So "already optimized" is simply "SVGO output
-== file on disk" — no external bookkeeping is needed to tell new/edited files from done ones.
+identical** (verified before adopting the approach). So "already optimized" is simply "SVGO
+output == file on disk" — no external bookkeeping is needed to tell new/edited files from done ones.
 
 Two SVGO-config details are load-bearing:
 
@@ -65,10 +64,8 @@ rewrite.
 
 ## Consequences
 
-* Adding an un-optimized icon fails CI with an actionable message
-  (`run npm run
-  img:audit and commit the result`), keeping the DOM/payload invariant enforced
-  rather than aspirational.
+* Adding an un-optimized icon fails CI with an actionable message (`run npm run img:audit and commit
+  the result`), keeping the DOM/payload invariant enforced rather than aspirational.
 * The audit is safe to run at any time; a no-op run confirms the tree is optimal.
 * Pinning matters: a future SVGO major that changes its output would make the check fail on every
   file until `img:audit` is re-run and the (still visually lossless) result committed. That's the

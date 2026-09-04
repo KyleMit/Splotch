@@ -34,10 +34,10 @@ or landscape store canvases.
 `tools/store-drawings/lib/drawing-instructions.mjs` fits the static coordinates within the canvas
 and owns two delivery paths. The default delegates every stroke to
 `tools/app-driver/lib/app-driver.mjs`: the driver changes colors and widths through visible controls
-and sends Playwright mouse down/move/up input to `#drawingCanvas`. The store hero selects
-`replay: 'engine'`, which expands the exact same six intermediate samples and held endpoint, then
-calls the dev-gated production engine once per stroke. Both paths therefore reach the same midpoint
-smoothing, tiled renderer, and history; neither paints a substitute canvas.
+and sends Playwright mouse down/move/up input to `#drawingCanvas`. The store hero selects `replay:
+'engine'`, which expands the exact same six intermediate samples and held endpoint, then calls the
+dev-gated production engine once per stroke. Both paths therefore reach the same midpoint smoothing,
+tiled renderer, and history; neither paints a substitute canvas.
 
 Named drawing functions can select Pen, Crayon, or Magic through the production Brush Menu before
 replaying their shared pointer instructions. Magic skips stored color selections because the brush

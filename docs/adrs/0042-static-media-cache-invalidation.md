@@ -7,10 +7,10 @@ coloring-pack caches. **Date:** 2026-07
 ## Context
 
 Splotch serves a set of static media with **stable, non-content-hashed filenames** —
-`/sounds/*.mp3`, `/styles/*.webp`, `/icons/*.webp` (referenced by fixed paths in code, e.g.
-`<img src="/styles/{style}.webp">`). A Lighthouse page-load audit flagged that these were served
-with the CDN default `Cache-Control: public, max-age=0, must-revalidate`, so every repeat visit paid
-a per-asset conditional-GET round-trip (`304, 0 bytes`) — real latency on Slow 4G for content that
+`/sounds/*.mp3`, `/styles/*.webp`, `/icons/*.webp` (referenced by fixed paths in code, e.g. `<img
+src="/styles/{style}.webp">`). A Lighthouse page-load audit flagged that these were served with the
+CDN default `Cache-Control: public, max-age=0, must-revalidate`, so every repeat visit paid a
+per-asset conditional-GET round-trip (`304, 0 bytes`) — real latency on Slow 4G for content that
 rarely changes. `netlify.toml` now grants them a one-week lifetime instead:
 
 ```toml
@@ -30,10 +30,8 @@ front of these files, and they invalidate differently:
    and no revalidation directive, a browser that already fetched an asset **directly** may reuse it
    for up to a week without contacting the server.
 2. **The Workbox service-worker precache** (ADR-0022). `web/vite.config.ts` precaches these assets
-   via `globPatterns:
-   ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}']` (plus
-   `includeAssets:
-   ['sounds/*.mp3']`). For a client whose SW is controlling the page — the normal
+   via `globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}']` (plus
+   `includeAssets: ['sounds/*.mp3']`). For a client whose SW is controlling the page — the normal
    repeat-visit path — requests for these URLs are answered **from the precache**, so the HTTP
    header in layer 1 never applies to them.
 
@@ -71,9 +69,7 @@ assets a contributor does **nothing special**: change the file's content and dep
 path is:
 
 1. The build recomputes that file's revision (new md5) and injects it into a new `sw.js` precache
-   manifest. `sw.js` is served `no-cache, no-store,
-   must-revalidate`, so every client re-checks
-   it.
+   manifest. `sw.js` is served `no-cache, no-store, must-revalidate`, so every client re-checks it.
 2. On the next `registration.update()` (ADR-0022 runs these on load, on visibility/focus, and
    hourly), the browser sees the changed `sw.js`, and Workbox re-fetches **only** the entries whose
    revision changed. That fetch is sent with a cache-busting `?__WB_REVISION__=<hash>` query param,
@@ -114,9 +110,9 @@ instantly for correctness rather than freshness.
 
 ## Verification
 
-Verified empirically against a live Netlify branch deploy (real CDN + generated SW, which
-`vite preview` / `netlify dev` cannot reproduce — see `docs/CLOUD/Claude.md`). For each step the
-asset was changed, pushed, and the deploy polled until its `sw.js` precache revision flipped:
+Verified empirically against a live Netlify branch deploy (real CDN + generated SW, which `vite
+preview` / `netlify dev` cannot reproduce — see `docs/CLOUD/Claude.md`). For each step the asset was
+changed, pushed, and the deploy polled until its `sw.js` precache revision flipped:
 
 | Step     | Commit    | `pixel.webp` md5 = **precache revision** | Netlify `ETag`  | `Content-Length` |
 | -------- | --------- | ---------------------------------------- | --------------- | ---------------- |

@@ -7,13 +7,12 @@ orientation-tagged measurement retained as a hydrated correction.
 ## Context
 
 The web target is built with `@sveltejs/adapter-netlify` (ADR-0001), which is *capable* of runtime
-SSR: it emits a `sveltekit-render` Netlify function wired to a `/*` catch-all with
-`preferStatic: true`. But most of the app doesn't use it. The site-wide default is
-`prerender = true` (`web/src/routes/+layout.ts`; SSR and CSR both stay on SvelteKit's own defaults),
-so every route that doesn't opt out is prerendered to static HTML at build time. Because
-`preferStatic: true` serves a matching static file without invoking the function, the prerendered
-routes are served straight from the CDN and the SSR function only runs for the routes that set
-`prerender = false`.
+SSR: it emits a `sveltekit-render` Netlify function wired to a `/*` catch-all with `preferStatic:
+true`. But most of the app doesn't use it. The site-wide default is `prerender = true`
+(`web/src/routes/+layout.ts`; SSR and CSR both stay on SvelteKit's own defaults), so every route
+that doesn't opt out is prerendered to static HTML at build time. Because `preferStatic: true`
+serves a matching static file without invoking the function, the prerendered routes are served
+straight from the CDN and the SSR function only runs for the routes that set `prerender = false`.
 
 This split had never been written down. It surfaced during a question about whether the home page's
 server render could be made to respect the visitor's stored preferences and device orientation —
@@ -23,9 +22,9 @@ rediscovered the hard way:
 
 * **`/` is SSG, so there is no per-request server render to personalize.** It's baked to a single
   static `index.html` at build time and served identically to everyone (the render function's
-  manifest even lists `/` in `prerendered_routes`). The build-time render runs with
-  `browser === false`, so `localStorage`-backed settings return their defaults and orientation
-  resolves to its `'landscape'` default.
+  manifest even lists `/` in `prerendered_routes`). The build-time render runs with `browser ===
+  false`, so `localStorage`-backed settings return their defaults and orientation resolves to its
+  `'landscape'` default.
 * **A service worker can't supply the missing state anyway.** It has no access to `localStorage`
   (synchronous; denied to SW contexts) and no `window`/`matchMedia`/ `screen`, so it cannot read
   preferences without a mirror and cannot know orientation at all.

@@ -74,8 +74,7 @@ It prints one JSON document with a `state`:
   worktree, runs the command with output captured to the spool, and replies with the exit code. The
   rival's command text is inline in that line so your permission mode, the project's deny rules, and
   the auto-mode classifier all read exactly what was asked. To decline, run the `declineCommand`
-  line with a reason the rival can act on (`host-exclusive suite`, `writes
-  outside the worktree`,
+  line with a reason the rival can act on (`host-exclusive suite`, `writes outside the worktree`,
   `not needed for this review`). A decline is a normal answer; the rival records the claim as
   unverified and moves on.
 * **`waiting`** — nothing pending yet. Call `next` again.
@@ -84,8 +83,7 @@ It prints one JSON document with a `state`:
 
 Keep serving until `done` or `failed`. The launcher's own watchdog terminates a rival that goes
 silent, but a request you never answer is treated as still running for up to an hour, so answer or
-decline every request rather than walking away.
-`node tools/rival-agent/broker.mjs status
+decline every request rather than walking away. `node tools/rival-agent/broker.mjs status
 --session <dir>` summarizes where things stand.
 
 Judge each request on its own merits. A brokered command runs under your permissions, so its risk is

@@ -24,9 +24,9 @@ Generalizes idea #1's `analyze-rim.mjs` catalog-wide:
 3. Build a **reference punch**: the mask dilated by 4 px, then the standard neighbor bleed on the
    raw — i.e. "what the collar would look like if the fill color from beyond any plausible rim were
    inpainted all the way in".
-4. For every pixel at chebyshev distance 1..3 from the ink,
-   `rimΔ = luma(reference) − luma(shipped)`. A residual re-inked rim is a large positive Δ; a legit
-   dark fill is ≈0 because the reference is equally dark there.
+4. For every pixel at chebyshev distance 1..3 from the ink, `rimΔ = luma(reference) −
+   luma(shipped)`. A residual re-inked rim is a large positive Δ; a legit dark fill is ≈0 because
+   the reference is equally dark there.
 5. **haloScore** = % of band-1..2 pixels with `rimΔ > 40` **and** shipped luma in `[55, 145)` — idea
    #1's mid-dark penumbra window. The window is load-bearing: without it (the `rawScore` column) the
    ranking is dominated by legit near-black art adjacent to lines (`farm/cow-wide`'s black patches:

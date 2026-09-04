@@ -43,13 +43,13 @@ Two things stay runner-shaped, and a `--runner=` flag selects them:
   defaults to `fresh`) and arrives attached to that branch, so its `HEAD` is never touched. This
   gate replaces the old `branch !== 'HEAD'` early return, which skipped provisioning entirely; an
   attached Codex worktree now gets dependencies too.
-* **How failure is reported.** Codex reads a stop decision from stdout
-  (`{ continue: false, stopReason, systemMessage }`, exit 0). Claude Code splits the two audiences
-  across two fields that cannot substitute for each other: top-level `systemMessage` is a warning
-  shown to the **user** and never reaches the model, while `hookSpecificOutput.additionalContext` is
-  the only field that puts the failure into **Claude's** context. The bootstrap returns both, so a
-  failed install is visible to the person who can fix it and to the agent that will otherwise run
-  `npm` against an empty `node_modules`. Returning only one still looks like it worked, which is why
+* **How failure is reported.** Codex reads a stop decision from stdout (`{ continue: false,
+  stopReason, systemMessage }`, exit 0). Claude Code splits the two audiences across two fields that
+  cannot substitute for each other: top-level `systemMessage` is a warning shown to the **user** and
+  never reaches the model, while `hookSpecificOutput.additionalContext` is the only field that puts
+  the failure into **Claude's** context. The bootstrap returns both, so a failed install is visible
+  to the person who can fix it and to the agent that will otherwise run `npm` against an empty
+  `node_modules`. Returning only one still looks like it worked, which is why
   `tools/tests/bootstrap-worktree.test.mjs` pins `additionalContext` by name.
 
 The non-obvious invariant is the working directory. Claude Code keeps `${CLAUDE_PROJECT_DIR}`

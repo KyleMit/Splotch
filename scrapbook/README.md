@@ -70,8 +70,8 @@ The coloring-book proof sheets have their own hub at
 `https://kylemit.github.io/Splotch/coloring-book-proof-sheets/` — one sheet per category
 (`coloring-book-proof-sheets/<category>.html`, built by `npm run gen:coloring-book-proof-sheet`)
 plus a generated `index.html` that jumps between categories (tabs, prev/next arrows, ←/→ keys, hash
-deep links). `npm run scrapbook:index` regenerates the hub alongside the top-level index;
-`npm run scrapbook:check` verifies both generated pages are current.
+deep links). `npm run scrapbook:index` regenerates the hub alongside the top-level index; `npm run
+scrapbook:check` verifies both generated pages are current.
 
 The crayon-brush reference and acceptance art collection lives at
 `https://kylemit.github.io/Splotch/crayon-brush-samples/`. `gen-reference-sheet.mjs` produces its
@@ -91,14 +91,14 @@ were reviewed.
 
 Critique work is one independently generated checkpoint per review ID under the gitignored
 `.scrapbook-scratch/page-inventory-critique/reviews/`. Run `npm run review:page-inventory` to create
-or resume the fresh image-only reviews, then finalize them with
-`npm run finalize:page-inventory-critique`; the command refuses missing, duplicate, unknown, or
-stale reviews, derives the coverage and severity totals rather than trusting model-authored counts,
-and records every group of captures that share a digest and a theme along with whether their
-severities diverge. When `design-critique.json` is present, capture preserves it but attaches it
-only when every hash matches the new manifest. To update feedback without recapturing images, run
-`npm run attach:page-inventory-feedback` (optionally `-- --critique FILE`). Then run
-`npm run scrapbook:index`.
+or resume the fresh image-only reviews, then finalize them with `npm run
+finalize:page-inventory-critique`; the command refuses missing, duplicate, unknown, or stale
+reviews, derives the coverage and severity totals rather than trusting model-authored counts, and
+records every group of captures that share a digest and a theme along with whether their severities
+diverge. When `design-critique.json` is present, capture preserves it but attaches it only when
+every hash matches the new manifest. To update feedback without recapturing images, run `npm run
+attach:page-inventory-feedback` (optionally `-- --critique FILE`). Then run `npm run
+scrapbook:index`.
 
 > HTML reports render because they're served by Pages. `raw.githubusercontent.com` would serve them
 > as `text/plain` (source, not a page) — that's why Pages, not a raw URL, is the mechanism here.

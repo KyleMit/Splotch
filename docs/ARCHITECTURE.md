@@ -46,10 +46,10 @@
 
 ### Testing
 
-* **[Vitest](https://vitest.dev/) + happy-dom** — unit tests for pure logic and state modules
-  (`npm run test:unit`).
-* **[Playwright](https://playwright.dev/)** — E2E web tests against the production build
-  (`npm run test:e2e`).
+* **[Vitest](https://vitest.dev/) + happy-dom** — unit tests for pure logic and state modules (`npm
+  run test:unit`).
+* **[Playwright](https://playwright.dev/)** — E2E web tests against the production build (`npm run
+  test:e2e`).
 * **[Maestro](https://maestro.mobile.dev/)** — Android and iOS smoke tests that boot a real emulator
   or simulator and assert the UI renders (`npm run test:android`, `npm run test:ios`). See the
   `testing` skill.
@@ -256,12 +256,12 @@ media queries + the head-script stamp in `app.html`).
 >   along the top edge** in portrait, a **column down the left edge** in landscape (single- or
 >   two-column depending on height). So a "top-left corner" is *not* free space — it's under the
 >   first swatch in one orientation.
-> * **Float canvas-overlay controls inside `.canvas-container`** (`DrawingCanvas.svelte`,
->   `position: relative`), using `position: absolute`, rather than a fixed viewport corner — that
->   container already tracks the drawing area across orientations. The **Fullscreen Toggle**
->   (`top: 8px; left: 8px; z-index: var(--z-canvas-chrome)`) is the reference example. Note
->   `.canvas-container` sets up no stacking context, so such a control still competes with the
->   viewport chrome below — it just sits under all of it.
+> * **Float canvas-overlay controls inside `.canvas-container`** (`DrawingCanvas.svelte`, `position:
+>   relative`), using `position: absolute`, rather than a fixed viewport corner — that container
+>   already tracks the drawing area across orientations. The **Fullscreen Toggle** (`top: 8px; left:
+>   8px; z-index: var(--z-canvas-chrome)`) is the reference example. Note `.canvas-container` sets
+>   up no stacking context, so such a control still competes with the viewport chrome below — it
+>   just sits under all of it.
 > * **Bottom edge is contested**: the **Settings Button** (`#settingsButton`,
 >   `var(--z-corner-button)`, bottom-right, `SettingsButton.svelte`) and the **Actions Panel**
 >   flyouts (`var(--z-panel)`/`var(--z-flyout)`, bottom-left, `ActionsPanel.svelte`) share it and

@@ -69,10 +69,9 @@ keeping because none of them errors — they all produce a runbook that reads fi
   runs, and bypassing is unsupported even for admins. The original packet reached its conclusion on
   a repo whose `main` has no required status checks, so the precondition was invisible in the
   evidence. The skill now checks the base's rules first and splits the two gates apart.
-* **`gh stack merge` with no argument** uses the stack for the *current branch*, while
-  `gh stack
-  link` deliberately writes no local state — so the documented flow produced a merge
-  command with nothing to target. Caught by reading `gh stack merge --help`, which says so plainly.
+* **`gh stack merge` with no argument** uses the stack for the *current branch*, while `gh stack
+  link` deliberately writes no local state — so the documented flow produced a merge command with
+  nothing to target. Caught by reading `gh stack merge --help`, which says so plainly.
 * **Hardcoded `gh`.** A shared runbook that reaches straight for the CLI contradicts the root
   instructions (native GitHub tooling first) and breaks in a sandbox with no Keychain access. The
   `gh` lines survive as the fallback and as the precise statement of the operation; `gh stack` is

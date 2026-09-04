@@ -41,8 +41,7 @@ workers: process.env.CI ? 4 : 2,
 Not `'100%'`, and not a percentage at all. A percentage silently means something different on a
 2-core CI runner than on a 16-core laptop, and the measured curve does not transfer between them.
 
-The split is not arbitrary — it falls out of an expected-cost model,
-`wall + P(red) × cost of a red
+The split is not arbitrary — it falls out of an expected-cost model, `wall + P(red) × cost of a red
 run`:
 
 * **Locally** (`retries: 0`) a red run costs a re-run plus the attention to notice and triage it.
@@ -209,9 +208,9 @@ first. Review killed it, and the reason generalises past this helper:
 * **A between-attempts deadline cannot do the job that would justify it.** It never interrupts an
   attempt, so it cannot rescue "one attempt runs long" — the case it was there for. It can only cut
   the loop *shorter*, and the loop can still overrun it by a full attempt. Probed on the shipped
-  loop shape: a 4s always-failing attempt under a 5s deadline failed at **8009ms**, where
-  `toPass({ timeout: 5000 })` hard-stops mid-attempt at 5013ms. So relative to `main` the budget had
-  quietly stopped being a ceiling at all.
+  loop shape: a 4s always-failing attempt under a 5s deadline failed at **8009ms**, where `toPass({
+  timeout: 5000 })` hard-stops mid-attempt at 5013ms. So relative to `main` the budget had quietly
+  stopped being a ceiling at all.
 * **Worse, it made the effective cap a function of machine speed.** A slower runner spends the
   budget inside earlier attempts and silently loses the third. That is exactly the
   deadline-exhaustion failure §3 names, reintroduced inside the fix for it — and it is invisible,
@@ -264,11 +263,9 @@ hits) and bursts the managed token's (15). A rep takes about as long as those wi
 inherited the previous rep's spent budget and its guard tests took a 429 where they assert a 415 or
 a 413. Nothing to do with the app or the specs: the sweep protocol alone.
 
-**It is not a rounding error.** On `ubuntu-latest` at 4 workers,
-`throttles a managed token hammered
-in a burst` failed in **12 of 12** reps. Locally at 4 workers
-the BYOK guard tests were 4 of 5 failures across 7 reps. Those are the same specs §2b's counts are
-made of.
+**It is not a rounding error.** On `ubuntu-latest` at 4 workers, `throttles a managed token hammered
+in a burst` failed in **12 of 12** reps. Locally at 4 workers the BYOK guard tests were 4 of 5
+failures across 7 reps. Those are the same specs §2b's counts are made of.
 
 **Fix.** `scripts/e2e-sweep.mjs` owns the protocol — a fresh preview server per rep, `CI` unset for
 the run, one summary line per rep — and both the local sweep and the workflow drive it. That is the
@@ -297,8 +294,8 @@ booting a fresh server — compare the shape against §2b's column, not the abso
 **That table is one spec.** Read on its own it says the rate rises steeply with workers and that 4
 is significantly worse than 3 — and a first pass of this record said exactly that, setting §1b's
 coefficient to 1.5× capacity on the strength of it. The tell that it was wrong is in the table: 6
-workers failed in **15 of 15** reps, which is a deterministic failure, not a flake rate. It was
-`a burst of screenshot taps shares one save before allowing the next`, whose fixed 500ms sleep was
+workers failed in **15 of 15** reps, which is a deterministic failure, not a flake rate. It was `a
+burst of screenshot taps shares one save before allowing the next`, whose fixed 500ms sleep was
 waiting for a save to *happen*; the more starved the worker, the more reliably it missed. It is
 fixed here (a poll for the positive half, a named idle window for the negative one).
 
@@ -530,9 +527,9 @@ only appears at one worker count will reproduce on only one of them.
 
 The full study — every configuration, both hardware profiles, the charts, and the hypotheses that
 were falsified — is committed at
-[`scrapbook/e2e-tuning/`](https://kylemit.github.io/Splotch/e2e-tuning/), regenerated with
-`npm run gen:e2e-tuning-report` from the datasets recorded in
-`tools/e2e-tuning/gen-tuning-report.mjs`. That page carries the exact commands for a re-sweep.
+[`scrapbook/e2e-tuning/`](https://kylemit.github.io/Splotch/e2e-tuning/), regenerated with `npm run
+gen:e2e-tuning-report` from the datasets recorded in `tools/e2e-tuning/gen-tuning-report.mjs`. That
+page carries the exact commands for a re-sweep.
 
 Both halves of the sweep now run one driver, so a local re-tune and the CI one measure the same
 thing (§4). The driver builds the instrumented bundle itself, so it is one command:
@@ -542,11 +539,11 @@ node tools/e2e-tuning/run-worker-sweep.mjs --workers=4 --reps=30 --out=runs
 ```
 
 On CI hardware it is **Actions → "Worker sweep (manual)" → Run workflow**, whose `workers` input
-takes a JSON list. Two different questions want two different shapes there: the full
-`[1, 2, 3, 4, 6, 8]` curve answers *how many workers*, while `[4]` with a large `reps` is what a
-**retry** count needs, because that rests on the red-run rate at the one configuration CI ships.
-Read either from `grep SWEEPTOTAL` in the job log — it names the specs the failures belonged to,
-which is usually the actual finding.
+takes a JSON list. Two different questions want two different shapes there: the full `[1, 2, 3, 4,
+6, 8]` curve answers *how many workers*, while `[4]` with a large `reps` is what a **retry** count
+needs, because that rests on the red-run rate at the one configuration CI ships. Read either from
+`grep SWEEPTOTAL` in the job log — it names the specs the failures belonged to, which is usually the
+actual finding.
 
 One thing the local half cannot measure honestly: if the box running the sweep is also running the
 session that dispatched it, its own tooling shows up as contention. The numbers in §4 are from CI

@@ -18,9 +18,9 @@ plugin Splotch uses ships a `Package.swift` (`@aparajita/capacitor-secure-storag
 `@capacitor/preferences`), so SPM costs nothing in plugin compatibility.
 
 **Build scripting.** Mirror of the Android question that ADR-0012/ADR-0019 answered with `android:*`
-Gradle scripts. The alternatives were "Xcode GUI only" (not scriptable, no parity with
-`npm run info` discoverability) or Fastlane (a Ruby dependency for what is currently two
-`xcodebuild` invocations).
+Gradle scripts. The alternatives were "Xcode GUI only" (not scriptable, no parity with `npm run
+info` discoverability) or Fastlane (a Ruby dependency for what is currently two `xcodebuild`
+invocations).
 
 **Signing.** Android uses a manually managed upload keystore (`keystore.properties`). On iOS the
 equivalent manual route (distribution certificates + provisioning profiles exported by hand) is
@@ -29,11 +29,11 @@ Apple's recommended default for a single-developer project.
 
 ## Decision
 
-* **SPM, no CocoaPods.** The `ios/` project was scaffolded with
-  `npx cap add ios --packagemanager SPM`. Plugins resolve via `ios/App/CapApp-SPM/Package.swift`,
-  which `cap sync` regenerates — that file is generated, never hand-edited. The macOS prerequisite
-  list is therefore just full Xcode (no Ruby, no `pod`); `cap sync ios` works even on a machine with
-  only Command Line Tools, since the SPM update is plain file generation.
+* **SPM, no CocoaPods.** The `ios/` project was scaffolded with `npx cap add ios --packagemanager
+  SPM`. Plugins resolve via `ios/App/CapApp-SPM/Package.swift`, which `cap sync` regenerates — that
+  file is generated, never hand-edited. The macOS prerequisite list is therefore just full Xcode (no
+  Ruby, no `pod`); `cap sync ios` works even on a machine with only Command Line Tools, since the
+  SPM update is plain file generation.
 * **Commit the generated SPM manifest and resolution.** `Package.swift` remains tracked so the
   committed Xcode project can be opened and resolved directly after installing dependencies;
   `App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` remains tracked so that
@@ -54,9 +54,8 @@ Apple's recommended default for a single-developer project.
   committed `project.pbxproj` (committing it churns for other contributors and bakes a personal ID
   into git). It lives in an untracked `ios/local.xcconfig` (gitignored), pulled into Debug builds
   via `#include? "local.xcconfig"` in `ios/debug.xcconfig` and into the Release archive via
-  `-xcconfig
-  ../local.xcconfig` on `ios:archive`. There is no iOS analog of `keystore.properties`
-  to back up — Apple holds the distribution certificate.
+  `-xcconfig ../local.xcconfig` on `ios:archive`. There is no iOS analog of `keystore.properties` to
+  back up — Apple holds the distribution certificate.
 * Version numbers are not managed in Xcode: `scripts/release.mjs` sets
   `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` via `capacitor-set-version`, keeping them locked to
   Android's `versionName`/`versionCode`.

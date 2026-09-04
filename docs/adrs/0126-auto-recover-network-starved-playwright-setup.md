@@ -82,13 +82,13 @@ to today's manual behavior, never a spurious re-run.
 
 Two of the decision's mechanisms are revised, one is retired, and one is added.
 
-**The offline install is `dpkg -i`, not `apt-get --no-download`.** The
-`apt-get install --no-download <debs>` path never installed anything: apt classifies even a
-command-line local `.deb` as a fetch and refuses it (`E: Unable to fetch some archives`), so the
-step only passed when every package was already present and every run silently fell through to the
-network install — the exposure the cache was built to remove. Reproduced deterministically on Ubuntu
-24.04. `sudo dpkg -i` installs the cached set in one offline transaction and exits non-zero when the
-set is incomplete; the `--dry-run` completeness gate and the network fallback are unchanged.
+**The offline install is `dpkg -i`, not `apt-get --no-download`.** The `apt-get install
+--no-download <debs>` path never installed anything: apt classifies even a command-line local `.deb`
+as a fetch and refuses it (`E: Unable to fetch some archives`), so the step only passed when every
+package was already present and every run silently fell through to the network install — the
+exposure the cache was built to remove. Reproduced deterministically on Ubuntu 24.04. `sudo dpkg -i`
+installs the cached set in one offline transaction and exits non-zero when the set is incomplete;
+the `--dry-run` completeness gate and the network fallback are unchanged.
 
 **The bounds and the auto-rerun are retired.** With the cache-hit path genuinely offline (verified
 in CI: both network steps skip with `duration_ms=0`), the network install runs only when a cache key

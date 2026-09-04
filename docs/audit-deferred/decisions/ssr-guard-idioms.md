@@ -23,10 +23,9 @@ Verified at HEAD:
   `settings.svelte.ts:26,280`, `saveFolder.svelte.ts:83`; `browser` in the four listener stores).
 * The finding's central test-churn premise is **false**: an empirical probe (a throwaway test
   importing `browser` from `$app/environment`) shows `browser === true` under this repo's Vitest
-  config — in the happy-dom environment **and** in `@vitest-environment node` files, where
-  `typeof window` is simultaneously `undefined`. Unifying would not have needed the mocks; the
-  existing mocks in `layout`/`install`/`fullscreen` tests pin determinism rather than flip a false
-  value.
+  config — in the happy-dom environment **and** in `@vitest-environment node` files, where `typeof
+  window` is simultaneously `undefined`. Unifying would not have needed the mocks; the existing
+  mocks in `layout`/`install`/`fullscreen` tests pin determinism rather than flip a false value.
 * That same probe is the load-bearing reason the idioms are not interchangeable: under Vitest,
   `browser` is a compile-time constant, not an environment probe. A `typeof` guard is the only
   spelling that actually tracks the runtime a test file selected. `appearance.svelte.test.ts` and

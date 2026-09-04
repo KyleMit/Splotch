@@ -14,8 +14,8 @@ and then holds open until stopped.
 Do this:
 
 1. Run `npm run dev:tunnel` **in the background** — do not wait for it to exit.
-2. Watch its output for the readiness line (`➜  Live:  https://…`) or a failure (e.g.
-   `Missing TUNNEL_AUTH — …`).
+2. Watch its output for the readiness line (`➜  Live:  https://…`) or a failure (e.g. `Missing
+   TUNNEL_AUTH — …`).
 3. Report the public URL once it's live so it can be opened on a phone. If it failed, report the
    error and the likely fix (usually a missing `TUNNEL_AUTH` in the cloud env config — see
    `.claude/cloud/environment.example`).

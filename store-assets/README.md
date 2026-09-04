@@ -95,8 +95,8 @@ npm run gen:store-assets:frames
 re-renders every final from the committed captures without driving the app, and the
 `/dev/store-frames` harness shows the same compositions hot-reloading under `npm run dev`.
 
-Iterate on a subset with `--target` / `--page` substring filters, e.g.
-`npm run gen:store-assets -- --target tablet10 --page 03`.
+Iterate on a subset with `--target` / `--page` substring filters, e.g. `npm run gen:store-assets --
+--target tablet10 --page 03`.
 
 One capture knowingly diverges from what the capture viewport would natively show, in order to
 *match* what real hardware shows: portrait captures run at 576 CSS px (for the ~1.6× marketing

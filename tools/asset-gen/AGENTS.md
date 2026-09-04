@@ -63,9 +63,9 @@ carve-out):
   `SAMPLES_DIR` and is bound; `legacy/` reads `COLORING_DIR` and is not live pipeline.
 * **Raw fills are the source of truth; shipped fills are derived.** The lined colored fills live in
   `fill-src/` (committed, never shipped); the shipped `web/static/coloring/**/*.{light,night}.webp`
-  are their fills-only punch (`coloring/punch-fill-outlines.mjs`, root:
-  `npm run gen:coloring-punched-fills` — offline, deterministic). Never hand-edit a shipped fill,
-  and after changing any raw, re-punch it. The drift audit scores the raws.
+  are their fills-only punch (`coloring/punch-fill-outlines.mjs`, root: `npm run
+  gen:coloring-punched-fills` — offline, deterministic). Never hand-edit a shipped fill, and after
+  changing any raw, re-punch it. The drift audit scores the raws.
 * **Line work is forked per theme (the pen/chalk split — see `docs/pipeline.md`).** Canonical page
   and cover line art is `{stem}.overlay.svg` for the PEN and `{stem}.dark.overlay.svg` for the
   CHALK. Pipeline consumers rasterize either SVG alpha to black ink on white; runtime uses the baked
@@ -87,14 +87,13 @@ carve-out):
   is ignored by `import` (same root cause the `run-splotch` skill documents for Playwright scripts).
   Drop it in the gitignored `tools/asset-gen/.coloring-samples/` (in the tree, so bare `sharp` and
   relative `../lib/*.mjs` imports resolve; ignored, so it doesn't dirty the tree) and delete it when
-  done. Escape hatch when moving the file isn't worth it: import by absolute path —
-  `import sharp from '<repo>/node_modules/sharp/dist/index.cjs'` — and likewise absolute paths for
-  each `lib/*.mjs`.
+  done. Escape hatch when moving the file isn't worth it: import by absolute path — `import sharp
+  from '<repo>/node_modules/sharp/dist/index.cjs'` — and likewise absolute paths for each
+  `lib/*.mjs`.
 * **sharp alpha gotcha:** never `joinChannel` an alpha plane and encode — sharp tags the 4th band as
   a generic extra channel, not alpha, so the webp/png encoder *silently* flattens it (output decodes
   `channels: 3, hasAlpha: false`, no error). Interleave an explicit RGBA buffer and construct
-  `sharp(rgba, { raw: { width,
-  height, channels: 4 } })` instead, and verify outputs with
+  `sharp(rgba, { raw: { width, height, channels: 4 } })` instead, and verify outputs with
   `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays and the style-cover
   backdrop key intentionally use this explicit-RGBA path (`lib/overlay-alpha.mjs`,
   `lib/flat-background-punch.mjs`); the fill punch still inpaints instead of cutting holes
@@ -103,9 +102,9 @@ carve-out):
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
   commit the scratch dirs.
 * **`golden/` holds the committed regression fixtures — keep them in sync with the assets.** After
-  any pipeline or asset change, run `npm run check:coloring-golden-scores` (offline, ~1 min; exit 1
-  = a page regressed) and, when the change is intentional, adopt it with
-  `npm run update:coloring-golden-scores` + `npm run gen:assets:manifest` in the same commit — CI's
+  any pipeline or asset change, run `npm run check:coloring-golden-scores` (offline, ~1 min; exit
+  1 = a page regressed) and, when the change is intentional, adopt it with `npm run
+  update:coloring-golden-scores` + `npm run gen:assets:manifest` in the same commit — CI's
   `check:assets:manifest` fails on any asset byte that drifted from `golden/asset-manifest.sha256`.
   The pair is deliberate: the golden scores catch quality drift, the sha256 manifest catches byte
   swaps between score-identical renders (and enforces that a night-only pass never touches

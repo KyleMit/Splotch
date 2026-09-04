@@ -31,11 +31,11 @@ the input cadence, and compare against the previous run of the same cell before 
 
 ## Device identity
 
-**An iPad answers to two different identifiers and they are not interchangeable.**
-`xcrun devicectl list devices` prints a CoreDevice UUID (`BF6A40F5-…`). Appium's `appium:udid` wants
-the hardware UDID that `idevice_id -l` prints (`00008103-…`). Passing the CoreDevice UUID fails with
-**"Could not find a pair record for device …"**, which reads like an unreachable device or a missing
-tunnel and is neither. `perf:preflight` prints the right one and rejects the wrong one.
+**An iPad answers to two different identifiers and they are not interchangeable.** `xcrun devicectl
+list devices` prints a CoreDevice UUID (`BF6A40F5-…`). Appium's `appium:udid` wants the hardware
+UDID that `idevice_id -l` prints (`00008103-…`). Passing the CoreDevice UUID fails with **"Could not
+find a pair record for device …"**, which reads like an unreachable device or a missing tunnel and
+is neither. `perf:preflight` prints the right one and rejects the wrong one.
 
 ## Approvals that are probably already granted
 
@@ -122,10 +122,10 @@ comparison below: a mismatch is a stale shell, and a pass keeps the capture whil
 recorded caveat.
 
 The XCUITest actions path now guards this (commit 1896c70c6): it compares the served HTML's
-`/_app/immutable/entry/start.*.js` module against `document.scripts` on the device, throws
-`Preview identity mismatch` on disagreement, blocks service-worker registration before measurement,
-and records `pageEntries` and `serviceWorkerRegistration` in the artifact. Two limits, both open:
-other capture paths do not carry the guard, and the same 404 tell has appeared on captures whose
+`/_app/immutable/entry/start.*.js` module against `document.scripts` on the device, throws `Preview
+identity mismatch` on disagreement, blocks service-worker registration before measurement, and
+records `pageEntries` and `serviceWorkerRegistration` in the artifact. Two limits, both open: other
+capture paths do not carry the guard, and the same 404 tell has appeared on captures whose
 entry-module check passed — attributed in-session to a persisted pack-manifest request, never proven
 with a clean-state control. A capture showing the tell alongside a passing entry check carries an
 unresolved device-state caveat; record the caveat beside the number rather than ignoring the log
@@ -188,8 +188,8 @@ pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and rest
 running it. A leaked pin then fails **every subsequent drawing cell on that phone** as
 `off-refresh-regime`, burning retries on a cause no retry can fix, and nothing in those failures
 names the setting. Check with `adb shell dumpsys display | grep -o 'renderFrameRate [0-9.]*'` — a
-phone that should boost to 120 reporting 60 is the tell — and clear it with
-`adb shell settings delete system peak_refresh_rate` and the same for `min_refresh_rate`.
+phone that should boost to 120 reporting 60 is the tell — and clear it with `adb shell settings
+delete system peak_refresh_rate` and the same for `min_refresh_rate`.
 
 **Eraser cells before the between-pass refill are optimistic by an unknown amount.** The gesture
 plan replays identical geometry every pass, so eraser passes 2..N dragged the eraser across pixels
@@ -479,8 +479,8 @@ preflight blocks and says so. For an overnight run, unlock it first and leave it
 ### Guided Access blocks every capture, disguised as a WebDriverAgent build error
 
 `xcodebuild failed with code 65` from Appium reads like a signing or Xcode problem and is neither.
-Run the `xcodebuild` line the Appium log prints and look past the exit code: the build says
-`** TEST BUILD SUCCEEDED **` and the *launch* is what failed.
+Run the `xcodebuild` line the Appium log prints and look past the exit code: the build says `** TEST
+BUILD SUCCEEDED **` and the *launch* is what failed.
 
 **Read to the innermost underlying error, not the first one.** The outer frames name a service that
 has nothing to do with the cause:
@@ -619,10 +619,10 @@ which is what makes it trustworthy after a resumed run.
 
 Step 3 chains `check:matrix-staleness` in process. By default it reports which captured rows are
 behind the current product surface and exits 0: rows go stale by design between campaigns, since the
-suite cannot run on every product commit (ADR-0159). Pass `--strict`
-(`npm run gen:performance-matrix -- --strict`) at the regenerate where the campaign asserts that
-every captured row is current; a stale or unreachable row then fails that regenerate rather than
-being published as current. Rows the campaign did not recapture are marked preserved before that
+suite cannot run on every product commit (ADR-0159). Pass `--strict` (`npm run
+gen:performance-matrix -- --strict`) at the regenerate where the campaign asserts that every
+captured row is current; a stale or unreachable row then fails that regenerate rather than being
+published as current. Rows the campaign did not recapture are marked preserved before that
 assertion, not silently carried as current.
 
 Three things about `perf:campaign` that each cost a launch:
@@ -639,12 +639,12 @@ Three things about `perf:campaign` that each cost a launch:
   device sees it. This applies to `android-device-web`, `android-emulator-web`, and both Android
   native targets. A loopback address reaches the capture host's own browser and never the device;
   the campaign rejects one up front, and asserts the probe host answers before the queue starts,
-  because getting it wrong otherwise reads as a page that would not load. Start the host with
-  `npm run perf:device:serve` first. Native drawing also needs a machine-local temporary
-  `server.url` plus `cleartext: true` in `capacitor.config.json` before the instrumented build and
-  sync; restore the source config immediately after installing and never commit that address.
-  Reinstall the packaged instrumented build before the Appium action cells so their page-delivery
-  provenance remains the bundled `https://localhost` origin.
+  because getting it wrong otherwise reads as a page that would not load. Start the host with `npm
+  run perf:device:serve` first. Native drawing also needs a machine-local temporary `server.url`
+  plus `cleartext: true` in `capacitor.config.json` before the instrumented build and sync; restore
+  the source config immediately after installing and never commit that address. Reinstall the
+  packaged instrumented build before the Appium action cells so their page-delivery provenance
+  remains the bundled `https://localhost` origin.
 
   The transport it replaced is the one ADR-0135 measured at **46.8 moves/s**, below the 100–170
   fidelity band. Re-probed on 2026-08-22 and it reproduces exactly: 46.8 moves/s, 0.44 moves per
@@ -721,8 +721,8 @@ Revert safely: `git checkout -- <file>` restores the working tree from the **ind
 when nothing is staged — so it silently discards any uncommitted work sharing the file with the
 temporary revert, and with the injection itself staged it does not even restore the fix. Commit
 first, or invert the edit instead of restoring the file (`docs/TESTING.md`'s "A regression test must
-fail against the old code" section owns the full rule). On 2026-08-25 an injection round's
-`git checkout` restore ate two uncommitted review fixes, and the follow-up commit's message and a
+fail against the old code" section owns the full rule). On 2026-08-25 an injection round's `git
+checkout` restore ate two uncommitted review fixes, and the follow-up commit's message and a
 published PR disposition both asserted changes the diff did not contain — discovered only when a
 second injection unexpectedly passed. An injection script should `assert` its anchors exist before
 writing, and the restore is proven by content (`grep -c` for something the fix added), never by
@@ -828,10 +828,10 @@ capture; the gaps are the risk.
 
 ## A native perf build is one wrong npm script away from being uninstrumented
 
-`npm run perf:build:cap` writes the instrumented native bundle. **Do not install it with
-`npm run ios:run:device`** — that script chains `cap:sync`, which runs plain `build:cap` and
-overwrites the instrumented bundle with a dead-code-eliminated one before deploying. The capture
-still runs, still passes fidelity, and still writes a well-formed artifact; the only tell is
+`npm run perf:build:cap` writes the instrumented native bundle. **Do not install it with `npm run
+ios:run:device`** — that script chains `cap:sync`, which runs plain `build:cap` and overwrites the
+instrumented bundle with a dead-code-eliminated one before deploying. The capture still runs, still
+passes fidelity, and still writes a well-formed artifact; the only tell is
 `report.meta.counts.measures` reading 0 and `__committedBrushMode` being absent, which is the same
 signature as the Playwright-rebuild trap above.
 
@@ -846,15 +846,15 @@ The same applies to `ios:build`, `ios:archive`, and anything else whose npm scri
 
 **A native transport does not prove a native page.** A retained iPad capture used Appium against a
 native session but navigated the WebView to an HTTP preview, so it exercised the web build's resize
-path while being cited as native evidence. For a packaged capture, verify both
-`captureRuntime: "ios-capacitor-webview"` (or `android-capacitor-webview`) and the packaged `appUrl`
+path while being cited as native evidence. For a packaged capture, verify both `captureRuntime:
+"ios-capacitor-webview"` (or `android-capacitor-webview`) and the packaged `appUrl`
 (`capacitor://localhost` on iOS, `https://localhost` on Android). The campaign rejects an artifact
 whose transport contradicts the requested runtime, and rejects an Appium native artifact that does
-not record a packaged `appUrl`. An Android native split capture must also record
-`nativePackage: "art.splotch.app"`, proving that the measurement came from the foreground packaged
-app rather than Chrome. Artifacts that predate either provenance field are not foldable by current
-campaign acceptance. Retain them only as explicitly labelled historical or advisory evidence and
-recapture them; do not backfill provenance or weaken the fail-closed checks.
+not record a packaged `appUrl`. An Android native split capture must also record `nativePackage:
+"art.splotch.app"`, proving that the measurement came from the foreground packaged app rather than
+Chrome. Artifacts that predate either provenance field are not foldable by current campaign
+acceptance. Retain them only as explicitly labelled historical or advisory evidence and recapture
+them; do not backfill provenance or weaken the fail-closed checks.
 
 **Do not choose the first Appium WebView context.** Chrome, Safari, a floor-control tab, and the
 installed app can all be debuggable at once. The first context may therefore be a healthy page in
@@ -964,8 +964,8 @@ technique applies to the in-page probe and `PERF_MARKS`.
 
 Every real-screen capture runs with an injected probe that hooks pointer events,
 `requestAnimationFrame` and performance marks on the drawing hot path — code the shipped app does
-not run, executing inside the loop being measured. It was measured the same way, with
-`npm run perf:device:probe-overhead`.
+not run, executing inside the loop being measured. It was measured the same way, with `npm run
+perf:device:probe-overhead`.
 
 The awkward part is that the probe cannot score the arm that has no probe, and on this phone neither
 platform-side clock answers for a browser target. Both were tried:
@@ -1242,17 +1242,16 @@ product then differs, and the artifact records the served entry module either wa
 raster-tier and backdrop-blur A/Bs ran their `origin/main` arms this way. Two more shell-level traps
 from the same night: the default shell is zsh, which does **not** word-split an unquoted `$ARGS`
 variable — the runner received one giant argument and asked for `--device-id` — spell the flags out
-or use `${=ARGS}`; and killing the `serve-profile-build` wrapper can leave its `vite
-preview` child
+or use `${=ARGS}`; and killing the `serve-profile-build` wrapper can leave its `vite preview` child
 holding the port with a manifest whose chunks a later rebuild has replaced (`manifest OK` fails on
-the entry fetch) — `lsof -nP -iTCP:<port> -sTCP:LISTEN` names the child, and its cwd
-(`lsof -p <pid>`) says whether it is yours to stop.
+the entry fetch) — `lsof -nP -iTCP:<port> -sTCP:LISTEN` names the child, and its cwd (`lsof -p
+<pid>`) says whether it is yours to stop.
 
-The A/B is two builds and about twenty minutes, against however long a candidate sweep takes.
-`npm run check:matrix-staleness` answers the cheaper half of the question — whether any cell
-currently claiming to be a measurement was taken from source that has since changed — without a
-device, and `gen:performance-matrix` runs it for you. It reports rather than fails by default;
-`--strict` turns a stale row into a failure for the one regenerate that asserts currency (ADR-0159).
+The A/B is two builds and about twenty minutes, against however long a candidate sweep takes. `npm
+run check:matrix-staleness` answers the cheaper half of the question — whether any cell currently
+claiming to be a measurement was taken from source that has since changed — without a device, and
+`gen:performance-matrix` runs it for you. It reports rather than fails by default; `--strict` turns
+a stale row into a failure for the one regenerate that asserts currency (ADR-0159).
 
 **Mind the check's `--base`, which defaults to `HEAD`.** Run from a campaign branch, that counts the
 branch's own commits as product drift and reports STALE for cells that are current on the trunk —

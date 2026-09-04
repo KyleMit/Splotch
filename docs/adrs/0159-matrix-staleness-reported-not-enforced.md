@@ -52,9 +52,9 @@ current: an `UNVERIFIABLE` row is a warning by default rather than a failure.
 `--strict` restores the failing behaviour for the one moment the original reasoning was right about:
 the regenerate where a campaign asserts that every captured row is current. Under `--strict` a stale
 or unreachable row exits non-zero with the rows named and the remedy stated — recapture them or mark
-them preserved before asserting. The flag is accepted by both scripts
-(`npm run check:matrix-staleness -- --strict`, `npm run gen:performance-matrix -- --strict`); the
-generator's manifest stays positional and is the first argument that is not a flag.
+them preserved before asserting. The flag is accepted by both scripts (`npm run
+check:matrix-staleness -- --strict`, `npm run gen:performance-matrix -- --strict`); the generator's
+manifest stays positional and is the first argument that is not a flag.
 
 The policy is one pure function, `stalenessOutcome` in `tools/perf/check-matrix-staleness.mjs`, so
 both modes are tested without a repository or a process exit

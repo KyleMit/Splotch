@@ -24,8 +24,8 @@ Follow these steps:
    features, major for breaking changes). If the user passed a version as the argument, use that
    instead.
 
-3. **Draft the release notes.** Write Markdown grouped under the headings the project uses —
-   `## ✨ New`, `## 🚀 Improved`, `## 🛠 Fixed` (omit empty sections). Translate commit subjects into
+3. **Draft the release notes.** Write Markdown grouped under the headings the project uses — `## ✨
+   New`, `## 🚀 Improved`, `## 🛠 Fixed` (omit empty sections). Translate commit subjects into
    concise, **user-facing** language — describe what changed for someone using the app, not the
    implementation. Drop purely internal commits (tooling, refactors, test-only, CI) unless they
    affect users. Keep it tight: the plain-text version feeds the Google Play "What's new" box, which
@@ -42,9 +42,8 @@ Follow these steps:
    ---
    <approved notes>
    ```
-   Get today's date from the environment (the date is in your context, or run
-   `git log -1 --format=%cd --date=short`). Omit `androidVersionCode` — the script assigns and pins
-   it.
+   Get today's date from the environment (the date is in your context, or run `git log -1
+   --format=%cd --date=short`). Omit `androidVersionCode` — the script assigns and pins it.
 
 6. **Confirm the publish step**, then run it. Publishing pushes to `main`, creates the `v<version>`
    tag, and opens a public GitHub Release. Ask the user which they want:

@@ -155,9 +155,9 @@ What changed, and what stands:
   permanently light console.
 * **The report-kind row (`ReportFields`) migrated onto the primitive too.** The `/feedback` page
   must submit with JavaScript unavailable, which `<button role="radio">` markup cannot — so
-  `SegmentedPicker` grew an opt-in `inputName` prop that renders each option as a real
-  `<input type="radio">` under that name inside the same track/option chrome. The last hand-rolled
-  picker migrated without losing the no-JS post.
+  `SegmentedPicker` grew an opt-in `inputName` prop that renders each option as a real `<input
+  type="radio">` under that name inside the same track/option chrome. The last hand-rolled picker
+  migrated without losing the no-JS post.
 
 ## Amendment (2026-08-03): the styleguide moved to public `/design`
 
@@ -225,11 +225,11 @@ was not enough:
   one. One mix strength has to clear WCAG AA for four crayons on two grounds (the tightest is green
   at 4.8:1), which is why `android-beta.spec.ts` now measures every numeral and callout label under
   both color schemes instead of assuming the light reading covers both.
-* **A derived color computes in a different notation.** `getComputedStyle` returns
-  `color(srgb r g b)` with 0-1 channels for a `color-mix()` and `rgb(r g b)` with 0-255 ones for a
-  plain token. The contrast helper in that spec scaled everything by 255 and so read every derived
-  ink as near-black — passing at a ratio just above 1. It reads its channels off a 1x1 canvas fill
-  now, which is notation-agnostic.
+* **A derived color computes in a different notation.** `getComputedStyle` returns `color(srgb r g
+  b)` with 0-1 channels for a `color-mix()` and `rgb(r g b)` with 0-255 ones for a plain token. The
+  contrast helper in that spec scaled everything by 255 and so read every derived ink as near-black
+  — passing at a ratio just above 1. It reads its channels off a 1x1 canvas fill now, which is
+  notation-agnostic.
 
 The `<meta name="theme-color">` tag was the last holdout and closed the same day. It shipped as
 `THEME_COLORS.light` on every route except `/`, because `lib/state/appearance.svelte.ts` — the one

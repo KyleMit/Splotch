@@ -19,8 +19,8 @@ on merge.
   ```
 * **pnpm** — the package manager (ADR-0119). Don't install it directly; `corepack enable pnpm` puts
   it on PATH at the exact version `package.json`'s `packageManager` field pins, and corepack is
-  bundled with Node. `npm run <script>` still works against a pnpm-installed tree, so every
-  `npm run …` in these docs is correct as written.
+  bundled with Node. `npm run <script>` still works against a pnpm-installed tree, so every `npm run
+  …` in these docs is correct as written.
   ```bash
   corepack enable pnpm
   ```
@@ -34,8 +34,8 @@ on merge.
   one. `package-lock.json` is gitignored so the mistake can't spread, and
   `tools/tests/package-manager.test.mjs` fails if any CI, hook, or bootstrap file starts installing
   with npm again.
-* **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via
-  `npm run dev:netlify`. Install globally with `npm install -g netlify-cli`.
+* **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via `npm
+  run dev:netlify`. Install globally with `npm install -g netlify-cli`.
 * For native Android/iOS work, see the full toolchain setup in the [mobile guide](MOBILE/native.md).
   (iOS needs macOS + full Xcode; no CocoaPods — the project uses Swift Package Manager.)
 
@@ -256,8 +256,8 @@ project-relative, and the broad `/tmp` scope is deliberate for session scratch f
 
 * **Docs-only images** (README screenshots and the like) live in `docs/assets/`, committed as
   optimized `.webp` — never raw PNGs.
-* **Shipped PNGs** under `web/static/` get a WebP sibling before committing:
-  `node tools/asset-gen/convert-png-to-webp.mjs`.
+* **Shipped PNGs** under `web/static/` get a WebP sibling before committing: `node
+  tools/asset-gen/convert-png-to-webp.mjs`.
 * **Committed run outputs** (proof sheets, Lighthouse reports, model tests) belong in
   [`/scrapbook`](../scrapbook/README.md), not `docs/`.
 

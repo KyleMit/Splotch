@@ -27,8 +27,8 @@ Alternatives evaluated against all ~156 tracked `.md` files:
 
 **dprint** (`dprint-plugin-markdown`) was the only tool that met every requirement:
 `unorderedListKind`/`emphasisKind`/`strongKind: asterisks`, `textWrap: always` at `lineWidth: 100`,
-tables column-aligned (never wrapped), `---` horizontal rules, fenced code preserved, and a
-`dprint check` mode for CI.
+tables column-aligned (never wrapped), `---` horizontal rules, fenced code preserved, and a `dprint
+check` mode for CI.
 
 ## Decision
 
@@ -37,7 +37,7 @@ and encoded in both tools' configs:
 
 * `dprint.json` (repo root): markdown options above; `includes` is `**/*.md` only, with `excludes`
   mirroring the gitignored trees so dprint's scope is exactly the tracked Markdown files. The
-  `typescript`/`json` wasm plugins are loaded solely to format fenced `` ```js/ts/json `` blocks
+  `typescript`/`json` wasm plugins are loaded solely to format fenced ` ```js/ts/json ` blocks
   inside docs (`quoteStyle: preferSingle` to match Prettier's style for real source).
 * Plugins are referenced as local `node_modules/@dprint/*/plugin.wasm` paths, version-pinned through
   `package.json` like every other dev tool — no plugin-URL fetch at runtime, works offline in CI.

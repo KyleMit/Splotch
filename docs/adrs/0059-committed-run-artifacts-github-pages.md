@@ -15,9 +15,9 @@
 > pages as well as HTML — a collection shipping only `.md` (findings/notes, e.g. a profiling run)
 > used to vanish from the index entirely, so its dir was counted in the "N collections" chip but
 > rendered no card. HTML pages link on-site (Pages renders them); `.md` links to its **rendered
-> GitHub blob view**, because Pages serves `.md` as `text/plain` under `.nojekyll`. A new
-> `npm run scrapbook:check` guard (wired into the CI `quality` job) fails if any collection dir has
-> no reachable entry page, keeping the collection count and the rendered-card count in lockstep so
+> GitHub blob view**, because Pages serves `.md` as `text/plain` under `.nojekyll`. A new `npm run
+> scrapbook:check` guard (wired into the CI `quality` job) fails if any collection dir has no
+> reachable entry page, keeping the collection count and the rendered-card count in lockstep so
 > nothing published silently goes missing. Raw data (`.json`, …) and `assets/` stay unsurfaced, as
 > before. (Issue #490.)
 
@@ -78,12 +78,10 @@ Pages — is used.
 
 Implementation:
 
-* **`scripts/publish-artifact.mjs`** (npm `artifacts:publish`) promotes a keeper:
-  `-- <source>
-  <type>/<name>` copies a file or dir from a gitignored scratch dir into
-  `artifacts/<type>/<name>`, regenerates the index, and prints the Pages URL. It guards the
-  destination against `../` escapes so a publish can't write outside `artifacts/`. Pure `node:fs`,
-  no shell (ADR-0017).
+* **`scripts/publish-artifact.mjs`** (npm `artifacts:publish`) promotes a keeper: `-- <source>
+  <type>/<name>` copies a file or dir from a gitignored scratch dir into `artifacts/<type>/<name>`,
+  regenerates the index, and prints the Pages URL. It guards the destination against `../` escapes
+  so a publish can't write outside `artifacts/`. Pure `node:fs`, no shell (ADR-0017).
 * **`scripts/lib/artifacts-index.mjs`** builds `artifacts/index.html` — a self-contained,
   theme-aware landing page grouping entries by their top-level type dir. `artifacts:index` rebuilds
   just the index.

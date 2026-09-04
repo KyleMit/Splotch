@@ -12,8 +12,8 @@ Building the Splotch Android app (Capacitor 8 + AGP/Gradle) on Windows has non-o
 requirements that differ from what a default Node.js or Android Studio installation provides.
 
 **Node version:** `@capacitor/cli` requires Node ≥ 22 (enforced via `engines` in its
-`package.json`). With `engine-strict=true` in the project's `.npmrc`, even `npm install` and
-`cap sync` hard-fail on Node 18/20 (`EBADENGINE`), not just the build itself.
+`package.json`). With `engine-strict=true` in the project's `.npmrc`, even `npm install` and `cap
+sync` hard-fail on Node 18/20 (`EBADENGINE`), not just the build itself.
 
 **Java version and distribution:** Capacitor 8 plugins require a Java 21 toolchain. Android Studio
 ships a bundled JetBrains Runtime (JBR), but:

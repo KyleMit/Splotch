@@ -27,8 +27,8 @@ Verified at HEAD (`package.json` scripts block and `scripts-info`):
   the discovery command ("find your serial with `adb:devices`"); `ios:run:emulator` says "use
   ios:run to pick a device"; `ios:run:device` names the personal device outright and points at the
   mobile guide. Nothing masquerades as portable.
-* The pinned scripts are load-bearing references: `.ruler/skills/mobile/android.md` prescribes
-  `npm run android:run:device` as the fix for adb's "more than one device/emulator" error, and
+* The pinned scripts are load-bearing references: `.ruler/skills/mobile/android.md` prescribes `npm
+  run android:run:device` as the fix for adb's "more than one device/emulator" error, and
   `.ruler/skills/capture-performance-matrix/references/platforms.md` uses both pinned run commands
   so performance-matrix captures land on the exact devices the committed matrix
   (`scrapbook/performance/`) was recorded against. Pinning known hardware in a named script is what
@@ -49,8 +49,8 @@ Verified at HEAD (`package.json` scripts block and `scripts-info`):
 4. **Delete the pinned scripts** (the prior attempt). Removes working tooling and orphans the mobile
    and capture-performance-matrix skill references. Wrong on the merits, independent of the sandbox
    failure that stopped it.
-5. **Resolve simulator by name at runtime** (helper mapping "iPad mini (A17 Pro)" → UDID via
-   `xcrun simctl list --json`). Makes `ios:run:emulator` machine-portable, but it is macOS-only glue
+5. **Resolve simulator by name at runtime** (helper mapping "iPad mini (A17 Pro)" → UDID via `xcrun
+   simctl list --json`). Makes `ios:run:emulator` machine-portable, but it is macOS-only glue
    solving a portability problem no second machine currently has.
 
 ## Decision / lean

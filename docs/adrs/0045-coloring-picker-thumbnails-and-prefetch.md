@@ -82,8 +82,8 @@ prefetches and hidden grid images competing with the selected page, the Magic Br
 opposite-orientation line art. On a throttled cold load, the canvas stayed blank for 1.8 seconds on
 fast 4G and several seconds on the constrained profile. That transient blank interval was reported
 on the physical iPad as both a slow page selection and a page landing off-center. The final overlay
-geometry was correct: `#coloringOverlay` and `#drawingCanvas` had identical
-`{ x: 84, y: 0, width: 1282, height: 934 }` bounds.
+geometry was correct: `#coloringOverlay` and `#drawingCanvas` had identical `{ x: 84, y: 0, width:
+1282, height: 934 }` bounds.
 
 Page application is now a visible-first sequence:
 

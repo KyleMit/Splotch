@@ -9,8 +9,8 @@ Splotch's tooling was originally written to run on Windows `cmd.exe` as well as 
 (ADR-0017). That portability had real, ongoing costs spread across the repo:
 
 * Every env-var-setting npm script was wrapped in
-  [`cross-env`](https://github.com/kentcdodds/cross-env) because `cmd.exe` has no
-  `VAR=value command` syntax. `cross-env`'s upstream is archived (see the former entry in
+  [`cross-env`](https://github.com/kentcdodds/cross-env) because `cmd.exe` has no `VAR=value
+  command` syntax. `cross-env`'s upstream is archived (see the former entry in
   `docs/DEPENDENCIES.md`), so it was a frozen, load-bearing dependency.
 * `@capacitor/cli` shells out to `./gradlew`, which breaks on Windows; a `patch-package` patch
   (ADR-0011) rewrote four spawn sites to use `gradlew.bat`, and a `postinstall: patch-package` step

@@ -84,11 +84,11 @@ safe-area insets; real devices lose a few more px, so these are upper bounds.)
   worst-case measured demand (2564x1709).
 
 Cost implication (published pricing at time of writing; verify before acting): 2.5-flash-image image
-output ~ $0.039/image; gemini-3-pro-image at 1K/2K ~ $0.13–0.14/image (~3.4x), 4K ~
-$0.24. A full-catalog 2K regen ~ 188 fills x ~$0.14 ~ $26 before retries (the drift gates typically
-consume multiple attempts per page), plus chalk outlines. The money is trivial; the *real* cost is a
-model swap: new art style, re-validation of every outline-match/eye/solidity gate, human re-review
-of ~100 pages, and the same ~2x+ payload growth.
+output ~ $0.039/image; gemini-3-pro-image at 1K/2K ~ $0.13–0.14/image (~3.4x), 4K ~ $0.24. A
+full-catalog 2K regen ~ 188 fills x ~$0.14 ~ $26 before retries (the drift gates typically consume
+multiple attempts per page), plus chalk outlines. The money is trivial; the *real* cost is a model
+swap: new art style, re-validation of every outline-match/eye/solidity gate, human re-review of ~100
+pages, and the same ~2x+ payload growth.
 
 ## 5. Recommendation
 

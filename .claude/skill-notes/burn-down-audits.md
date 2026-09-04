@@ -89,9 +89,9 @@ different sizes.
 19k-line `AUDIT.md`, and that the header comment called hundreds of sequential edits "a corruption
 risk" — yet the entry-boundary parsing and seam-collapse logic had no committed test, only manual
 exercise against a scratch copy. The response created
-`tools/audit-burndown/tests/burndown-core.test.mjs` + `tools/vitest.config.mjs`, wired as
-`npm run test:tools` into `npm test` and its own CI step. The whole repo-script test suite traces
-back to that one comment.
+`tools/audit-burndown/tests/burndown-core.test.mjs` + `tools/vitest.config.mjs`, wired as `npm run
+test:tools` into `npm test` and its own CI step. The whole repo-script test suite traces back to
+that one comment.
 
 ### The gate ladder — why type-checking was never enough
 
@@ -123,10 +123,10 @@ through.
   with no baseline entry at all. Both are correct fixes, and neither `CHECK_CMD`, `TEST_CMD`,
   `LINT_CMD` (eslint on changed files) nor a targeted E2E spec can see either. **A fix that improves
   a ratcheted metric fails CI exactly like a regression** — worth internalising, because the run log
-  and the per-finding gates read fully green throughout.
-  `CHECK_CMD='npm run check && npm run lint:tokens'` closes it for a run at the cost of a few
-  seconds per finding; the same hazard applies to any other bespoke `npm run lint:*`/drift gate CI
-  runs that the four default gates do not.
+  and the per-finding gates read fully green throughout. `CHECK_CMD='npm run check && npm run
+  lint:tokens'` closes it for a run at the cost of a few seconds per finding; the same hazard
+  applies to any other bespoke `npm run lint:*`/drift gate CI runs that the four default gates do
+  not.
 * **E2E retry** (401820f5). One flaky E2E failure red-lit a whole batch and held the push; the
   re-run was fully green. `--retries=1` lets a genuine flake clear while a real regression still
   fails twice.
@@ -247,8 +247,8 @@ agent must hold no orchestration state.
   file. Also records that **`ps` is authoritative for live monitors, not `TaskList`** — `TaskList`
   was observed empty while a monitor was still alive, and the duplicate that mistake armed
   double-reported for an hour.
-* **The launch command cannot be scraped from `ps`** (d755a0b6). `launch-overnight.mjs` runs
-  `env VAR=… node …`, and `env` **execs** node, so the assignments live in the environment and never
+* **The launch command cannot be scraped from `ps`** (d755a0b6). `launch-overnight.mjs` runs `env
+  VAR=… node …`, and `env` **execs** node, so the assignments live in the environment and never
   enter argv. macOS only appeared to work because the `caffeinate` parent incidentally retains the
   string in its own argv — and Linux drops caffeinate. The driver now records its own environment.
 * **`SessionStart` companion hook** (2f508555). `PreCompact` has no `additionalContext` support, so
@@ -375,9 +375,8 @@ defence: the title it is handed really is the current finding's, and that entry 
 driver deletes the right entry for the wrong work.**
 
 Fixed by `briefIsStale(issueWrittenAtMs, briefMtimeMs)` in `lib/burndown-core.mjs`, checked between
-the `VALID` verdict and the implementer call; a stale or missing brief defers as
-`verifier gave no usable
-brief`.
+the `VALID` verdict and the implementer call; a stale or missing brief defers as `verifier gave no
+usable brief`.
 
 **Why mtime rather than the identity check these notes originally proposed.** The obvious design —
 have the verifier write the finding's title into the brief and have the driver compare — needs the
@@ -465,8 +464,8 @@ None of these touched the driver. They are all things the *supervising* session 
 time on, which is exactly the material that never makes it into a runbook because it feels like
 operator error rather than design.
 
-* **The liveness check was measuring itself.** The documented stall check compared `HEAD` and
-  `wc -l < run.log` across five minutes. Both are surfaces the supervising agent writes to —
+* **The liveness check was measuring itself.** The documented stall check compared `HEAD` and `wc -l
+  < run.log` across five minutes. Both are surfaces the supervising agent writes to —
   `backfill-comments.mjs done` appends a line to `run.log`, and any `git reset` of your own moves
   HEAD — so it returned a confident `ADVANCED` for a driver that had been dead for half an hour. The
   envelope count in `.audit-work/logs/` is written only by role calls, which is why the check now
@@ -498,8 +497,8 @@ operator error rather than design.
   **The mechanism recorded here on 2026-07-25 was wrong, and it is a clean instance of principle 1
   turning up inside these notes themselves.** The original claim — a zero-byte key file means
   commits are unsigned — was inferred from `ls` on `user.signingkey` plus the hook's own wording,
-  and never checked against a commit object. Checked on 2026-07-25: commits **are** signed
-  (`git cat-file commit HEAD` shows `gpgsig -----BEGIN SSH SIGNATURE-----`). Signing is delegated to
+  and never checked against a commit object. Checked on 2026-07-25: commits **are** signed (`git
+  cat-file commit HEAD` shows `gpgsig -----BEGIN SSH SIGNATURE-----`). Signing is delegated to
   `gpg.ssh.program=/tmp/code-sign`, a session-provisioned symlink to the environment manager, and
   the 0-byte `.pub` is a placeholder that program ignores. What actually fails is *local
   verification*: `gpg.ssh.allowedSignersFile` is unset, so `%G?` cannot check an SSH signature and
@@ -617,9 +616,9 @@ already decided against.
 
 The chain, and why each link looked reasonable:
 
-1. `verifier.md` asked for *"the exact commands that must pass"* without saying **which**.
-   `npm test` is a defensible reading of "the tests must pass" for a model that has not been told
-   the driver's gate set.
+1. `verifier.md` asked for *"the exact commands that must pass"* without saying **which**. `npm
+   test` is a defensible reading of "the tests must pass" for a model that has not been told the
+   driver's gate set.
 2. `implementer.md` lists *"the acceptance commands from the brief"* **first**, ahead of the gates
    the driver actually runs — so a brief naming the full suite silently widens the required set.
 3. The driver gates on `test:unit` precisely *because* the full suite belongs to CI. So the criteria
@@ -644,10 +643,9 @@ Two smaller things from the same run, both recorded because they generalise:
   driver that will not die, indefinitely, long after the run has finished. This is the third
   distinct way `-f`'s whole-command-line matching has bitten a supervising agent (after `pkill`
   killing its own shell, and the orphan check matching the supervising CLI), and the first where the
-  failure is a silent hang rather than a wrong answer. The anchored
-  `'^node
-  tools/audit-burndown/run-burndown.mjs'` form fixes all three; it is now in the skill for
-  the wait loop as well as the liveness check.
+  failure is a silent hang rather than a wrong answer. The anchored `'^node
+  tools/audit-burndown/run-burndown.mjs'` form fixes all three; it is now in the skill for the wait
+  loop as well as the liveness check.
 * **The verifier invalidated a finding the run itself had obsoleted, correctly and in 25 seconds.**
   An early P1 extracted the drawing shell's boot sequence into `lib/boot/`; a later P2 asked for
   wake-lock lifecycle to be pulled out of `onMount`, which the P1 had already done. The verifier
@@ -658,15 +656,13 @@ Two smaller things from the same run, both recorded because they generalise:
 
 ### A drop got the verdict right and the reason wrong — the same day the pattern above went well (2026-07-26)
 
-Sixth cloud run. The verifier dropped
-`[P4][maintainability] scheduleReset returns an id that no
-caller uses` as invalid, reasoning
-*"that's false at HEAD (and was already false at the pinned SHA f934d43 — the code is unchanged in
-this regard)."* Checked directly against the pin: it's wrong. `git show f934d43:…` shows the hold
-timer was a bare `setTimeout(...)` at the pin — no caller captured `scheduleReset`'s return value,
-so the finding was accurate when written. It was made false by a fix *earlier in this same run*
-(rerouting the hold timer through `scheduleReset` so `destroy()` could cancel it individually), not
-by anything true at the pin.
+Sixth cloud run. The verifier dropped `[P4][maintainability] scheduleReset returns an id that no
+caller uses` as invalid, reasoning *"that's false at HEAD (and was already false at the pinned SHA
+f934d43 — the code is unchanged in this regard)."* Checked directly against the pin: it's wrong.
+`git show f934d43:…` shows the hold timer was a bare `setTimeout(...)` at the pin — no caller
+captured `scheduleReset`'s return value, so the finding was accurate when written. It was made false
+by a fix *earlier in this same run* (rerouting the hold timer through `scheduleReset` so `destroy()`
+could cancel it individually), not by anything true at the pin.
 
 The **verdict was still correct** — applying the finding at HEAD would have broken that early
 cancellation, re-introducing the exact bug a mutation-tested fix had just closed — so no work was
@@ -685,18 +681,18 @@ distinction.
 ### A HALT with an environment cause, not a model one (2026-07-26)
 
 Same run. Three consecutive deferrals (`implementation failed`, `verifier unavailable` ×2) halted
-the run at finding 46. All three `.err` logs carried the identical string:
-`this workspace has not been trusted` — a container event had reset `hasTrustDialogAccepted` to
-`false` for the project in `/root/.claude.json` between one finding's successful verify and its own
-impl attempt, and every `claude -p` subprocess launched afterward errored immediately
-(`is_error: true, total_cost_usd: 0, terminal_reason: "api_error"`) regardless of role. The driver's
-deferral labels were the correct ones available to it — the schema has no way to say "the role never
-got to run" versus "the role judged the work" — but they read exactly like the benign, documented
-halt shape (three unlucky findings) unless someone opens the `.err` files. Confirmed still broken at
-wrap-up; fixing `/root/.claude.json` is outside the repo and outside a supervising agent's default
-permission scope (blocked by the session's own auto-mode classifier), so it was flagged to the human
-operator rather than worked around. Added to the skill: check the `.err` files for a shared
-non-model error string before assuming a HALT is the ordinary case.
+the run at finding 46. All three `.err` logs carried the identical string: `this workspace has not
+been trusted` — a container event had reset `hasTrustDialogAccepted` to `false` for the project in
+`/root/.claude.json` between one finding's successful verify and its own impl attempt, and every
+`claude -p` subprocess launched afterward errored immediately (`is_error: true, total_cost_usd: 0,
+terminal_reason: "api_error"`) regardless of role. The driver's deferral labels were the correct
+ones available to it — the schema has no way to say "the role never got to run" versus "the role
+judged the work" — but they read exactly like the benign, documented halt shape (three unlucky
+findings) unless someone opens the `.err` files. Confirmed still broken at wrap-up; fixing
+`/root/.claude.json` is outside the repo and outside a supervising agent's default permission scope
+(blocked by the session's own auto-mode classifier), so it was flagged to the human operator rather
+than worked around. Added to the skill: check the `.err` files for a shared non-model error string
+before assuming a HALT is the ordinary case.
 
 ### The first clean run — and the defect class it exposed instead (2026-07-29)
 
@@ -739,15 +735,13 @@ the adversarial pass rather than by a gate. Added to the canary-audit checklist 
 fourth smuggling shape, framed as a rate to measure rather than an instance to catch.
 
 **The reviewer's value continues to concentrate where no gate can reach.** The catches worth naming:
-a default parameter evaluating `canvas.getBoundingClientRect()` *before* its own
-`if (!canvas)
-return` guard, converting a no-op into a TypeError; a paired-marks change that would
-have moved the two hottest ops onto WebKit's ~1 ms-clamped mark deltas and destroyed ADR-0066's
-commit-hitch attribution; an LRU eviction that freed tile canvases while `createPattern`'s bitmap
-copies stayed in the pattern cache, so the memory the finding targeted was still retained; and a
-four-corner-union test written with a pure scale+translate matrix, under which two opposite corners
-produce the identical rect — a test that passed without exercising the invariant its own name
-claimed.
+a default parameter evaluating `canvas.getBoundingClientRect()` *before* its own `if (!canvas)
+return` guard, converting a no-op into a TypeError; a paired-marks change that would have moved the
+two hottest ops onto WebKit's ~1 ms-clamped mark deltas and destroyed ADR-0066's commit-hitch
+attribution; an LRU eviction that freed tile canvases while `createPattern`'s bitmap copies stayed
+in the pattern cache, so the memory the finding targeted was still retained; and a four-corner-union
+test written with a pure scale+translate matrix, under which two opposite corners produce the
+identical rect — a test that passed without exercising the invariant its own name claimed.
 
 The single best evidence for a documented design decision: on the `SnapshotPatch` finding the
 reviewer rejected the fix because **the verifier's acceptance criteria were wrong**, asserting no
@@ -760,8 +754,8 @@ Smaller frictions, all fixed in `SKILL.md` this pass:
 
 * **The documented monitor command cannot be armed at launch.** `tail -f` on a not-yet-created
   `run.log` exits 1 immediately, so the first monitor died before the run wrote a line — and a dead
-  monitor is exactly the silence the skill elsewhere warns reads as health. Needs an
-  `until [ -f … ]` guard and `-n +1` on the first arm.
+  monitor is exactly the silence the skill elsewhere warns reads as health. Needs an `until [ -f …
+  ]` guard and `-n +1` on the first arm.
 * **"Read the flaky count" is wrong advice for this repo.** Bare `npm run test:e2e` carries no
   `--retries`, so Playwright never emits a `flaky` line; a load-dependent flake surfaces as a plain
   `1 failed`, indistinguishable from a broken base. The baseline run hit exactly this on
@@ -1092,9 +1086,9 @@ check to save 90 seconds is trusting a signal that does not exist.
 Consequences now written into the skill: run the base gates **un-chained** (the `&&` short-circuit
 hid the second failure until the first was repaired — one relaunch per gate); repair in a **separate
 commit** attributed to no finding; and **re-run the whole set after each repair**, because a repair
-can redden a different gate. That last one is not hypothetical either —
-`npm run optimize:svg-assets` rewrote `line-weight.svg`, which `scrapbook/index.html` *inlines* as a
-card emoji, so `scrapbook:check` was green at base and red only after the fix.
+can redden a different gate. That last one is not hypothetical either — `npm run
+optimize:svg-assets` rewrote `line-weight.svg`, which `scrapbook/index.html` *inlines* as a card
+emoji, so `scrapbook:check` was green at base and red only after the fix.
 
 Why this matters more than it sounds: every `CHECK_CMD` gate runs at the top of *every* review
 round. A red base gate is not a nuisance, it is a guaranteed HALT after three findings, with three

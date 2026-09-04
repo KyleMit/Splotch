@@ -186,13 +186,13 @@ failure mode is loud and cheap — a script that crashes when run from the wrong
 18 P2s were deleted too, which is the point of the exercise: P2 is a *within-section* rank, so a P2
 in the asset-gen tests never meant what a P2 in the drawing engine meant.
 
-Two structural notes. Findings are grouped by criterion rather than by the usual
-`## Source: <audit>` sections, because after a triage pass the criterion is the argument for keeping
-a finding and the source is not; `.claude/audit-conventions.md` §1 now documents the curated-group
-shape alongside the producer shape, and the burndown parser is heading-agnostic so `pop.mjs --count`
-reads 75 unchanged. And every citation in the file is still pinned to `9ae62ff1` from 2026-07-28 —
-all cited paths were re-checked and still exist, but line numbers have drifted through several
-hundred fixes, so the header now tells whoever picks one up to re-verify first.
+Two structural notes. Findings are grouped by criterion rather than by the usual `## Source:
+<audit>` sections, because after a triage pass the criterion is the argument for keeping a finding
+and the source is not; `.claude/audit-conventions.md` §1 now documents the curated-group shape
+alongside the producer shape, and the burndown parser is heading-agnostic so `pop.mjs --count` reads
+75 unchanged. And every citation in the file is still pinned to `9ae62ff1` from 2026-07-28 — all
+cited paths were re-checked and still exist, but line numbers have drifted through several hundred
+fixes, so the header now tells whoever picks one up to re-verify first.
 
 The deleted 271 are recoverable from this file's git history and were deliberately not moved to
 `docs/AUDIT-DEFERRED.md`: parking them there would recreate the same standing backlog under a
@@ -226,10 +226,9 @@ nobody noticed: the merge commit b8f7013283f8 has **no CI run at all**, because 
 `cancel-in-progress` and its push run was cancelled.
 
 **GitHub Actions was not running for the whole session** — runs sat `queued` for hours and PR #821
-never had one created — so the cross-finding backstop was absent. Substituting
-`PUSH_TEST_CMD='npm test'` would have cost ~5–6 min across 346 findings, so the full suite was run
-locally instead: green at the base commit, at the canary head, and at the final head (2193 unit +
-279 e2e).
+never had one created — so the cross-finding backstop was absent. Substituting `PUSH_TEST_CMD='npm
+test'` would have cost ~5–6 min across 346 findings, so the full suite was run locally instead:
+green at the base commit, at the canary head, and at the final head (2193 unit + 279 e2e).
 
 The adversarial reviewer rejected roughly one fix in three. Its sharpest catch was a **vacuous
 test**: extracting the global Ctrl+Z shortcut into `lib/boot/undoShortcut.ts` left an existing
@@ -366,10 +365,8 @@ caps landed on sweeping multi-file findings. The single drop was a finding alrea
 pin. No eslint `max-lines` cap was raised and no ratchet baseline widened across all 31 fixes; the
 one ratchet edit lowered a raw-hex baseline to 0 after a dead declaration was removed. Entry
 accounting reconciles exactly: 473 − 37 == 436 == `pop.mjs --count`, with commit-derived deferral
-and drop counts matching the run logs independently, and `capture` reporting
-`skipped 31 already
-posted` against 31 fixes. Four `## Source:` sections were emptied and removed in
-the closeout.
+and drop counts matching the run logs independently, and `capture` reporting `skipped 31 already
+posted` against 31 fixes. Four `## Source:` sections were emptied and removed in the closeout.
 
 ## 2026-08-05 · burn-down-audits (run 1)
 
@@ -449,8 +446,8 @@ Bulk burndown of the 636-finding backlog left by PR #616's merge, on
 `claude/burn-down-audit-skill-ecb5np` → [PR #627](https://github.com/KyleMit/Splotch/pull/627): **39
 fixed**, 4 dropped, 0 deferred across a 5-finding canary and a ~6-hour full run; backlog 636 → 593.
 Entry accounting is exact — no commit drained more than one finding, and 636 − 43 consumed = 593 =
-`pop.mjs --count`. All 39 fixes carry a per-commit PR comment (`capture` confirms
-`skipped 39 already posted`); CI green throughout.
+`pop.mjs --count`. All 39 fixes carry a per-commit PR comment (`capture` confirms `skipped 39
+already posted`); CI green throughout.
 
 Work concentrated in the drawing engine and its neighbours, and several findings were structural
 rather than local: the WebKit merged-stream pen quirk, the crayon pass buffer, the pointer-halo UI,
@@ -644,10 +641,9 @@ status banners, ~8 MB of regenerable/misfiled artifacts pruned) and most of `scr
 admin-API client and redteam report module, `api-smoke` split into eight suites, and the store-shot
 scenes moved behind the rot-guarded app driver). Paused mid-run to fix a real driver bug: the lint
 gate ran eslint on paths a fix had deleted or renamed away, which exits 2 and reddened the gate
-unrecoverably, destroying one correct rename-only fix and mislabelling it
-`fix introduced a lint violation` — now filtered by a unit-tested `lintablePaths()` (40d641b). All
-47 fixes received a per-commit PR comment, emptied source sections were removed, and CI stayed green
-throughout.
+unrecoverably, destroying one correct rename-only fix and mislabelling it `fix introduced a lint
+violation` — now filtered by a unit-tested `lintablePaths()` (40d641b). All 47 fixes received a
+per-commit PR comment, emptied source sections were removed, and CI stayed green throughout.
 
 ## 2026-07-26 · burn-down-audits (run 4)
 
@@ -713,9 +709,9 @@ was environment, not the model: a container event mid-run reset workspace trust
 ordinary-looking `implementation failed` / `verifier unavailable` deferral labels — still broken as
 of wrap-up and left for the operator to fix (`/root/.claude.json`, outside repo/permission scope)
 rather than worked around. All 40 fix comments posted to the PR; CI green through the canary and
-most of the run, then red only on the unrelated `npm audit` registry endpoint
-(`invalid json response body`, reproduced independently, zero dependency files touched) from ~04:32
-onward. (5-finding canary + unattended run, stopped on request): **10 fixed**, 3 dropped as
+most of the run, then red only on the unrelated `npm audit` registry endpoint (`invalid json
+response body`, reproduced independently, zero dependency files touched) from ~04:32 onward.
+(5-finding canary + unattended run, stopped on request): **10 fixed**, 3 dropped as
 already-fixed-at-HEAD, 3 deferred; backlog 465 → 449. Cleared the highest-priority end first — four
 P1s including the drawing shell's ~140-line inline boot sequence (extracted to `lib/boot/`), the
 `app.html` pre-paint script's hardcoded key/default duplication (now drift-guarded by a test), and
@@ -831,9 +827,9 @@ consistent radiogroup semantics). Four driver defects found and fixed mid-sessio
 **tooling failure being recorded as a model verdict**: an implementer that committed but omitted the
 optional `sha` had its finished fix `reset --hard`-ed away and deferred (hit 2 of 14 findings, ~$4
 of Opus work once; now recovers the sha from `HEAD`), and a budget-capped reviewer was logged as
-"failed adversarial review" when nothing had reviewed the code (now defers as
-`reviewer unavailable`; `BUDGET_REVIEW` raised 2.00 → 3.00). Also added P4/P5 impl-model tiering to
-Sonnet, a `backfill-comments.mjs` tool that reconstructs per-commit PR comments from logs + git, and
+"failed adversarial review" when nothing had reviewed the code (now defers as `reviewer
+unavailable`; `BUDGET_REVIEW` raised 2.00 → 3.00). Also added P4/P5 impl-model tiering to Sonnet, a
+`backfill-comments.mjs` tool that reconstructs per-commit PR comments from logs + git, and
 stale-`pr-number` self-heal. A multi-hour GitHub outage blocked PR creation entirely (GraphQL +
 REST, HTTP 500); the 5 canary fixes' comments were banked in a committed store and drained onto #540
 once it recovered.
@@ -1039,13 +1035,13 @@ paths lack lifecycle or regression coverage.
 Swept all 4 session-audit findings on [PR #144](https://github.com/KyleMit/Splotch/pull/144):
 documented the in-tree requirement (+ absolute-path escape hatch) for ad-hoc asset-gen analysis
 scripts that import `sharp`/`lib/*.mjs`, naming `tools/asset-gen/.coloring-samples/` as the drop
-spot; made `gen-coloring-fills-dark` result lines state gate outcomes
-(`kept least-bad attempt 2/8` + explicit `*-gate FAILED (value vs bar)` markers instead of `ok` +
-`⚠` glyphs and the kept-attempt-index `(N tries)`); closed both night-fill shipping path traps
-(repo-root note + debug-sibling-safe batch loop in pipeline.md/README, and `punch-fill-outlines.mjs`
-now skips stray `*.input.*.raw.webp` with a warning instead of crashing). The chalk keep-gate
-finding was already resolved by `4892c6a` (IDEAS #11, verified offline: trex-tall 71.2% → 95.6%,
-zero regressions) — removed without changes. 0 skipped; `docs/AUDIT.md` cleared and deleted.
+spot; made `gen-coloring-fills-dark` result lines state gate outcomes (`kept least-bad attempt
+2/8` + explicit `*-gate FAILED (value vs bar)` markers instead of `ok` + `⚠` glyphs and the
+kept-attempt-index `(N tries)`); closed both night-fill shipping path traps (repo-root note +
+debug-sibling-safe batch loop in pipeline.md/README, and `punch-fill-outlines.mjs` now skips stray
+`*.input.*.raw.webp` with a warning instead of crashing). The chalk keep-gate finding was already
+resolved by `4892c6a` (IDEAS #11, verified offline: trex-tall 71.2% → 95.6%, zero regressions) —
+removed without changes. 0 skipped; `docs/AUDIT.md` cleared and deleted.
 
 ## 2026-07-14 · session-audit
 
@@ -1093,9 +1089,9 @@ runs, full hook run green. 0 skipped; `docs/AUDIT.md` cleared and deleted.
 Contact-sheet consolidation session (review sheet retired into `gen-contact-sheet.mjs`, PR #117).
 One `[Execution]` finding: fresh-cloud `npm install` fails on `@capacitor/assets`' transitive sharp
 0.32.6 (libvips GitHub download → proxy 403), which silently kills the SessionStart dep install
-under `set -e` while `docs/CLOUD/Claude.md` claims installs "work as usual"; workaround
-`npm install --ignore-scripts && npx patch-package`. Passed on: Playwright headless-shell mismatch
-in a hand-rolled verify script (run-splotch/README already carry the fix — failure to apply,
+under `set -e` while `docs/CLOUD/Claude.md` claims installs "work as usual"; workaround `npm install
+--ignore-scripts && npx patch-package`. Passed on: Playwright headless-shell mismatch in a
+hand-rolled verify script (run-splotch/README already carry the fix — failure to apply,
 fourth-recurrence watch), Edit-before-Read tool errors (self-inflicted), branch-choice ambiguity
 (hook text already covers it).
 

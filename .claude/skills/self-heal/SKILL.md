@@ -77,10 +77,10 @@ Two placement traps, both learned from prior sessions:
 ## Apply now, small and verified
 
 This skill **applies** its fixes; it does not stage them for later. Each heal is the smallest
-confident change, verified like any other edit: generated files only via `.ruler/**` plus
-`npm run ruler:apply`; Markdown through `npm run format:check`; code and scripts through
-`npm run check` and the tests covering them. Commit the heals with the session's work, or as their
-own clearly-messaged commit when the session's branch is already spoken for.
+confident change, verified like any other edit: generated files only via `.ruler/**` plus `npm run
+ruler:apply`; Markdown through `npm run format:check`; code and scripts through `npm run check` and
+the tests covering them. Commit the heals with the session's work, or as their own clearly-messaged
+commit when the session's branch is already spoken for.
 
 ## When another skill is the better home
 

@@ -31,8 +31,8 @@ test. Corpus case 02 scored IoU 0.771 for exactly this reason while its *centerl
 
 Fix, and both halves are needed: fit on a **uniformly arc-length resampled** chain
 (`extract.resample_uniform`, step `R_med/8`), and keep a sanity check that rejects control points
-outside the run's bbox + 35% of its diagonal and subdivides instead
-(`fit-curve-bridge.mjs: sane()`). Anyone else using fit-curve should copy both.
+outside the run's bbox + 35% of its diagonal and subdivides instead (`fit-curve-bridge.mjs:
+sane()`). Anyone else using fit-curve should copy both.
 
 ## IoU is a weak discriminator for centerline quality, and can be anti-correlated with it
 

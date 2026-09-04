@@ -117,8 +117,8 @@ $ node tools/asset-gen/gen-asset-manifest.mjs --check
 exit code: 1
 ```
 
-Exactly the touched file, nothing else. After restoring the original bytes:
-`[asset-manifest] 682 asset(s) match the manifest.`
+Exactly the touched file, nothing else. After restoring the original bytes: `[asset-manifest] 682
+asset(s) match the manifest.`
 
 ### (c) Legitimate night change — manifest diff localizes it
 
@@ -147,9 +147,9 @@ exit: 1
 
 ### npm/tooling wiring verified
 
-`npm run check:assets:manifest` and `npm run gen:assets:manifest` both run through npm;
-`npm run info` lists both new scripts-info entries; `eslint` and `prettier --check` pass on the new
-script; the modified `test.yml` parses as valid YAML.
+`npm run check:assets:manifest` and `npm run gen:assets:manifest` both run through npm; `npm run
+info` lists both new scripts-info entries; `eslint` and `prettier --check` pass on the new script;
+the modified `test.yml` parses as valid YAML.
 
 ## CI wiring (in the patch)
 
@@ -175,8 +175,8 @@ need to distinguish "asset PRs" (which the workflow currently has no mechanism f
   night-only. The check's contribution is making that line *exist* (binary webp diffs are otherwise
   invisible in review). A stricter declared-scope check would need the commit-message convention
   this design rejected.
-* **One-command friction per asset change:** every legit generate/retouch now requires
-  `npm run gen:assets:manifest` before commit. The CI failure message says exactly this.
+* **One-command friction per asset change:** every legit generate/retouch now requires `npm run
+  gen:assets:manifest` before commit. The CI failure message says exactly this.
 * Scoped to `*.webp` in the three art trees; icons/SVG/PNG elsewhere are out of scope (SVGs have
   their own guard).
 * `prerelease` still runs only `check:assets`; chaining `check:assets:manifest` there is a natural

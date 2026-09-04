@@ -118,6 +118,6 @@ and buys nothing over ~90 lines.
   wrong in both directions (rebuilds without version changes, restored files, clock skew). The
   version is embedded in the binary; read it.
 * **Sidecar `version.json` written next to the artifact by the build script.** Simpler than parsing
-  the binary, but it describes the artifact instead of being read from it — a hand-run
-  `gradlew bundleRelease`, or any stale sidecar/artifact pairing, reintroduces the gap. The value
-  has to come out of the bytes being uploaded.
+  the binary, but it describes the artifact instead of being read from it — a hand-run `gradlew
+  bundleRelease`, or any stale sidecar/artifact pairing, reintroduces the gap. The value has to come
+  out of the bytes being uploaded.

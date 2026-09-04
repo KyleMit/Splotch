@@ -178,8 +178,8 @@ the destination sheet. The timing cliff appears after JavaScript returns.
 
 The retained version samples the original image:
 
-1. Convert the destination inset to source coordinates using `bw / sourceWidth` and
-   `bh / sourceHeight`.
+1. Convert the destination inset to source coordinates using `bw / sourceWidth` and `bh /
+   sourceHeight`.
 2. Stretch a one-destination-pixel-equivalent source row into top and bottom bands.
 3. Stretch corresponding source columns into left and right bands.
 4. Draw four source pixels into the four corner rectangles when both axes are inset.

@@ -67,8 +67,8 @@ Open it up, hand over the device, and let them make a mess. That's the whole ide
 
 ## What's New (max 4000)
 
-Generated per release — `fastlane/metadata/en-US/release_notes.txt` (written by
-`npm run gen:releases` from `releases/<version>.md`).
+Generated per release — `fastlane/metadata/en-US/release_notes.txt` (written by `npm run
+gen:releases` from `releases/<version>.md`).
 
 ## URLs
 

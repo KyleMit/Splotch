@@ -11,8 +11,8 @@ The finding observed that each engaged `pinchZoom` pointermove allocates several
 `tracker.points()` snapshot array, the centroid object, the transform literal fed to and returned
 from `clampTransform`, the `getBounds()` bounds object, and the transform template string in
 `apply()` — and that `.claude/rules/svelte.md`'s hot-path rule ("code reached per pointermove … must
-not allocate arrays/objects") draws no exemption for it. Secondary: the
-`rect ?? node.getBoundingClientRect()` fallbacks are defensive lazy-init on the move path.
+not allocate arrays/objects") draws no exemption for it. Secondary: the `rect ??
+node.getBoundingClientRect()` fallbacks are defensive lazy-init on the move path.
 
 The burndown attempt escalated through three stages — in-place scratch objects, cached option fields
 plus numeric CSS custom properties, and finally paused additive Web Animations driven by

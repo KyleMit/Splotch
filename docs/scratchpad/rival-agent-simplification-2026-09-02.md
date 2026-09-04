@@ -102,14 +102,12 @@ Round one, no filesystem overrides (12.5 s, two turns, $0.04 of plan usage):
 | targeted Vitest                             | 3 passed                                                       |
 | `git commit --allow-empty -q`               | **succeeded** — see below                                      |
 
-Round two, following that commit: `git update-ref` in the canonical checkout succeeded,
-`touch
-/Users/kylemit/Code/Splotch/.git/rival-probe-file` succeeded, and
-`git push /Users/kylemit/Code/Splotch
-HEAD:refs/heads/rival-sandbox-push` created a branch there
-(all removed afterwards). Claude's sandbox resolves a linked worktree's gitdir and grants write
-access to the **whole** canonical `.git`, which Codex's sandbox refuses. A Claude rival confined
-only by the defaults can write refs and objects into the shared repository.
+Round two, following that commit: `git update-ref` in the canonical checkout succeeded, `touch
+/Users/kylemit/Code/Splotch/.git/rival-probe-file` succeeded, and `git push
+/Users/kylemit/Code/Splotch HEAD:refs/heads/rival-sandbox-push` created a branch there (all removed
+afterwards). Claude's sandbox resolves a linked worktree's gitdir and grants write access to the
+**whole** canonical `.git`, which Codex's sandbox refuses. A Claude rival confined only by the
+defaults can write refs and objects into the shared repository.
 
 Round three, with
 `"filesystem":{"denyWrite":["/Users/kylemit/Code/Splotch/.git"],"denyRead":["/Users/kylemit/.codex"]}`
@@ -121,8 +119,7 @@ have to pin `denyWrite` on the canonical `.git` and `denyRead` on the credential
 the launcher would have to compute both from the repo root. Also observed: the sonnet rival refused
 one probe outright as a credential-reading trap before the sandbox was consulted, which is a model
 judgement the design cannot rely on but should not be surprised by. The Claude-side launcher does
-**not** get the flag in this pilot; it is refused with
-`the claude rival has no workspace-write
+**not** get the flag in this pilot; it is refused with `the claude rival has no workspace-write
 launch path`.
 
 ## Probe 4 — the hosted first-party reviewers
@@ -275,11 +272,11 @@ did not.
 
 The first round on the hybrid shape, on the reworked branch at
 faac09b7cf5679bab355b3e0586c87110f919f06 against main (the hybrid semantics, the prompt partial, the
-workflow removal, NOTES.md, the rewritten docs), `gpt-5.6-sol` at high effort:
-`npm run --silent rival:launch -- --fresh --sandbox workspace-write --base main`, this session
-serving the broker. Seven minutes five (22:15:45 → 22:22:50), **23 shell commands of its own, zero
-broker requests, zero handler turns**, one blocking finding, zero unverified. Usage: 2,230,533 input
-tokens (2,120,320 cached), 11,237 output (6,782 reasoning).
+workflow removal, NOTES.md, the rewritten docs), `gpt-5.6-sol` at high effort: `npm run --silent
+rival:launch -- --fresh --sandbox workspace-write --base main`, this session serving the broker.
+Seven minutes five (22:15:45 → 22:22:50), **23 shell commands of its own, zero broker requests, zero
+handler turns**, one blocking finding, zero unverified. Usage: 2,230,533 input tokens (2,120,320
+cached), 11,237 output (6,782 reasoning).
 
 Routing, read from the stream log against the two questions the hybrid had to answer:
 
@@ -310,11 +307,11 @@ the rival had read NOTES.md and rated it one anyway.
 
 The first round of the Claude rival on the shape the bench chose for Codex: `launch-claude.mjs` with
 `Bash` added and the sandbox pinned by `--settings`, opus, reviewing the whole three-PR stack
-against main from the checkout with this Claude session serving the broker —
-`node .agents/skills/run-rival-agent/scripts/launch-claude.mjs --fresh --base main`. Seventeen
-minutes fifty (22:56:13 → 23:14:05), **24 Bash calls of its own, zero broker requests**, five
-findings (three blocking, two suggestions), zero unverified. Usage: 3,814,387 cache-read tokens,
-135,987 cache-creation, 84 uncached input, 32,837 output (19,027 thinking).
+against main from the checkout with this Claude session serving the broker — `node
+.agents/skills/run-rival-agent/scripts/launch-claude.mjs --fresh --base main`. Seventeen minutes
+fifty (22:56:13 → 23:14:05), **24 Bash calls of its own, zero broker requests**, five findings
+(three blocking, two suggestions), zero unverified. Usage: 3,814,387 cache-read tokens, 135,987
+cache-creation, 84 uncached input, 32,837 output (19,027 thinking).
 
 It ran the rival-agent Vitest tier (92 tests), `lint:dead`, and then the whole tools tier, which
 Claude's Bash tool cut off at its ten-minute cap with the same port-binding failures Round C saw in

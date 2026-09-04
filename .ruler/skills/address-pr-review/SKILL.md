@@ -36,9 +36,9 @@ destructive data changes, spending money, or acting outside the named PR; those 
    * **Review summaries** (the approve/request-changes body text) — `method: "get_reviews"`.
    * **Conversation comments** (top-level comments on the PR itself) — `method: "get_comments"`.
 
-   With `gh` available, `gh pr view <n> --comments` and
-   `gh api repos/{owner}/{repo}/pulls/{n}/comments` cover the same ground. In cloud sessions `gh` is
-   not available — use the MCP tools.
+   With `gh` available, `gh pr view <n> --comments` and `gh api
+   repos/{owner}/{repo}/pulls/{n}/comments` cover the same ground. In cloud sessions `gh` is not
+   available — use the MCP tools.
 4. **Filter to open threads only — resolved is done.** The worklist is exclusively the
    **unresolved** threads: because this skill resolves every thread it finishes (see Replying), a
    resolved thread is a completed round, and re-triaging it duplicates effort. This is what lets
@@ -189,10 +189,10 @@ reviewer sees a verdict that was checked, not asserted.
 
 ## Replying — close every loop
 
-* **Fixed** → reply **on the same thread** stating what changed and the commit SHA
-  (`Fixed in <sha> — <one line on the approach>`). The SHA must already be pushed — reply order is
-  always push first, then reply, then resolve. Use `add_reply_to_pull_request_comment` for inline
-  threads, `add_issue_comment` for conversation comments.
+* **Fixed** → reply **on the same thread** stating what changed and the commit SHA (`Fixed in <sha>
+  — <one line on the approach>`). The SHA must already be pushed — reply order is always push first,
+  then reply, then resolve. Use `add_reply_to_pull_request_comment` for inline threads,
+  `add_issue_comment` for conversation comments.
 * **Invalid / already addressed / question** → reply with the rationale or answer — the concrete
   reason the comment isn't being addressed (the code path, test, command output, or ADR from the
   verify pass), never a bare dismissal.

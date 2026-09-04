@@ -52,8 +52,8 @@ Referenced as:
 ![before](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/<pr-slug>/before.png)
 ```
 
-Mechanics live in the [`pr-screenshots`](../../.claude/skills/pr-screenshots/SKILL.md) skill (a
-`git worktree` sequence so the feature-branch checkout is never disturbed, plus an MCP `push_files`
+Mechanics live in the [`pr-screenshots`](../../.claude/skills/pr-screenshots/SKILL.md) skill (a `git
+worktree` sequence so the feature-branch checkout is never disturbed, plus an MCP `push_files`
 fallback for sessions without local git). GitHub resolves the raw URL **server-side**, so rendering
 is independent of the agent's outbound proxy.
 

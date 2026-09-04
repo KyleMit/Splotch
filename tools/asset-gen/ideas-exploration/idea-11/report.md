@@ -12,8 +12,8 @@ page that could never pass before and shipped by hand-`cp` at 49.7%.
 ## 1. The blind spot, confirmed
 
 Gate 1 of the chalk generator scores `outlineMatch(pen, candidate)` — every pen ink pixel must be
-covered by chalk ink within ±2px, globally (`keep >= 92%`) and in the worst 8x8 tile
-(`localKeep >= 80%`).
+covered by chalk ink within ±2px, globally (`keep >= 92%`) and in the worst 8x8 tile (`localKeep >=
+80%`).
 
 Polarity: the chalk is stored ink-on-white. A pen page with a **solid black pupil** (accident-era
 art; ideas #5/#6 showed these blobs are the root cause of several eye failures) demands ink across
@@ -92,18 +92,16 @@ pass->fail regressions. Zero meaningful score decreases** (largest "drop" was 4e
 
 ### Verified through the real tool
 
-Applied the patch and ran the actual generator's offline path
-(`gen-coloring-chalk.mjs <19 pages + 2 controls> --rescore`, shipped chalks copied into the scratch
-dir as candidates): all 19 print clean stat lines with **no `drifting`/`local drift` warnings** and
-the run exits 0. The audit's verification criterion — circle-tall's worst tile >= 80% instead of
-49.7% — is met at 88.7%. Controls (`nature/bee-tall`, `dinosaur/brachiosaurus-tall`) unchanged
-(their pre-existing warn-only "eye whites not chalked" notes remain, as they should — that gate is
-untouched).
+Applied the patch and ran the actual generator's offline path (`gen-coloring-chalk.mjs <19 pages + 2
+controls> --rescore`, shipped chalks copied into the scratch dir as candidates): all 19 print clean
+stat lines with **no `drifting`/`local drift` warnings** and the run exits 0. The audit's
+verification criterion — circle-tall's worst tile >= 80% instead of 49.7% — is met at 88.7%.
+Controls (`nature/bee-tall`, `dinosaur/brachiosaurus-tall`) unchanged (their pre-existing warn-only
+"eye whites not chalked" notes remain, as they should — that gate is untouched).
 
 ## 4. Live demo — retries can hunt again (1 Gemini call)
 
-`node tools/asset-gen/gen-coloring-chalk.mjs shapes/circle-tall --force
---max-attempts 3` with the
+`node tools/asset-gen/gen-coloring-chalk.mjs shapes/circle-tall --force --max-attempts 3` with the
 fix active: the **first attempt passed every gate** (keep 99.1%, localKeep 90.8%, white 0.2%,
 invented 0, no warnings). One Gemini call used. During the 2026-07 migration this page structurally
 could not pass (its best-ranked candidate was hand-shipped at localKeep 49.7% after burning

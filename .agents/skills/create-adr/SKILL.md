@@ -40,16 +40,16 @@ decisions in `docs/adrs/`.
    decision that has already been reversed.
 
 4. **Determine the next ADR number.** Identify `<base-branch>`, the branch this work will merge into
-   (`main` for a direct PR, its parent branch for a stack). Fetch its current remote state with
-   `git fetch origin +refs/heads/<base-branch>:refs/remotes/origin/<base-branch>` and use
+   (`main` for a direct PR, its parent branch for a stack). Fetch its current remote state with `git
+   fetch origin +refs/heads/<base-branch>:refs/remotes/origin/<base-branch>` and use
    `origin/<base-branch>` as `<base-ref>`. Find the highest four-digit ADR prefix across both
    `docs/adrs/` and `git ls-tree --name-only <base-ref>:docs/adrs`; if the fetch or lookup fails,
    stop and fix the ref rather than falling back to the working tree alone. Add one and zero-pad to
    four digits. Do not count files: a gap — such as the one left by moved records `0053`–`0056` —
    leaves the count below the highest number in use, and counting can reissue a number that already
-   exists. This matches the canonical `nextAdrNumber()` used by
-   `npm run check:adrs -- --base=<base-ref>`, which unions the branch with its base before picking
-   and rejects a working-tree number that collides with its merge target.
+   exists. This matches the canonical `nextAdrNumber()` used by `npm run check:adrs --
+   --base=<base-ref>`, which unions the branch with its base before picking and rejects a
+   working-tree number that collides with its merge target.
 
 5. **Write the ADR file** at `docs/adrs/NNNN-kebab-case-title.md` using the template below.
 
@@ -59,8 +59,8 @@ decisions in `docs/adrs/`.
    order within that section. New ADRs default to their area section — only promote one to "Start
    here" when the decision is genuinely load-bearing for the whole project (rare). Every ADR appears
    exactly once in the index. The integrity check recognizes two canonical entry shapes: an
-   unindented Start here bullet whose leading link is bold
-   (`* **[NNNN — Title](NNNN-kebab-title.md)**`), or a section table row whose first cell is
+   unindented Start here bullet whose leading link is bold (`* **[NNNN —
+   Title](NNNN-kebab-title.md)**`), or a section table row whose first cell is
    `[NNNN](NNNN-kebab-title.md)`. Status text, summaries, and other cross-links do not count as the
    record's index entry, but every local ADR link label must still match its target filename.
 

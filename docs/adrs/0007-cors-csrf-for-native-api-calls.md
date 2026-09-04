@@ -63,7 +63,7 @@ credentialed (cookie) requests in any case.
 * **-** The two trusted origins must be manually maintained if Capacitor changes its WebView origin
   scheme in a future major version.
 * **-** Debugging CSRF vs. CORS failures in the WebView is non-obvious; the misreported error ("No
-  CORS header") masks the real cause (CSRF 403). To verify:
-  `curl -i -X POST https://splotch.art/api/generate-image -H "Origin: https://localhost" -F token=x -F image=@tiny.png`
-  — a healthy response is `403 {"ok":false,"error":"Invalid access token"}` WITH a CORS header
-  present.
+  CORS header") masks the real cause (CSRF 403). To verify: `curl -i -X POST
+  https://splotch.art/api/generate-image -H "Origin: https://localhost" -F token=x -F
+  image=@tiny.png` — a healthy response is `403 {"ok":false,"error":"Invalid access token"}` WITH a
+  CORS header present.

@@ -68,13 +68,12 @@ then migrates them into secure storage and removes both plaintext copies.
 
 Two rules, both load-bearing:
 
-**1. Gate every plugin code path on the literal `__IS_CAPACITOR__`** (usually
-`__IS_CAPACITOR__ && isNative()`). `isNative()` alone is a runtime check Rollup can't tree-shake
-across modules, so without the compile-time literal the plugin chunks ship in the web bundle and get
-precached by the service worker. In a component (function scope), inline the `import()` inside the
-gated branch; in a shared `.ts` module, use `lazyPluginModule()` with the ternary below — Rollup
-retains a module-level thunk even when every caller is dead code, so the `import()` itself must sit
-behind the literal.
+**1. Gate every plugin code path on the literal `__IS_CAPACITOR__`** (usually `__IS_CAPACITOR__ &&
+isNative()`). `isNative()` alone is a runtime check Rollup can't tree-shake across modules, so
+without the compile-time literal the plugin chunks ship in the web bundle and get precached by the
+service worker. In a component (function scope), inline the `import()` inside the gated branch; in a
+shared `.ts` module, use `lazyPluginModule()` with the ternary below — Rollup retains a module-level
+thunk even when every caller is dead code, so the `import()` itself must sit behind the literal.
 
 **2. Destructure the plugin out of the module namespace *after* awaiting:**
 
@@ -87,15 +86,14 @@ const getPrefs = lazyPluginModule(() =>
 const { Preferences } = await getPrefs();
 ```
 
-Never let a Promise resolve to the plugin object itself (e.g.
-`import('…').then((m) => m.Preferences)` or `async () => (await import('…')).Preferences`). A
-registered plugin is a Proxy whose every property — `then` included — is a native-method call, so
-it's "thenable": promise assimilation invokes `plugin.then(resolve, reject)`, Capacitor dispatches a
-native method named `then` ("not implemented"), and it **never settles**. The awaiting promise hangs
-forever. This silently blanked a since-removed native page whose render gated on an awaited plugin
-load, until the loaders were funnelled through `lazyPluginModule`. A gated inline
-`import('…').then(({ Plugin }) => …)` in a component is equally safe — it resolves to the module
-namespace, never the proxy.
+Never let a Promise resolve to the plugin object itself (e.g. `import('…').then((m) =>
+m.Preferences)` or `async () => (await import('…')).Preferences`). A registered plugin is a Proxy
+whose every property — `then` included — is a native-method call, so it's "thenable": promise
+assimilation invokes `plugin.then(resolve, reject)`, Capacitor dispatches a native method named
+`then` ("not implemented"), and it **never settles**. The awaiting promise hangs forever. This
+silently blanked a since-removed native page whose render gated on an awaited plugin load, until the
+loaders were funnelled through `lazyPluginModule`. A gated inline `import('…').then(({ Plugin }) =>
+…)` in a component is equally safe — it resolves to the module namespace, never the proxy.
 
 ### Custom native plugins
 
@@ -103,20 +101,20 @@ When no published plugin exposes a native capability, add a small **local** plug
 itself (see `DeviceLock`, ADR-0027, and `ColoringPacks`, ADR-0103):
 
 * iOS — the key gotcha: **Capacitor 8 does not auto-discover plugin classes.**
-  `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList` that
-  `cap sync` writes into `capacitor.config.json` from installed **npm plugin packages**. An
-  app-local class is never in that list, so it must be registered by hand — otherwise every call
-  fails with `"<name>" plugin is not implemented on ios` (our JS catches this and silently reads
-  "unlocked"). Two files, both added to the App target's Compile Sources:
+  `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList` that `cap
+  sync` writes into `capacitor.config.json` from installed **npm plugin packages**. An app-local
+  class is never in that list, so it must be registered by hand — otherwise every call fails with
+  `"<name>" plugin is not implemented on ios` (our JS catches this and silently reads "unlocked").
+  Two files, both added to the App target's Compile Sources:
   * `DeviceLockPlugin.swift` — an `@objc(...)` class conforming to `CAPPlugin` **and**
     `CAPBridgedPlugin` (provide `identifier`, `jsName`, `pluginMethods` in Swift;
     `registerPluginInstance` casts to `CAPPlugin & CAPBridgedPlugin`, so the conformance is
     required).
   * `MainViewController.swift` — subclass `CAPBridgeViewController` and override
     `capacitorDidLoad()` to call `bridge?.registerPluginInstance(DeviceLockPlugin())`. Then point
-    the root VC at it in `ios/App/App/Base.lproj/Main.storyboard`
-    (`customClass="MainViewController" customModule="App" customModuleProvider="target"`).
-    `capacitorDidLoad()` runs right after the bridge is created, before the web view loads.
+    the root VC at it in `ios/App/App/Base.lproj/Main.storyboard` (`customClass="MainViewController"
+    customModule="App" customModuleProvider="target"`). `capacitorDidLoad()` runs right after the
+    bridge is created, before the web view loads.
   * Do **not** use the legacy Obj-C `CAP_PLUGIN` macro `.m` for an app-local plugin — its
     category-based conformance is unreliable in the app target and is moot anyway, since discovery
     is by explicit registration, not runtime enumeration.
@@ -261,8 +259,8 @@ The shared baseline both depend on:
 ## 5. Known follow-ups / nice-to-haves (cross-platform)
 
 * [ ] **Final hi-res app icon** (placeholder is upscaled from 512px) — produce a crisp **1024×1024**
-      source at `assets/icon.png` (and tune `assets/splash.png`), then rerun
-      `npx @capacitor/assets generate` for both platforms.
+      source at `assets/icon.png` (and tune `assets/splash.png`), then rerun `npx @capacitor/assets
+      generate` for both platforms.
 * [ ] **AI access token on native**: today a parent types the invite code in Settings. Consider
       **deep links** (Android App Links / iOS Universal Links) so an `?ai_access_token=…` invite
       link opens the app and applies the token automatically.
@@ -323,8 +321,7 @@ the metadata pipeline that's already in place.
 
 When release cadence justifies automating, set it up roughly as:
 
-1. **Install** fastlane (a `Gemfile` + `bundle add fastlane`, or `brew install
-   fastlane`).
+1. **Install** fastlane (a `Gemfile` + `bundle add fastlane`, or `brew install fastlane`).
 2. **`fastlane/Appfile`** — iOS bundle ID `art.splotch.app`, the Android package name, and the path
    to the Google Play service-account JSON.
 3. **`fastlane/Fastfile`** with two lanes:

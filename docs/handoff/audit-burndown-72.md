@@ -22,11 +22,9 @@ The five remaining groups hold 43: app correctness 12 · cross-file agreement 12
 · docs that misdirect 8 · coverage gaps 1.
 
 **To continue: PR #830 has merged, so it cannot track further work.** Re-cut the branch from the
-current `main`
-(`git fetch origin main && git checkout -B claude/audit-burn-down-vf4iui
-origin/main`), relaunch
-with the command below, and open a **new** PR to post per-commit comments to. Do not stack new
-commits on the merged history.
+current `main` (`git fetch origin main && git checkout -B claude/audit-burn-down-vf4iui
+origin/main`), relaunch with the command below, and open a **new** PR to post per-commit comments
+to. Do not stack new commits on the merged history.
 
 The 43 remaining findings are still staged in `docs/AUDIT.md` and the relaunch command below is
 unchanged — the driver pops from the file, so it resumes at the next finding with no other setup.
@@ -62,9 +60,9 @@ Every other knob is at its default (`PUSH_EVERY=1`, `PUSH_TEST_CMD=''`, `MODEL_I
 nothing depends on a helper script in gitignored `.audit-work/`.
 
 **`BRANCH` is not optional.** The driver defaults to `audit/burndown`. Preflight echoes two branch
-lines: `repo → branch` is just the current git branch and is green regardless, while
-`resume target → branch <name>` is the one that reflects the env var. Read the **resume target**
-line and match it before launching.
+lines: `repo → branch` is just the current git branch and is green regardless, while `resume target
+→ branch <name>` is the one that reflects the env var. Read the **resume target** line and match it
+before launching.
 
 ## State
 
@@ -151,8 +149,8 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
   read the `INVALID` verdict.
 * **Never run `npm run ruler:check`, `gen:tokens`, or `gen:assets:manifest` while the driver is
   live** — they mutate the tree and their writes land in the in-flight fix commit.
-* **`pgrep -f` and `pkill -f` match their own command line.** Anchor on
-  `'^node tools/audit-burndown/run-burndown.mjs'` or a wait loop never exits.
+* **`pgrep -f` and `pkill -f` match their own command line.** Anchor on `'^node
+  tools/audit-burndown/run-burndown.mjs'` or a wait loop never exits.
 * **A `Monitor` clamps to 30 minutes** regardless of `persistent`/`timeout_ms`. Re-arming is a
   routine chore; close the gap with a scoped `awk` catch-up read after each re-arm.
 
@@ -168,8 +166,8 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
   summing **every** `finished:` line this session produced (canary + full run), not just the last.
 * Tidy any emptied `##` keep-criterion sections in `docs/AUDIT.md`; delete the file outright if
   drained.
-* Re-check the eslint `max-lines` caps for findings that raised one rather than clearing it
-  (`git log <base>..HEAD -- eslint.config.js`), and judge the rate, not the instance.
+* Re-check the eslint `max-lines` caps for findings that raised one rather than clearing it (`git
+  log <base>..HEAD -- eslint.config.js`), and judge the rate, not the instance.
 * Confirm CI green on the final push, then `mcp__github__update_pull_request` `draft: false`.
 
 ## Inherited follow-ups — FILED, no longer owed here

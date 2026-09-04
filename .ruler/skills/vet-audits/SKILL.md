@@ -53,10 +53,10 @@ with `search_issues` to avoid duplicates — enrich an existing issue rather tha
 
 * **Title** — a concise, imperative summary of the fix ("Debounce the canvas resize handler", not
   "Resize is slow").
-* **Body** — carry the sharpened finding over in full, keeping the `#### Problem` /
-  `#### Proposed solution` / `#### Verification` sections so the fix agent has everything without
-  re-deriving it. Note which audit surfaced it (e.g. "Surfaced by `code-audit`."). Escape any bare
-  `#`-number that isn't a deliberate issue reference (see `docs/ISSUE-WORKFLOW.md`).
+* **Body** — carry the sharpened finding over in full, keeping the `#### Problem` / `#### Proposed
+  solution` / `#### Verification` sections so the fix agent has everything without re-deriving it.
+  Note which audit surfaced it (e.g. "Surfaced by `code-audit`."). Escape any bare `#`-number that
+  isn't a deliberate issue reference (see `docs/ISSUE-WORKFLOW.md`).
 * **Labels** — always `type:audit`. Add the applicable `area:*` and the substantive `type:*`
   (`type:perf`, `type:chore`, …) when they're clear — an audit issue may carry `type:audit` *and* a
   substantive type (this is the one sanctioned exception to "one `type:` per issue"; see

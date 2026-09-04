@@ -33,11 +33,9 @@ can."
   not a calibration gap.
 * Rig: preflight green 2026-08-26 (Android input 122 moves/s, iOS WDA launch + rotation verified).
   Preview 4173 (this checkout), probe 4215, Appium 4723 reused, WDA 8100.
-* Capture:
-  `perf:ios:xcuitest:screen --brush=<b> --gesture-repeats=10 --orientation=portrait
-  --theme=light`,
-  3 samples per cell, fidelity verdict checked before scoring, brush committed asserted by the tool.
-  Build per variant via `perf:serve` restart; manifest verified per capture.
+* Capture: `perf:ios:xcuitest:screen --brush=<b> --gesture-repeats=10 --orientation=portrait
+  --theme=light`, 3 samples per cell, fidelity verdict checked before scoring, brush committed
+  asserted by the tool. Build per variant via `perf:serve` restart; manifest verified per capture.
 * Score: lostFrameTimeShare (in-contact), paint p95/p99/max. Compare against same-session pen and
   crayon baselines, never the published matrix.
 

@@ -22,8 +22,8 @@ attachable without breaking the privacy promise.
 
 ## Decision
 
-A new `POST /api/report` endpoint (`web/src/routes/api/report/+server.ts`) receives
-`{ kind, message, device?, hp? }` and opens a GitHub issue, returning `{ ok }`.
+A new `POST /api/report` endpoint (`web/src/routes/api/report/+server.ts`) receives `{ kind,
+message, device?, hp? }` and opens a GitHub issue, returning `{ ok }`.
 
 * **Auth: a fine-grained PAT**, `GITHUB_ISSUE_TOKEN`, scoped to *Issues: Read and write* on the
   target repo only, read via `$env/dynamic/private` and set in Netlify — never shipped to the

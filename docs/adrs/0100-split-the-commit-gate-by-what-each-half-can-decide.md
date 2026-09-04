@@ -51,11 +51,11 @@ path that is not an encode.
 
 The gate is split by what each half can decide, not by which scenarios it runs.
 
-* **Pre-merge, on every pull request and every push to `main`:** `commit-path-guard` runs
-  `npm run perf:undo:encode-path` on `ubuntu-latest` in headless Chromium. It fails when any
-  measured scenario recorded an `engine.encode` inside the commit window. This is a count, never a
-  threshold: one such measure is the defect, no host slowness can manufacture it, and no engine's
-  timing fidelity is required to read it. The job runs parallel to the e2e shards.
+* **Pre-merge, on every pull request and every push to `main`:** `commit-path-guard` runs `npm run
+  perf:undo:encode-path` on `ubuntu-latest` in headless Chromium. It fails when any measured
+  scenario recorded an `engine.encode` inside the commit window. This is a count, never a threshold:
+  one such measure is the defect, no host slowness can manufacture it, and no engine's timing
+  fidelity is required to read it. The job runs parallel to the e2e shards.
 * **Post-merge, on pushes to `main`:** the existing `webkit-commit-gate-fast` job keeps the
   `COMMIT_GATE_MS` P95 verdict, the shared-runner crayon normalization, and the fast set defined by
   `FAST_UNDO_SCENARIO_KEYS`. It is no longer on the pull-request path.

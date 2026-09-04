@@ -1,20 +1,19 @@
 # Playwright CI setup timing — offline apt cache validation (2026-08-18)
 
 Evidence base for the [ADR-0126](../adrs/0126-auto-recover-network-starved-playwright-setup.md)
-amendment (PR [1127](https://github.com/KyleMit/Splotch/pull/1127)). All durations are the
-`Run ./.github/actions/setup-playwright` step on `ubuntu-latest`, runner image 20260810.271.1,
-Playwright 1.62.1, warm Actions caches throughout.
+amendment (PR [1127](https://github.com/KyleMit/Splotch/pull/1127)). All durations are the `Run
+./.github/actions/setup-playwright` step on `ubuntu-latest`, runner image 20260810.271.1, Playwright
+1.62.1, warm Actions caches throughout.
 
 ## The defect these numbers exposed
 
-Every "before" run restored a complete apt `.deb` cache and then ignored it:
-`apt-get install --no-download <local debs>` refuses command-line local debs as fetches
-(`E: Unable to fetch some archives`), so the offline step could never install a missing package and
-every run fell through to `apt-get update` + the full package download. Setup time therefore tracked
-whatever bandwidth the runner drew. Run
-[32154808944](https://github.com/KyleMit/Splotch/actions/runs/32154808944) shows the spread inside a
-single run: one chromium shard finished setup in 28s at 65 MB/s while its sibling fetched at 245
-kB/s until the then-180s bound killed it two packages short of done.
+Every "before" run restored a complete apt `.deb` cache and then ignored it: `apt-get install
+--no-download <local debs>` refuses command-line local debs as fetches (`E: Unable to fetch some
+archives`), so the offline step could never install a missing package and every run fell through to
+`apt-get update` + the full package download. Setup time therefore tracked whatever bandwidth the
+runner drew. Run [32154808944](https://github.com/KyleMit/Splotch/actions/runs/32154808944) shows
+the spread inside a single run: one chromium shard finished setup in 28s at 65 MB/s while its
+sibling fetched at 245 kB/s until the then-180s bound killed it two packages short of done.
 
 ## Before (network path on every run, main, 2026-08-18)
 

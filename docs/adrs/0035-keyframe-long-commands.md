@@ -41,8 +41,7 @@ once at commit (off the draw frame), and drop its ops.
   spend a raster. **(ADR-0036 re-bases this trigger: the constant is now
   `KEYFRAME_SEGMENT_THRESHOLD` (384) measured against a command's *simplified* segment count, so
   keyframing fires only for a pathological all-corners gesture that simplification can't thin.)**
-* A command's `keyframe` is a **cumulative** square raster (same `max(w,h) ×
-  renderScale` geometry
+* A command's `keyframe` is a **cumulative** square raster (same `max(w,h) × renderScale` geometry
   as the baseline) holding the entire drawing *through that command*. Built via
   `paintStateThrough()` at commit, then `ops` is set to `[]`.
 * `paintStateThrough(target, upToIndex)` is the one shared rebuild primitive: start from the most

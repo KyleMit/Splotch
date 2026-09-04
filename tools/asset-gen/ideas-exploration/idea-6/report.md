@@ -35,11 +35,9 @@ punch keeps it (paint isn't line art), and the scorer can see it.
    of 2 attempts scored keep 96.0% / **local 0.0%** / rev 100%: the model deleted the small star
    above the teddy's head (overlay evidence: `teddy-tall.normalize-attempt1-overlay.webp`). Exact
    repeat of the bee-wide "deleted a cloud" precedent — the worst-tile gate caught it. **2 calls.**
-2. Retry with
-   `--notes "The scene contains a small five-pointed STAR floating
-   above the teddy bear's head — KEEP that star … keep both clouds, all toy
-   blocks, the grass tufts, and the heart"`
-   → passed on the first attempt: blob 719→0, keep 100.0%, local 99.6%, rev 100.0%, applied. **1
+2. Retry with `--notes "The scene contains a small five-pointed STAR floating above the teddy bear's
+   head — KEEP that star … keep both clouds, all toy blocks, the grass tufts, and the heart"` →
+   passed on the first attempt: blob 719→0, keep 100.0%, local 99.6%, rev 100.0%, applied. **1
    call.**
 3. Pen verification: `scoreSolidity` passes (blob 0, interior 0), ring depth 3 (≤4), all 10 source
    eye cores preserved at the same coordinates, all three stars/clouds/blocks/heart intact
@@ -110,9 +108,8 @@ Per-page recipe (empirical):
 Numbers for 47 pages: observed normalize cost 1.5 calls/page average across the two trials (1, and
 3-with-notes-retry) → est. ~1.5–2.5 calls/page ≈ **70–120 normalize calls**; if ~25% of pages end up
 needing a fresh fill (~12 pages × ~2.5 calls) add ~30 → **~100–150 Gemini flash-image calls total ≈
-$4–6** at
-gemini-2.5-flash-image's ~$0.039/image, plus free re-punches/audits/thumbs. Wall-clock: a few hours
-autonomous + per-category human contact-sheet review.
+$4–6** at gemini-2.5-flash-image's ~$0.039/image, plus free re-punches/audits/thumbs. Wall-clock: a
+few hours autonomous + per-category human contact-sheet review.
 
 ## Limitations / risks
 

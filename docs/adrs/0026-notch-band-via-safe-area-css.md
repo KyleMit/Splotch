@@ -55,8 +55,7 @@ knob.
 **Orientation.** The hole-punch lives at the device's *physical* top, which rotates to a side in
 landscape, so the band follows it. `NotchBand.svelte` measures `env(safe-area-inset-top/left/right)`
 and reads the orientation; `cutoutEdge` picks the top inset in portrait and the deeper of the two
-side insets in landscape, and the band renders along that edge (`.notch-band--top
-/left/right`). The
+side insets in landscape, and the band renders along that edge (`.notch-band--top /left/right`). The
 long top edge in landscape is never banded.
 
 For the side cutout to produce a side inset (rather than the system letterboxing the WebView away

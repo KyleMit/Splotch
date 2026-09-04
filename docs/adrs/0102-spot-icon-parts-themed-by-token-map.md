@@ -61,8 +61,8 @@ reference; an icon-part token only ever paints the one path that names it.
 
 * **Dark mode is legible across the whole spot set,** including on the selected row, and the icons
   now read as two deliberate sets rather than one file stretched over four surfaces.
-* **Adding a themed part is three edits with no design debate:** an entry in `iconTokens.ts`,
-  `npm run gen:tokens`, and the `var()` in the SVG. `npm run img:audit` after any SVG edit.
+* **Adding a themed part is three edits with no design debate:** an entry in `iconTokens.ts`, `npm
+  run gen:tokens`, and the `var()` in the SVG. `npm run img:audit` after any SVG edit.
 * **The reverse drift check is the load-bearing half.** The realistic failure is an artist
   re-exporting an icon from source, which silently wipes the `var()` and reverts the path to its
   baked light hex — no error, no visual change in light mode, just a dark-mode regression nobody

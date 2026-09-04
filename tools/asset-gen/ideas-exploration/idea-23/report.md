@@ -11,8 +11,8 @@ that page.
 
 ## What was built
 
-Three files (see `code/golden-tooling.patch`, re-appliable on baseline `8e471b8`; verified with
-`git apply --check` + a full end-to-end diff run from the re-applied state):
+Three files (see `code/golden-tooling.patch`, re-appliable on baseline `8e471b8`; verified with `git
+apply --check` + a full end-to-end diff run from the re-applied state):
 
 1. **`tools/asset-gen/lib/night-scores.mjs`** (new) — `scoreDrift` / `scoreNightness` /
    `scoreLineColor` extracted verbatim from `gen-coloring-fills-dark.mjs`, plus their default
@@ -85,13 +85,12 @@ absorb a future sharp-upgrade decode shift; verdict flips always gate regardless
 
 ## Spot-check transcript (both directions)
 
-**No-op:** `npm run gen:coloring:golden:diff` ->
-`102 page(s) diffed vs golden in 53.3s · 0 regression(s) · 0 improvement(s) · 0 other change(s). Clean`
-(exit 0).
+**No-op:** `npm run gen:coloring:golden:diff` -> `102 page(s) diffed vs golden in 53.3s · 0
+regression(s) · 0 improvement(s) · 0 other change(s). Clean` (exit 0).
 
-**Deliberate revert:**
-`git checkout 6840bba -- tools/asset-gen/fill-src/nature/bee-wide.night.raw.webp` (the pre-chalk-era
-night fill that shipped dead-eyed) ->
+**Deliberate revert:** `git checkout 6840bba --
+tools/asset-gen/fill-src/nature/bee-wide.night.raw.webp` (the pre-chalk-era night fill that shipped
+dead-eyed) ->
 
 ```
 REGRESSIONS:
@@ -108,13 +107,12 @@ on the simulated chalk composite, and the current chalk owns the eye whites, so 
 raw's verdict. The *numeric movement* detection (lineWhite dropping 252->195) is what carried the
 catch — evidence that freezing raw scores, not just verdicts, is worth it.
 
-**First revert attempt was a miss worth documenting:**
-`git checkout a81be48 --
-fill-src/nature/ant-wide.light.raw.webp` (an older but different render)
-diffed **clean** — the old raw scores keep=1.0000/localKeep=1.0000 and identical eye counts against
-the current outline. The famously drifted ant-wide flower predates that blob. Lesson: the golden set
-catches *score* regressions, not arbitrary byte changes — two valid renders can be score-identical
-(see Limitations).
+**First revert attempt was a miss worth documenting:** `git checkout a81be48 --
+fill-src/nature/ant-wide.light.raw.webp` (an older but different render) diffed **clean** — the old
+raw scores keep=1.0000/localKeep=1.0000 and identical eye counts against the current outline. The
+famously drifted ant-wide flower predates that blob. Lesson: the golden set catches *score*
+regressions, not arbitrary byte changes — two valid renders can be score-identical (see
+Limitations).
 
 ## Limitations
 

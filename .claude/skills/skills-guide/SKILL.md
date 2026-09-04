@@ -190,9 +190,9 @@ implementations, as do `analyze-session-transcripts` and `run-rival-agent` (each
 the other vendor); `implement-issue-stack` is Codex-only. When editing one, change only the declared
 provider; never copy one implementation into an undeclared provider tree.
 
-**When you add, rename, or delete a skill, update this guide in the same change**, then run
-`npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
-rather than forcing it into one.
+**When you add, rename, or delete a skill, update this guide in the same change**, then run `npm run
+ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group rather than
+forcing it into one.
 
 Naming: workflow skills (perform a procedure with side effects) get verb-noun names (`create-adr`,
 `fix-audits`); reference skills (only load knowledge) get plain noun names (`architecture`, `adrs`).

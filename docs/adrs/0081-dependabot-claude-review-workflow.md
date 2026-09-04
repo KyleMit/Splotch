@@ -75,9 +75,8 @@ credits.
 **The job never installs dependencies.** It reads the manifest/lockfile diff and the published
 release notes, and that is all — so the bumped package's code is never executed on the runner. The
 `--allowedTools` list is the enforcement layer: read/search tools, `WebFetch`/`WebSearch`, read-only
-`git`, and read-only `gh pr` subcommands, plus the one write the job exists to perform —
-`gh pr comment`. No install, no build, no approve, no merge. The review is advisory; a human still
-merges.
+`git`, and read-only `gh pr` subcommands, plus the one write the job exists to perform — `gh pr
+comment`. No install, no build, no approve, no merge. The review is advisory; a human still merges.
 
 The patterns must stay specific to hold that line. `Bash(gh api:*)` was granted in an early draft
 and removed: it is a prefix match, so it admits `gh api -X POST .../reviews -f event=APPROVE` along

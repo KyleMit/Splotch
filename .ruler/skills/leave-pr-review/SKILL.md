@@ -40,9 +40,9 @@ diffs and actually execute the code:
 
 1. Read the PR itself and record its repository, number, state, base branch + OID, and head branch +
    OID. The PR metadata is authoritative; never assume the merge target is `main`. The native PR
-   read carries all four; the CLI spelling is
-   `gh pr view <n> --json baseRefName,baseRefOid,headRefName,headRefOid`. A base OID no local ref
-   covers is fetchable directly: `git fetch origin <base-oid>`.
+   read carries all four; the CLI spelling is `gh pr view <n> --json
+   baseRefName,baseRefOid,headRefName,headRefOid`. A base OID no local ref covers is fetchable
+   directly: `git fetch origin <base-oid>`.
 2. Make sure the working tree is clean; never mix a review checkout with local work in progress.
 3. Fetch and check out the recorded head branch:
 
@@ -51,13 +51,13 @@ diffs and actually execute the code:
    git checkout <head-branch>
    ```
 
-   For a fork PR (head repo ≠ origin), fetch the PR ref instead:
-   `git fetch origin pull/<n>/head:pr-<n> && git checkout pr-<n>`.
-4. Fetch the recorded base and diff exactly the range defined by the PR:
-   `git diff <base-oid>...<head-oid>` (three dots — changes this PR introduces relative to its
-   actual merge target). `git log <base-oid>..<head-oid> --oneline` gives the commit story; per-file
-   diffs and `git blame` are all offline from here. This is load-bearing for stacked PRs, whose base
-   is the preceding feature branch rather than `main`.
+   For a fork PR (head repo ≠ origin), fetch the PR ref instead: `git fetch origin
+   pull/<n>/head:pr-<n> && git checkout pr-<n>`.
+4. Fetch the recorded base and diff exactly the range defined by the PR: `git diff
+   <base-oid>...<head-oid>` (three dots — changes this PR introduces relative to its actual merge
+   target). `git log <base-oid>..<head-oid> --oneline` gives the commit story; per-file diffs and
+   `git blame` are all offline from here. This is load-bearing for stacked PRs, whose base is the
+   preceding feature branch rather than `main`.
 
 ## Reviewing a stack
 
@@ -194,8 +194,7 @@ stack:
 1. Branch off the PR's checked-out head: `git checkout -b <head-branch>-review-fixes`.
 2. Implement each finding — smallest correct change matching the surrounding style, one commit per
    finding (or per logical group), the same fix discipline as `address-pr-review`.
-3. Verify composed: `npm run check` plus the tests covering everything touched
-   (`npm run
+3. Verify composed: `npm run check` plus the tests covering everything touched (`npm run
    format:check` for Markdown-only fixes).
 4. Push and open a PR whose **base is the original PR's head branch** — not `main` — so the fixes
    flow into the original PR for its author to review. Map each commit to its finding in the PR body

@@ -58,13 +58,13 @@ Complete preflight before creating any branch or PR:
    clean it. Determine the remote default branch, fetch it, and record its exact OID.
 3. Resolve every issue reference through GitHub. Read each body and labels. Confirm all are open,
    unique, in this repository, and actionable in the requested order.
-4. Read and follow the Codex package of the `run-rival-agent` skill, then run
-   `npm run issue-stack:policy:check`. Invoke its fixed read-only authentication probe
-   `/Users/kylemit/.local/libexec/splotch-claude-health.mjs` outside the sandbox, then run
-   `gh auth status --hostname github.com` outside the sandbox. A failed policy or authentication
-   check is a global blocker: tell the user to run `npm run issue-stack:install` and restart Codex;
-   do not change user configuration during an unattended queue. Do not fall back to raw `claude` or
-   weaken its permission mode.
+4. Read and follow the Codex package of the `run-rival-agent` skill, then run `npm run
+   issue-stack:policy:check`. Invoke its fixed read-only authentication probe
+   `/Users/kylemit/.local/libexec/splotch-claude-health.mjs` outside the sandbox, then run `gh auth
+   status --hostname github.com` outside the sandbox. A failed policy or authentication check is a
+   global blocker: tell the user to run `npm run issue-stack:install` and restart Codex; do not
+   change user configuration during an unattended queue. Do not fall back to raw `claude` or weaken
+   its permission mode.
 5. Require `gh stack --version` to report `0.1.0`. Another version is a global blocker unless the
    user authorized that exact version after its `link` and `unstack` behavior was validated. Use
    GitHub MCP for operations it covers; use `gh` for authenticated CLI-only operations, especially
@@ -290,14 +290,13 @@ or other queue-wide/non-causal failure. When one issue remains blocked after its
    fixes, Claude findings, remaining risks, autonomous decisions, and the concrete next actions.
 3. Comment on the issue with the PR link and failure summary. Apply existing repository labels that
    truthfully represent the state; do not invent labels during an overnight run.
-4. End the PR's reviewer conversation with
-   `splotch-claude-review-publish.mjs --pr <number> --end-session`, checkpoint the issue as
-   `quarantined`, and restore `last_good_base`. If GitHub confirms the failed PR belongs to a stack,
-   use `gh stack unstack <recorded-stack-number>`; otherwise skip unstacking. Immediately checkpoint
-   `--clear-stack`, then re-run `gh stack link --base <trunk> <remaining-pr-urls...>` when at least
-   two successful PRs remain and record the new stack number. Confirm the failed PR is absent, wait
-   for base propagation, verify every remaining base, and drive every retriggered check to green
-   before continuing.
+4. End the PR's reviewer conversation with `splotch-claude-review-publish.mjs --pr <number>
+   --end-session`, checkpoint the issue as `quarantined`, and restore `last_good_base`. If GitHub
+   confirms the failed PR belongs to a stack, use `gh stack unstack <recorded-stack-number>`;
+   otherwise skip unstacking. Immediately checkpoint `--clear-stack`, then re-run `gh stack link
+   --base <trunk> <remaining-pr-urls...>` when at least two successful PRs remain and record the new
+   stack number. Confirm the failed PR is absent, wait for base propagation, verify every remaining
+   base, and drive every retriggered check to green before continuing.
 5. Begin the next pending issue immediately from the restored `last_good_base`. Record the
    quarantine in the final handoff, but keep the campaign successful when its remaining issues can
    still be processed.

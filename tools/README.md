@@ -60,10 +60,10 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 | `start-cloud-tunnel.mjs`           | `dev:tunnel`                              | Start the cloud preview server and authenticated tunnel       |
 | `stop-dev-servers.mjs`             | `dev:stop`                                | Stop listeners on the repository-owned development ports      |
 
-The check and optimization commands are deterministic and local except
-`check:github-actions -- --check-latest`, which queries GitHub and reports unknown release data when
-the network is unavailable. Despite its migration-defined name, `check:github-actions` remains an
-advisory inventory and always exits zero; changing that behavior is outside this rename-only phase.
+The check and optimization commands are deterministic and local except `check:github-actions --
+--check-latest`, which queries GitHub and reports unknown release data when the network is
+unavailable. Despite its migration-defined name, `check:github-actions` remains an advisory
+inventory and always exits zero; changing that behavior is outside this rename-only phase.
 `dev:tunnel` requires the cloud-session tunnel credentials documented in
 [`docs/CLOUD/Claude.md`](../docs/CLOUD/Claude.md). Contract-enforcing root checks fail nonzero
 rather than silently weakening validation when an external prerequisite is missing.

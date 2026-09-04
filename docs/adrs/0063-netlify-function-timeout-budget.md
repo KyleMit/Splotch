@@ -7,12 +7,12 @@
 
 `/api/generate-image` (and the `/api/verify-key` oracle) call Gemini from inside SvelteKit's SSR
 serverless function. The code carried 120-second deadlines on both the server model call
-(`gemini.ts`, `AbortSignal.timeout(120_000)`) and the client fetch (`aiImage.ts`,
-`AI_TIMEOUT_MS = 120_000`), and `verifyKey()` had **no** abort at all. A code audit flagged that
-these deadlines are far larger than Netlify's real function ceiling, so on a slow model call the
-**platform**, not Splotch, ends the request — returning Netlify's bare error instead of the app's
-controlled 502 and its kid-friendly retry UI. The audit's premise was that the deployed function ran
-in *streaming* mode with a *10-second* ceiling, but that was never confirmed.
+(`gemini.ts`, `AbortSignal.timeout(120_000)`) and the client fetch (`aiImage.ts`, `AI_TIMEOUT_MS =
+120_000`), and `verifyKey()` had **no** abort at all. A code audit flagged that these deadlines are
+far larger than Netlify's real function ceiling, so on a slow model call the **platform**, not
+Splotch, ends the request — returning Netlify's bare error instead of the app's controlled 502 and
+its kid-friendly retry UI. The audit's premise was that the deployed function ran in *streaming*
+mode with a *10-second* ceiling, but that was never confirmed.
 
 We resolved it empirically instead of from the docs, because the docs/UI were misleading (the Free
 plan exposes no timeout setting, which reads as "fixed at 10s" but actually means "not
@@ -21,10 +21,10 @@ configurable").
 ### What we measured
 
 The deployed function is a **single synchronous, buffered Netlify Node function** — the adapter
-(`@sveltejs/adapter-netlify` v6) emits one catch-all function
-(`config = { path: ["/*"], preferStatic: true }`) that returns a single buffered `Response`; there
-is no streaming and no per-function timeout config in either `netlify.toml`. A throwaway
-`/api/slowtest` endpoint deployed to a branch preview, swept from a client, gave:
+(`@sveltejs/adapter-netlify` v6) emits one catch-all function (`config = { path: ["/*"],
+preferStatic: true }`) that returns a single buffered `Response`; there is no streaming and no
+per-function timeout config in either `netlify.toml`. A throwaway `/api/slowtest` endpoint deployed
+to a branch preview, swept from a client, gave:
 
 | Requested sleep      | Result              | Server actually ran |
 | -------------------- | ------------------- | ------------------- |
@@ -95,7 +95,8 @@ export const GET: RequestHandler = async ({ url }) => {
 ```
 
 Sweep it from a client and watch for the status flip (200 → 502) and the body-size flip (200 → 500):
-`for ms in 5000 … 30000; do curl -w '%{http_code} %{time_total}\n' "$BASE/api/slowtest?ms=$ms"; done`.
+`for ms in 5000 … 30000; do curl -w '%{http_code} %{time_total}\n' "$BASE/api/slowtest?ms=$ms";
+done`.
 
 ### Invariant guard
 

@@ -41,21 +41,21 @@ version local dev and CI use, from the one place that records it. This mirrors
 [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh).
 
 That step replaced a global `npm@11` pin, which existed because the image's npm 11.4.2 and the npm
-that authored `package-lock.json` disagreed over transitive **optional-peer** entries and made
-`npm ci` fail with `Missing: picomatch@… from lock file`. The class of bug is gone rather than
-re-pinned: with `packageManager`, there is no second version of the manager to drift.
+that authored `package-lock.json` disagreed over transitive **optional-peer** entries and made `npm
+ci` fail with `Missing: picomatch@… from lock file`. The class of bug is gone rather than re-pinned:
+with `packageManager`, there is no second version of the manager to drift.
 
 Keep `--frozen-lockfile` in maintenance even when a branch is based on `main`: a cached container
 may retain dependencies from another branch, and a frozen install reproduces exactly the checked-out
 lockfile instead of resolving around the drift.
 
-Both scripts are best-effort: they run without `set -e`, so a failed step prints a loud
-`CODEX SETUP WARNING` / `CODEX MAINTENANCE WARNING` banner (plus an end-of-run summary) and the
-script continues to exit 0 rather than aborting the whole environment build. This keeps a single bad
-step — most often `pnpm-lock.yaml` disagreeing with `package.json` — from leaving the container
-unusable, while still surfacing the failure in the log for the chat session to act on. Watch the
-setup/maintenance log for those banners; an install banner usually means the lockfile needs a local
-`pnpm install` and a commit.
+Both scripts are best-effort: they run without `set -e`, so a failed step prints a loud `CODEX SETUP
+WARNING` / `CODEX MAINTENANCE WARNING` banner (plus an end-of-run summary) and the script continues
+to exit 0 rather than aborting the whole environment build. This keeps a single bad step — most
+often `pnpm-lock.yaml` disagreeing with `package.json` — from leaving the container unusable, while
+still surfacing the failure in the log for the chat session to act on. Watch the setup/maintenance
+log for those banners; an install banner usually means the lockfile needs a local `pnpm install` and
+a commit.
 
 ## Initial acceptance check
 

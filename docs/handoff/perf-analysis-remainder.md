@@ -25,8 +25,8 @@ review rounds ran across the stack (every finding validated against the code bef
 accepted ones fixed, tip at c5495baec including the round-2 unproven-commit refusal); the resumed
 round confirmed its earlier findings addressed. Tip empirically verified on the physical Android
 (artifact records `buildEntry`/`buildDigest`/`productCommit` from the build-time stamp;
-`paintedOutput.changed: true`; fidelity PASS — no false red; nonce-named report file).
-`npm run test:tools` 3151 green at the tip.
+`paintedOutput.changed: true`; fidelity PASS — no false red; nonce-named report file). `npm run
+test:tools` 3151 green at the tip.
 
 ## Remaining findings, ranked
 
@@ -46,8 +46,8 @@ round confirmed its earlier findings addressed. Tip empirically verified on the 
    result; their artifacts fold under the absent-field convention. Clean follow-up extending
    \#1537's recording to them.
 4. **SHA posting-time validator**: the rule text exists (root instructions + memory) and the verify
-   loop works; a `tools/` one-shot that scans a body-file for 7–40-hex strings and
-   `git cat-file`-checks each would make it one command. Small and unowned. (5 occurrences in one
+   loop works; a `tools/` one-shot that scans a body-file for 7–40-hex strings and `git
+   cat-file`-checks each would make it one command. Small and unowned. (5 occurrences in one
    session; also a published review citing a nonexistent commit, Codex lane.)
 5. **Wrapper-observability contract** (Codex rank 8, 23 sessions): nested failures behind green
    wrappers. \#1530 documents the pipe-exit-code tell; a mechanical contract (e.g. `proc.mjs`

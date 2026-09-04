@@ -48,10 +48,10 @@ holds the palette data and the two static arrangements). Three rules:
    so it alternates by *visible* position — that's what keeps every trimmed layout interlocking
    instead of jagged.
 
-Thresholds derive from the hex geometry and the dialog's 90vw/90vh cap: `r` rows fit while
-`90vh ≥ 51r + 50`, `c` columns while `90vw ≥ 60c + 63` (the ladder comments in the component show
-the math). The trim ladders are pinned by E2E tests (`web/tests/picker-trim.spec.ts`, same pattern
-as `palette-trim.spec.ts`), including an offset-alternation walk over every height rung — that's the
+Thresholds derive from the hex geometry and the dialog's 90vw/90vh cap: `r` rows fit while `90vh ≥
+51r + 50`, `c` columns while `90vw ≥ 60c + 63` (the ladder comments in the component show the math).
+The trim ladders are pinned by E2E tests (`web/tests/picker-trim.spec.ts`, same pattern as
+`palette-trim.spec.ts`), including an offset-alternation walk over every height rung — that's the
 coverage for the restatement rules, which are the easiest thing to break when editing the ladder.
 
 ## Consequences

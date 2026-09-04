@@ -96,10 +96,10 @@ reproduced byte-for-byte with the config in place.
 Vite's dev server *does* support ignoring paths in its file watcher, so configuring it to skip the
 native trees looks like the right lever.
 
-Ineffective: it configures only **Vite's own** watcher (the bundler/HMR process). Under
-`netlify dev`, netlify-cli runs a **separate** chokidar watcher for its edge-functions registry, in
-its own process, that never consults Vite's config. The descriptors that overflow `EMFILE` belong to
-*that* watcher, so ignoring paths in Vite changes nothing about the crash — it's aimed at the wrong
+Ineffective: it configures only **Vite's own** watcher (the bundler/HMR process). Under `netlify
+dev`, netlify-cli runs a **separate** chokidar watcher for its edge-functions registry, in its own
+process, that never consults Vite's config. The descriptors that overflow `EMFILE` belong to *that*
+watcher, so ignoring paths in Vite changes nothing about the crash — it's aimed at the wrong
 process.
 
 ### npm/pnpm workspaces instead of plain subdirectories

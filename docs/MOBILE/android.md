@@ -116,10 +116,9 @@ browser hits your local dev server over USB.
    ```bash
    npm run adb:reverse
    ```
-   This forwards the phone's port 5173 to the desktop's dev server
-   (`adb reverse tcp:5173 tcp:5173`), so `http://localhost:5173` on the phone resolves to your
-   machine. The dev server port is pinned to 5173 in `web/vite.config.ts` so this script is always
-   correct.
+   This forwards the phone's port 5173 to the desktop's dev server (`adb reverse tcp:5173
+   tcp:5173`), so `http://localhost:5173` on the phone resolves to your machine. The dev server port
+   is pinned to 5173 in `web/vite.config.ts` so this script is always correct.
 3. Open Chrome on the phone and navigate to `http://localhost:5173`.
 
 Re-run `npm run adb:reverse` after each USB reconnect.
@@ -157,9 +156,8 @@ storage, or the offline AI flow — not needed for canvas/perf work.
   Harmless on a throwaway test device; warn the user if it's their real phone.
 
 To preview the dev server on a phone that isn't on your local network, use an outbound tunnel.
-Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel
---url http://localhost:5173`, or
-`ngrok http 5173`). From a Claude Code cloud session the egress is a TLS-terminating, HTTP-only MITM
+Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel --url http://localhost:5173`, or `ngrok
+http 5173`). From a Claude Code cloud session the egress is a TLS-terminating, HTTP-only MITM
 gateway and those tools fail — the working path is a self-hosted chisel reverse tunnel. See
 **[docs/CLOUD/Claude.md](../CLOUD/Claude.md)** and
 **[ADR-0021](../adrs/0021-cloud-session-tunneling.md)**.
@@ -227,8 +225,8 @@ Three things that will waste your time here:
 * **The socket name carries the pid** (`webview_devtools_remote_<pid>`), so the forward is invalid
   the moment the app restarts. Re-read `pidof` and re-forward on every launch, and poll for the
   socket to appear rather than sleeping a fixed interval — it lags process start by a second or so.
-* **`adb shell monkey -p art.splotch.app 1` can report success and start nothing.** Use
-  `adb -s "$SERIAL" shell am start -n art.splotch.app/.MainActivity`.
+* **`adb shell monkey -p art.splotch.app 1` can report success and start nothing.** Use `adb -s
+  "$SERIAL" shell am start -n art.splotch.app/.MainActivity`.
 * **Pin `-s <serial>` on every call** when a phone and an emulator are both attached, or adb fails
   with `more than one device/emulator`. Per the root `CLAUDE.md`, never kill the other listener to
   clear a port — pick another port or another serial.

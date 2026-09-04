@@ -17,13 +17,13 @@ its own initiative.
 
 ## Decisions and what earned them
 
-* **Skeleton-then-drill over resuming sessions.** The first design was
-  `claude -p --resume <id> --fork-session` — let the session report on itself. A demo worked on a 53
-  KB session, but large sessions auto-compact at load (and compacted mid-session originally), so the
-  report would be written from a lossy summary while the lossless record sits on disk. Measurement
-  killed the approach: an 8.2 MB transcript holds only 27 KB of assistant text — tool results are
-  ~97% of the bytes — so a deterministic extractor gets the whole conversation into ~50k tokens with
-  line-number pointers back into the raw record.
+* **Skeleton-then-drill over resuming sessions.** The first design was `claude -p --resume <id>
+  --fork-session` — let the session report on itself. A demo worked on a 53 KB session, but large
+  sessions auto-compact at load (and compacted mid-session originally), so the report would be
+  written from a lossy summary while the lossless record sits on disk. Measurement killed the
+  approach: an 8.2 MB transcript holds only 27 KB of assistant text — tool results are ~97% of the
+  bytes — so a deterministic extractor gets the whole conversation into ~50k tokens with line-number
+  pointers back into the raw record.
 * **Evidence anchors + explicit "none found"** are in the report spec because a reporter required to
   fill seven categories will otherwise pad, and reports feed later cross-session synthesis that must
   be able to verify claims.

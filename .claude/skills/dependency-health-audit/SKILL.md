@@ -37,8 +37,8 @@ end. Skip every other entry.
    no install, whereas `pnpm list --depth=0` needs a `node_modules` a fresh checkout doesn't have
    (and this skill installs nothing). Use `pnpm list --depth=0` only as optional confirmation *when*
    `node_modules` exists. For the total installed footprint, count the lockfile's `packages:`
-   entries — the lockfile is YAML, so this is a text scan, not `node -e`:
-   `awk '/^packages:/{f=1;next} /^[a-z]/{f=0} f && /^  [^ ]/{n++} END{print n}' pnpm-lock.yaml`.
+   entries — the lockfile is YAML, so this is a text scan, not `node -e`: `awk
+   '/^packages:/{f=1;next} /^[a-z]/{f=0} f && /^  [^ ]/{n++} END{print n}' pnpm-lock.yaml`.
 2. **Attribute usage.** For each direct dep, establish *why and where* Splotch uses it: grep
    `web/src/`, `web/*.config.*`, `tools/`, `tools/`, and the npm scripts for imports and
    invocations. A package with no findable usage is itself a finding (candidate for removal — but
@@ -107,8 +107,8 @@ release is "slowing," an archived repo with an old release is at least `investig
 
 **Version drift is a currency signal, not an action for this skill.** When the locked version trails
 the latest by a major (or sits several minors behind for months), note it in `Concerns` — it feeds
-the verdict and is explicitly handed to `dependency-update-audit`. Do not silently write
-`Concerns: none` on a package that is a full major behind, and do not apply the bump here.
+the verdict and is explicitly handed to `dependency-update-audit`. Do not silently write `Concerns:
+none` on a package that is a full major behind, and do not apply the bump here.
 
 For security/ecosystem concerns, check `pnpm audit --json` (map advisories to the package),
 `deprecated` flags, install scripts, and anything notable about the publisher (org-backed vs.
@@ -150,12 +150,11 @@ own report section (`## Development lifecycle dependencies (outside package.json
 come from **workflow/script pins, not `pnpm-lock.yaml`** — refresh them by re-reading the files, not
 `npm view`. Three kinds:
 
-* **GitHub Actions** — every `uses:` in `.github/workflows/*.yml`
-  (`grep -rhoE "uses: [^ ]+@[^ ]+"`). Note the pin (tag/SHA), publisher (first-party `actions/*` vs.
-  third-party), and for third-party actions the repo health (stars/last-push/archived/latest tag via
-  the GitHub API) + whether the pinned major is behind latest. Flag **inconsistent pins** of the
-  same action across workflows, and that GitHub's hardening guidance prefers SHA pins for
-  third-party actions.
+* **GitHub Actions** — every `uses:` in `.github/workflows/*.yml` (`grep -rhoE "uses: [^ ]+@[^
+  ]+"`). Note the pin (tag/SHA), publisher (first-party `actions/*` vs. third-party), and for
+  third-party actions the repo health (stars/last-push/archived/latest tag via the GitHub API) +
+  whether the pinned major is behind latest. Flag **inconsistent pins** of the same action across
+  workflows, and that GitHub's hardening guidance prefers SHA pins for third-party actions.
 * **Runtime-fetched CLIs** — tools invoked by npm scripts that aren't deps: `npx <tool>` (often
   unpinned → runs latest each time), and globally-installed CLIs deliberately kept out of the tree
   (e.g. `netlify-cli`, guarded by a `tools/check-*.mjs`). Grep `package.json` scripts and
@@ -199,11 +198,11 @@ File header (create the file if missing — its absence just means the first aud
 **Last refresh:** YYYY-MM-DD at `<short-sha>` · NN prod + NN dev direct · NNNN total installed
 ```
 
-Then: a **verdict summary table** (`| Package | Prod/Dev | Verdict |`, non-`keep` rows first), a
-`## Direct dependencies — production` section, `## Direct dependencies — development`,
-`## Transitive dependencies` (Phase 4 content), and
-`## Development lifecycle dependencies (outside package.json)` (Phase 4b content — a table per kind:
-GitHub Actions, runtime-fetched CLIs, system toolchains). Per-package entry format:
+Then: a **verdict summary table** (`| Package | Prod/Dev | Verdict |`, non-`keep` rows first), a `##
+Direct dependencies — production` section, `## Direct dependencies — development`, `## Transitive
+dependencies` (Phase 4 content), and `## Development lifecycle dependencies (outside package.json)`
+(Phase 4b content — a table per kind: GitHub Actions, runtime-fetched CLIs, system toolchains).
+Per-package entry format:
 
 ```markdown
 ### package-name

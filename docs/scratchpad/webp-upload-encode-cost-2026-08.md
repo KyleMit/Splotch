@@ -25,8 +25,8 @@ A benchmark page reproduced `encodeWebpUpload`'s exact phases at export resoluti
 scribbles, ~520–600 KB PNG):
 
 1. `createImageBitmap(png)` — the decode
-2. `drawImage` onto a fresh `OffscreenCanvas`, then
-   `convertToBlob({ type: 'image/webp', quality: 0.85 })`
+2. `drawImage` onto a fresh `OffscreenCanvas`, then `convertToBlob({ type: 'image/webp', quality:
+   0.85 })`
 3. `drawImage` onto a fresh DOM canvas, then `toBlob(cb, 'image/webp', 0.85)`
 
 Each phase recorded its awaited duration *and* the longest main-thread stall during it, via a

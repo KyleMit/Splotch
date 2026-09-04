@@ -46,11 +46,11 @@ comment (per the per-item loop), don't force a shaky fix.
 ## Setup (once per run)
 
 1. **Fetch the backlog first.** Query the open `type:audit` issues with the GitHub MCP tools
-   (`list_issues` with `labels: ["type:audit"]` and `state: OPEN`, or `search_issues` for
-   `is:open label:type:audit`). If there are none, there's nothing to fix: report "no open
-   `type:audit` issues" and stop cleanly — don't create a branch or PR. Order the issues you did get
-   for the sweep: `priority:high` first, then the rest oldest-first (issue number ascending); order
-   is not implied by number otherwise.
+   (`list_issues` with `labels: ["type:audit"]` and `state: OPEN`, or `search_issues` for `is:open
+   label:type:audit`). If there are none, there's nothing to fix: report "no open `type:audit`
+   issues" and stop cleanly — don't create a branch or PR. Order the issues you did get for the
+   sweep: `priority:high` first, then the rest oldest-first (issue number ascending); order is not
+   implied by number otherwise.
 2. Ensure the working tree is clean; if not, stop and tell the user — never mix their uncommitted
    work into this run.
 3. **Resolve the PR question once, upfront — then never ask again.** This is the single thing the
@@ -70,8 +70,7 @@ comment (per the per-item loop), don't force a shaky fix.
    create `claude/audit-sweep-<YYYY-MM-DD>` (or reuse the session's designated working branch if one
    is set), and push it with `git push -u origin <branch>`. Then, **in Draft-PR mode only**, open a
    **draft PR** titled "Audit sweep: <date>" with a body noting the run is in progress (final
-   summary comes at the end). Create it with `gh pr create
-   --draft` where `gh` is available,
+   summary comes at the end). Create it with `gh pr create --draft` where `gh` is available,
    otherwise the GitHub MCP `create_pull_request` tool with `draft: true`.
 
 ## Per-item loop

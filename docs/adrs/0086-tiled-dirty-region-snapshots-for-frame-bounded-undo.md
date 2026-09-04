@@ -212,9 +212,9 @@ npm run perf:ipad:xcuitest --ignore-scripts -- \
   --output=/private/tmp/<trial-name>.json
 ```
 
-Use `--brush=crayon|magic|eraser` for brush coverage. Use
-`--gesture-repeats=3 --history-settle-ms=17000 --undo-count=20` to reproduce the fully compacted
-depth test. Use `--rotate-before-undo` for the dimension-change path.
+Use `--brush=crayon|magic|eraser` for brush coverage. Use `--gesture-repeats=3
+--history-settle-ms=17000 --undo-count=20` to reproduce the fully compacted depth test. Use
+`--rotate-before-undo` for the dimension-change path.
 
 Do not score a run unless trusted-input fidelity passes. Do not reuse an old MobileSafari bundle:
 the runner unregisters service workers, clears CacheStorage, and reloads a cache-busted URL for this

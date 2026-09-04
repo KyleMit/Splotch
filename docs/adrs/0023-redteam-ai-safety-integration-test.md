@@ -79,11 +79,11 @@ behind the `AiImageProvider` seam — ADR-0047/0113):
   means the model declined to draw, so it maps to `422` ("draw something else") rather than a `502`
   retry that cannot succeed. A response with genuinely no content stays `empty` → `502`.
 * `/api/generate-image` returns **`422`** for a safety refusal (vs `502` for an upstream/empty
-  failure). The client (`aiImage.ts`) maps `422` to a distinct
-  `aiResult.error: { kind: 'safety', … }` (`aiGeneration.svelte.ts`); `AiImageResult.svelte` shows a
-  child-friendly "let's try drawing something else!". As amended by ADR-0109, the retired timer
-  harness was replaced by Playwright endpoint mocks invoked through the production-flow dev seam;
-  the timeout presentation no longer has E2E coverage.
+  failure). The client (`aiImage.ts`) maps `422` to a distinct `aiResult.error: { kind: 'safety', …
+  }` (`aiGeneration.svelte.ts`); `AiImageResult.svelte` shows a child-friendly "let's try drawing
+  something else!". As amended by ADR-0109, the retired timer harness was replaced by Playwright
+  endpoint mocks invoked through the production-flow dev seam; the timeout presentation no longer
+  has E2E coverage.
 
 **Hardening the model toward refusal.** On Gemini's defaults the red-team found the image model
 would *transform* an unsafe drawing rather than refuse it (a gun became a gilded gun, anatomy a

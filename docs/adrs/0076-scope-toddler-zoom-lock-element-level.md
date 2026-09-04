@@ -38,26 +38,25 @@ re-litigated.
 ## Decision
 
 **Tier 1 — route-scoped app surface, normal documents everywhere else.** Remove `user-scalable=no`
-and `maximum-scale=1.0` from the viewport meta (`web/src/app.html`), keeping
-`width=device-width, initial-scale=1.0, viewport-fit=cover`. Then **invert the default**: the
-drawing route is an *immersive app surface* — no scroll, no text selection, no zoom, no iOS
-long-press callout — while every other route is a normal document. These locks
-(`touch-action: none`, `overflow: hidden`, `user-select: none`, `-webkit-touch-callout: none`) used
-to sit on `body` globally (set back when `/` was the only page); the old meta reinforced the zoom
-half. That forced every other route to stay locked — `/admin` couldn't even zoom — and made
-`/privacy` and `/admin` each duplicate a `position: fixed` scroll container with `user-select: text`
-to claw scrolling and selection back. They are now scoped to the drawing route: `<html>` carries a
-`data-app-surface` flag, and `app.css` applies all four locks under `:root[data-app-surface] body`.
+and `maximum-scale=1.0` from the viewport meta (`web/src/app.html`), keeping `width=device-width,
+initial-scale=1.0, viewport-fit=cover`. Then **invert the default**: the drawing route is an
+*immersive app surface* — no scroll, no text selection, no zoom, no iOS long-press callout — while
+every other route is a normal document. These locks (`touch-action: none`, `overflow: hidden`,
+`user-select: none`, `-webkit-touch-callout: none`) used to sit on `body` globally (set back when
+`/` was the only page); the old meta reinforced the zoom half. That forced every other route to stay
+locked — `/admin` couldn't even zoom — and made `/privacy` and `/admin` each duplicate a `position:
+fixed` scroll container with `user-select: text` to claw scrolling and selection back. They are now
+scoped to the drawing route: `<html>` carries a `data-app-surface` flag, and `app.css` applies all
+four locks under `:root[data-app-surface] body`.
 
-* The flag is **seeded before first paint** by the `app.html` boot script
-  (`location.pathname === '/'`) so the locks apply with no window where the page scrolls or the
-  chrome is zoomable, and **kept correct across client-side navigation** by an `$effect` in
-  `web/src/routes/+page.svelte` that sets it on mount and clears it on cleanup.
+* The flag is **seeded before first paint** by the `app.html` boot script (`location.pathname ===
+  '/'`) so the locks apply with no window where the page scrolls or the chrome is zoomable, and
+  **kept correct across client-side navigation** by an `$effect` in `web/src/routes/+page.svelte`
+  that sets it on mount and clears it on cleanup.
 * The zoom lock covers the **whole drawing page**, not just the canvas — the button chrome uses
   `touch-action: manipulation`, which *permits* pinch, so a page-level rule is required to stop a
-  two-finger gesture on the button bar from zooming. The canvas element keeps its own
-  `touch-action: none` + engine `preventDefault` (`cancelTouch` on `touchstart`/`touchmove`) as a
-  second layer.
+  two-finger gesture on the button bar from zooming. The canvas element keeps its own `touch-action:
+  none` + engine `preventDefault` (`cancelTouch` on `touchstart`/`touchmove`) as a second layer.
 * **Every non-canvas route** (`/privacy`, `/admin`, and any page added later) is now a normal
   scrollable, selectable, browser-zoomable document by default — no per-page opt-in. `/privacy` and
   `/admin` shed their `user-select: text` / `touch-action: auto` opt-outs (they keep their fixed
@@ -123,11 +122,10 @@ Two consequences fall out:
   viewport — canvas included — scales. There is no CSS "do not zoom this element", so "let the app
   zoom but freeze the canvas" cannot be expressed declaratively.
 * **Drawing coordinates do not break under a pinch-zoom.** A stroke drawn while the page is
-  pinch-zoomed still lands on the correct canvas pixel, because the engine's
-  `(clientX − rect.left) × (canvas.width / rect.width)` mapping is entirely in layout space, which
-  the pinch leaves untouched. (This is unlike CSS `zoom` or a CSS transform, which *do* change
-  coordinate math — which is exactly why the tier-2 overlays feed the gesture through their own
-  transform.)
+  pinch-zoomed still lands on the correct canvas pixel, because the engine's `(clientX − rect.left)
+  × (canvas.width / rect.width)` mapping is entirely in layout space, which the pinch leaves
+  untouched. (This is unlike CSS `zoom` or a CSS transform, which *do* change coordinate math —
+  which is exactly why the tier-2 overlays feed the gesture through their own transform.)
 
 **A pinch initiates only if every contact point permits it.** The browser intersects `touch-action`
 across the active pointers of a gesture: if any finger is on a `touch-action: none` region, the

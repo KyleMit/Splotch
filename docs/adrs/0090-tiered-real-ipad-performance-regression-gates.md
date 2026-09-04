@@ -336,13 +336,13 @@ WebContent itself stays unsaturated). A real-finger control the same day was **c
 opens, which themselves showed hitches in the same 34-58 ms band — leaving both hypotheses alive.
 
 So the exception ledger gains a max-frame half as a **capture-environment allowance**, scoped as
-ever to the calibrated physical-iOS automated capture: `IOS_ACTION_GATE_ALLOWANCES` carries
-`{ p95, max }`, `open Settings` is allowed 56 ms (the observed three-beat frame plus jitter), a flat
-legacy `gateAllowances` map re-scores exactly as it always did (P95 allowance only), and every other
-action and target stays on the base max gate. **Reopen condition:** a clean-device control — the
-automation overlay verifiably absent (device restarted or overlay timed out, proven by a trace with
-no `AutomationModeUI` process) — that still shows the 44-55 ms open-Settings frame converts this to
-a product finding, retires the allowance, and files the frame for a product fix or an ADR-0137-style
+ever to the calibrated physical-iOS automated capture: `IOS_ACTION_GATE_ALLOWANCES` carries `{ p95,
+max }`, `open Settings` is allowed 56 ms (the observed three-beat frame plus jitter), a flat legacy
+`gateAllowances` map re-scores exactly as it always did (P95 allowance only), and every other action
+and target stays on the base max gate. **Reopen condition:** a clean-device control — the automation
+overlay verifiably absent (device restarted or overlay timed out, proven by a trace with no
+`AutomationModeUI` process) — that still shows the 44-55 ms open-Settings frame converts this to a
+product finding, retires the allowance, and files the frame for a product fix or an ADR-0137-style
 product exception argued from that evidence.
 
 ## Amendment (2026-08): theme switches activate by trusted native tap

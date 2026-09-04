@@ -26,15 +26,15 @@ shape, built by `throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `4
 ```
 
 The `error` field is user-facing (clients surface it directly). That `{ ok: false, error }` body is
-the **one client-facing JSON error shape** across `/api/*`, built by the same module's
-`fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)`, which converts
-every thrown failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status
-and message, and an unexpected exception becomes a 500 with the generic error text — so neither
-throw-based control flow nor a crashed dependency can leak SvelteKit's `{ message }` body. The one
-exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
-module's `readJsonBody(request)` is the shared JSON-body parser — a malformed body is a uniform
-`400 "Expected a JSON body"`. Use these helpers in any new endpoint instead of hand-rolling the
-parse, the failure body, or the 429.
+the **one client-facing JSON error shape** across `/api/*`, built by the same module's `fail(status,
+error, headers?)`; every handler is wrapped in its `apiHandler(...)`, which converts every thrown
+failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status and message,
+and an unexpected exception becomes a 500 with the generic error text — so neither throw-based
+control flow nor a crashed dependency can leak SvelteKit's `{ message }` body. The one exemption is
+`csp-report`, whose responses are deliberately bodyless (browsers ignore them). The module's
+`readJsonBody(request)` is the shared JSON-body parser — a malformed body is a uniform `400
+"Expected a JSON body"`. Use these helpers in any new endpoint instead of hand-rolling the parse,
+the failure body, or the 429.
 
 An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
 managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`
@@ -53,24 +53,23 @@ body** — the client uploads a high-quality **WebP** (`Content-Type: image/webp
 small; the allowlist is `image/png`, `image/jpeg`, `image/webp`, and an absent type defaults to PNG.
 There is no multipart envelope for the buffered function to parse and copy (ADR-0064). The
 credential rides in a header, **never** the query string, because both are secrets that would
-otherwise leak into access logs, browser history, and `Referer`: send
-`X-Access-Token: <allow-listed access token>` **or** `X-Api-Key: <BYO OpenAI key>` (mutually
-exclusive; a key takes the BYOK path). The non-secret style enum is the one field in the URL —
-`?style=Magical` (any value not in `STYLE_SUFFIXES` is ignored and the base prompt is used). The
-body is capped at 15 MiB (`413`); a present, non-allow-listed `Content-Type` is `415`; an empty body
-is `400`.
+otherwise leak into access logs, browser history, and `Referer`: send `X-Access-Token: <allow-listed
+access token>` **or** `X-Api-Key: <BYO OpenAI key>` (mutually exclusive; a key takes the BYOK path).
+The non-secret style enum is the one field in the URL — `?style=Magical` (any value not in
+`STYLE_SUFFIXES` is ignored and the base prompt is used). The body is capped at 15 MiB (`413`); a
+present, non-allow-listed `Content-Type` is `415`; an empty body is `400`.
 
 A client that sends `X-Async-Generation: 1` is saying it can collect the picture in a later request.
-When a background worker is reachable, the response is then **`202`** with
-`{ ok: true, jobId, pollAfterMs }` and the picture is collected from `/api/generation-result`
-(ADR-0115); the drawing is written to the job store for the handoff, because a background function's
-invocation body is capped in the low hundreds of KB, and the worker takes it in one read-and-delete.
-It is at rest for that handoff and no longer; the finished picture is at rest until the poll that
-hands it over deletes it. A job expires after 20 minutes, and an hourly sweep deletes whatever was
-never collected. The server still answers in-line wherever there is no worker (a plain `vite dev`,
-or an unconfigured signing secret), and a client that never sends the header always gets the
-synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that path
-now usually ends in the controlled `502`.
+When a background worker is reachable, the response is then **`202`** with `{ ok: true, jobId,
+pollAfterMs }` and the picture is collected from `/api/generation-result` (ADR-0115); the drawing is
+written to the job store for the handoff, because a background function's invocation body is capped
+in the low hundreds of KB, and the worker takes it in one read-and-delete. It is at rest for that
+handoff and no longer; the finished picture is at rest until the poll that hands it over deletes it.
+A job expires after 20 minutes, and an hourly sweep deletes whatever was never collected. The server
+still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured signing
+secret), and a client that never sends the header always gets the synchronous shape. Since every
+OpenAI effort tier exceeds the synchronous deadline at p90, that path now usually ends in the
+controlled `502`.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -119,8 +118,8 @@ On success returns the image bytes. A free-grant response also carries
 ran here, which `/api/report-image` requires before it will accept a free-tier report. Exhaustion is
 `403` with `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
 already-parent-gated client flow to BYOK setup. Failure modes are split so the client can guide the
-child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
-`{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
+child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with `{
+ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
 records the released installation reservation as `daily-limit`, not as an upstream provider failure.
 A **`422`** means the model refused the drawing on **safety** grounds — the child should draw
 something *different* (the app shows "let's try drawing something else!"). Every such response
@@ -207,11 +206,11 @@ Verifies a parent-supplied OpenAI API key with a minimal live call. Rate-limited
 { "ok": false, "error": "No API key provided" }
 ```
 
-A key check that never reached OpenAI is a **third** answer, not the second one:
-`503 { ok:false, code:"KEY_CHECK_UNAVAILABLE", error }`. Only a `401`/`403` from OpenAI means the
-key is bad; a timeout, a `429`, a `5xx`, or a dead socket means we failed to ask, and reporting that
-as a bad key tells a parent something false about a credential that works. Observed on a real
-deploy: a cold start outran `VERIFY_KEY_DEADLINE_MS` and a valid key came back rejected.
+A key check that never reached OpenAI is a **third** answer, not the second one: `503 { ok:false,
+code:"KEY_CHECK_UNAVAILABLE", error }`. Only a `401`/`403` from OpenAI means the key is bad; a
+timeout, a `429`, a `5xx`, or a dead socket means we failed to ask, and reporting that as a bad key
+tells a parent something false about a credential that works. Observed on a real deploy: a cold
+start outran `VERIFY_KEY_DEADLINE_MS` and a valid key came back rejected.
 
 ### `GET /api/free-generation-grant`
 
@@ -364,10 +363,10 @@ hours. See ADR-0104.
 
 First-party receiver for browser CSP violation reports (issue #457) — the `report-uri` / `report-to`
 target of the site's composed Content Security Policy (SvelteKit's resource policy plus the
-meta-unsupported subset in root `netlify.toml`, which also sends the matching
-`Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured `[csp-report]`
-lines in the Netlify function log — the app's only telemetry sink (no third-party reporting by
-design; same stance as `handleError` in `hooks.server.ts`).
+meta-unsupported subset in root `netlify.toml`, which also sends the matching `Reporting-Endpoints:
+csp="/api/csp-report"` header). Violations land as structured `[csp-report]` lines in the Netlify
+function log — the app's only telemetry sink (no third-party reporting by design; same stance as
+`handleError` in `hooks.server.ts`).
 
 Delivery is browser-best-effort rather than complete telemetry. SSR policies are response headers
 and carry both `report-uri` and `report-to`. Prerendered resource policies are meta-delivered, where
@@ -378,15 +377,15 @@ accepted prerendering tradeoff.
 
 Browsers post these unauthenticated, so there is no credential gate. Accepted `Content-Type`s:
 `application/csp-report` (the legacy `report-uri` batch, `{"csp-report": {…kebab-case…}}` — Firefox
-and Safari), `application/reports+json` (the Reporting-API batch, an array of
-`{type: "csp-violation", url, body: {…camelCase…}}` — Chromium), and plain `application/json` for
-tooling; anything else is `415`. Abuse is blunted the same way as `/api/report`: a per-IP rate limit
-(10/min, the standard `throttled()` 429) plus hard caps — body over 32 KiB is `413`, at most 10
-reports are logged per payload, and every logged field is length-capped. Each report is normalized
-to one JSON log line (`documentURL`, `blockedURL`, `directive`, `disposition`, `sourceFile`, `line`,
-`column`, `sample`). Query strings, fragments, and URL username/password components are removed from
-the three URL-shaped fields before logging so credentials and other page-local secrets are not
-retained; non-URL CSP sentinel values remain unchanged.
+and Safari), `application/reports+json` (the Reporting-API batch, an array of `{type:
+"csp-violation", url, body: {…camelCase…}}` — Chromium), and plain `application/json` for tooling;
+anything else is `415`. Abuse is blunted the same way as `/api/report`: a per-IP rate limit (10/min,
+the standard `throttled()` 429) plus hard caps — body over 32 KiB is `413`, at most 10 reports are
+logged per payload, and every logged field is length-capped. Each report is normalized to one JSON
+log line (`documentURL`, `blockedURL`, `directive`, `disposition`, `sourceFile`, `line`, `column`,
+`sample`). Query strings, fragments, and URL username/password components are removed from the three
+URL-shaped fields before logging so credentials and other page-local secrets are not retained;
+non-URL CSP sentinel values remain unchanged.
 
 Every accepted payload — including malformed JSON, which is silently dropped — is answered `204`
 with no body; browsers ignore the response, so there is nothing to return.
@@ -409,10 +408,10 @@ directly in its form actions and **never** loops back through these endpoints.
 
 * `ADMIN_ACCESS_TOKEN` (env var) is the raw admin secret. It is only ever sent once, in the login
   request body, and never stored client-side.
-* Login returns a **derived session token**:
-  `HMAC-SHA256(key = ADMIN_ACCESS_TOKEN, "admin-session-v1")` — the same value the web console
-  stores in its HTTP-only cookie. It cannot be inverted to recover the secret, and rotating the
-  secret (or bumping the HMAC label) invalidates every outstanding session at once.
+* Login returns a **derived session token**: `HMAC-SHA256(key = ADMIN_ACCESS_TOKEN,
+  "admin-session-v1")` — the same value the web console stores in its HTTP-only cookie. It cannot be
+  inverted to recover the secret, and rotating the secret (or bumping the HMAC label) invalidates
+  every outstanding session at once.
 * Subsequent requests send it as `Authorization: Bearer <session>`. The native app keeps it in the
   platform secure store (Keychain/Keystore).
 * All comparisons are constant-time (`timingSafeEqual`).
@@ -435,9 +434,9 @@ page's login action, so the two doors don't double an attacker's budget).
 
 ### `/api/admin/tokens`
 
-All methods require `Authorization: Bearer <session>`; failures are a uniform
-`401 { "ok": false, "error": "Unauthorized" }`. All methods return the same snapshot shape so
-mutations never need a follow-up fetch:
+All methods require `Authorization: Bearer <session>`; failures are a uniform `401 { "ok": false,
+"error": "Unauthorized" }`. All methods return the same snapshot shape so mutations never need a
+follow-up fetch:
 
 ```json
 {
@@ -463,8 +462,8 @@ round-trip only on Netlify preview hostnames.
 | `DELETE` | `{ "token": "name" }` | Remove a token (idempotent). Also requests immediate deletion of its usage tally. |
 
 Mutations are etag compare-and-set writes with a few retries; if concurrent admin mutations keep
-colliding (possible under Blobs eventual consistency, ADR-0025), `POST`/`DELETE` return
-`409 { ok: false, error }` — safe to retry as-is.
+colliding (possible under Blobs eventual consistency, ADR-0025), `POST`/`DELETE` return `409 { ok:
+false, error }` — safe to retry as-is.
 
 A mutation returns `503 { ok: false, error }` and changes nothing whenever durable storage is
 unavailable in a production-shaped runtime: `getStore()` threw, a Blobs read threw, or every

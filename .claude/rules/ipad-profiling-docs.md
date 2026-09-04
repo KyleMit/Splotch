@@ -18,8 +18,8 @@ Square brackets make `[Mac]` a **shortcut reference link** with no matching defi
 as literal text, so nothing visibly breaks — but markdownlint flags every one (MD052) and editors
 highlight them as broken links, which buries real problems in the noise.
 
-The same applies to the UI placeholders in these docs, for the same reason: write
-`Develop → ⟨your iPad's name⟩ → …/dev/engine`, not `Develop → [your iPad's name] → …`.
+The same applies to the UI placeholders in these docs, for the same reason: write `Develop → ⟨your
+iPad's name⟩ → …/dev/engine`, not `Develop → [your iPad's name] → …`.
 
 **Scope: Markdown only, and only these files.** The `[Mac]` / `[iPad]` comment headers in
 `tools/perf/probes/input-recorder.js` and `tools/perf/probes/engine-gates.js` are JavaScript

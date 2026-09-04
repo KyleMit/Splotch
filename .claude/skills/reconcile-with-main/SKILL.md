@@ -94,8 +94,8 @@ Fix what you find. A finding you decide not to fix still goes in the report.
 
 These merge clean every time and are worth checking by name:
 
-* **ADR number collision** — both sides adding a record claims the same four-digit prefix.
-  `npm run check:adrs`.
+* **ADR number collision** — both sides adding a record claims the same four-digit prefix. `npm run
+  check:adrs`.
 * **Generated-instruction drift** — either side touching `.ruler/`, skill forks, or a direct
   provider package. `npm run ruler:check`.
 * **Dependency placement** — a package that moved between `dependencies` and `devDependencies`
@@ -107,8 +107,8 @@ These merge clean every time and are worth checking by name:
   (`web/src/lib/state/saveFolder.svelte.ts` and `web/src/app.html` are the standing examples). If
   one side moved, the guard test is what tells you.
 * **Backlog overlap** — the issue this branch closes may already be closed on `main`, or its
-  approach superseded by an ADR that landed since the merge base:
-  `git log <merge-base>..origin/main -- docs/adrs/`.
+  approach superseded by an ADR that landed since the merge base: `git log
+  <merge-base>..origin/main -- docs/adrs/`.
 * **Skill registry** — a skill added, renamed, or removed on either side must still be registered
   exactly once in the `skills-guide` skill.
 

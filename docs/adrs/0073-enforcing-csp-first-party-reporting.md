@@ -122,14 +122,14 @@ hash-bearing CSP meta tag, while dynamically rendered documents receive a nonce-
 header. `style-src 'unsafe-inline'` is unchanged because the inlined component styles and Svelte
 transitions still require it; this tightening is deliberately script-only.
 
-The Netlify/SSR security-header policy is now the complementary
-`frame-ancestors 'none'; report-uri /api/csp-report` subset. It deliberately carries neither
-`default-src` nor `script-src`: browsers enforce multiple policies by intersection, so retaining
-either directive in that second policy would block the inline boot code that SvelteKit's hashes or
-nonces authorize. On SSR responses, `hooks.server.ts` preserves SvelteKit's existing full CSP
-instead of replacing it with the platform subset. On prerendered responses, Netlify supplies the
-subset that meta delivery cannot express, while SvelteKit's meta policy retains `report-to csp` and
-the response's `Reporting-Endpoints` header defines that group.
+The Netlify/SSR security-header policy is now the complementary `frame-ancestors 'none'; report-uri
+/api/csp-report` subset. It deliberately carries neither `default-src` nor `script-src`: browsers
+enforce multiple policies by intersection, so retaining either directive in that second policy would
+block the inline boot code that SvelteKit's hashes or nonces authorize. On SSR responses,
+`hooks.server.ts` preserves SvelteKit's existing full CSP instead of replacing it with the platform
+subset. On prerendered responses, Netlify supplies the subset that meta delivery cannot express,
+while SvelteKit's meta policy retains `report-to csp` and the response's `Reporting-Endpoints`
+header defines that group.
 
 Reporting coverage is not equivalent across the two delivery modes. Header-delivered SSR CSP keeps
 both reporting mechanisms. On prerendered pages, legacy `report-uri` covers only violations of the

@@ -65,9 +65,9 @@ paths with one exerciser and fails if that scenario is absent from `FAST_UNDO_SC
 runtime continues to prove the encode path actually ran; the declaration guards membership while the
 runtime guard catches behavior diverging from the declaration.
 
-Every completed release-tag full run computes each scenario's headroom ratio as
-`engine.commit P95 / COMMIT_GATE_MS` and appends it to a schema-validated rolling history. Ideal
-membership uses the latest three full runs in priority order:
+Every completed release-tag full run computes each scenario's headroom ratio as `engine.commit P95 /
+COMMIT_GATE_MS` and appends it to a schema-validated rolling history. Ideal membership uses the
+latest three full runs in priority order:
 
 1. scenarios that solely exercise a declared path are mandatory;
 2. remaining slots take the highest measured-to-budget ratio, prioritizing scenarios closest to or

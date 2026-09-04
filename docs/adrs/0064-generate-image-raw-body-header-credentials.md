@@ -7,10 +7,10 @@
 
 `/api/generate-image` originally accepted `multipart/form-data`: the PNG in an `image` field, the
 managed access token / BYO Gemini key in `token` / `apiKey` fields, and the style enum in a `style`
-field. On the buffered Netlify function (ADR-0063) that path is wasteful —
-`await request.formData()` buffers the whole multipart envelope, parses it, then
-`imageFile.arrayBuffer()` copies the image out again. A raw body collapses that to one
-`await request.arrayBuffer()`: no multipart parse, one fewer copy, less peak memory (issue #346).
+field. On the buffered Netlify function (ADR-0063) that path is wasteful — `await
+request.formData()` buffers the whole multipart envelope, parses it, then `imageFile.arrayBuffer()`
+copies the image out again. A raw body collapses that to one `await request.arrayBuffer()`: no
+multipart parse, one fewer copy, less peak memory (issue #346).
 
 Moving the image to the body forces the other three fields somewhere else. The obvious framing —
 "headers plus a query param" — hides a security decision: **the token and the BYO Gemini key are
@@ -58,10 +58,10 @@ paths.
 SvelteKit's CSRF guard only rejects a cross-site POST whose `Content-Type` is a form type
 (`multipart/form-data`, `application/x-www-form-urlencoded`, `text/plain`). A raw `image/*` body is
 none of those, so the guard never fires on the new contract. But the retained legacy multipart shape
-**is** a form type, and shipped native builds send it cross-origin, so
-`csrf.trustedOrigins: ['https://localhost', 'capacitor://localhost']` (ADR-0007) is **still actively
-required** — not merely defense-in-depth — until those clients age out. Once the multipart branch is
-removed, the route stops depending on `trustedOrigins`.
+**is** a form type, and shipped native builds send it cross-origin, so `csrf.trustedOrigins:
+['https://localhost', 'capacitor://localhost']` (ADR-0007) is **still actively required** — not
+merely defense-in-depth — until those clients age out. Once the multipart branch is removed, the
+route stops depending on `trustedOrigins`.
 
 ## Consequences
 

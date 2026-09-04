@@ -17,31 +17,30 @@ Full end-to-end, fully offline (0 Gemini calls, as predicted):
    uncataloged assets on disk — `shapes/heart-tall`, `objects/umbrella-wide`). Regenerating the
    existing pen thumbs proved byte-identical (deterministic sharp pipeline), so a full regen is
    safe.
-2. **App side** — `web/src/lib/state/books.ts` gained `chalkThumbPath()`
-   (`x.chalk.webp → x.chalk.thumb.webp`) and `pageThumb(page, orientation, theme)` (dark → chalk
-   thumb where the orientation has a chalk, else pen thumb); `bookAssetPaths()` now lists the chalk
-   thumbs so `check-assets` validates them and `strip-native-assets` removes them with their book.
-   `ColoringBook.svelte` swaps the page-tile `src` and the page-thumb prefetch to
-   `pageThumb(page, orientation, resolvedTheme())` — the existing reactive resolved-theme rune
-   module, so a live theme switch re-picks the thumbs (same pattern `DrawingCanvas.svelte` uses for
-   the full-screen chalk overlay).
-3. **Verified in the real app** — `run-splotch` driver + a Playwright script with
-   `localStorage splotch-theme=dark`: before/after screenshots of the dark-mode picker (books grid,
-   Creatures grid, Shapes grid), owl and circle tiles cropped as evidence.
+2. **App side** — `web/src/lib/state/books.ts` gained `chalkThumbPath()` (`x.chalk.webp →
+   x.chalk.thumb.webp`) and `pageThumb(page, orientation, theme)` (dark → chalk thumb where the
+   orientation has a chalk, else pen thumb); `bookAssetPaths()` now lists the chalk thumbs so
+   `check-assets` validates them and `strip-native-assets` removes them with their book.
+   `ColoringBook.svelte` swaps the page-tile `src` and the page-thumb prefetch to `pageThumb(page,
+   orientation, resolvedTheme())` — the existing reactive resolved-theme rune module, so a live
+   theme switch re-picks the thumbs (same pattern `DrawingCanvas.svelte` uses for the full-screen
+   chalk overlay).
+3. **Verified in the real app** — `run-splotch` driver + a Playwright script with `localStorage
+   splotch-theme=dark`: before/after screenshots of the dark-mode picker (books grid, Creatures
+   grid, Shapes grid), owl and circle tiles cropped as evidence.
 4. `npm run check` (0 errors), `books` unit tests (9 passed, tests extended for the new helpers),
    `tools/check-assets.mjs` (568 assets, all pass).
 
 ## The key simplification: no negation needed anywhere
 
 The idea text said the chalk must be "negated appropriately" for dark-mode thumbs. **Empirically
-false — and that's the best part.** The picker tile already applies
-`filter: var(--lineart-filter)` + `mix-blend-mode: var(--lineart-blend)` (= `invert(1)` + `screen`
-in dark mode) to every tile `<img>`. Chalks are stored ink-on-white *by design* so that exact
-treatment renders them as white chalk (see the storage-polarity comment in
-`gen-coloring-chalk.mjs`). So the chalk thumb is a plain resize of the chalk — same pipeline as the
-pen thumb, no polarity fork, no CSS change, and the tile preview goes through the *identical* render
-path as the canvas overlay it predicts. The whole feature is ~15 lines of real code plus derived
-assets.
+false — and that's the best part.** The picker tile already applies `filter:
+var(--lineart-filter)` + `mix-blend-mode: var(--lineart-blend)` (= `invert(1)` + `screen` in dark
+mode) to every tile `<img>`. Chalks are stored ink-on-white *by design* so that exact treatment
+renders them as white chalk (see the storage-polarity comment in `gen-coloring-chalk.mjs`). So the
+chalk thumb is a plain resize of the chalk — same pipeline as the pen thumb, no polarity fork, no
+CSS change, and the tile preview goes through the *identical* render path as the canvas overlay it
+predicts. The whole feature is ~15 lines of real code plus derived assets.
 
 ## What the fix actually changes on screen
 

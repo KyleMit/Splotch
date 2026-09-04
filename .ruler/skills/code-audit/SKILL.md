@@ -51,11 +51,11 @@ Learned from prior runs:
 * For an exhaustive whole-repo pass (every area, high finding counts), `docs/CODE-MAP.md` is the
   ready-made section inventory — one auditor per area, using the subcategory splits where defined.
   At that scale, have each auditor write its full report to its own scratch file and return only
-  counts + themes, then assemble `docs/AUDIT.md` by concatenation with one
-  `## Source: Code audit — <section>` header per section (keeps the `###` = one-finding invariant
-  the consumers parse). Pin every citation to the audited commit SHA so line numbers stay resolvable
-  after the code moves, and hand auditors a pre-fetched open-issue list file — 100+ issues is too
-  much for each agent to re-query.
+  counts + themes, then assemble `docs/AUDIT.md` by concatenation with one `## Source: Code audit
+  — <section>` header per section (keeps the `###` = one-finding invariant the consumers parse). Pin
+  every citation to the audited commit SHA so line numbers stay resolvable after the code moves, and
+  hand auditors a pre-fetched open-issue list file — 100+ issues is too much for each agent to
+  re-query.
 
 ## Shared audit conventions
 

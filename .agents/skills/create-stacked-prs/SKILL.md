@@ -203,9 +203,9 @@ grep -lE "^[[:space:]]*(paths|paths-ignore):" .github/workflows/*.yml   # green 
 ```
 
 And watch for **unpushed local commits** on the tip branch — merging ships what is on the remote and
-strands anything local. Jobs gated on
-`github.event_name == 'push' && github.ref == 'refs/heads/main'` run *only after* the merge and can
-never be green beforehand; they are not a reason to hold the stack.
+strands anything local. Jobs gated on `github.event_name == 'push' && github.ref ==
+'refs/heads/main'` run *only after* the merge and can never be green beforehand; they are not a
+reason to hold the stack.
 
 ## Responding to review
 
@@ -242,25 +242,23 @@ gh stack link <pr-url-bottom> <pr-url-2> <pr-url-3>   # bottom → top
   2026-08-24 a guessed number resolved to **an unrelated PR opened six minutes earlier**, whose base
   was repointed into the stack. Nothing errors: linking a valid PR is a valid operation.
 
-  Repairing it is worse than avoiding it, because a PR cannot leave a stack while it is in one —
-  `gh pr edit --base` fails with *"Cannot change the base branch because the pull request is part of
-  a stack"*. The whole stack has to be dissolved with `gh stack unstack <number>`, the stray PR's
-  base restored, and the real chain relinked, which issues a new stack number. Capture the URL from
-  `gh pr create` and pass that.
+  Repairing it is worse than avoiding it, because a PR cannot leave a stack while it is in one — `gh
+  pr edit --base` fails with *"Cannot change the base branch because the pull request is part of a
+  stack"*. The whole stack has to be dissolved with `gh stack unstack <number>`, the stray PR's base
+  restored, and the real chain relinked, which issues a new stack number. Capture the URL from `gh
+  pr create` and pass that.
 * If the bases are already chained correctly this is structurally a no-op — it creates the stack
-  association without rewriting bases or moving branches. Confirm nothing moved:
-  `git status
-  --porcelain` empty, and `git rev-parse <branch>` equal to
-  `git rev-parse origin/<branch>`.
+  association without rewriting bases or moving branches. Confirm nothing moved: `git status
+  --porcelain` empty, and `git rev-parse <branch>` equal to `git rev-parse origin/<branch>`.
 * **Do not pass `--open`** unless you want every PR marked ready for review — it un-drafts drafts.
-* Append to an existing stack by passing its stack number first:
-  `gh stack link 7 <pr-url> <pr-url>`.
+* Append to an existing stack by passing its stack number first: `gh stack link 7 <pr-url>
+  <pr-url>`.
 * **Record the stack number `link` prints.** It is the handle for every later command, and `link`
   creates no local tracking state — nothing else will hand it back to you.
 * Stack propagation is asynchronous. Re-read the bases for a few seconds until every one is correct;
   a wrong base after that is infrastructure to repair, not to work around.
-* Local view: `gh stack checkout <stack-number>` imports the stack from GitHub, then
-  `gh stack view --short`. Escape hatch: `gh stack unstack`.
+* Local view: `gh stack checkout <stack-number>` imports the stack from GitHub, then `gh stack view
+  --short`. Escape hatch: `gh stack unstack`.
 
 ## Merging — only when the user asks
 
@@ -271,10 +269,10 @@ gh stack merge <stack-number> --squash --yes   # one commit per PR; discards int
 ```
 
 **Pass the stack number.** With no argument `gh stack merge` uses the stack for the *current
-branch*, and `gh stack link` deliberately writes no local state — so unless someone ran
-`gh stack checkout <stack-number>` first, the bare form has nothing to target. A bare number is read
-first as a stack number and then as a PR number; passing a PR number instead merges everything up to
-and including that PR.
+branch*, and `gh stack link` deliberately writes no local state — so unless someone ran `gh stack
+checkout <stack-number>` first, the bare form has nothing to target. A bare number is read first as
+a stack number and then as a PR number; passing a PR number instead merges everything up to and
+including that PR.
 
 `--yes` skips the interactive wizard and is required non-interactively. The merge is **atomic and
 bottom-to-top**: if any PR cannot merge, none do. Only open-and-not-draft is checked client-side;
@@ -290,8 +288,7 @@ collapses each PR to a single commit.
 the trunk at the fork point, every intermediate PR fast-forwards and GitHub creates a **single**
 merge commit at the top. All individual commits are preserved at their **original SHAs**; only the
 per-PR boundaries in first-parent history are lost. `--rebase` rewrites every SHA instead, and
-GitHub-side rebases produce **unsigned** commits — check whether that matters
-(`git log
+GitHub-side rebases produce **unsigned** commits — check whether that matters (`git log
 --format='%G?'`).
 
 ### Verify the landing
@@ -315,9 +312,9 @@ the trunk by then.
 * `gh pr stack` does not exist; the extension is top-level `gh stack`.
 * The public GraphQL schema exposes **no** stack mutations, but REST does — `gh stack` is the
   convenience client, not the only programmatic path. Stacks are listed and created at
-  `/repos/{owner}/{repo}/stacks`, extended with `POST …/stacks/{number}/add`, dissolved with
-  `POST …/stacks/{number}/unstack`, and landed with the asynchronous
-  `PUT /repos/{owner}/{repo}/pulls/{number}/merge-async`, which returns a UUID to poll at
+  `/repos/{owner}/{repo}/stacks`, extended with `POST …/stacks/{number}/add`, dissolved with `POST
+  …/stacks/{number}/unstack`, and landed with the asynchronous `PUT
+  /repos/{owner}/{repo}/pulls/{number}/merge-async`, which returns a UUID to poll at
   `…/merge-async/{uuid}` until it reaches a terminal state. All of it is reachable through `gh api`
   or a native REST call when the extension is unavailable.
 * A force-push that rewrites every branch does **not** break the stack association.

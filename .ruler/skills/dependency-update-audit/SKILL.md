@@ -12,9 +12,9 @@ There is **one root `package.json`** for the whole repo (web + Capacitor native)
 lives in `web/` but its dependencies are declared at the root (see `CLAUDE.md`). Run npm tooling
 from the repo root.
 
-**Wrong skill if Dependabot already opened the PRs.** This one picks the packages itself from
-`pnpm outdated` and drives each bump. To clear a queue of open Dependabot PRs — verify each, merge
-the safe ones in a conflict-aware order, close the rest behind a tracking issue — use
+**Wrong skill if Dependabot already opened the PRs.** This one picks the packages itself from `pnpm
+outdated` and drives each bump. To clear a queue of open Dependabot PRs — verify each, merge the
+safe ones in a conflict-aware order, close the rest behind a tracking issue — use
 [`triage-dependabot-prs`](../triage-dependabot-prs/SKILL.md) instead.
 
 If an argument is given, scope the entire run to just that one package and skip straight to step 3
@@ -35,11 +35,11 @@ where no user is present to answer questions.
    versions, and whether it's a `prod` or `dev` dependency.
    * **GitHub Actions pins count too.** Run `npm run check:github-actions` to inventory every
      `uses:` pin across `.github/workflows/` and flag **drift** — the same action pinned at
-     inconsistent versions across files (network-free). Add
-     `npm run check:github-actions -- --check-latest` to also compare each pin against its latest
-     upstream release tag (needs unauthenticated-or-`GITHUB_TOKEN` access to `api.github.com`; it
-     degrades to `latest: unknown` when rate-limited or offline). Treat an outdated or inconsistent
-     Action pin as an upgrade candidate alongside the npm packages.
+     inconsistent versions across files (network-free). Add `npm run check:github-actions --
+     --check-latest` to also compare each pin against its latest upstream release tag (needs
+     unauthenticated-or-`GITHUB_TOKEN` access to `api.github.com`; it degrades to `latest: unknown`
+     when rate-limited or offline). Treat an outdated or inconsistent Action pin as an upgrade
+     candidate alongside the npm packages.
 2. **Classify each.** For every outdated package decide the jump:
    * **Patch/minor within range** (`wanted` move) — low risk.
    * **Major** (`latest` > `wanted`, crosses a major) — needs a migration guide and a usage audit.
@@ -64,10 +64,10 @@ where no user is present to answer questions.
    * How to handle the **coordinated families** (e.g. attempt the Svelte 5.x → next-major or
      Capacitor major together, or defer them).
    * Any package the user wants to **hold back** or pin.
-   * Whether to run the **full `npm test`** (unit + Playwright E2E) per package or just
-     `npm run check` + unit tests, with full E2E once at the end (E2E is the slow part — default to
-     check + unit per package, full suite before the last commit). Present a concise plan alongside
-     the questions so the user can approve the whole sequence in one pass.
+   * Whether to run the **full `npm test`** (unit + Playwright E2E) per package or just `npm run
+     check` + unit tests, with full E2E once at the end (E2E is the slow part — default to check +
+     unit per package, full suite before the last commit). Present a concise plan alongside the
+     questions so the user can approve the whole sequence in one pass.
 
 ## Phase 3 — Execute, one package at a time (autonomous)
 

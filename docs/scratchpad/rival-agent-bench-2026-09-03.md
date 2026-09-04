@@ -89,64 +89,219 @@ the key's floor.
 
 ### Broker requests
 
-* `commit-scope-keyed-as-typed` read-only r1 — approved, exit 23 —
-  `npm run test:tools -- tools/rival-agent/tests/launch.test.mjs && node --input-type=module -e 'import { ledgerKeyFor } from "./tools/rival-agent/launch.mjs"; const repoRoot = process.cwd(); const rival = "codex"; const branch = "detached"; const oid = "29d6bedbb70c5600d3929b87ce5a858c069a9598"; const byHead = ledgerKeyFor({ repoRoot, rival, scope: { kind: "commit", commit: "HEAD" }, branch }); const byOid = ledgerKeyFor({ repoRoot, rival, scope: { kind: "commit", commit: oid }, branch }); console.log(JSON.stringify({ byHead, byOid, sameCommit: oid })); if (byHead !== byOid) process.exit(23);'`
-* `control-comment-reword` read-only r1 — approved, exit 0 —
-  `npx prettier --check tools/rival-agent/spool.mjs && npx eslint tools/rival-agent/spool.mjs`
-* `control-test-title` read-only r1 — approved, exit 0 —
-  `npm run test:tools -- tools/rival-agent/tests/ledger.test.mjs`
-* `hunk-content-read-as-file-header` read-only r1 — approved, exit 0 —
-  `node --input-type=module -e 'import { parseDiffAnchors } from "./tools/rival-agent/post-review.mjs"; const patch = ["diff --git a/db/schema.sql b/db/schema.sql", "index 1111111..2222222 100644", "--- a/db/schema.sql", "+++ b/db/schema.sql", "@@ -1,3 +1,3 @@", " create table t (", "--- legacy column", "+++ replacement column", " );"].join("\n"); console.log(JSON.stringify([...parseDiffAnchors(patch)].map(([path, sides]) => ({ path, RIGHT: [...sides.RIGHT], LEFT: [...sides.LEFT] }))));' && npx vitest run --config tools/vitest.config.mjs rival-agent/tests/post-review.test.mjs`
+* `commit-scope-keyed-as-typed` read-only r1 — approved, exit 23 — `npm run test:tools --
+  tools/rival-agent/tests/launch.test.mjs && node --input-type=module -e 'import { ledgerKeyFor }
+  from "./tools/rival-agent/launch.mjs"; const repoRoot = process.cwd(); const rival = "codex";
+  const branch = "detached"; const oid = "29d6bedbb70c5600d3929b87ce5a858c069a9598"; const byHead =
+  ledgerKeyFor({ repoRoot, rival, scope: { kind: "commit", commit: "HEAD" }, branch }); const
+  byOid = ledgerKeyFor({ repoRoot, rival, scope: { kind: "commit", commit: oid }, branch });
+  console.log(JSON.stringify({ byHead, byOid, sameCommit: oid })); if (byHead !== byOid)
+  process.exit(23);'`
+* `control-comment-reword` read-only r1 — approved, exit 0 — `npx prettier --check
+  tools/rival-agent/spool.mjs && npx eslint tools/rival-agent/spool.mjs`
+* `control-test-title` read-only r1 — approved, exit 0 — `npm run test:tools --
+  tools/rival-agent/tests/ledger.test.mjs`
+* `hunk-content-read-as-file-header` read-only r1 — approved, exit 0 — `node --input-type=module -e
+  'import { parseDiffAnchors } from "./tools/rival-agent/post-review.mjs"; const patch = ["diff
+  --git a/db/schema.sql b/db/schema.sql", "index 1111111..2222222 100644", "--- a/db/schema.sql",
+  "+++ b/db/schema.sql", "@@ -1,3 +1,3 @@", " create table t (", "--- legacy column", "+++
+  replacement column", " );"].join("\n");
+  console.log(JSON.stringify([...parseDiffAnchors(patch)].map(([path, sides]) => ({ path, RIGHT:
+  [...sides.RIGHT], LEFT: [...sides.LEFT] }))));' && npx vitest run --config tools/vitest.config.mjs
+  rival-agent/tests/post-review.test.mjs`
 * `newline-escape-in-single-quotes` read-only r1 — declined: reaches outside the disposable worktree
-  —
-  ``node --input-type=module -e 'import { readFileSync } from "node:fs"; import { spawnSync } from "node:child_process"; const question = readFileSync("tools/rival-agent/acceptance/question.md", "utf8"); const commands = [...question.matchAll(/```sh\n([\s\S]*?)\n```/g)]; const execution = spawnSync("bash", ["-c", commands[2][1]], { encoding: "utf8" }); console.log(JSON.stringify({ status: execution.status, stdout: execution.stdout, stderr: execution.stderr, stdoutCodes: [...execution.stdout].map((character) => character.charCodeAt(0)), stderrCodes: [...execution.stderr].map((character) => character.charCodeAt(0)) }));' && npx vitest run --config tools/vitest.config.mjs rival-agent/tests/gen-acceptance-suite.test.mjs``
-* `packet-inherits-diff-context` read-only r1 — approved, exit 0 —
-  `node --input-type=module <<'NODE' import { execFileSync } from 'node:child_process'; import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'; import { tmpdir } from 'node:os'; import { join } from 'node:path'; import { resolveScope, writeReviewPacket, PACKET_FILES } from './tools/rival-agent/worktree.mjs'; const root = mkdtempSync(join(tmpdir(), 'rival-context-repro-')); const repo = join(root, 'repo'); const packet = join(root, 'packet'); mkdirSync(repo); mkdirSync(packet); const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8' }); try {   git('init', '-q');   git('config', 'user.name', 'review');   git('config', 'user.email', 'review@example.test');   const lines = Array.from({ length: 30 }, (_, i) =>`l${i}`);   writeFileSync(join(repo, 'a.txt'), `${lines.join('\n')}\n`);   git('add', 'a.txt'); git('commit', '-q', '-m', 'initial');   git('config', 'diff.context', '10');   lines[15] = 'changed';   writeFileSync(join(repo, 'a.txt'),`${lines.join('\n')}\n`);   git('commit', '-q', '-am', 'change');   writeReviewPacket(repo, resolveScope(repo, { kind: 'commit', commit: 'HEAD' }), packet);   const patch = readFileSync(join(packet, PACKET_FILES.diff), 'utf8');   const hunk = patch.split('\n').find((line) => line.startsWith('@@'));   console.log(hunk);   if (hunk !== '@@ -6,21 +6,21 @@ l4') process.exitCode = 1; } finally {   rmSync(root, { recursive: true, force: true }); } NODE`
+  — `node --input-type=module -e 'import { readFileSync } from "node:fs"; import { spawnSync } from
+  "node:child_process"; const question = readFileSync("tools/rival-agent/acceptance/question.md",
+  "utf8"); const commands = [...question.matchAll(/```sh\n([\s\S]*?)\n```/g)]; const execution =
+  spawnSync("bash", ["-c", commands[2][1]], { encoding: "utf8" }); console.log(JSON.stringify({
+  status: execution.status, stdout: execution.stdout, stderr: execution.stderr, stdoutCodes:
+  [...execution.stdout].map((character) => character.charCodeAt(0)), stderrCodes:
+  [...execution.stderr].map((character) => character.charCodeAt(0)) }));' && npx vitest run --config
+  tools/vitest.config.mjs rival-agent/tests/gen-acceptance-suite.test.mjs`
+* `packet-inherits-diff-context` read-only r1 — approved, exit 0 — `node --input-type=module
+  <<'NODE' import { execFileSync } from 'node:child_process'; import { mkdtempSync, mkdirSync,
+  readFileSync, rmSync, writeFileSync } from 'node:fs'; import { tmpdir } from 'node:os'; import {
+  join } from 'node:path'; import { resolveScope, writeReviewPacket, PACKET_FILES } from
+  './tools/rival-agent/worktree.mjs'; const root = mkdtempSync(join(tmpdir(),
+  'rival-context-repro-')); const repo = join(root, 'repo'); const packet = join(root, 'packet');
+  mkdirSync(repo); mkdirSync(packet); const git = (...args) => execFileSync('git', ['-C', repo,
+  ...args], { encoding: 'utf8' }); try {   git('init', '-q');   git('config', 'user.name',
+  'review');   git('config', 'user.email', 'review@example.test');   const lines = Array.from({
+  length: 30 }, (_, i)
+  =>`l${i}`);   writeFileSync(join(repo, 'a.txt'), `${lines.join('\n')}\n`);   git('add', 'a.txt');
+  git('commit', '-q', '-m', 'initial');   git('config', 'diff.context', '10');   lines[15] =
+  'changed';   writeFileSync(join(repo, 'a.txt'),`${lines.join('\n')}\n`);   git('commit', '-q',
+  '-am', 'change');   writeReviewPacket(repo, resolveScope(repo, { kind: 'commit', commit: 'HEAD'
+  }), packet);   const patch = readFileSync(join(packet, PACKET_FILES.diff), 'utf8');   const hunk =
+  patch.split('\n').find((line) => line.startsWith('@@'));   console.log(hunk);   if (hunk !== '@@
+  -6,21 +6,21 @@ l4') process.exitCode = 1; } finally {   rmSync(root, { recursive: true, force:
+  true }); } NODE`
 * `paginate-without-slurp` read-only r1 — declined: needs the network or a host-exclusive resource —
-  `gh --version && gh help api \| sed -n '1,220p' && npm exec -- vitest run --config tools/vitest.config.mjs tools/rival-agent/tests/post-review.test.mjs`
-* `retry-reuses-log-path` read-only r1 — approved, exit 0 —
-  `npm run test:tools -- tools/rival-agent/tests/launch.test.mjs && node --input-type=module -e "import { createWriteStream } from 'node:fs'; import { once } from 'node:events'; import { tmpdir } from 'node:os'; import { join } from 'node:path'; import { randomUUID } from 'node:crypto'; import { logPathForAttempt } from './tools/rival-agent/launch.mjs'; const dir=join(tmpdir(),randomUUID()); const { mkdirSync, rmSync }=await import('node:fs'); mkdirSync(dir); const path1=logPathForAttempt(dir,1); const path2=logPathForAttempt(dir,2); const first=createWriteStream(path1,{flags:'wx'}); await once(first,'open'); first.end(); await once(first,'close'); const second=createWriteStream(path2,{flags:'wx'}); const [error]=await once(second,'error'); console.log(JSON.stringify({path1,path2,code:error.code})); rmSync(dir,{recursive:true}); if(error.code!=='EEXIST'\|\|path1!==path2) process.exit(1);"`
-* `session-record-written-late` read-only r1 — approved, exit 0 —
-  `node --input-type=module -e 'import { rmSync } from "node:fs"; import { launch, parseLaunchArgs } from "./tools/rival-agent/launch.mjs"; import { sessionStatus } from "./tools/rival-agent/broker.mjs"; let result; const vendor = { rival: "probe", prepare() { return { env: {} }; }, resolveModel() { return "probe"; } }; try { await launch(parseLaunchArgs(["--base", "HEAD"]), vendor, { onProgress(line) { if (!line.startsWith("session: ")) return; const session = line.slice("session: ".length); let brokerError; try { sessionStatus(session); } catch (error) { brokerError = error.message; } result = { session, brokerError }; rmSync(session, { recursive: true, force: true }); throw new Error("probe-complete"); } }); } catch (error) { if (error.message !== "probe-complete") throw error; } console.log(JSON.stringify(result));' && npm run test:tools -- tools/rival-agent/tests/launch.test.mjs`
-* `stale-request-after-exit` read-only r1 — declined: reaches outside the disposable worktree —
-  `npx vitest run --config tools/vitest.config.mjs rival-agent/tests/broker.test.mjs && node --input-type=module -e "import { mkdtempSync } from 'node:fs'; import { tmpdir } from 'node:os'; import { join } from 'node:path'; import { appendRequest, createSessionDirectory, SESSION_FILES, sessionPath, waitForPendingOrEnd, writeJsonAtomic } from './tools/rival-agent/spool.mjs'; const root=mkdtempSync(join(tmpdir(),'rival-terminal-repro-')); const session=createSessionDirectory('session',root); appendRequest(session,{command:'touch /tmp/should-not-run',why:'stale'}); writeJsonAtomic(sessionPath(session,SESSION_FILES.done),{}); console.log(JSON.stringify(await waitForPendingOrEnd(session,{timeoutMs:0})));"`
-* `commit-scope-keyed-as-typed` read-only r2 — approved, exit 0 —
-  `npm run test:tools -- tools/rival-agent/tests/launch.test.mjs`
-* `commit-scope-keyed-as-typed` read-only r2 — approved, exit 42 —
-  `node --input-type=module -e 'import { execFileSync } from "node:child_process"; import { ledgerKeyFor } from "./tools/rival-agent/launch.mjs"; const repoRoot=process.cwd(); const full=execFileSync("git", ["rev-parse", "HEAD^{commit}"], { encoding: "utf8" }).trim(); const key=(commit)=>ledgerKeyFor({repoRoot,rival:"claude",scope:{kind:"commit",commit},branch:"unused"}); const aliases=["HEAD",full.slice(0,7),full]; console.log(JSON.stringify({full,aliases:aliases.map((commit)=>({commit,key:key(commit)})),uniqueKeys:new Set(aliases.map(key)).size},null,2)); if (new Set(aliases.map(key)).size !== 1) process.exitCode=42;'`
-* `control-comment-reword` read-only r2 — approved, exit 0 —
-  `npm run format:check && npm run test:tools -- tools/rival-agent/tests/broker.test.mjs`
-* `control-test-title` read-only r2 — approved, exit 0 —
-  `npm run test:tools -- rival-agent/tests/ledger.test.mjs`
-* `hunk-content-read-as-file-header` read-only r2 — approved, exit 0 —
-  `node --input-type=module -e 'import { parseDiffAnchors } from "./tools/rival-agent/post-review.mjs"; const patch = ["diff --git a/db/schema.sql b/db/schema.sql", "index 1111111..2222222 100644", "--- a/db/schema.sql", "+++ b/db/schema.sql", "@@ -1,3 +1,3 @@", " create table t (", "--- legacy column", "+++ replacement column", " );"].join("\n"); const anchors = parseDiffAnchors(patch); console.log(JSON.stringify([...anchors].map(([path, sides]) => ({ path, RIGHT: [...sides.RIGHT], LEFT: [...sides.LEFT] }))));' && npm run test:tools -- rival-agent/tests/post-review.test.mjs`
-* `newline-escape-in-single-quotes` read-only r2 — approved, exit 0 —
-  `node --input-type=module -e 'process.stdout.write("STDOUT:probe\\n"); process.stderr.write("STDERR:probe\\n"); process.exit(23)'; status=$?; printf '\nOBSERVED_STATUS=%s\n' "$status"; npx vitest run --config tools/vitest.config.mjs rival-agent/tests/gen-acceptance-suite.test.mjs`
-* `packet-inherits-diff-context` read-only r2 — approved, exit 0 —
-  `npm run test:tools -- tools/rival-agent/tests/worktree.test.mjs && node --input-type=module <<'NODE' import { execFileSync } from 'node:child_process'; import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'; import { tmpdir } from 'node:os'; import { join } from 'node:path'; import { parseDiffAnchors } from './tools/rival-agent/post-review.mjs'; import { PACKET_FILES, resolveScope, writeReviewPacket } from './tools/rival-agent/worktree.mjs';  const root = mkdtempSync(join(tmpdir(), 'rival-context-repro-')); const repo = join(root, 'repo'); const packet = join(root, 'packet'); const git = (...args) => execFileSync('git', args, {   cwd: repo,   encoding: 'utf8',   env: {     ...process.env,     GIT_AUTHOR_NAME: 't',     GIT_AUTHOR_EMAIL: 't@t',     GIT_COMMITTER_NAME: 't',     GIT_COMMITTER_EMAIL: 't@t',   }, }).trim(); try {   mkdirSync(repo);   mkdirSync(packet);   git('init', '-q', '-b', 'main');   writeFileSync(join(repo, 'a.txt'), Array.from({ length: 30 }, (_, i) =>`l${i}`).join('\n') + '\n');   git('add', '.');   git('commit', '-q', '-m', 'base');   git('config', 'diff.context', '10');   const lines = readFileSync(join(repo, 'a.txt'), 'utf8').split('\n');   lines[15] = 'changed';   writeFileSync(join(repo, 'a.txt'), lines.join('\n'));   git('commit', '-q', '-am', 'change');   writeReviewPacket(repo, resolveScope(repo, { kind: 'commit', commit: 'HEAD' }), packet);   const patch = readFileSync(join(packet, PACKET_FILES.diff), 'utf8');   const hunk = patch.split('\n').find((line) => line.startsWith('@@'));   const right = [...parseDiffAnchors(patch).get('a.txt').RIGHT];   console.log(JSON.stringify({ hunk, right, acceptedFarContextLine: right.includes(6) }, null, 2)); } finally {   rmSync(root, { recursive: true, force: true }); } NODE`
+  `gh --version && gh help api \| sed -n '1,220p' && npm exec -- vitest run --config
+  tools/vitest.config.mjs tools/rival-agent/tests/post-review.test.mjs`
+* `retry-reuses-log-path` read-only r1 — approved, exit 0 — `npm run test:tools --
+  tools/rival-agent/tests/launch.test.mjs && node --input-type=module -e "import { createWriteStream
+  } from 'node:fs'; import { once } from 'node:events'; import { tmpdir } from 'node:os'; import {
+  join } from 'node:path'; import { randomUUID } from 'node:crypto'; import { logPathForAttempt }
+  from './tools/rival-agent/launch.mjs'; const dir=join(tmpdir(),randomUUID()); const { mkdirSync,
+  rmSync }=await import('node:fs'); mkdirSync(dir); const path1=logPathForAttempt(dir,1); const
+  path2=logPathForAttempt(dir,2); const first=createWriteStream(path1,{flags:'wx'}); await
+  once(first,'open'); first.end(); await once(first,'close'); const
+  second=createWriteStream(path2,{flags:'wx'}); const [error]=await once(second,'error');
+  console.log(JSON.stringify({path1,path2,code:error.code})); rmSync(dir,{recursive:true});
+  if(error.code!=='EEXIST'\|\|path1!==path2) process.exit(1);"`
+* `session-record-written-late` read-only r1 — approved, exit 0 — `node --input-type=module -e
+  'import { rmSync } from "node:fs"; import { launch, parseLaunchArgs } from
+  "./tools/rival-agent/launch.mjs"; import { sessionStatus } from "./tools/rival-agent/broker.mjs";
+  let result; const vendor = { rival: "probe", prepare() { return { env: {} }; }, resolveModel() {
+  return "probe"; } }; try { await launch(parseLaunchArgs(["--base", "HEAD"]), vendor, {
+  onProgress(line) { if (!line.startsWith("session: ")) return; const session = line.slice("session:
+  ".length); let brokerError; try { sessionStatus(session); } catch (error) { brokerError =
+  error.message; } result = { session, brokerError }; rmSync(session, { recursive: true, force: true
+  }); throw new Error("probe-complete"); } }); } catch (error) { if (error.message !==
+  "probe-complete") throw error; } console.log(JSON.stringify(result));' && npm run test:tools --
+  tools/rival-agent/tests/launch.test.mjs`
+* `stale-request-after-exit` read-only r1 — declined: reaches outside the disposable worktree — `npx
+  vitest run --config tools/vitest.config.mjs rival-agent/tests/broker.test.mjs && node
+  --input-type=module -e "import { mkdtempSync } from 'node:fs'; import { tmpdir } from 'node:os';
+  import { join } from 'node:path'; import { appendRequest, createSessionDirectory, SESSION_FILES,
+  sessionPath, waitForPendingOrEnd, writeJsonAtomic } from './tools/rival-agent/spool.mjs'; const
+  root=mkdtempSync(join(tmpdir(),'rival-terminal-repro-')); const
+  session=createSessionDirectory('session',root); appendRequest(session,{command:'touch
+  /tmp/should-not-run',why:'stale'}); writeJsonAtomic(sessionPath(session,SESSION_FILES.done),{});
+  console.log(JSON.stringify(await waitForPendingOrEnd(session,{timeoutMs:0})));"`
+* `commit-scope-keyed-as-typed` read-only r2 — approved, exit 0 — `npm run test:tools --
+  tools/rival-agent/tests/launch.test.mjs`
+* `commit-scope-keyed-as-typed` read-only r2 — approved, exit 42 — `node --input-type=module -e
+  'import { execFileSync } from "node:child_process"; import { ledgerKeyFor } from
+  "./tools/rival-agent/launch.mjs"; const repoRoot=process.cwd(); const full=execFileSync("git",
+  ["rev-parse", "HEAD^{commit}"], { encoding: "utf8" }).trim(); const
+  key=(commit)=>ledgerKeyFor({repoRoot,rival:"claude",scope:{kind:"commit",commit},branch:"unused"});
+  const aliases=["HEAD",full.slice(0,7),full];
+  console.log(JSON.stringify({full,aliases:aliases.map((commit)=>({commit,key:key(commit)})),uniqueKeys:new
+  Set(aliases.map(key)).size},null,2)); if (new Set(aliases.map(key)).size !== 1)
+  process.exitCode=42;'`
+* `control-comment-reword` read-only r2 — approved, exit 0 — `npm run format:check && npm run
+  test:tools -- tools/rival-agent/tests/broker.test.mjs`
+* `control-test-title` read-only r2 — approved, exit 0 — `npm run test:tools --
+  rival-agent/tests/ledger.test.mjs`
+* `hunk-content-read-as-file-header` read-only r2 — approved, exit 0 — `node --input-type=module -e
+  'import { parseDiffAnchors } from "./tools/rival-agent/post-review.mjs"; const patch = ["diff
+  --git a/db/schema.sql b/db/schema.sql", "index 1111111..2222222 100644", "--- a/db/schema.sql",
+  "+++ b/db/schema.sql", "@@ -1,3 +1,3 @@", " create table t (", "--- legacy column", "+++
+  replacement column", " );"].join("\n"); const anchors = parseDiffAnchors(patch);
+  console.log(JSON.stringify([...anchors].map(([path, sides]) => ({ path, RIGHT: [...sides.RIGHT],
+  LEFT: [...sides.LEFT] }))));' && npm run test:tools -- rival-agent/tests/post-review.test.mjs`
+* `newline-escape-in-single-quotes` read-only r2 — approved, exit 0 — `node --input-type=module -e
+  'process.stdout.write("STDOUT:probe\\n"); process.stderr.write("STDERR:probe\\n");
+  process.exit(23)'; status=$?; printf '\nOBSERVED_STATUS=%s\n' "$status"; npx vitest run --config
+  tools/vitest.config.mjs rival-agent/tests/gen-acceptance-suite.test.mjs`
+* `packet-inherits-diff-context` read-only r2 — approved, exit 0 — `npm run test:tools --
+  tools/rival-agent/tests/worktree.test.mjs && node --input-type=module <<'NODE' import {
+  execFileSync } from 'node:child_process'; import { mkdtempSync, mkdirSync, readFileSync, rmSync,
+  writeFileSync } from 'node:fs'; import { tmpdir } from 'node:os'; import { join } from
+  'node:path'; import { parseDiffAnchors } from './tools/rival-agent/post-review.mjs'; import {
+  PACKET_FILES, resolveScope, writeReviewPacket } from './tools/rival-agent/worktree.mjs';  const
+  root = mkdtempSync(join(tmpdir(), 'rival-context-repro-')); const repo = join(root, 'repo'); const
+  packet = join(root, 'packet'); const git = (...args) => execFileSync('git', args, {   cwd:
+  repo,   encoding: 'utf8',   env: {     ...process.env,     GIT_AUTHOR_NAME:
+  't',     GIT_AUTHOR_EMAIL: 't@t',     GIT_COMMITTER_NAME: 't',     GIT_COMMITTER_EMAIL:
+  't@t',   }, }).trim(); try {   mkdirSync(repo);   mkdirSync(packet);   git('init', '-q', '-b',
+  'main');   writeFileSync(join(repo, 'a.txt'), Array.from({ length: 30 }, (_, i)
+  =>`l${i}`).join('\n') + '\n');   git('add', '.');   git('commit', '-q', '-m',
+  'base');   git('config', 'diff.context', '10');   const lines = readFileSync(join(repo, 'a.txt'),
+  'utf8').split('\n');   lines[15] = 'changed';   writeFileSync(join(repo, 'a.txt'),
+  lines.join('\n'));   git('commit', '-q', '-am', 'change');   writeReviewPacket(repo,
+  resolveScope(repo, { kind: 'commit', commit: 'HEAD' }), packet);   const patch =
+  readFileSync(join(packet, PACKET_FILES.diff), 'utf8');   const hunk =
+  patch.split('\n').find((line) => line.startsWith('@@'));   const right =
+  [...parseDiffAnchors(patch).get('a.txt').RIGHT];   console.log(JSON.stringify({ hunk, right,
+  acceptedFarContextLine: right.includes(6) }, null, 2)); } finally {   rmSync(root, { recursive:
+  true, force: true }); } NODE`
 * `paginate-without-slurp` read-only r2 — declined: needs the network or a host-exclusive resource —
-  `node --input-type=module -e "import { readReviews } from './tools/rival-agent/post-review.mjs'; const gh = () => '[{\"id\":1}]\n[{\"id\":2}]\n'; try { console.log(readReviews(7, gh)); } catch (error) { console.error(error.name + ': ' + error.message); process.exitCode = 1; }"; npx vitest run --config tools/vitest.config.mjs rival-agent/tests/post-review.test.mjs`
+  `node --input-type=module -e "import { readReviews } from './tools/rival-agent/post-review.mjs';
+  const gh = () => '[{\"id\":1}]\n[{\"id\":2}]\n'; try { console.log(readReviews(7, gh)); } catch
+  (error) { console.error(error.name + ': ' + error.message); process.exitCode = 1; }"; npx vitest
+  run --config tools/vitest.config.mjs rival-agent/tests/post-review.test.mjs`
 * `paginate-without-slurp` workspace-write r2 — declined: needs the network or a host-exclusive
   resource — `gh help api \| sed -n '55,95p'`
-* `retry-reuses-log-path` read-only r2 — approved, exit 0 —
-  `npm run test:tools -- tools/rival-agent/tests/launch.test.mjs tools/rival-agent/tests/stream.test.mjs && node --input-type=module -e "import { mkdtempSync, rmSync } from 'node:fs'; import { tmpdir } from 'node:os'; import { join } from 'node:path'; import { codexReducer, runStreaming } from './tools/rival-agent/stream.mjs'; const dir=mkdtempSync(join(tmpdir(),'rival-log-repro-')); const logPath=join(dir,'rival.ndjson'); const invoke=(exitCode)=>runStreaming({command:process.execPath,args:['-e',\`process.exit(\${exitCode})\`],logPath,reducer:codexReducer});
+* `retry-reuses-log-path` read-only r2 — approved, exit 0 — `npm run test:tools --
+  tools/rival-agent/tests/launch.test.mjs tools/rival-agent/tests/stream.test.mjs && node
+  --input-type=module -e "import { mkdtempSync, rmSync } from 'node:fs'; import { tmpdir } from
+  'node:os'; import { join } from 'node:path'; import { codexReducer, runStreaming } from
+  './tools/rival-agent/stream.mjs'; const dir=mkdtempSync(join(tmpdir(),'rival-log-repro-')); const
+  logPath=join(dir,'rival.ndjson'); const
+  invoke=(exitCode)=>runStreaming({command:process.execPath,args:['-e',\`process.exit(\${exitCode})\`],logPath,reducer:codexReducer});
   let first; let second; try { await invoke(3); } catch (error) {
   first={code:error.code,message:error.message}; } try { await invoke(0); } catch (error) {
   second={code:error.code,message:error.message}; }
   console.log(JSON.stringify({first,second},null,2)); rmSync(dir,{recursive:true,force:true});"`
 * `session-record-written-late` read-only r2 — declined: reaches outside the disposable worktree —
-  `npm run test:unit -- tools/rival-agent/tests/launch.test.mjs tools/rival-agent/tests/broker.test.mjs && node --input-type=module <<'NODE' import { existsSync } from 'node:fs'; import { launch, parseLaunchArgs } from './tools/rival-agent/launch.mjs'; import { SESSION_FILES, sessionPath } from './tools/rival-agent/spool.mjs'; let announcedSession; let recordVisibleAtAnnouncement; const vendor = {   rival: 'probe',   prepare: () => ({ env: process.env }),   resolveModel: () => 'probe',   command: '/usr/bin/true',   buildArgs: () => [],   reducer: () => ({}),   localToolBoundary: '',   newSessionId: () => 'probe-session', }; try {   await launch(parseLaunchArgs(['--commit', 'HEAD']), vendor, {     onProgress(line) {       if (line.startsWith('session: ')) {         announcedSession = line.slice('session: '.length);         recordVisibleAtAnnouncement = existsSync(sessionPath(announcedSession, SESSION_FILES.session));       }     },   }); } catch {} console.log(JSON.stringify({ announcedSession: Boolean(announcedSession), recordVisibleAtAnnouncement })); if (!announcedSession \|\| recordVisibleAtAnnouncement !== false) process.exit(1); NODE`
-* `stale-request-after-exit` read-only r2 — declined: reaches outside the disposable worktree —
-  `npm run test:tools -- tools/rival-agent/tests/broker.test.mjs && node --input-type=module -e 'import { mkdtempSync, rmSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; import { appendRequest, createSessionDirectory, SESSION_FILES, sessionPath, waitForPendingOrEnd, writeJsonAtomic } from "./tools/rival-agent/spool.mjs"; const root = mkdtempSync(join(tmpdir(), "rival-terminal-repro-")); try { const session = createSessionDirectory("session", root); appendRequest(session, { command: "touch /tmp/should-not-run", why: "stale" }); writeJsonAtomic(sessionPath(session, SESSION_FILES.failed), { reason: "rival exited" }); const outcome = await waitForPendingOrEnd(session, { timeoutMs: 0 }); console.log(JSON.stringify(outcome)); if (outcome.state !== "failed") throw new Error(`expected
-  terminal failure to outrank stale request, got
-  ${outcome.state}`); } finally { rmSync(root, { recursive: true, force: true }); }'`
-* `worktree-install-runs-postinstall` read-only r2 — approved, exit 1 —
-  `node --input-type=module -e 'import { execFileSync } from "node:child_process"; import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; import { createDisposableWorktree, removeDisposableWorktree } from "./tools/rival-agent/worktree.mjs"; const root=mkdtempSync(join(tmpdir(),"rival-postinstall-probe-")); const repo=join(root,"repo"); const wt=join(root,"wt"); mkdirSync(repo); const git=(args)=>execFileSync("git",["-C",repo,...args],{stdio:"pipe"}); try { git(["init","-q"]); writeFileSync(join(repo,"package.json"),JSON.stringify({name:"probe",version:"1.0.0",scripts:{postinstall:"node -e \\"require(\\\"node:fs\\\").writeFileSync(\\\"postinstall.marker\\\",\\\"ran\\\")\\""}})); writeFileSync(join(repo,"pnpm-lock.yaml"),"lockfileVersion: '9.0'\nsettings:\n  autoInstallPeers: true\n  excludeLinksFromLockfile: false\nimporters:\n  .: {}\n"); git(["add","."]); git(["-c","user.name=t","-c","user.email=t@t","commit","-qm","probe"]); const head=git(["rev-parse","HEAD"]).toString().trim(); createDisposableWorktree(repo,head,wt); console.log(JSON.stringify({postinstallRan:existsSync(join(wt,"postinstall.marker"))})); removeDisposableWorktree(repo,wt); } finally { rmSync(root,{recursive:true,force:true}); }'`
-* `worktree-install-runs-postinstall` read-only r2 — approved, exit 1 —
-  `node --input-type=module -e 'import { execFileSync } from "node:child_process"; import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; import { createDisposableWorktree, removeDisposableWorktree } from "./tools/rival-agent/worktree.mjs"; const root=mkdtempSync(join(tmpdir(),"rival-postinstall-probe-")); const repo=join(root,"repo"); const wt=join(root,"wt"); mkdirSync(repo); const git=(args)=>execFileSync("git",["-C",repo,...args],{stdio:"pipe"}); try { git(["init","-q"]); writeFileSync(join(repo,"package.json"),JSON.stringify({name:"probe",version:"1.0.0",scripts:{postinstall:"node -p 42 > postinstall.marker"}})); writeFileSync(join(repo,"pnpm-lock.yaml"),"lockfileVersion: 9.0\nsettings:\n  autoInstallPeers: true\n  excludeLinksFromLockfile: false\nimporters:\n  .: {}\n"); git(["add","."]); git(["-c","user.name=t","-c","user.email=t@t","commit","-qm","probe"]); const head=git(["rev-parse","HEAD"]).toString().trim(); createDisposableWorktree(repo,head,wt); console.log(JSON.stringify({postinstallRan:existsSync(join(wt,"postinstall.marker"))})); removeDisposableWorktree(repo,wt); } finally { rmSync(root,{recursive:true,force:true}); }'`
+  `npm run test:unit -- tools/rival-agent/tests/launch.test.mjs
+  tools/rival-agent/tests/broker.test.mjs && node --input-type=module <<'NODE' import { existsSync }
+  from 'node:fs'; import { launch, parseLaunchArgs } from './tools/rival-agent/launch.mjs'; import {
+  SESSION_FILES, sessionPath } from './tools/rival-agent/spool.mjs'; let announcedSession; let
+  recordVisibleAtAnnouncement; const vendor = {   rival: 'probe',   prepare: () => ({ env:
+  process.env }),   resolveModel: () => 'probe',   command: '/usr/bin/true',   buildArgs: () =>
+  [],   reducer: () => ({}),   localToolBoundary: '',   newSessionId: () => 'probe-session', }; try
+  {   await launch(parseLaunchArgs(['--commit', 'HEAD']), vendor, {     onProgress(line) {       if
+  (line.startsWith('session: ')) {         announcedSession = line.slice('session:
+  '.length);         recordVisibleAtAnnouncement = existsSync(sessionPath(announcedSession,
+  SESSION_FILES.session));       }     },   }); } catch {} console.log(JSON.stringify({
+  announcedSession: Boolean(announcedSession), recordVisibleAtAnnouncement })); if
+  (!announcedSession \|\| recordVisibleAtAnnouncement !== false) process.exit(1); NODE`
+* `stale-request-after-exit` read-only r2 — declined: reaches outside the disposable worktree — `npm
+  run test:tools -- tools/rival-agent/tests/broker.test.mjs && node --input-type=module -e 'import {
+  mkdtempSync, rmSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from
+  "node:path"; import { appendRequest, createSessionDirectory, SESSION_FILES, sessionPath,
+  waitForPendingOrEnd, writeJsonAtomic } from "./tools/rival-agent/spool.mjs"; const root =
+  mkdtempSync(join(tmpdir(), "rival-terminal-repro-")); try { const session =
+  createSessionDirectory("session", root); appendRequest(session, { command: "touch
+  /tmp/should-not-run", why: "stale" }); writeJsonAtomic(sessionPath(session, SESSION_FILES.failed),
+  { reason: "rival exited" }); const outcome = await waitForPendingOrEnd(session, { timeoutMs: 0 });
+  console.log(JSON.stringify(outcome)); if (outcome.state !== "failed") throw new Error(`expected
+  terminal failure to outrank stale request, got ${outcome.state}`); } finally { rmSync(root, {
+  recursive: true, force: true }); }'`
+* `worktree-install-runs-postinstall` read-only r2 — approved, exit 1 — `node --input-type=module -e
+  'import { execFileSync } from "node:child_process"; import { existsSync, mkdtempSync, mkdirSync,
+  rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from
+  "node:path"; import { createDisposableWorktree, removeDisposableWorktree } from
+  "./tools/rival-agent/worktree.mjs"; const
+  root=mkdtempSync(join(tmpdir(),"rival-postinstall-probe-")); const repo=join(root,"repo"); const
+  wt=join(root,"wt"); mkdirSync(repo); const
+  git=(args)=>execFileSync("git",["-C",repo,...args],{stdio:"pipe"}); try { git(["init","-q"]);
+  writeFileSync(join(repo,"package.json"),JSON.stringify({name:"probe",version:"1.0.0",scripts:{postinstall:"node
+  -e \\"require(\\\"node:fs\\\").writeFileSync(\\\"postinstall.marker\\\",\\\"ran\\\")\\""}}));
+  writeFileSync(join(repo,"pnpm-lock.yaml"),"lockfileVersion: '9.0'\nsettings:\n  autoInstallPeers:
+  true\n  excludeLinksFromLockfile: false\nimporters:\n  .: {}\n"); git(["add","."]);
+  git(["-c","user.name=t","-c","user.email=t@t","commit","-qm","probe"]); const
+  head=git(["rev-parse","HEAD"]).toString().trim(); createDisposableWorktree(repo,head,wt);
+  console.log(JSON.stringify({postinstallRan:existsSync(join(wt,"postinstall.marker"))}));
+  removeDisposableWorktree(repo,wt); } finally { rmSync(root,{recursive:true,force:true}); }'`
+* `worktree-install-runs-postinstall` read-only r2 — approved, exit 1 — `node --input-type=module -e
+  'import { execFileSync } from "node:child_process"; import { existsSync, mkdtempSync, mkdirSync,
+  rmSync, writeFileSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from
+  "node:path"; import { createDisposableWorktree, removeDisposableWorktree } from
+  "./tools/rival-agent/worktree.mjs"; const
+  root=mkdtempSync(join(tmpdir(),"rival-postinstall-probe-")); const repo=join(root,"repo"); const
+  wt=join(root,"wt"); mkdirSync(repo); const
+  git=(args)=>execFileSync("git",["-C",repo,...args],{stdio:"pipe"}); try { git(["init","-q"]);
+  writeFileSync(join(repo,"package.json"),JSON.stringify({name:"probe",version:"1.0.0",scripts:{postinstall:"node
+  -p 42 > postinstall.marker"}})); writeFileSync(join(repo,"pnpm-lock.yaml"),"lockfileVersion:
+  9.0\nsettings:\n  autoInstallPeers: true\n  excludeLinksFromLockfile: false\nimporters:\n  .:
+  {}\n"); git(["add","."]); git(["-c","user.name=t","-c","user.email=t@t","commit","-qm","probe"]);
+  const head=git(["rev-parse","HEAD"]).toString().trim(); createDisposableWorktree(repo,head,wt);
+  console.log(JSON.stringify({postinstallRan:existsSync(join(wt,"postinstall.marker"))}));
+  removeDisposableWorktree(repo,wt); } finally { rmSync(root,{recursive:true,force:true}); }'`
 * `worktree-install-runs-postinstall` read-only r2 — declined: needs the network or a host-exclusive
-  resource —
-  `probe_dir=$(mktemp -d); printf '%s\n' '{"name":"probe","version":"1.0.0","scripts":{"postinstall":"node -p 42 > postinstall.marker"}}' > "$probe_dir/package.json"; printf '%s\n' "lockfileVersion: '9.0'" 'settings:' '  autoInstallPeers: true' '  excludeLinksFromLockfile: false' 'importers:' '  .: {}' > "$probe_dir/pnpm-lock.yaml"; (cd "$probe_dir" && pnpm install --frozen-lockfile --prefer-offline --ignore-pnpmfile); probe_status=$?; test -f "$probe_dir/postinstall.marker"; marker_status=$?; printf 'install_status=%s marker_exists=%s\n' "$probe_status" "$([ "$marker_status" -eq 0 ] && printf true \|\| printf false)"; rm -rf "$probe_dir"; exit "$probe_status"`
+  resource — `probe_dir=$(mktemp -d); printf '%s\n'
+  '{"name":"probe","version":"1.0.0","scripts":{"postinstall":"node -p 42 > postinstall.marker"}}' >
+  "$probe_dir/package.json"; printf '%s\n' "lockfileVersion: '9.0'" 'settings:' '  autoInstallPeers:
+  true' '  excludeLinksFromLockfile: false' 'importers:' '  .: {}' > "$probe_dir/pnpm-lock.yaml";
+  (cd "$probe_dir" && pnpm install --frozen-lockfile --prefer-offline --ignore-pnpmfile);
+  probe_status=$?; test -f "$probe_dir/postinstall.marker"; marker_status=$?; printf
+  'install_status=%s marker_exists=%s\n' "$probe_status" "$([ "$marker_status" -eq 0 ] && printf
+  true \|\| printf false)"; rm -rf "$probe_dir"; exit "$probe_status"`
 
 ### Reading it
 
@@ -214,8 +369,16 @@ the key's floor.
 
 ### Broker requests
 
-* `paginate-without-slurp` r1 — declined: needs the network or a host-exclusive resource —
-  `printf '== no slurp ==\n'; gh api --paginate 'repos/cli/cli/labels?per_page=2' 2>/dev/null \| node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const v=JSON.parse(s);console.log("PARSE OK; isArray="+Array.isArray(v)+" len="+v.length+" firstElemIsArray="+Array.isArray(v[0]))}catch(e){console.log("PARSE FAIL: "+e.message);console.log("HEAD:"+JSON.stringify(s.slice(0,80)));console.log("BYTES:"+s.length)}})'; printf '== slurp ==\n'; gh api --paginate --slurp 'repos/cli/cli/labels?per_page=2' 2>/dev/null \| node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const v=JSON.parse(s);console.log("PARSE OK; isArray="+Array.isArray(v)+" len="+v.length+" firstElemIsArray="+Array.isArray(v[0]))}catch(e){console.log("PARSE FAIL: "+e.message)}})'`
+* `paginate-without-slurp` r1 — declined: needs the network or a host-exclusive resource — `printf
+  '== no slurp ==\n'; gh api --paginate 'repos/cli/cli/labels?per_page=2' 2>/dev/null \| node -e
+  'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const
+  v=JSON.parse(s);console.log("PARSE OK; isArray="+Array.isArray(v)+" len="+v.length+"
+  firstElemIsArray="+Array.isArray(v[0]))}catch(e){console.log("PARSE FAIL:
+  "+e.message);console.log("HEAD:"+JSON.stringify(s.slice(0,80)));console.log("BYTES:"+s.length)}})';
+  printf '== slurp ==\n'; gh api --paginate --slurp 'repos/cli/cli/labels?per_page=2' 2>/dev/null \|
+  node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const
+  v=JSON.parse(s);console.log("PARSE OK; isArray="+Array.isArray(v)+" len="+v.length+"
+  firstElemIsArray="+Array.isArray(v[0]))}catch(e){console.log("PARSE FAIL: "+e.message)}})'`
 
 ### Reading it beside the Codex run
 

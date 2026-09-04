@@ -153,14 +153,14 @@ TEST_CMD='npm run test:unit && npm run test:tools'
 ```
 
 Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A Codex implementer
-whose finding edits any Ruler source tree (`.ruler/**` or `<dir>/.ruler/**`) still runs
-`npm run ruler:apply`, but its nested sandbox may deny only the generated `.agents/**` write. In
-that case it leaves the source and partial generated changes and returns success; the outer driver
-detects any changed path whose component is `.ruler`, reruns `npm run ruler:apply` outside the
-nested sandbox, and includes the complete generated output in its commit. Any other Ruler failure
-remains an implementation failure. When the supervisor runs `ruler:check`, run it outside the
-workspace sandbox because its drift check temporarily rewrites `.agents/`; an `EPERM` under
-`.agents/skills.tmp-*` is a permission boundary, not drift.
+whose finding edits any Ruler source tree (`.ruler/**` or `<dir>/.ruler/**`) still runs `npm run
+ruler:apply`, but its nested sandbox may deny only the generated `.agents/**` write. In that case it
+leaves the source and partial generated changes and returns success; the outer driver detects any
+changed path whose component is `.ruler`, reruns `npm run ruler:apply` outside the nested sandbox,
+and includes the complete generated output in its commit. Any other Ruler failure remains an
+implementation failure. When the supervisor runs `ruler:check`, run it outside the workspace sandbox
+because its drift check temporarily rewrites `.agents/`; an `EPERM` under `.agents/skills.tmp-*` is
+a permission boundary, not drift.
 
 On macOS a sandboxed dprint invocation can warn that it could not save its incremental cache under
 `~/Library/Caches` and still exit zero. Use the command exit status as the gate verdict; do not turn
@@ -260,9 +260,9 @@ must reach origin before an ephemeral environment can be reclaimed.
    differ. If no canary finding needed a fix round, do not invent one—continue only after the driver
    unit tests and the committed resume probe remain green.
 
-10. Check CI on the canary's final push and require green before a full run. Then run
-    `npm run audit:cost` and sanity-check both wall-clock and tokens. Its scope is every retained
-    role envelope under `.audit-work/logs`, not necessarily this continuation alone.
+10. Check CI on the canary's final push and require green before a full run. Then run `npm run
+    audit:cost` and sanity-check both wall-clock and tokens. Its scope is every retained role
+    envelope under `.audit-work/logs`, not necessarily this continuation alone.
 
 11. Launch the full run with the exact durable command:
 
@@ -420,8 +420,8 @@ committed handoff across machines.
 1. Stop cleanly and confirm no driver or nested Codex call remains.
 2. Confirm `HEAD` equals `origin/<branch>`.
 3. Run comment `capture`, drain every pending record, then run `capture` again.
-4. Reconcile only the `finished:` lines after the handoff's `run.log` baseline. Prove
-   `initial backlog - remaining = fixed + dropped + deferred`; a halt can omit its final summary, so
+4. Reconcile only the `finished:` lines after the handoff's `run.log` baseline. Prove `initial
+   backlog - remaining = fixed + dropped + deferred`; a halt can omit its final summary, so
    reconcile any gap from terminal `DONE`/`INVALID`/`DEFERRED` events in that same scoped log. Do
    not use historical lines, the cumulative deferred list, or commit count: one finding can have
    several fix commits.

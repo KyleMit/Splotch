@@ -25,10 +25,10 @@ translates each guest instruction in software. Everything below follows from tha
 
 Two adjacent options are dead ends, both verified here rather than assumed:
 
-* **An arm64 system image does not help.** Emulator 37 refuses a foreign-ABI AVD outright —
-  `Avd's CPU Architecture 'arm64' is not supported by the QEMU2 emulator on x86_64 host` — even
-  though it ships a `qemu-system-aarch64` binary. Google removed cross-architecture emulation. The
-  guest ABI must equal the host's, so the AVD is `x86_64`.
+* **An arm64 system image does not help.** Emulator 37 refuses a foreign-ABI AVD outright — `Avd's
+  CPU Architecture 'arm64' is not supported by the QEMU2 emulator on x86_64 host` — even though it
+  ships a `qemu-system-aarch64` binary. Google removed cross-architecture emulation. The guest ABI
+  must equal the host's, so the AVD is `x86_64`.
 * **Multi-threaded TCG does not help.** Passing `-qemu -accel tcg,thread=multi` does raise host CPU
   from ~100% to ~190%, but the guest never finishes booting: adb goes `offline` and stays there past
   12 minutes. The emulator's QEMU fork is not safe under x86 MTTCG. Single-threaded TCG — roughly
@@ -64,13 +64,12 @@ F libc   : Fatal signal 5 (SIGTRAP), code 128 (SI_KERNEL) ... in art.splotch.app
 ```
 
 `SIGTRAP`/`SI_KERNEL` is Chromium's deliberate `IMMEDIATE_CRASH`, i.e. a failed internal check
-rather than an illegal instruction. The guest CPU that TCG presents is threadbare —
-`ssse3 sse4_2
-popcnt aes`, with no `avx`, `avx2`, `f16c`, `fma`, or `bmi*`, and the emulator logs
-`TCG doesn't support requested feature: CPUID.01H:ECX.avx` at startup — which is the most likely
-reason a Chromium check fails here and does not on hardware. Lowering the panel to 720x1280, raising
-guest RAM to 4 GB, and switching between `swiftshader_indirect` and `guest` GL each changed how far
-it got; none of them stopped the crash.
+rather than an illegal instruction. The guest CPU that TCG presents is threadbare — `ssse3 sse4_2
+popcnt aes`, with no `avx`, `avx2`, `f16c`, `fma`, or `bmi*`, and the emulator logs `TCG doesn't
+support requested feature: CPUID.01H:ECX.avx` at startup — which is the most likely reason a
+Chromium check fails here and does not on hardware. Lowering the panel to 720x1280, raising guest
+RAM to 4 GB, and switching between `swiftshader_indirect` and `guest` GL each changed how far it
+got; none of them stopped the crash.
 
 The system's own UI is unaffected — the AOSP launcher, wallpaper, icons and dialogs all render — so
 the emulator is genuinely working. It is specifically Chromium that will not survive on it.
@@ -84,9 +83,9 @@ serves the real app to a real browser and costs none of this.
 
 ### Expect "isn't responding" dialogs
 
-Under TCG the guest is slow enough to trip Android's own watchdogs during and after boot —
-`Process system isn't responding`, `System UI isn't responding`. They are a symptom of the
-interpreter, not of a broken image. Dismiss with a tap on **Wait**, or suppress the background ones:
+Under TCG the guest is slow enough to trip Android's own watchdogs during and after boot — `Process
+system isn't responding`, `System UI isn't responding`. They are a symptom of the interpreter, not
+of a broken image. Dismiss with a tap on **Wait**, or suppress the background ones:
 
 ```bash
 adb -s emulator-5554 shell settings put global anr_show_background 0
@@ -148,10 +147,10 @@ without grepping for `Failed to load snapshot`.
 Because there is no fast path, the SessionStart hook starts the cold boot in the background at t=0
 and returns immediately. That is the whole of "ready at launch", and it buys less than it sounds
 like: two clean fresh-userdata boots measured **1279 s and ~1309 s** (`Boot completed in 1278690 ms`
-in the emulator log), i.e. **~21 minutes**, one with `-gpu swiftshader_indirect` and one with
-`-gpu guest` — the GL backend makes no difference. Earlier, faster figures on this page's history
-came from AVDs whose data partition was already initialised; a **first** boot pays the full package
-scan on a single interpreted core, and that is what a fresh session gets. Treat ~20 minutes as the
+in the emulator log), i.e. **~21 minutes**, one with `-gpu swiftshader_indirect` and one with `-gpu
+guest` — the GL backend makes no difference. Earlier, faster figures on this page's history came
+from AVDs whose data partition was already initialised; a **first** boot pays the full package scan
+on a single interpreted core, and that is what a fresh session gets. Treat ~20 minutes as the
 planning number and expect variance around it.
 
 So: start other work immediately, and come back to the device rather than waiting on it. When you do
@@ -180,9 +179,9 @@ guest keeps producing lines here:
 adb -s emulator-5554 logcat -d -t 5     # advancing = still booting; run the wait again
 ```
 
-A guest that is genuinely stuck shows adb `device` (or `offline`) with a static logcat and no
-`Boot completed` in `/tmp/splotch-emulator-boot.log`. Never run two emulators against one AVD to
-"hurry it up" — they share `userdata-qemu.img`, and the corruption costs another full cold boot.
+A guest that is genuinely stuck shows adb `device` (or `offline`) with a static logcat and no `Boot
+completed` in `/tmp/splotch-emulator-boot.log`. Never run two emulators against one AVD to "hurry it
+up" — they share `userdata-qemu.img`, and the corruption costs another full cold boot.
 
 `adb` itself resolves because provisioning symlinks it into `/usr/local/bin`; nothing exported by
 the setup script survives into a session, and `platform-tools` is not on the default PATH. If that

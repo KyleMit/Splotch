@@ -41,10 +41,10 @@ coloring pages adapting. The design questions with real alternatives:
 explicitly chose one; the default `system` leaves the attribute off. All themed surfaces read
 semantic custom properties (`--surface`, `--text`, `--border`, `--paper`, `--lineart-*`,
 `--float-*`, …) defined in `web/src/app.css`: light values on `:root`, dark overrides in **two
-deliberately identical blocks** — `:root[data-theme='dark']` and
-`@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) }`. CSS below the browser
-floor has no way to share one declaration block between an attribute selector and a media query, so
-the duplication is the accepted cost; keep the blocks in sync.
+deliberately identical blocks** — `:root[data-theme='dark']` and `@media (prefers-color-scheme:
+dark) { :root:not([data-theme='light']) }`. CSS below the browser floor has no way to share one
+declaration block between an attribute selector and a media query, so the duplication is the
+accepted cost; keep the blocks in sync.
 
 * Setting: `settings.theme` in `web/src/lib/state/settings.svelte.ts` (`splotch-theme`, covered by
   `reloadSettings()` / the native durable mirror). `web/src/lib/theme.ts` owns the preference
@@ -116,11 +116,11 @@ the duplication is the accepted cost; keep the blocks in sync.
   in dark mode; both are byte-identical to the prior light styling in light mode (transparent
   border + the warm shadow).
 * **Icons.** Monochrome Material SVGs bake in `fill="#1f1f1f"`; the CSS `fill` property beats that
-  presentation attribute, so one zero-specificity rule
-  (`:where(.modal-shell) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg`) re-inks them
-  to `--icon-ink` on themed surfaces (InstallBanner repeats it locally). Where an icon was tinted by
-  a hand-tuned `filter` chain (modal close, coloring-book back, breadcrumb home), the filter was
-  replaced with theme-aware `fill` — a filter composed over the re-ink would drift in dark mode.
+  presentation attribute, so one zero-specificity rule (`:where(.modal-shell)
+  :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg`) re-inks them to `--icon-ink` on
+  themed surfaces (InstallBanner repeats it locally). Where an icon was tinted by a hand-tuned
+  `filter` chain (modal close, coloring-book back, breadcrumb home), the filter was replaced with
+  theme-aware `fill` — a filter composed over the re-ink would drift in dark mode.
 
 ## Consequences
 

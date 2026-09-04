@@ -6,9 +6,9 @@ description: Launch, run, and screenshot the Splotch web app to confirm a change
 # Run Splotch (web)
 
 Splotch is a SvelteKit web app (`/` drawing canvas, `/admin` console, `/privacy`). There is no
-`chromium-cli` on this project, so the driver is [`driver.mjs`](driver.mjs) — it launches a
-`vite dev` server, opens Playwright's bundled Chromium, optionally draws a stroke, and saves a
-screenshot. Playwright is already a devDependency; the same Chromium the E2E suite uses.
+`chromium-cli` on this project, so the driver is [`driver.mjs`](driver.mjs) — it launches a `vite
+dev` server, opens Playwright's bundled Chromium, optionally draws a stroke, and saves a screenshot.
+Playwright is already a devDependency; the same Chromium the E2E suite uses.
 
 **All paths below are relative to the repo root.**
 
@@ -127,12 +127,12 @@ await page.locator('#brushButton').click();
 await page.locator('#magicBrushButton').click();
 ```
 
-> **Save the script file inside the repo, not the session scratchpad.** Node resolves
-> `import ... 'playwright'` by walking up from the script's own directory, so a `.mjs` under the
-> session scratchpad (per `CLAUDE.md`'s temp-file rule) dies with
-> `ERR_MODULE_NOT_FOUND: Cannot find package 'playwright'`. Put it in the gitignored `screenshots/`
-> dir — inside the tree so imports resolve, and gitignored so the file doesn't trip the stop-hook
-> git check (same dir your shots go in). Delete it when done.
+> **Save the script file inside the repo, not the session scratchpad.** Node resolves `import ...
+> 'playwright'` by walking up from the script's own directory, so a `.mjs` under the session
+> scratchpad (per `CLAUDE.md`'s temp-file rule) dies with `ERR_MODULE_NOT_FOUND: Cannot find package
+> 'playwright'`. Put it in the gitignored `screenshots/` dir — inside the tree so imports resolve,
+> and gitignored so the file doesn't trip the stop-hook git check (same dir your shots go in).
+> Delete it when done.
 >
 > `NODE_PATH=…/node_modules` does **not** fix this for these scripts — `NODE_PATH` is a
 > CommonJS-only resolver hint and is ignored by the ESM `import` loader.
@@ -142,8 +142,7 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these 
 `applyFarmPage` helper in `web/tests/flows-harness.ts`, which the magic-brush E2E spec
 (`web/tests/flows-magic-brush.spec.ts`) drives.
 
-> **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite',
-> 'dev', …])` +
+> **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite', 'dev', …])` +
 > `server.kill('SIGTERM')` does **not** work: `npx` exits but the real `vite` keeps running, and
 > because its stdout is piped to your script the Node event loop never drains — the script hangs on
 > exit and leaves an **orphaned `vite dev` holding the port for hours**. Instead, pick one:

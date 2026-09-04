@@ -307,8 +307,8 @@ entry 87. Paths under `web/src/` unless noted.*
 ### VI. Undo / history
 
 40. **Tiled dirty-region snapshot undo** — per touched tile, first-touch pre-mutation snapshot;
-    dirty bounds unioned; `crop()` shrinks to the dirty rect at commit; undo is
-    `clearRect + drawImage`. `tiledUndoPatches.ts`. *ADR-0086; lineage 0066/0069/0074*
+    dirty bounds unioned; `crop()` shrinks to the dirty rect at commit; undo is `clearRect +
+    drawImage`. `tiledUndoPatches.ts`. *ADR-0086; lineage 0066/0069/0074*
 41. **Byte-budgeted retention** — patch bytes bounded to 6 whole papers (min 2 commands), depth
     cap 20. `tiledRenderer.ts:54-58, 233-249`. *ADR-0086; lineage ADR-0082*
 42. **Idle history fold** — commands beyond the undo window fold into raster base tiles, one per 1.5

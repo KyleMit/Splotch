@@ -36,11 +36,11 @@ self-contained, is explicitly injected, or moves the whole browser-side operatio
 ## Output
 
 Write findings to `docs/AUDIT.md` under a `## Source: Extract audit` section, using the canonical
-finding format from the shared conventions — `### [Extract] proposedFunctionName` with
-`#### Problem` / `#### Proposed solution` / `#### Verification` inside. Extract-specific: name the
+finding format from the shared conventions — `### [Extract] proposedFunctionName` with `####
+Problem` / `#### Proposed solution` / `#### Verification` inside. Extract-specific: name the
 proposed function in the title, and put its **signature** and **target location** (same file, nearby
-util, etc.) in `#### Proposed solution`, e.g.
-`function suggestedFunctionName(param: Type): ReturnType`.
+util, etc.) in `#### Proposed solution`, e.g. `function suggestedFunctionName(param: Type):
+ReturnType`.
 
 Order by value: prefer extractions that most improve readability at the call site. Aim for 5–15
 items; skip trivial one-liners unless the name would genuinely clarify intent.

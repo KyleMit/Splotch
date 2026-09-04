@@ -29,10 +29,9 @@ chalks (gate-passing null edit), so it is *not* the better default.
 * The three named pages map onto **two generators**: train-wide re-inking and caterpillar-wide eye
   flooding are night-fill classes (`gen-coloring-fills-dark.mjs`), rectangle-wide's
   whiten-everything misfire is a chalk class (`gen-coloring-chalk.mjs`).
-* One-line temporary patch:
-  `const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image'` in both generators
-  (reverted after the runs). Everything else — prompts, gates, thresholds, alignment — is the
-  production path.
+* One-line temporary patch: `const MODEL = process.env.GEMINI_IMAGE_MODEL ||
+  'gemini-2.5-flash-image'` in both generators (reverted after the runs). Everything else — prompts,
+  gates, thresholds, alignment — is the production path.
 * Night fills: `--samples 2 --max-attempts 1` (exactly 1 API call per take, no retry ladder, so raw
   per-take behavior is visible). Chalk: `--force --max-attempts 2`, **without** the `--notes` that
   the shipped rectangle chalk needed, to test the misfire tendency raw.

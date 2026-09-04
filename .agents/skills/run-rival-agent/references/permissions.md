@@ -3,8 +3,8 @@
 Run `npm run run-claude:install` once from the trusted canonical checkout, approve that fixed Node
 command in Codex, and restart Codex so its config and rules reload. The installer:
 
-* sets `approval_policy = "on-request"`, `approvals_reviewer = "auto_review"`, and
-  `sandbox_mode = "workspace-write"` in `~/.codex/config.toml`;
+* sets `approval_policy = "on-request"`, `approvals_reviewer = "auto_review"`, and `sandbox_mode =
+  "workspace-write"` in `~/.codex/config.toml`;
 * copies the vendor-neutral core from `tools/rival-agent/` and this package's launcher, health
   probe, publisher alias, and billing guard into `~/.local/libexec/splotch-rival-agent/`, repointing
   the package files' core imports at their new siblings, and writes a manifest hashing every file;
@@ -81,8 +81,8 @@ capped at 256 KiB.
 
 Every wrapper rejects environment variables that select API-key, Bedrock, Vertex, or Foundry
 billing. `CLAUDE_CODE_OAUTH_TOKEN` remains allowed because it is a Claude plan token; local use
-normally authenticates through the Keychain. The health probe additionally requires
-`claude auth status` to report a logged-in, non-API-key session.
+normally authenticates through the Keychain. The health probe additionally requires `claude auth
+status` to report a logged-in, non-API-key session.
 
 ## Rounds and the alias
 
@@ -104,6 +104,6 @@ The prefix rules are not a complete remote security perimeter. Repository protec
 scoped credentials remain the hard remote guarantees; Auto-review evaluates operations that reach
 the escalation boundary. A denial remains a real stop or safer-path signal; never route around it.
 
-Run `npm run run-claude:policy:check` before use. Use
-`codex execpolicy check --rules ~/.codex/rules/default.rules --pretty < command.txt` to inspect the
-effective decisions after installation.
+Run `npm run run-claude:policy:check` before use. Use `codex execpolicy check --rules
+~/.codex/rules/default.rules --pretty < command.txt` to inspect the effective decisions after
+installation.

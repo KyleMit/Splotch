@@ -13,16 +13,16 @@ cost, and issue 1251 explicitly asked for an
 [ADR-0136](0136-browser-target-lost-frame-gate.md)-style check before anyone optimized anything.
 
 A frame of real per-frame work `W` presents at `ceil(W/P) × P` for vsync period `P`. The
-discriminating experiment (2026-08-25) pinned the panel to 60Hz
-(`settings put system peak_refresh_rate/min_refresh_rate 60.0`) and reran the same actions on the
-same build: **every action in the family passed at a flat 16.7–16.8ms**. The two observations are
-jointly inconsistent with any real-work explanation: 25.0ms at 120Hz requires `W ∈ (16.7, 25.0]`,
-and that same band would present at 33.4ms at 60Hz — not the observed 16.7. No single `W` explains
-both runs, so the 25.0 cadence cannot be quantized product work. What the experiment proves is that
-**the work fits inside one 60Hz period** (`W ≤ 16.7ms`); the sweep's own idle control idling at a
-clean, passing 60Hz on the same device places the 25ms cadence squarely in the post-touch boost
-window. The precise mechanism — panel boost-decay stepping, or Chrome throttling content to 40Hz
-post-touch — is deliberately not asserted; the numbers pin the conclusion either way.
+discriminating experiment (2026-08-25) pinned the panel to 60Hz (`settings put system
+peak_refresh_rate/min_refresh_rate 60.0`) and reran the same actions on the same build: **every
+action in the family passed at a flat 16.7–16.8ms**. The two observations are jointly inconsistent
+with any real-work explanation: 25.0ms at 120Hz requires `W ∈ (16.7, 25.0]`, and that same band
+would present at 33.4ms at 60Hz — not the observed 16.7. No single `W` explains both runs, so the
+25.0 cadence cannot be quantized product work. What the experiment proves is that **the work fits
+inside one 60Hz period** (`W ≤ 16.7ms`); the sweep's own idle control idling at a clean, passing
+60Hz on the same device places the 25ms cadence squarely in the post-touch boost window. The precise
+mechanism — panel boost-decay stepping, or Chrome throttling content to 40Hz post-touch — is
+deliberately not asserted; the numbers pin the conclusion either way.
 
 Alternatives considered:
 

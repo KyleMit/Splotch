@@ -3,10 +3,9 @@
 The intermediate representation. Read this if you want the *geometry* rather than the SVG — to edit
 strokes, re-emit at a different width, feed a drawing app, or score the result yourself.
 
-`src/centerline_tracing/cli.py` writes one per drawing to
-`explicit output directory/graphs/<image>.json`. Normative implementation:
-`src/centerline_tracing/graph/schema.py`. **Status: frozen.** Breaking changes take a new version
-string, never an edit to this one.
+`src/centerline_tracing/cli.py` writes one per drawing to `explicit output
+directory/graphs/<image>.json`. Normative implementation: `src/centerline_tracing/graph/schema.py`.
+**Status: frozen.** Breaking changes take a new version string, never an edit to this one.
 
 ## Document
 

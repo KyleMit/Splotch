@@ -151,8 +151,8 @@ test failed.
 * Status: fixed and stress-verified
 * Spec: `web/tests/webkit-smoke.spec.ts`
 * Test: `a pointer stroke puts ink on the canvas`
-* Failure: the pre-stroke blank-canvas sample threw `IndexSizeError` from
-  `getImageData(0, 0, canvas.width, canvas.height)` while both canvas dimensions were zero.
+* Failure: the pre-stroke blank-canvas sample threw `IndexSizeError` from `getImageData(0, 0,
+  canvas.width, canvas.height)` while both canvas dimensions were zero.
 * Frequency: 1 failure in 3 post-fix full-suite runs.
 * Initial scope: the shared `firstOpaquePixel` helper assumes the rendered composite canvas has
   non-zero dimensions. WebKit rejects a zero-width or zero-height `getImageData` request before the

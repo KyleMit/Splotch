@@ -25,9 +25,9 @@ its obsolete pre-merge blob-encoding guard retired.
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
-A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
-`pnpm audit --audit-level=high`) also runs on every push/PR alongside the tests — see Continuous
-integration below. The hosted deploy smoke runs separately against real deployments; its narrower
+A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and `pnpm audit
+--audit-level=high`) also runs on every push/PR alongside the tests — see Continuous integration
+below. The hosted deploy smoke runs separately against real deployments; its narrower
 `test:blobs:smoke` diagnostic is manual.
 
 `npm test` runs the first five (`test:unit:coverage` + `test:asset-gen` + `test:store-drawings` +
@@ -106,12 +106,12 @@ state before the revert check caught them:
   passed while the command that parser feeds crashed on invocation, because the crash lived in the
   caller. A unit assertion on a helper is not a test of the command documented in a skill.
 
-**Commit the fix before running the revert check.** The check is destructive, and
-`git checkout -- <file>` restores the working tree from the **index** (`HEAD` only when nothing is
-staged), so it cannot separate the temporary revert from unrelated uncommitted work in the same file
-— it silently discards both, and if the revert itself was staged it restores the reverted shape
-rather than the fix. Commit first, or invert the edit rather than restoring the file. Never reach
-for a bare `git stash` here: the stash stack is shared across worktrees and other sessions pop it.
+**Commit the fix before running the revert check.** The check is destructive, and `git checkout --
+<file>` restores the working tree from the **index** (`HEAD` only when nothing is staged), so it
+cannot separate the temporary revert from unrelated uncommitted work in the same file — it silently
+discards both, and if the revert itself was staged it restores the reverted shape rather than the
+fix. Commit first, or invert the edit rather than restoring the file. Never reach for a bare `git
+stash` here: the stash stack is shared across worktrees and other sessions pop it.
 
 ## Server-contract smoke tests — `test:api:smoke`, `test:deploy:smoke`, `test:blobs:smoke`
 
@@ -177,9 +177,9 @@ even when a Vitest test imports a component's module script. Moving logic from a
 committed floor only across the `.ts` surface. Browser and component coverage remain separate and
 are not merged into this Vitest-only report.
 
-Files that need no DOM at all — `lib/server/**` and pure-logic modules — carry a
-`// @vitest-environment node` first line so they skip the per-file happy-dom setup (the suite's
-biggest fixed cost). Keep the happy-dom default for any test whose module (or its imports) touches
+Files that need no DOM at all — `lib/server/**` and pure-logic modules — carry a `//
+@vitest-environment node` first line so they skip the per-file happy-dom setup (the suite's biggest
+fixed cost). Keep the happy-dom default for any test whose module (or its imports) touches
 `localStorage`, `document`, or `window` — running those in `node` would silently switch the code
 onto its non-browser fallback paths.
 
@@ -273,12 +273,11 @@ npm run test:e2e:debug     # inspector
 npm run test:e2e -- flows-undo-persistence.spec.ts -g "the undo button enables on a stroke and reverts it"
 ```
 
-For ad-hoc validation of a single change, filter through the npm script — **not** raw
-`npx playwright test` from the repo root. The config + `baseURL` live in `web/`, so raw `npx` from
-the root navigates to an empty `baseURL` (`Cannot navigate to
-invalid URL`) and also loses the
-Chromium fallback (cryptic `chrome-headless-shell` error in cloud). `node tools/run-web-tool.mjs`
-sets the `web/` cwd and Chromium path for you, and forwards everything after `--` to Playwright.
+For ad-hoc validation of a single change, filter through the npm script — **not** raw `npx
+playwright test` from the repo root. The config + `baseURL` live in `web/`, so raw `npx` from the
+root navigates to an empty `baseURL` (`Cannot navigate to invalid URL`) and also loses the Chromium
+fallback (cryptic `chrome-headless-shell` error in cloud). `node tools/run-web-tool.mjs` sets the
+`web/` cwd and Chromium path for you, and forwards everything after `--` to Playwright.
 
 Configured in `web/playwright.config.ts`. By default it builds the production artifact and serves it
 with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). Specs live in
@@ -290,9 +289,9 @@ Android smoke test is for.
 ### Flake-hunting protocol
 
 Start discovery at the repository's supported CI contention level: one worker per logical CPU
-available to the process (ADR-0078), with retries disabled. Read that count with
-`node -p "require('node:os').availableParallelism()"`, then run at least three independent full
-suites through the sweep driver:
+available to the process (ADR-0078), with retries disabled. Read that count with `node -p
+"require('node:os').availableParallelism()"`, then run at least three independent full suites
+through the sweep driver:
 
 ```bash
 npm run test:e2e:sweep -- --workers=<printed count> --reps=3 --out=/tmp/splotch-e2e-discovery
@@ -312,9 +311,9 @@ Use this sequence for a suspected flake:
    product when a user can reach the bad state. Otherwise make the spec wait for the durable outcome
    its next operation actually needs.
 3. Keep the pre-fix reproduction as evidence, then run a focused diagnostic amplifier with retries
-   disabled, for example
-   `npm run test:e2e -- <spec> -g "<title>" --workers=<higher count> --retries=0 --repeat-each=10`.
-   Higher-than-supported worker counts are diagnostic amplification only, never a new default.
+   disabled, for example `npm run test:e2e -- <spec> -g "<title>" --workers=<higher count>
+   --retries=0 --repeat-each=10`. Higher-than-supported worker counts are diagnostic amplification
+   only, never a new default.
 4. Verify the outcome-based fix with that focused amplifier, then run at least three clean
    full-suite repetitions through `test:e2e:sweep` at the supported CI worker count. Use the sweep
    for any stateful or full-suite repetition so every repetition gets fresh server state.
@@ -384,8 +383,8 @@ specs that can't race in the first place:
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
   (`REVEAL_SETTLE_MS` in `flows-magic-brush.spec.ts`); the engine debounces resize by
-  `RESIZE_SETTLE_MS`. Use `expect.poll` with a generous timeout, not a one-shot
-  `await page.evaluate(...)` + `expect(...)`.
+  `RESIZE_SETTLE_MS`. Use `expect.poll` with a generous timeout, not a one-shot `await
+  page.evaluate(...)` + `expect(...)`.
 * **Read reactive/engine state *through* a retrying assertion.** `expect(await count(page)).toBe(n)`
   reads exactly once and races the repaint; `await expect.poll(() => count(page)).toBe(n)` waits for
   it to settle. Same for `getViewState()`/`pixelAt()` reads after a rotation.
@@ -507,8 +506,8 @@ browser engine has an automated push/PR signal:
 
 * Each project joins only when its binary is installed, so Chromium-only local and cloud checkouts
   keep working. CI explicitly installs the selected browser and sets `REQUIRE_FIREFOX` or
-  `REQUIRE_WEBKIT`, turning a missing binary into a hard failure. Run one project with
-  `npm run test:firefox:smoke` or `npm run test:webkit:smoke`.
+  `REQUIRE_WEBKIT`, turning a missing binary into a hard failure. Run one project with `npm run
+  test:firefox:smoke` or `npm run test:webkit:smoke`.
 * CI keeps `firefox-smoke` and `webkit-smoke` parallel to the sharded Chromium Tests job. Firefox is
   the cheaper leg because it needs none of WebKit's GStreamer/ffmpeg stack. WebKit adds ~110 system
   packages, and installing them lands on every run; the setup action's apt cache removes network
@@ -571,8 +570,8 @@ run — no separate command or workflow:
   The permanent fix is keeping `.claude/cloud/setup.sh`'s browser install pinned to this package's
   `@playwright/test` version (it now derives it from `package.json`). See `docs/CLOUD/Claude.md`.
 * **`DEV_SERVER=1` is unreliable in cloud** — global-setup has hit `window is not defined` (SSR) /
-  `/dev/engine never became ready` there. Use the default production-build path (just
-  `npm run test:e2e`); it's slower per run but works.
+  `/dev/engine never became ready` there. Use the default production-build path (just `npm run
+  test:e2e`); it's slower per run but works.
 
 ---
 

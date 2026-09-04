@@ -59,12 +59,12 @@
   documented way to invoke the script graph (ADR-0019) — pre/post hooks and all. But **never run
   `npm install` or `npm ci` here**: both succeed, both produce a working flat `node_modules`, and
   both write a `package-lock.json` that resolves the tree independently of `pnpm-lock.yaml` and then
-  drifts from it with nothing to announce the divergence. Use `pnpm install` (or
-  `pnpm install --frozen-lockfile` to reproduce the committed tree exactly), and `pnpm add <pkg>` to
-  add one. `package-lock.json` is gitignored and `tools/tests/package-manager.test.mjs` fails if any
-  CI, hook, or bootstrap file starts installing with npm again. pnpm itself comes from
-  `corepack enable pnpm` — re-run that after every `nvm install`, since the shim is written into the
-  active Node's `bin/`.
+  drifts from it with nothing to announce the divergence. Use `pnpm install` (or `pnpm install
+  --frozen-lockfile` to reproduce the committed tree exactly), and `pnpm add <pkg>` to add one.
+  `package-lock.json` is gitignored and `tools/tests/package-manager.test.mjs` fails if any CI,
+  hook, or bootstrap file starts installing with npm again. pnpm itself comes from `corepack enable
+  pnpm` — re-run that after every `nvm install`, since the shim is written into the active Node's
+  `bin/`.
 * **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
   Netlify web build needs (runtime imports + vite/SvelteKit/adapter/`marked`); `devDependencies` =
   local/CI-only tooling (Playwright, dprint, sharp, the Capacitor CLIs, …). Netlify installs with
@@ -73,8 +73,8 @@
   or execute this?"
 * **Formatting is split: Prettier owns code, dprint owns Markdown** (`*.md` is in `.prettierignore`;
   ADR-0057). The `format-edited-file.sh` PostToolUse hook auto-formats each file you edit through
-  the right one, but if you write Markdown any other way (or aren't sure), run
-  `npm run format:check` before you commit — CI's `dprint check` fails on unwrapped Markdown, and
-  that's the most common reason a fresh PR is red. The cloud-only `session-start.sh` and
+  the right one, but if you write Markdown any other way (or aren't sure), run `npm run
+  format:check` before you commit — CI's `dprint check` fails on unwrapped Markdown, and that's the
+  most common reason a fresh PR is red. The cloud-only `session-start.sh` and
   `cloud-branch-preview.sh` SessionStart hooks run only when `CLAUDE_CODE_REMOTE=true`; see
   `docs/CLOUD/Claude.md` for details.

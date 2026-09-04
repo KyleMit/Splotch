@@ -64,10 +64,10 @@ Number Slow issue draw commands: 5
 Pipeline=Skia (OpenGL)
 ```
 
-The named counters are the useful part, because each one points at a different subsystem —
-`Slow bitmap uploads` is texture upload, `Slow issue draw commands` is the render thread,
-`Slow UI thread` is the main thread, `High input latency` is the input pipeline ahead of any of
-them. A percentile alone cannot distinguish those.
+The named counters are the useful part, because each one points at a different subsystem — `Slow
+bitmap uploads` is texture upload, `Slow issue draw commands` is the render thread, `Slow UI thread`
+is the main thread, `High input latency` is the input pipeline ahead of any of them. A percentile
+alone cannot distinguish those.
 
 `framestats` then dumps a per-frame CSV between `---PROFILEDATA---` markers, one row per frame, in
 nanoseconds:
@@ -149,9 +149,9 @@ CDP (ADR-0092). That connection also carries the `Tracing` domain, which is the 
 instruments that attributes time to *page* work — script, style, layout, paint — rather than to the
 frame the platform ended up compositing.
 
-This is the piece with no iPad counterpart: `pymobiledevice3`'s CDP bridge answers
-`'Tracing' domain was not found` (see `docs/PROFILING-CAMPAIGNS.md`). On Android it works, so a
-question like "which function is making crayon expensive" is answerable here and is not on the iPad.
+This is the piece with no iPad counterpart: `pymobiledevice3`'s CDP bridge answers `'Tracing' domain
+was not found` (see `docs/PROFILING-CAMPAIGNS.md`). On Android it works, so a question like "which
+function is making crayon expensive" is answerable here and is not on the iPad.
 
 For the **native** target the WebView must be marked debuggable for CDP to see it at all; a release
 build will simply not appear in the target list, which reads as a connection problem and is not one.

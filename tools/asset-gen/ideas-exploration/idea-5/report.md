@@ -89,12 +89,10 @@ Result on the edited pen (all offline, deterministic):
   regenerating it first matters — the chalk gate's polarity reference is the committed light raw,
   which must correspond to the new pen. (I temporarily set `MAX_ATTEMPTS = 2` in
   `gen-coloring-fills.mjs` to bound API use; reverted.)
-* **Chalk** (1 call):
-  `gen:coloring-chalk -- nature/caterpillar-wide --apply --force
-  --max-attempts 3` passed first
-  try — keep 99.1 / local 83.4 / white 0.5% (vs the whole-eyeball whitening before). The new chalk
-  keeps a **fillable pupil** with a chalk-ink catchlight inside it — the owl-style best case. Only
-  warning: "eye whites not chalked (1)", the known warn-only polarity direction.
+* **Chalk** (1 call): `gen:coloring-chalk -- nature/caterpillar-wide --apply --force --max-attempts
+  3` passed first try — keep 99.1 / local 83.4 / white 0.5% (vs the whole-eyeball whitening before).
+  The new chalk keeps a **fillable pupil** with a chalk-ink catchlight inside it — the owl-style
+  best case. Only warning: "eye whites not chalked (1)", the known warn-only polarity direction.
 * **Night fill** (5 calls, 2 runs): both runs produced takes with **lively eyes** and good night
   traits (bgLuma 32-40, lineW 255). Best take drift 0.0056 vs the 0.004 bar (take 1: 0.0111) — the
   drift is invented bright marks (antenna-tip glow), not eye-related. With a normal budget

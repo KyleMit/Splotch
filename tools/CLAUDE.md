@@ -7,8 +7,8 @@
 
 `tools/` is the single home for Splotch-owned repository automation — one tree for both a one-file
 Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). The root
-`package.json` plus `npm run info` stays the public invocation catalog (ADR-0019); reach for a
-`node tools/...` path only when no npm command covers what you need.
+`package.json` plus `npm run info` stays the public invocation catalog (ADR-0019); reach for a `node
+tools/...` path only when no npm command covers what you need.
 
 ## Where a new tool goes (ADRs 0108 and 0111)
 
@@ -132,8 +132,8 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   session-resume, model defaults, and output normalization; `pop-finding.mjs` is the **only** thing
   that reads or edits `docs/AUDIT.md` at that scale; `lib/burndown-core.mjs` holds the shared state
   helpers, which deliberately return status instead of exiting. `prompts/*.md` are runner-neutral
-  role prompts. Entry points are the `audit:*` npm scripts. A run is a
-  `createBurndownRun({ config, effects })` instance — the counters it shares
+  role prompts. Entry points are the `audit:*` npm scripts. A run is a `createBurndownRun({ config,
+  effects })` instance — the counters it shares
   (`done`/`dropped`/`deferred`/`consecutive`/`sincePush`) live there, each lifecycle step is a named
   helper, and `effects` is the whole outside-world surface the tests substitute — git, shell, the
   binary probe, the agent runner, the log, and `halt` — so both `preflight()` and `execute()` are

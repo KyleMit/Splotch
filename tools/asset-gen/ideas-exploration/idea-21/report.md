@@ -5,8 +5,8 @@ Status: LANDED — `--source git:<ref>` is a mode of ../../bin/gen-coloring-book
 
 **Verdict: WORKED.** `--source git:<ref>` and `--compare git:<ref>` were implemented in
 `gen-contact-sheet.mjs` end-to-end, fully offline (0 Gemini calls), validated on real historical
-refs for both suggested targets (`farm`, `creatures/owl-tall`), with normal
-`--source shipped`/`--source samples` behavior verified untouched. The change is captured as a clean
+refs for both suggested targets (`farm`, `creatures/owl-tall`), with normal `--source
+shipped`/`--source samples` behavior verified untouched. The change is captured as a clean
 re-appliable patch (`code/contact-sheet-git-source-and-compare.patch`, 5 files, +187/-46); the repo
 was restored to pristine.
 
@@ -18,15 +18,15 @@ naturally):
 * **`--source git:<ref>`** — every layer (pen outline, chalk, light fill, night fill) is read from
   the commit's blobs via `git -C REPO_ROOT cat-file blob <ref>:<path>` (spawnSync, buffer output,
   forward-slash tree paths so it stays cross-platform per ADR-0017). Nothing is materialized to disk
-  and nothing is checked out. The ref is validated up front with
-  `git rev-parse --short --verify <ref>^{commit}` and reported by short hash. The outline-keep badge
-  is scored from the ref's own `tools/asset-gen/fill-src/` raw when it exists at that ref (it did at
-  `46bc770`/`6e3f14f`; blank on pre-fill-src refs).
+  and nothing is checked out. The ref is validated up front with `git rev-parse --short --verify
+  <ref>^{commit}` and reported by short hash. The outline-keep badge is scored from the ref's own
+  `tools/asset-gen/fill-src/` raw when it exists at that ref (it did at `46bc770`/`6e3f14f`; blank
+  on pre-fill-src refs).
 * **`--compare git:<ref>`** — before/after mode: each page orientation renders twice, the ref's
   light+night pair first, then the current `--source` pair (shipped or samples) directly below it.
-  Every caption gets a provenance tag chip (`git:46bc770` / `shipped`). `--compare` +
-  `--source samples` is deliberately allowed — that is the strongest use: judge a fresh regen
-  against history *before* committing. `--compare` + `--source git:` is rejected.
+  Every caption gets a provenance tag chip (`git:46bc770` / `shipped`). `--compare` + `--source
+  samples` is deliberately allowed — that is the strongest use: judge a fresh regen against history
+  *before* committing. `--compare` + `--source git:` is rejected.
 * **Legacy-name fallback** — refs older than the dot-separated rename (`099204f`) resolve through
   the old names (`{page}-{orient}.webp` for the pen outline, `.color.webp` for the light fill; night
   name never changed; chalk is modern-only). This makes truly pre-fork refs like `34a606f`
@@ -89,10 +89,10 @@ era) as the stress test.
 ## Recommendation
 
 Adopt as-is. The patch is small, contract-respecting, and directly serves the set-by-set cleanup
-pass: `npm run gen:contact-sheet -- farm --compare git:<pre-regen-ref>` (optionally with
-`--source samples` to gate a regen against history before committing). Interning is a free win for
-all modes. If adopted, consider also fixing the "N pages" log label, and note the decision may
-deserve a line in pipeline.md.
+pass: `npm run gen:contact-sheet -- farm --compare git:<pre-regen-ref>` (optionally with `--source
+samples` to gate a regen against history before committing). Interning is a free win for all modes.
+If adopted, consider also fixing the "N pages" log label, and note the decision may deserve a line
+in pipeline.md.
 
 ## Files
 
@@ -101,11 +101,11 @@ deserve a line in pipeline.md.
 * `code/tmp-shoot-sheet.mjs`, `code/tmp-rects.mjs` — throwaway Playwright verification helpers used
   during the run (were placed in tools/asset-gen/ for import resolution, then deleted from the repo;
   chromium executablePath is hardcoded for this sandbox).
-* Regenerate the historical-versus-current proof sheets with
-  `npm run gen:coloring-book-proof-sheet -- farm --source git:46bc770 --out <file>` and
-  `npm run gen:coloring-book-proof-sheet -- creatures/owl-tall --source git:6e3f14f --out <file>`.
-  The current CLI cannot faithfully regenerate the deleted pre-rename `34a606f` sheet because that
-  ref predates the modern `.outline.webp` and `.light.webp` paths.
+* Regenerate the historical-versus-current proof sheets with `npm run
+  gen:coloring-book-proof-sheet -- farm --source git:46bc770 --out <file>` and `npm run
+  gen:coloring-book-proof-sheet -- creatures/owl-tall --source git:6e3f14f --out <file>`. The
+  current CLI cannot faithfully regenerate the deleted pre-rename `34a606f` sheet because that ref
+  predates the modern `.outline.webp` and `.light.webp` paths.
 * `overview-owl-compare.webp` — full-sheet view of the owl-tall compare.
 * `pair-{cat-wide,cow-tall,horse-tall}-{before,after}.webp` — night-tile Combined-view crops from
   the farm compare sheet (before = `git:46bc770` pre-fork fill, after = shipped chalk-fork fill,

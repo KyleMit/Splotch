@@ -235,10 +235,10 @@ Two consequences worth knowing before styling one:
   in rainbow order, hues looked up from `lib/palette.ts`) is the wordmark's companion mark on parent
   pages.
 * **Icons are first-party inline SVG** through `<Icon name="…">` — no icon font, no CDN set, no
-  emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked with
-  `fill: var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and
-  are **never tinted wholesale** — the split is the `COLOR_ICONS` set in `Icon.svelte`. Adding an
-  icon: see the icon steps in `.claude/rules/svelte.md`.
+  emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked with `fill:
+  var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and are
+  **never tinted wholesale** — the split is the `COLOR_ICONS` set in `Icon.svelte`. Adding an icon:
+  see the icon steps in `.claude/rules/svelte.md`.
 * **A single path inside a spot icon can still be themed** (ADR-0102). Declare it in
   `web/src/lib/design/iconTokens.ts` — keyed by icon then part, with a `light` and a `dark` hex —
   run `npm run gen:tokens`, and paint the path with

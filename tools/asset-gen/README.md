@@ -232,9 +232,9 @@ views, the outline-% badge, size constraints — lives in
 * **One category per sheet** (`gen:coloring-book-proof-sheet -- nature`); `all` is rejected because
   a whole-catalog sheet exceeds the Artifact tool's 16 MB upload cap. For a catalog-wide review,
   build and publish one sheet per category. The default `--source shipped` reads only committed
-  assets, so any session rebuilds the identical sheet in seconds with no key or network;
-  `--source samples` reviews fresh, uncommitted night-fill takes from `.coloring-samples-dark/` —
-  the human gate before committing.
+  assets, so any session rebuilds the identical sheet in seconds with no key or network; `--source
+  samples` reviews fresh, uncommitted night-fill takes from `.coloring-samples-dark/` — the human
+  gate before committing.
 * For a **focused** pass, target a page or cell within the category (`nature/ant`,
   `nature/ant-wide`).
 * Every page shows its light and night fills **side by side**, each with an Outline / Color /

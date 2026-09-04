@@ -55,10 +55,10 @@ reflink; on this Mac it is under a second. **Disk is the win. Speed is a roundin
 a real one in CI.**
 
 Hoisted gives up pnpm's strict dependency isolation, which is a genuine loss — the migration's
-strictness surfaced exactly one phantom dependency (`netlify/tsconfig.json` declared
-`"types": ["node"]` while `@types/node` was never a declared dependency; npm hoisted a transitive
-copy and the type-check resolved it by accident). That bug is fixed by declaring it, and it stays
-fixed; what is given up is the guarantee against the *next* one.
+strictness surfaced exactly one phantom dependency (`netlify/tsconfig.json` declared `"types":
+["node"]` while `@types/node` was never a declared dependency; npm hoisted a transitive copy and the
+type-check resolved it by accident). That bug is fixed by declaring it, and it stays fixed; what is
+given up is the guarantee against the *next* one.
 
 ## Decision
 
@@ -80,9 +80,9 @@ fixed; what is given up is the guarantee against the *next* one.
   `package.json`'s scripts against a pnpm tree, pre/post hooks included, so
   [ADR-0019](0019-npm-script-naming-and-scripts-info.md)'s vocabulary and every `npm run …` in the
   docs stay correct. npm is no longer allowed to *install* — that would author a competing
-  `package-lock.json` — which is why `tools/release/cut-release.mjs` bumps with `pnpm version`
-  (`npm version` syncs the lockfile it expects to find) and why the Claude Code permission allowlist
-  drops `npm install`/`npm ci`.
+  `package-lock.json` — which is why `tools/release/cut-release.mjs` bumps with `pnpm version` (`npm
+  version` syncs the lockfile it expects to find) and why the Claude Code permission allowlist drops
+  `npm install`/`npm ci`.
 
 Carried forward from ADR-0029, unchanged and still load-bearing:
 

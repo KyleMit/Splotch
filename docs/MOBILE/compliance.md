@@ -348,8 +348,8 @@ the compliance surface even though no store wrote them:
 ## Provenance
 
 The compliance work arrived in roughly this order (full history for the earliest items sits below
-this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0; run
-`git fetch --unshallow` to recover it):
+this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0; run `git fetch
+--unshallow` to recover it):
 
 | Landed                                                                                                        | Where                                                                                                                                                               |
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

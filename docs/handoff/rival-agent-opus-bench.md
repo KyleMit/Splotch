@@ -82,9 +82,9 @@ Anthropic's public status page still reported operational.
   control) before the stale third patch stopped it; do not combine those with the final run.
 * Local gates: `npm run check`; `npm run lint` (zero errors, one pre-existing
   `tools/perf/campaign-status.mjs` warning); `npm run lint:dead`; `npm run check:skill-refs`;
-  `DPRINT_CACHE_DIR=/private/tmp/splotch-dprint-cache npm run format:check`; escalated
-  `npm run ruler:check`; focused rival tests 10 files / 92 tests; escalated `npm run test:tools` 161
-  files / 3,377 tests.
+  `DPRINT_CACHE_DIR=/private/tmp/splotch-dprint-cache npm run format:check`; escalated `npm run
+  ruler:check`; focused rival tests 10 files / 92 tests; escalated `npm run test:tools` 161 files /
+  3,377 tests.
 
 ## Risks & next 3 steps
 

@@ -169,9 +169,9 @@ as possible:
   — and the ratchet demands the baseline come *down* to match, so **an improvement fails exactly
   like a regression**. A second finding extracted a component into a new file, carrying four hexes
   into a path with no baseline entry. Both fixes were correct; nothing in `CHECK_CMD`, `TEST_CMD`,
-  `LINT_CMD` or a targeted spec can see either. Set
-  `CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check'` — both ratchets
-  cost ~0.3s each — and check `.github/workflows/` for any other bespoke gate before a long run.
+  `LINT_CMD` or a targeted spec can see either. Set `CHECK_CMD='npm run check && npm run lint:tokens
+  && npm run gen:tokens:check'` — both ratchets cost ~0.3s each — and check `.github/workflows/` for
+  any other bespoke gate before a long run.
 
   **Derive that list from `test.yml` each time rather than copying the one above; it grows.** By
   2026-07-28 the Quality job ran ten steps, and a run configured from this paragraph alone would
@@ -296,10 +296,10 @@ The reviewer is also handed the **original finding**, not just the verifier's ac
 so it can reject a fix that satisfies mis-scoped criteria while missing what the finding asked for —
 the verifier is the one role with no independent check.
 
-A deferral now names the role that actually failed: `fix broke the test suite` /
-`fix broke a targeted E2E spec` / `fix introduced a lint violation` / `fix broke the type-check` for
-a gate that never went green, `implementer failed to deliver a fix round`, `reviewer unavailable`,
-and `failed adversarial review` **only** when a reviewer genuinely rejected the work.
+A deferral now names the role that actually failed: `fix broke the test suite` / `fix broke a
+targeted E2E spec` / `fix introduced a lint violation` / `fix broke the type-check` for a gate that
+never went green, `implementer failed to deliver a fix round`, `reviewer unavailable`, and `failed
+adversarial review` **only** when a reviewer genuinely rejected the work.
 
 ### Per-commit PR comments
 
@@ -383,11 +383,11 @@ finding text. Idempotent — it dedupes by SHA.
 > re-run `capture` to "repair" a canary comment**; it replaces a right record with a wrong one. The
 > closeout `skipped N already posted` check is still sound, since `POSTED` dedupes by sha.
 >
-> **Within one run the tag counts outcomes, not fixes.** It is
-> `iter${done + dropped + deferred + 1}`, so a fix, a drop, and a deferral all advance it and no two
-> findings in a run share a tag or overwrite each other's envelopes. Across runs it is still not a
-> finding identifier — the restart above is what breaks that — so correlate by the `run.log` line
-> and its timestamp, not by iteration number.
+> **Within one run the tag counts outcomes, not fixes.** It is `iter${done + dropped + deferred +
+> 1}`, so a fix, a drop, and a deferral all advance it and no two findings in a run share a tag or
+> overwrite each other's envelopes. Across runs it is still not a finding identifier — the restart
+> above is what breaks that — so correlate by the `run.log` line and its timestamp, not by iteration
+> number.
 
 **Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
 plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside
@@ -468,13 +468,12 @@ this is only about SHAs.)
    that is not a symptom of anything.** The verifier rescopes and retitles a finding as part of
    producing the brief, and the trailer carries *its* title — so an iteration announcing a
    two-module dedup can commit as `Audit: [<one module>] …`. It reads exactly like the commit
-   consumed the wrong entry. Do not go diagnosing it from the titles:
-   `git show <sha> -- docs/AUDIT.md
-   | grep '^-### '` prints the entry actually deleted, and the
-   `removed` count above is the real invariant. What the mismatch *can* legitimately signal is a
-   **narrowed scope** — a finding naming two modules, fixed in one, entry consumed — so read the
-   fix's own summary for whether the narrowing was deliberate (the implementer says so, e.g. "left
-   `X` untouched per the brief's scoping call") before deciding anything was lost.
+   consumed the wrong entry. Do not go diagnosing it from the titles: `git show <sha> --
+   docs/AUDIT.md | grep '^-### '` prints the entry actually deleted, and the `removed` count above
+   is the real invariant. What the mismatch *can* legitimately signal is a **narrowed scope** — a
+   finding naming two modules, fixed in one, entry consumed — so read the fix's own summary for
+   whether the narrowing was deliberate (the implementer says so, e.g. "left `X` untouched per the
+   brief's scoping call") before deciding anything was lost.
 6. **Confirm the resume handoff actually fired.** Extra rounds happen on their own — a typical run
    logs `round 1: changes required` (a reviewer rejection) or `round 1: gates red — …` (a red gate,
    which is now also a recoverable round) every few findings — so read one instead of staging one.
@@ -498,13 +497,13 @@ this is only about SHAs.)
 
 * Stop gracefully with `touch .audit-work/STOP` (exits after the current finding; `rm` it before
   resuming). Stop hard with `pkill -TERM -f 'claude -p'`.
-* **Never edit a tracked file while the driver is running.** Its rollback paths run
-  `git reset -q --hard <baseSha>`, which wipes uncommitted working-tree edits with no warning and no
-  reflog entry — and at a realistic deferral rate that fires within the hour. Committing mid-run is
-  worse: you are racing the driver's own `git commit`/`--amend` on the same branch. If you find a
-  bug in the driver worth fixing now, **pause first** (`touch .audit-work/STOP`, wait for exit),
-  then edit. Writing to `.audit-work/`, to memory, or to a scratchpad is safe — those are outside
-  the reset's blast radius.
+* **Never edit a tracked file while the driver is running.** Its rollback paths run `git reset -q
+  --hard <baseSha>`, which wipes uncommitted working-tree edits with no warning and no reflog entry
+  — and at a realistic deferral rate that fires within the hour. Committing mid-run is worse: you
+  are racing the driver's own `git commit`/`--amend` on the same branch. If you find a bug in the
+  driver worth fixing now, **pause first** (`touch .audit-work/STOP`, wait for exit), then edit.
+  Writing to `.audit-work/`, to memory, or to a scratchpad is safe — those are outside the reset's
+  blast radius.
 
   **The same hazard applies to your *own* `git reset --hard`, at any time — including after the run
   has ended.** A closeout session used one to roll back a one-off probe commit and silently
@@ -513,8 +512,8 @@ this is only about SHAs.)
   is to undo a commit.
 
   **"Editing a tracked file" includes running a command that writes one.** The obvious reading of
-  this rule is about `Edit`/`Write`, so a read-sounding verification command slips past it:
-  `npm run ruler:check` runs `dprint fmt` and formats the tree, and `npm run gen:tokens` /
+  this rule is about `Edit`/`Write`, so a read-sounding verification command slips past it: `npm run
+  ruler:check` runs `dprint fmt` and formats the tree, and `npm run gen:tokens` /
   `gen:assets:manifest` regenerate committed output. Run one mid-finding and its writes land inside
   the driver's in-flight fix commit, attributed to a finding that never touched them. A 2026-08-06
   supervisor ran `ruler:check` to confirm a fix's `ruler:apply` had taken; it was a no-op only
@@ -531,21 +530,21 @@ this is only about SHAs.)
   correctly regenerated both mirrors after editing a Ruler source. Before flagging one, check what
   the commit actually touched: writes confined to the finding's own files are the system working.
 * **A session hook will nag every turn that the commits are unsigned. It is a false positive —
-  ignore it.** Verified 2026-07-25 by reading the commit objects: they *do* carry
-  `gpgsig -----BEGIN SSH SIGNATURE-----`. Signing is delegated to `gpg.ssh.program=/tmp/code-sign`
-  (a session-provisioned symlink to the environment manager), and it works. What fails is *local
+  ignore it.** Verified 2026-07-25 by reading the commit objects: they *do* carry `gpgsig -----BEGIN
+  SSH SIGNATURE-----`. Signing is delegated to `gpg.ssh.program=/tmp/code-sign` (a
+  session-provisioned symlink to the environment manager), and it works. What fails is *local
   verification*: `gpg.ssh.allowedSignersFile` is unset, so `git log --format=%G?` cannot check an
   SSH signature and reports `N` — which the hook reads as "missing signature". The identity is also
   already correct (`Claude <noreply@anthropic.com>`), so neither half of its advice applies.
 
   The 0-byte `~/.ssh/commit_signing_key.pub` that `user.signingkey` points at is a placeholder the
   signing program ignores; it is **not** the cause, and an earlier version of this runbook said it
-  was. Don't re-derive that story from the file's size — check
-  `git cat-file commit HEAD | grep gpgsig`.
+  was. Don't re-derive that story from the file's size — check `git cat-file commit HEAD | grep
+  gpgsig`.
 
-  **Never act on the suggested remedy during a run.** `git commit --amend --reset-author` and
-  `git rebase --exec …` fix nothing here, and both rewrite history the driver is actively committing
-  onto — an amend races its own `--amend`, and a rebase would orphan every pushed fix and demand a
+  **Never act on the suggested remedy during a run.** `git commit --amend --reset-author` and `git
+  rebase --exec …` fix nothing here, and both rewrite history the driver is actively committing onto
+  — an amend races its own `--amend`, and a rebase would orphan every pushed fix and demand a
   force-push. Say so once and move on.
 * **The stop hook's "uncommitted changes" warning is expected while a finding is in flight.** The
   dirty tree is the implementer's work-in-progress and the unpushed commit is the finding's own; the
@@ -619,9 +618,9 @@ that is a handful of tool calls.
 ### "status" — report without interrupting anything
 
 Read-only: do **not** touch the STOP file or the process. Run `npm run audit:status` and relay the
-counts, run state, and — when a finding is in flight — the two elapsed figures it prints
-(`in-flight <elapsed> <finding>` and `current claude call <etime>`). Then **gut-check the duration**
-against these norms (from real runs on this repo):
+counts, run state, and — when a finding is in flight — the two elapsed figures it prints (`in-flight
+<elapsed> <finding>` and `current claude call <etime>`). Then **gut-check the duration** against
+these norms (from real runs on this repo):
 
 | Signal                                       | Normal   | Watch     | Investigate |
 | -------------------------------------------- | -------- | --------- | ----------- |
@@ -696,8 +695,8 @@ itself. No `claude` call in the sample exceeded ~13 min.
   **`pkill -f` will also kill the shell you typed it in.** The pattern matches whole command lines,
   and your own `bash -c` wrapper contains the pattern — so the command reports a nonzero exit
   (`144`) and takes any background waiter whose command line also mentions it. Read that exit code
-  as "I shot my own shell", not "the kill failed", and re-verify with a separate
-  `pgrep -af run-burndown.mjs | grep -v 'bash -c'`.
+  as "I shot my own shell", not "the kill failed", and re-verify with a separate `pgrep -af
+  run-burndown.mjs | grep -v 'bash -c'`.
 
   **The same self-match makes `pgrep` wait loops hang forever.** The obvious way to wait for a clean
   stop — `until ! pgrep -f 'audit-burndown/run-burndown.mjs' >/dev/null; do sleep 15; done` — **can
@@ -708,8 +707,8 @@ itself. No `claude` call in the sample exceeded ~13 min.
   until ! pgrep -f '^node tools/audit-burndown/run-burndown.mjs' >/dev/null; do sleep 15; done
   ```
   `env` execs node, so the real driver's cmdline starts with `node` and the anchor is safe on every
-  launch path. The same anchor is what to use for the plain liveness question — an unanchored
-  `pgrep -f` answering "still running" is meaningless until you have read the matched lines.
+  launch path. The same anchor is what to use for the plain liveness question — an unanchored `pgrep
+  -f` answering "still running" is meaningless until you have read the matched lines.
 
 * **No `claude -p` child at all, while `run-burndown.mjs` is still alive** → the driver is
   **orphaned**, and this is the one case where killing the orchestrator is correct. It happens when
@@ -718,9 +717,9 @@ itself. No `claude` call in the sample exceeded ~13 min.
   signature is specific — `pgrep -f 'claude -p'` returns nothing but the supervising session's own
   CLI, no new envelope for tens of minutes, HEAD frozen, and **no log line of any kind**, so an
   event-driven monitor stays silent and reads exactly like a healthy long finding. Confirm with the
-  envelope count above, then `pkill -TERM -f 'audit-burndown/run-burndown.mjs'`,
-  `git reset -q --hard origin/<branch>` to drop the half-done finding (its `docs/AUDIT.md` entry was
-  never removed, so the finding is intact and will be re-processed), and relaunch from the durable
+  envelope count above, then `pkill -TERM -f 'audit-burndown/run-burndown.mjs'`, `git reset -q
+  --hard origin/<branch>` to drop the half-done finding (its `docs/AUDIT.md` entry was never
+  removed, so the finding is intact and will be re-processed), and relaunch from the durable
   checkpoint.
 
 ### "pause" — stop cleanly after the current finding
@@ -728,22 +727,22 @@ itself. No `claude` call in the sample exceeded ~13 min.
 `touch .audit-work/STOP`. The driver checks it at the top of each iteration, so it **finishes the
 entire in-flight workflow** — verify → implement → review → gates → commit, and the exit flush
 pushes — then exits without starting the next finding. Wait for the process to exit, then confirm
-the end state is resumable: no `run-burndown.mjs` / `claude -p` process left, `git rev-parse HEAD`
-== `origin/<branch>` (nothing unpushed), the comment store drained onto the PR, and the durable
-checkpoint (memory / handoff) reflecting the new counts. **Leave the STOP file in place** — it holds
-the pause; a stray relaunch would exit immediately. Stand down any run-log monitor while paused.
+the end state is resumable: no `run-burndown.mjs` / `claude -p` process left, `git rev-parse
+HEAD` == `origin/<branch>` (nothing unpushed), the comment store drained onto the PR, and the
+durable checkpoint (memory / handoff) reflecting the new counts. **Leave the STOP file in place** —
+it holds the pause; a stray relaunch would exit immediately. Stand down any run-log monitor while
+paused.
 
 ### "resume" / "continue" — start the next finding
 
 Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/run-burndown.mjs`
 must be empty (if it isn't, the run is already going — say so, don't launch a second). Read the
-matches rather than counting them: `pgrep -f` matches whole command lines, so the launcher's
-`env … node …` wrapper — and any shell whose own command line happens to mention the path, including
-the `pgrep` call you just typed — matches too. Only a bare
-`node tools/audit-burndown/run-burndown.mjs` line is the driver. Then `rm .audit-work/STOP`,
-relaunch with the exact command from the durable checkpoint, and re-arm the event-driven monitor.
-The launcher self-recovers even in a brand-new session that never saw this run — see **Resuming a
-crashed run** below.
+matches rather than counting them: `pgrep -f` matches whole command lines, so the launcher's `env …
+node …` wrapper — and any shell whose own command line happens to mention the path, including the
+`pgrep` call you just typed — matches too. Only a bare `node tools/audit-burndown/run-burndown.mjs`
+line is the driver. Then `rm .audit-work/STOP`, relaunch with the exact command from the durable
+checkpoint, and re-arm the event-driven monitor. The launcher self-recovers even in a brand-new
+session that never saw this run — see **Resuming a crashed run** below.
 
 **Re-arm the monitor as part of the relaunch** — stopping the previous one first, and confirming the
 new one caught. Both failure directions and the arming details are under **Surviving the context
@@ -882,11 +881,11 @@ state in the conversation:
   indistinguishable from a healthy run.
 
   **Budget for re-arming roughly every half hour, for the whole run.** `persistent: true` and a
-  one-hour `timeout_ms` are both accepted and both ignored — the monitor still reports
-  `timeout 1800000ms` and dies on schedule. Treat the `[Monitor timed out]` event as a routine
-  chore, not an incident: stop the old task if it is somehow still listed, re-arm the identical
-  command, and then **close the gap** — `tail -f -n 0` starts from the end of the file, so anything
-  written between death and re-arm is never reported. One scoped catch-up read covers it:
+  one-hour `timeout_ms` are both accepted and both ignored — the monitor still reports `timeout
+  1800000ms` and dies on schedule. Treat the `[Monitor timed out]` event as a routine chore, not an
+  incident: stop the old task if it is somehow still listed, re-arm the identical command, and then
+  **close the gap** — `tail -f -n 0` starts from the end of the file, so anything written between
+  death and re-arm is never reported. One scoped catch-up read covers it:
   ```bash
   awk '/starting — target/{f=1} f' .audit-work/logs/run.log | grep -E "iter|DEFERRED|INVALID|finished:|HALT" | tail -4
   ```
@@ -935,11 +934,10 @@ HEAD, found already fixed, and dropped as invalid — one extra drop commit, no 
 relaunching, commit or stash any real work in progress** — `RESUME=1` treats a dirty tree as crash
 residue and resets it.
 
-A container that died also lost every comment record you had not posted.
-`backfill-comments.mjs
-capture` rebuilds them from the pushed commits, but only for what is still
-reconstructable from `run.log` and the role envelopes — both of which died too. In practice: what
-you did not post before the container went, you write from the commit diffs or not at all.
+A container that died also lost every comment record you had not posted. `backfill-comments.mjs
+capture` rebuilds them from the pushed commits, but only for what is still reconstructable from
+`run.log` and the role envelopes — both of which died too. In practice: what you did not post before
+the container went, you write from the commit diffs or not at all.
 
 ## Tuning & lessons
 
@@ -947,8 +945,8 @@ Notes from real runs — set these before a large run rather than discovering th
 
 * **Verify is the slowest role and the main halt risk.** It reads a lot of code to confirm a finding
   at HEAD (~150s median on this repo) and occasionally needs more than $1. The old
-  `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster of
-  those nearly tripped the three-consecutive-deferral halt. Default is now `3.00`; don't drop it
+  `BUDGET_VERIFY=1.00` clipped complex findings (`error_max_budget_usd` → deferral), and a cluster
+  of those nearly tripped the three-consecutive-deferral halt. Default is now `3.00`; don't drop it
   below ~$2.50 for a big run. `BUDGET_REVIEW` was raised from `2.00` to `3.00` for the same reason:
   a cap mid-verdict costs the *whole finding*, since the fix rolls back unreviewed. A budget knob
   set too tight doesn't save money — it converts finished work into a deferral and pays for it again
@@ -994,9 +992,8 @@ Notes from real runs — set these before a large run rather than discovering th
 * **The opus roles are pinned to the explicit `claude-opus-5` id, not the `opus` alias.** The `opus`
   alias can lag a fresh release (it still resolved to `claude-opus-4-8` right after Opus 5 shipped),
   so pinning the id is what actually puts impl/review on Opus 5; `sonnet` already resolves to Sonnet
-  5, so verify stays on the alias. When a newer opus lands, re-probe
-  (`claude -p --model
-  <id> --output-format json 'ok'` → check `modelUsage`) and bump the pin.
+  5, so verify stays on the alias. When a newer opus lands, re-probe (`claude -p --model <id>
+  --output-format json 'ok'` → check `modelUsage`) and bump the pin.
 * **Impl-model tiering is on by default, scoped to P4/P5.** Much of a `/code-audit` backlog is
   trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
   `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
@@ -1123,19 +1120,19 @@ Notes from real runs — set these before a large run rather than discovering th
   toolbar's first paint — applying it as written would have shipped a visible regression.
 * **Scope every `run.log` grep to the current run.** `run.log` accumulates across runs and iteration
   numbers restart at `iter0001` each time, so a bare `grep iter0008` silently matches a different
-  finding from hours ago. Anchor on the run's start line:
-  `awk '/HH:MM:SS\] starting/{f=1} f' .audit-work/logs/run.log`. Unscoped reads also cost context: a
-  `sed`/`grep` range over a multi-run log can dump hundreds of lines of unrelated history into the
-  window you are trying to conserve. The per-iteration JSON envelopes collide the same way — see the
-  blockquote under **Per-commit PR comments**.
+  finding from hours ago. Anchor on the run's start line: `awk '/HH:MM:SS\] starting/{f=1} f'
+  .audit-work/logs/run.log`. Unscoped reads also cost context: a `sed`/`grep` range over a multi-run
+  log can dump hundreds of lines of unrelated history into the window you are trying to conserve.
+  The per-iteration JSON envelopes collide the same way — see the blockquote under **Per-commit PR
+  comments**.
 
   **Anchor on the *timestamped* start line, not the bare `starting — target` pattern** — and be
   deliberate about which run you mean. A normal session runs a canary and *then* the full run, so
   `awk '/starting — target/{f=1} f'` latches onto the **canary's** start and hands you both runs
   concatenated. That is the right scope for a wrap-up total (sum every `finished:` line) and the
   wrong one for "what has the current run done", where it silently doubles the picture. Pin the
-  timestamp you actually want (`awk '/09:41:44\] starting/{f=1} f'`), or take the last one with
-  `awk '/starting — target/{n=NR} …'`. Same trap in reverse at closeout: a session with a canary has
+  timestamp you actually want (`awk '/09:41:44\] starting/{f=1} f'`), or take the last one with `awk
+  '/starting — target/{n=NR} …'`. Same trap in reverse at closeout: a session with a canary has
   **two** `finished:` lines and the log row covers both.
 
 ## Closing out a run
@@ -1168,8 +1165,7 @@ Notes from real runs — set these before a large run rather than discovering th
   that you posted what was *offered*, and a comment record lost with a reclaimed container is
   invisible from the store's point of view. `capture` rebuilds from the pushed commits instead, so
   agreement between the two is real evidence. A `skipped N` **below** the fix count means capture
-  just re-armed the difference: post those before finishing. On 2026-07-29,
-  `skipped 39 already
+  just re-armed the difference: post those before finishing. On 2026-07-29, `skipped 39 already
   posted` against 39 fixed closed the run out in one command.
 * Confirm CI is green on the final push before marking the PR ready. It is the only full-suite gate
   in this configuration, so "the run finished" and "the branch is sound" are genuinely different

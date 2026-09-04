@@ -70,8 +70,8 @@ output-directory suffix (for example, `mount-phone-4x`) for the actual capture p
 
 **Undo memory caveat:** tiled history's patch and folded-base rasters live in **canvas backing
 stores, not the JS heap** — so `performance.memory` / the heap table can't see them and stay flat.
-`perf:web:undo` reports the real cost directly from `getUndoDebug()`:
-`rasterBytes + baseRasterBytes` (ADR-0085/0086).
+`perf:web:undo` reports the real cost directly from `getUndoDebug()`: `rasterBytes +
+baseRasterBytes` (ADR-0085/0086).
 
 ### Which undo run to reach for
 
@@ -153,11 +153,11 @@ restored state, and a run without commit samples never enters the history.
   display, overlay planes, or GPU compositor, so it **cannot** surface transparency/alpha bugs,
   overlay-promotion bugs, tearing, or finger-to-ink presentation latency — a passing run is *not*
   validation that the change renders correctly, and the E2E readback flows don't cover it either.
-  Any change to a canvas **context attribute**
-  (`getContext('2d', { alpha, desynchronized, willReadFrequently })`) or to GPU compositing **must
-  be verified on a real Android device** (`perf:android`, or the `mobile` skill's `chrome://inspect`
-  flow) before it counts as validated. (Learned the hard way: a `desynchronized` hint passed
-  `perf:web` + E2E and rendered the transparent canvas black on Android — ADR-0051.)
+  Any change to a canvas **context attribute** (`getContext('2d', { alpha, desynchronized,
+  willReadFrequently })`) or to GPU compositing **must be verified on a real Android device**
+  (`perf:android`, or the `mobile` skill's `chrome://inspect` flow) before it counts as validated.
+  (Learned the hard way: a `desynchronized` hint passed `perf:web` + E2E and rendered the
+  transparent canvas black on Android — ADR-0051.)
 * **The self-time table excludes harness symbols** (the rAF sampler, the user-timing API,
   Playwright's input plumbing) so it reflects app compute. In production (minified) builds
   non-engine names may still be short; the engine.* marks stay readable.
@@ -185,9 +185,9 @@ Read in this order:
    A phase whose long tasks are commit-dominated is paying for pixel area (full-canvas damage, e.g.
    `repaintAll`), not JS.
 5. **Long tasks attributed** — each top >50 ms task tagged with its phase and its largest nested
-   trace events, so the jank names itself: `Commit` = compositor raster; `EventDispatch (pointerup)`
-   = the stroke-end pipeline (check `engine.commit`); `MajorGC` = allocation pressure. In
-   `perf:web:undo` draw phases, huge `Receive mojo message` rows are the harness's synchronous
+   trace events, so the jank names itself: `Commit` = compositor raster; `EventDispatch
+   (pointerup)` = the stroke-end pipeline (check `engine.commit`); `MajorGC` = allocation pressure.
+   In `perf:web:undo` draw phases, huge `Receive mojo message` rows are the harness's synchronous
    stroke dispatch — an artifact, not app cost.
 6. **Top JS by self-time** — corroborates 2–3. `drawImage` = canvas copies (the commit's patch
    capture, undo restores, the resize blit); `stroke`/`quadraticCurveTo` = live drawing;
@@ -222,8 +222,8 @@ session + the seven `perf:web:undo` scenarios, with a ranked findings write-up) 
 ## Native specifics
 
 * **Android** needs an emulator/device on `adb` and the toolchain. `perf:android` rebuilds +
-  installs the native app with `PERF_MARKS=true`, launches it
-  (`am start -n art.splotch.app/.MainActivity`), finds the WebView DevTools socket
+  installs the native app with `PERF_MARKS=true`, launches it (`am start -n
+  art.splotch.app/.MainActivity`), finds the WebView DevTools socket
   (`webview_devtools_remote_<pid>` in `/proc/net/unix`), `adb forward`s it, and connects Playwright
   over CDP. `--no-build` profiles the already-installed app (only shows engine marks if that build
   had `PERF_MARKS`). Local-only — see the `mobile` skill for the toolchain and the manual
@@ -234,11 +234,10 @@ session + the seven `perf:web:undo` scenarios, with a ranked findings write-up) 
   native- WebView transport; it is not an approval path for Android browser frames (ADR-0092).
 * **iOS** `perf:web:webkit` profiles the WebKit *engine*, not the Simulator app. For device-accurate
   numbers, run the app on the Simulator, record a **Timeline** in Safari Web Inspector (Develop →
-  Simulator → Splotch — see the `mobile` skill), export it, and run
-  `npm run perf:analyze:web-inspector -- <export>.json` (the Web Inspector export is
-  mark-only/ring-buffered — a different format from `perf:analyze:chrome`; see
-  `docs/PROFILING-IPAD.md`). WebKit clamps `performance.now()` to ~1 ms, so its engine-mark timings
-  are coarse.
+  Simulator → Splotch — see the `mobile` skill), export it, and run `npm run
+  perf:analyze:web-inspector -- <export>.json` (the Web Inspector export is mark-only/ring-buffered
+  — a different format from `perf:analyze:chrome`; see `docs/PROFILING-IPAD.md`). WebKit clamps
+  `performance.now()` to ~1 ms, so its engine-mark timings are coarse.
 * **Real iPad** (the highest-fidelity target — real WebKit + GPU + 120 Hz ProMotion): the gates run
   is automated — **`npm run perf:ios:webkit:gates`** (ADR-0079) attaches over the WebKit Inspector
   Protocol and drives the same `perf:web:undo` scenarios through

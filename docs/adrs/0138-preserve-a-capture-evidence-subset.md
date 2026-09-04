@@ -77,12 +77,11 @@ is 44 captures for the full 11-target matrix — about 3.7 MB per campaign — r
 per-cell rule would take. The mode each preserved capture came from is recorded, so a later reader
 knows which one it is looking at rather than assuming.
 
-Promotion is explicit —
-`npm run perf:evidence:keep --corpus=<dir> --campaign=<name> --product-commit=<sha>` — never a
-default write path. The exact capture product SHA is required and stamped into the corpus index, so
-the representative remains attributable after its gitignored source corpus and the manifest's live
-paths are gone. The tree holds curated evidence only, and a capture enters it because someone
-decided it was the sample worth keeping.
+Promotion is explicit — `npm run perf:evidence:keep --corpus=<dir> --campaign=<name>
+--product-commit=<sha>` — never a default write path. The exact capture product SHA is required and
+stamped into the corpus index, so the representative remains attributable after its gitignored
+source corpus and the manifest's live paths are gone. The tree holds curated evidence only, and a
+capture enters it because someone decided it was the sample worth keeping.
 
 The consumer already exists: `npm run perf:rescore -- --corpus=perf-profiles/evidence/<campaign>`
 re-derives every preserved capture through the shipped scoring modules.

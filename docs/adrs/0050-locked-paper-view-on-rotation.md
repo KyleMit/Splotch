@@ -53,8 +53,8 @@ device and is scaled down (uniformly) when the old orientation's paper doesn't f
 * `engine.ts` keeps `paper` (px + CSS dims) and `paperAngle` (the `screen.orientation.angle` at
   adoption). `resizeCanvas()` decides **adopt vs lock**: an empty canvas, or a resize at an
   unchanged angle (desktop window drag, mobile URL bar), re-adopts the paper as the live viewport —
-  exactly the old semantics. Only a resize whose angle differs (a real rotation,
-  `rotationDelta ≠ 0`) with a non-empty canvas keeps the paper and computes a **paper view**.
+  exactly the old semantics. Only a resize whose angle differs (a real rotation, `rotationDelta ≠
+  0`) with a non-empty canvas keeps the paper and computes a **paper view**.
 * The view (`lib/drawing/paperView.ts`, pure + unit-tested) is a uniform contain-fit + center
   (`computePaperView(paper, viewport, 0)` — the rotation parameter exists for the rejected
   glued-to-glass alternative and stays 0 in production, so a 180° flip on an unchanged viewport
@@ -62,8 +62,7 @@ device and is scaled down (uniformly) when the old orientation's paper doesn't f
   transform plus a clip to the paper rect** — every existing paint path (live ops, undo/resize
   replay, keyframe blits, the magic-brush pattern) flows through it untouched, because they all
   paint in paper coordinates already. Pointer input is inverse-mapped (`screenToPaper`); the
-  edge-swipe guard stays in screen space (OS gesture bands are physical edges), so
-  `PointerState.
+  edge-swipe guard stays in screen space (OS gesture bands are physical edges), so `PointerState.
   startX/startY/pendingPoints` are screen-space by contract.
 * **Uniform view scale, never per-op rescale**: relative stroke weights inside the drawing stay
   exact; while letterboxed the whole page just reads smaller, and new strokes record in paper space

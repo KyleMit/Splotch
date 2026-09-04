@@ -111,8 +111,8 @@ tree-shaken from release output. Run the applicable release build after changing
   measures frames. Physical MobileSafari is the calibrated iPad approval target.
 * **Android Chrome web:** direct CDP via `perf:android:browser:actions` for actions. Do not approve
   browser frames from the Appium action transport.
-* **Android native:** Appium attached to the Capacitor WebView with
-  `--native-app --native-webview-class=android.webkit.WebView`.
+* **Android native:** Appium attached to the Capacitor WebView with `--native-app
+  --native-webview-class=android.webkit.WebView`.
 
 Appium automation round-trip time is not an application frame metric. The probe must measure inside
 the page. Native rotation must go through whatever orientation control the product actually offers,
@@ -171,10 +171,10 @@ undo, report engine P95 and next-frame P95/max. For actions, report first-frame 
 frame P95, post-action max, activation fidelity, and the count/list of failed actions. Include input
 fidelity and the raw artifact path beside the result.
 
-Before attributing any committed red cell to the product, run
-`npm run check:matrix-staleness -- --base=origin/main` — the cell describes the commit it was
-captured at, and the check's default `--base=HEAD` counts a campaign branch's own commits as drift,
-reporting STALE wrongly from any branch that carries its own work.
+Before attributing any committed red cell to the product, run `npm run check:matrix-staleness --
+--base=origin/main` — the cell describes the commit it was captured at, and the check's default
+`--base=HEAD` counts a campaign branch's own commits as drift, reporting STALE wrongly from any
+branch that carries its own work.
 
 When refreshing the committed matrix:
 

@@ -45,8 +45,8 @@ Keep it a **packet, not a prose recap**. Link to files to reread rather than re-
   revisited.
 * **Unverified assumptions** — the things believed-but-not-checked. This is the section
   `resume-handoff` is required to test first.
-* **Done & verified** — commands already run and their result (`npm run check`, `npm test`,
-  `npm run gen:*:audit`, …), so the next session knows what it can trust vs. must re-run.
+* **Done & verified** — commands already run and their result (`npm run check`, `npm test`, `npm run
+  gen:*:audit`, …), so the next session knows what it can trust vs. must re-run.
 * **Risks & next 3 steps** — the concrete next actions, ordered.
 * **Reread first** — links to the source files, ADRs, and skills to open before doing anything. Not
   a summary of them — pointers.

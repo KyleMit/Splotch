@@ -35,11 +35,11 @@ independent ways for each to fail (breach, no measurement) on a shared macOS run
 polls `getUndoDebug()` and needs four consecutive identical readings inside a 10 s budget. The
 budget is wall clock, but on a saturated main thread the polls *are* what spends it: each
 `page.evaluate` round trip queues behind the work being waited on. The crayon draw phase measured
-**58,317 ms** on that host, and every counter the "never settled" text reported —
-`undoEntries=20 livePatchEntries=20 patchBytes=29341600 baseTiles=20 historyCommands=21`, plus
-`baseRasterBytes` — matches the completed `crayon-scribbles` reading the *other* runner reported for
-the same commit. The harness got two or three looks where four are needed to see quiescence at all,
-and reported the shortfall as missing coverage, which the gate correctly refuses to certify.
+**58,317 ms** on that host, and every counter the "never settled" text reported — `undoEntries=20
+livePatchEntries=20 patchBytes=29341600 baseTiles=20 historyCommands=21`, plus `baseRasterBytes` —
+matches the completed `crayon-scribbles` reading the *other* runner reported for the same commit.
+The harness got two or three looks where four are needed to see quiescence at all, and reported the
+shortfall as missing coverage, which the gate correctly refuses to certify.
 
 Be precise about how far that evidence reaches, because the diagnostic that would settle it is the
 thing this ADR is adding. The timeout text carried **six** of the seven fields `sameHistory`

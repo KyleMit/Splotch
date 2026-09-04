@@ -87,8 +87,8 @@ those paths, so the report cannot be regenerated without them.
 * All 44 undo probes pass, including 8 new physical ones.
 * The iOS RemoteXPC tunnel works, and the way to answer its password prompt without a terminal is in
   `docs/PROFILING-IPAD.md`.
-* Green: perf tests (339), `npm run lint`, `npm run format:check`, `npm run ruler:check`,
-  `npm run scrapbook:check`.
+* Green: perf tests (339), `npm run lint`, `npm run format:check`, `npm run ruler:check`, `npm run
+  scrapbook:check`.
 * Full tools tier on a quiet host: **2,312 pass**. The single mid-session failure under
   device-capture load does not reproduce. `npm run lint`, `format:check`, `ruler:check`,
   `check:skill-refs`, `scrapbook:check` all green.
@@ -109,11 +109,11 @@ those paths, so the report cannot be regenerated without them.
    the only native failure. This is the ADR-0090 decision the matrix existed to enable, and it is a
    product question, not a harness one.
 3. **[#1194](https://github.com/KyleMit/Splotch/issues/1194) has a lead, not a fix.** Synthetic
-   input restores correctly; only trusted input fails. The suspect is the
-   `activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()` gate in `undo()`, which silently
-   skips the paper restore. `hasCanvasExit()` is pen-only and these sweeps are touch, so instrument
-   `activePointers.size` at the top of `undo()` and rerun one landscape sweep — two lines, and it
-   confirms or kills the hypothesis. Do not guess past that.
+   input restores correctly; only trusted input fails. The suspect is the `activePointers.size === 0
+   && !penStreamAdopter.hasCanvasExit()` gate in `undo()`, which silently skips the paper restore.
+   `hasCanvasExit()` is pen-only and these sweeps are touch, so instrument `activePointers.size` at
+   the top of `undo()` and rerun one landscape sweep — two lines, and it confirms or kills the
+   hypothesis. Do not guess past that.
 
 ## Reread first
 

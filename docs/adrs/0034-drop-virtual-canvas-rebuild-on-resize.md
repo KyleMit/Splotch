@@ -6,9 +6,9 @@ survives ADR-0066's reversal of ADR-0033; the rebuild is now one blit of the pap
 
 ## Context
 
-The engine kept a second offscreen square surface, the **virtual canvas** (ADR-0004): a
-`max(w,h) × renderScale` mirror of the drawing whose only job was preserving off-screen pixels
-across rotation/resize. `resizeCanvas()` repainted the resized visible canvas from it.
+The engine kept a second offscreen square surface, the **virtual canvas** (ADR-0004): a `max(w,h) ×
+renderScale` mirror of the drawing whose only job was preserving off-screen pixels across
+rotation/resize. `resizeCanvas()` repainted the resized visible canvas from it.
 
 To stay current, the virtual canvas was re-synced on **every** `stopDrawing` (and
 `releaseAllPointers`): `syncVirtualCanvas()` ran a `clearRect` + `drawImage(wholeCanvas)` at up to
@@ -26,8 +26,8 @@ canvas became a redundant mirror of information the undo machinery was already k
 **Delete the virtual canvas.** Reconstruct content on demand at resize from the ADR-0033 baseline +
 command log instead of mirroring it on every stroke.
 
-* The `baselineCanvas` stays the off-screen source of truth: still a square
-  (`max(w,h) × renderScale`) that grows with the viewport, so rotation never loses pixels.
+* The `baselineCanvas` stays the off-screen source of truth: still a square (`max(w,h) ×
+  renderScale`) that grows with the viewport, so rotation never loses pixels.
 * `syncVirtualCanvas()` and its per-stroke call sites are gone. `stopDrawing` / `releaseAllPointers`
   no longer copy the canvas; an erase stroke still re-scans emptiness off the visible canvas as
   before.

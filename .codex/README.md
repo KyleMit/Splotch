@@ -13,8 +13,8 @@ Complete this one-time setup in the desktop app:
 
 1. Open the Splotch project in Codex.
 2. Open the project settings pane and select **Local environments**.
-3. Add a local environment whose setup script is exactly
-   `corepack enable pnpm && corepack install && pnpm install --frozen-lockfile --prefer-offline`.
+3. Add a local environment whose setup script is exactly `corepack enable pnpm && corepack install
+   && pnpm install --frozen-lockfile --prefer-offline`.
 4. Save it, then commit the generated configuration file that appears under `.codex/`.
 
 Do not hand-author the generated configuration.

@@ -22,9 +22,8 @@ palettes paint the same region map.
 2. **Plan** (1 Gemini `gemini-2.5-flash` text/vision call per page): render the region map — random
    tints + a number at each region's most-interior point (distance-transform argmax, so labels land
    inside concave regions) — and send it with per-region area/centroid stats plus a 31-name curated
-   palette (each name carries a matched light hex + night hex). The model returns strict JSON
-   `{n, what, color}` per region. One call covers BOTH themes because the palette name is
-   theme-neutral.
+   palette (each name carries a matched light hex + night hex). The model returns strict JSON `{n,
+   what, color}` per region. One call covers BOTH themes because the palette name is theme-neutral.
 3. **Paint**: fill each labeled region with its palette hex; every other pixel (ink, tiny regions,
    coarse-split slivers) is inpainted with the same direction-neutral ring bleed the punch uses.
    Light paints/punches against the pen, night against the chalk — the output IS the shipped

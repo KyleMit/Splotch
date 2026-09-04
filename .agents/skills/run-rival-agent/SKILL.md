@@ -115,9 +115,9 @@ It prints one JSON document with a `state`:
 * **`failed`** — the rival exited without valid findings; `reason` and `logPath` say why.
 
 Keep serving until `done` or `failed`. A request you never answer counts as still running for up to
-an hour, so answer or decline every request rather than walking away.
-`node /Users/kylemit/.local/libexec/splotch-rival-agent/broker.mjs status --session <dir>`
-summarizes where things stand.
+an hour, so answer or decline every request rather than walking away. `node
+/Users/kylemit/.local/libexec/splotch-rival-agent/broker.mjs status --session <dir>` summarizes
+where things stand.
 
 Judge each request on its own merits. A targeted test file or `npm run check` in the worktree is
 routine; a full Playwright suite is host-exclusive and worth declining; anything that reaches
@@ -169,8 +169,7 @@ conversation.
 
 ## Options
 
-`--cwd <dir>` (defaults to the current directory; must be inside a git worktree),
-`--model
+`--cwd <dir>` (defaults to the current directory; must be inside a git worktree), `--model
 sonnet|opus` (defaults to `opus`), and `--effort low|medium|high` (defaults to `high`).
 
 ## Handling the findings

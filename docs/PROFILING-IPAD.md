@@ -8,9 +8,9 @@ ProMotion** display the app actually ships on.
 
 The gates run is automated by **`npm run perf:ios:webkit:gates`**; trusted-touch real-screen capture
 is automated by **`npm run perf:ios:xcuitest:screen`**, and discrete UI-action regression coverage
-by **`npm run perf:ios:xcuitest:actions`**. The installed app's bundled WKWebView uses
-**`npm run perf:ios:bundled:frames`**. This file covers their one-time device setup, the Timeline
-recording they deliberately do *not* replace, and the by-hand fallbacks.
+by **`npm run perf:ios:xcuitest:actions`**. The installed app's bundled WKWebView uses **`npm run
+perf:ios:bundled:frames`**. This file covers their one-time device setup, the Timeline recording
+they deliberately do *not* replace, and the by-hand fallbacks.
 
 Where the device sits among the harness targets:
 
@@ -18,8 +18,8 @@ Where the device sits among the harness targets:
 * `npm run perf:web:webkit` drives **Playwright's WebKit on the Mac** — the right *engine*, but not
   the iPad's CPU, GPU, or refresh rate.
 * Apple exposes no **CDP** endpoint on a physical device — but it does expose Safari's own **WebKit
-  Inspector Protocol** over USB, which carries `Runtime.evaluate` and `Console.messageAdded`.
-  `npm run perf:ios:webkit:gates` speaks that protocol directly; Safari's Web Inspector is the same
+  Inspector Protocol** over USB, which carries `Runtime.evaluate` and `Console.messageAdded`. `npm
+  run perf:ios:webkit:gates` speaks that protocol directly; Safari's Web Inspector is the same
   channel with a UI on top.
 
 Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear where the action happens.
@@ -73,12 +73,12 @@ appium driver install xcuitest
 appium --port 4723
 ```
 
-WebDriverAgent also needs `ios/local.xcconfig` with
-`DEVELOPMENT_TEAM = <your Apple Developer team id>`. It is gitignored, so it exists in the main
-checkout and **not** in a fresh worktree — copy it across before the first run there, or every
-XCUITest command stops on "No signing config". Its first device install may need
-`--allow-provisioning`; that flag authorizes Xcode/Appium to create or update Apple Developer
-provisioning and device registration, so use it deliberately. Omit it from normal runs.
+WebDriverAgent also needs `ios/local.xcconfig` with `DEVELOPMENT_TEAM = <your Apple Developer team
+id>`. It is gitignored, so it exists in the main checkout and **not** in a fresh worktree — copy it
+across before the first run there, or every XCUITest command stops on "No signing config". Its first
+device install may need `--allow-provisioning`; that flag authorizes Xcode/Appium to create or
+update Apple Developer provisioning and device registration, so use it deliberately. Omit it from
+normal runs.
 
 **⟨iPad⟩** Set **Settings → Display & Brightness → Auto-Lock → Never** for the length of a campaign.
 A locked device fails every remaining cell, and the failure reads as a discovery problem rather than
@@ -243,17 +243,17 @@ npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
 ```
 
 The command rebuilds and serves the profiling bundle like the other iPad entries. For a build
-already served elsewhere, use
-`--ignore-scripts -- --url=http://<mac-ip>:<port>/ --no-serve --device-id=<UDID>`. `--label=` names
-the output directory; `--output=` writes an exact artifact path for a scripted A/B run.
-`--brush=pen|crayon|magic|eraser` selects through the real brush UI before capture; the eraser run
-prefills the live tiles so it measures actual removal. `--gesture-repeats=N` repeats the calibrated
-sequence in one drawing session, and `--repeat-pause-ms=N` idles between repetitions to exercise
-deferred work such as history compaction. `--undo-count=N` clicks the real enabled Undo button
-serially and records both `engine.undo` and the first action-local animation frame;
-`--undo-pause-ms=N` controls the gap. `--history-settle-ms=N` waits after drawing so deferred folds
-can finish. `--rotate-before-undo` changes orientation, waits for the new viewport and two visual
-frames, measures undo in the settled layout, and restores the original orientation.
+already served elsewhere, use `--ignore-scripts -- --url=http://<mac-ip>:<port>/ --no-serve
+--device-id=<UDID>`. `--label=` names the output directory; `--output=` writes an exact artifact
+path for a scripted A/B run. `--brush=pen|crayon|magic|eraser` selects through the real brush UI
+before capture; the eraser run prefills the live tiles so it measures actual removal.
+`--gesture-repeats=N` repeats the calibrated sequence in one drawing session, and
+`--repeat-pause-ms=N` idles between repetitions to exercise deferred work such as history
+compaction. `--undo-count=N` clicks the real enabled Undo button serially and records both
+`engine.undo` and the first action-local animation frame; `--undo-pause-ms=N` controls the gap.
+`--history-settle-ms=N` waits after drawing so deferred folds can finish. `--rotate-before-undo`
+changes orientation, waits for the new viewport and two visual frames, measures undo in the settled
+layout, and restores the original orientation.
 
 The base gesture contains two long interpolated strokes and eight short strokes. WebDriverAgent
 emits native touch samples along each interpolation; splitting the same gesture into hundreds of 8
@@ -344,11 +344,11 @@ bundled origin, WKWebView user agent, table counts, and exact UTF-8 byte size al
 clears the ephemeral key and flushes that removal on success, refusal, timeout, or interruption. The
 artifact records `pageDelivery: "bundled"` and `pageIdentity: "proven-by-container-nonce"`.
 
-For an experimental real-finger control, keep the same installed build and add
-`--hand-input --seconds=20` (maximum 60 seconds). The command counts down before opening the drawing
-window and does not synthesize the drawing input. WebDriverAgent remains attached throughout,
-however, and its effect on touch delivery is unmeasured. The artifact records that condition; do not
-bank its coalescing number as a clean witness until a paired attached-vs-detached run, or a proven
+For an experimental real-finger control, keep the same installed build and add `--hand-input
+--seconds=20` (maximum 60 seconds). The command counts down before opening the drawing window and
+does not synthesize the drawing input. WebDriverAgent remains attached throughout, however, and its
+effect on touch delivery is unmeasured. The artifact records that condition; do not bank its
+coalescing number as a clean witness until a paired attached-vs-detached run, or a proven
 close-and-reattach workflow, shows WDA does not move it.
 
 ### Discrete action automation — `perf:ios:xcuitest:actions`
@@ -523,9 +523,9 @@ on the iPad page and:
   `PERF_MARKS` was off in the build and the driver bails immediately with a rebuild message instead
   of stalling through every undo wait,
 * drives four real-volume scenarios — 22 long ~1200-op squiggles, 22 five-finger ~2400-op drags, 22
-  crayon squiggles, and 22 crayon reversal-scribbles (mid-stroke pass splits) — matching
-  `npm run perf:web:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes,
-  and each scenario resets to blank paper **and** zero history first so its counts are its own,
+  crayon squiggles, and 22 crayon reversal-scribbles (mid-stroke pass splits) — matching `npm run
+  perf:web:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes, and each
+  scenario resets to blank paper **and** zero history first so its counts are its own,
 * prints a `console.table` with, per scenario: undo entries, retained history commands, folded base
   tiles, **`commit max ms`**, **`undo avg/p95/max ms`**, and direct patch/base/total history MiB —
   then the ADR-0066 gates verbatim.
@@ -697,8 +697,8 @@ below when the question needs Timeline records rather than the probe tables.
 5. **⟨iPad⟩** By hand: draw one long continuous scribble (several seconds), then tap **undo**.
    Repeat a few times; try a five-finger drag too.
 6. **⟨Mac⟩** Stop the recording. Read `engine.draw` / `engine.commit` / `engine.undo` in the
-   Timeline's user-timing track, or export and
-   `npm run perf:analyze:web-inspector -- <export>.json`.
+   Timeline's user-timing track, or export and `npm run perf:analyze:web-inspector --
+   <export>.json`.
 
 There's no `window.__engine` here, so op counts aren't controlled — you're reading the engine marks
 off organic input. The harness-gated bundled capture does expose its narrower read-only drawing and
@@ -854,6 +854,6 @@ findings above is negligible engine cost beside long rendering-side records.
   Failing all that, confirm Web Inspector is attached to the `…/dev/engine` tab and not another one
   — the Develop submenu lists every open tab. Serving with anything other than `npm run perf:serve`
   also does it: `PUBLIC_ENABLE_DEV_HARNESS` gates the route at runtime, on the server.
-* **No `engine.*` marks in the export** → the served build wasn't made with `PERF_MARKS=true`.
-  `npm run perf:serve` rebuilds with it via `preperf:serve`, so this means the rebuild was skipped
+* **No `engine.*` marks in the export** → the served build wasn't made with `PERF_MARKS=true`. `npm
+  run perf:serve` rebuilds with it via `preperf:serve`, so this means the rebuild was skipped
   (`--ignore-scripts`) or the bundle is being served some other way.

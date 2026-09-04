@@ -29,26 +29,24 @@ deliberately *avoided* a native plugin. The two differ on the facts that matter:
 
 ## Decision
 
-Add a minimal local Capacitor plugin, **`DeviceLock`**, with a single method
-`isLocked(): Promise<{ locked: boolean }>`:
+Add a minimal local Capacitor plugin, **`DeviceLock`**, with a single method `isLocked(): Promise<{
+locked: boolean }>`:
 
 * **iOS** — two Swift files in the App target (`ios/App/App/`). `DeviceLockPlugin.swift` is an
   `@objc` `CAPPlugin` + `CAPBridgedPlugin` whose `isLocked` reads
   `UIAccessibility.isGuidedAccessEnabled` on the main thread. Crucially, **Capacitor 8 does not
   auto-discover plugin classes** — `registerPlugins()` only loads its built-ins plus the
   `packageClassList` that `cap sync` writes into `capacitor.config.json` from npm *packages*, so an
-  app-local class is never registered and calls fail with
-  `"DeviceLock"
-  plugin is not implemented on ios`. We register it explicitly in
-  `MainViewController.swift` (a `CAPBridgeViewController` subclass) via `capacitorDidLoad()` →
-  `bridge?.registerPluginInstance(DeviceLockPlugin())`, and point `Main.storyboard`'s root VC at
-  `MainViewController`. Both files are added to Compile Sources by hand — the project uses classic
-  Xcode file references (not synchronized groups) and `cap sync` won't add them. No `Package.swift`
-  edit (SPM, ADR-0020).
-* **Android** — `DeviceLockPlugin.java`, a `@CapacitorPlugin` returning
-  `getLockTaskModeState() != LOCK_TASK_MODE_NONE` (covers user pinning *and* MDM lock-task;
-  `getLockTaskModeState` is API 23+, below our minSdk 24). Registered via
-  `registerPlugin(DeviceLockPlugin.class)` **before** `super.onCreate` in `MainActivity`.
+  app-local class is never registered and calls fail with `"DeviceLock" plugin is not implemented on
+  ios`. We register it explicitly in `MainViewController.swift` (a `CAPBridgeViewController`
+  subclass) via `capacitorDidLoad()` → `bridge?.registerPluginInstance(DeviceLockPlugin())`, and
+  point `Main.storyboard`'s root VC at `MainViewController`. Both files are added to Compile Sources
+  by hand — the project uses classic Xcode file references (not synchronized groups) and `cap sync`
+  won't add them. No `Package.swift` edit (SPM, ADR-0020).
+* **Android** — `DeviceLockPlugin.java`, a `@CapacitorPlugin` returning `getLockTaskModeState() !=
+  LOCK_TASK_MODE_NONE` (covers user pinning *and* MDM lock-task; `getLockTaskModeState` is API 23+,
+  below our minSdk 24). Registered via `registerPlugin(DeviceLockPlugin.class)` **before**
+  `super.onCreate` in `MainActivity`.
 * **JS** — `web/src/lib/plugins/deviceLock.ts`, a typed `registerPlugin('DeviceLock', …)` facade
   whose `web` fallback always resolves `{ locked: false }` (the web genuinely can't observe either
   state). Loaded through an `__IS_CAPACITOR__`-gated lazy `import()` so `@capacitor/core` stays out
