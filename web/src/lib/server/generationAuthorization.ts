@@ -17,8 +17,7 @@ export type GenerationAuthorization =
   | { authorized: true; kind: 'free'; effectiveKey: string; installationId: string };
 
 export type GenerationAuthorizationResult =
-  | GenerationAuthorization
-  | { authorized: false; response: Response };
+  GenerationAuthorization | { authorized: false; response: Response };
 
 export async function authorizeGenerationRequest(input: {
   apiKey: string | null;

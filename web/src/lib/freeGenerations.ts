@@ -23,12 +23,7 @@ export interface FreeGenerationDailyLimitExhausted {
 }
 
 export type FreeGenerationFailureKind =
-  | 'abandoned'
-  | 'daily-limit'
-  | 'exhausted'
-  | 'invalid-request'
-  | 'safety'
-  | 'upstream';
+  'abandoned' | 'daily-limit' | 'exhausted' | 'invalid-request' | 'safety' | 'upstream';
 
 export interface FreeGenerationGrantAdminStats {
   persistent: boolean;
