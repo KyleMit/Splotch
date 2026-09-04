@@ -106,14 +106,19 @@ then for each branch:
 4. **Present a decide table** — one row per branch: branch · last active · PR state · one-sentence
    summary of the change · durable home written (or "none needed") · recoverable from (`origin`, the
    PR, or **nowhere**) · proposed action. Default to delete; ask the user which to preserve.
-5. After approval, delete each with
-   `git update-ref -d refs/heads/<name> <the sha you read in step
-   1>`, not
-   `git branch -D <name>`. The named form resolves the branch again at deletion time, so a commit
-   pushed onto it while you were writing the table is destroyed without a word; the ref form fails
-   instead, which is the answer you want. A branch recoverable from nowhere — upstream gone, no PR —
-   gets an explicit per-branch confirmation, since this is the only step in the skill that can lose
-   commits.
+5. After approval, delete each with the guarded command, passing the sha you read in step 1:
+
+   ```bash
+   npm run branches:prune -- --delete-branch=<name> --at=<sha>
+   ```
+
+   Do not reach for `git branch -D <name>` or a raw `git update-ref -d` by hand. Each drops one of
+   the two guards this command keeps: `-D` resolves the name again at deletion time, so a commit
+   pushed onto the branch while you were writing the table is destroyed without a word, and raw
+   `update-ref` deletes a branch another worktree has checked out, leaving that session's `HEAD`
+   pointing at nothing. The command refuses both and says which. A branch recoverable from nowhere —
+   upstream gone, no PR — gets an explicit per-branch confirmation, since this is the only step in
+   the skill that can lose commits.
 
 ## Part 3 — Remote branches on `origin`
 

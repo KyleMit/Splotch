@@ -14,6 +14,11 @@
 // Usage:
 //   node tools/git-housekeeping/prune-local-branches.mjs [--apply] [--include-equivalent]
 //                                                        [--no-fetch] [--json] [--base=origin/main]
+//   node tools/git-housekeeping/prune-local-branches.mjs --delete-branch=<name> --at=<commit>
+//
+// The second form is the judgment pass's guarded deletion: one approved branch,
+// removed only while it still points at the commit that was judged and only
+// while no worktree holds it.
 
 import { parseArgs } from 'node:util';
 
@@ -47,14 +52,43 @@ export function parsePruneBranchesArgs(argv) {
       'no-fetch': { type: 'boolean', default: false },
       json: { type: 'boolean', default: false },
       base: { type: 'string', default: DEFAULT_BASE },
+      'delete-branch': { type: 'string' },
+      at: { type: 'string' },
     },
   });
+  const deleteBranch = values['delete-branch'];
+  if (deleteBranch !== undefined && !values.at) {
+    throw new Error('--delete-branch needs --at=<the commit id you judged>');
+  }
+  if (values.at && deleteBranch === undefined) {
+    throw new Error('--at only means something with --delete-branch=<name>');
+  }
   return {
     apply: values.apply,
     includeEquivalent: values['include-equivalent'],
     fetch: !values['no-fetch'],
     json: values.json,
     base: values.base,
+    deleteBranch,
+    at: values.at,
+  };
+}
+
+// The judgment pass's deletion, for a branch a human approved rather than a
+// proof cleared. It carries the same two guards as the scripted path, because
+// its exposure is worse: approval can arrive long after the branch was read,
+// and the agent driving it has no other reason to know that `git branch -D`
+// refuses a worktree-held branch while `git update-ref -d` does not.
+export function deleteApprovedBranch({ name, at }, { cwd = ROOT } = {}) {
+  const resolved = tryGit(['rev-parse', '--verify', `${at}^{commit}`], { cwd });
+  if (!resolved.ok) {
+    return { ok: false, message: `${at} does not name a commit in this repository` };
+  }
+  const result = deleteRefAtCommit(name, resolved.stdout, cwd);
+  if (result.ok) return { ok: true, message: `deleted ${name} at ${resolved.stdout.slice(0, 12)}` };
+  return {
+    ok: false,
+    message: `refusing to delete ${name}: ${result.stderr.split('\n')[0] || `it no longer points at ${resolved.stdout.slice(0, 12)}`}`,
   };
 }
 
@@ -215,8 +249,14 @@ function printReport(rows, { json }) {
 }
 
 export async function pruneLocalBranches(options, { cwd = ROOT } = {}) {
-  const { apply, includeEquivalent, fetch, json, base } = options;
+  const { apply, includeEquivalent, fetch, json, base, deleteBranch, at } = options;
   const note = (message) => process.stderr.write(`${message}\n`);
+  if (deleteBranch !== undefined) {
+    const outcome = deleteApprovedBranch({ name: deleteBranch, at }, { cwd });
+    process.stdout.write(`${outcome.message}\n`);
+    if (!outcome.ok) process.exitCode = 1;
+    return outcome;
+  }
   if (fetch) {
     const fetched = fetchBase(cwd);
     if (!fetched.ok) {

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { join } from 'node:path';
 import {
   classifyLocalBranch,
+  deleteApprovedBranch,
   deleteLocalBranch,
   parsePruneBranchesArgs,
   planLocalBranchPrune,
@@ -36,6 +37,15 @@ describe('parsePruneBranchesArgs', () => {
       fetch: false,
       json: true,
       base: 'origin/dev',
+    });
+  });
+
+  it('requires --delete-branch and --at together', () => {
+    expect(() => parsePruneBranchesArgs(['--delete-branch=x'])).toThrow(/needs --at/);
+    expect(() => parsePruneBranchesArgs(['--at=abc'])).toThrow(/only means something with/);
+    expect(parsePruneBranchesArgs(['--delete-branch=x', '--at=abc'])).toMatchObject({
+      deleteBranch: 'x',
+      at: 'abc',
     });
   });
 
@@ -190,6 +200,51 @@ describe('classifyLocalBranch', () => {
     expect(plannedOutcome({ tier: 'merged' }, { includeEquivalent: false })).toBe('delete');
     expect(plannedOutcome({ tier: 'skip', reason: 'in use: x' }, {})).toBe('skip (in use)');
     expect(plannedOutcome({ tier: 'skip', reason: 'PR #1 open' }, {})).toBe('skip');
+  });
+});
+
+describe("deleteApprovedBranch — the judgment pass's deletion", () => {
+  let fixture;
+
+  beforeEach(() => {
+    fixture = createTempRepo();
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  // The judgment pass is more exposed than the scripted one: approval can
+  // arrive long after the branch was read. It gets the same two guards.
+  it('refuses a worktree-held branch, a moved branch, and an unknown commit', () => {
+    const { sh, commit, repo, root } = fixture;
+    sh(['checkout', '-q', '-b', 'topic']);
+    const judged = commit('t.txt', 't', 'topic work');
+    sh(['checkout', '-q', 'main']);
+
+    expect(deleteApprovedBranch({ name: 'topic', at: '0'.repeat(40) }, { cwd: repo })).toEqual({
+      ok: false,
+      message: `${'0'.repeat(40)} does not name a commit in this repository`,
+    });
+
+    const worktree = join(root, 'live-session');
+    sh(['worktree', 'add', '-q', worktree, 'topic']);
+    const held = deleteApprovedBranch({ name: 'topic', at: judged }, { cwd: repo });
+    expect(held.ok).toBe(false);
+    expect(held.message).toMatch(/checked out in/);
+    expect(sh(['rev-parse', 'HEAD'], { cwd: worktree })).toBe(judged);
+    sh(['worktree', 'remove', worktree]);
+
+    sh(['checkout', '-q', 'topic']);
+    const moved = commit('later.txt', 'x', 'moved after judging');
+    sh(['checkout', '-q', 'main']);
+    const stale = deleteApprovedBranch({ name: 'topic', at: judged }, { cwd: repo });
+    expect(stale.ok).toBe(false);
+    expect(sh(['branch', '--list', 'topic'])).toContain('topic');
+
+    const done = deleteApprovedBranch({ name: 'topic', at: moved }, { cwd: repo });
+    expect(done).toEqual({ ok: true, message: `deleted topic at ${moved.slice(0, 12)}` });
+    expect(sh(['branch', '--list', 'topic'])).toBe('');
   });
 });
 

@@ -13,6 +13,13 @@ skill is the procedure that runs these scripts in order and owns the judgment ca
 | `prune-local-branches.mjs`      | `npm run branches:prune`    | Delete provably-dead local branches; report why every other one stays   |
 | `gather-remote-branches.mjs`    | `npm run branches:gather`   | One row of facts per `origin` branch for the skill's remote triage      |
 
+`branches:prune` has a second form for the skill's judgment pass — a single approved branch, deleted
+only while it still points at the commit that was judged and only while no worktree holds it:
+
+```sh
+npm run branches:prune -- --delete-branch=<name> --at=<commit>
+```
+
 Every command is a **dry run by default** and prints one line per item —
 `<outcome>  <subject>
 <reason>` — so a run that takes a minute shows progress and a cancelled one

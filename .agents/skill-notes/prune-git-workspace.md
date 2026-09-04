@@ -173,6 +173,25 @@ that.**
   a worktree in the window between planning and moving was invisible to exactly the recheck added to
   catch it. It now re-reads `git worktree list` as well.
 
+## Round 3: the fix that stopped at the code
+
+One finding, and it is the same omission as round 2's first one at a different scale. Round 2 fixed
+`deleteRefAtCommit` to refuse a worktree-held branch — and left the skill's judgment pass telling
+the agent to run `git update-ref -d refs/heads/<name> <sha>` by hand, which is precisely the
+unguarded primitive. Reproduced: with the branch checked out elsewhere the raw command succeeds and
+the other worktree can no longer resolve `HEAD`.
+
+The lesson is about where a guard has to live. A safety property implemented in a function protects
+only the callers that go through the function, and a skill instructing an agent to run git directly
+is a caller that does not. The judgment pass is also the *worse* place to leave it, because its
+approval step means an arbitrary amount of time passes between reading the branch and deleting it.
+
+So the guard moved behind a command the skill can call —
+`npm run branches:prune -- --delete-branch=<name> --at=<sha>` — and step 5 names that instead of a
+git invocation. The general rule worth carrying to other skills in this repo: **if a skill tells an
+agent to run a destructive primitive, the guards on it exist only in prose.** Give the skill a verb
+that carries them.
+
 ## Rejected
 
 * **`git branch --merged` as the classifier.** Same ancestry test as `-d`, misses every rebase and
