@@ -44,6 +44,18 @@ protocol is not invented here — it is how the user has repeatedly asked to be 
 was already in Claude's memory as a behavioral preference; encoding it in the skill makes it
 reachable from Codex too, and survives a memory reset.
 
+## Round-1 rival review
+
+The Codex rival agent found three instruction-level contradictions, all confirmed and all fixed:
+unconditional grounding on a skill advertised as scope-agnostic (above), two-option phrasing in a
+two-to-four-option procedure ("A and B", "both options", "the one you are rejecting"), and a
+`weigh → consult` group arrow in `skills-guide` that inverted the repo's read-ADRs-first contract.
+
+The pattern worth remembering: every one was an **internal contradiction between the skill's stated
+scope and its own imperatives** — not a wrong claim about the world. Prose skills fail that way. A
+self-check for the next skill written here is to read the frontmatter description as a promise and
+then audit every imperative in the body against it.
+
 ## Open / unvalidated
 
 * **The artifact escalation thresholds are guesses.** "Three or more options across many dimensions"
@@ -52,8 +64,10 @@ reachable from Codex too, and survives a memory reset.
 * **No worked example end to end.** The skill shows a table fragment but not a complete walkthrough.
   That was left out to keep the context cost down; if walkthroughs come back thin or mis-shaped, a
   single full example is the cheapest fix and the first thing to try.
-* **Grounding may be over-specified for small decisions.** "Read the actual code, check the ADRs,
-  check `docs/audit-deferred/decisions/`, measure what is cheap to measure" is right for a real
-  architectural fork and heavy for "which of these two names". No escape hatch is written in yet, on
-  the theory that over-grounding is the cheaper failure. Watch whether it makes small walkthroughs
-  slow.
+* **Grounding is now scope-conditional, and the split is untested.** The first draft ordered an
+  unconditional repo inspection before any trade-off, which the round-1 rival review caught as an
+  instruction a naming or process decision cannot follow honestly. Measuring and flagging estimates
+  now apply to every decision; the code-and-ADR checks apply when the decision is about this
+  codebase. What is unvalidated is whether an agent reliably picks the right branch — the failure to
+  watch for is a repo search performed to look rigorous about a decision the repo cannot speak to,
+  which is why that sentence is stated outright rather than left implied.
