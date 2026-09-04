@@ -26,3 +26,4 @@ updates:
       # opt-out, breaking this repo's grep-able command contracts (670 spans
       # across 239 files). Held at 0.22 by issue 1634; remove with that issue.
       - dependency-name: '@dprint/markdown'
+        versions: ['>= 0.23']
