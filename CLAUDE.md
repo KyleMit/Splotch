@@ -319,11 +319,11 @@ deleting a skill. If the user asks to create a *command*, ask whether they'd lik
 before making one.
 
 **Skill naming:** the name's shape signals what invoking the skill does. **Workflow skills** — ones
-that perform a procedure with side effects (`create-adr`, `fix-audits`, `prune-remote-branches`) —
-get verb-noun names, so the name reads as the action it kicks off. **Reference skills** — ones that
-only load knowledge into context (`architecture`, `adrs`, `testing`, `skills-guide`) — get plain
-noun names; a verb name on a reference skill would falsely promise an action. Scanning the skill
-list, the name alone should tell you whether invoking it is passive or starts a procedure.
+that perform a procedure with side effects (`create-adr`, `fix-audits`, `prune-git-workspace`) — get
+verb-noun names, so the name reads as the action it kicks off. **Reference skills** — ones that only
+load knowledge into context (`architecture`, `adrs`, `testing`, `skills-guide`) — get plain noun
+names; a verb name on a reference skill would falsely promise an action. Scanning the skill list,
+the name alone should tell you whether invoking it is passive or starts a procedure.
 
 **Where a skill's content lives (ADR-0107).** Every skill is stored three times — the `.ruler/`
 source plus a generated `.claude/` and `.agents/` copy — so one line of skill prose is three lines

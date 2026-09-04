@@ -18,8 +18,10 @@ this" needs a door into the runbook. What it no longer does is carry the payload
 
 The general rule this suggests: **a skill package should hold instructions, not implementations.**
 The drivers that do still live under `.ruler/skills/` (`run-splotch/driver.mjs`,
-`lighthouse-audit/run-audit.mjs`, `prune-remote-branches/gather.mjs`) are each small and tightly
-coupled to their skill's procedure. Once a skill ships a real program *plus* reference material, the
+`lighthouse-audit/run-audit.mjs`) are each small and tightly coupled to their skill's procedure;
+`prune-remote-branches/gather.mjs` was one until the branch facts it computed became shared with the
+local-branch pass, at which point it moved to `tools/git-housekeeping/` with the rest of
+`prune-git-workspace`. Once a skill ships a real program *plus* reference material, the
 triplication is cost with no benefit — nothing about the generated copies differs by runner.
 
 The links are `../../../tools/vectorize/…`, the same depth from `.ruler/`, `.claude/`, and
