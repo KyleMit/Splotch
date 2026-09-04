@@ -12,7 +12,9 @@ Handoffs are **transient**, not documentation. A durable decision belongs in an 
 `docs/ISSUE-WORKFLOW.md`); behavioural feedback belongs in `memory/`. A handoff is deleted the
 moment it's consumed.
 
-Write one with the `create-handoff` skill; consume one with the `resume-handoff` skill.
+Write one with the `create-handoff` skill — it defaults to handing the same content back as a
+copyable prompt instead, and writes a file here when asked for one — and consume it with the
+`resume-handoff` skill.
 
 ## One file per handoff
 

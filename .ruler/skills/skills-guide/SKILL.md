@@ -110,11 +110,11 @@ drives the bumps itself, this one triages PRs Dependabot has already opened.
 
 ## Session continuity — pause ↔ resume, keep the lessons
 
-| Skill            | Direction                                                                                            |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `create-handoff` | Write a transfer packet to `docs/handoff/` before stopping in-flight work                            |
-| `resume-handoff` | Pick a packet back up: verify against the repo, delete it, continue the work                         |
-| `self-heal`      | Sweep the session for durable lessons; write each into the home the next tripped-up session will see |
+| Skill            | Direction                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `create-handoff` | Hand off in-flight work: a copyable continuation prompt by default, a `docs/handoff/` packet on request |
+| `resume-handoff` | Pick a packet back up: verify against the repo, delete it, continue the work                            |
+| `self-heal`      | Sweep the session for durable lessons; write each into the home the next tripped-up session will see    |
 
 End-of-session reflexes divide by what survives the session: in-flight *work* goes into a handoff
 packet; a *lesson* with a clear fix and home is applied on the spot by `self-heal`; recurring
