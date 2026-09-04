@@ -53,9 +53,10 @@ Six parts, in this order.
 
 ### 1. Name the decision
 
-One sentence, at the top: *"You're choosing between A and B for X."* If you cannot write that
-sentence, you do not yet know what is being decided — ask before going further. If several decisions
-are tangled together, see [Several decisions at once](#several-decisions-at-once).
+One sentence, at the top: *"You're choosing between A and B for X"* — or, with more on the table,
+*"You're picking one of three ways to do X."* If you cannot write that sentence, you do not yet know
+what is being decided — ask before going further. If several decisions are tangled together, see
+[Several decisions at once](#several-decisions-at-once).
 
 ### 2. Say what is at stake — before any options
 
@@ -90,7 +91,8 @@ Short bullets, concrete, no scoring. Two rules that do the real work:
 
 * State **the strongest argument against the option you are about to recommend.** If you cannot find
   one, you have not looked hard enough, and the reader will find it later without you.
-* State **the strongest argument for the one you are rejecting.** Same reason.
+* State **the strongest argument for each option you are not recommending.** Same reason — with
+  three or four on the table that means each of them, not just the runner-up.
 
 ### 6. Recommend one
 
@@ -101,7 +103,7 @@ See [The recommendation](#the-recommendation).
 Options are columns. The things that vary are rows. Build it in two blocks, and put the similarities
 **first**:
 
-* **Same either way** — every dimension both options handle identically. This block is what stops
+* **Same either way** — every dimension all the options handle identically. This block is what stops
   the reader from re-litigating something the choice does not actually touch, and it is usually the
   fastest way to shrink a decision that felt big.
 * **Where they differ** — one row per dimension that genuinely differs.
