@@ -175,9 +175,11 @@ function paintUndoShell() {
     return element;
   };
 
-  let historyLength = 12;
+  let historyLength = 14;
+  let snapshots = 12;
+  let undoClicks = 0;
   window.__drawingDebug = {
-    getUndoDebug: () => ({ historyLength, snapshots: historyLength }),
+    getUndoDebug: () => ({ historyLength, snapshots }),
     getLiveSurfaceTopology: () => [],
   };
   const measures = [];
@@ -190,7 +192,9 @@ function paintUndoShell() {
   undo.id = 'undoButton';
   undo.addEventListener('click', () => {
     probeFinishedAtUndo.push(window.__probe.finish.mock.calls.length > 0);
-    historyLength -= 1;
+    undoClicks += 1;
+    historyLength -= undoClicks === 1 ? 3 : 1;
+    snapshots -= 1;
     canvas.pixelVersion -= 1;
     measures.push({ duration: 2 });
   });
@@ -223,8 +227,9 @@ describe('the bootstrap actually capturing undo', () => {
       const payload = await run.reportPosted;
 
       expect(payload.undoActions).toHaveLength(2);
-      expect(payload.historyBeforeUndo.historyLength).toBe(12);
+      expect(payload.historyBeforeUndo).toMatchObject({ historyLength: 14, snapshots: 12 });
       expect(payload.historyAfterUndo.historyLength).toBe(10);
+      expect(payload.historyAfterUndo.snapshots).toBe(10);
       expect(payload.undoVisual).toMatchObject({
         changedEveryStep: true,
         steps: [

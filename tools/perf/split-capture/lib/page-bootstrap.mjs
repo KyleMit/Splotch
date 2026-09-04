@@ -446,7 +446,9 @@ export function pageBootstrapSource() {
     let undoVisual = null;
     if (undoCount > 0) {
       historyBeforeUndo = window.__drawingDebug.getUndoDebug();
-      const beforeDepth = historyBeforeUndo.historyLength ?? historyBeforeUndo.snapshots;
+      // The idle fold can remove retained, non-undoable commands while the
+      // clicks run. snapshots is the undoable depth each click must reduce.
+      const beforeDepth = historyBeforeUndo.snapshots ?? historyBeforeUndo.historyLength;
       if (!Number.isSafeInteger(beforeDepth) || beforeDepth < undoCount) {
         throw new Error('the drawing did not create enough undo history');
       }
@@ -480,7 +482,7 @@ export function pageBootstrapSource() {
         await wait(undoPauseMs);
       }
       historyAfterUndo = window.__drawingDebug.getUndoDebug();
-      const afterDepth = historyAfterUndo.historyLength ?? historyAfterUndo.snapshots;
+      const afterDepth = historyAfterUndo.snapshots ?? historyAfterUndo.historyLength;
       if (afterDepth !== beforeDepth - undoCount) {
         throw new Error(
           'undo history changed by ' + (beforeDepth - afterDepth) + ', expected ' + undoCount

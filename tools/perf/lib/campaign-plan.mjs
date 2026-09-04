@@ -726,7 +726,9 @@ export function recordedGestureRepeats(artifact) {
 }
 
 function recordedHistoryDepth(history) {
-  const depth = history?.historyLength ?? history?.snapshots;
+  // The idle fold can remove retained, non-undoable commands while the
+  // clicks run. `snapshots` is the undoable depth each click must reduce.
+  const depth = history?.snapshots ?? history?.historyLength;
   return Number.isSafeInteger(depth) && depth >= 0 ? depth : null;
 }
 

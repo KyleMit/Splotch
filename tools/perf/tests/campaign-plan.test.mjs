@@ -398,8 +398,8 @@ describe('campaign artifact acceptance', () => {
       engineMs: 1,
       nextFrameMs: 2,
     })),
-    historyBeforeUndo: { historyLength: 20 },
-    historyAfterUndo: { historyLength: 10 },
+    historyBeforeUndo: { historyLength: 22, snapshots: 20 },
+    historyAfterUndo: { historyLength: 10, snapshots: 10 },
     undoVisual: {
       changedEveryStep: true,
       samples: Array.from({ length: UNDO_COUNT + 1 }, (_, index) => ({ digests: [index] })),
@@ -420,7 +420,7 @@ describe('campaign artifact acceptance', () => {
     ).toContain('contradicts');
     expect(
       splitUndoEvidenceProblem(
-        { ...validSplitUndo, historyAfterUndo: { historyLength: 11 } },
+        { ...validSplitUndo, historyAfterUndo: { historyLength: 11, snapshots: 11 } },
         UNDO_COUNT
       )
     ).toContain('history reduction');
