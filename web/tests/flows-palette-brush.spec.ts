@@ -428,7 +428,40 @@ test('a keyboard pick closes the flyout and restores focus to its trigger', asyn
   await expect(page.locator('#strokeWidthButton')).toBeFocused();
 });
 
-test('rotation cancels an in-flight action drawer transition', async ({ page }) => {
+for (const rotationSignal of ['screen orientation', 'legacy window orientation'] as const) {
+  test(`${rotationSignal} cancels an in-flight action drawer transition`, async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await page.addStyleTag({
+      content: `:root { --duration-fast: ${STALLED_DRAWER_TRANSITION_DURATION} !important; }`,
+    });
+
+    const panel = page.locator('.actions-panel');
+    await page.getByRole('button', { name: 'Collapse controls' }).click();
+    await expect(panel).toHaveAttribute('data-drawer-motion', '');
+
+    await page.evaluate((signal) => {
+      const event = new Event(signal === 'screen orientation' ? 'change' : 'orientationchange');
+      if (signal === 'screen orientation') screen.orientation.dispatchEvent(event);
+      else window.dispatchEvent(event);
+    }, rotationSignal);
+    await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
+  });
+}
+
+test('the drawer motion marker clears when a state change starts no transition', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await page.addStyleTag({ content: '.actions-drawer { transition: none !important; }' });
+
+  const panel = page.locator('.actions-panel');
+  await page.getByRole('button', { name: 'Collapse controls' }).click();
+  await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
+});
+
+test('the drawer motion marker clears after its transition is canceled', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
   await page.addStyleTag({
@@ -436,10 +469,21 @@ test('rotation cancels an in-flight action drawer transition', async ({ page }) 
   });
 
   const panel = page.locator('.actions-panel');
+  const drawer = page.locator('.actions-drawer');
   await page.getByRole('button', { name: 'Collapse controls' }).click();
   await expect(panel).toHaveAttribute('data-drawer-motion', '');
-
-  await page.evaluate(() => window.dispatchEvent(new Event('orientationchange')));
+  await expect
+    .poll(() => drawer.evaluate((element) => element.getAnimations().length))
+    .toBeGreaterThan(0);
+  await drawer.evaluate((element) => {
+    for (const animation of element.getAnimations()) animation.cancel();
+    element.dispatchEvent(
+      new TransitionEvent('transitioncancel', {
+        bubbles: true,
+        propertyName: 'grid-template-columns',
+      })
+    );
+  });
   await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
 });
 

@@ -470,12 +470,12 @@ entry 87. Paths under `web/src/` unless noted.*
     reduced-motion overrides at matching specificity. Measured: 5,847 → 0 Animation invalidations;
     emulator theme-flip post-p95 median 100.1 → 66.7 ms (n=3/arm). `ClearCoachmark.svelte`, pinned
     by `clear-tutorial.spec.ts`.
-88. **Action Drawer motion canceled before device rotation** — `orientationchange` clears an armed
-    drawer transition before the viewport breakpoint flips, so a stale motion marker cannot animate
-    the drawer's axis margins through the drawing's rotation frames. A physical Android Chrome
-    canonical A/B removed all drawer transition events from both with-ink directions and reduced
-    portrait-to-landscape P95/max from 33.4/66.7 to 16.7/16.8 ms. `ActionsPanel.svelte`,
-    `docs/scratchpad/perf/2026-09-04-issue-1632-rotation-drawer-motion.md`.
+88. **Action Drawer motion canceled before device rotation** — the standard and legacy orientation
+    signals clear an armed drawer transition before the viewport breakpoint flips, so a stale motion
+    marker cannot animate the drawer's axis margins through the drawing's rotation frames. A
+    physical Android Chrome canonical A/B removed all drawer transition events from both with-ink
+    directions and reduced portrait-to-landscape P95/max from 33.4/66.7 to 16.7/16.8 ms.
+    `ActionsPanel.svelte`, `docs/scratchpad/perf/2026-09-04-issue-1632-rotation-drawer-motion.md`.
 
 ### Documented rejections — perf machinery deliberately absent
 
@@ -494,7 +494,7 @@ halos, section mounts, tile migration); **do it at idle, never while a finger is
 `scheduleIdle` substrate under ~15 mechanisms); **touch only what changed** (tiles, dirty rects,
 culling, the hidden-tile invariant); and **keep it off the startup bundle** (test-pinned
 boundaries). The one anti-pattern this inventory's own sweep later caught — an infinite animation on
-a hidden element — is the inverse of idea two, and its fix (entry 87) is the newest entry.
+a hidden element — is the inverse of idea two, and its fix is entry 87.
 
 ### Known open performance work (as of 2026-08-26)
 

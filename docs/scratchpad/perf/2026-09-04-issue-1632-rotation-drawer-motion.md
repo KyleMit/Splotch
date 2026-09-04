@@ -9,8 +9,9 @@ Repeats: one warm-up plus three scored
 
 The canonical Settings round-trip can leave `data-drawer-motion` armed while the Action Panel is
 behind the modal. Later device rotations then animate the drawer's portrait/landscape margin change
-inside the scored rotation window. Clearing that marker on `orientationchange`, before `resize`,
-should retain deliberate drawer open/close motion while removing rotation-only work.
+inside the scored rotation window. Clearing that marker on the standard and legacy orientation
+signals, before `resize`, should retain deliberate drawer open/close motion while removing
+rotation-only work.
 
 ## Control
 
