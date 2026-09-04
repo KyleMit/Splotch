@@ -466,7 +466,7 @@
     "@dprint/markdown": "^0.22.1",
     "@dprint/typescript": "^0.96.1",
     "@eslint/js": "^10.0.1",
-    "@google/genai": "^2.10.0",
+    "@google/genai": "^2.20.0",
     "@intellectronica/ruler": "0.3.44",
     "@playwright/test": "^1.62.1",
     "@resvg/resvg-js": "^2.6.2",
