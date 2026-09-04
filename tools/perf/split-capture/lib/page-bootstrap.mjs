@@ -433,6 +433,11 @@ export function pageBootstrapSource() {
       await wait(${PLAN_POLL_MS});
     }
 
+    // Close the drawing phase before readback or undo. The split plan's long
+    // contact bank never ends the phase itself, so delaying finish() would fold
+    // the undo tail into the drawing artifact's between-stroke and engine rows.
+    await log({ kind: 'finish-observed', nonce });
+    const report = window.__probe.finish();
     const paintedAfterDrawing = sampleCanvasDelta();
 
     const undoActions = [];
@@ -491,8 +496,6 @@ export function pageBootstrapSource() {
     // finish()/serialization, one ending at uploading died in the POST or was
     // suspended mid-flight, and neither line at all means the page never saw
     // the plan flip.
-    await log({ kind: 'finish-observed', nonce });
-    const report = window.__probe.finish();
     const counts = report.meta.counts;
     const read = (accessor, expected) => {
       const rows = [];

@@ -121,7 +121,7 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
         frames: () => [],
         events: (from, count) => eventRows.slice(from, from + count),
         measures: () => [],
-        finish: () => ({ meta: { counts: {} } }),
+        finish: vi.fn(() => ({ meta: { counts: {} } })),
         stop: () => {},
       };
       queueMicrotask(() => element.onload?.());
@@ -181,6 +181,7 @@ function paintUndoShell() {
     getLiveSurfaceTopology: () => [],
   };
   const measures = [];
+  const probeFinishedAtUndo = [];
   Object.defineProperty(window.performance, 'getEntriesByName', {
     configurable: true,
     value: () => measures,
@@ -188,12 +189,13 @@ function paintUndoShell() {
   const undo = document.createElement('button');
   undo.id = 'undoButton';
   undo.addEventListener('click', () => {
+    probeFinishedAtUndo.push(window.__probe.finish.mock.calls.length > 0);
     historyLength -= 1;
     canvas.pixelVersion -= 1;
     measures.push({ duration: 2 });
   });
   document.body.append(undo);
-  return canvas;
+  return { canvas, probeFinishedAtUndo };
 }
 
 beforeEach(() => {
@@ -206,7 +208,7 @@ describe('the bootstrap actually capturing undo', () => {
   it(
     'records canonical timing plus history and pixel restoration evidence',
     async () => {
-      const canvas = paintUndoShell();
+      const { canvas, probeFinishedAtUndo } = paintUndoShell();
       const run = runBootstrap({
         brush: 'pen',
         theme: 'light',
@@ -232,6 +234,7 @@ describe('the bootstrap actually capturing undo', () => {
       });
       expect(payload.undoVisual.samples).toHaveLength(3);
       expect(payload.report.paintedOutput).toMatchObject({ changed: true });
+      expect(probeFinishedAtUndo).toEqual([true, true]);
     },
     BOOTSTRAP_TIMEOUT_MS
   );
