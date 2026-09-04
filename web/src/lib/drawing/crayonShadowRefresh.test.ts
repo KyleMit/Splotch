@@ -38,8 +38,7 @@ function trackDrawImageSources() {
     ...args: unknown[]
   ) {
     const context = (original as unknown as (...a: unknown[]) => unknown).apply(this, args) as
-      | (CanvasRenderingContext2D & { __readTracked?: boolean })
-      | null;
+      (CanvasRenderingContext2D & { __readTracked?: boolean }) | null;
     if (context && !context.__readTracked) {
       context.__readTracked = true;
       const draw = context.drawImage.bind(context);

@@ -24,8 +24,7 @@ test('hydration adopts the pre-hydration canvas instead of replacing it', async 
   await page.addInitScript(() => {
     document.addEventListener('DOMContentLoaded', () => {
       const canvas = document.getElementById('drawingCanvas') as
-        | (HTMLCanvasElement & { __preHydration?: boolean })
-        | null;
+        (HTMLCanvasElement & { __preHydration?: boolean }) | null;
       if (canvas) canvas.__preHydration = true;
     });
   });
@@ -35,8 +34,7 @@ test('hydration adopts the pre-hydration canvas instead of replacing it', async 
 
   const adopted = await page.evaluate(() => {
     const canvas = document.getElementById('drawingCanvas') as
-      | (HTMLCanvasElement & { __preHydration?: boolean })
-      | null;
+      (HTMLCanvasElement & { __preHydration?: boolean }) | null;
     return canvas?.__preHydration === true;
   });
   expect(adopted, 'hydration replaced the prerendered canvas — the adopt contract broke').toBe(

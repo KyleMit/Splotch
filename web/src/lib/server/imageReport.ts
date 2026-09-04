@@ -31,8 +31,7 @@ export interface ImageReportInput {
 }
 
 export type ImageReportResult =
-  | { ok: true; reportId: string }
-  | { ok: false; status: 400 | 502 | 503; error: string };
+  { ok: true; reportId: string } | { ok: false; status: 400 | 502 | 503; error: string };
 
 function readStyle(raw: unknown): StyleName | null | undefined {
   if (raw === '' || raw === null) return null;

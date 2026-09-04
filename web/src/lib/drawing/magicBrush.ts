@@ -250,8 +250,7 @@ function buildGradientPool(): RainbowGradient[] {
 // decoded) yields null so the brush reveals nothing until it loads, matching the
 // original behaviour — it never falls back to the gradient mid-load.
 type SheetSource =
-  | { kind: 'fill'; image: HTMLImageElement }
-  | { kind: 'gradient'; gradient: RainbowGradient };
+  { kind: 'fill'; image: HTMLImageElement } | { kind: 'gradient'; gradient: RainbowGradient };
 
 function activeSource(): SheetSource | null {
   if (fillUrl) {

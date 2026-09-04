@@ -22,3 +22,7 @@ updates:
       # tracked by issue 1624 lands; remove this rule with that issue.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # dprint-plugin-markdown 0.23 wraps inside inline code spans with no
+      # opt-out, breaking this repo's grep-able command contracts (670 spans
+      # across 239 files). Held at 0.22 by issue 1634; remove with that issue.
+      - dependency-name: '@dprint/markdown'
