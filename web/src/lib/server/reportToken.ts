@@ -27,8 +27,7 @@ export interface ReportTokenBinding {
 }
 
 export type ReportTokenContext =
-  | { kind: 'picture' }
-  | { kind: 'false-positive-refusal'; refusalReason: string };
+  { kind: 'picture' } | { kind: 'false-positive-refusal'; refusalReason: string };
 
 export type ReportTokenVerdict =
   | { status: 'valid'; context: ReportTokenContext }

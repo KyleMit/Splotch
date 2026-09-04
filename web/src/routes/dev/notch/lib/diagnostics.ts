@@ -106,9 +106,7 @@ export function diagnose(profile: DeviceProfile, orientation: Orientation): Diag
 // are absent because landscapeBandEdges no longer has them. What is left is
 // hardware the app declines to paint, and surfaces that report nothing to paint.
 export type BandGapCause =
-  | 'cutout-below-threshold'
-  | 'platform-paints-no-band'
-  | 'rotation-angle-unavailable';
+  'cutout-below-threshold' | 'platform-paints-no-band' | 'rotation-angle-unavailable';
 
 export const BAND_GAP_EXPLANATIONS = {
   'cutout-below-threshold':

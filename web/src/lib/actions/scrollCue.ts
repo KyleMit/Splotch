@@ -82,7 +82,7 @@ export function cutTrailingRow(node: HTMLElement) {
   // dialog a fraction of its settled size.
   function offsetWithinScrollport(element: HTMLElement) {
     let top = 0;
-    for (let node: HTMLElement | null = element; node && node !== scrollport; ) {
+    for (let node: HTMLElement | null = element; node && node !== scrollport;) {
       top += node.offsetTop;
       node = node.offsetParent as HTMLElement | null;
     }

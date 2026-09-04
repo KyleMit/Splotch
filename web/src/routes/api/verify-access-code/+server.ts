@@ -7,8 +7,7 @@ import { apiHandler, asRecord, readJsonBody, throttled } from '$lib/server/http'
 import type { RequestHandler } from './$types';
 
 export type VerifyAccessCodeResponse =
-  | { ok: true; accessCode: string }
-  | { ok: false; error: string };
+  { ok: true; accessCode: string } | { ok: false; error: string };
 
 /**
  * Verify a secret access code against the managed allowlist. This is the

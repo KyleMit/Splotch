@@ -216,14 +216,12 @@ export async function composeExportPng(
   if ('source' in snapshot) {
     const texture = includePaperTexture ? await loadPaperTexture() : null;
     const bitmapRequests: Promise<ExportBitmapResult>[] = [
-      ...snapshot.source.tiles.map(
-        async (tile): Promise<ExportBitmapResult> => ({
-          kind: 'tile',
-          bitmap: await tile.bitmap,
-          x: tile.x,
-          y: tile.y,
-        })
-      ),
+      ...snapshot.source.tiles.map(async (tile): Promise<ExportBitmapResult> => ({
+        kind: 'tile',
+        bitmap: await tile.bitmap,
+        x: tile.x,
+        y: tile.y,
+      })),
       Promise.resolve(texture ? createImageBitmap(texture) : null).then(
         (bitmap): ExportBitmapResult => (bitmap ? { kind: 'texture', bitmap } : null)
       ),
