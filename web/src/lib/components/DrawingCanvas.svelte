@@ -278,6 +278,7 @@
       class:overlay-ready={!!displayedOverlayUrl}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
+      decoding="async"
       data-canonical-url={themedOverlayUrl ?? undefined}
       alt=""
       hidden={!overlayUrl()}
