@@ -1834,11 +1834,14 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         }
       }
     }
-    if (nativeApp && requestedOrientation && requestedOrientation !== restoreOrientation) {
-      await client.request('POST', `/session/${sessionId}/orientation`, {
-        orientation: requestedOrientation,
-      });
-      await sleep(ROTATION_NATIVE_SETTLE_MS);
+    if (nativeApp && requestedOrientation) {
+      const currentOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
+      if (requestedOrientation !== currentOrientation) {
+        await client.request('POST', `/session/${sessionId}/orientation`, {
+          orientation: requestedOrientation,
+        });
+        await sleep(ROTATION_NATIVE_SETTLE_MS);
+      }
     }
     originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;

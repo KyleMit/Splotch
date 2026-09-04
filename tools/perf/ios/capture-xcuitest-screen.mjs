@@ -861,27 +861,30 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         }
       }
     }
-    if (requestedOrientation && requestedOrientation !== originalOrientation) {
-      await client.request('POST', `/session/${sessionId}/orientation`, {
-        orientation: requestedOrientation,
-      });
-      const rotated = await pollUntil(
-        () =>
-          execute('return { width: innerWidth, height: innerHeight };')
-            .then((size) =>
-              requestedOrientation === 'PORTRAIT'
-                ? size.height > size.width
-                : size.width > size.height
-            )
-            .catch((error) => {
-        rethrowIfBroken(error);
-        return false;
-      }),
-        ROTATION_SETTLE_TIMEOUT_MS,
-        WEBVIEW_READY_POLL_MS
-      );
-      if (!rotated) throw new Error(`The device did not settle into ${requestedOrientation}`);
-      await sleep(AFTER_GESTURE_SETTLE_MS);
+    if (requestedOrientation) {
+      const currentOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
+      if (requestedOrientation !== currentOrientation) {
+        await client.request('POST', `/session/${sessionId}/orientation`, {
+          orientation: requestedOrientation,
+        });
+        const rotated = await pollUntil(
+          () =>
+            execute('return { width: innerWidth, height: innerHeight };')
+              .then((size) =>
+                requestedOrientation === 'PORTRAIT'
+                  ? size.height > size.width
+                  : size.width > size.height
+              )
+              .catch((error) => {
+          rethrowIfBroken(error);
+          return false;
+        }),
+          ROTATION_SETTLE_TIMEOUT_MS,
+          WEBVIEW_READY_POLL_MS
+        );
+        if (!rotated) throw new Error(`The device did not settle into ${requestedOrientation}`);
+        await sleep(AFTER_GESTURE_SETTLE_MS);
+      }
     }
     await clearDeviceWebCache(executeAsync);
     await dismissInstallBannerForMeasurement(execute);

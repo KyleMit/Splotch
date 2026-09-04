@@ -69,6 +69,10 @@ const IPAD_ACTIONS = readFileSync(
   join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
   'utf8'
 );
+const IPAD_SCREEN = readFileSync(
+  join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-screen.mjs'),
+  'utf8'
+);
 const CAMPAIGN_STATE = readFileSync(
   join(ROOT, 'tools', 'perf', 'lib', 'campaign-state.mjs'),
   'utf8'
@@ -688,6 +692,24 @@ describe('trusted action setup', () => {
     expect(unlock).toBeGreaterThan(-1);
     expect(rotate).toBeGreaterThan(unlock);
     expect(setup).toContain('initialRotationLock === PLATFORM_OWNS_ROTATION');
+  });
+
+  it('rechecks live orientation after releasing a native lock', () => {
+    for (const [source, unlockDecision] of [
+      [IPAD_ACTIONS, 'const needsNativeRotationUnlock ='],
+      [IPAD_SCREEN, 'const needsRotationUnlock ='],
+    ]) {
+      const setupStart = source.indexOf(unlockDecision);
+      const setupEnd = source.indexOf('const appUrl =', setupStart);
+      const setup = source.slice(setupStart, setupEnd);
+      const unlock = setup.indexOf('releaseNativeRotationLock(execute)');
+      const liveRead = setup.indexOf("currentOrientation = await client.request('GET'");
+      const comparison = setup.indexOf('requestedOrientation !== currentOrientation');
+
+      expect(unlock).toBeGreaterThan(-1);
+      expect(liveRead).toBeGreaterThan(unlock);
+      expect(comparison).toBeGreaterThan(liveRead);
+    }
   });
 
   // ADR-0142: rotation's clock starts at resize alone — which of the two
