@@ -90,6 +90,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
     'data-canonical-url',
     /\/coloring\/farm\/.+-(wide|tall)\.overlay\.svg$/
   );
+  await expect(overlay).toHaveAttribute('decoding', 'async');
   await expect(overlay).not.toHaveAttribute('srcset');
   await expect(overlay).not.toHaveAttribute('sizes');
 
