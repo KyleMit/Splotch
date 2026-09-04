@@ -135,9 +135,10 @@ describe('undo metric ownership', () => {
     for (const relative of [
       join('tools', 'perf', 'ios', 'capture-xcuitest-screen.mjs'),
       join('tools', 'perf', 'web', 'capture-local-frames.mjs'),
+      join('tools', 'perf', 'split-capture', 'lib', 'page-bootstrap.mjs'),
     ]) {
       const source = readFileSync(join(ROOT, relative), 'utf8');
-      expect(source).toContain('undoActionPromiseSource');
+      expect(source).toMatch(/undoAction(?:Promise|Function)Source/);
       expect(source).not.toContain("getEntriesByName('engine.undo'");
     }
   });

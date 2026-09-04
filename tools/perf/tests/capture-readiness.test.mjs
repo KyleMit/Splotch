@@ -317,7 +317,8 @@ describe('probe reuse', () => {
 
     expect(verdict).toEqual({
       reuse: false,
-      reason: 'it speaks splotch-perf-probe-v1, not splotch-perf-probe-v2 — restart the probe host',
+      reason:
+        `it speaks splotch-perf-probe-v1, not ${PROBE_HOST_PROTOCOL} — restart the probe host`,
     });
   });
 });

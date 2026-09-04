@@ -181,7 +181,8 @@ Do this **before** quoting a Perfetto-traced capture as a performance result, no
 * **Input cadence is a measured variable.** The Appium browser transport drives this phone at 46.8
   contact moves/s — 0.44 moves per painted frame — and cells captured that way score ~11% lost frame
   time that means nothing. Use the split transport (`perf:device:frames`), and read the fidelity
-  verdict before the result.
+  verdict before the result. Its pen cell also owns Android undo capture: ten shared canonical undo
+  actions must carry timing, exact history-depth reduction, and per-action pixel-change evidence.
 * **The fidelity gate asks Android only what Chrome can answer.** `pressure`, `contactGeometry` and
   `coalescedPerMove` were measured to be identical for a real finger and for `adb shell input` on
   this phone, so `android-chrome` declares them `not-applicable` and they are absent from the

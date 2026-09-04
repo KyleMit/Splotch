@@ -69,6 +69,14 @@ unmodified real-screen probe, selects the brush, and uploads the probe's own tab
 signals the gesture is done. Scoring imports the harness's existing modules, so a number from this
 transport is comparable with a committed matrix cell.
 
+The pen cell also performs the canonical ten-action undo probe in the page after trusted drawing
+finishes. It uses the same action source and gates as the other capture transports, then uploads the
+raw timings together with the exact history-depth reduction and a downsampled canvas digest before
+and after every undo. A split artifact cannot satisfy campaign status, source folding, or matrix
+generation unless all ten actions have timings, history falls by ten, and every action restores
+different pixels. Those semantic proofs distinguish a measured undo from a button click that did
+nothing.
+
 Three guards exist because each one caught a capture that would otherwise have been scored:
 
 * The plan carries a nonce. Safari keeps earlier tabs alive and their bootstraps poll the same plan;
@@ -80,8 +88,10 @@ Three guards exist because each one caught a capture that would otherwise have b
   menu can leave it open over the canvas, which produced captures with frames but no pointer events
   at all.
 
-Appium remains the transport for native Capacitor captures, where it provides the app shell and
-context switching that this path does not.
+Android native drawing and undo use the same split transport against the packaged WebView because
+Appium under-drives its drawing stream too. Appium remains the Android native discrete-action
+transport, where its app shell and context switching are useful and the touch-cadence limitation is
+irrelevant. iPad web and native capture remain on Appium.
 
 ## Consequences
 
@@ -93,6 +103,8 @@ context switching that this path does not.
   release-gating capture should still prefer it; this path is for unattended and comparative work.
 * \+ Android browser input reaches a fidelity-passing cadence, so the Android cells measure the
   product rather than the driver.
+* \+ Android web and native pen cells carry fresh undo timing and semantic proof from the same
+  product build as their drawing evidence instead of preserving an older Appium measurement.
 * \+ The same host serves both platforms, so the two differ only in how touch is injected.
 * − Two more device-side prerequisites to keep working: a WebDriverAgent build installed on the
   iPad, and `iproxy`.

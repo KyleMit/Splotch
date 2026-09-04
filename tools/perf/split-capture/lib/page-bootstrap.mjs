@@ -28,6 +28,12 @@ import {
   ERASER_REFILL_IDLE_FRAMES,
   eraserFillFunctionSource,
 } from '../../lib/eraser-fill.mjs';
+import {
+  EXPAND_CONTROLS_SELECTOR,
+  UNDO_ACTION_PAUSE_MS,
+  UNDO_BUTTON_SELECTOR,
+  undoActionFunctionSource,
+} from '../../lib/undo-driver.mjs';
 
 // The page polls its plan while it waits for the runner to end the phase. Long
 // enough not to spin, short enough that a finished gesture is not left banking
@@ -47,10 +53,10 @@ const ERASER_FILL_SETTLE_MS = 400;
 // size, not a cap on the capture.
 const REPORT_SLICE_ROWS = 5_000;
 // Each drawing surface is downscaled into a scratch this many pixels on a side
-// before its pixels are hashed. Small enough that both samples cost microseconds
-// outside the measured window; a stroke that survives a 16x downscale of every
-// surface it touched is not going to vanish from the hash.
-const CANVAS_DELTA_GRID_PX = 16;
+// before its pixels are hashed. The same sampler proves whole-pass output and
+// that each undo changed rendered pixels; 64 px keeps a narrow pen stroke visible
+// while the reads stay outside both measured windows.
+const CANVAS_DELTA_GRID_PX = 64;
 // FNV-1a's offset basis and prime — algorithm constants, not tuning.
 const FNV_OFFSET_BASIS = 2166136261;
 const FNV_PRIME = 16777619;
@@ -195,6 +201,22 @@ export function pageBootstrapSource() {
         return;
       }
       throw new Error('route never hydrated');
+    }
+
+    const undoCount = plan.undoCount ?? 0;
+    const undoPauseMs = plan.undoPauseMs ?? ${UNDO_ACTION_PAUSE_MS};
+    if (!Number.isSafeInteger(undoCount) || undoCount < 0) {
+      throw new Error('the split capture received an invalid undo count');
+    }
+    if (!Number.isSafeInteger(undoPauseMs) || undoPauseMs < 0) {
+      throw new Error('the split capture received an invalid undo pause');
+    }
+    if (undoCount > 0 && plan.brush !== 'pen') {
+      throw new Error('split undo capture is supported only for the pen cell');
+    }
+    if (undoCount > 0) {
+      const historyReady = await until(() => !!window.__drawingDebug?.getUndoDebug);
+      if (!historyReady) throw new Error('the production route did not expose __drawingDebug');
     }
 
     // Every brush is selected explicitly, pen included: the tool choice is
@@ -410,6 +432,52 @@ export function pageBootstrapSource() {
       await wait(${PLAN_POLL_MS});
     }
 
+    const undoActions = [];
+    let historyBeforeUndo = null;
+    let historyAfterUndo = null;
+    let undoVisual = null;
+    if (undoCount > 0) {
+      historyBeforeUndo = window.__drawingDebug.getUndoDebug();
+      const beforeDepth = historyBeforeUndo.historyLength ?? historyBeforeUndo.snapshots;
+      if (!Number.isSafeInteger(beforeDepth) || beforeDepth < undoCount) {
+        throw new Error('the drawing did not create enough undo history');
+      }
+
+      document.querySelector(${JSON.stringify(EXPAND_CONTROLS_SELECTOR)})?.click();
+      const undoReady = await until(() => {
+        const button = document.querySelector(${JSON.stringify(UNDO_BUTTON_SELECTOR)});
+        return !!button && !button.disabled;
+      });
+      if (!undoReady) throw new Error('the action drawer did not expose an enabled undo button');
+
+      const runUndoAction = ${undoActionFunctionSource()};
+      const visualSamples = [sampleCanvasDelta()];
+      const visualSteps = [];
+      for (let index = 0; index < undoCount; index++) {
+        const action = await runUndoAction(index);
+        if (!action) throw new Error('undo action ' + (index + 1) + ' produced no engine.undo measure');
+        undoActions.push(action);
+        await wait(undoPauseMs);
+        const before = visualSamples.at(-1);
+        const after = sampleCanvasDelta();
+        const changed = !before.error && !after.error &&
+          JSON.stringify(before.digests) !== JSON.stringify(after.digests);
+        visualSamples.push(after);
+        visualSteps.push({ index, changed });
+        if (!changed) {
+          throw new Error('undo action ' + (index + 1) + ' did not restore different pixels');
+        }
+      }
+      historyAfterUndo = window.__drawingDebug.getUndoDebug();
+      const afterDepth = historyAfterUndo.historyLength ?? historyAfterUndo.snapshots;
+      if (afterDepth !== beforeDepth - undoCount) {
+        throw new Error(
+          'undo history changed by ' + (beforeDepth - afterDepth) + ', expected ' + undoCount
+        );
+      }
+      undoVisual = { samples: visualSamples, steps: visualSteps, changedEveryStep: true };
+    }
+
     // The heartbeat issue 1300 asked for. A ready page that never uploads was
     // indistinguishable between four states: it never saw finish, finish()
     // threw, the upload failed, or the page was suspended first. These two log
@@ -455,6 +523,10 @@ export function pageBootstrapSource() {
       topology: window.__drawingDebug?.getLiveSurfaceTopology?.() ?? null,
       // Per-pass refill evidence (issue 1292); null for every non-eraser run.
       eraserRefills,
+      undoActions,
+      historyBeforeUndo,
+      historyAfterUndo,
+      undoVisual,
     });
   } catch (error) {
     await log({ kind: 'bootstrap', message: String(error?.message ?? error) });

@@ -10,6 +10,7 @@
 
 import { inputFidelity } from './input-fidelity.mjs';
 import { CAMPAIGN_REFERENCE_POSITIONS } from './campaign-reference.mjs';
+import { summarizeUndoActions } from './undo-action-stats.mjs';
 
 export const CAMPAIGN_MODES = [
   { id: 'portrait-light', orientation: 'PORTRAIT', theme: 'light' },
@@ -35,12 +36,9 @@ export const UNDO_COUNT = 10;
 export const MAX_ATTEMPTS = 3;
 
 const SCREEN_COMMAND = 'perf:ios:xcuitest:screen';
-// ADR-0135's transport. Drawing only: it has no undo phase and no gate-reporting
-// flag, so a split cell carries a different argument vocabulary rather than the
+// ADR-0135's transport. It carries its own argument vocabulary rather than the
 // Appium one minus the parts that would be ignored.
 export const SPLIT_SCREEN_COMMAND = 'perf:device:frames';
-// Named because consumers branch on it: the split path captures drawing only, so
-// a mode it produces has no undo artifact to name.
 export const SPLIT_TRANSPORT = 'split';
 // Desktop rows run entirely on the capture host through Playwright. Orientation
 // is a viewport shape rather than a device rotation, and the matrix derives it
@@ -626,17 +624,16 @@ function transportArgs(target, host) {
   return args;
 }
 
-// The split runner takes no undo phase and no --report-only. Emitting them anyway
-// would be silently dropped, which is the shape of every defect this campaign
-// found: a flag that looks like it asked for something and did not.
 function splitDrawingArgs(item, mode) {
   const brush = brushFor(item);
-  return [
+  const args = [
     `--brush=${brush}`,
     `--gesture-repeats=${GESTURE_REPEATS}`,
     `--orientation=${mode.orientation}`,
     `--theme=${mode.theme}`,
   ];
+  if (item === 'pen-undo') args.splice(2, 0, `--undo-count=${UNDO_COUNT}`);
+  return args;
 }
 
 function drawingArgs(item, mode) {
@@ -728,6 +725,70 @@ export function recordedGestureRepeats(artifact) {
   return count;
 }
 
+function recordedHistoryDepth(history) {
+  const depth = history?.historyLength ?? history?.snapshots;
+  return Number.isSafeInteger(depth) && depth >= 0 ? depth : null;
+}
+
+export function splitUndoEvidenceProblem(artifact, expectedUndoCount) {
+  if (artifact?.transport !== 'split-input-measurement' || expectedUndoCount === null) return null;
+  if (artifact.undoCount !== expectedUndoCount) {
+    return `the split artifact records undoCount ${JSON.stringify(artifact.undoCount)}, expected ${expectedUndoCount}`;
+  }
+  if (artifact.undo?.count !== expectedUndoCount || !Array.isArray(artifact.undoActions)) {
+    return 'the split artifact carries no complete undo timing summary';
+  }
+  if (artifact.undoActions.length !== expectedUndoCount) {
+    return `the split artifact records ${artifact.undoActions.length} undo actions, expected ${expectedUndoCount}`;
+  }
+  for (const [index, action] of artifact.undoActions.entries()) {
+    if (
+      action?.index !== index ||
+      action.afterCount !== action.beforeCount + 1 ||
+      !Number.isFinite(action.engineMs) ||
+      !Number.isFinite(action.nextFrameMs)
+    ) {
+      return `the split artifact's undo action ${index + 1} is incomplete`;
+    }
+  }
+
+  const expectedSummary = summarizeUndoActions(artifact.undoActions, []);
+  const recordedSummary = artifact.undo;
+  const summaryMatches =
+    recordedSummary.count === expectedSummary.count &&
+    recordedSummary.passed === expectedSummary.passed &&
+    ['engine', 'nextFrame'].every((group) =>
+      ['p50', 'p95', 'p99', 'max'].every(
+        (metric) => recordedSummary[group]?.[metric] === expectedSummary[group][metric]
+      )
+    );
+  if (!summaryMatches) {
+    return 'the split artifact undo summary contradicts its raw action timings';
+  }
+
+  const beforeDepth = recordedHistoryDepth(artifact.historyBeforeUndo);
+  const afterDepth = recordedHistoryDepth(artifact.historyAfterUndo);
+  if (beforeDepth === null || afterDepth !== beforeDepth - expectedUndoCount) {
+    return 'the split artifact does not prove the expected undo-history reduction';
+  }
+
+  const visual = artifact.undoVisual;
+  if (
+    visual?.changedEveryStep !== true ||
+    !Array.isArray(visual.samples) ||
+    visual.samples.length !== expectedUndoCount + 1 ||
+    visual.samples.some(
+      (sample) => sample?.error || !Array.isArray(sample?.digests) || sample.digests.length === 0
+    ) ||
+    !Array.isArray(visual.steps) ||
+    visual.steps.length !== expectedUndoCount ||
+    visual.steps.some((step, index) => step?.index !== index || step.changed !== true)
+  ) {
+    return 'the split artifact does not prove that every undo restored different pixels';
+  }
+  return null;
+}
+
 export function planCampaign(targetId, { modes, items, outputRoot, host = {}, label } = {}) {
   const target = campaignTarget(targetId);
   if (!outputRoot) throw new Error('planCampaign requires an outputRoot');
@@ -803,6 +864,7 @@ export function planCampaign(targetId, { modes, items, outputRoot, host = {}, la
         reportsFidelity: commandReportsFidelity(command),
         reportsRefreshRegime: commandReportsRefreshRegime(command),
         gestureRepeats,
+        expectedUndoCount: item === 'pen-undo' ? UNDO_COUNT : null,
         // Exactly the repeat-driven cells carry a gesture plan: the desktop
         // transport drives the probe's own synthetic driver and the action
         // sweeps drive no gesture, and neither takes --gesture-repeats — so the

@@ -89,21 +89,25 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
   if (openedWithoutProbe) window.happyDOM?.setURL?.('http://probe-host.test/');
   else openedFor(plan.nonce);
   const posted = [];
+  const currentPlan = plan;
   let readyResolve;
   const readyPosted = new Promise((resolve) => (readyResolve = resolve));
   let errorResolve;
   const errorPosted = new Promise((resolve) => (errorResolve = resolve));
   let staleResolve;
   const stalePosted = new Promise((resolve) => (staleResolve = resolve));
+  let reportResolve;
+  const reportPosted = new Promise((resolve) => (reportResolve = resolve));
   const eventRows = [];
 
   global.fetch = vi.fn(async (path, init) => {
-    if (path === '/__probe/plan') return { json: async () => plan };
+    if (path === '/__probe/plan') return { json: async () => currentPlan };
     const body = init?.body ? JSON.parse(init.body) : null;
     posted.push({ path, body });
     if (path === '/__probe/ready') readyResolve(body);
     if (path === '/__probe/log' && body?.kind === 'bootstrap') errorResolve(body);
     if (path === '/__probe/log' && body?.kind === 'stale-page') staleResolve(body);
+    if (path === '/__probe/report') reportResolve(body);
     return { json: async () => ({}) };
   });
 
@@ -131,16 +135,103 @@ function runBootstrap(plan, { openedWithoutProbe = false } = {}) {
     readyPosted,
     errorPosted,
     stalePosted,
+    reportPosted,
     posted,
+    finish() {
+      currentPlan.finish = true;
+    },
     recordTrustedCanvasPointerUp() {
       eventRows.push([0, 0, 2, 1, 0, 0, 1, 0, 1]);
     },
   };
 }
 
+function paintUndoShell() {
+  paintShell({ compact: true, startingTheme: 'light' });
+  const canvas = document.querySelector('#drawingCanvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  canvas.pixelVersion = 3;
+
+  const createElement = document.createElement.bind(document);
+  document.createElement = (tag) => {
+    const element = createElement(tag);
+    if (tag === 'canvas') {
+      let sampledVersion = 0;
+      element.getContext = () => ({
+        clearRect() {
+          sampledVersion = 0;
+        },
+        drawImage(source) {
+          sampledVersion = source.pixelVersion ?? 0;
+        },
+        getImageData() {
+          const data = new Uint8ClampedArray(64 * 64 * 4);
+          data.fill(sampledVersion);
+          return { data };
+        },
+      });
+    }
+    return element;
+  };
+
+  let historyLength = 12;
+  window.__drawingDebug = {
+    getUndoDebug: () => ({ historyLength, snapshots: historyLength }),
+    getLiveSurfaceTopology: () => [],
+  };
+  const measures = [];
+  Object.defineProperty(window.performance, 'getEntriesByName', {
+    configurable: true,
+    value: () => measures,
+  });
+  const undo = document.createElement('button');
+  undo.id = 'undoButton';
+  undo.addEventListener('click', () => {
+    historyLength -= 1;
+    canvas.pixelVersion -= 1;
+    measures.push({ duration: 2 });
+  });
+  document.body.append(undo);
+}
+
 beforeEach(() => {
   window.matchMedia = () => ({ matches: false, addEventListener() {} });
   delete window.__probe;
+  delete window.__drawingDebug;
+});
+
+describe('the bootstrap actually capturing undo', () => {
+  it(
+    'records canonical timing plus history and pixel restoration evidence',
+    async () => {
+      paintUndoShell();
+      const run = runBootstrap({
+        brush: 'pen',
+        theme: 'light',
+        nonce: 'undo-run',
+        undoCount: 2,
+        undoPauseMs: 0,
+      });
+
+      await run.readyPosted;
+      run.finish();
+      const payload = await run.reportPosted;
+
+      expect(payload.undoActions).toHaveLength(2);
+      expect(payload.historyBeforeUndo.historyLength).toBe(12);
+      expect(payload.historyAfterUndo.historyLength).toBe(10);
+      expect(payload.undoVisual).toMatchObject({
+        changedEveryStep: true,
+        steps: [
+          { index: 0, changed: true },
+          { index: 1, changed: true },
+        ],
+      });
+      expect(payload.undoVisual.samples).toHaveLength(3);
+    },
+    BOOTSTRAP_TIMEOUT_MS
+  );
 });
 
 describe('the bootstrap actually setting the theme', () => {

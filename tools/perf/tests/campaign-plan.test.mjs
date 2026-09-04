@@ -21,6 +21,7 @@ import {
   probeHostProblem,
   resolvedProbeHostProblem,
   splitTransportIdentityProblem,
+  splitUndoEvidenceProblem,
   commandReportsRefreshRegime,
 } from '../lib/campaign-plan.mjs';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -34,7 +35,7 @@ import {
 } from '../lib/profile-preview.mjs';
 import { ROOT as ROOT_DIR } from '../../lib/proc.mjs';
 import { campaignProgress, campaignStatus } from '../campaign-status.mjs';
-import { probeHostAvailabilityProblem } from '../run-campaign.mjs';
+import { cellInspection, probeHostAvailabilityProblem } from '../run-campaign.mjs';
 import { PROBE_HOST_PROTOCOL } from '../split-capture/lib/probe-host-protocol.mjs';
 import {
   ALREADY_VALID,
@@ -381,6 +382,101 @@ describe('campaign device class', () => {
 });
 
 describe('campaign artifact acceptance', () => {
+  const validSplitUndo = {
+    transport: 'split-input-measurement',
+    undoCount: UNDO_COUNT,
+    undo: {
+      count: UNDO_COUNT,
+      engine: { p50: 1, p95: 1, p99: 1, max: 1 },
+      nextFrame: { p50: 2, p95: 2, p99: 2, max: 2 },
+      passed: true,
+    },
+    undoActions: Array.from({ length: UNDO_COUNT }, (_, index) => ({
+      index,
+      beforeCount: index,
+      afterCount: index + 1,
+      engineMs: 1,
+      nextFrameMs: 2,
+    })),
+    historyBeforeUndo: { historyLength: 20 },
+    historyAfterUndo: { historyLength: 10 },
+    undoVisual: {
+      changedEveryStep: true,
+      samples: Array.from({ length: UNDO_COUNT + 1 }, (_, index) => ({ digests: [index] })),
+      steps: Array.from({ length: UNDO_COUNT }, (_, index) => ({ index, changed: true })),
+    },
+  };
+
+  it('requires split undo timing, history, and per-step pixel evidence', () => {
+    expect(splitUndoEvidenceProblem(validSplitUndo, UNDO_COUNT)).toBeNull();
+    expect(splitUndoEvidenceProblem({ ...validSplitUndo, undo: null }, UNDO_COUNT)).toContain(
+      'timing summary'
+    );
+    expect(
+      splitUndoEvidenceProblem(
+        { ...validSplitUndo, undo: { ...validSplitUndo.undo, passed: false } },
+        UNDO_COUNT
+      )
+    ).toContain('contradicts');
+    expect(
+      splitUndoEvidenceProblem(
+        { ...validSplitUndo, historyAfterUndo: { historyLength: 11 } },
+        UNDO_COUNT
+      )
+    ).toContain('history reduction');
+    expect(
+      splitUndoEvidenceProblem(
+        {
+          ...validSplitUndo,
+          undoVisual: {
+            ...validSplitUndo.undoVisual,
+            steps: validSplitUndo.undoVisual.steps.map((step, index) =>
+              index === 4 ? { ...step, changed: false } : step
+            ),
+          },
+        },
+        UNDO_COUNT
+      )
+    ).toContain('different pixels');
+  });
+
+  it('makes campaign status reject a split pen artifact without undo proof', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-campaign-undo-'));
+    const artifact = join(directory, 'pen.json');
+    const [planned] = planCampaign('android-device-web', {
+      outputRoot: directory,
+      host: { deviceId: 'serial', probeHost: 'http://device.test/' },
+      modes: ['portrait-light'],
+      items: ['pen-undo'],
+    });
+    const cell = {
+      ...planned,
+      artifact,
+      reportsFidelity: false,
+      reportsRefreshRegime: false,
+      gestureRepeats: null,
+      gesturePlan: null,
+    };
+    writeFileSync(artifact, JSON.stringify({ ...validSplitUndo, undoVisual: null }));
+
+    expect(
+      cellInspection(cell, {
+        runtime: 'web',
+        refreshRegime: '120hz',
+        captureRuntime: 'android-chrome',
+      })
+    ).toMatchObject({ ok: false, status: FAILED, undoProblem: expect.any(String) });
+
+    writeFileSync(artifact, JSON.stringify(validSplitUndo));
+    expect(
+      cellInspection(cell, {
+        runtime: 'web',
+        refreshRegime: '120hz',
+        captureRuntime: 'android-chrome',
+      })
+    ).toMatchObject({ ok: true, status: COMPLETE });
+  });
+
   it('accepts a native cell only when the capture attached to the app WebView', () => {
     expect(
       artifactMatchesRuntime(
@@ -592,12 +688,11 @@ describe('split transport', () => {
     }
   });
 
-  // A flag the runner silently drops is the shape of every defect this campaign
-  // found, so the omissions are asserted rather than left to the runner's tolerance.
-  it('omits the undo phase and --report-only, which the split runner does not implement', () => {
+  it('requests the canonical undo phase without the Appium-only report flag', () => {
     const [pen] = splitCells({ items: ['pen-undo'] });
 
-    expect(pen.args.some((arg) => arg.startsWith('--undo-count'))).toBe(false);
+    expect(pen.args).toContain(`--undo-count=${UNDO_COUNT}`);
+    expect(pen.expectedUndoCount).toBe(UNDO_COUNT);
     expect(pen.args).not.toContain('--report-only');
   });
 

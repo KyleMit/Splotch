@@ -30,7 +30,7 @@ only has to be able to touch the screen.
 | Command                      | Does                                                                                               |
 | ---------------------------- | -------------------------------------------------------------------------------------------------- |
 | `npm run perf:device:serve`  | Serves the perf build with the probe bootstrapped in, and collects the uploaded report             |
-| `npm run perf:device:frames` | Opens the page on the device, dispatches trusted touch, waits for the report, scores and writes it |
+| `npm run perf:device:frames` | Opens the page, dispatches trusted drawing and optional undo, then scores and writes the report    |
 | `npm run perf:device:hand`   | The same, with a **person** drawing in place of the injected touch — how a threshold gets measured |
 
 Run the host first; it binds `0.0.0.0` because the device loads it over the LAN.
@@ -78,6 +78,13 @@ is no iOS equivalent, so an iPad run is driven by a person calling the start.
 artifact records `orientation`, `theme`, and the `fidelity` verdict alongside the summaries, because
 the performance matrix validates a capture against the mode it was filed under and refuses one that
 cannot prove which mode it measured.
+
+`--undo-count=<n>` is valid only with `--brush=pen`. After the trusted gesture finishes, the page
+runs the shared canonical undo action source and records the raw engine/next-frame timings, the
+history depth before and after, and a canvas digest around every action. The campaign's pen cell
+sets the count to ten. Campaign status, source folding, and matrix generation all reject a split pen
+artifact unless it proves the complete count, exact history reduction, and a pixel change for every
+undo.
 
 The CLI exits non-zero when the fidelity gate fails, **after** writing the artifact. That ordering
 is deliberate — the failed capture is kept for inspection — but it means an artifact that parses is

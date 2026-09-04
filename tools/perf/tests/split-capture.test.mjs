@@ -687,6 +687,27 @@ describe('what a saved artifact can prove about its own theme', () => {
     expect(drivenCaptureArtifact({ ...common, ready, gestureRepeats: 10 }).gestureRepeats).toBe(10);
   });
 
+  it('records the split undo contract and its semantic evidence', () => {
+    const undo = { count: 2, passed: true };
+    const payload = {
+      undoActions: [{ index: 0 }, { index: 1 }],
+      historyBeforeUndo: { historyLength: 12 },
+      historyAfterUndo: { historyLength: 10 },
+      undoVisual: { changedEveryStep: true },
+    };
+
+    expect(
+      drivenCaptureArtifact({
+        ...common,
+        ready,
+        undoCount: 2,
+        undoPauseMs: 120,
+        undo,
+        payload,
+      })
+    ).toMatchObject({ undoCount: 2, undoPauseMs: 120, undo, ...payload });
+  });
+
   it('records the measured native package rather than trusting the launch flag', () => {
     expect(
       drivenCaptureArtifact({ ...common, ready, nativeApp: true, nativePackage: 'art.splotch.app' })

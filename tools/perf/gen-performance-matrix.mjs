@@ -25,12 +25,14 @@ import {
 import {
   CAMPAIGN_TARGETS,
   GESTURE_REPEATS,
+  UNDO_COUNT,
   anomalousEraserRefills,
   eraserRefillShortfall,
   gesturePlanFor,
   recordedGesturePlan,
   recordedGestureRepeats,
   recordedPaintedOutput,
+  splitUndoEvidenceProblem,
 } from './lib/campaign-plan.mjs';
 import {
   LOST_FRAME_TIME_SHARE_EXCEPTIONS,
@@ -698,6 +700,10 @@ function normalizeUndo(source, productCommit, sourceDirectory, mode) {
   if (!source) return null;
   const profile = readJson(sourcePath(source, sourceDirectory));
   validateCaptureMode(profile, mode, source);
+  const splitEvidenceProblem = splitUndoEvidenceProblem(profile, UNDO_COUNT);
+  if (splitEvidenceProblem) {
+    throw new Error(`${source} cannot supply undo evidence: ${splitEvidenceProblem}`);
+  }
   const summary = profile.undo;
   if (!summary) return null;
   return {

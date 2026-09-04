@@ -13,7 +13,7 @@ import {
   renderMarkdown,
   renderReport,
 } from '../gen-performance-matrix.mjs';
-import { GESTURE_REPEATS } from '../lib/campaign-plan.mjs';
+import { GESTURE_REPEATS, UNDO_COUNT } from '../lib/campaign-plan.mjs';
 import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
@@ -136,6 +136,62 @@ function normalizedMode(spec, overrides = {}) {
     ...overrides,
   };
 }
+
+function splitUndoCapture(overrides = {}) {
+  return {
+    transport: 'split-input-measurement',
+    orientation: 'PORTRAIT',
+    theme: 'light',
+    undoCount: UNDO_COUNT,
+    undo: {
+      count: UNDO_COUNT,
+      engine: distribution,
+      nextFrame: { p50: 2, p95: 2, p99: 2, max: 2 },
+      passed: true,
+    },
+    undoActions: Array.from({ length: UNDO_COUNT }, (_, index) => ({
+      index,
+      beforeCount: index,
+      afterCount: index + 1,
+      engineMs: 1,
+      nextFrameMs: 2,
+    })),
+    historyBeforeUndo: { historyLength: 20 },
+    historyAfterUndo: { historyLength: 10 },
+    undoVisual: {
+      changedEveryStep: true,
+      samples: Array.from({ length: UNDO_COUNT + 1 }, (_, index) => ({ digests: [index] })),
+      steps: Array.from({ length: UNDO_COUNT }, (_, index) => ({ index, changed: true })),
+    },
+    ...overrides,
+  };
+}
+
+describe('split undo normalization', () => {
+  function matrixFor(capture) {
+    const directory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(directory);
+    writeFileSync(join(directory, 'undo.json'), JSON.stringify(capture));
+    const source = manifest([
+      capturedManifestMode(modeSpecs[0], { undoSource: 'undo.json' }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    source.targets[0].id = 'android-device-web';
+    return () => normalizeMatrix(source, directory);
+  }
+
+  it('publishes a complete split undo artifact', () => {
+    const matrix = matrixFor(splitUndoCapture())();
+
+    expect(matrix.targets[0].modes[0].undo).toMatchObject({ count: UNDO_COUNT, passed: true });
+  });
+
+  it('fails closed when the split artifact has timing but no semantic proof', () => {
+    expect(matrixFor(splitUndoCapture({ undoVisual: null }))).toThrow(
+      'does not prove that every undo restored different pixels'
+    );
+  });
+});
 
 function normalizedMatrix(modes) {
   return {
