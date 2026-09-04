@@ -280,4 +280,24 @@ describe('merged-ness proofs on a real repository', () => {
       ['topic', 1, 1],
     ]);
   });
+
+  // The remote's HEAD pointer resolves to the base, so it reports zero ahead and
+  // zero behind and reads as a branch holding nothing new — the shape every triage
+  // bucket collects for deletion. Its short name is the bare remote name, which is
+  // what a `git push --delete` would then be handed.
+  it('listBranchRefs omits the remote HEAD pointer from the remotes namespace', () => {
+    const { sh, commit, repo, pushMain } = fixture;
+    commit('main2.txt', 'x', 'main moves');
+    pushMain();
+    sh(['checkout', '-q', '-b', 'shipped']);
+    commit('s.txt', 's', 'shipped work');
+    sh(['push', '-q', 'origin', 'shipped']);
+    sh(['remote', 'set-head', 'origin', 'main']);
+
+    expect(sh(['symbolic-ref', 'refs/remotes/origin/HEAD'])).toBe('refs/remotes/origin/main');
+
+    const refs = listBranchRefs(repo, { base: 'origin/main', namespace: 'refs/remotes/origin' });
+    expect(refs.map((r) => r.name).sort()).toEqual(['origin/main', 'origin/shipped']);
+    expect(refs.map((r) => r.name)).not.toContain('origin');
+  });
 });
