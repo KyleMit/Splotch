@@ -2,17 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { PORT_ROLES } from '../lib/capture-readiness.mjs';
 import {
   classifyProcess,
+  forwardActions,
   isRigForward,
   parseAdbForwards,
   planRelease,
+  releaseFailures,
+  repoScriptRoot,
   rigPorts,
+  selectAndroidSerial,
 } from '../release-capture.mjs';
 
 const MAIN = '/Users/dev/Code/Splotch';
 const WORKTREE = '/private/tmp/splotch-capture-pr1633';
 const roots = {
   checkoutRoots: [MAIN, WORKTREE],
-  containerRoots: [`${MAIN}/.claude/worktrees`, `${MAIN}/.codex/worktrees`],
+  containerRoots: [`${MAIN}/.claude/worktrees`, '/Users/dev/.codex/worktrees'],
 };
 const preview = (cwd) => ({ cwd, command: 'node tools/run-web-tool.mjs vite preview --port 4173' });
 
@@ -63,6 +67,108 @@ describe('classifyProcess', () => {
 
   it('does not own a sibling directory that merely shares the checkout prefix', () => {
     expect(classifyProcess(preview(`${MAIN}-archive/web`), roots).verdict).toBe('foreign');
+  });
+
+  it('owns a pruned Codex worktree under the home-directory container', () => {
+    const pruned = '/Users/dev/.codex/worktrees/4db6dc63-gone/Splotch/web';
+    expect(classifyProcess(preview(pruned), roots).verdict).toBe('ours');
+  });
+
+  it('owns a pruned worktree outside every container by the rig script it runs', () => {
+    const entry = {
+      cwd: '/private/tmp/splotch-gone/web',
+      command: 'node /private/tmp/splotch-gone/tools/run-web-tool.mjs vite preview --port 4173',
+    };
+    const verdict = classifyProcess(entry, roots);
+    expect(verdict.verdict).toBe('ours');
+    expect(verdict.reason).toContain('/private/tmp/splotch-gone');
+  });
+
+  it('owns the vite port holder of a pruned worktree through its ancestor command line', () => {
+    const entry = {
+      cwd: '/private/tmp/splotch-gone/web',
+      command: 'node /private/tmp/splotch-gone/node_modules/vite/bin/vite.js preview --port 4173',
+      ancestors: ['node /private/tmp/splotch-gone/tools/run-web-tool.mjs vite preview --port 4173'],
+    };
+    expect(classifyProcess(entry, roots).verdict).toBe('ours');
+  });
+
+  it('does not own a vite from another project just because it has ancestors', () => {
+    const entry = {
+      cwd: '/Users/dev/Code/OtherApp',
+      command: 'node /Users/dev/Code/OtherApp/node_modules/vite/bin/vite.js preview',
+      ancestors: ['npm run preview', '/bin/zsh'],
+    };
+    expect(classifyProcess(entry, roots).verdict).toBe('foreign');
+  });
+});
+
+describe('repoScriptRoot', () => {
+  it('names the checkout a rig script runs from and nothing else', () => {
+    expect(repoScriptRoot('node /x/y/tools/perf/serve-probe-host.mjs --port=4175')).toBe('/x/y');
+    expect(repoScriptRoot('node /x/y/tools/run-web-tool.mjs vite preview --host')).toBe('/x/y');
+    expect(repoScriptRoot('node /x/y/tools/run-web-tool.mjs vite dev')).toBeNull();
+    expect(repoScriptRoot('node /x/y/node_modules/vite/bin/vite.js preview')).toBeNull();
+  });
+});
+
+describe('selectAndroidSerial', () => {
+  it('takes the explicit serial, the only attached one, or none', () => {
+    expect(selectAndroidSerial(['a', 'b'], 'b')).toEqual({ serial: 'b' });
+    expect(selectAndroidSerial(['a'], null)).toEqual({ serial: 'a' });
+    expect(selectAndroidSerial([], null)).toEqual({ serial: null });
+  });
+
+  it('refuses to guess between several attached phones', () => {
+    const pick = selectAndroidSerial(['phone-a', 'phone-b'], null);
+    expect(pick.serial).toBeNull();
+    expect(pick.problem).toContain('--android-serial=');
+  });
+});
+
+describe('forwardActions', () => {
+  it('removes only the selected device’s devtools forwards', () => {
+    const forwards = parseAdbForwards(
+      [
+        'phone-a tcp:9224 localabstract:chrome_devtools_remote',
+        'phone-b tcp:9234 localabstract:chrome_devtools_remote',
+        'phone-a tcp:5555 tcp:5555',
+      ].join('\n')
+    );
+    expect(forwardActions(forwards, 'phone-a').map((f) => [f.serial, f.action])).toEqual([
+      ['phone-a', 'remove'],
+      ['phone-b', 'leave'],
+      ['phone-a', 'leave'],
+    ]);
+  });
+});
+
+describe('releaseFailures', () => {
+  const clean = {
+    forwards: [{ serial: 'a', local: 'tcp:9224', outcome: 'removed' }],
+    android: { serial: 'a', steps: [{ command: 'svc power stayon false', outcome: 'ok' }] },
+  };
+
+  it('is empty when every step succeeded', () => {
+    expect(releaseFailures(clean)).toEqual([]);
+  });
+
+  it('collects a failed forward removal, a failed reset step, and a refused phone pick', () => {
+    expect(
+      releaseFailures({
+        forwards: [{ serial: 'a', local: 'tcp:9224', outcome: 'remove failed: exit 17' }],
+        android: {
+          serial: 'a',
+          steps: [{ command: 'dumpsys battery reset', outcome: 'failed: exit 17' }],
+        },
+      })
+    ).toHaveLength(2);
+    expect(
+      releaseFailures({ forwards: [], android: { serial: null, steps: [], problem: 'x' } })
+    ).toEqual(['x']);
+    expect(releaseFailures({ forwards: [], forwardProblem: 'adb forward --list failed' })).toEqual([
+      'adb forward --list failed',
+    ]);
   });
 });
 

@@ -36,9 +36,11 @@ npm run perf:release -- --dry-run
 
 Read the inventory before releasing anything. Each line carries a verdict — `ours`, `foreign`,
 `tunnel`, or `campaign` — with the reason. Ownership is placement inside a checkout of this repo:
-the main checkout, any worktree in `git worktree list`, or a pruned worktree whose process outlived
-its directory. A `foreign` line naming a checkout you recognize means its cwd is unreadable from
-where you are running; that is the sandbox, not a foreign process.
+the main checkout, any worktree in `git worktree list`, a pruned worktree under either runner's
+container (`<main>/.claude/worktrees/`, `~/.codex/worktrees/`), or a pruned worktree anywhere else
+whose process — or whose parent — runs one of this repo's rig scripts from it. A `foreign` line
+naming a checkout you recognize means its cwd is unreadable from where you are running; that is the
+sandbox, not a foreign process.
 
 ```sh
 npm run perf:release
@@ -59,7 +61,7 @@ command exits non-zero; do not report the rig released while that list is non-em
 | `--host-only`      | Stop host processes and drop forwards, but leave the phone's stay-awake, timeout, and rotation |
 | `--stop-campaigns` | Also stop a live campaign or operator driver — only when the user has abandoned it             |
 | `--json`           | Machine-readable report                                                                        |
-| `--android-serial` | Pick the phone when more than one is attached                                                  |
+| `--android-serial` | Pick the phone when more than one is attached — required then; the release refuses to guess    |
 
 ## What the phone gets back
 
@@ -67,8 +69,11 @@ Unless `--host-only`, the release undoes every write `perf:preflight --wake-andr
 `--hold-android-awake` make, plus the rotation pair a crashed input check leaves pinned: stay-awake
 off, the stock screen timeout (the preflight never records what it replaced),
 `dumpsys battery
-reset` for the forced-plugged override, and auto-rotate on. The adb forwards to
-Chrome and WebView devtools sockets are removed; any other forward is listed and left.
+reset` for the forced-plugged override, and auto-rotate on. The selected phone's
+adb forwards to Chrome and WebView devtools sockets are removed; another device's forwards, and any
+forward to some other socket, are listed and left. Every device-side step that fails is listed under
+`NOT RELEASED` and fails the command the same way a survivor does — a run that could not undo
+stay-awake has not released the phone, whatever else it stopped.
 
 **The consequence is the one the campaigns doc warns about: the phone will now sleep and lock.** A
 locked phone with a passcode cannot be unlocked from the host, so the next `start-capture-session`

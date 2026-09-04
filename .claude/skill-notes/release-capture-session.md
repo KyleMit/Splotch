@@ -25,13 +25,35 @@ a shared worktree. The release must be usable in exactly that setting.
 `perf:preflight` owns a listener only when its cwd is inside *this* checkout, because its job is to
 route around everyone else. The request that produced this skill was to clear ports left by *any
 current or previous session*, and previous sessions ran from other worktrees — on this machine, in
-`.claude/worktrees/` and scattered across `/private/tmp`. So ownership here is any path from
-`git worktree list`, plus the runner containers under the main checkout for a worktree that was
-pruned while its preview kept serving (the directory is gone from the list; the process's cwd still
-names it). A command-line path is the fallback for a process spawned with an unhelpful cwd.
+`<main>/.claude/worktrees/`, in `~/.codex/worktrees/<id>/Splotch`, and scattered across
+`/private/tmp`. So ownership here is any path from `git worktree list`, plus the two runner
+containers for a worktree pruned while its preview kept serving (the directory is gone from the
+list; the process's cwd still names it), plus — for a pruned worktree outside every container — the
+checkout a rig script on the process's own or an ancestor's command line runs from. That last rule
+is what covers `/private/tmp/splotch-*`: the vite port holder's own command line names nothing of
+this repo, but its parent's is `<root>/tools/run-web-tool.mjs vite preview`, and only this repo has
+that script.
+
+The first cut put the Codex container at `<main>/.codex/worktrees` by analogy with Claude's. The
+rival review checked the live host and found Codex keeps them under the home directory, and that a
+pruned one classified as foreign — the feature's central promise, broken for one runner. The lesson
+is the general one: a path layout is a fact to look up, not to infer from a sibling's.
 
 The boundary was checked against the one false positive that matters: `startsWith(root + '/')`
-rather than `startsWith(root)`, so `Splotch-archive` is not `Splotch`.
+rather than `startsWith(root)`, so `Splotch-archive` is not `Splotch`. Ancestor command lines are
+consulted only for the repo-script rule, so a foreign vite with an `npm run preview` parent stays
+foreign.
+
+## Why a failed adb step fails the run
+
+The first cut exited zero whenever no process survived SIGKILL and no campaign blocked — so a run in
+which every `adb` write failed still reported the rig released, and an agent reading the exit code
+would have handed off a phone pinned awake. The rival review reproduced that with a fake `adb`
+returning 17. Every device-side step now lands in `report.failures` and the exit code, and the
+printed report gives them their own heading. The same review found the forward sweep removing rows
+for *every* attached device; forwards are now scoped to the selected serial, and with several phones
+attached and no `--android-serial` the device steps are refused rather than aimed at whichever was
+listed first.
 
 ## Why a live campaign blocks instead of stopping
 

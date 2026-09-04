@@ -28,6 +28,7 @@
 // failed with an error that named neither the port nor the stale process.
 import { spawnSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { argFlag, isMain, ROOT, runMain, sleep } from '../lib/proc.mjs';
 import { rethrowIfBroken } from './lib/error-classification.mjs';
@@ -46,10 +47,21 @@ const TERM_GRACE_MS = 3_000;
 const KILL_GRACE_MS = 2_000;
 const RECHECK_INTERVAL_MS = 100;
 
-// Where each runner keeps the worktrees it manages under the main checkout. A
-// worktree that was pruned while its preview kept serving is no longer in
-// `git worktree list`, but its cwd is still under one of these.
-const WORKTREE_CONTAINERS = ['.claude/worktrees', '.codex/worktrees'];
+// Where each runner keeps the worktrees it manages: Claude Code under the main
+// checkout, Codex under the home directory as `<id>/<repo name>`. A worktree
+// pruned while its preview kept serving is no longer in `git worktree list`,
+// but its cwd is still under one of these.
+const CLAUDE_WORKTREE_CONTAINER = '.claude/worktrees';
+const CODEX_WORKTREE_CONTAINER = '.codex/worktrees';
+
+// A command line that runs one of this repo's own rig scripts by absolute path
+// names the checkout it runs from, wherever that checkout is — the pruned
+// `/private/tmp` worktree that no container and no list still knows about.
+const REPO_SCRIPT_ROOT_PATTERN =
+  /(\/\S+?)\/tools\/(?:perf\/\S+\.mjs|run-web-tool\.mjs vite preview)/;
+// The port holder for a preview is vite itself, a grandchild whose own command
+// line names nothing of this repo; its parent's does.
+const ANCESTOR_DEPTH = 5;
 
 const RIG_SCRIPT_PATTERNS = [
   /prepare-capture\.mjs/,
@@ -90,18 +102,27 @@ function realPath(path) {
 
 const within = (path, root) => path === root || path.startsWith(`${root}/`);
 
-// Ownership is placement inside a checkout of this repo — by cwd first, and by
-// an absolute path on the command line when the cwd says nothing (Appium and
-// the inspector proxy are spawned with the checkout as cwd, but a launcher can
-// have chdir'd elsewhere).
-export function classifyProcess({ cwd, command }, { checkoutRoots, containerRoots }) {
+export const repoScriptRoot = (command) => command.match(REPO_SCRIPT_ROOT_PATTERN)?.[1] ?? null;
+
+// Ownership is placement inside a checkout of this repo — by cwd first, by an
+// absolute path on the command line when the cwd says nothing (Appium and the
+// inspector proxy are spawned with the checkout as cwd, but a launcher can have
+// chdir'd elsewhere), and finally by the checkout a rig script on this or an
+// ancestor's command line runs from, which is the only trace a pruned worktree
+// outside every container leaves.
+export function classifyProcess(
+  { cwd, command, ancestors = [] },
+  { checkoutRoots, containerRoots }
+) {
   if (TUNNEL_PATTERN.test(command)) {
     return { verdict: 'tunnel', reason: 'root-owned RemoteXPC tunnel — left up' };
   }
   const roots = [...checkoutRoots, ...containerRoots];
+  const lines = [command, ...ancestors];
   const owningRoot =
     roots.find((root) => cwd && within(cwd, root)) ??
-    roots.find((root) => command.includes(`${root}/`));
+    roots.find((root) => lines.some((line) => line.includes(`${root}/`))) ??
+    lines.map(repoScriptRoot).find(Boolean);
   if (!owningRoot) {
     return {
       verdict: 'foreign',
@@ -196,7 +217,22 @@ function checkoutRoots() {
 function containerRoots() {
   const commonDir = sh('git', ['rev-parse', '--path-format=absolute', '--git-common-dir']).out;
   const mainRoot = realPath(dirname(commonDir || join(ROOT, '.git')));
-  return WORKTREE_CONTAINERS.map((container) => join(mainRoot, container));
+  return [join(mainRoot, CLAUDE_WORKTREE_CONTAINER), join(homedir(), CODEX_WORKTREE_CONTAINER)];
+}
+
+function parentPid(pid) {
+  const ppid = Number(sh('ps', ['-o', 'ppid=', '-p', String(pid)]).out);
+  return Number.isInteger(ppid) && ppid > 1 ? ppid : null;
+}
+
+function ancestorCommands(pid) {
+  const commands = [];
+  let current = parentPid(pid);
+  while (current && commands.length < ANCESTOR_DEPTH) {
+    commands.push(commandLine(current));
+    current = parentPid(current);
+  }
+  return commands;
 }
 
 // Every listener on a rig port, plus every portless rig process (the hold-awake
@@ -218,13 +254,14 @@ export function collectInventory({
     }
     const cwd = workingDirectory(pid);
     const command = extra.command ?? commandLine(pid);
+    const ancestors = ancestorCommands(pid);
     byPid.set(pid, {
       pid,
       cwd,
       command,
       ports: extra.port ? [extra.port] : [],
       roles: extra.role ? [extra.role] : [],
-      ...classifyProcess({ cwd, command }, roots),
+      ...classifyProcess({ cwd, command, ancestors }, roots),
     });
   };
   for (const { role, port } of rigPorts()) {
@@ -302,32 +339,50 @@ async function drainAppiumSessions(port) {
   return drained;
 }
 
-function androidSerial() {
-  const explicit = argFlag('android-serial', null);
-  if (explicit) return explicit;
-  const attached = sh('adb', ['devices'])
+// The rig has one phone. With several attached and no --android-serial there is
+// no honest pick — the first one listed is whoever plugged in first — so the
+// device steps are refused rather than aimed at a guess.
+export function selectAndroidSerial(attached, explicit) {
+  if (explicit) return { serial: explicit };
+  if (attached.length > 1) {
+    return {
+      serial: null,
+      problem: `several devices attached (${attached.join(', ')}) — pass --android-serial=`,
+    };
+  }
+  return { serial: attached[0] ?? null };
+}
+
+function attachedAndroidSerials() {
+  return sh('adb', ['devices'])
     .out.split('\n')
     .slice(1)
     .map((line) => line.trim().split(/\s+/))
     .filter(([, state]) => state === 'device')
     .map(([serial]) => serial);
-  return attached[0] ?? null;
+}
+
+// Only the selected phone's forwards: `adb forward --list` reports every
+// attached device, and another phone's devtools forward is another session's.
+export function forwardActions(forwards, serial) {
+  return forwards.map((forward) => {
+    if (forward.serial !== serial) return { ...forward, action: 'leave', why: 'another device' };
+    if (!isRigForward(forward))
+      return { ...forward, action: 'leave', why: 'not a devtools forward' };
+    return { ...forward, action: 'remove' };
+  });
 }
 
 function releaseForwards(serial, { dryRun }) {
-  const forwards = parseAdbForwards(sh('adb', ['forward', '--list']).out);
-  return forwards.map((forward) => {
-    if (!isRigForward(forward)) return { ...forward, outcome: 'left (not a devtools forward)' };
+  const listed = sh('adb', ['forward', '--list']);
+  if (!listed.ok) return { forwards: [], problem: `adb forward --list failed: ${listed.err}` };
+  const forwards = forwardActions(parseAdbForwards(listed.out), serial).map((forward) => {
+    if (forward.action === 'leave') return { ...forward, outcome: `left (${forward.why})` };
     if (dryRun) return { ...forward, outcome: 'would remove' };
-    const removed = sh('adb', [
-      '-s',
-      forward.serial ?? serial,
-      'forward',
-      '--remove',
-      forward.local,
-    ]);
+    const removed = sh('adb', ['-s', serial, 'forward', '--remove', forward.local]);
     return { ...forward, outcome: removed.ok ? 'removed' : `remove failed: ${removed.err}` };
   });
+  return { forwards, problem: null };
 }
 
 // The writes perf:preflight --wake-android and --hold-android-awake make, undone,
@@ -386,7 +441,9 @@ function printReport(report) {
     for (const f of report.forwards)
       console.log(`  ${f.serial} ${f.local} -> ${f.remote}: ${f.outcome}`);
   }
-  if (report.android) {
+  if (report.android?.problem) {
+    console.log(`\nandroid: ${report.android.problem}`);
+  } else if (report.android) {
     console.log(`\nandroid ${report.android.serial}`);
     for (const step of report.android.steps)
       console.log(`  ${step.outcome.padEnd(9)} ${step.command}`);
@@ -402,6 +459,10 @@ function printReport(report) {
   if (report.survivors.length) {
     console.log('\nSTILL RUNNING after SIGKILL:');
     for (const entry of report.survivors) console.log(`  ${describe(entry)}`);
+  }
+  if (report.failures.length) {
+    console.log('\nNOT RELEASED — these steps failed:');
+    for (const failure of report.failures) console.log(`  ${failure}`);
   }
 }
 
@@ -441,12 +502,38 @@ export async function releaseCapture({
   await stopAll(plan.servers);
   report.survivors = report.stopped.filter((entry) => entry.outcome === 'survived');
 
-  const serial = androidSerial();
+  const { serial, problem } = selectAndroidSerial(
+    attachedAndroidSerials(),
+    argFlag('android-serial', null)
+  );
+  if (problem) report.android = { serial: null, steps: [], problem };
   if (serial) {
-    report.forwards = releaseForwards(serial, { dryRun });
+    const released = releaseForwards(serial, { dryRun });
+    report.forwards = released.forwards;
+    report.forwardProblem = released.problem;
     if (!hostOnly) report.android = { serial, steps: resetAndroid(serial, { dryRun }) };
   }
+  report.failures = releaseFailures(report);
   return report;
+}
+
+// A release that could not undo something is not a release. Every adb step that
+// failed, and a phone it could not pick, count the same as a survivor: reported
+// under their own heading and reflected in the exit code, so an agent cannot read
+// "rig released" off a run that left the phone pinned awake.
+export function releaseFailures(report) {
+  const failures = [];
+  if (report.android?.problem) failures.push(report.android.problem);
+  if (report.forwardProblem) failures.push(report.forwardProblem);
+  for (const forward of report.forwards ?? []) {
+    if (forward.outcome?.startsWith('remove failed')) {
+      failures.push(`${forward.serial} ${forward.local}: ${forward.outcome}`);
+    }
+  }
+  for (const step of report.android?.steps ?? []) {
+    if (step.outcome.startsWith('failed')) failures.push(`${step.command}: ${step.outcome}`);
+  }
+  return failures;
 }
 
 if (isMain(import.meta.url)) {
@@ -459,6 +546,8 @@ if (isMain(import.meta.url)) {
     });
     if (argv.includes('--json')) console.log(JSON.stringify(report, null, 2));
     else printReport(report);
-    if (report.blocked.length || report.survivors.length) process.exit(1);
+    if (report.blocked.length || report.survivors.length || report.failures.length) {
+      process.exit(1);
+    }
   });
 }
