@@ -23,6 +23,14 @@ complete flag and output descriptions.
   resolution, launches the iPad app deterministically through `devicectl` rather than trusting the
   foregrounded app, and each capture refuses an artifact whose user agent contradicts the labelled
   runtime.
+* `perf:release` (`release-capture.mjs`) is the preflight's mirror image, for when a human wants the
+  rig torn down rather than left up. It stops every capture-rig process a checkout of this repo owns
+  — the main checkout, any registered worktree, or a pruned worktree whose process outlived its
+  directory — drains Appium's sessions before signalling it so no WebDriverAgent is stranded on the
+  iPad, removes the adb forwards to devtools sockets, and returns the phone to stock. Foreign
+  listeners, an unreadable cwd, and the root-owned tunnel are reported and left; a live campaign
+  blocks it unless `--stop-campaigns` says the campaign is abandoned. `classifyProcess` and
+  `planRelease` are pure so the ownership judgement is tested without a rig.
 * Root analyzers consume existing evidence: `perf:analyze:chrome`, `perf:analyze:web-inspector`, and
   `perf:analyze:frames`.
 * `perf:rescore` (`rescore-captures.mjs`) re-derives a whole corpus of captures from their raw frame
