@@ -113,6 +113,41 @@ The general principle worth keeping: an autonomous mode should automate the deci
 automate and inherit every other boundary unchanged. Each extra thing it quietly takes over is one
 the user did not get to decline.
 
+## A shared skill must not spell out either provider's commands
+
+The first review caught this skill naming `rival:health`, `rival:launch`, `post-review.mjs`, and
+`codex login` directly. All four are Claude-side: `package.json` maps the `rival:*` scripts at
+`.claude/skills/run-rival-agent`, whose implementation launches Codex, while the Codex package
+drives installed `splotch-claude-*` wrappers through host execution. A Codex session following those
+lines would have asked Codex to review Codex, and been told to fix a failed preflight by logging
+into the wrong vendor.
+
+What makes it worth a note rather than just a fix is the **shape** of the failure. It is silent: a
+vendor reviewing its own output still produces a plausible review, the run completes, and step 9
+counts it as the independent review authorizing a merge. Nothing errors. The same shape is why a
+downgraded reviewer withdraws merge authority — both are cases where the pipeline keeps working
+while the guarantee underneath it is gone.
+
+The rule this leaves: a shared `.ruler/` skill may name another skill's **sections and flag
+vocabulary** (both packages share `--pr`, `--prompt-file`, `--fresh`, and the Preflight / Launch /
+Broker / Post / Rounds structure) but never its **executable paths or credentials**. Same reason the
+branch prefix is described as the active runner's own rather than fixed to `claude/`.
+
+## Claim after the stop conditions, never before
+
+Also from the first review. The claim bullet sat above the actionability check and the clean-tree
+check, so a blocked pickup applied `in-progress` and then abandoned it. That label is what
+`burn-down-backlog` filters out of its pickups, so one aborted run would have stranded the issue
+from every future automated pickup — invisibly, since nothing reports a label that is merely still
+there.
+
+The general form: **an irreversible side effect on a shared system belongs after every check that
+could abort the run, not before.** The claim's purpose (shrinking the window where two sessions grab
+the same issue) argues for doing it early, which is exactly what made the wrong order look right. A
+rollback rule for blockers found *later* is still needed and still lives in step 2 — but a rollback
+is not a substitute for ordering, because the abort paths that skip the rest of the skill are the
+ones least likely to reach it.
+
 ## Rejected and deferred
 
 * **Merging in the default mode.** Still out of scope, and the default's authorization is unchanged:
