@@ -158,11 +158,6 @@
 
   const clipFor = (name) => clips.get(name) ?? null;
 
-  function setVolume(value) {
-    settings.volume = value;
-    if (master) master.gain.value = value;
-  }
-
   // Drag position → the time in the source buffer holding that share of its total
   // energy, so a recording with a silent patch never parks the playhead in it.
   function energyPosition(clip, unit) {
@@ -470,7 +465,7 @@
       value: 'climb',
       label: 'Keep climbing',
       sustains: false,
-      note: 'Nothing happens at the threshold at all. The ladder simply keeps going as long as the hand keeps pulling, and rests when the hand rests — the same bargain the pencil-scratch loop already makes. Nine more notes live past the point of no return, so there is plenty left to hear.',
+      note: 'Nothing new happens at the ring. The ladder keeps climbing as long as the hand keeps pulling, and goes quiet when the hand stops, the same rule the pencil sound follows. Nine more notes sit past the ring.',
       create: ({ voice }) => ({
         enter() {},
         step(frequency) {
@@ -485,7 +480,7 @@
       label: 'Climb, then widen',
       sustains: false,
       climbNotes: LADDER_WIDE_CLIMB_NOTES,
-      note: 'The same climb, but past the threshold the notes are spread further apart in distance, so the melody decelerates as you keep pulling. Arriving rather than accelerating — the gesture tells you it is past the point of no return by slowing down, not by adding anything.',
+      note: 'The same climb, but past the ring the notes are spaced further apart, so the melody slows down as you keep pulling. The slowdown is the only signal that you have crossed.',
       create: ({ voice }) => ({
         enter() {},
         step(frequency) {
@@ -499,7 +494,7 @@
       value: 'open',
       label: 'Climb, opening up',
       sustains: false,
-      note: 'Past the threshold every note gains a quiet fifth above it. Still one note per step of the hand, still silent when you stop — the run just gets wider, the way a held chord on an instrument does, without anything new starting.',
+      note: 'Past the ring every note gets a quiet fifth above it. Still one note per step and still silent when you stop; the run just gets wider.',
       create: ({ voice }) => ({
         enter() {},
         step(frequency) {
@@ -514,7 +509,7 @@
       value: 'settle',
       label: 'Climb, longer notes',
       sustains: false,
-      note: 'Past the threshold each note rings about two and a half times as long, so while the hand is moving the notes overlap into a shimmer. Stop and the last one fades out on its own — a tail rather than a pad.',
+      note: 'Past the ring each note rings about two and a half times longer, so a moving hand hears the notes overlap. Stop and the last note fades out on its own.',
       create: ({ voice }) => ({
         enter() {},
         step(frequency) {
@@ -528,7 +523,7 @@
       value: 'speed',
       label: 'Hand-speed climb',
       sustains: false,
-      note: 'Level follows how fast the hand is moving, on the same curve drawingSound.ts already uses for the pencil. A quick confident yank is loud, a slow careful pull is nearly a whisper, and the whole gesture answers the hand the way drawing does.',
+      note: 'Loudness follows hand speed, on the curve the pencil sound already uses. A fast pull is loud and a slow careful pull is nearly a whisper.',
       create: ({ voice, speed }) => ({
         enter() {},
         step(frequency) {
@@ -540,9 +535,9 @@
     },
     {
       value: 'trill',
-      label: 'Repeating trill (shipped)',
+      label: 'Repeating trill (previous build)',
       sustains: true,
-      note: 'What is on main: a dot every 240 ms for as long as you hold, whether or not the hand is moving. Here as the thing to beat.',
+      note: 'What the previous build did: a steady repeating dot for as long as you hold, whether or not the hand moves. Here as the thing to beat.',
       create: ({ voice, pulse, stopPulses }) => {
         let frequency = 0;
         let high = true;
@@ -648,17 +643,17 @@
     {
       id: 'bubble-ladder',
       name: 'Bubble Ladder',
-      tag: 'chosen',
+      tag: 'shipped',
       chosen: true,
       hue: 'var(--c-blue)',
       blurb:
-        'The shipped water-bubble idea, tuned into a tune: each bubble snaps to a note of a pentatonic scale, so dragging out plays a rising melody and dragging back plays it in reverse.',
+        'Water bubbles that snap to a pentatonic scale. Dragging out plays a rising melody and dragging back plays it in reverse.',
       notes: [
-        'Snapping to a scale removes the microtonal wobble of a continuous glide — every dot is consonant with the one before it.',
-        'A dot fires when the *note* changes rather than on a fixed distance gate, so the rhythm follows the hand instead of the sample rate.',
-        'Ten notes lead up to the threshold and nine more lie past it, out to 2.6× the commit distance — so continuing to pull keeps producing melody instead of running out at 1.4× the way the first cut did.',
-        'The bubble chirps upward (0.86× → 1.08×) like real bubble resonance, with a droplet tick riding the attack.',
-        'Releasing short of the threshold walks three bubbles back down the scale.',
+        'Snapping to a scale removes the pitch wobble of a continuous glide, so every dot is in tune with the one before it.',
+        'A dot fires when the note changes rather than at a fixed distance, so the rhythm follows the hand.',
+        'Ten notes lead up to the ring and nine more sit past it, so a long pull keeps producing melody instead of running out.',
+        'Each bubble chirps upward the way a real bubble does, with a small droplet tick on the attack.',
+        'Letting go short of the ring walks three bubbles back down the scale.',
       ],
       commit: 'commit-page-crisp',
       level: 0.97,
@@ -708,14 +703,14 @@
     {
       id: 'xylophone',
       name: 'Toy Xylophone',
-      tag: 'fresh take',
+      tag: 'candidate',
       hue: 'var(--c-yellow)',
       blurb:
-        'The same distance-to-note ladder played on a wooden toy xylophone — mallet click, bar partial, fast decay. Drag out and you run up the bars; drag back and you run down them.',
+        'The same distance-to-note ladder played on a wooden toy xylophone: mallet click, bar overtone, fast decay.',
       notes: [
-        'A struck-bar timbre (fundamental plus an inharmonic 3.01× partial) reads as a physical object being played, not as a synthesizer.',
-        'Fifteen bars across the full drag, so a long pull is a longer run — the gesture writes the melody.',
-        'Of the three voices this one carries the longer notes treatment most naturally: a bar that keeps ringing is what a real mallet leaves behind.',
+        'A struck-bar tone (fundamental plus an inharmonic overtone) reads as an object being played rather than a synthesizer.',
+        'Fifteen bars across the full pull, so a longer drag is a longer run.',
+        'Carries the longer-notes option most naturally, because a ringing bar is what a real mallet leaves behind.',
       ],
       commit: 'commit-page-crisp',
       level: 0.53,
@@ -763,17 +758,17 @@
 
     {
       id: 'baseline',
-      name: 'The build before this',
-      tag: 'superseded',
+      name: 'Previous build',
+      tag: 'before',
       hue: 'var(--faint)',
       blurb:
-        'A faithful port of the build this comparison replaced — sine bubble dots on a 0.055 progress gate and a continuous pitch glide, wired to the same treatment picker so the armed state could be judged on its own.',
+        'The build this replaced, ported faithfully: sine bubble dots on a fixed distance gate and a continuous pitch glide.',
       notes: [
-        'Level-matched to the other cards so the comparison is about character, not loudness; the sheet masters through a soft ceiling, which only the densest flick on this card reaches.',
-        'Pitch is a continuous exponential glide, so two adjacent dots can land a few cents apart.',
-        'On a fast flick the 0.055 progress gate fires about fifteen dots inside 260 ms — five deep once the 85 ms envelopes overlap — so a quick clear reads as a buzz rather than as bubbles.',
-        'Cancel is silent here, unlike the two voices above. That is faithful, and the audit asserts it rather than tolerating it: nothing in the shipped build tells a child the drawing survived.',
-        'Its commit clip plays at this sheet’s shared commit level rather than the shipped 0.3, so the commit picker compares clips instead of card mixes.',
+        'Level-matched to the other cards so the comparison is about character, not loudness.',
+        'Pitch glides continuously, so two neighbouring dots can land slightly out of tune with each other.',
+        'On a fast flick the distance gate fires about fifteen dots in a quarter of a second, so a quick clear sounds like a buzz rather than bubbles.',
+        'Cancel is silent, unlike the two voices beside it. The audit asserts that rather than excusing it: nothing tells a child the drawing survived.',
+        'Its release clip plays at the sheet’s shared level rather than the level it shipped at, so the Release picker compares clips instead of card mixes.',
       ],
       commit: 'baseline-clear-pop',
       silentCancel: true,
@@ -827,15 +822,15 @@
       id: 'balloon',
       secondary: true,
       name: 'Balloon Inflate',
-      tag: 'fresh take',
+      tag: 'set aside',
       hue: 'var(--c-red)',
       blurb:
-        'Pulling the button away stretches a balloon: rubber creak plus a resonant hiss that climbs and tightens. Past the threshold it wobbles like it is about to go. Let go early and it deflates.',
+        'Pulling stretches a balloon: rubber creak and a tightening hiss. Past the ring it wobbles. Let go early and it deflates.',
       notes: [
-        'Noise-based, so tracking the hand exactly never produces the harsh glide a bare oscillator does — the reason ADR-0131 rejected the continuous-tone option.',
-        'Two layers move together: a recorded rubber-stretch loop speeding up 0.9× → 1.3×, and a synthesized band whose centre climbs 320 → 2600 Hz as its Q tightens 1 → 7.',
-        'The ready cue is physical rather than musical: a 6 → 11 Hz wobble that says "about to burst" without adding a new sound.',
-        'Cancel finally has an answer — the deflating squeak, which is exactly what a child expects when they pull back.',
+        'Noise-based, so tracking the hand exactly never produces the harsh glide of a bare oscillator, which is why the continuous-tone option was rejected.',
+        'Two layers move together: a recorded rubber-stretch loop that speeds up, and a filtered noise band whose centre climbs and narrows.',
+        'The ring cue is physical rather than musical: a wobble that says “about to burst” without adding a new sound.',
+        'Cancel has an answer here: the deflating squeak, which is what a child expects when they pull back.',
       ],
       commit: 'commit-pop-sparkle',
       level: 0.46,
@@ -904,16 +899,15 @@
       id: 'scrub',
       secondary: true,
       name: 'Scrubbed Tape',
-      tag: 'new delivery',
+      tag: 'set aside',
       hue: 'var(--c-purple)',
       blurb:
-        'One authored recording, but the drag moves the playhead instead of the clock. Overlapping grains resynthesize whatever moment the hand is pointing at, so a real recording tracks a gesture of any length — forwards, backwards, or held still.',
+        'The drag moves a playhead through one recording. Overlapping grains replay whatever moment the hand points at, in either direction.',
       notes: [
-        'ADR-0131 rejected "one crescendo, pitch-shifted": the recording fought the gesture and rate changes read as a cartoon. Granular scrubbing removes both problems — position is the hand, pitch stays true.',
-        'Holding still is not a special case: the grains keep overlapping at one spot and it becomes a shimmering freeze, which *is* the ready state.',
-        'Position maps through the clip’s cumulative energy rather than its duration, so a dead patch in a generated file is skipped instead of becoming a silent stretch of the drag.',
-        'Swap the source and the whole gesture re-skins with no code change — the drag character becomes an asset, which is exactly what ADR-0131 lists as the shipped design’s cost.',
-        'Try the zipper: a drag that unzips is about the most literal thing a two-year-old could be handed.',
+        'Pitch-shifting one recorded crescendo was rejected: the recording fought the gesture and speed changes sounded like a cartoon. Scrubbing keeps pitch true and lets position follow the hand.',
+        'Holding still is not a special case: the grains keep overlapping at one spot and become a shimmering freeze, which is the armed state.',
+        'Position maps through the clip’s cumulative energy rather than its duration, so a quiet patch in the recording is skipped instead of becoming a silent stretch of the drag.',
+        'Swap the recording and the whole gesture changes with no code change. Try the zipper.',
       ],
       commit: 'commit-whoomp-gulp',
       level: 0.5,
@@ -983,16 +977,16 @@
       id: 'stems',
       secondary: true,
       name: 'Stacking Stems',
-      tag: 'new delivery',
+      tag: 'set aside',
       hue: 'var(--c-green)',
       blurb:
-        'Three looping beds play from the first millisecond, all silent but one. Distance opens their faders in turn — hum, then sparkle, then shimmer — the way a game scores a rising action.',
+        'Three loops play from the start, all silent but one. Distance opens their faders in turn: hum, then sparkle, then shimmer.',
       notes: [
-        'Nothing is pitched or stretched, so there is no artifact to hide and no authored length to outrun. The gesture can last a quarter second or ten.',
-        'Overlapping smoothstep windows mean the texture *changes character*, not just volume: a child hears which part of the journey they are in.',
-        'A master lowpass opens 600 Hz → 12 kHz alongside the faders, which is what makes the top of the drag feel like arrival rather than just loud.',
-        'Ready adds a slow tremolo on the shimmer bed only, leaving the rest of the mix steady.',
-        'The obvious cost: three decoded loops resident instead of one small pop — worth measuring against the startup budget before shipping it.',
+        'Nothing is pitched or stretched, so there is no artifact to hide and no fixed length to outrun. The gesture can last a quarter of a second or ten seconds.',
+        'Overlapping crossfades mean the texture changes character, not just volume: a child hears which part of the pull they are in.',
+        'A lowpass filter opens alongside the faders, which is what makes the top of the drag feel like arrival rather than just loud.',
+        'Past the ring adds a slow tremolo on the shimmer loop only.',
+        'The cost: three decoded loops in memory instead of one small pop. Worth measuring against the startup budget before shipping.',
       ],
       commit: 'commit-confetti-sparkle',
       level: 0.23,
@@ -1044,15 +1038,15 @@
       id: 'rocket',
       secondary: true,
       name: 'Rocket Countdown',
-      tag: 'fresh take',
+      tag: 'set aside',
       hue: 'var(--c-orange)',
       blurb:
-        'Engines spin up as you pull away. Hold past the threshold and it counts you down — three rising ticks, then a held throb. Let go and it lifts off; pull back and it spins down.',
+        'Engines spin up as you pull. Hold past the ring and it counts down: three ticks, then a throb. Let go and it lifts off.',
       notes: [
-        'Gives the hold a *story* instead of a metronome. The ready pulse stops being "still here" and becomes "3 — 2 — 1".',
-        'Rumble loop plus a sawtooth whine climbing 55 → 190 Hz through an opening lowpass, so the build reads even at low volume on a tablet speaker.',
-        'The spin-down on cancel is the clearest "nothing happened" of any option here — pitch and cutoff both fall away.',
-        'Riskiest for a two-year-old: it is the loudest, busiest idea on the sheet, and the countdown only pays off if the hold lasts about a second and a half.',
+        'Gives the hold a story instead of a metronome: the pulse becomes three, two, one.',
+        'A rumble loop plus a sawtooth whine through an opening lowpass filter, so the build reads even at low volume on a tablet speaker.',
+        'The spin-down on cancel is the clearest “nothing happened” of any option: pitch and filter both fall away.',
+        'Riskiest for a two-year-old: it is the loudest, busiest idea here, and the countdown only pays off if the hold lasts about a second and a half.',
       ],
       commit: 'commit-rocket-liftoff',
       level: 0.37,
@@ -1117,15 +1111,15 @@
       id: 'detent',
       secondary: true,
       name: 'Quiet Detent',
-      tag: 'restraint',
+      tag: 'set aside',
       hue: 'var(--c-pink)',
       blurb:
-        'The minimal answer. No bed, no melody — nine soft detent ticks spaced along the pull, like a dial with notches, a single bell at the point of no return, and a page turn on release.',
+        'No bed, no melody: nine soft ticks along the pull like a dial with notches, a bell at the ring, and a page turn on release.',
       notes: [
-        'Information carried by *rate*, not by volume or pitch: drag fast and the ticks blur, drag slowly and they separate. Nothing has to get louder.',
-        'The most defensible option in a room with a sleeping sibling, and the least likely to become the reason a parent turns sound off.',
-        'It leans hardest on the threshold bell, which is the one moment today has no sound for at all.',
-        'The honest risk: it may read as "cheap" next to the richer options — worth checking whether a two-year-old still understands the pull without a rising bed.',
+        'Information is carried by rate, not volume or pitch: drag fast and the ticks blur, drag slowly and they separate.',
+        'The safest option in a room with a sleeping sibling, and the least likely to make a parent turn sound off.',
+        'Leans hardest on the bell at the ring, the one moment the app had no sound for.',
+        'The risk: it may sound cheap next to the richer options. Worth checking whether a two-year-old still understands the pull without a rising bed.',
       ],
       commit: 'commit-page-crisp',
       level: 1,
@@ -1186,12 +1180,12 @@
   // option is auditioned against the shapes real hands make rather than one
   // convenient sweep.
   const PRESETS = [
-    { id: 'flick', label: 'Flick', hint: '0 → 1.15 in 260 ms', frames: [[0, 0], [260, 1.15]], outcome: 'commit' },
-    { id: 'slow', label: 'Slow pull', hint: '0 → 1.35 over 1.9 s', frames: [[0, 0], [1900, 1.35]], outcome: 'commit' },
-    { id: 'pull', label: 'Keep pulling', hint: 'arrive at 1.05, pull on to 2.4', frames: [[0, 0], [900, 1.05], [3000, 2.4]], outcome: 'commit' },
-    { id: 'hold', label: 'Hold at ready', hint: 'arrive at 1.05, hold 3.5 s', frames: [[0, 0], [700, 1.05], [4200, 1.09]], outcome: 'commit' },
-    { id: 'waver', label: 'Second thoughts', hint: '0.85 → 0.35 → 1.2', frames: [[0, 0], [600, 0.85], [1100, 0.35], [1800, 1.2]], outcome: 'commit' },
-    { id: 'abandon', label: 'Chicken out', hint: 'to 0.75, then release', frames: [[0, 0], [700, 0.75]], outcome: 'cancel' },
+    { id: 'flick', label: 'Flick', hint: 'A fast yank just past the ring, released in a quarter of a second', frames: [[0, 0], [260, 1.15]], outcome: 'commit' },
+    { id: 'slow', label: 'Slow pull', hint: 'A steady two-second pull to a little past the ring, then release', frames: [[0, 0], [1900, 1.35]], outcome: 'commit' },
+    { id: 'pull', label: 'Keep pulling', hint: 'Reach the ring, then keep pulling to more than twice its distance', frames: [[0, 0], [900, 1.05], [3000, 2.4]], outcome: 'commit' },
+    { id: 'hold', label: 'Hold at ready', hint: 'Reach the ring and hold still there for three and a half seconds', frames: [[0, 0], [700, 1.05], [4200, 1.09]], outcome: 'commit' },
+    { id: 'waver', label: 'Second thoughts', hint: 'Almost reach the ring, pull back, then go through with it', frames: [[0, 0], [600, 0.85], [1100, 0.35], [1800, 1.2]], outcome: 'commit' },
+    { id: 'abandon', label: 'Let go early', hint: 'Pull three quarters of the way to the ring and let go', frames: [[0, 0], [700, 0.75]], outcome: 'cancel' },
   ];
 
   const PAD_THRESHOLD_PX = 96;
@@ -1219,56 +1213,100 @@
   const CLIMB_PROBE_APPROACH_MS = 900;
   const CLIMB_PROBE_CLIMB_MS = 1500;
 
-  const COMMIT_CHOICES = [
-    { value: 'commit-page-crisp', label: 'Page turn — crisp sheet' },
-    { value: 'commit-crumple-slow', label: 'Crumple — long scrunch' },
-    { value: 'baseline-clear-pop', label: 'clear-pop.mp3 (shipped)' },
-    { value: 'commit-page-crisp-thin', label: 'Page turn — thin sheet' },
-    { value: 'commit-page-crisp-heavy', label: 'Page turn — heavy cartridge' },
-    { value: 'commit-page-crisp-double', label: 'Page turn — two sheets' },
-    { value: 'commit-crumple-long-soft', label: 'Crumple — long, soft newsprint' },
-    { value: 'commit-crumple-long-tight', label: 'Crumple — long, squeezed tight' },
-    { value: 'commit-crumple-long-settle', label: 'Crumple — long, then settling' },
-    { value: 'commit-crumple-then-page', label: 'Crumple, then a fresh sheet' },
-    { value: 'commit-paper-whoosh', label: 'Page turn — original' },
-    { value: 'commit-page-board-book', label: 'Page turn — board book' },
-    { value: 'commit-page-flick', label: 'Page turn — fast flick' },
-    { value: 'commit-page-slap', label: 'Page turn — flip and land' },
-    { value: 'commit-page-slow', label: 'Page turn — big slow sheet' },
-    { value: 'commit-crumple-quick', label: 'Crumple — quick scrunch' },
-    { value: 'commit-crumple-toss', label: 'Crumple — scrunch and toss' },
-    { value: 'commit-crumple-basket', label: 'Crumple — into the basket' },
-    { value: 'commit-pop-sparkle', label: 'Bubble pop + sparkle' },
-    { value: 'commit-magic-poof', label: 'Magic poof + chime' },
-    { value: 'commit-confetti-sparkle', label: 'Confetti burst' },
-    { value: 'commit-whoomp-gulp', label: 'Whoomp gulp' },
-    { value: 'commit-toy-boing', label: 'Toy boing' },
-    { value: 'commit-rocket-liftoff', label: 'Rocket lift-off' },
+  const COMMIT_GROUPS = [
+    {
+      label: 'Page turns',
+      clips: [
+        { value: 'commit-page-crisp', label: 'Crisp page' },
+        { value: 'commit-page-crisp-thin', label: 'Thin page' },
+        { value: 'commit-page-crisp-heavy', label: 'Heavy page' },
+        { value: 'commit-page-crisp-double', label: 'Two pages' },
+        { value: 'commit-paper-whoosh', label: 'First page take' },
+        { value: 'commit-page-board-book', label: 'Board book page' },
+        { value: 'commit-page-flick', label: 'Fast page flick' },
+        { value: 'commit-page-slap', label: 'Page flip and land' },
+        { value: 'commit-page-slow', label: 'Big slow page' },
+      ],
+    },
+    {
+      label: 'Crumples',
+      clips: [
+        { value: 'commit-crumple-slow', label: 'Long crumple' },
+        { value: 'commit-crumple-quick', label: 'Quick crumple' },
+        { value: 'commit-crumple-long-soft', label: 'Soft crumple' },
+        { value: 'commit-crumple-long-tight', label: 'Tight crumple' },
+        { value: 'commit-crumple-long-settle', label: 'Crumple, then settle' },
+        { value: 'commit-crumple-then-page', label: 'Crumple, fresh sheet' },
+        { value: 'commit-crumple-toss', label: 'Crumple and toss' },
+        { value: 'commit-crumple-basket', label: 'Crumple to basket' },
+      ],
+    },
+    {
+      label: 'Pops and toys',
+      clips: [
+        { value: 'baseline-clear-pop', label: 'Old clear pop' },
+        { value: 'commit-pop-sparkle', label: 'Pop and sparkle' },
+        { value: 'commit-magic-poof', label: 'Poof and chime' },
+        { value: 'commit-confetti-sparkle', label: 'Confetti burst' },
+        { value: 'commit-whoomp-gulp', label: 'Whoomp gulp' },
+        { value: 'commit-toy-boing', label: 'Toy boing' },
+        { value: 'commit-rocket-liftoff', label: 'Rocket lift-off' },
+      ],
+    },
   ];
 
-  const BENCH_ONE_SHOTS = [
-    ...COMMIT_CHOICES,
-    { value: 'ready-ding', label: 'Threshold bell' },
-    { value: 'cancel-deflate', label: 'Cancel: deflate' },
-    { value: 'cancel-soft-settle', label: 'Cancel: soft settle' },
+  const BENCH_ONE_SHOT_GROUPS = [
+    ...COMMIT_GROUPS,
+    {
+      label: 'Ring and cancel',
+      clips: [
+        { value: 'ready-ding', label: 'Bell at the ring' },
+        { value: 'cancel-deflate', label: 'Cancel: deflate' },
+        { value: 'cancel-soft-settle', label: 'Cancel: soft settle' },
+      ],
+    },
   ];
 
-  const BENCH_BEDS = [
-    { value: 'scrub-bubble-cauldron', label: 'Scrub source: bubbling water' },
-    { value: 'scrub-zipper', label: 'Scrub source: zipper' },
-    { value: 'scrub-slide-whistle', label: 'Scrub source: slide whistle' },
-    { value: 'scrub-magic-riser', label: 'Scrub source: magic riser' },
-    { value: 'stem-low-hum', label: 'Stem: low hum' },
-    { value: 'stem-mid-sparkle', label: 'Stem: mid sparkle' },
-    { value: 'stem-high-shimmer', label: 'Stem: high shimmer' },
-    { value: 'stem-rocket-rumble', label: 'Stem: rocket rumble' },
-    { value: 'stem-balloon-stretch', label: 'Stem: balloon stretch' },
-    { value: 'stem-water-fill', label: 'Stem: water fill (unused)' },
+  const BENCH_BED_GROUPS = [
+    {
+      label: 'Scrubbed Tape sources',
+      clips: [
+        { value: 'scrub-bubble-cauldron', label: 'Bubbling water' },
+        { value: 'scrub-zipper', label: 'Zipper' },
+        { value: 'scrub-slide-whistle', label: 'Slide whistle' },
+        { value: 'scrub-magic-riser', label: 'Magic riser' },
+      ],
+    },
+    {
+      label: 'Loops',
+      clips: [
+        { value: 'stem-low-hum', label: 'Low hum' },
+        { value: 'stem-mid-sparkle', label: 'Mid sparkle' },
+        { value: 'stem-high-shimmer', label: 'High shimmer' },
+        { value: 'stem-rocket-rumble', label: 'Rocket rumble' },
+        { value: 'stem-balloon-stretch', label: 'Balloon stretch' },
+        { value: 'stem-water-fill', label: 'Water fill (unused)' },
+      ],
+    },
   ];
 
   const BED_PREVIEW_S = 3;
+  const PLAY_ICON =
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 2.5v11l9-5.5z"/></svg>';
+  const SPEAKER_ON_ICON =
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 6h2.5L8 3v10L4.5 10H2z"/><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6 6 0 0 1 0 9"/></svg>';
+  const SPEAKER_OFF_ICON =
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 6h2.5L8 3v10L4.5 10H2z"/><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="m10.5 6 4 4m0-4-4 4"/></svg>';
+  const STOP_ICON =
+    '<svg viewBox="0 0 16 16" aria-hidden="true"><rect fill="currentColor" x="3" y="3" width="10" height="10" rx="1.5"/></svg>';
 
   let activeGesture = null;
+  let selectedPreset = PRESETS.find((preset) => preset.id === 'slow');
+  const presetListeners = [];
+  let muted = false;
+  let audioReady = false;
+  let onAudioReady = () => {};
+  let setStatus = () => {};
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -1277,15 +1315,59 @@
     return node;
   }
 
+  function iconButton(icon, label, className = 'ghost') {
+    const button = el('button', className);
+    button.type = 'button';
+    button.innerHTML = icon;
+    if (label) button.append(el('span', null, label));
+    return button;
+  }
+
+  function optionNode({ value, label }) {
+    const option = el('option', null, label);
+    option.value = value;
+    return option;
+  }
+
   function select(choices, initial) {
     const node = el('select');
-    for (const { value, label } of choices) {
-      const option = el('option', null, label);
-      option.value = value;
-      node.append(option);
+    for (const choice of choices) node.append(optionNode(choice));
+    node.value = initial;
+    return node;
+  }
+
+  function groupedSelect(groups, initial) {
+    const node = el('select');
+    for (const group of groups) {
+      const optgroup = el('optgroup');
+      optgroup.label = group.label;
+      for (const clip of group.clips) optgroup.append(optionNode(clip));
+      node.append(optgroup);
     }
     node.value = initial;
     return node;
+  }
+
+  function applyMasterGain() {
+    if (master) master.gain.value = muted ? 0 : settings.volume;
+  }
+
+  // Every play control routes through here, so the first tap anywhere on the
+  // page is enough to unlock audio; the toolbar button is one entry point among
+  // many, not a gate.
+  async function enableAudio() {
+    if (!audioReady) setStatus('Loading clips…');
+    await ensureAudio();
+    applyMasterGain();
+    if (audioReady) return;
+    audioReady = true;
+    document.body.classList.add('audio-ready');
+    onAudioReady();
+  }
+
+  function selectPreset(preset) {
+    selectedPreset = preset;
+    for (const listener of presetListeners) listener(preset);
   }
 
   class Gesture {
@@ -1314,12 +1396,14 @@
       this.card.render(0);
       this.card.root.classList.remove('is-active');
       if (activeGesture === this) activeGesture = null;
+      setStatus();
     }
   }
 
-  function startGesture(card) {
+  function startGesture(card, detail) {
     activeGesture?.finish('cancel');
     activeGesture = new Gesture(card);
+    setStatus(`Playing <b>${card.option.name}</b>${detail ? ` · ${detail}` : ''}`);
     return activeGesture;
   }
 
@@ -1337,8 +1421,8 @@
   }
 
   async function playGestureFrames(card, preset, existing) {
-    await ensureAudio();
-    const gesture = existing ?? startGesture(card);
+    await enableAudio();
+    const gesture = existing ?? startGesture(card, preset.label);
     const duration = preset.frames[preset.frames.length - 1][0];
     const started = performance.now();
     await new Promise((resolve) => {
@@ -1363,17 +1447,31 @@
 
   function buildPad(card) {
     const pad = el('div', 'pad');
+    const meter = el('div', 'meter');
+    const meterFill = el('i');
+    const readyMark = el('span', 'mark');
+    readyMark.style.left = `${(COMMIT_PROGRESS / LADDER_REACH_PROGRESS) * 100}%`;
+    meter.append(meterFill, readyMark);
     const ring = el('div', 'ring');
     const anchor = el('button', 'anchor');
     anchor.type = 'button';
-    anchor.setAttribute('aria-label', `Drag to clear — ${card.option.name}`);
+    anchor.setAttribute('aria-label', `Drag to clear with ${card.option.name}. Press Enter to play the selected gesture instead.`);
     anchor.innerHTML =
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z"/></svg>';
     const puck = el('div', 'puck');
-    const readout = el('div', 'readout', '0.00');
+    const play = iconButton(PLAY_ICON, selectedPreset.label, 'ghost play');
+    play.title = 'Play the gesture picked in the toolbar on this card';
+    presetListeners.push((preset) => {
+      play.lastChild.textContent = preset.label;
+    });
+    play.addEventListener('click', () => runPreset(card, selectedPreset));
+    const readout = el('div', 'readout');
+    const state = el('span', 'state', 'distance');
+    const value = el('span', 'value', '0.00');
+    readout.append(state, value);
     ring.style.width = `${PAD_THRESHOLD_PX * 2}px`;
     ring.style.height = `${PAD_THRESHOLD_PX * 2}px`;
-    pad.append(ring, puck, anchor, readout);
+    pad.append(meter, ring, puck, anchor, play, readout);
 
     let origin = null;
     const onMove = (event) => {
@@ -1394,17 +1492,23 @@
 
     anchor.addEventListener('pointerdown', async (event) => {
       event.preventDefault();
-      await ensureAudio();
+      await enableAudio();
       origin = { x: event.clientX, y: event.clientY };
-      startGesture(card);
+      startGesture(card, 'by hand');
       window.addEventListener('pointermove', onMove, { passive: false });
       window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', onUp);
     });
+    // A keyboard "click" has no pointer to drag, so it plays the scripted gesture.
+    anchor.addEventListener('click', (event) => {
+      if (event.detail === 0) runPreset(card, selectedPreset);
+    });
 
     card.pad = pad;
     card.puck = puck;
-    card.readout = readout;
+    card.meterFill = meterFill;
+    card.readoutValue = value;
+    card.readoutState = state;
     return pad;
   }
 
@@ -1423,9 +1527,11 @@
       },
       render(progress) {
         const capped = clamp(progress / LADDER_REACH_PROGRESS, 0, 1);
-        meterFill.style.transform = `scaleX(${capped})`;
-        root.classList.toggle('is-ready', progress >= COMMIT_PROGRESS);
-        card.readout.textContent = progress.toFixed(2);
+        card.meterFill.style.transform = `scaleX(${capped})`;
+        const ready = progress >= COMMIT_PROGRESS;
+        root.classList.toggle('is-ready', ready);
+        card.readoutValue.textContent = progress.toFixed(2);
+        card.readoutState.textContent = ready ? 'past the ring' : 'distance';
       },
       setThreshold(value) {
         if (!thresholdSelect) return;
@@ -1433,8 +1539,7 @@
         thresholdSelect.dispatchEvent(new Event('change'));
       },
       renderPuck(progress) {
-        const distance =
-          Math.min(progress, PAD_PUCK_MAX_RATIO) * PAD_THRESHOLD_PX;
+        const distance = Math.min(progress, PAD_PUCK_MAX_RATIO) * PAD_THRESHOLD_PX;
         card.puck.style.transform =
           `translate(${Math.cos(PAD_SCRIPT_ANGLE_RAD) * distance}px, ${Math.sin(PAD_SCRIPT_ANGLE_RAD) * distance}px)`;
         card.puck.style.opacity = progress > 0.02 ? '1' : '0';
@@ -1442,51 +1547,29 @@
     };
 
     const head = el('div', 'opt-head');
-    head.append(el('span', 'tag', option.tag), el('h3', null, option.name));
+    head.append(el('h3', null, option.name), el('span', 'tag', option.tag));
     if (option.chosen) root.classList.add('is-chosen');
     const blurb = el('p', 'blurb', option.blurb);
 
-    const meter = el('div', 'meter');
-    const meterFill = el('i');
-    meter.append(meterFill, el('span', 'mark ready-mark'), el('span', 'mark cap-mark'));
-
-    const presets = el('div', 'presets');
-    for (const preset of PRESETS) {
-      const button = el('button', 'ghost', preset.label);
-      button.type = 'button';
-      button.title = preset.hint;
-      button.addEventListener('click', () => runPreset(card, preset));
-      presets.append(button);
-    }
-    const tour = el('button', 'ghost tour', `Tour all ${PRESETS.length}`);
-    tour.type = 'button';
-    tour.addEventListener('click', async () => {
-      for (const preset of PRESETS) {
-        await runPreset(card, preset);
-        await new Promise((resolve) => setTimeout(resolve, SEQUENCE_GAP_MS));
-      }
-    });
-    presets.append(tour);
-
-    const controls = el('div', 'opt-controls');
+    const fields = el('div', 'opt-fields');
     let thresholdSelect = null;
-    const treatmentNote = el('p', 'treatment-note');
+    const hint = el('p', 'hint');
     if (option.threshold) {
       thresholdSelect = select(THRESHOLD_TREATMENTS, option.defaultThreshold ?? DEFAULT_TREATMENT);
       const describe = () => {
-        treatmentNote.textContent =
+        hint.textContent =
           THRESHOLD_TREATMENTS.find((entry) => entry.value === thresholdSelect.value)?.note ?? '';
       };
       thresholdSelect.addEventListener('change', describe);
       describe();
-      controls.append(labelled('Past threshold', thresholdSelect));
+      fields.append(labelled('Past the ring', thresholdSelect));
     }
-    const commitSelect = select(COMMIT_CHOICES, option.commit);
-    controls.append(labelled('Commit sound', commitSelect));
+    const commitSelect = groupedSelect(COMMIT_GROUPS, option.commit);
+    fields.append(labelled('Release', commitSelect));
     let sourceSelect = null;
     if (option.sources) {
       sourceSelect = select(option.sources, option.sources[0].value);
-      controls.append(labelled('Source clip', sourceSelect));
+      fields.append(labelled('Recording', sourceSelect));
     }
 
     const notes = el('details', 'notes');
@@ -1495,7 +1578,9 @@
     for (const note of option.notes) list.append(el('li', null, note));
     notes.append(list);
 
-    root.append(head, blurb, buildPad(card), meter, presets, controls, treatmentNote, notes);
+    root.append(head, blurb, buildPad(card), fields);
+    if (option.threshold) root.append(hint);
+    root.append(notes);
     card.render(0);
     card.renderPuck(0);
     return card;
@@ -1507,54 +1592,126 @@
     return wrap;
   }
 
-  function drawWaveform(canvas, clip) {
+  const WAVE_WIDTH_PX = 600;
+  const WAVE_HEIGHT_PX = 64;
+
+  function drawWaveform(canvas, clip, loaded) {
     const width = canvas.width;
     const height = canvas.height;
     const context = canvas.getContext('2d');
     context.clearRect(0, 0, width, height);
+    context.fillStyle = getComputedStyle(canvas).color;
     if (!clip) {
-      context.fillStyle = 'rgba(210,75,63,.8)';
+      if (loaded) context.fillStyle = 'rgba(210,75,63,.8)';
+      context.globalAlpha = loaded ? 1 : 0.25;
       context.fillRect(0, height / 2 - 1, width, 2);
       return;
     }
     const data = clip.buffer.getChannelData(0);
     const step = Math.max(1, Math.floor(data.length / width));
     const scale = 1 / Math.max(clip.peak, 0.001);
-    context.fillStyle = getComputedStyle(canvas).color;
+    const half = height / 2;
+    const magnitudes = new Float32Array(width);
     for (let x = 0; x < width; x += 1) {
       let magnitude = 0;
       const from = x * step;
       for (let i = from; i < from + step && i < data.length; i += 1) {
         magnitude = Math.max(magnitude, Math.abs(data[i]));
       }
-      const bar = Math.max(1, magnitude * scale * height * 0.92);
-      context.fillRect(x, (height - bar) / 2, 1, bar);
+      magnitudes[x] = Math.max(1, magnitude * scale * half * 0.94);
     }
+    context.beginPath();
+    context.moveTo(0, half - magnitudes[0]);
+    for (let x = 1; x < width; x += 1) context.lineTo(x, half - magnitudes[x]);
+    for (let x = width - 1; x >= 0; x -= 1) context.lineTo(x, half + magnitudes[x]);
+    context.closePath();
+    context.fill();
+  }
+
+  function formatSeconds(seconds) {
+    return `${seconds.toFixed(1)}s`;
   }
 
   function buildBenchRow({ value, label }, { loop }) {
     const row = el('div', 'bench-row');
-    const play = el('button', 'ghost', '▶');
-    play.type = 'button';
+    const play = iconButton(PLAY_ICON, null);
     play.setAttribute('aria-label', `Play ${label}`);
-    const canvas = el('canvas', 'wave');
-    canvas.width = 260;
-    canvas.height = 34;
+    const wave = el('div', 'wave');
+    const canvas = el('canvas');
+    canvas.width = WAVE_WIDTH_PX;
+    canvas.height = WAVE_HEIGHT_PX;
+    const head = el('i', 'head');
+    wave.append(canvas, head);
     const name = el('span', 'bench-name', label);
-    const meta = el('span', 'bench-meta', '…');
+    const meta = el('span', 'bench-meta', '');
+
+    let stopPlaying = null;
+    const sweep = (seconds) => {
+      const started = performance.now();
+      let frame = 0;
+      row.classList.add('is-playing');
+      const tick = () => {
+        const unit = (performance.now() - started) / (seconds * 1000);
+        head.style.transform = `translateX(${Math.min(unit, 1) * wave.clientWidth}px)`;
+        if (unit < 1) frame = requestAnimationFrame(tick);
+        else stopPlaying?.();
+      };
+      frame = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(frame);
+    };
 
     play.addEventListener('click', async () => {
-      await ensureAudio();
-      if (!loop) return playOneShot(value, master, 0.6);
-      const layer = startLoop(value, master, 0);
-      if (!layer) return;
-      rampTo(layer.gain.gain, layer.unit, 0.05);
-      setTimeout(() => fadeOutAndStop(layer, 0.15), BED_PREVIEW_S * 1000);
+      if (stopPlaying) {
+        stopPlaying();
+        return;
+      }
+      await enableAudio();
+      const clip = clipFor(value);
+      if (!clip) return;
+      let cancelSweep;
+      if (loop) {
+        const layer = startLoop(value, master, 0);
+        if (!layer) return;
+        rampTo(layer.gain.gain, layer.unit, 0.05);
+        cancelSweep = sweep(BED_PREVIEW_S);
+        stopPlaying = () => {
+          fadeOutAndStop(layer, 0.15);
+          cancelSweep();
+          row.classList.remove('is-playing');
+          play.innerHTML = PLAY_ICON;
+          stopPlaying = null;
+        };
+      } else {
+        const source = playOneShot(value, master, 0.6);
+        cancelSweep = sweep(clip.duration - clip.onset);
+        stopPlaying = () => {
+          source?.stop();
+          cancelSweep();
+          row.classList.remove('is-playing');
+          play.innerHTML = PLAY_ICON;
+          stopPlaying = null;
+        };
+      }
+      play.innerHTML = STOP_ICON;
     });
 
-    row.append(play, name, canvas, meta);
+    row.append(play, name, wave, meta);
     row.dataset.clip = value;
+    drawWaveform(canvas, null, false);
     return { row, canvas, meta, value };
+  }
+
+  function buildBench(target, groups, { loop }) {
+    const rows = [];
+    for (const group of groups) {
+      target.append(el('div', 'bench-group', group.label));
+      for (const clip of group.clips) {
+        const built = buildBenchRow(clip, { loop });
+        target.append(built.row);
+        rows.push(built);
+      }
+    }
+    return rows;
   }
 
   function boot() {
@@ -1566,63 +1723,95 @@
       return card;
     });
 
-    const oneShotRows = BENCH_ONE_SHOTS.map((entry) => buildBenchRow(entry, { loop: false }));
-    const bedRows = BENCH_BEDS.map((entry) => buildBenchRow(entry, { loop: true }));
-    const oneShotList = document.querySelector('[data-bench-oneshots]');
-    const bedList = document.querySelector('[data-bench-beds]');
-    for (const { row } of oneShotRows) oneShotList.append(row);
-    for (const { row } of bedRows) bedList.append(row);
+    const benchRows = [
+      ...buildBench(document.querySelector('[data-bench-oneshots]'), BENCH_ONE_SHOT_GROUPS, { loop: false }),
+      ...buildBench(document.querySelector('[data-bench-beds]'), BENCH_BED_GROUPS, { loop: true }),
+    ];
 
     // Rendered here rather than in gen.mjs so the counts cannot drift from the
     // arrays that produce the cards.
-    document.querySelector('[data-option-count]').innerHTML =
-      `<b>${OPTIONS.filter((option) => !option.secondary).length}</b> voices`;
-    document.querySelector('[data-treatment-count]').innerHTML =
-      `<b>${THRESHOLD_TREATMENTS.length}</b> hold treatments`;
-    document.querySelector('[data-preset-count]').innerHTML =
-      `<b>${PRESETS.length}</b> scripted gestures`;
+    const primaryCount = OPTIONS.filter((option) => !option.secondary).length;
+    const secondaryCount = OPTIONS.length - primaryCount;
+    document.querySelector('[data-option-count]').innerHTML = `<b>${primaryCount}</b> voices`;
+    document.querySelector('[data-secondary-count]').innerHTML = `<b>${secondaryCount}</b> set aside`;
+    document.querySelector('[data-secondary-count-inline]').textContent = String(secondaryCount);
 
     const volume = document.querySelector('[data-volume]');
     volume.value = String(settings.volume);
-    volume.addEventListener('input', () => setVolume(Number(volume.value)));
+    volume.addEventListener('input', () => {
+      settings.volume = Number(volume.value);
+      applyMasterGain();
+    });
 
-    const sequencePreset = document.querySelector('[data-sequence-preset]');
+    const gestureSelect = document.querySelector('[data-gesture]');
     for (const preset of PRESETS) {
-      const option = el('option', null, preset.label);
-      option.value = preset.id;
-      sequencePreset.append(option);
+      const option = optionNode({ value: preset.id, label: preset.label });
+      option.title = preset.hint;
+      gestureSelect.append(option);
     }
-    sequencePreset.value = 'slow';
+    gestureSelect.value = selectedPreset.id;
+    gestureSelect.addEventListener('change', () => {
+      selectPreset(PRESETS.find((entry) => entry.id === gestureSelect.value));
+    });
 
-    document.querySelector('[data-sequence-run]').addEventListener('click', async () => {
-      const preset = PRESETS.find((entry) => entry.id === sequencePreset.value);
+    const runAll = document.querySelector('[data-sequence-run]');
+    runAll.innerHTML = `${PLAY_ICON}<span class="long">Play on every card</span><span class="short">All</span>`;
+    let sequenceToken = 0;
+    runAll.addEventListener('click', async () => {
+      const token = (sequenceToken += 1);
       for (const card of cards) {
+        if (token !== sequenceToken) return;
+        if (card.option.secondary && !card.root.closest('details')?.open) continue;
         card.root.scrollIntoView({ behavior: 'smooth', block: 'center' });
         card.root.classList.add('is-spotlit');
-        await runPreset(card, preset);
+        await runPreset(card, selectedPreset);
         card.root.classList.remove('is-spotlit');
         await new Promise((resolve) => setTimeout(resolve, SEQUENCE_GAP_MS));
       }
     });
 
-    document.querySelector('[data-stop]').addEventListener('click', () => {
+    const stop = document.querySelector('[data-stop]');
+    stop.innerHTML = `${STOP_ICON}<span>Stop</span>`;
+    stop.addEventListener('click', () => {
+      sequenceToken += 1;
       activeGesture?.finish('cancel');
     });
 
     const status = document.querySelector('[data-status]');
-    document.querySelector('[data-enable]').addEventListener('click', async () => {
-      status.textContent = 'Loading sounds…';
-      await ensureAudio();
-      status.textContent = `${clips.size} clips loaded — press a trash button and drag away.`;
-      document.body.classList.add('audio-ready');
-      for (const { canvas, meta, value } of [...oneShotRows, ...bedRows]) {
-        const clip = clipFor(value);
-        drawWaveform(canvas, clip);
-        meta.textContent = clip
-          ? `${clip.duration.toFixed(2)}s · peak ${clip.peak.toFixed(2)}`
-          : 'missing';
+    const readyText = () => `<b>${clips.size}</b> clips ready`;
+    setStatus = (html) => {
+      status.innerHTML = html ?? (audioReady ? readyText() : 'Sound is off until you tap.');
+    };
+
+    const soundToggle = document.querySelector('[data-enable]');
+    const soundLabel = soundToggle.querySelector('.sound-label');
+    const soundIcon = soundToggle.querySelector('.sound-icon');
+    const renderSoundToggle = () => {
+      soundToggle.setAttribute('aria-pressed', String(muted));
+      soundIcon.innerHTML = audioReady && !muted ? SPEAKER_ON_ICON : SPEAKER_OFF_ICON;
+      soundLabel.textContent = !audioReady ? 'Turn sound on' : muted ? 'Muted' : 'Sound on';
+      soundToggle.setAttribute('aria-label', !audioReady ? 'Turn sound on' : muted ? 'Unmute' : 'Mute');
+    };
+    renderSoundToggle();
+    soundToggle.addEventListener('click', async () => {
+      if (!audioReady) {
+        await enableAudio();
+        return;
       }
+      muted = !muted;
+      applyMasterGain();
+      renderSoundToggle();
     });
+
+    onAudioReady = () => {
+      renderSoundToggle();
+      setStatus();
+      for (const { canvas, meta, value } of benchRows) {
+        const clip = clipFor(value);
+        drawWaveform(canvas, clip, true);
+        meta.textContent = clip ? formatSeconds(clip.duration) : 'missing';
+      }
+    };
 
     // Test seam: tools/scrapbook/clear-sound-sheet/audit.mjs drives the sheet
     // headlessly and fails on anything that renders silence. The drag and the
@@ -1662,7 +1851,7 @@
     window.__sheetAudit = async (optionId, presetId) => {
       const card = cards.find((entry) => entry.option.id === optionId);
       const preset = PRESETS.find((entry) => entry.id === presetId);
-      await ensureAudio();
+      await enableAudio();
       const scope = meter();
       const gesture = await playGestureFrames(card, preset);
       const drag = scope.take();
@@ -1680,7 +1869,7 @@
     // from "audible" — the sheet can hold a full clip table and still play none
     // of it.
     window.__sheetPlayClip = async (name) => {
-      await ensureAudio();
+      await enableAudio();
       const scope = meter();
       const source = playOneShot(name, master, 1);
       await settle(CLIP_PROBE_MS);
@@ -1700,8 +1889,9 @@
     window.__sheetHoldProbe = async (optionId, treatment) => {
       const card = cards.find((entry) => entry.option.id === optionId);
       card.setThreshold(treatment);
-      await ensureAudio();
+      await enableAudio();
       const gesture = await playGestureFrames(card, {
+        label: 'hold probe',
         frames: [
           [0, 0],
           [HOLD_PROBE_RAMP_MS, 1.05],
@@ -1726,8 +1916,9 @@
     window.__sheetClimbProbe = async (optionId, treatment) => {
       const card = cards.find((entry) => entry.option.id === optionId);
       card.setThreshold(treatment);
-      await ensureAudio();
+      await enableAudio();
       const gesture = await playGestureFrames(card, {
+        label: 'climb probe',
         frames: [
           [0, 0],
           [CLIMB_PROBE_APPROACH_MS, 1.05],
@@ -1737,6 +1928,7 @@
       await playGestureFrames(
         card,
         {
+          label: 'climb probe',
           frames: [
             [0, 1.05],
             [CLIMB_PROBE_CLIMB_MS, LADDER_REACH_PROGRESS],

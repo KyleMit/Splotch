@@ -73,9 +73,8 @@ function render({ manifest, scriptTag }) {
   const body = `${masthead({
     title: PAGE_TITLE,
     tagline:
-      'Three pitched voices for the Clear drag, each with a swappable answer to the hardest ' +
-      'part of the gesture: what holding past the point of no return should sound like. Press ' +
-      'a trash button and drag away from it, or fire the scripted gestures.',
+      'Candidate sounds for the gesture that clears the canvas. Press a trash button, drag it ' +
+      'away, and let go past the ring. Every card runs the same gesture through a different sound.',
     crumbs: [
       { label: 'Scrapbook', href: '../../index.html' },
       { label: 'Sound design', href: '../' },
@@ -84,56 +83,52 @@ function render({ manifest, scriptTag }) {
     home: '../../index.html',
     stats:
       `<span class="chip accent" data-option-count></span>` +
-      `<span class="chip" data-treatment-count></span>` +
-      `<span class="chip"><b>${manifest.length}</b> clips</span>` +
-      `<span class="chip" data-preset-count></span>`,
+      `<span class="chip" data-secondary-count></span>` +
+      `<span class="chip"><b>${manifest.length}</b> clips</span>`,
   })}
 <main><div class="shell">
-  <div class="controlbar">
-    <button class="solid" type="button" data-enable>Turn sound on</button>
-    <span class="status" data-status>Audio is off until you tap.</span>
-    <label class="field"><span>Volume</span><input type="range" min="0" max="1" step="0.01" data-volume/></label>
-    <label class="field"><span>Run</span><select data-sequence-preset></select></label>
-    <button class="ghost" type="button" data-sequence-run>across all options</button>
-    <button class="ghost" type="button" data-stop>Stop</button>
+  <div class="toolbar" data-toolbar>
+    <button class="solid sound-toggle" type="button" data-enable aria-pressed="false">
+      <span class="sound-icon" aria-hidden="true"></span><span class="sound-label">Turn sound on</span>
+    </button>
+    <label class="field volume"><span>Volume</span><input type="range" min="0" max="1" step="0.01" data-volume aria-label="Volume"/></label>
+    <label class="field gesture"><span>Gesture</span><select data-gesture aria-label="Scripted gesture"></select></label>
+    <button class="ghost" type="button" data-sequence-run title="Play the selected gesture on every card, one after another">Play on every card</button>
+    <button class="ghost stop" type="button" data-stop>Stop</button>
+    <span class="status" data-status aria-live="polite">Sound is off until you tap.</span>
   </div>
 
   <div class="outcome">
-    <span class="eyebrow">Outcome</span>
-    <p><b>Bubble Ladder with Keep climbing, committing on the crisp page turn.</b> Chosen from this
-    sheet and ported into <code>web/src/lib/audio/drawingSound.ts</code>; ADR-0131 carries the
-    reasoning. Everything else here stays playable as the record of what it was chosen over.</p>
+    <span class="eyebrow">Shipped</span>
+    <p><b>Bubble Ladder, Keep climbing past the ring, crisp page turn on release.</b>
+    It lives in <code>drawingSound.ts</code> and ADR-0131 records why. Everything else here stays playable so the comparison can be re-run.</p>
   </div>
 
-  <section class="intro">
-    <ol>
-      <li><b>Turn sound on</b> — browsers need one tap before audio can start.</li>
-      <li><b>Press a trash button and drag away from it.</b> The dashed ring is the commit threshold; past it the card goes ready. Release inside to cancel, outside to clear.</li>
-      <li><b>Change "Past threshold"</b> and run <b>Hold at ready</b> again. That picker is the point of this pass — the drag itself is settled.</li>
-      <li><b>Change "Commit sound"</b> to compare the paper family; the picker is shared, so a clip can be judged across all three voices.</li>
-    </ol>
-    <p class="tagline">Headphones or a real tablet speaker both matter here: the held chord sits in
-    a band that small speakers roll off, and that is exactly the device a two-year-old is holding.</p>
+  <section class="howto" aria-label="How to use this sheet">
+    <div class="step"><b>1. Turn sound on.</b> Browsers block audio until you tap something. Any play button or trash button counts.</div>
+    <div class="step"><b>2. Drag a trash button.</b> Cross the dashed ring to arm the clear. Let go inside the ring to cancel, outside it to clear.</div>
+    <div class="step"><b>3. Change “Past the ring”.</b> Then play <b>Hold at ready</b>. That picker is what this sheet was built to compare.</div>
   </section>
+  <p class="aside">Use headphones or a real tablet speaker. The held notes sit in a range that small laptop speakers roll off.</p>
 
-  <div class="section-head"><h2>Voices</h2><span class="desc">start / update(progress) / commit / cancel — the same contract as drawingSound.ts</span></div>
+  <div class="section-head"><h2>Voices</h2><span class="desc">Drag distance becomes a note. The picker on each card decides what happens once the hand is past the ring.</span></div>
   <div class="options" data-options></div>
 
   <details class="explored">
-    <summary>Also explored — the continuous and themed takes</summary>
-    <p>Set aside for now in favour of the pitched voices above, kept playable rather than deleted.
-    These carry their own armed-state behaviour and do not use the treatment picker.</p>
+    <summary><span class="section-head"><h2>Set aside</h2><span class="desc"><span data-secondary-count-inline></span> takes that lost to the voices above. Still playable; they handle the ring their own way and ignore the picker.</span></span></summary>
     <div class="options" data-options-secondary></div>
   </details>
 
-  <div class="section-head"><h2>One-shot bench</h2><span class="desc">every commit, cancel, and threshold clip on its own, to mix and match above</span></div>
+  <div class="section-head"><h2>Release sounds</h2><span class="desc">Every clip that can play when the drag lets go. Pick any of them on a card under “Release”.</span></div>
   <div class="bench" data-bench-oneshots></div>
 
-  <div class="section-head"><h2>Beds and sources</h2><span class="desc">the loops and long recordings the continuous options are built from — 3 s preview</span></div>
+  <div class="section-head"><h2>Loops and long recordings</h2><span class="desc">The beds the set-aside options are built from. Each preview runs for three seconds.</span></div>
   <div class="bench" data-bench-beds></div>
 
-  <div class="section-head"><h2>Provenance</h2><span class="desc">every clip is ElevenLabs ${esc(provenance.model)} at ${esc(provenance.outputFormat)}; prompts are committed in tools/scrapbook/clear-sound-sheet/sounds.json</span></div>
-  <details class="notes"><summary>Show the ${provenance.clips.length} generation prompts</summary>${provenanceTable()}</details>
+  <details class="prompts">
+    <summary><span class="section-head"><h2>Prompts</h2><span class="desc">Every clip is ElevenLabs ${esc(provenance.model)} at ${esc(provenance.outputFormat)}. The ${provenance.clips.length} prompts below are committed in <code>sounds.json</code>.</span></span></summary>
+    ${provenanceTable()}
+  </details>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}
 <script>window.CLEAR_SHEET_SOUNDS = ${JSON.stringify(manifest)};</script>
@@ -147,11 +142,11 @@ function provenanceTable() {
     .map(
       (clip) =>
         `<tr><td><code>${esc(clip.name)}</code></td><td>${clip.durationSeconds}s${
-          clip.loop ? ' · loop' : ''
+          clip.loop ? ', loop' : ''
         } · influence ${clip.promptInfluence}</td><td>${esc(clip.prompt)}</td></tr>`
     )
     .join('');
-  return `<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:.84rem;margin-top:10px">
-    <thead><tr style="text-align:left;color:var(--muted)"><th>Clip</th><th>Settings</th><th>Prompt</th></tr></thead>
+  return `<div class="prompt-table"><table>
+    <thead><tr><th>Clip</th><th>Settings</th><th>Prompt</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
