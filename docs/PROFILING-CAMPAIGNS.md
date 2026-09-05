@@ -1090,8 +1090,20 @@ serving a 404ing manifest since the last `cap:sync`. The build-freshness guard c
 capture, minutes after the issue was filed.
 
 Before resuming **web** capture after `cap sync`, rebuild the web target **and restart the preview
-server**. Automated native split capture requires the native static export instead: build with
-`npm run perf:build:cap`, then start an explicitly native preview on an unused port:
+server**. Automated native split capture requires the native static export instead. From a clean
+product checkout, build and stamp its provenance in the same operation, without changing HEAD or
+product sources between the two commands. Unlike `perf:build`, `perf:build:cap` has no automatic
+provenance hook:
+
+```sh
+npm run perf:build:cap && node tools/perf/write-build-provenance.mjs
+```
+
+Check that the resulting `web/build/.perf-build-provenance.json` records the intended commit with
+`dirty: false` before spending device time. If native sync changed tracked worktree scaffolding,
+restore only those generated path changes and verify the product sources and HEAD are unchanged
+before stamping, as part of that same build operation. A dirty product build cannot certify a
+commit. Then start an explicitly native preview on an unused port:
 
 ```sh
 CAPACITOR=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/run-web-tool.mjs vite preview \
@@ -1101,9 +1113,10 @@ CAPACITOR=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/run-web-tool.mjs vite p
 Point a separately resolved probe host at that preview. `perf:serve` and the generic preflight's
 probe-reuse check are web-oriented; they reject a native export. Leave existing services alone and
 verify the native preview through the automated runner's variant-aware served-build check. A build
-without a clean build-time provenance stamp records a null product commit; never stamp it later
-merely to make a capture claim the current HEAD. The guided hand-input calibration workflow keeps
-its web-preview contract inside the native WebView and does not certify native product behavior.
+without a clean build-time provenance stamp records a null product commit. Stamping the build just
+produced is required; stamping an older build later to make a capture claim the current HEAD is
+forbidden. The guided hand-input calibration workflow keeps its web-preview contract inside the
+native WebView and does not certify native product behavior.
 
 ### Your control has to be concurrent, not remembered
 
