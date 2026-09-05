@@ -51,7 +51,8 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
 
 * The 2026-09-05 release-gate campaign measured product commit
   9af487b3745c0c1237644c92d5a243b1825911d7. Its parent stack contains the reviewed performance work;
-  this matrix refresh adds only capture evidence and documentation.
+  this PR adds capture evidence, documentation, and delivery-only review tooling, with no
+  product-surface change.
 * All four orientation/theme modes were freshly captured for physical iPad web, physical iPad
   native, physical Android web, and physical Android native. Every drawing, undo, and action section
   on those four release-gate rows comes from the campaign product commit.

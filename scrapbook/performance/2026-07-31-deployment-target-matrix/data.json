@@ -5,7 +5,7 @@
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
   "limitations": [
-    "The 2026-09-05 release-gate campaign measured product commit 9af487b3745c0c1237644c92d5a243b1825911d7. Its parent stack contains the reviewed performance work; this matrix refresh adds only capture evidence and documentation.",
+    "The 2026-09-05 release-gate campaign measured product commit 9af487b3745c0c1237644c92d5a243b1825911d7. Its parent stack contains the reviewed performance work; this PR adds capture evidence, documentation, and delivery-only review tooling, with no product-surface change.",
     "All four orientation/theme modes were freshly captured for physical iPad web, physical iPad native, physical Android web, and physical Android native. Every drawing, undo, and action section on those four release-gate rows comes from the campaign product commit.",
     "The first Android drawing pass was retained as rejected provenance evidence after its build identity recorded no product commit. Both Android drawing rows and their drift references were recaptured from a clean build that embedded 9af487b3745c0c1237644c92d5a243b1825911d7; the matrix folds only those replacements.",
     "All physical drawing and undo cells passed their timing and input-fidelity gates. The scoreable red remainder is confined to discrete actions and is preserved exactly as captured for bounded product experiments.",
