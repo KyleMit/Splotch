@@ -37,4 +37,4 @@ AGENTS.md              linguist-generated=true
 # provenance are reviewed as text; rendering multi-megabyte one-line JSON as a
 # diff exhausts review tooling without making the samples reviewable.
 perf-profiles/evidence/**/*.json            binary
-perf-profiles/evidence/**/index.json         text diff
+perf-profiles/evidence/**/index.json         text diff merge
