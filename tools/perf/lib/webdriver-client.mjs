@@ -98,6 +98,20 @@ export class PlaywrightWebDriver {
     await this.page.mouse.wheel(0, deltaY);
   }
 
+  async scrollTouchGesture({ x, startY, endY, durationMs }) {
+    if (!this.cdp) throw new Error('Browser-generated touch scrolling requires CDP');
+    // Per-move acknowledgements plus host sleeps stretch a swipe and starve
+    // scroll updates. Chrome schedules this gesture against its own frame clock.
+    await this.cdp.send('Input.synthesizeScrollGesture', {
+      x,
+      y: startY,
+      yDistance: endY - startY,
+      speed: Math.round((Math.abs(endY - startY) * 1000) / durationMs),
+      gestureSourceType: 'touch',
+      preventFling: true,
+    });
+  }
+
   async setOrientation(orientation) {
     if (orientation === (await this.orientation())) return;
     if (this.rotate) {
