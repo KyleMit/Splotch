@@ -17,14 +17,23 @@ re-proved before this capture, reusing the existing WDA connection without resta
 
 All 48 applicable groups retained one warmup and three scored repeats, with valid activation in all
 four samples per group. The coloring grid fit without scrolling, so that action was explicitly not
-applicable. Forty-five groups passed. Each maximum below comes from that repeat's
-`scoredActionFrameGaps`, not the pooled P95/P99/maximum:
+applicable. The artifact records 45 passing groups under its stored base gates. Each maximum below
+comes from that repeat's `scoredActionFrameGaps`, not the pooled P95/P99/maximum:
 
-| Canonical red                   | Three scored maxima (ms) | Post-action P95 (ms) |
+| Recorded base-gate failure      | Three scored maxima (ms) | Post-action P95 (ms) |
 | ------------------------------- | ------------------------ | -------------------- |
 | Open Settings                   | 29 / 34 / 35             | 25                   |
 | Close Settings                  | 21 / 21 / 21             | 21                   |
 | With ink: portrait to landscape | 28 / 22 / 25             | 25                   |
+
+The invocation reused a capabilities file without a tablet device name and omitted
+`--device-class=tablet`. The physical-device check passed, but the tablet predicate did not, so the
+runner stored `gateAllowances: {}`. This was a setup omission, not a policy change. A read-only
+recomputation with the existing `IOS_ACTION_GATE_ALLOWANCES` gives 46 passing groups: Open Settings
+at P95 25 / max 35 is within ADR-0090's 26 / 56 ms allowance. Only Close Settings and ink
+portrait-to-landscape remain red under that policy. The original artifact, its stored 45/48 verdict,
+and all samples are unchanged; it is not a final release-gate certification. Future physical-iPad
+invocations explicitly pass `--device-class=tablet`.
 
 Empty-clear landscape-to-portrait rotation has one unconfirmed maximum warning (35 / 33 / 29 ms),
 not a red. Magic selection and disabling Advanced Controls are green at 17 / 17 / 17 ms. These
@@ -37,11 +46,16 @@ rewrite. The frame trace does not identify a specific GPU task.
 
 ## Bounded paired experiment
 
-The focused control reproduced both ink-direction P95 reds. The candidate changed only the paper
-sheet's compositor hint. Paper dimensions, texture, matrix, input mapping, resize debounce, undo and
-export code were unchanged. ADR-0050 and ADR-0089's presentation semantics were preserved. The
-action runner, in-page probe and scoring source files were byte-identical across arms. Both arms
-used the same physical device, runtime, orientation/theme, action sequence and repeat count.
+The focused control reproduced the outbound ink P95 red and also scored the return direction red.
+The canonical return was green (P95 18 ms, maxima 31 / 32 / 28), while the focused return was red
+(P95 23 ms, maxima 23 / 23 / 23). The action sequences differ, so these controls are not
+interchangeable; this comparison does not isolate the reason for the P95 difference. The candidate
+comparison uses only the paired focused control, and no focused result certifies a canonical pass.
+The candidate changed only the paper sheet's compositor hint. Paper dimensions, texture, matrix,
+input mapping, resize debounce, undo and export code were unchanged. ADR-0050 and ADR-0089's
+presentation semantics were preserved. The action runner, in-page probe and scoring source files
+were byte-identical across arms. Both arms used the same physical device, runtime,
+orientation/theme, action sequence and repeat count.
 
 | Action                                            | Control maxima (ms) | Candidate maxima (ms) | Control readiness P50 / P95 (ms) | Candidate readiness P50 / P95 (ms) |
 | ------------------------------------------------- | ------------------- | --------------------- | -------------------------------- | ---------------------------------- |
@@ -93,12 +107,16 @@ gitignored raw corpus `perf-profiles/epic-1567-september-resume/`.
 
 Both clean controls are retained whole through `keep-capture-evidence.mjs` under
 `perf-profiles/evidence/2026-09-05-epic-1567-ipad-paper-control/`: `actions--9f43bfdf.json` is
-canonical; `actions--5372bd09.json` is focused. The keep-all exception preserves the complete causal
+canonical; `actions--5372bd09.json` is focused. The staging corpus named by the keeper index is
+`perf-profiles/epic-1567-ipad-paper-control/`: `canonical/actions.json` is a byte-identical copy of
+`ipad-recovered-canonical-pl/actions.json`, and `focused/actions.json` copies
+`ipad-paper-focused-control/actions.json` from the raw corpus above. Each staged file therefore has
+the corresponding SHA-256 in the table. The keep-all exception preserves the complete causal
 comparison rather than selecting its best repeat. Every raw and staged source hash was unchanged
 after promotion. Deep comparison verified whole measurement payloads after identifier redaction, and
 the tracked copies contain no device identifiers. The index's null drawing-fidelity field is not the
 action activation verdict: the action suites record their own four-of-four activation evidence.
 
-This resolves the formerly unmeasured paper-sheet proposal as a negative result. The canonical
-Settings and rotation reds remain open campaign work. No release-gate row, issue closure, or
-performance threshold is changed.
+This resolves the formerly unmeasured paper-sheet proposal as a negative result. The canonical Close
+Settings and outbound ink-rotation reds remain open campaign work. No release-gate row, issue
+closure, or performance threshold is changed.

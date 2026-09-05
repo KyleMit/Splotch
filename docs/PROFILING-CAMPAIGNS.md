@@ -182,6 +182,15 @@ keep whichever report saw more input.
 frames but zero pointer events. Before measuring, check that `document.elementFromPoint` at the
 canvas centre actually hits the canvas.
 
+**A reused iPad capabilities file still needs tablet classification.** A physical XCUITest session
+can omit `deviceName`, and a minimal file that reuses `webDriverAgentUrl` need not supply it either.
+Pass `--device-class=tablet` on physical-iPad action captures and inspect the resulting
+`gateAllowances` before interpreting Settings results. Without tablet classification the runner
+records base gates, even when its device-ID and runtime checks prove a physical iOS Safari session.
+This affects the existing ADR-0090 Settings allowance, not the rotation gates. Keep an earlier
+artifact's recorded ledger unchanged; distinguish its base-gate verdict from a read-only comparison
+with the declared physical policy. A missing declaration is not evidence that the policy changed.
+
 **A native orientation lock can rotate the page after split-capture readiness.** A retained
 landscape lock in Android Settings let the initial probe report portrait canvas bounds, then moved
 the WebView into landscape before the gestures arrived. The result had thousands of trusted touch
