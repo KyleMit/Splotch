@@ -517,7 +517,7 @@ export async function captureDeviceFrames({
   // preview, so the build the device will load is checkable from here — and until
   // it was, only the desktop runners verified a build at all. A native export
   // written after the preview started reached device cells unchallenged.
-  const servedBuild = await assertServedBuildIsFresh(host, { allowForeignBuild });
+  const servedBuild = await assertServedBuildIsFresh(host, { allowForeignBuild, nativeApp });
 
   const runLabel = label ?? `${platform}-${brush}-${orientation.toLowerCase()}-${theme}`;
   const hostLoadStart = sampleHostLoad();

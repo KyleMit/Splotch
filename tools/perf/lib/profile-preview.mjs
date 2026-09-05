@@ -112,6 +112,7 @@ export async function servedBuildFingerprintProblem(
   base,
   {
     allowForeignBuild = false,
+    nativeApp = false,
     fetchText = defaultFetchText,
     // Injected so a unit test can stand up a fake build rather than depending on
     // one existing — CI's unit job does not run a build, and a test that reads
@@ -120,13 +121,18 @@ export async function servedBuildFingerprintProblem(
   } = {}
 ) {
   if (allowForeignBuild) return null;
-  if (buildDirHoldsNativeExport(buildDir)) {
+  const nativeBuild = buildDirHoldsNativeExport(buildDir);
+  if (nativeBuild && !nativeApp) {
     return (
       'web/build holds the native static export, not the web build — a native build ' +
       '(build:cap, ios:run:device, android:run) overwrote it, possibly while this server ' +
       'was already running. A capture against it hangs rather than failing. ' +
       'Run `npm run perf:build` and restart the preview.'
     );
+  }
+
+  if (nativeApp && !nativeBuild) {
+    return 'Native capture requires the native static export. Run `npm run perf:build:cap` first.';
   }
 
   const { digests } = await servedChunkDigests(base, fetchText);
@@ -191,9 +197,12 @@ export async function servedBuildBinding(
   };
 }
 
-export async function assertServedBuildIsFresh(base, { allowForeignBuild = false } = {}) {
+export async function assertServedBuildIsFresh(
+  base,
+  { allowForeignBuild = false, nativeApp = false } = {}
+) {
   await assertServedManifestResolves(base);
-  const problem = await servedBuildFingerprintProblem(base, { allowForeignBuild });
+  const problem = await servedBuildFingerprintProblem(base, { allowForeignBuild, nativeApp });
   if (problem) fail(problem);
   return servedBuildBinding(base, { verifiedAgainstCheckout: !allowForeignBuild });
 }
