@@ -1,0 +1,1581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="description" content="How Splotch's crayon stroke is made, one rule at a time: the paper-tooth field, the binary threshold, the two density bands, per-pass seeds, the darken-and-return glaze, and the per-runtime pipelines — with the real algorithm running in the page."/>
+<title>How a crayon stroke is made</title>
+<style>
+:root{
+  color-scheme:light dark;
+  --paper:#f5f3ee;--paper-2:#efece5;--card:#fdfbf6;--card-2:#f6f3ec;
+  --ink:#23212a;--muted:#6b6774;--faint:#948f9c;
+  --hair:#e6e1d8;--hair-strong:#d9d3c8;
+  --accent:#2f6fed;--accent-ink:#1e50c4;--accent-wash:#e8effe;
+  --gold:#b1780a;--ok:#3f9d55;--warn:#e08a1e;--bad:#d24b3f;
+  --c-red:#ec534e;--c-orange:#f89c45;--c-yellow:#f9d24f;
+  --c-green:#8cc864;--c-blue:#62a2e9;--c-purple:#ab71e1;--c-pink:#f47cb0;
+  --code-bg:#211f29;--code-ink:#f2eef8;--code-muted:#aaa4b7;
+  --code-blue:#8fc7ff;--code-green:#91d18b;--code-orange:#f6b46b;--code-pink:#f39bc2;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05),0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06),0 22px 48px rgba(30,28,40,.12);
+  --r-sm:9px;--r-md:16px;--r-lg:22px;--shell:1120px;
+  --font:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --demo-paper:#fcfbf8;--demo-paper-ink:#23212a;--demo-grid:#e9e5dc;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#131418;--paper-2:#0f1013;--card:#1d1f27;--card-2:#181a20;
+    --ink:#e9e7e2;--muted:#a8a4af;--faint:#807d89;
+    --hair:#34373f;--hair-strong:#464a55;
+    --accent:#7aa8ff;--accent-ink:#a9c6ff;--accent-wash:#1b2536;
+    --gold:#d9a441;--ok:#5cc078;--warn:#e6a545;--bad:#e8695c;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.4);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 22px 48px rgba(0,0,0,.5);
+  }
+}
+html[data-paper=dark]{--demo-paper:#211f29;--demo-paper-ink:#f2eef8;--demo-grid:#2f2d3a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.58;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-ink);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+button{font:inherit;color:inherit}
+.shell{width:100%;max-width:var(--shell);margin:0 auto;padding-inline:clamp(16px,4vw,44px)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+dfn{font-style:normal;font-weight:750;text-decoration:underline dotted color-mix(in srgb,var(--gold) 70%,transparent);text-underline-offset:3px}
+
+.masthead{position:relative;overflow:hidden;background:radial-gradient(120% 140% at 100% 0,color-mix(in srgb,var(--accent-wash) 62%,transparent),transparent 60%),linear-gradient(180deg,var(--card-2),var(--paper));border-bottom:1px solid var(--hair)}
+.masthead .shell{padding-top:clamp(16px,3vw,26px);padding-bottom:clamp(28px,5vw,54px)}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-height:34px}
+.brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:700;letter-spacing:-.01em}
+.brand:hover{text-decoration:none}.brand:hover .brand-name{color:var(--accent-ink)}
+.brand-name{font-size:15px}.brand-sub{color:var(--muted);font-weight:600}.brand-sub::before{content:"/";margin:0 5px;color:var(--faint);font-weight:400}
+.crayons{display:inline-flex;gap:4px;flex:0 0 auto}.crayons i{display:block;border-radius:99px;width:16px;height:6px}
+.crumbs{margin-left:auto;display:flex;align-items:center;gap:2px;font-size:13px;color:var(--muted);flex-wrap:wrap}.crumbs a{color:var(--muted)}.crumbs .sep{color:var(--faint);margin:0 5px}.crumbs .here{color:var(--ink);font-weight:650}
+.masthead-body{margin-top:clamp(22px,4vw,38px);position:relative;z-index:1;max-width:880px}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;color:var(--gold);font-weight:750}
+h1{font-size:clamp(2.2rem,6vw,4.4rem);line-height:.98;margin:.32rem 0 0;letter-spacing:-.05em;text-wrap:balance;font-weight:850}
+.tagline{color:var(--muted);max-width:68ch;margin:.9rem 0 0;font-size:clamp(1rem,1.5vw,1.16rem)}
+.tagline b{color:var(--ink)}
+.stat-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:19px}
+.chip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:.76rem;font-weight:650;padding:5px 11px;border-radius:999px;background:var(--card);border:1px solid var(--hair);color:var(--muted)}
+.chip b{color:var(--ink)}
+.masthead-art{position:absolute;right:clamp(-60px,-2vw,-10px);bottom:-30px;width:clamp(280px,38vw,470px);height:250px;opacity:.85;pointer-events:none}
+
+.quicknav{border-bottom:1px solid var(--hair);background:color-mix(in srgb,var(--paper) 92%,transparent)}
+.quicknav .shell{display:flex;gap:6px;flex-wrap:wrap;padding-block:11px}
+.quicknav a{font-size:.76rem;color:var(--muted);padding:4px 9px;border-radius:999px;border:1px solid transparent}.quicknav a:hover{color:var(--accent-ink);background:var(--accent-wash);text-decoration:none}
+.quicknav a b{color:var(--faint);font-weight:700;margin-right:4px}
+
+/* Sticky control bar: every demo reads from it. Kept to one short row. */
+.controls{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--card) 86%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair);box-shadow:var(--shadow-sm)}
+.controls .shell{display:flex;align-items:center;gap:14px;padding-block:7px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.controls .shell::-webkit-scrollbar{display:none}
+.ctl{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.ctl-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:750}
+.swatches{display:flex;gap:5px}
+.swatch-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;background:var(--sw);cursor:pointer;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);transition:transform .12s}
+.swatch-btn:hover{transform:scale(1.12)}
+.swatch-btn[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ink)}
+.seg{display:inline-flex;background:var(--card-2);border:1px solid var(--hair);border-radius:999px;padding:2px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:3px 9px;font-size:.78rem;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;min-height:24px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.seg .dot{display:inline-block;border-radius:50%;background:currentColor;width:var(--d);height:var(--d)}
+.paper-btn{width:22px;height:22px;border-radius:50%;border:1px solid var(--hair-strong);cursor:pointer;padding:0}
+.paper-btn[aria-pressed=true]{box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ink)}
+.ctl-hint{font-size:.72rem;color:var(--faint);margin-left:auto;flex:0 0 auto}
+
+main .shell{padding-top:clamp(30px,5vw,56px);padding-bottom:clamp(62px,8vw,100px)}
+section{scroll-margin-top:64px;margin-top:clamp(56px,8vw,92px)}
+section:first-child{margin-top:0}
+.section-kicker{font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:750;margin:0 0 4px}
+h2{font-size:clamp(1.65rem,3.3vw,2.5rem);line-height:1.08;letter-spacing:-.035em;margin:0;text-wrap:balance}
+h3{font-size:1.1rem;line-height:1.25;margin:0;letter-spacing:-.012em}
+h3.spaced{margin-top:34px}
+p{margin:.72rem 0;max-width:76ch}.section-lead{color:var(--muted);font-size:1.03rem;margin:.7rem 0 22px}
+.lede{font-size:clamp(1.1rem,2vw,1.3rem);line-height:1.48;max-width:72ch;margin:0 0 26px}
+.muted{color:var(--muted)}
+ul.plain{padding-left:20px;max-width:76ch}ul.plain li{margin:.35rem 0}
+.callout{border-left:4px solid var(--accent);padding:13px 16px;background:var(--accent-wash);border-radius:0 var(--r-sm) var(--r-sm) 0;margin:20px 0;max-width:80ch}
+.callout.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 11%,var(--card))}
+.callout.gold{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,var(--card))}
+.callout strong{font-weight:800}
+.callout p{margin:.3rem 0}
+.term-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:18px 0 6px}
+.term-card{padding:12px 14px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-sm);font-size:.86rem}
+.term-card b{display:block;font-size:.84rem;margin-bottom:2px}.term-card span{color:var(--muted)}
+
+.formula{font:13px/1.6 var(--mono);background:var(--card);border:1px solid var(--hair);border-radius:var(--r-sm);padding:12px 14px;margin:14px 0;overflow-x:auto;max-width:80ch}
+.formula b{color:var(--accent-ink)}
+:not(pre)>code{font-family:var(--mono);font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.13em .42em;border-radius:5px;color:var(--ink)}
+.codeblock{background:var(--code-bg);color:var(--code-ink);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-md);margin:20px 0;max-width:820px}
+.codehead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.1);font-family:var(--mono);font-size:.7rem;color:var(--code-muted)}
+pre{margin:0;padding:14px 16px;overflow:auto;font:12px/1.65 var(--mono);tab-size:2}
+.kw{color:var(--code-pink)}.fn{color:var(--code-blue)}.str{color:var(--code-green)}.num{color:var(--code-orange)}.cm{color:var(--code-muted)}
+
+/* Brick flow: the whole stroke as seven stages */
+.bricks{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:24px 0 10px}
+.brick{border:0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:12px 8px 10px;text-align:center;cursor:pointer;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;box-shadow:var(--shadow-sm);color:var(--ink)}
+.brick:hover{border-color:var(--accent)}
+.brick[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px var(--accent-wash)}
+.brick .n{font-size:.62rem;font-weight:800;letter-spacing:.1em;opacity:.7}
+.brick b{font-size:.8rem;line-height:1.2}
+.brick svg{width:36px;height:36px;display:block}
+.brick-detail{padding:14px 16px;border-radius:var(--r-sm);background:var(--card-2);border:1px solid var(--hair);font-size:.93rem;min-height:70px;max-width:none}
+.brick-detail b{display:block;margin-bottom:2px}.brick-detail a{font-weight:700}
+
+/* Demo frames */
+.demo{margin:22px 0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);box-shadow:var(--shadow-md);overflow:hidden}
+.demo-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--hair);font-size:.8rem;color:var(--muted)}
+.demo-head b{color:var(--ink);font-size:.84rem}
+.demo-head .spacer{flex:1}
+.demo-body{padding:14px}
+.demo-foot{padding:10px 14px;border-top:1px solid var(--hair);font-size:.8rem;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.demo-foot b{color:var(--ink)}
+.paper-canvas{display:block;width:100%;background:var(--demo-paper);border-radius:var(--r-sm);touch-action:none;border:1px solid var(--hair);cursor:crosshair;user-select:none;-webkit-user-select:none}
+.demo,.controls,.bricks{user-select:none;-webkit-user-select:none}
+.canvas-wrap{position:relative}
+.canvas-wrap .overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.canvas-wrap .corner{position:absolute;top:8px;right:8px;display:flex;gap:6px}
+.mini-btn{border:1px solid var(--hair-strong);background:var(--card);border-radius:999px;padding:4px 11px;font-size:.76rem;font-weight:700;cursor:pointer;color:var(--ink);box-shadow:var(--shadow-sm)}
+.mini-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.mini-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.mini-btn[disabled]{opacity:.45;cursor:default}
+.canvas-wrap.inked .hint{display:none}
+.hint{position:absolute;left:12px;bottom:10px;font-size:.74rem;color:var(--faint);pointer-events:none;background:color-mix(in srgb,var(--demo-paper) 80%,transparent);padding:2px 8px;border-radius:999px}
+.stat{display:inline-flex;align-items:baseline;gap:5px;font-size:.8rem;color:var(--muted)}.stat b{font-variant-numeric:tabular-nums;color:var(--ink);font-size:.95rem}
+.range{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);min-width:0}
+.range input{flex:1;min-width:90px;accent-color:var(--accent)}
+.range output{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:700;min-width:3.2em;text-align:right}
+.range-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 18px;margin-bottom:12px}
+.check{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer}
+.check input{accent-color:var(--accent)}
+
+/* Tile galleries */
+.tile-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px}
+.tile-cell{text-align:center}
+.tile-cell canvas{width:100%;aspect-ratio:1;display:block;border-radius:8px;border:1px solid var(--hair);background:var(--demo-paper);image-rendering:pixelated}
+.tile-cell canvas.smooth{image-rendering:auto}
+.tile-cell b{display:block;font-size:.78rem;margin-top:7px}.tile-cell small{display:block;color:var(--muted);font-size:.7rem}
+.tile-cell.sum canvas{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+.split-view{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.zoom-note{font-size:.74rem;color:var(--faint);margin-top:6px}
+
+/* Binary vs soft comparison */
+.matrix{display:grid;grid-template-columns:100px repeat(3,1fr);gap:8px;align-items:center}
+.matrix .rowlab{font-size:.8rem;font-weight:800;line-height:1.2}.matrix .rowlab small{display:block;font-weight:500;color:var(--muted);font-size:.7rem}
+.matrix .collab{text-align:center;font-size:.72rem;color:var(--muted);font-weight:700}
+.matrix canvas{width:100%;aspect-ratio:2.2;display:block;border-radius:8px;border:1px solid var(--hair);background:var(--demo-paper)}
+.matrix .m{text-align:center;font-size:.72rem;color:var(--muted);margin-top:3px}.matrix .m b{color:var(--ink);font-variant-numeric:tabular-nums}
+.matrix.ok canvas{border-color:color-mix(in srgb,var(--ok) 50%,var(--hair))}.matrix .k{display:none}
+
+/* Panels of canvases */
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.panel{text-align:center}
+.panel canvas{width:100%;aspect-ratio:1.35;display:block;border-radius:8px;border:1px solid var(--hair);background:var(--demo-paper)}
+.panel b{display:block;font-size:.8rem;margin-top:7px}.panel small{display:block;color:var(--muted);font-size:.7rem;font-variant-numeric:tabular-nums}
+.panel.hl canvas{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+
+/* Glaze lab */
+.lab{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.lab-swatch{border-radius:var(--r-sm);border:1px solid var(--hair);overflow:hidden;background:var(--card)}
+.lab-swatch .fill{height:74px;background:var(--fill)}
+.lab-swatch .meta{padding:8px 10px;font-size:.74rem;color:var(--muted)}.lab-swatch .meta b{display:block;color:var(--ink);font-size:.8rem}.lab-swatch .meta code{font-size:.7rem;background:transparent;padding:0;color:var(--muted)}
+.lab-swatch.ship{border-color:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
+.lab-swatch.no .fill{position:relative}.lab-swatch.no .fill::after{content:"rejected";position:absolute;right:6px;top:6px;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:color-mix(in srgb,var(--bad) 85%,#000);color:#fff;padding:2px 7px;border-radius:999px}
+.lab-swatch.ship .fill::after{content:"shipped";position:absolute;right:6px;top:6px;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:var(--ok);color:#fff;padding:2px 7px;border-radius:999px}
+.lab-swatch.ship .fill{position:relative}
+.channel-table{width:100%;border-collapse:collapse;font:12px/1.5 var(--mono);margin-top:12px}
+.channel-table th,.channel-table td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--hair)}
+.channel-table th:first-child,.channel-table td:first-child{text-align:left;font-family:var(--font);font-weight:700;font-size:.78rem}
+.channel-table th{color:var(--muted);font-weight:600}
+.lab-controls{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:.8rem}
+.lab-controls select{font:inherit;font-size:.8rem;padding:4px 8px;border-radius:8px;border:1px solid var(--hair-strong);background:var(--card);color:var(--ink)}
+.repeat-row{display:flex;gap:6px;align-items:center;margin-top:12px;flex-wrap:wrap;font-size:.76rem;color:var(--muted)}
+.repeat-row i{display:inline-block;width:38px;height:26px;border-radius:6px;border:1px solid var(--hair);background:var(--fill)}
+
+/* Pipeline step-through */
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.trio .panel canvas{aspect-ratio:1.2}
+.trio .panel b{font-size:.8rem}
+.step-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.step-caption{font-size:.86rem;padding:10px 12px;border-radius:var(--r-sm);background:var(--card-2);border:1px solid var(--hair);margin-top:12px;min-height:58px}
+.step-caption b{color:var(--accent-ink)}
+.table-scroll{overflow-x:auto;margin:22px 0}.table-scroll .pipe-table{margin:0;min-width:640px}.table-scroll .channel-table{min-width:420px}
+.pipe-table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);overflow:hidden;margin:22px 0;font-size:.84rem}
+.pipe-table th,.pipe-table td{text-align:left;padding:10px 12px;border-top:1px solid var(--hair);vertical-align:top}
+.pipe-table thead th{border-top:0;background:var(--card-2);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.pipe-table td:first-child{font-weight:800;white-space:nowrap}
+.pipe-table td{color:var(--muted)}.pipe-table td:first-child{color:var(--ink)}
+.pipe-table .tag{display:inline-block;font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.tag.web{background:var(--accent-wash);color:var(--accent-ink)}.tag.native{background:color-mix(in srgb,var(--c-green) 22%,var(--card));color:color-mix(in srgb,var(--c-green) 40%,var(--ink))}.tag.retired{background:color-mix(in srgb,var(--faint) 22%,var(--card));color:var(--muted)}
+.rule-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.rule{padding:14px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair);border-top:3px solid var(--warn);font-size:.84rem}.rule b{display:block;margin-bottom:4px}.rule span{color:var(--muted)}
+
+/* Warm-up */
+.warm-layout{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center}
+.warm-layout canvas{width:100%;aspect-ratio:1;display:block;border-radius:8px;border:1px solid var(--hair);background:var(--demo-paper);image-rendering:pixelated}
+.warm-frames{display:flex;gap:3px;flex-wrap:wrap}
+.warm-frames i{width:14px;height:22px;border-radius:3px;background:var(--hair);display:block}
+.warm-frames i.done{background:var(--accent)}.warm-frames i.now{background:var(--warn)}
+
+/* Alternatives */
+.alt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:22px}
+.alt{padding:16px 18px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:8px}
+.alt h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.alt .pop{font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--card-2);border:1px solid var(--hair);color:var(--muted)}
+.alt p{margin:0;font-size:.88rem;color:var(--muted)}
+.alt p b{color:var(--ink)}
+.alt canvas{width:100%;aspect-ratio:3;display:block;border-radius:8px;border:1px solid var(--hair);background:var(--demo-paper);margin-top:4px}
+.alt .verdict{margin-top:auto;padding-top:8px;border-top:1px dashed var(--hair);font-size:.8rem}
+.alt .verdict b{color:var(--bad)}
+.alt .verdict.kept b{color:var(--ok)}
+
+.glossary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}.term{padding:13px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-sm)}.term dt{font-weight:850;font-size:.84rem}.term dd{margin:.3rem 0 0;color:var(--muted);font-size:.8rem}
+.source-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.84rem}.source-table th,.source-table td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--hair);vertical-align:top}.source-table th{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}.source-table td:first-child{font-family:var(--mono);font-size:.76rem}.source-table td:last-child{color:var(--muted)}
+.adr-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.adr-links a{font-size:.76rem;padding:6px 10px;border:1px solid var(--hair);border-radius:999px;background:var(--card)}
+
+.site-foot{border-top:1px solid var(--hair);background:var(--card-2)}.site-foot .shell{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:22px;padding-bottom:26px;color:var(--muted);font-size:.84rem}.site-foot p{margin:0}.site-foot .crayons i{width:15px;height:5px}
+
+@media(max-width:960px){
+  .bricks{grid-template-columns:repeat(4,1fr)}
+  .split-view{grid-template-columns:1fr}
+  .rule-list{grid-template-columns:1fr}
+  .glossary{grid-template-columns:repeat(2,1fr)}
+  .alt-grid{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  .masthead-art{display:none}.crumbs{width:100%;margin-left:0;margin-top:6px}
+  .ctl-hint{display:none}.ctl-label{display:none}.controls .shell{gap:10px;padding-inline:12px}.swatches{gap:3px}.swatch-btn{width:21px;height:21px}.seg button{padding:3px 6px}.paper-btn{width:20px;height:20px}
+  .bricks{grid-template-columns:repeat(2,1fr)}.brick{min-height:auto;flex-direction:row;text-align:left;justify-content:flex-start;padding:10px 12px}.brick .n{display:none}.brick svg{width:30px;height:30px;flex:0 0 auto}
+  .matrix{grid-template-columns:1fr;gap:6px}.matrix .rowlab{margin-top:10px}.matrix .collab{display:none}.matrix .k{display:inline}
+  .trio{grid-template-columns:1fr}.trio .panel canvas{aspect-ratio:2}
+  .warm-layout{grid-template-columns:1fr}.warm-layout canvas{max-width:200px}
+  .glossary{grid-template-columns:1fr}.source-table{display:block;overflow-x:auto}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body id="crayon-explainer">
+<header class="masthead">
+  <svg class="masthead-art" aria-hidden="true" viewBox="0 0 470 250">
+    <defs>
+      <pattern id="mast-tooth" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.3" fill="var(--paper)"/><circle cx="5.5" cy="5" r="1" fill="var(--paper)"/></pattern>
+    </defs>
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 200 C90 60 150 260 230 110 S360 180 450 40" stroke="var(--c-blue)" stroke-width="34" opacity=".55"/>
+      <path d="M20 200 C90 60 150 260 230 110 S360 180 450 40" stroke="var(--c-blue)" stroke-width="22"/>
+      <path d="M20 200 C90 60 150 260 230 110 S360 180 450 40" stroke="url(#mast-tooth)" stroke-width="34"/>
+      <path d="M40 60 C120 120 200 20 300 90 S420 150 460 120" stroke="var(--c-yellow)" stroke-width="26" opacity=".5"/>
+      <path d="M40 60 C120 120 200 20 300 90 S420 150 460 120" stroke="url(#mast-tooth)" stroke-width="26"/>
+    </g>
+  </svg>
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="../index.html">
+        <span class="crayons" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+        <span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span>
+      </a>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">Collections</a><span class="sep">/</span><span class="here" aria-current="page">Crayon stroke</span></nav>
+    </div>
+    <div class="masthead-body">
+      <p class="eyebrow">Brush anatomy · September 5, 2026</p>
+      <h1>How a crayon stroke is made</h1>
+      <p class="tagline">Splotch's crayon is not a picture of a crayon. It is a short list of rules — <b>a paper texture, a threshold, two stroke widths, a seed per pass, and one mixing formula</b> — that together behave like wax. This page adds one rule at a time. Every illustration is the real algorithm, running in your browser as you read.</p>
+      <div class="stat-row" aria-label="Key numbers">
+        <span class="chip"><b>256 px</b> tooth tile</span>
+        <span class="chip"><b>4</b> noise octaves</span>
+        <span class="chip"><b>0 or 1</b> wax alpha</span>
+        <span class="chip"><b>2</b> density bands</span>
+        <span class="chip"><b>0.55</b> mix strength</span>
+        <span class="chip"><b>64</b> moves per checkpoint</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="quicknav" aria-label="Sections"><div class="shell">
+  <a href="#overview"><b>0</b>Overview</a>
+  <a href="#shape"><b>1</b>Shape</a>
+  <a href="#tooth"><b>2</b>Paper tooth</a>
+  <a href="#threshold"><b>3</b>Wax threshold</a>
+  <a href="#binary"><b>4</b>Why 0 or 1</a>
+  <a href="#bands"><b>5</b>Two bands</a>
+  <a href="#phase"><b>6</b>Seeds &amp; buildup</a>
+  <a href="#passes"><b>7</b>Passes</a>
+  <a href="#glaze"><b>8</b>The glaze</a>
+  <a href="#pipelines"><b>9</b>Pipelines</a>
+  <a href="#warm"><b>10</b>Warm-up</a>
+  <a href="#alternatives">Roads not taken</a>
+  <a href="#glossary">Glossary</a>
+</div></nav>
+
+<div class="controls" id="controls" aria-label="Crayon settings used by every demo on this page">
+  <div class="shell">
+    <div class="ctl"><span class="ctl-label">Crayon</span><div class="swatches" id="swatches" role="radiogroup" aria-label="Crayon colour"></div></div>
+    <div class="ctl"><span class="ctl-label">Width</span><div class="seg" id="widths" role="radiogroup" aria-label="Stroke width"></div></div>
+    <div class="ctl"><span class="ctl-label">Paper</span>
+      <button class="paper-btn" data-paper="light" style="background:#fcfbf8" aria-label="Light paper" aria-pressed="true"></button>
+      <button class="paper-btn" data-paper="dark" style="background:#211f29" aria-label="Dark paper" aria-pressed="false"></button>
+    </div>
+    <span class="ctl-hint">These settings drive every demo below</span>
+  </div>
+</div>
+
+<main>
+  <div class="shell">
+
+    <section id="overview">
+      <p class="section-kicker">Brick 0</p>
+      <h2>The whole stroke in one picture</h2>
+      <p class="lede">A crayon stroke is the pen's shape, filled with a textured paint instead of a flat colour, laid down in passes, and mixed once with whatever ink is already underneath. Each of those clauses is a brick. Tap one to see what it owns.</p>
+
+      <div class="bricks" id="bricks" role="group" aria-label="The seven stages of a crayon stroke">
+        <button class="brick" data-brick="shape" aria-pressed="true"><span class="n">01</span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 30 C14 8 22 34 34 10" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg><b>Shape</b></button>
+        <button class="brick" data-brick="tooth" aria-pressed="false"><span class="n">02</span><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="5" width="30" height="30" rx="6" fill="currentColor" opacity=".25"/><g fill="currentColor"><circle cx="12" cy="13" r="2.2"/><circle cx="22" cy="10" r="1.6"/><circle cx="29" cy="17" r="2.6"/><circle cx="15" cy="24" r="1.8"/><circle cx="25" cy="27" r="2.3"/><circle cx="10" cy="31" r="1.4"/><circle cx="31" cy="30" r="1.5"/></g></svg><b>Paper tooth</b></button>
+        <button class="brick" data-brick="threshold" aria-pressed="false"><span class="n">03</span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M4 26 C9 12 13 30 18 18 S27 28 36 12" fill="none" stroke="currentColor" stroke-width="2.5"/><line x1="4" y1="20" x2="36" y2="20" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/><rect x="4" y="30" width="32" height="5" rx="2" fill="currentColor"/></svg><b>Threshold</b></button>
+        <button class="brick" data-brick="bands" aria-pressed="false"><span class="n">04</span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 20 H34" stroke="currentColor" stroke-width="16" stroke-linecap="round" opacity=".35"/><path d="M6 20 H34" stroke="currentColor" stroke-width="9" stroke-linecap="round"/></svg><b>Two bands</b></button>
+        <button class="brick" data-brick="phase" aria-pressed="false"><span class="n">05</span><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="9" width="22" height="22" rx="5" fill="currentColor" opacity=".4"/><rect x="13" y="13" width="22" height="22" rx="5" fill="currentColor"/></svg><b>Seed &amp; buildup</b></button>
+        <button class="brick" data-brick="passes" aria-pressed="false"><span class="n">06</span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 12 L34 12 L6 22 L34 22 L6 32 L34 32" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Passes</b></button>
+        <button class="brick" data-brick="glaze" aria-pressed="false"><span class="n">07</span><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="16" cy="20" r="11" fill="currentColor" opacity=".55"/><circle cx="25" cy="20" r="11" fill="currentColor" opacity=".55"/></svg><b>Glaze</b></button>
+      </div>
+      <div class="brick-detail" id="brick-detail" aria-live="polite"></div>
+
+      <h3 class="spaced">Try the finished brush first</h3>
+      <p class="muted">Draw here with a finger or mouse. Cross colours, scribble back over a mark, and draw the same line twice. Everything you see is explained below.</p>
+      <div class="demo" id="playground">
+        <div class="demo-head">
+          <b>Playground</b>
+          <span class="seg" role="radiogroup" aria-label="Deposition pipeline">
+            <button data-mode="restamp" aria-pressed="true">Web</button>
+            <button data-mode="glaze-direct" aria-pressed="false">Native</button>
+            <button data-mode="opaque" aria-pressed="false">No glaze</button>
+          </span>
+          <span class="spacer"></span>
+          <button class="mini-btn" id="play-demo">Draw a sample</button>
+          <button class="mini-btn" id="play-clear">Clear</button>
+        </div>
+        <div class="demo-body">
+          <div class="canvas-wrap">
+            <canvas class="paper-canvas" id="play-canvas" style="aspect-ratio:2.1" aria-label="Free drawing canvas using the crayon brush"></canvas>
+            <span class="hint">Draw here</span>
+          </div>
+        </div>
+        <div class="demo-foot"><span class="stat">passes <b id="play-passes">0</b></span><span class="stat">ops <b id="play-ops">0</b></span><span class="stat">splits <b id="play-splits">0</b></span><span class="muted">Web and Native differ only where a stroke crosses another colour; see <a href="#pipelines">brick 9</a>.</span></div>
+      </div>
+    </section>
+
+    <section id="shape">
+      <p class="section-kicker">Brick 1</p>
+      <h2>The shape is the pen's shape</h2>
+      <p class="section-lead">Before any texture exists, the engine has to know where the finger went. The crayon reuses the pen's answer exactly. Only the paint inside the shape changes later.</p>
+      <p>Every movement the browser reports becomes an <dfn>operation</dfn> (an "op"): a small, self-contained drawing instruction the engine can render, store, and replay. Two kinds of op carry ink. A <dfn>dot op</dfn> is a filled circle placed where the finger first touches. A <dfn>path op</dfn> is a curve with a <dfn>line width</dfn>, drawn with round caps and round joins so segments melt into each other.</p>
+      <p>The path is not the raw points joined by straight lines. The engine uses <dfn>midpoint smoothing</dfn>: each raw sample becomes the control point of a quadratic curve that runs from the midpoint before it to the midpoint after it. The curve therefore passes near, not through, the samples, which removes the polygonal look of hand input. A stroke's ops chain together because each op starts at the midpoint where the previous one stopped.</p>
+      <div class="demo">
+        <div class="demo-head"><b>Draw a shape</b><span>Grey is the filled shape. The overlay shows how it was built.</span><span class="spacer"></span>
+          <label class="check"><input type="checkbox" id="shape-points" checked/> raw samples</label>
+          <label class="check"><input type="checkbox" id="shape-curve" checked/> smoothed centreline</label>
+          <button class="mini-btn" id="shape-clear">Clear</button></div>
+        <div class="demo-body"><div class="canvas-wrap"><canvas class="paper-canvas" id="shape-canvas" style="aspect-ratio:2.4" aria-label="Canvas that shows raw input points and the smoothed stroke centreline"></canvas><span class="hint">Draw here</span></div></div>
+        <div class="demo-foot"><span class="stat">samples <b id="shape-n">0</b></span><span class="stat">path ops <b id="shape-ops">0</b></span><span class="muted">Squares are raw samples, hollow circles are midpoints, the thin line is the quadratic curve the op actually strokes.</span></div>
+      </div>
+      <div class="callout"><strong>How many ops per stroke?</strong> On the web build the engine records one path op per pointer move, because Safari charges more for a longer path than for an extra op. The native app does the opposite: it merges a frame's moves into one op, capped at eight moves, because that WebView charges per op. The pixels are the same either way; only the op boundaries move.</div>
+    </section>
+
+    <section id="tooth">
+      <p class="section-kicker">Brick 2</p>
+      <h2>Paper tooth: a height map that never changes</h2>
+      <p class="section-lead">Real paper is not flat. Its surface has a fine grain of bumps and pits called <dfn>tooth</dfn>. Wax sticks to the bumps and skips the pits, which is what makes a crayon mark look broken rather than printed. The crayon needs a model of that grain.</p>
+      <p>The model is a <dfn>height field</dfn>: a 256×256 grid of numbers between 0 and 1, where a high number is a raised bump and a low number is a pit. Each cell of that grid is a <dfn>texel</dfn> (a texture pixel). The field is built once from <dfn>value noise</dfn>: place random values on a coarse lattice, then blend smoothly between them for every texel in between. One lattice on its own looks like blurry blobs at a single size, so the crayon sums four of them at different cell sizes, called <dfn>octaves</dfn>, and weights them so no single frequency dominates.</p>
+      <p>Two properties matter more than the look. The field is <dfn>tileable</dfn>: the lattice wraps at the edge, so the tile repeats with no visible seam and can be used as a repeating fill. And it is <dfn>deterministic</dfn>: the random values come from a small pseudo-random generator started from a fixed constant, never from <code>Math.random</code>, so every device builds the identical field and a drawing rebuilds to the identical pixels.</p>
+      <div class="demo">
+        <div class="demo-head"><b>The four octaves</b><span>A 64×64 corner of each 256×256 tile, magnified 4×. Untick an octave to remove it from the sum.</span><span class="spacer"></span><label class="check"><input type="checkbox" id="tooth-repeat"/> show the whole tile repeating 2×2</label></div>
+        <div class="demo-body">
+          <div class="tile-row" id="octave-row"></div>
+        </div>
+        <div class="demo-foot"><span class="muted">Lighter is higher. The cell sizes are 6, 4, 3 and 2 texels with weights 0.22, 0.30, 0.30 and 0.18. The body field uses 110-texel cells, which on a 256-texel tile rounds to a 2×2 lattice: a slow drift, not a texture. Brick 3 uses it to wobble density.</span></div>
+      </div>
+      <div class="callout gold"><strong>Why no coarse octave?</strong> A large-cell octave would give the field blotchy, paper-like structure, but a 256-pixel tile with visible blotches repeats visibly across a big fill. The tuning chose fine grain only, so the repeat stays below what the eye picks out. The cost is that a large flood of one colour has no blotch-scale variation; the roads-not-taken section lists this as a known gap.</div>
+    </section>
+
+    <section id="threshold">
+      <p class="section-kicker">Brick 3</p>
+      <h2>From height to wax: a threshold with a jittered edge</h2>
+      <p class="section-lead">The height field is grey numbers. Wax is colour with holes in it. The step in between is a single comparison per texel.</p>
+      <p>A band's <dfn>coverage</dfn> is the fraction of texels that should carry wax. The <dfn>threshold</dfn> is simply one minus that coverage: a texel whose height is above the threshold gets wax, a texel below it stays a bare pit. The field is normalised to span 0 to 1, but its values cluster around the middle (four noise layers summed tend toward their mean), so a cut at 0.55 covers fewer than 45 percent of the texels. The lab below measures the real share; the name is the knob, the measurement is the truth.</p>
+      <p>A hard threshold produces hard-edged pits that read as digital dots. The crayon softens the edge without introducing grey: a fixed per-texel <dfn>dither</dfn> value nudges the threshold up or down within a narrow band (the <code>edge</code> option, 0.045 either side). Texels near the cut resolve to a stipple of on and off instead of a clean line. The result is still strictly on or off, which brick 4 explains is essential.</p>
+      <p>Two more fields ride along. <dfn>Body variation</dfn> shifts the threshold slowly across the tile using the 110-texel field, so a stroke's density wobbles like uneven hand pressure rather than staying uniform. <dfn>Shade variation</dfn> nudges each wax texel's colour a few percent lighter or darker (tall bumps darker, thin patches lighter) so the body is mottled rather than one flat RGB. The shade change touches only the colour channels. The alpha channel stays 0 or 255.</p>
+      <div class="demo">
+        <div class="demo-head"><b>Threshold lab</b><span>Live wax tile for the selected crayon.</span><span class="spacer"></span><button class="mini-btn" id="thr-reset">Reset to shipped values</button></div>
+        <div class="demo-body">
+          <div class="range-grid">
+            <label class="range">coverage<input type="range" id="thr-cov" min="0.1" max="0.95" step="0.01" value="0.45"/><output>0.45</output></label>
+            <label class="range">dither band<input type="range" id="thr-edge" min="0" max="0.2" step="0.005" value="0.045"/><output>0.045</output></label>
+            <label class="range">body variation<input type="range" id="thr-body" min="0" max="0.6" step="0.01" value="0.2"/><output>0.20</output></label>
+            <label class="range">shade variation<input type="range" id="thr-shade" min="0" max="0.4" step="0.01" value="0.08"/><output>0.08</output></label>
+          </div>
+          <div class="split-view">
+            <div class="tile-cell"><canvas id="thr-zoom" width="96" height="96" aria-label="A 96 by 96 texel corner of the wax tile, magnified"></canvas><b>96×96 texels, magnified</b><small>each square is one texel</small></div>
+            <div class="tile-cell"><canvas id="thr-full" width="256" height="256" class="smooth" aria-label="The full 256 by 256 wax tile at 1:1"></canvas><b>the full 256×256 tile</b><small>this is what the pattern repeats</small></div>
+          </div>
+        </div>
+        <div class="demo-foot"><span class="stat">measured coverage <b id="thr-measured">–</b></span><span class="stat">wax texels <b id="thr-count">–</b></span><span class="muted">Shipped: band 1 coverage 0.45, band 2 coverage 0.63, dither 0.045, body 0.20, shade 0.08.</span></div>
+      </div>
+    </section>
+
+    <section id="binary">
+      <p class="section-kicker">Brick 4</p>
+      <h2>Why the wax is 0 or 1, never in between</h2>
+      <p class="section-lead">The most consequential decision in the crayon is that a texel is either fully opaque wax or fully bare paper. A softer, partly transparent grain looked slightly creamier and was rejected. Here is the arithmetic that rejected it.</p>
+      <p>Canvas paints with <dfn>source-over</dfn> compositing: new paint at alpha <i>a</i> lands on old paint, and the combined alpha is <i>a</i> + <i>a</i>(1 − <i>a</i>) when both are the same paint. For <i>a</i> = 1 that is still 1. For <i>a</i> = 0 it is still 0. For anything in between it grows. A live stroke is made of dozens of overlapping ops (every move op overlaps the one before it by most of its length), so any partial alpha in the grain gets darker each time an op covers it. The texture would then depend on how many ops happened to overlap, which changes with hand speed and with how the stroke is rebuilt after an undo. Binary wax is <dfn>idempotent</dfn>: painting the same op again produces the same pixels, so overlap count cannot show.</p>
+      <div class="demo">
+        <div class="demo-head"><b>Paint the same op again and again</b><span>Same shape, same seed, painted once, twice, and eight times.</span></div>
+        <div class="demo-body">
+          <div class="matrix ok" id="bin-matrix">
+            <div></div><div class="collab">painted 1×</div><div class="collab">painted 2×</div><div class="collab">painted 8×</div>
+            <div class="rowlab">Binary tooth<small>shipped</small></div><div><canvas data-k="1" data-soft="0"></canvas><div class="m"><span class="k">painted 1× · </span>mean alpha <b>–</b></div></div><div><canvas data-k="2" data-soft="0"></canvas><div class="m"><span class="k">painted 2× · </span>mean alpha <b>–</b></div></div><div><canvas data-k="8" data-soft="0"></canvas><div class="m"><span class="k">painted 8× · </span>mean alpha <b>–</b></div></div>
+            <div class="rowlab">Soft ramp<small>rejected</small></div><div><canvas data-k="1" data-soft="1"></canvas><div class="m"><span class="k">painted 1× · </span>mean alpha <b>–</b></div></div><div><canvas data-k="2" data-soft="1"></canvas><div class="m"><span class="k">painted 2× · </span>mean alpha <b>–</b></div></div><div><canvas data-k="8" data-soft="1"></canvas><div class="m"><span class="k">painted 8× · </span>mean alpha <b>–</b></div></div>
+          </div>
+        </div>
+        <div class="demo-foot"><span class="muted">Mean alpha is averaged over the stroke's interior. The binary row does not move. The soft row fills in with every repeat, which is exactly what a rebuild from a different op count would expose. The one thing binary wax cannot hold still is the anti-aliased silhouette of each band, a ring one pixel wide that no stroking avoids and no eye picks out, so those rings are left out of the average.</span></div>
+      </div>
+      <div class="callout"><strong>The same rule protects the pass buffer.</strong> Bricks 8 and 9 accumulate a whole pass on an offscreen buffer before mixing it once. That buffer receives every overlapping op at full opacity, and it only holds still because the wax is binary. The rule was first needed for replay-based undo, which the engine no longer uses, and it stayed because the buffer needs it too.</div>
+    </section>
+
+    <section id="bands">
+      <p class="section-kicker">Brick 5</p>
+      <h2>Two density bands: sparse rim, dense core</h2>
+      <p class="section-lead">A real crayon presses hardest along the middle of its path and crumbles into flecks at the rim. One tile at one coverage cannot do both. Two can.</p>
+      <p>Each crayon op is painted twice, with the same shape and the same seed but a different <dfn>density band</dfn> (the code calls them passes in the options, a name this page reserves for brick 7). The first band strokes the op at its full line width using a sparse tile (coverage 0.45). The second band strokes the same op at 68 percent of the width using a denser tile (coverage 0.63). Widest first, so the dense core lands on top of the sparse rim. Because both bands share the seed, their pits line up on the same paper, and the union reads as one piece of wax with a solid middle and a broken edge.</p>
+      <div class="demo">
+        <div class="demo-head"><b>Bands, separately and together</b><span>Same curve, same seed.</span></div>
+        <div class="demo-body">
+          <div class="panels">
+            <div class="panel"><canvas data-bands="rim" aria-label="Only the full-width sparse band"></canvas><b>Rim band only</b><small>100% width · coverage 0.45</small></div>
+            <div class="panel"><canvas data-bands="core" aria-label="Only the narrower dense band"></canvas><b>Core band only</b><small>68% width · coverage 0.63</small></div>
+            <div class="panel hl"><canvas data-bands="both" aria-label="Both bands stacked, widest first"></canvas><b>Both, widest first</b><small>what ships</small></div>
+          </div>
+        </div>
+        <div class="demo-foot"><span class="muted">Change the width in the bar at the top. The rim keeps its flecks at every size because coverage is a property of the tile, not of the stroke.</span></div>
+      </div>
+    </section>
+
+    <section id="phase">
+      <p class="section-kicker">Brick 6</p>
+      <h2>Seeds: how a second stroke gets denser without getting darker</h2>
+      <p class="section-lead">Press a crayon over its own mark and the mark gets denser, not a different colour. The wax fills pits the first pass missed. The crayon reproduces this with one integer.</p>
+      <p>The wax tile is turned into a <dfn>repeating pattern</dfn> (a <code>CanvasPattern</code>) and the op's shape is filled with it. A pattern has a phase: where in the tile the repeat starts. The crayon anchors that phase to the paper, not to the stroke, so every op in a pass samples the same paper texel at the same paper position. That is what makes a pass read as one continuous piece of wax rather than beads that restart at every op.</p>
+      <p>Each pass carries a <dfn>seed</dfn>, a small integer stored on every op. The seed is hashed into an x and y offset inside the tile, which slides the whole tooth field to a new position on the paper. That slide is the entire difference between two passes. The tile, the colour and the coverage are identical. Because the pits now fall in different paper spots, the second pass fills tooth the first left bare. Coverage rises. And because the wax is opaque and the same RGB, laying it over itself cannot change the hue. That is <dfn>buildup at constant hue</dfn>, the behaviour the whole design was chosen for.</p>
+      <div class="demo">
+        <div class="demo-head"><b>One stroke, drawn again</b><span>The same curve painted with fresh seeds, and with the same seed.</span></div>
+        <div class="demo-body">
+          <div class="panels">
+            <div class="panel"><canvas data-phase="1" aria-label="One pass"></canvas><b>1 pass</b><small id="ph-1">–</small></div>
+            <div class="panel"><canvas data-phase="2" aria-label="Two passes with different seeds"></canvas><b>2 passes, new seed each</b><small id="ph-2">–</small></div>
+            <div class="panel hl"><canvas data-phase="4" aria-label="Four passes with different seeds"></canvas><b>4 passes, new seed each</b><small id="ph-4">–</small></div>
+            <div class="panel"><canvas data-phase="same" aria-label="Four passes with the same seed"></canvas><b>4 passes, same seed</b><small id="ph-same">–</small></div>
+          </div>
+        </div>
+        <div class="demo-foot"><span class="muted">Coverage is the share of the stroke's footprint that holds wax. Mean colour is averaged over the wax texels only, so the small drift is the shade mottling, not a darkening.</span></div>
+      </div>
+      <div class="formula">phase(seed) = hash(seed) mod 256 in x, hash(hash) mod 256 in y<br/>pattern.setTransform({ e: phaseX, f: phaseY })   <span class="cm">// paper-anchored, so replay tiles identically</span></div>
+      <div class="callout gold"><strong>What buildup does not model.</strong> A real second pass also deposits wax deeper into the same valleys and shifts value a little. The crayon changes only which pits are filled. At toddler scale that reads the same, and it keeps the hue exactly constant, which the deeper model could not.</div>
+    </section>
+
+    <section id="passes">
+      <p class="section-kicker">Brick 7</p>
+      <h2>Passes: when the seed changes</h2>
+      <p class="section-lead">If every stroke had one seed, a back-and-forth scribble in a single gesture would never build up, because every op would share a phase and fill the same pits. Wax does not care whether the crayon lifted. So the unit of phase is not the stroke. It is the pass.</p>
+      <p>A <dfn>deposition pass</dfn> is a run of ops that share one seed. A stroke opens a pass on contact and closes it on lift, but three things can end a pass early. Each end records a <dfn>flush op</dfn>, which is the instruction "close the open pass here", and the next op takes a fresh seed.</p>
+      <ul class="plain">
+        <li><b>A reversal.</b> The <dfn>pass tracker</dfn> measures direction between anchor points at least 0.35 widths apart, so jitter cannot trigger it. A turn sharper than 100° means the tip is heading back over wax it just laid.</li>
+        <li><b>A re-entry.</b> The tip lands within 0.45 widths of a point laid more than 2.5 widths of arc ago. The trailing arc is excluded because the tip is always near the strip it just painted. Loops and hairpins split here even without a sharp corner.</li>
+        <li><b>A checkpoint.</b> After 64 pointer moves the pass closes regardless, so a very long scribble never accumulates unbounded pass state. The count is in moves, not ops, so merging moves into ops on native cannot stretch the interval.</li>
+      </ul>
+      <p>All thresholds scale with the line width, so a thin and a thick crayon feel the same. Straight lines, gentle curves, ordinary corners, and hand jitter never split. The tracker's memory is the pass: a split or a checkpoint starts a fresh tracker, so a loop only counts as a re-entry if it closes within 64 moves, and a big lazy circle simply checkpoints. Every seed is stored on its op, so a rebuild reproduces the splits without re-running the tracker.</p>
+      <div class="demo">
+        <div class="demo-head"><b>Scribble and watch the passes</b><span>Each pass gets its own tint on the overlay.</span><span class="spacer"></span><label class="check"><input type="checkbox" id="pass-overlay" checked/> show overlay</label><button class="mini-btn" id="pass-demo">Draw a sample</button><button class="mini-btn" id="pass-clear">Clear</button></div>
+        <div class="demo-body"><div class="canvas-wrap"><canvas class="paper-canvas" id="pass-canvas" style="aspect-ratio:2.1" aria-label="Scribble canvas that highlights each deposition pass"></canvas><canvas class="overlay" id="pass-overlay-canvas" aria-hidden="true"></canvas><span class="hint">Scribble here</span></div></div>
+        <div class="demo-foot"><span class="stat">passes <b id="pass-n">0</b></span><span class="stat">reversals <b id="pass-rev">0</b></span><span class="stat">re-entries <b id="pass-re">0</b></span><span class="stat">checkpoints <b id="pass-cp">0</b></span><span class="muted">Markers: ↩ reversal · ⟲ re-entry · 64 checkpoint.</span></div>
+      </div>
+    </section>
+
+    <section id="glaze">
+      <p class="section-kicker">Brick 8</p>
+      <h2>The glaze: how crossing colours mix</h2>
+      <p class="section-lead">Blue crayon over yellow should look green. Pigments are subtractive: each one filters light, so what you see is the light both let through. Averaging the two RGB values gives grey. The crayon needed a formula that mixes like pigment, and one that leaves same-colour buildup alone.</p>
+      <p>The formula is two compositing steps applied to a pass as a whole. The first is <dfn>darken</dfn>, the per-channel minimum of the new wax S and the ink D already there. Where paper is blank, min with nothing is just S. The second step paints the wax over that again with source-over at alpha 1 − m, where <dfn>m</dfn> is the <dfn>mix strength</dfn>, 0.55. Together:</p>
+      <div class="formula">out = (1 − m) · S  +  m · <b>min(S, D)</b>          m = 0.55<br/><span class="cm">// blank paper: min(S, nothing) = S, so out = S exactly. Same colour: min(c, c) = c, so out = c exactly.</span></div>
+      <p>Two facts fall out of the minimum. Over blank paper the glaze collapses to plain opaque wax, so a first stroke is the exact palette colour. Over the same colour, min(c, c) = c, so redrawing never darkens. That <dfn>fixed point</dfn> is what lets the mix ship strong enough to actually see: m could be turned up without muddying buildup. Multiply, the usual subtractive choice, has no such fixed point and darkened every overlap.</p>
+      <p>Why not m = 1, a pure minimum? Because then blue over yellow would stay green forever, however many times the child draws back over it, and the crayon would appear to refuse to work. The shipped mix walks toward the new colour with each pass: after n passes the old ink contributes only m<sup>n</sup>.</p>
+      <div class="demo">
+        <div class="demo-head"><b>Mixing lab</b><span>Pick an under colour and an over colour.</span></div>
+        <div class="demo-body">
+          <div class="lab-controls">
+            <label>under <select id="lab-under"></select></label>
+            <label>over <select id="lab-over"></select></label>
+            <label class="range" style="min-width:220px">mix strength m<input type="range" id="lab-m" min="0" max="1" step="0.05" value="0.55"/><output>0.55</output></label>
+          </div>
+          <div class="lab" id="lab-swatches"></div>
+          <div class="table-scroll"><table class="channel-table" id="lab-table"></table></div>
+          <div class="repeat-row" id="lab-repeat"></div>
+        </div>
+        <div class="demo-foot"><span class="muted">Averaging is what a plain alpha blend does. Multiply darkens the shared channels and every same-colour overlap. Pure minimum never moves after the first pass. Try under = over to see the fixed point.</span></div>
+      </div>
+    </section>
+
+    <section id="pipelines">
+      <p class="section-kicker">Brick 9</p>
+      <h2>Where an open pass lives while the finger is down</h2>
+      <p class="section-lead">The glaze must be applied exactly once per pass, but a child is watching the stroke appear op by op. Something has to hold the growing pass and show the finished mix at the same time. How that is done is the one part of the crayon that differs by platform.</p>
+      <p>The naive route, glazing every op as it arrives, compounds: a pixel covered by k overlapping ops would be mixed k times and drift toward pure crayon colour in the interior. So the web build keeps a <dfn>pass buffer</dfn>, an offscreen canvas where the pass accumulates at full opacity (safe, because the wax is binary), and glazes from the buffer onto the visible ink tile. Two more pieces make that cheap enough for a phone:</p>
+      <ul class="plain">
+        <li>An <dfn>under shadow</dfn>: an offscreen copy of the tile's pixels from before the pass opened. It is read from the tile at most once per invalidation, and the read is deferred to two frames after the finger lifts, because reading a canvas that the browser is compositing forces a GPU pipeline sync. Foreign ink, the eraser, undo, clear, and a closed pass's own wax all invalidate it.</li>
+        <li>A <dfn>restamp</dfn>: after each op is painted into the buffer, the tile restores that op's <dfn>padded rectangle</dfn> (its bounds plus half the line width plus two pixels of anti-aliasing bleed) from the under shadow, then re-applies the two-step glaze from the buffer over the same rectangle. A pixel's latest restamp is the same function of (buffer, under) that the close-time stamp would have applied once, so live pixels equal committed pixels by construction.</li>
+        <li>A <dfn>virgin fast path</dfn>: a pass opening on a blank tile needs no under shadow at all, because the glaze over nothing is just the wax. One plain copy of the rectangle reproduces it byte for byte. This is the common toddler case.</li>
+      </ul>
+      <div class="demo">
+        <div class="demo-head"><b>Step through a restamp</b><span>A blue pass crossing a yellow pen line, one op at a time.</span><span class="spacer"></span>
+          <button class="mini-btn" id="pipe-reset">Reset</button><button class="mini-btn primary" id="pipe-step">Next op</button><button class="mini-btn" id="pipe-play">Play</button></div>
+        <div class="demo-body">
+          <div class="trio">
+            <div class="panel"><canvas id="pipe-under" aria-label="The under shadow: a copy of the tile before the pass opened"></canvas><b>Under shadow</b><small>tile pixels before the pass</small></div>
+            <div class="panel"><canvas id="pipe-buffer" aria-label="The pass buffer accumulating opaque wax"></canvas><b>Pass buffer</b><small>opaque wax, no glaze yet</small></div>
+            <div class="panel hl"><canvas id="pipe-tile" aria-label="The visible ink tile after each restamp"></canvas><b>Ink tile (what you see)</b><small>restamped one rectangle per op</small></div>
+          </div>
+          <div class="step-caption" id="pipe-caption"></div>
+        </div>
+        <div class="demo-foot"><span class="stat">op <b id="pipe-n">0</b> / <span id="pipe-total">0</span></span><span class="muted">The orange box is the op's padded rectangle. Only pixels inside it are touched, which is why restamp cost scales with area per frame and not with the number of ops.</span></div>
+      </div>
+
+      <h3 class="spaced">Three pipelines for one brush</h3>
+      <p>The native app measured the opposite costs from Safari on the same iPad, so the deposition step is chosen at build time from the same signal that decides op granularity. Only the crossing of two different colours can look different between them. Blank paper and same-colour buildup match exactly everywhere.</p>
+      <div class="table-scroll"><table class="pipe-table">
+        <thead><tr><th>Pipeline</th><th>Where the pass lives</th><th>When the glaze is applied</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Restamp<span class="tag web">web</span></td><td>Offscreen pass buffer plus an under shadow; nothing extra is composited while drawing.</td><td>Per op, over the op's padded rectangle, as a pure function of buffer and under, so it never compounds.</td><td>On Safari the composited preview canvases were crayon's entire cost over the pen. Restamp brought crayon to pen parity in portrait.</td></tr>
+          <tr><td>Per-op glaze<span class="tag native">native</span></td><td>Nowhere. No buffer, no shadow, no copy from canvas to canvas.</td><td>Per op, straight onto the tile: darken, then the crayon's own colour back at an effective 0.29 per fully covered op. It does compound, on purpose.</td><td>The WebView charges for every canvas-to-canvas copy. Per-op glazing measured at the pen floor. The cost is that mix depth now varies with stroke speed, which is also how wax behaves.</td></tr>
+          <tr><td>Preview planes<span class="tag retired">retired</span></td><td>Two extra canvases per live tile: a bottom plane blended with CSS <code>mix-blend-mode: darken</code> and a top mirror at opacity 1 − m.</td><td>Once, at pass close, stamped from the buffer onto the tile. The CSS stack previewed the identical pixels meanwhile.</td><td>Correct and elegant, but the composited planes themselves were the cost on both runtimes. Replaced by the two rows above.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="demo">
+        <div class="demo-head"><b>The same crossing under each pipeline</b><span>Blue over a yellow band.</span></div>
+        <div class="demo-body">
+          <div class="panels">
+            <div class="panel hl"><canvas data-pipe="restamp" aria-label="Crossing rendered by the web restamp pipeline"></canvas><b>Web: restamp</b><small>one uniform glaze per pass</small></div>
+            <div class="panel"><canvas data-pipe="direct-fast" aria-label="Crossing rendered by the native per-op glaze with a fast stroke"></canvas><b>Native, fast swipe</b><small>few overlapping ops, more yellow shows</small></div>
+            <div class="panel"><canvas data-pipe="direct-slow" aria-label="Crossing rendered by the native per-op glaze with a slow stroke"></canvas><b>Native, slow stroke</b><small>many overlapping ops, walks toward blue</small></div>
+          </div>
+        </div>
+        <div class="demo-foot"><span class="muted">The retired plane pipeline produced the same pixels as restamp, so it is not shown separately.</span></div>
+      </div>
+      <div class="rule-list">
+        <div class="rule"><b>Never read a composited canvas on the pointer hot path.</b><span>Per-op reads froze the page outright. Even one read per pass produced 50 to 79 ms paint frames. The under shadow reads after lift.</span></div>
+        <div class="rule"><b>Restamp cost scales with area per frame, not with blits.</b><span>Per-op padded rectangles are the ceiling. Frame unions and whole pass bounds each measured a full point worse.</span></div>
+        <div class="rule"><b>Never blend into a canvas that hot-path copies read from.</b><span>Folding the glaze into the shadow demoted it as a copy source and measured 2.8 percent lost frames.</span></div>
+      </div>
+    </section>
+
+    <section id="warm">
+      <p class="section-kicker">Brick 10</p>
+      <h2>Getting the tiles ready without dropping a frame</h2>
+      <p class="section-lead">Everything above assumes a coloured wax tile exists for the current crayon. Building one is 65,536 texels of threshold and shade arithmetic per band, and the first version did both bands in one go, which cost a 29 to 45 ms frame on an iPad.</p>
+      <p>Each (colour, band) pair owns a 256×256 canvas. When the crayon is selected or the colour changes, a <dfn>warm-up</dfn> job starts on the next animation frame and fills the tile in eight-row chunks until a two-millisecond deadline, then yields and continues on the following frame. A new colour cancels the old job rather than queueing behind it. If a stroke arrives before its tile is finished, the tile is built synchronously as the correctness fallback. The finished pixels are byte-identical either way; only the scheduling differs.</p>
+      <p>Finished tiles sit in a small least-recently-used cache sized to the palette plus one, so custom colours can never grow canvas memory without bound. A <code>CanvasPattern</code> is bound to the canvas context that created it, so patterns are cached per context and per (colour, band) on top of the tile cache.</p>
+      <div class="demo">
+        <div class="demo-head"><b>Replay a warm-up</b><span>Eight rows per chunk, a few chunks per frame.</span><span class="spacer"></span><button class="mini-btn primary" id="warm-play">Replay</button></div>
+        <div class="demo-body">
+          <div class="warm-layout">
+            <canvas id="warm-canvas" width="256" height="256" aria-label="A wax tile being filled eight rows at a time"></canvas>
+            <div>
+              <div class="warm-frames" id="warm-frames" aria-label="Chunks completed per frame"></div>
+              <p class="muted" style="font-size:.84rem;margin-top:12px">Each square is one eight-row chunk. Chunks fill until the frame's two-millisecond budget runs out, then the job waits for the next frame. On a fast desktop the whole tile fits in one frame; on an old tablet it spreads across several, and the drawing loop never notices.</p>
+              <p class="stat">frames used <b id="warm-n">0</b></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="alternatives">
+      <p class="section-kicker">Roads not taken</p>
+      <h2>Popular crayon techniques, and why this one is different</h2>
+      <p class="section-lead">Most of these were built and measured, not just argued about. Each card says what the technique is, what it gets right, and the specific reason it did not ship. Two of them survive inside the shipped brush.</p>
+      <div class="alt-grid">
+        <article class="alt"><h3>Solid stroke plus random speckle <span class="pop">the obvious one</span></h3>
+          <p>Draw a flat line, then punch holes in it with <code>Math.random</code> noise. It is the first thing everyone tries and it does read as "textured".</p>
+          <canvas data-alt="speckle" aria-label="Two renders of the same stroke with random speckle, which differ"></canvas>
+          <p><b>Why not:</b> the noise is different every render, so an undo or resize redraws the mark differently (the two halves above are the same stroke rendered twice). The grain reads as digital grit rather than paper, and semi-transparent speckle darkens wherever ops overlap instead of building up at constant hue.</p>
+          <p class="verdict"><b>Rejected</b> at the design stage. The deterministic tooth field is the answer to the first problem, binary alpha to the third.</p></article>
+
+        <article class="alt"><h3>Soft alpha tooth <span class="pop">looks creamier</span></h3>
+          <p>Map the height field to a continuous alpha, so pit rims fade instead of stippling. The swept-passes experiment used exactly this, with nonzero alpha in the valleys so heavy overdraw could eventually fill them.</p>
+          <canvas data-alt="soft" aria-label="The shipped binary tooth beside the rejected soft alpha ramp"></canvas>
+          <p><b>Why not:</b> brick 4. Fractional alpha accumulates across overlapping ops, so the texture depended on op count and shifted the moment a later stroke was undone. The experiment avoided that by drawing a whole pass as one <code>stroke()</code> call, whose union semantics deposit once, but that forbids per-op live rendering on a tiled canvas.</p>
+          <p class="verdict kept"><b>Partly kept:</b> its pass tracker and its per-pass phase shift are the shipped brick 7, ported with the same thresholds.</p></article>
+
+        <article class="alt"><h3>Multiply blend for mixing <span class="pop">the textbook subtractive</span></h3>
+          <p>Multiply is what most "pigment" mixing tutorials reach for: out = S × D per channel. It is subtractive and it does turn blue over yellow greenish.</p>
+          <canvas data-alt="mixes" aria-label="Blue over yellow with multiply, average, and darken glazes"></canvas>
+          <p><b>Why not:</b> it darkens every overlap, including same-colour buildup (c × c is darker than c), and it mutes the channels the two colours share, so the mix had to ship weak to avoid mud, too weak to read as green on a phone. Averaging (a plain alpha blend) goes grey, as the middle sample shows.</p>
+          <p class="verdict"><b>Rejected</b> for the per-channel minimum, whose fixed point min(c, c) = c allows a strong mix.</p></article>
+
+        <article class="alt"><h3>Pure minimum, m = 1 <span class="pop">cheapest possible</span></h3>
+          <p>Drop the second glaze step entirely. min(S, D) is idempotent, so it can be painted per op with no buffer, no shadow, and no copies, and it measured at the pen floor on native. A WebGL port could even do it with <code>gl.MIN</code> blending.</p>
+          <canvas data-alt="minimum" aria-label="Blue drawn over yellow once and four times, under pure minimum and under the shipped glaze"></canvas>
+          <p><b>Why not:</b> a person drew with it and rejected it immediately. The fixed point cuts both ways: blue drawn back over yellow stays green no matter how many times the child scrubs. The crayon reads as refusing to work. The shipped mix walks toward the new colour precisely because it is <i>not</i> idempotent.</p>
+          <p class="verdict"><b>Rejected</b> on appearance. It is why an accumulation surface, or a per-op return step, has to exist at all.</p></article>
+
+        <article class="alt"><h3>Stamp (dab) brushes <span class="pop">Procreate style</span></h3>
+          <p>Pre-render a textured stamp and place copies along the path at a fixed spacing. This is how most painting apps build textured brushes, and it gives easy per-dab jitter and rotation.</p>
+          <p><b>Why not:</b> stamps overlap at every step, so the deposit depends on spacing and speed, which is the overlap problem again with a knob attached. In the GPU spike the stamped renderer was indistinguishable in picture and time from a stroke-shader renderer despite drawing 2.2× the primitives, and five times fewer stamps bought eight percent while visibly changing the pixels. Spacing is not a lever here.</p>
+          <p class="verdict"><b>Not pursued.</b> A pattern-filled stroke deposits the tile once per op with no spacing parameter.</p></article>
+
+        <article class="alt"><h3>A GPU stroke renderer <span class="pop">SDF and Ciallo shaders</span></h3>
+          <p>Render each stroke in WebGL: a signed-distance-field shader or an arc-length-integral shader samples the tooth texture per fragment, and blending does the mixing. Three working architectures were built in a two-day spike.</p>
+          <p><b>Why not:</b> GPU cost tracked the render target's area, not the drawn work (a scissor bought exactly nothing), so it did not remove the cost that matters. Under a software rasteriser every WebGL variant was two to three times slower than the 2D canvas, and browsers are withdrawing that fallback, so the CPU crayon could never be retired. Browsers also cap live WebGL contexts well below the tile count.</p>
+          <p class="verdict"><b>Rejected</b> as additive complexity: a second renderer to maintain, not a deletion.</p></article>
+
+        <article class="alt"><h3>Per-stroke composited layers <span class="pop">a layer per stroke</span></h3>
+          <p>Give each crayon stroke its own canvas layer with a soft texture, and composite the layers. This is how a desktop paint program would keep soft grain stable.</p>
+          <p><b>Why not:</b> it re-derives undo, eraser, ordering, and export machinery that the single op stream gives for free, and a phone's canvas memory cap is measured in a few hundred megabytes across all live canvases, with allocations failing silently past it.</p>
+          <p class="verdict"><b>Rejected</b> twice, in the original design and again when the raster commit was introduced.</p></article>
+
+        <article class="alt"><h3>Glaze after the lift <span class="pop">a 4× native win</span></h3>
+          <p>Show unmixed opaque wax while drawing and apply the exact glaze two frames after the finger lifts. It measured a fourfold lost-frame improvement on the native app.</p>
+          <p><b>Why not:</b> the colour visibly shifts when the stroke lands, bright wax darkening toward what is underneath, and on a device that reads as a glitch rather than as ink drying. Automation measured the win and could not see the cost; a person drawing on the device saw it at once.</p>
+          <p class="verdict"><b>Rejected</b> on appearance, with the measurements kept so the headroom is known to be spent.</p></article>
+      </div>
+      <div class="callout warn"><strong>The open gap.</strong> Comparing renders against photos of real crayon, the honest verdict is that colour mixing and mid-stroke pass splitting are the strongest parts, and the missing piece is wax <i>thickness</i>: real deposits vary continuously and value follows thickness, with drag streaks along the stroke direction. The tile model expresses coverage, not quantity. That is a known limitation, not a rejected idea.</div>
+    </section>
+
+    <section id="glossary">
+      <p class="section-kicker">Keep beside the code</p>
+      <h2>Every term on this page</h2>
+      <dl class="glossary">
+        <div class="term"><dt>Alpha</dt><dd>A pixel's opacity, 0 (clear) to 1 (opaque). Crayon wax texels are exactly 0 or 1.</dd></div>
+        <div class="term"><dt>Band (density band)</dt><dd>One of the two pattern fills an op receives: full width at coverage 0.45, then 68% width at 0.63.</dd></div>
+        <div class="term"><dt>Blit</dt><dd>A rectangular copy of already-rendered pixels from one canvas to another, done with <code>drawImage</code>.</dd></div>
+        <div class="term"><dt>Buildup</dt><dd>A second same-colour pass filling pits the first left bare. Coverage rises; hue does not change.</dd></div>
+        <div class="term"><dt>Checkpoint</dt><dd>The forced pass close after 64 pointer moves that bounds live pass state.</dd></div>
+        <div class="term"><dt>Composited canvas</dt><dd>A canvas the browser is presenting on screen. Reading its pixels forces the GPU to finish pending work.</dd></div>
+        <div class="term"><dt>Coverage</dt><dd>The fraction of a tile's texels that carry wax; threshold = 1 − coverage.</dd></div>
+        <div class="term"><dt>Darken</dt><dd>A compositing mode that keeps the per-channel minimum of source and destination.</dd></div>
+        <div class="term"><dt>Deterministic</dt><dd>Same inputs, same pixels, on every device and every rebuild. No <code>Math.random</code>, no clock.</dd></div>
+        <div class="term"><dt>Dither band</dt><dd>The narrow range around the threshold where a fixed per-texel jitter decides on or off, so rims stipple instead of aliasing.</dd></div>
+        <div class="term"><dt>Fixed point</dt><dd>An input a function returns unchanged: min(c, c) = c. It is why same-colour overdraw is exact.</dd></div>
+        <div class="term"><dt>Flush op</dt><dd>The recorded instruction that closes an open pass. Later ops take a new seed.</dd></div>
+        <div class="term"><dt>Glaze</dt><dd>The once-per-pass mix with the ink underneath: darken, then the wax back at 1 − m.</dd></div>
+        <div class="term"><dt>Height field</dt><dd>The 256×256 grid of 0 to 1 values that models the paper's bumps and pits.</dd></div>
+        <div class="term"><dt>Idempotent</dt><dd>Doing it again changes nothing. Binary wax painted twice equals binary wax painted once.</dd></div>
+        <div class="term"><dt>Mix strength (m)</dt><dd>How much of the darkened mix survives the second glaze step. 0.55 in production.</dd></div>
+        <div class="term"><dt>Octave</dt><dd>One layer of value noise at one lattice cell size. Four are summed.</dd></div>
+        <div class="term"><dt>Op (operation)</dt><dd>One render instruction: a dot, a path, a flush, or a clear. Stored so a drawing can be rebuilt.</dd></div>
+        <div class="term"><dt>Padded rectangle</dt><dd>An op's bounds plus half its line width plus 2 px of anti-aliasing bleed. The unit of a restamp.</dd></div>
+        <div class="term"><dt>Pass (deposition pass)</dt><dd>A run of ops sharing one seed. Opened on contact, closed on lift, split, or checkpoint.</dd></div>
+        <div class="term"><dt>Pass buffer</dt><dd>The offscreen canvas where an open pass accumulates at full opacity before glazing.</dd></div>
+        <div class="term"><dt>Pass tracker</dt><dd>The pure geometry helper that detects reversals and re-entries on the live polyline.</dd></div>
+        <div class="term"><dt>Pattern</dt><dd>A <code>CanvasPattern</code>: a tile used as a repeating fill, with a transform that sets its phase.</dd></div>
+        <div class="term"><dt>Phase</dt><dd>Where the tile's repeat starts on the paper. The seed sets it; every op in a pass shares it.</dd></div>
+        <div class="term"><dt>Restamp</dt><dd>Restoring an op's rectangle from the under shadow and re-applying the glaze from the buffer.</dd></div>
+        <div class="term"><dt>Seed</dt><dd>A small integer stored on every crayon op, hashed into the pattern phase. New per pass.</dd></div>
+        <div class="term"><dt>Source-over</dt><dd>Normal painting: new pixels over old, weighted by the new alpha.</dd></div>
+        <div class="term"><dt>Texel</dt><dd>One cell of the tooth tile. The tile has 65,536 of them.</dd></div>
+        <div class="term"><dt>Tileable</dt><dd>Repeats edge to edge with no seam, because the noise lattice wraps around.</dd></div>
+        <div class="term"><dt>Tooth</dt><dd>The grain of paper: bumps that take wax and pits that stay bare.</dd></div>
+        <div class="term"><dt>Under shadow</dt><dd>An offscreen copy of the tile from before the pass opened, read at most once per invalidation.</dd></div>
+        <div class="term"><dt>Value noise</dt><dd>Random values on a lattice, smoothly interpolated between lattice points.</dd></div>
+        <div class="term"><dt>Virgin fast path</dt><dd>A pass on a blank tile skips the under shadow: the glaze over nothing is just the wax.</dd></div>
+        <div class="term"><dt>Warm-up</dt><dd>Building a colour's wax tiles in eight-row chunks under a 2 ms per-frame budget, off the drawing path.</dd></div>
+      </dl>
+
+      <h3 class="spaced">Where the production code lives</h3>
+      <table class="source-table">
+        <thead><tr><th>File</th><th>Owns</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/crayonBrush.ts">crayonBrush.ts</a></td><td>The height, body, and dither fields; the threshold and shade shift; wax tiles, warm-up chunks, the tile cache, pattern phase, and the pass tracker.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/crayonPassBuffer.ts">crayonPassBuffer.ts</a></td><td>The two density bands per op, the pass buffer, the under shadow and its deferred refresh, the restamp, the two-step glaze, and the per-op native glaze.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/crayonPassBoundaries.ts">crayonPassBoundaries.ts</a></td><td>When a pass ends: the 64-move checkpoint, the split, the flush before foreign ink, and the monotonic seed.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/strokeRasterQueue.ts">strokeRasterQueue.ts</a></td><td>Per-move versus per-frame op granularity, chosen per runtime.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/opGeometry.ts">opGeometry.ts</a></td><td>How a dot or path op is stroked, and the padded bounds every rectangle on this page comes from.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/engine.ts">engine.ts</a></td><td>Midpoint smoothing, the crayon-aware segment routing that applies splits, and the build-time pipeline selection.</td></tr>
+        </tbody>
+      </table>
+      <h3 class="spaced">Decision records behind this page</h3>
+      <div class="adr-links">
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0065-crayon-brush-textured-wax.md">ADR-0065 · textured wax</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0068-crayon-raster-pass-commit.md">ADR-0068 · raster pass commit</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0085-tiled-live-canvas-for-ipad-webkit.md">ADR-0085 · tiled canvas and preview planes</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0146-crayon-op-granularity-per-runtime.md">ADR-0146 · op granularity</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0147-crayon-restamp-renderer-no-preview-planes.md">ADR-0147 · restamp</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0148-crayon-per-op-glaze-on-native.md">ADR-0148 · per-op glaze on native</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0153-reject-webgl-crayon-renderer.md">ADR-0153 · rejected WebGL renderer</a>
+        <a href="../crayon-brush-samples/index.html">Reference strokes</a>
+        <a href="../crayon-brush-samples/vs-current.html">Reference vs shipping brush</a>
+        <a href="../drawing-engine/index.html">The drawing engine</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot"><div class="shell"><span class="crayons" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><p>A hand-authored explainer of the shipping crayon brush. Every demo runs a page-local port of the production algorithm; the numbers quoted are the production constants at the date in the masthead.</p></div></footer>
+
+<script>
+(() => {
+'use strict';
+// ---------- The crayon, ported from web/src/lib/drawing/crayonBrush.ts + crayonPassBuffer.ts ----------
+const PALETTE = [
+  ['Purple', '#AB71E1'], ['Blue', '#62A2E9'], ['Teal', '#4FC4C0'], ['Green', '#8CC864'],
+  ['Yellow', '#F9D24F'], ['Orange', '#F89C45'], ['Red', '#EC534E'], ['Pink', '#F47CB0'], ['Brown', '#B5835A'],
+];
+const WIDTHS = [4, 8, 14, 22, 32];
+const OPTS = {
+  tile: 256,
+  octaves: [{ cell: 6, weight: 0.22 }, { cell: 4, weight: 0.3 }, { cell: 3, weight: 0.3 }, { cell: 2, weight: 0.18 }],
+  edge: 0.045, bodyVariation: 0.2, bodyVariationCell: 110, shadeVariation: 0.08,
+  colorMix: 0.55, perOpGlazeReturn: 0.2944,
+  passes: [{ widthScale: 1, coverage: 0.45 }, { widthScale: 0.68, coverage: 0.63 }],
+};
+const CHECKPOINT_MOVES = 64;
+const AA_PAD = 2;
+const state = { color: '#62A2E9', width: 22, paper: 'light' };
+const listeners = [];
+const onChange = (fn) => listeners.push(fn);
+const emitChange = () => listeners.forEach((fn) => fn());
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const smooth = (t) => t * t * (3 - 2 * t);
+function octaveField(size, cell, rand) {
+  const n = Math.max(1, Math.round(size / cell));
+  const lat = new Float32Array(n * n);
+  for (let i = 0; i < lat.length; i++) lat[i] = rand();
+  const out = new Float32Array(size * size);
+  for (let y = 0; y < size; y++) {
+    const fy = (y / size) * n, y0 = Math.floor(fy) % n, y1 = (y0 + 1) % n, ty = smooth(fy - Math.floor(fy));
+    for (let x = 0; x < size; x++) {
+      const fx = (x / size) * n, x0 = Math.floor(fx) % n, x1 = (x0 + 1) % n, tx = smooth(fx - Math.floor(fx));
+      const top = lat[y0 * n + x0] * (1 - tx) + lat[y0 * n + x1] * tx;
+      const bot = lat[y1 * n + x0] * (1 - tx) + lat[y1 * n + x1] * tx;
+      out[y * size + x] = top * (1 - ty) + bot * ty;
+    }
+  }
+  return out;
+}
+function normalize(a) {
+  let lo = Infinity, hi = -Infinity;
+  for (const v of a) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  const span = hi - lo || 1;
+  for (let i = 0; i < a.length; i++) a[i] = (a[i] - lo) / span;
+  return a;
+}
+function buildFields(o) {
+  const size = o.tile, rand = mulberry32(0x5c1a1);
+  const wsum = o.octaves.reduce((s, x) => s + x.weight, 0);
+  const octaves = o.octaves.map((oc) => ({ ...oc, field: octaveField(size, oc.cell, rand) }));
+  const height = new Float32Array(size * size);
+  for (const oc of octaves) for (let i = 0; i < height.length; i++) height[i] += oc.field[i] * (oc.weight / wsum);
+  normalize(height);
+  const body = normalize(octaveField(size, o.bodyVariationCell, rand));
+  const dither = new Float32Array(size * size);
+  const drand = mulberry32(0x0d17e);
+  for (let i = 0; i < dither.length; i++) dither[i] = drand();
+  return { tile: size, height, body, dither, octaves };
+}
+const FIELDS = buildFields(OPTS);
+
+function shadeShift(h, b, amp) {
+  const fine = Math.max(-1, Math.min(1, (0.7 - h) * 2));
+  const slow = b * 2 - 1;
+  return amp * (0.7 * fine + 0.3 * slow);
+}
+function parseColor(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+// Fill an ImageData with a colourised wax tile. `soft` renders the rejected alpha ramp instead of the binary cut.
+function fillTilePixels(data, fields, rgb, p, start = 0, end = fields.height.length) {
+  const { height, body, dither } = fields;
+  const [r, g, b] = rgb;
+  const thr0 = 1 - p.coverage, ds = 2 * p.edge;
+  for (let i = start; i < end; i++) {
+    const j = i * 4;
+    const s = p.shadeVariation ? shadeShift(height[i], body[i], p.shadeVariation) : 0;
+    if (s >= 0) { data[j] = Math.round(r + (255 - r) * s); data[j + 1] = Math.round(g + (255 - g) * s); data[j + 2] = Math.round(b + (255 - b) * s); }
+    else { const k = 1 + s; data[j] = Math.round(r * k); data[j + 1] = Math.round(g * k); data[j + 2] = Math.round(b * k); }
+    const threshold = thr0 + p.bodyVariation * (body[i] - 0.5);
+    if (p.soft) {
+      const a = Math.max(0, Math.min(1, (height[i] - threshold) / 0.14 + 0.5));
+      data[j + 3] = Math.round(255 * a);
+    } else {
+      const jitter = (dither[i] - 0.5) * ds;
+      data[j + 3] = height[i] + jitter >= threshold ? 255 : 0;
+    }
+  }
+}
+const tileCache = new Map();
+function tileParams(band, extra = {}) {
+  return { coverage: OPTS.passes[band].coverage, edge: OPTS.edge, bodyVariation: OPTS.bodyVariation, shadeVariation: OPTS.shadeVariation, soft: false, ...extra };
+}
+function waxTile(color, band, extra = {}) {
+  const p = tileParams(band, extra);
+  const key = `${color}@${band}@${p.coverage}@${p.edge}@${p.bodyVariation}@${p.shadeVariation}@${p.soft ? 1 : 0}`;
+  let c = tileCache.get(key);
+  if (c) return { canvas: c, key };
+  c = document.createElement('canvas');
+  c.width = c.height = FIELDS.tile;
+  const g = c.getContext('2d');
+  const img = g.createImageData(FIELDS.tile, FIELDS.tile);
+  fillTilePixels(img.data, FIELDS, parseColor(color), p);
+  g.putImageData(img, 0, 0);
+  tileCache.set(key, c);
+  if (tileCache.size > 60) tileCache.delete(tileCache.keys().next().value);
+  return { canvas: c, key };
+}
+function seedPhase(seed, tileSize) {
+  let h = (seed ^ 0x9e3779b9) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  const px = h % tileSize;
+  h = Math.imul(h ^ (h >>> 13), 0x45d9f3b) >>> 0;
+  return [px, h % tileSize];
+}
+const patternCache = new WeakMap();
+function patternFor(ctx, color, seed, band, extra) {
+  const { canvas, key } = waxTile(color, band, extra);
+  let byKey = patternCache.get(ctx);
+  if (!byKey) { byKey = new Map(); patternCache.set(ctx, byKey); }
+  let pat = byKey.get(key);
+  if (!pat) { pat = ctx.createPattern(canvas, 'repeat'); byKey.set(key, pat); }
+  const [px, py] = seedPhase(seed, FIELDS.tile);
+  pat.setTransform(new DOMMatrix([1, 0, 0, 1, px, py]));
+  return pat;
+}
+function paintShape(ctx, op, paint, ws = 1) {
+  if (op.kind === 'dot') {
+    ctx.fillStyle = paint; ctx.beginPath(); ctx.arc(op.x, op.y, op.radius * ws, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.strokeStyle = paint; ctx.lineWidth = op.lineWidth * ws; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(op.startX, op.startY);
+    for (const s of op.segs) ctx.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+    ctx.stroke();
+  }
+}
+// One op as textured wax: one pattern fill per density band, widest first.
+function paintCrayon(ctx, op, color, seed, { composite = 'source-over', alpha = 1, bands = null, extra = {} } = {}) {
+  ctx.globalCompositeOperation = composite;
+  ctx.globalAlpha = alpha;
+  const which = bands ?? OPTS.passes.map((_, i) => i);
+  for (const i of which) paintShape(ctx, op, patternFor(ctx, color, seed, i, extra), OPTS.passes[i].widthScale);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+function opBounds(op) {
+  if (op.kind === 'dot') { const p = op.radius + AA_PAD; return { x0: op.x - p, y0: op.y - p, x1: op.x + p, y1: op.y + p }; }
+  let x0 = op.startX, y0 = op.startY, x1 = op.startX, y1 = op.startY;
+  for (const s of op.segs) { x0 = Math.min(x0, s.cx, s.x); y0 = Math.min(y0, s.cy, s.y); x1 = Math.max(x1, s.cx, s.x); y1 = Math.max(y1, s.cy, s.y); }
+  const p = op.lineWidth / 2 + AA_PAD;
+  return { x0: x0 - p, y0: y0 - p, x1: x1 + p, y1: y1 + p };
+}
+function perBandGlazeReturn(bands) {
+  const e = OPTS.perOpGlazeReturn;
+  return bands <= 1 ? e : 1 - (1 - e) ** (1 / bands);
+}
+
+// A drawing surface with the three deposition pipelines: 'restamp' (web), 'glaze-direct' (native), 'opaque' (colorMix 0).
+class Surface {
+  constructor(canvas, { mode = 'restamp' } = {}) {
+    this.canvas = canvas; this.mode = mode; this.ctx = canvas.getContext('2d');
+    this.buffer = document.createElement('canvas').getContext('2d');
+    this.under = document.createElement('canvas').getContext('2d');
+    this.dirty = false; this.hasInk = false; this.virgin = false; this.bounds = null; this.lastRect = null;
+    this.resize();
+  }
+  resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    if (!w || !h) return false;
+    const bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+    this.dpr = dpr; this.w = w; this.h = h;
+    if (this.canvas.width === bw && this.canvas.height === bh) {
+      for (const c of [this.buffer.canvas, this.under.canvas]) if (c.width !== bw || c.height !== bh) { c.width = bw; c.height = bh; }
+      for (const g of [this.ctx, this.buffer, this.under]) g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return false;
+    }
+    for (const c of [this.canvas, this.buffer.canvas, this.under.canvas]) { c.width = bw; c.height = bh; }
+    for (const g of [this.ctx, this.buffer, this.under]) g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.dirty = false; this.hasInk = false; this.bounds = null;
+    return true;
+  }
+  clear() {
+    for (const g of [this.ctx, this.buffer, this.under]) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, g.canvas.width, g.canvas.height); g.restore(); }
+    this.dirty = false; this.hasInk = false; this.virgin = false; this.bounds = null; this.lastRect = null;
+  }
+  // Foreign (pen) ink: flush any open pass first so compositing order matches op order.
+  paintPen(op, color) {
+    this.flush();
+    paintShape(this.ctx, op, color);
+    this.hasInk = true;
+  }
+  deviceRect(b) {
+    const d = this.dpr, W = this.canvas.width, H = this.canvas.height;
+    const x0 = Math.max(0, Math.floor(b.x0 * d)), y0 = Math.max(0, Math.floor(b.y0 * d));
+    const x1 = Math.min(W, Math.ceil(b.x1 * d)), y1 = Math.min(H, Math.ceil(b.y1 * d));
+    return x1 <= x0 || y1 <= y0 ? null : { x0, y0, x1, y1 };
+  }
+  captureUnder() {
+    const g = this.under; g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, g.canvas.width, g.canvas.height); g.drawImage(this.canvas, 0, 0); g.restore();
+  }
+  stampGlaze(rect, mix) {
+    const t = this.ctx, { x0, y0 } = rect, w = rect.x1 - x0, h = rect.y1 - y0;
+    const blit = () => t.drawImage(this.buffer.canvas, x0, y0, w, h, x0, y0, w, h);
+    t.globalCompositeOperation = 'darken'; t.globalAlpha = 1; blit();
+    t.globalCompositeOperation = 'source-over'; t.globalAlpha = 1 - mix; blit();
+    t.globalAlpha = 1;
+  }
+  restamp(rect) {
+    const t = this.ctx, { x0, y0 } = rect, w = rect.x1 - x0, h = rect.y1 - y0;
+    t.save(); t.setTransform(1, 0, 0, 1, 0, 0); t.globalCompositeOperation = 'source-over';
+    t.clearRect(x0, y0, w, h);
+    if (this.virgin) t.drawImage(this.buffer.canvas, x0, y0, w, h, x0, y0, w, h);
+    else { t.drawImage(this.under.canvas, x0, y0, w, h, x0, y0, w, h); this.stampGlaze(rect, OPTS.colorMix); }
+    t.restore();
+  }
+  renderOp(op, color, seed) {
+    this.hasInkBefore = this.hasInk;
+    if (this.mode === 'opaque') { paintCrayon(this.ctx, op, color, seed); this.hasInk = true; return; }
+    if (this.mode === 'glaze-direct') {
+      paintCrayon(this.ctx, op, color, seed, { composite: 'darken' });
+      paintCrayon(this.ctx, op, color, seed, { composite: 'source-over', alpha: perBandGlazeReturn(OPTS.passes.length) });
+      this.hasInk = true; return;
+    }
+    if (!this.dirty) { this.virgin = !this.hasInk; if (!this.virgin) this.captureUnder(); }
+    paintCrayon(this.buffer, op, color, seed);
+    this.dirty = true; this.hasInk = true;
+    const rect = this.deviceRect(opBounds(op));
+    this.lastRect = rect;
+    if (rect) { this.restamp(rect); const b = this.bounds; this.bounds = b ? { x0: Math.min(b.x0, rect.x0), y0: Math.min(b.y0, rect.y0), x1: Math.max(b.x1, rect.x1), y1: Math.max(b.y1, rect.y1) } : { ...rect }; }
+  }
+  flush() {
+    if (!this.dirty) return;
+    const b = this.bounds, g = this.buffer;
+    if (b) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0); g.restore(); }
+    this.dirty = false; this.virgin = false; this.bounds = null;
+  }
+}
+
+// Pass tracker, ported verbatim (thresholds included). `reason` is a page-only annotation.
+const SPLIT_TURN_COS = Math.cos((100 * Math.PI) / 180);
+class PassTracker {
+  constructor(x, y, lw) {
+    this.dirStep = Math.max(3, lw * 0.35); this.proximity = Math.max(2, lw * 0.45);
+    this.excludeArc = Math.max(this.dirStep * 3, lw * 2.5); this.anchorSpacing = Math.max(2, lw * 0.25);
+    this.anchors = [{ x, y, arc: 0 }]; this.arc = 0; this.lastX = x; this.lastY = y;
+    this.dirX = 0; this.dirY = 0; this.hasDir = false; this.dirOriginX = x; this.dirOriginY = y; this.reason = null;
+  }
+  advance(p) {
+    if (this.reversalAt(p)) { this.reason = 'reversal'; return 'split'; }
+    if (this.reentryAt(p)) { this.reason = 'reentry'; return 'split'; }
+    this.consume(p); return 'extend';
+  }
+  reversalAt(p) {
+    const dx = p.x - this.dirOriginX, dy = p.y - this.dirOriginY, len = Math.hypot(dx, dy);
+    if (len < this.dirStep || !this.hasDir) return false;
+    return (dx / len) * this.dirX + (dy / len) * this.dirY < SPLIT_TURN_COS;
+  }
+  reentryAt(p) {
+    const tipArc = this.arc + Math.hypot(p.x - this.lastX, p.y - this.lastY);
+    for (const a of this.anchors) {
+      if (tipArc - a.arc <= this.excludeArc) break;
+      const dx = p.x - a.x, dy = p.y - a.y;
+      if (dx * dx + dy * dy <= this.proximity * this.proximity) return true;
+    }
+    return false;
+  }
+  consume(p) {
+    this.arc += Math.hypot(p.x - this.lastX, p.y - this.lastY); this.lastX = p.x; this.lastY = p.y;
+    const dx = p.x - this.dirOriginX, dy = p.y - this.dirOriginY, len = Math.hypot(dx, dy);
+    if (len >= this.dirStep) { this.dirX = dx / len; this.dirY = dy / len; this.hasDir = true; this.dirOriginX = p.x; this.dirOriginY = p.y; }
+    const la = this.anchors[this.anchors.length - 1], ax = p.x - la.x, ay = p.y - la.y;
+    if (ax * ax + ay * ay >= this.anchorSpacing * this.anchorSpacing) this.anchors.push({ x: p.x, y: p.y, arc: this.arc });
+  }
+}
+
+// A stroke: turns points into dot/path ops with midpoint smoothing, per-pass seeds, splits and checkpoints.
+let seedCounter = 1;
+class Stroke {
+  constructor(surface, { color, width, crayon = true, onOp = null, onPass = null } = {}) {
+    Object.assign(this, { surface, color, width, crayon, onOp, onPass });
+    this.passes = []; this.ops = 0;
+  }
+  down(p) {
+    this.ps = { x: p.x, y: p.y, midX: p.x, midY: p.y };
+    this.moves = 0;
+    this.openPass(p, 'start');
+    this.emit({ kind: 'dot', x: p.x, y: p.y, radius: this.width / 2 });
+  }
+  openPass(at, reason) {
+    this.seed = seedCounter++;
+    this.tracker = this.crayon ? new PassTracker(at.x, at.y, this.width) : null;
+    this.passes.push({ seed: this.seed, reason, start: { x: at.x, y: at.y }, points: [{ x: at.x, y: at.y }] });
+    if (this.onPass) this.onPass(this.passes[this.passes.length - 1]);
+  }
+  rollToNextPass(at, reason) { this.surface.flush(); this.moves = 0; this.openPass(at, reason); }
+  move(points, moveCount = 1) {
+    if (!this.tracker) { this.emitPath(points, moveCount); return; }
+    let batch = [], didSplit = false;
+    for (const p of points) {
+      if (this.tracker.advance(p) === 'split') {
+        const reason = this.tracker.reason;
+        this.emitPath(batch, 0); batch = []; didSplit = true;
+        this.rollToNextPass(this.ps, reason); this.tracker.advance(p);
+      }
+      batch.push(p);
+    }
+    const credited = didSplit ? Math.round((moveCount * batch.length) / points.length) : moveCount;
+    this.emitPath(batch, credited);
+  }
+  emitPath(points, moveCount) {
+    if (!points.length) return;
+    const ps = this.ps;
+    const op = { kind: 'path', startX: ps.midX, startY: ps.midY, segs: [], lineWidth: this.width };
+    for (const { x, y } of points) {
+      const midX = (ps.x + x) / 2, midY = (ps.y + y) / 2;
+      op.segs.push({ cx: ps.x, cy: ps.y, x: midX, y: midY });
+      ps.x = x; ps.y = y; ps.midX = midX; ps.midY = midY;
+      this.passes[this.passes.length - 1].points.push({ x, y });
+    }
+    this.emit(op);
+    if (this.crayon) { this.moves += moveCount; if (this.moves >= CHECKPOINT_MOVES) this.rollToNextPass(ps, 'checkpoint'); }
+  }
+  emit(op) {
+    this.ops++;
+    if (this.crayon) this.surface.renderOp(op, this.color, this.seed); else this.surface.paintPen(op, this.color);
+    if (this.onOp) this.onOp(op, this);
+  }
+  up() { this.surface.flush(); }
+}
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+function resample(pts, spacing) {
+  const out = [pts[0]]; let carry = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], len = Math.hypot(b.x - a.x, b.y - a.y);
+    let t = carry;
+    while (t + spacing <= len) { t += spacing; out.push({ x: a.x + ((b.x - a.x) * t) / len, y: a.y + ((b.y - a.y) * t) / len }); }
+    carry = t - len;
+  }
+  return out;
+}
+function curve(fn, n) { const pts = []; for (let i = 0; i <= n; i++) pts.push(fn(i / n)); return pts; }
+function sCurve(w, h, n = 60) { return curve((t) => ({ x: w * (0.1 + 0.8 * t), y: h * (0.5 + 0.28 * Math.sin(t * Math.PI * 2 - 0.4)) }), n); }
+function runStroke(stroke, pts, spacing = 3) {
+  const r = resample(pts, spacing);
+  stroke.down(r[0]);
+  for (let i = 1; i < r.length; i++) stroke.move([r[i]]);
+  stroke.up();
+}
+function animateStroke(stroke, pts, { spacing = 3, perFrame = 3, onDone } = {}) {
+  const r = resample(pts, spacing); let i = 1;
+  stroke.down(r[0]);
+  const tick = () => {
+    for (let k = 0; k < perFrame && i < r.length; k++, i++) stroke.move([r[i]]);
+    if (i < r.length) requestAnimationFrame(tick); else { stroke.up(); if (onDone) onDone(); }
+  };
+  requestAnimationFrame(tick);
+}
+function measure(canvas, footprint = null) {
+  const g = canvas.getContext('2d'), { width, height } = canvas;
+  const d = g.getImageData(0, 0, width, height).data;
+  let n = 0, a = 0, r = 0, gr = 0, b = 0, wax = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (footprint && !footprint[i >> 2]) continue;
+    n++; a += d[i + 3];
+    if (d[i + 3] > 0) { wax++; r += d[i]; gr += d[i + 1]; b += d[i + 2]; }
+  }
+  return { count: n, meanAlpha: n ? a / (255 * n) : 0, coverage: n ? wax / n : 0, mean: wax ? [r / wax, gr / wax, b / wax].map(Math.round) : null };
+}
+// The stroke's own footprint: paint it solid on a scratch canvas and read the alpha mask.
+function footprintOf(canvas, paintFn) {
+  const c = document.createElement('canvas'); c.width = canvas.width; c.height = canvas.height;
+  const g = c.getContext('2d'); paintFn(g);
+  const d = g.getImageData(0, 0, c.width, c.height).data; const mask = new Uint8Array(c.width * c.height);
+  for (let i = 0; i < mask.length; i++) mask[i] = d[i * 4 + 3] > 0 ? 1 : 0;
+  return mask;
+}
+function pointerDrawing(canvas, { down, move, up }) {
+  const toLocal = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  let active = false;
+  canvas.addEventListener('mousedown', (e) => e.preventDefault());
+  canvas.addEventListener('pointerdown', (e) => { if (e.button !== 0 && e.pointerType === 'mouse') return; active = true; canvas.setPointerCapture(e.pointerId); down(toLocal(e)); e.preventDefault(); });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!active) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of evs.length ? evs : [e]) move(toLocal(ev));
+  });
+  const end = (e) => { if (!active) return; active = false; up(); };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+}
+function tint(hex, alpha) { const [r, g, b] = parseColor(hex); return `rgba(${r},${g},${b},${alpha})`; }
+function watchResize(el, fn) { if ('ResizeObserver' in window) new ResizeObserver(() => fn()).observe(el); }
+
+// ---------- sticky controls ----------
+(function controls() {
+  const sw = $('swatches');
+  for (const [label, hex] of PALETTE) {
+    const b = document.createElement('button'); b.className = 'swatch-btn'; b.style.setProperty('--sw', hex);
+    b.setAttribute('role', 'radio'); b.setAttribute('aria-label', label); b.title = label;
+    b.setAttribute('aria-pressed', String(hex === state.color));
+    b.addEventListener('click', () => { state.color = hex; sw.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); emitChange(); });
+    sw.appendChild(b);
+  }
+  const wd = $('widths');
+  for (const w of WIDTHS) {
+    const b = document.createElement('button'); b.setAttribute('role', 'radio'); b.setAttribute('aria-label', `${w} pixels`);
+    b.innerHTML = `<span class="dot" style="--d:${Math.max(5, Math.min(16, w * 0.55))}px"></span>`;
+    b.setAttribute('aria-pressed', String(w === state.width));
+    b.addEventListener('click', () => { state.width = w; wd.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); emitChange(); });
+    wd.appendChild(b);
+  }
+  document.querySelectorAll('.paper-btn').forEach((b) => b.addEventListener('click', () => {
+    state.paper = b.dataset.paper; document.documentElement.dataset.paper = state.paper;
+    document.querySelectorAll('.paper-btn').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    emitChange();
+  }));
+})();
+
+// ---------- Brick 0: the seven bricks ----------
+(function bricks() {
+  const copy = {
+    shape: ['Shape: the pen’s geometry, unchanged.', 'A dot op where the finger lands, then midpoint-smoothed quadratic path ops with round caps. The crayon changes nothing here.', '#shape'],
+    tooth: ['Paper tooth: one fixed 256×256 height field.', 'Four octaves of tileable value noise from a constant seed. Built once, identical on every device, never random at draw time.', '#tooth'],
+    threshold: ['Threshold: height above the cut becomes opaque wax.', 'A per-texel dither jitters the cut so pit rims stipple. Body variation wobbles density; shade variation mottles the colour. Alpha stays 0 or 1.', '#threshold'],
+    bands: ['Two bands: a sparse full-width rim under a dense narrower core.', 'Each op is pattern-filled twice with the same seed. The union has a solid middle and a crumbling edge.', '#bands'],
+    phase: ['Seed: a stored integer that slides the tooth on the paper.', 'Every op in a pass shares the phase, so wax reads as one piece. A new seed puts pits in new places, so redrawing gets denser without changing hue.', '#phase'],
+    passes: ['Passes: a reversal, a re-entry, or 64 moves closes the pass.', 'A flush op records the boundary; the next op takes a fresh seed. Scribbling in one gesture builds up like separate strokes.', '#passes'],
+    glaze: ['Glaze: mix once per pass with the ink underneath.', 'darken (per-channel minimum), then the wax back over it at 1 − 0.55. Blank paper stays exact, same colour stays exact, blue over yellow goes green.', '#glaze'],
+  };
+  const detail = $('brick-detail');
+  const buttons = Array.from(document.querySelectorAll('[data-brick]'));
+  const show = (key) => { const [b, p, href] = copy[key]; detail.innerHTML = `<b>${b}</b>${p} <a href="${href}">Read the brick →</a>`; buttons.forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.brick === key))); };
+  buttons.forEach((b) => b.addEventListener('click', () => show(b.dataset.brick)));
+  show('shape');
+})();
+
+// ---------- Playground ----------
+(function playground() {
+  const canvas = $('play-canvas');
+  const surface = new Surface(canvas, { mode: 'restamp' });
+  let stroke = null, passes = 0, ops = 0, splits = 0;
+  const stats = () => { $('play-passes').textContent = passes; $('play-ops').textContent = ops; $('play-splits').textContent = splits; };
+  const wrap = canvas.parentElement;
+  const newStroke = (color = state.color, width = state.width) => { wrap.classList.add('inked'); return new Stroke(surface, { color, width, onOp: () => { ops++; stats(); }, onPass: (p) => { passes++; if (p.reason !== 'start') splits++; stats(); } }); };
+  pointerDrawing(canvas, { down: (p) => { stroke = newStroke(); stroke.down(p); }, move: (p) => stroke && stroke.move([p]), up: () => { stroke && stroke.up(); stroke = null; } });
+  document.querySelectorAll('#playground [data-mode]').forEach((b) => b.addEventListener('click', () => {
+    surface.flush(); surface.mode = b.dataset.mode;
+    document.querySelectorAll('#playground [data-mode]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+  const clear = () => { surface.clear(); passes = ops = splits = 0; stats(); wrap.classList.remove('inked'); };
+  $('play-clear').addEventListener('click', clear);
+  $('play-demo').addEventListener('click', () => {
+    clear();
+    const w = surface.w, h = surface.h, lw = state.width;
+    wrap.classList.add('inked');
+    const yellow = new Stroke(surface, { color: '#F9D24F', width: Math.max(lw, 14) });
+    animateStroke(yellow, curve((t) => ({ x: w * (0.08 + 0.84 * t), y: h * (0.55 + 0.1 * Math.sin(t * 6)) }), 40), { perFrame: 6, onDone: () => {
+      const blue = new Stroke(surface, { color: state.color === '#F9D24F' ? '#62A2E9' : state.color, width: lw, onOp: () => { ops++; stats(); }, onPass: (p) => { passes++; if (p.reason !== 'start') splits++; stats(); } });
+      const zig = []; for (let i = 0; i <= 7; i++) zig.push({ x: w * (0.15 + 0.1 * i), y: h * (i % 2 ? 0.88 : 0.16) });
+      animateStroke(blue, zig, { perFrame: 4 });
+    } });
+  });
+  watchResize(canvas, () => { if (surface.resize()) clear(); });
+  requestAnimationFrame(() => { surface.resize(); $('play-demo').click(); });
+})();
+
+// ---------- Brick 1: shape ----------
+(function shapeDemo() {
+  const canvas = $('shape-canvas'), g = canvas.getContext('2d');
+  let strokes = [], current = null, dpr = 1;
+  const resize = () => { dpr = Math.min(2, devicePixelRatio || 1); canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); render(); };
+  function render() {
+    g.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+    const showPts = $('shape-points').checked, showCurve = $('shape-curve').checked;
+    let samples = 0, opCount = 0;
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--demo-paper-ink').trim() || '#23212a';
+    for (const pts of strokes) {
+      samples += pts.length; if (pts.length < 1) continue;
+      // Build the ops exactly as the engine does, one path op per move.
+      const ps = { x: pts[0].x, y: pts[0].y, midX: pts[0].x, midY: pts[0].y };
+      const ops = [{ kind: 'dot', x: pts[0].x, y: pts[0].y, radius: state.width / 2 }];
+      for (let i = 1; i < pts.length; i++) {
+        const { x, y } = pts[i], midX = (ps.x + x) / 2, midY = (ps.y + y) / 2;
+        ops.push({ kind: 'path', startX: ps.midX, startY: ps.midY, segs: [{ cx: ps.x, cy: ps.y, x: midX, y: midY }], lineWidth: state.width });
+        ps.x = x; ps.y = y; ps.midX = midX; ps.midY = midY;
+      }
+      opCount += ops.length - 1;
+      g.globalAlpha = 1; for (const op of ops) paintShape(g, op, state.paper === 'dark' ? '#5a5766' : '#c9c4ba');
+      if (showCurve) { g.strokeStyle = state.color; g.lineWidth = 2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); for (const op of ops) if (op.kind === 'path') { g.moveTo(op.startX, op.startY); g.quadraticCurveTo(op.segs[0].cx, op.segs[0].cy, op.segs[0].x, op.segs[0].y); } g.stroke(); }
+      if (showPts) {
+        g.setLineDash([3, 4]); g.strokeStyle = tint(ink, 0.35); g.lineWidth = 1; g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); g.setLineDash([]);
+        g.fillStyle = ink; for (const p of pts) g.fillRect(p.x - 2.5, p.y - 2.5, 5, 5);
+        g.strokeStyle = state.color; g.lineWidth = 1.5; g.fillStyle = state.paper === 'dark' ? '#211f29' : '#fcfbf8';
+        for (const op of ops) if (op.kind === 'path') { g.beginPath(); g.arc(op.segs[0].x, op.segs[0].y, 3, 0, Math.PI * 2); g.fill(); g.stroke(); }
+      }
+    }
+    $('shape-n').textContent = samples; $('shape-ops').textContent = opCount;
+  }
+  pointerDrawing(canvas, {
+    down: (p) => { current = [p]; strokes.push(current); render(); },
+    move: (p) => { if (!current) return; const l = current[current.length - 1]; if (Math.hypot(p.x - l.x, p.y - l.y) >= 6) { current.push(p); render(); } },
+    up: () => { current = null; },
+  });
+  const seed = () => { const w = canvas.clientWidth, h = canvas.clientHeight; strokes = [resample(curve((t) => ({ x: w * (0.08 + 0.84 * t), y: h * (0.5 + 0.3 * Math.sin(t * Math.PI * 2.4 + 0.3)) }), 30), Math.max(18, w / 26))]; };
+  $('shape-clear').addEventListener('click', () => { strokes = []; render(); });
+  $('shape-points').addEventListener('change', render); $('shape-curve').addEventListener('change', render);
+  onChange(render);
+  watchResize(canvas, () => { if (!strokes.length) seed(); resize(); });
+  seed(); resize();
+})();
+
+// ---------- Brick 2: tooth octaves ----------
+(function toothDemo() {
+  const row = $('octave-row');
+  const cells = FIELDS.octaves.map((oc, i) => ({ oc, on: true, i }));
+  const mk = (label, sub, cls = '') => { const d = document.createElement('div'); d.className = 'tile-cell ' + cls; d.innerHTML = `<canvas width="256" height="256"></canvas><b>${label}</b><small>${sub}</small>`; row.appendChild(d); return d.querySelector('canvas'); };
+  // Default view: a 64×64 crop magnified 4×, so the cell sizes are legible. Repeat view: the full tile, twice over, to show the seam is absent.
+  const CROP = 64;
+  const grey = (canvas, field, repeat) => {
+    const g = canvas.getContext('2d'), size = FIELDS.tile;
+    const img = g.createImageData(size, size), d = img.data;
+    for (let i = 0; i < field.length; i++) { const v = Math.round(field[i] * 255); d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
+    const t = document.createElement('canvas'); t.width = t.height = size; t.getContext('2d').putImageData(img, 0, 0);
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, size, size);
+    if (!repeat) { g.drawImage(t, 0, 0, CROP, CROP, 0, 0, size, size); return; }
+    for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) g.drawImage(t, x * 128, y * 128, 128, 128);
+  };
+  const octCanvases = cells.map((c) => {
+    const cv = mk(`Octave ${c.i + 1}`, `${c.oc.cell}-texel cells · weight ${c.oc.weight}`);
+    const lab = document.createElement('label'); lab.className = 'check'; lab.style.justifyContent = 'center'; lab.style.marginTop = '4px';
+    lab.innerHTML = `<input type="checkbox" checked/> include`; lab.querySelector('input').addEventListener('change', (e) => { c.on = e.target.checked; draw(); });
+    cv.parentElement.appendChild(lab); return cv;
+  });
+  const sumCanvas = mk('Sum, normalised', 'the height field', 'sum');
+  const bodyCanvas = mk('Body field', '110-texel cells · slow wobble');
+  function draw() {
+    const rep = $('tooth-repeat').checked;
+    for (const cv of [...octCanvases, sumCanvas, bodyCanvas]) cv.parentElement.querySelector('small').dataset.rep = rep ? '1' : '';
+    cells.forEach((c, i) => grey(octCanvases[i], normalize(Float32Array.from(c.oc.field)), rep));
+    const on = cells.filter((c) => c.on), wsum = on.reduce((s, c) => s + c.oc.weight, 0) || 1;
+    const sum = new Float32Array(FIELDS.tile * FIELDS.tile);
+    for (const c of on) for (let i = 0; i < sum.length; i++) sum[i] += c.oc.field[i] * (c.oc.weight / wsum);
+    grey(sumCanvas, on.length ? normalize(sum) : sum, rep);
+    grey(bodyCanvas, FIELDS.body, rep);
+  }
+  $('tooth-repeat').addEventListener('change', draw);
+  draw();
+})();
+
+// ---------- Brick 3: threshold lab ----------
+(function thresholdLab() {
+  const cov = $('thr-cov'), edge = $('thr-edge'), body = $('thr-body'), shade = $('thr-shade');
+  const zoom = $('thr-zoom'), full = $('thr-full');
+  const fmt = (el, digits) => { el.nextElementSibling.textContent = Number(el.value).toFixed(digits); };
+  function draw() {
+    fmt(cov, 2); fmt(edge, 3); fmt(body, 2); fmt(shade, 2);
+    const p = { coverage: +cov.value, edge: +edge.value, bodyVariation: +body.value, shadeVariation: +shade.value, soft: false };
+    const g = full.getContext('2d'), img = g.createImageData(256, 256);
+    fillTilePixels(img.data, FIELDS, parseColor(state.color), p);
+    g.clearRect(0, 0, 256, 256); g.putImageData(img, 0, 0);
+    const z = zoom.getContext('2d'); z.clearRect(0, 0, 96, 96); z.drawImage(full, 0, 0, 96, 96, 0, 0, 96, 96);
+    let wax = 0; for (let i = 3; i < img.data.length; i += 4) if (img.data[i]) wax++;
+    $('thr-measured').textContent = (100 * wax / 65536).toFixed(1) + '%'; $('thr-count').textContent = wax.toLocaleString() + ' / 65,536';
+  }
+  [cov, edge, body, shade].forEach((el) => el.addEventListener('input', draw));
+  $('thr-reset').addEventListener('click', () => { cov.value = 0.45; edge.value = 0.045; body.value = 0.2; shade.value = 0.08; draw(); });
+  onChange(draw); draw();
+})();
+
+// ---------- Brick 4: binary vs soft ----------
+(function binaryDemo() {
+  const cells = Array.from(document.querySelectorAll('#bin-matrix canvas'));
+  function draw() {
+    for (const c of cells) {
+      const dpr = Math.min(2, devicePixelRatio || 1); const w = c.clientWidth || 300, h = c.clientHeight || 136;
+      c.width = w * dpr; c.height = h * dpr; const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const lw = Math.max(state.width, 14);
+      const op = { kind: 'path', startX: w * 0.12, startY: h * 0.6, segs: [{ cx: w * 0.5, cy: h * -0.1, x: w * 0.88, y: h * 0.6 }], lineWidth: lw };
+      const k = +c.dataset.k, soft = c.dataset.soft === '1';
+      for (let i = 0; i < k; i++) paintCrayon(g, op, state.color, 7, { extra: { soft } });
+      // Measure the interior only: the anti-aliased silhouette is a one-pixel ring that no stroking can make idempotent.
+      const core = OPTS.passes[1].widthScale;
+      const mask = footprintOf(c, (m) => {
+        m.setTransform(dpr, 0, 0, dpr, 0, 0);
+        paintShape(m, { ...op, lineWidth: lw - 5 }, '#000');
+        m.globalCompositeOperation = 'destination-out'; paintShape(m, { ...op, lineWidth: lw * core + 5 }, '#000');
+        m.globalCompositeOperation = 'source-over'; paintShape(m, { ...op, lineWidth: Math.max(1, lw * core - 5) }, '#000');
+      });
+      const stats = measure(c, mask);
+      c.nextElementSibling.querySelector('b').textContent = stats.meanAlpha.toFixed(3);
+    }
+  }
+  onChange(draw); watchResize(cells[0], draw); draw();
+})();
+
+// ---------- shared: size a panel canvas to its CSS box ----------
+function fit(c) {
+  const dpr = Math.min(2, devicePixelRatio || 1), w = c.clientWidth || 300, h = c.clientHeight || 220;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  return { g, w, h, dpr };
+}
+
+// ---------- Brick 5: bands ----------
+(function bandsDemo() {
+  const cells = Array.from(document.querySelectorAll('[data-bands]'));
+  function draw() {
+    for (const c of cells) {
+      const { g, w, h } = fit(c);
+      const op = { kind: 'path', startX: w * 0.1, startY: h * 0.62, segs: [{ cx: w * 0.5, cy: h * -0.15, x: w * 0.9, y: h * 0.62 }], lineWidth: Math.max(state.width, 14) };
+      const which = c.dataset.bands === 'rim' ? [0] : c.dataset.bands === 'core' ? [1] : [0, 1];
+      paintCrayon(g, op, state.color, 3, { bands: which });
+    }
+  }
+  onChange(draw); watchResize(cells[0], draw); draw();
+})();
+
+// ---------- Brick 6: seeds and buildup ----------
+(function phaseDemo() {
+  const cells = Array.from(document.querySelectorAll('[data-phase]'));
+  function draw() {
+    for (const c of cells) {
+      const { g, w, h, dpr } = fit(c);
+      const op = { kind: 'path', startX: w * 0.1, startY: h * 0.62, segs: [{ cx: w * 0.5, cy: h * -0.15, x: w * 0.9, y: h * 0.62 }], lineWidth: Math.max(state.width, 14) };
+      const mode = c.dataset.phase, n = mode === 'same' ? 4 : +mode;
+      for (let i = 0; i < n; i++) paintCrayon(g, op, state.color, mode === 'same' ? 11 : 11 + i * 7);
+      const mask = footprintOf(c, (m) => { m.setTransform(dpr, 0, 0, dpr, 0, 0); paintShape(m, op, '#000'); });
+      const s = measure(c, mask);
+      $('ph-' + mode).textContent = `coverage ${(100 * s.coverage).toFixed(0)}% · mean rgb(${s.mean ? s.mean.join(', ') : '–'})`;
+    }
+  }
+  onChange(draw); watchResize(cells[0], draw); draw();
+})();
+
+// ---------- Brick 7: passes ----------
+(function passesDemo() {
+  const canvas = $('pass-canvas'), overlay = $('pass-overlay-canvas'), og = overlay.getContext('2d');
+  const surface = new Surface(canvas, { mode: 'restamp' });
+  const TINTS = ['#2f6fed', '#d24b3f', '#3f9d55', '#b1780a', '#8b3fd2', '#0e9aa7'];
+  let passes = [], stroke = null;
+  const counts = () => {
+    const by = (r) => passes.filter((p) => p.reason === r).length;
+    $('pass-n').textContent = passes.length; $('pass-rev').textContent = by('reversal'); $('pass-re').textContent = by('reentry'); $('pass-cp').textContent = by('checkpoint');
+  };
+  function drawOverlay() {
+    const dpr = surface.dpr || 1; overlay.width = canvas.width; overlay.height = canvas.height; og.setTransform(dpr, 0, 0, dpr, 0, 0);
+    og.clearRect(0, 0, surface.w, surface.h);
+    if (!$('pass-overlay').checked) return;
+    passes.forEach((p, i) => {
+      const col = TINTS[i % TINTS.length];
+      og.strokeStyle = col; og.lineWidth = 2.5; og.lineCap = 'round'; og.lineJoin = 'round'; og.beginPath();
+      p.points.forEach((q, k) => (k ? og.lineTo(q.x, q.y) : og.moveTo(q.x, q.y))); og.stroke();
+      if (p.reason !== 'start') {
+        const label = p.reason === 'reversal' ? '↩' : p.reason === 'reentry' ? '⟲' : '64';
+        og.fillStyle = col; og.beginPath(); og.arc(p.start.x, p.start.y, 11, 0, Math.PI * 2); og.fill();
+        og.fillStyle = '#fff'; og.font = '700 11px ' + getComputedStyle(document.body).fontFamily; og.textAlign = 'center'; og.textBaseline = 'middle'; og.fillText(label, p.start.x, p.start.y + 0.5);
+      }
+    });
+  }
+  const newStroke = () => { canvas.parentElement.classList.add('inked'); return new Stroke(surface, { color: state.color, width: state.width, onPass: (p) => { passes.push(p); counts(); }, onOp: drawOverlay }); };
+  pointerDrawing(canvas, { down: (p) => { stroke = newStroke(); stroke.down(p); }, move: (p) => { if (stroke) { stroke.move([p]); drawOverlay(); } }, up: () => { if (stroke) stroke.up(); stroke = null; drawOverlay(); } });
+  const clear = () => { surface.clear(); passes = []; counts(); drawOverlay(); canvas.parentElement.classList.remove('inked'); };
+  const sample = () => {
+    clear();
+    const w = surface.w, h = surface.h;
+    const zig = []; for (let i = 0; i <= 5; i++) zig.push({ x: w * (0.08 + 0.09 * i), y: h * (i % 2 ? 0.85 : 0.2) });
+    // Two tight loops: a re-entry needs the anchor from a full turn ago, and a checkpoint resets the anchors, so only a loop shorter than 64 moves can re-enter.
+    const r = Math.min(40, h * 0.18);
+    const loop = curve((t) => ({ x: w * 0.7 + r * 1.35 * Math.cos(t * Math.PI * 4.4 - 1.3) + t * r * 0.3, y: h * 0.52 + r * Math.sin(t * Math.PI * 4.4 - 1.3) }), 90);
+    const s = newStroke();
+    animateStroke(s, [...zig, ...loop], { spacing: 6, perFrame: 5, onDone: drawOverlay });
+  };
+  $('pass-demo').addEventListener('click', sample); $('pass-clear').addEventListener('click', clear);
+  $('pass-overlay').addEventListener('change', drawOverlay);
+  watchResize(canvas, () => { if (surface.resize()) sample(); });
+  requestAnimationFrame(() => { surface.resize(); sample(); });
+})();
+
+// ---------- Brick 8: mixing lab ----------
+(function glazeLab() {
+  const under = $('lab-under'), over = $('lab-over'), mEl = $('lab-m');
+  for (const sel of [under, over]) for (const [label, hex] of PALETTE) { const o = document.createElement('option'); o.value = hex; o.textContent = label; sel.appendChild(o); }
+  under.value = '#F9D24F'; over.value = '#62A2E9';
+  const rgb = (c) => `rgb(${c.map(Math.round).join(', ')})`;
+  const sw = (cls, name, note, c) => `<div class="lab-swatch ${cls}" style="--fill:${rgb(c)}"><div class="fill"></div><div class="meta"><b>${name}</b>${note}<br/><code>${rgb(c)}</code></div></div>`;
+  function draw() {
+    const m = +mEl.value; mEl.nextElementSibling.textContent = m.toFixed(2);
+    const D = parseColor(under.value), S = parseColor(over.value);
+    const min = S.map((v, i) => Math.min(v, D[i]));
+    const ship = S.map((v, i) => (1 - m) * v + m * min[i]);
+    const avg = S.map((v, i) => (1 - m) * v + m * D[i]);
+    const mul = S.map((v, i) => (1 - m) * v + m * (v * D[i]) / 255);
+    $('lab-swatches').innerHTML = sw('', 'Under (D)', 'ink already on the paper', D) + sw('', 'Over (S)', 'the new wax', S) + sw('', 'min(S, D)', 'per-channel minimum', min)
+      + sw('ship', 'Darken glaze', `(1 − m)·S + m·min(S, D)`, ship) + sw('no', 'Average', `(1 − m)·S + m·D — goes grey`, avg) + sw('no', 'Multiply', `(1 − m)·S + m·S·D — muddy, darkens`, mul) + sw('no', 'Pure minimum', 'm = 1 — a fixed point, never moves', min);
+    const rows = ['R', 'G', 'B'].map((ch, i) => `<tr><td>${ch}</td><td>${D[i]}</td><td>${S[i]}</td><td>${min[i]}</td><td><b>${Math.round(ship[i])}</b></td><td>${Math.round(avg[i])}</td><td>${Math.round(mul[i])}</td></tr>`).join('');
+    $('lab-table').innerHTML = `<thead><tr><th>channel</th><th>under</th><th>over</th><th>min</th><th>darken glaze</th><th>average</th><th>multiply</th></tr></thead><tbody>${rows}</tbody>`;
+    let cur = D.slice(); let html = '<span>Drawing the over colour back over the same spot, pass after pass:</span>';
+    for (let n = 1; n <= 6; n++) { cur = S.map((v, i) => (1 - m) * v + m * Math.min(v, cur[i])); html += `<i style="--fill:${rgb(cur)}" title="pass ${n}"></i>`; }
+    html += `<span>→ the old ink’s share after n passes is m<sup>n</sup>${m === 1 ? ' (with m = 1 it never leaves)' : ''}</span>`;
+    $('lab-repeat').innerHTML = html;
+  }
+  [under, over, mEl].forEach((el) => el.addEventListener('input', draw)); draw();
+})();
+
+// ---------- Brick 9: restamp step-through ----------
+(function pipelineSteps() {
+  const cU = $('pipe-under'), cB = $('pipe-buffer'), cT = $('pipe-tile');
+  let ops = [], i = 0, surface = null, playing = null, lw = 16;
+  const caption = $('pipe-caption');
+  function reset() {
+    if (playing) { clearInterval(playing); playing = null; }
+    fit(cU); fit(cB); fit(cT);
+    surface = new Surface(cT, { mode: 'restamp' }); surface.resize();
+    const w = surface.w, h = surface.h; lw = Math.max(14, Math.min(state.width, 22));
+    surface.paintPen({ kind: 'path', startX: w * 0.08, startY: h * 0.5, segs: [{ cx: w * 0.5, cy: h * 0.5, x: w * 0.92, y: h * 0.5 }], lineWidth: lw * 1.3 }, '#F9D24F');
+    const pts = resample(curve((t) => ({ x: w * (0.2 + 0.6 * t), y: h * (0.92 - 0.84 * t) }), 20), lw * 0.9);
+    ops = []; const ps = { x: pts[0].x, y: pts[0].y, midX: pts[0].x, midY: pts[0].y };
+    ops.push({ kind: 'dot', x: pts[0].x, y: pts[0].y, radius: lw / 2 });
+    for (let k = 1; k < pts.length; k++) { const { x, y } = pts[k], midX = (ps.x + x) / 2, midY = (ps.y + y) / 2; ops.push({ kind: 'path', startX: ps.midX, startY: ps.midY, segs: [{ cx: ps.x, cy: ps.y, x: midX, y: midY }], lineWidth: lw }); ps.x = x; ps.y = y; ps.midX = midX; ps.midY = midY; }
+    i = 0; $('pipe-total').textContent = ops.length; paint();
+    caption.innerHTML = '<b>Before the pass opens.</b> The tile holds a yellow pen line. The pass buffer is empty. Nothing has been read from the tile yet.';
+  }
+  function paint() {
+    $('pipe-n').textContent = i;
+    const d = surface.dpr;
+    for (const [c, src] of [[cU, surface.under.canvas], [cB, surface.buffer.canvas]]) { const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.drawImage(src, 0, 0); }
+    const r = surface.lastRect; if (!r || i === 0) return;
+    for (const c of [cB, cT]) { const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.strokeStyle = '#e08a1e'; g.lineWidth = 2 * d; g.setLineDash([6 * d, 4 * d]); g.strokeRect(r.x0 + 1, r.y0 + 1, r.x1 - r.x0 - 2, r.y1 - r.y0 - 2); g.setLineDash([]); }
+  }
+  function step() {
+    if (i >= ops.length) { surface.flush(); surface.lastRect = null; paint(); caption.innerHTML = '<b>Finger lifts: flush.</b> The buffer is cleared and the pass closes. The tile already holds the exact glazed pixels, so the flush changes nothing you can see. Two frames later the under shadow is refreshed from the tile, ready for the next pass.'; if (playing) { clearInterval(playing); playing = null; } return; }
+    const op = ops[i]; surface.renderOp(op, '#62A2E9', 5); i++; paint();
+    if (i === 1) caption.innerHTML = '<b>Op 1 opens the pass.</b> The tile is not blank, so the under shadow is captured: one copy of the tile’s pixels. The dot is painted opaque into the buffer, then its padded rectangle on the tile is cleared, restored from the shadow, and glazed from the buffer.';
+    else if (op.kind === 'path' && surface.bounds && op.segs[0].y < surface.h * 0.5 + lw && op.segs[0].y > surface.h * 0.5 - lw) caption.innerHTML = `<b>Op ${i} crosses the yellow line.</b> Inside the rectangle the darken step takes min(blue, yellow) and the second step returns 45% of blue over it. The buffer stays pure opaque blue; the mix exists only on the tile. Blank parts of the rectangle reproduce the wax exactly.`;
+    else caption.innerHTML = `<b>Op ${i}.</b> Painted opaque into the buffer, which overlaps the previous op and holds still because the wax is binary. Only the orange rectangle is restamped: clear, restore from the shadow, darken, return. Pixels outside it are untouched.`;
+  }
+  $('pipe-step').addEventListener('click', step); $('pipe-reset').addEventListener('click', reset);
+  $('pipe-play').addEventListener('click', () => { if (playing) return; if (i >= ops.length) reset(); playing = setInterval(step, 420); });
+  onChange(reset); watchResize(cT, reset); reset();
+})();
+
+// ---------- Brick 9: crossing under each pipeline ----------
+(function pipelineCompare() {
+  const cells = Array.from(document.querySelectorAll('[data-pipe]'));
+  function draw() {
+    for (const c of cells) {
+      fit(c);
+      const mode = c.dataset.pipe.startsWith('direct') ? 'glaze-direct' : 'restamp';
+      const s = new Surface(c, { mode }); s.resize();
+      const w = s.w, h = s.h, lw = Math.max(state.width, 14);
+      s.paintPen({ kind: 'path', startX: w * 0.08, startY: h * 0.5, segs: [{ cx: w * 0.5, cy: h * 0.5, x: w * 0.92, y: h * 0.5 }], lineWidth: lw * 1.4 }, '#F9D24F');
+      const over = state.color === '#F9D24F' ? '#62A2E9' : state.color;
+      const spacing = c.dataset.pipe === 'direct-fast' ? lw * 0.9 : c.dataset.pipe === 'direct-slow' ? 2 : 3;
+      const st = new Stroke(s, { color: over, width: lw });
+      runStroke(st, curve((t) => ({ x: w * (0.22 + 0.56 * t), y: h * (0.9 - 0.8 * t) }), 30), spacing);
+    }
+  }
+  onChange(draw); watchResize(cells[0], draw); draw();
+})();
+
+// ---------- Brick 10: warm-up replay ----------
+(function warmDemo() {
+  const canvas = $('warm-canvas'), g = canvas.getContext('2d'), frames = $('warm-frames');
+  const ROWS = 8, CHUNKS = 256 / ROWS; let raf = 0;
+  function play() {
+    cancelAnimationFrame(raf);
+    g.clearRect(0, 0, 256, 256); frames.innerHTML = ''; for (let i = 0; i < CHUNKS; i++) frames.appendChild(document.createElement('i'));
+    const img = g.createImageData(256, 256), rgb = parseColor(state.color), p = tileParams(0);
+    let chunk = 0, used = 0; const perFrame = 3; // slowed down so the chunking is visible; production runs to a 2 ms deadline
+    const tick = () => {
+      used++; $('warm-n').textContent = used;
+      for (let k = 0; k < perFrame && chunk < CHUNKS; k++, chunk++) {
+        fillTilePixels(img.data, FIELDS, rgb, p, chunk * ROWS * 256, (chunk + 1) * ROWS * 256);
+        g.putImageData(img, 0, 0, 0, chunk * ROWS, 256, ROWS);
+        frames.children[chunk].className = 'done';
+      }
+      if (chunk < CHUNKS) { frames.children[chunk].className = 'now'; raf = requestAnimationFrame(tick); }
+    };
+    raf = requestAnimationFrame(tick);
+  }
+  $('warm-play').addEventListener('click', play); onChange(play); play();
+})();
+
+// ---------- Roads not taken: small illustrations ----------
+(function altDemos() {
+  const speckle = document.querySelector('[data-alt="speckle"]'), mixes = document.querySelector('[data-alt="mixes"]');
+  const soft = document.querySelector('[data-alt="soft"]'), minimum = document.querySelector('[data-alt="minimum"]');
+  const label = (g, text, x, y) => { g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--demo-paper-ink'); g.font = '700 11px ' + getComputedStyle(document.body).fontFamily; g.textAlign = 'center'; g.fillText(text, x, y); };
+  function draw() {
+    { const { g, w, h } = fit(soft); const lw = Math.max(state.width, 14);
+      for (let half = 0; half < 2; half++) {
+        const x0 = half ? w * 0.52 : 0, op = { kind: 'path', startX: x0 + w * 0.05, startY: h * 0.62, segs: [{ cx: x0 + w * 0.24, cy: h * -0.1, x: x0 + w * 0.43, y: h * 0.62 }], lineWidth: lw };
+        paintCrayon(g, op, state.color, 7, { extra: { soft: half === 1 } });
+        label(g, half ? 'soft ramp (rejected)' : 'binary (shipped)', x0 + w * 0.24, h - 6);
+      }
+    }
+    { const { g, w, h } = fit(minimum); const lw = Math.max(state.width, 14), over = state.color === '#F9D24F' ? '#62A2E9' : state.color;
+      const cols = [['pure min ×1', 1, 1], ['pure min ×4', 1, 4], ['shipped ×1', OPTS.colorMix, 1], ['shipped ×4', OPTS.colorMix, 4]];
+      cols.forEach(([text, m, n], k) => {
+        const x0 = (w / 4) * k, cx = x0 + w / 8;
+        paintShape(g, { kind: 'path', startX: x0 + 6, startY: h * 0.45, segs: [{ cx, cy: h * 0.45, x: x0 + w / 4 - 6, y: h * 0.45 }], lineWidth: lw }, '#F9D24F');
+        for (let pass = 0; pass < n; pass++) {
+          const buf = document.createElement('canvas'); buf.width = minimum.width; buf.height = minimum.height; const bg = buf.getContext('2d'); bg.setTransform(g.getTransform());
+          paintCrayon(bg, { kind: 'path', startX: cx, startY: h * 0.76, segs: [{ cx, cy: h * 0.45, x: cx, y: h * 0.12 }], lineWidth: lw }, over, 20 + pass * 3);
+          g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'darken'; g.drawImage(buf, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1 - m; g.drawImage(buf, 0, 0); g.restore();
+        }
+        label(g, text, cx, h - 6);
+      });
+    }
+    { const { g, w, h } = fit(speckle); const lw = Math.max(state.width, 14);
+      for (let half = 0; half < 2; half++) {
+        const x0 = half ? w * 0.52 : 0, op = { kind: 'path', startX: x0 + w * 0.05, startY: h * 0.6, segs: [{ cx: x0 + w * 0.24, cy: h * -0.1, x: x0 + w * 0.43, y: h * 0.6 }], lineWidth: lw };
+        paintShape(g, op, state.color);
+        g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000';
+        for (let n = 0; n < 900; n++) { const x = x0 + Math.random() * w * 0.48, y = Math.random() * h; g.beginPath(); g.arc(x, y, 0.6 + Math.random() * 1.4, 0, Math.PI * 2); g.fill(); }
+        g.restore();
+      }
+      g.strokeStyle = 'rgba(128,128,128,.4)'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(w * 0.5, 6); g.lineTo(w * 0.5, h - 6); g.stroke(); g.setLineDash([]);
+    }
+    { const { g, w, h } = fit(mixes); const lw = Math.max(state.width, 14), over = state.color === '#F9D24F' ? '#62A2E9' : state.color;
+      const modes = [['multiply', 'multiply'], ['source-over', 'average'], ['darken', 'darken (shipped)']];
+      g.font = '700 11px ' + getComputedStyle(document.body).fontFamily; g.textAlign = 'center';
+      modes.forEach(([mode, label], k) => {
+        const x0 = (w / 3) * k, cx = x0 + w / 6;
+        paintShape(g, { kind: 'path', startX: x0 + 8, startY: h * 0.45, segs: [{ cx, cy: h * 0.45, x: x0 + w / 3 - 8, y: h * 0.45 }], lineWidth: lw }, '#F9D24F');
+        const buf = document.createElement('canvas'); buf.width = mixes.width; buf.height = mixes.height; const bg = buf.getContext('2d'); bg.setTransform(g.getTransform());
+        paintCrayon(bg, { kind: 'path', startX: cx, startY: h * 0.76, segs: [{ cx, cy: h * 0.45, x: cx, y: h * 0.12 }], lineWidth: lw }, over, 9);
+        g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+        if (mode === 'source-over') { g.globalAlpha = 1 - OPTS.colorMix; g.drawImage(buf, 0, 0); }
+        else { g.globalCompositeOperation = mode; g.drawImage(buf, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1 - OPTS.colorMix; g.drawImage(buf, 0, 0); }
+        g.restore();
+        g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--demo-paper-ink'); g.fillText(label, cx, h - 6);
+      });
+    }
+  }
+  onChange(draw); watchResize(speckle, draw); draw();
+})();
+})();
+</script>
+</body>
+</html>
