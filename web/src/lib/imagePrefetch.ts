@@ -38,7 +38,10 @@ function prefetchImage(
   activePrefetches.set(url, img);
   img.src = url;
   if (retainUntilDecoded) {
-    void img.decode().catch(() => undefined).finally(release);
+    void img
+      .decode()
+      .catch(() => undefined)
+      .finally(release);
   } else {
     img.onload = release;
   }
