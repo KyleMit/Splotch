@@ -9,8 +9,11 @@ control is retained in `perf-profiles/evidence/2026-09-05-epic-1567-settings-she
 
 The Action Panel inherits a zero base transition duration while Settings is open, except during its
 visible button-size preview. This removes theme crossfades from the inactive background panel; it
-preserves the visible Settings controls' animations, ordinary panel interactions, and the size
-preview. The accepted drawer-motion treatment remains in place.
+preserves the visible Settings controls' animations and ordinary panel interactions. Button
+dimensions already snap during resizing; the exception does not animate their size. It
+conservatively leaves normal transition timing on the panel while the transparent Settings surface
+exposes it, limiting this treatment to the covered panel. The timing test checks that boundary, not
+resize appearance. The accepted drawer-motion treatment remains in place.
 
 The provisional treatment was a9438fc73fbe80dd7afc734d9924d8611671fe14 plus the saved
 `night-mode-panel-transitions.patch`, not a clean capture of that SHA. There are no product or
@@ -44,8 +47,12 @@ additive wall time.
 The control diagnostic failed Settings opening, Night Mode enabling, and Night Mode disabling. The
 treatment diagnostic still failed Night Mode's first-frame gate: 42.0 / 36.9 / 26.6 ms, versus
 control 42.5 / 22.0 / 37.4 ms. Its scored post-action maxima were 16.7 / 16.7 / 16.8 ms; that does
-not make the first-frame failure pass. Other treatment diagnostic groups passed. Both diagnostics
-remain separate from the full untraced certification plan.
+not make the first-frame failure pass. Other treatment diagnostic groups passed, but Night Mode
+disabling's first frames increased from 1.5 / 0.0 / 1.7 ms in control to 31.8 / 29.8 / 31.6 ms in
+treatment, close to the 33.5 ms gate. The full untraced certification did not reproduce that
+pattern: control was 9.1 / 8.4 / 10.4 ms and committed treatment was 8.2 / 15.0 / 7.9 ms. These
+captures do not establish why the traced first frames increased. Both diagnostics remain separate
+from the full untraced certification plan.
 
 ## Provenance and verification
 
