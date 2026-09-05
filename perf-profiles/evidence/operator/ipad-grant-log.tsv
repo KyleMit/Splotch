@@ -22,3 +22,5 @@ timestamp	device	outcome	detail
 2026-09-02T02:43:13.565Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-04T16:48:32.724Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
 2026-09-04T16:50:32.158Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
+2026-09-05T03:15:20.388Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
+2026-09-05T03:17:35.144Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
