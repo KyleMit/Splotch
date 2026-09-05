@@ -97,34 +97,29 @@ Cells held to a different lost-frame budget, and why (ADR-0137):
   captures under perf-profiles/evidence/; every section not promoted from this campaign is marked
   preserved before the strict regeneration.
 * 28 cells carry historical results preserved from data.json rather than re-read raw captures: The
-  2026-09-03 campaign preserves only sections it could not recapture faithfully: both iPad Simulator
-  rows; Android emulator web; Android emulator native portrait and both landscape action sections;
-  all physical Android undo sections; Android physical web dark-mode actions; and every Android
-  physical native action section. The split Android transport records no undo phase. The physical
-  Android action blocks are #1595's lazy-Settings wait-before-demand ordering plus #1387's compact
-  rotation-picker contract in native landscape modes; advisory targets also hit uncalibrated content
-  geometry, unchanged-canvas, or input-cadence failures. Preserved sections retain their original
-  product commits and do not claim currency. Representative fresh evidence is promoted under the
-  perf-profiles/evidence/2026-09-03-deployment-target-matrix* campaign directories. Preserved cells:
-  iPad simulator · web · portrait-light (drawing, undo, actions); iPad simulator · web ·
-  portrait-dark (drawing, undo, actions); iPad simulator · web · landscape-light (drawing, undo,
-  actions); iPad simulator · web · landscape-dark (drawing, undo, actions); iPad simulator · native
-  · portrait-light (drawing, undo, actions); iPad simulator · native · portrait-dark (drawing, undo,
-  actions); iPad simulator · native · landscape-light (drawing, undo, actions); iPad simulator ·
-  native · landscape-dark (drawing, undo, actions); Android emulator · web · portrait-light
-  (drawing, undo, actions); Android emulator · web · portrait-dark (drawing, undo, actions); Android
-  emulator · web · landscape-light (drawing, undo, actions); Android emulator · web · landscape-dark
-  (drawing, undo, actions); Android emulator · native · portrait-light (drawing, undo, actions);
-  Android emulator · native · portrait-dark (drawing, undo, actions); Android emulator · native ·
-  landscape-light (drawing, undo, actions); Android emulator · native · landscape-dark (drawing,
-  undo, actions); Mac · Chrome · portrait-light (drawing, undo, actions); Mac · Chrome ·
-  portrait-dark (drawing, undo, actions); Mac · Chrome · landscape-light (drawing, undo, actions);
-  Mac · Chrome · landscape-dark (drawing, undo, actions); Mac · Safari · portrait-light (drawing,
-  undo, actions); Mac · Safari · portrait-dark (drawing, undo, actions); Mac · Safari ·
-  landscape-light (drawing, undo, actions); Mac · Safari · landscape-dark (drawing, undo, actions);
-  Mac · Firefox · portrait-light (drawing, undo, actions); Mac · Firefox · portrait-dark (drawing,
-  undo, actions); Mac · Firefox · landscape-light (drawing, undo, actions); Mac · Firefox ·
-  landscape-dark (drawing, undo, actions).
+  2026-09-05 campaign freshly captured every physical release-gate section and preserves all
+  advisory iPad Simulator, Android Emulator, and Mac desktop rows wholesale. No physical section is
+  preserved. The 28 preserved advisory modes retain their original product commits and do not claim
+  currency. Representative fresh physical evidence is promoted under
+  perf-profiles/evidence/2026-09-05-epic-1567-final-control/. Preserved cells: iPad simulator · web
+  · portrait-light (drawing, undo, actions); iPad simulator · web · portrait-dark (drawing, undo,
+  actions); iPad simulator · web · landscape-light (drawing, undo, actions); iPad simulator · web ·
+  landscape-dark (drawing, undo, actions); iPad simulator · native · portrait-light (drawing, undo,
+  actions); iPad simulator · native · portrait-dark (drawing, undo, actions); iPad simulator ·
+  native · landscape-light (drawing, undo, actions); iPad simulator · native · landscape-dark
+  (drawing, undo, actions); Android emulator · web · portrait-light (drawing, undo, actions);
+  Android emulator · web · portrait-dark (drawing, undo, actions); Android emulator · web ·
+  landscape-light (drawing, undo, actions); Android emulator · web · landscape-dark (drawing, undo,
+  actions); Android emulator · native · portrait-light (drawing, undo, actions); Android emulator ·
+  native · portrait-dark (drawing, undo, actions); Android emulator · native · landscape-light
+  (drawing, undo, actions); Android emulator · native · landscape-dark (drawing, undo, actions); Mac
+  · Chrome · portrait-light (drawing, undo, actions); Mac · Chrome · portrait-dark (drawing, undo,
+  actions); Mac · Chrome · landscape-light (drawing, undo, actions); Mac · Chrome · landscape-dark
+  (drawing, undo, actions); Mac · Safari · portrait-light (drawing, undo, actions); Mac · Safari ·
+  portrait-dark (drawing, undo, actions); Mac · Safari · landscape-light (drawing, undo, actions);
+  Mac · Safari · landscape-dark (drawing, undo, actions); Mac · Firefox · portrait-light (drawing,
+  undo, actions); Mac · Firefox · portrait-dark (drawing, undo, actions); Mac · Firefox ·
+  landscape-light (drawing, undo, actions); Mac · Firefox · landscape-dark (drawing, undo, actions).
 
 ## Candidate actions
 

@@ -1026,6 +1026,6 @@
   ],
   "preservedEvidence": {
     "from": "data.json",
-    "reason": "The 2026-09-03 campaign preserves only sections it could not recapture faithfully: both iPad Simulator rows; Android emulator web; Android emulator native portrait and both landscape action sections; all physical Android undo sections; Android physical web dark-mode actions; and every Android physical native action section. The split Android transport records no undo phase. The physical Android action blocks are #1595's lazy-Settings wait-before-demand ordering plus #1387's compact rotation-picker contract in native landscape modes; advisory targets also hit uncalibrated content geometry, unchanged-canvas, or input-cadence failures. Preserved sections retain their original product commits and do not claim currency. Representative fresh evidence is promoted under the perf-profiles/evidence/2026-09-03-deployment-target-matrix* campaign directories."
+    "reason": "The 2026-09-05 campaign freshly captured every physical release-gate section and preserves all advisory iPad Simulator, Android Emulator, and Mac desktop rows wholesale. No physical section is preserved. The 28 preserved advisory modes retain their original product commits and do not claim currency. Representative fresh physical evidence is promoted under perf-profiles/evidence/2026-09-05-epic-1567-final-control/."
   }
 }
