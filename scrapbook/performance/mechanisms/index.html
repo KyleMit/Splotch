@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="description" content="A guided, illustrated tour of every performance mechanism in Splotch: the frame budget, per-frame rasterization, the tiled canvas, idle scheduling, the startup bundle, off-main-thread work, and network caching, verified against the code."/>
+<title>How Splotch stays fast</title>
+<link rel="icon" href="data:,"/>
+<style>
+:root{
+  color-scheme:light dark;
+  --paper:#f5f3ee;--paper-2:#efece5;--card:#fdfbf6;--card-2:#f6f3ec;
+  --ink:#23212a;--muted:#6b6774;--faint:#948f9c;
+  --hair:#e6e1d8;--hair-strong:#d9d3c8;
+  --accent:#2f6fed;--accent-ink:#1e50c4;--accent-wash:#e8effe;
+  --gold:#b1780a;--ok:#3f9d55;--warn:#e08a1e;--bad:#d24b3f;
+  --c-red:#ec534e;--c-orange:#f89c45;--c-yellow:#f9d24f;
+  --c-green:#8cc864;--c-blue:#62a2e9;--c-purple:#ab71e1;--c-pink:#f47cb0;
+  --code-bg:#211f29;--code-ink:#f2eef8;--code-muted:#aaa4b7;
+  --code-blue:#8fc7ff;--code-green:#91d18b;--code-orange:#f6b46b;--code-pink:#f39bc2;--code-type:#d8b4fe;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05),0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06),0 22px 48px rgba(30,28,40,.12);
+  --r-sm:9px;--r-md:16px;--r-lg:22px;--shell:1160px;--nav-h:46px;
+  --font:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#131418;--paper-2:#0f1013;--card:#1d1f27;--card-2:#181a20;
+    --ink:#e9e7e2;--muted:#a8a4af;--faint:#807d89;
+    --hair:#34373f;--hair-strong:#464a55;
+    --accent:#7aa8ff;--accent-ink:#a9c6ff;--accent-wash:#1b2536;
+    --gold:#d9a441;--ok:#5cc078;--warn:#e6a545;--bad:#e8695c;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.4);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 22px 48px rgba(0,0,0,.5);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.58;-webkit-font-smoothing:antialiased}
+a{color:var(--accent-ink);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+button{font:inherit;color:inherit}
+.shell{width:100%;max-width:var(--shell);margin:0 auto;padding-inline:clamp(16px,4vw,44px)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+dfn{font-style:normal;font-weight:750;border-bottom:2px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+
+/* masthead */
+.masthead{position:relative;overflow:hidden;background:radial-gradient(120% 140% at 100% 0,color-mix(in srgb,var(--accent-wash) 62%,transparent),transparent 60%),linear-gradient(180deg,var(--card-2),var(--paper));border-bottom:1px solid var(--hair)}
+.masthead .shell{padding-top:clamp(16px,3vw,26px);padding-bottom:clamp(28px,5vw,54px)}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-height:34px}
+.brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:700;letter-spacing:-.01em}
+.brand:hover{text-decoration:none}.brand:hover .brand-name{color:var(--accent-ink)}
+.brand-name{font-size:15px}.brand-sub{color:var(--muted);font-weight:600}.brand-sub::before{content:"/";margin:0 5px;color:var(--faint);font-weight:400}
+.crayons{display:inline-flex;gap:4px;flex:0 0 auto}.crayons i{display:block;border-radius:99px;width:16px;height:6px}
+.crumbs{margin-left:auto;display:flex;align-items:center;gap:2px;font-size:13px;color:var(--muted);flex-wrap:wrap}.crumbs a{color:var(--muted)}.crumbs .sep{color:var(--faint);margin:0 5px}.crumbs .here{color:var(--ink);font-weight:650}
+.masthead-body{margin-top:clamp(22px,4vw,38px);position:relative;z-index:1;max-width:900px}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;color:var(--gold);font-weight:750}
+h1{font-size:clamp(2.2rem,6vw,4.4rem);line-height:.98;margin:.32rem 0 0;letter-spacing:-.05em;text-wrap:balance;font-weight:850}
+.tagline{color:var(--muted);max-width:70ch;margin:.9rem 0 0;font-size:clamp(1rem,1.5vw,1.16rem)}
+.tagline b{color:var(--ink)}
+.stat-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:19px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:650;padding:5px 11px;border-radius:999px;background:var(--card);border:1px solid var(--hair);color:var(--muted)}
+.chip b{color:var(--ink)}.chip.accent{background:var(--accent-wash);border-color:transparent;color:var(--accent-ink)}
+.masthead-sketch{position:absolute;right:clamp(-95px,-3vw,-20px);bottom:-70px;width:clamp(300px,42vw,520px);height:300px;opacity:.22;pointer-events:none}
+
+/* sticky quick nav */
+.quicknav{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--hair);background:var(--paper)}
+.quicknav .shell{display:flex;gap:4px;align-items:center;height:var(--nav-h);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 22px),transparent)}
+.quicknav .shell::-webkit-scrollbar{display:none}
+.quicknav a{flex:0 0 auto;font-size:.76rem;font-weight:650;color:var(--muted);padding:5px 10px;border-radius:999px;border:1px solid transparent;line-height:1.2;white-space:nowrap}
+.quicknav a:hover{color:var(--accent-ink);background:var(--accent-wash);text-decoration:none}
+.quicknav a.active{color:var(--accent-ink);background:var(--accent-wash);border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.quicknav .nav-num{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:5px;font-size:.62rem;background:color-mix(in srgb,var(--ink) 9%,transparent);margin-right:5px;vertical-align:-2px}
+.quicknav a.active .nav-num{background:var(--accent);color:#fff}
+
+main .shell{padding-top:clamp(34px,5vw,62px);padding-bottom:clamp(62px,8vw,100px)}
+section{scroll-margin-top:calc(var(--nav-h) + 14px);margin-top:clamp(58px,8vw,94px)}
+section:first-child{margin-top:0}
+.section-kicker{font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:750;margin:0 0 4px}
+h2{font-size:clamp(1.7rem,3.4vw,2.6rem);line-height:1.08;letter-spacing:-.035em;margin:0;text-wrap:balance}
+h3{font-size:1.13rem;line-height:1.25;margin:0;letter-spacing:-.012em}
+h4{font-size:.95rem;margin:0}
+p{margin:.72rem 0}
+.lede{font-size:clamp(1.1rem,1.9vw,1.32rem);line-height:1.48;max-width:74ch;margin:.7rem 0 26px;color:var(--ink)}
+.prose{max-width:76ch}
+.muted{color:var(--muted)}
+.callout{border-left:4px solid var(--accent);padding:13px 16px;background:var(--accent-wash);border-radius:0 var(--r-sm) var(--r-sm) 0;margin:20px 0;color:var(--ink)}
+.callout.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 11%,var(--card))}
+.callout.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--card))}
+.callout strong{font-weight:800}
+.callout p{margin:.35rem 0}
+
+/* brick header */
+.brick-head{display:flex;gap:18px;align-items:flex-start}
+.brick-glyph{flex:0 0 auto;width:58px;height:58px;display:grid;place-items:center;border-radius:18px;background:color-mix(in srgb,var(--hue,var(--accent)) 18%,var(--card));border:1px solid color-mix(in srgb,var(--hue,var(--accent)) 40%,var(--hair));font-size:1.55rem;box-shadow:var(--shadow-sm)}
+.brick-rule{margin:18px 0 0;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:12px 16px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--hair);font-size:.95rem}
+.brick-rule b{color:var(--ink)}.brick-rule .rule-tag{font-size:.66rem;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);font-weight:800}
+
+/* definition cards */
+.terms{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}
+.term-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px 16px;box-shadow:var(--shadow-sm)}
+.term-card h4{font-size:.92rem;display:flex;align-items:center;gap:8px}
+.term-card h4 span{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent-wash);padding:2px 7px;border-radius:999px}
+.term-card p{margin:.4rem 0 0;font-size:.88rem;color:var(--muted)}
+
+/* idea grid (map) */
+.idea-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+.idea{display:block;position:relative;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:18px;box-shadow:var(--shadow-sm);color:var(--ink);border-top:4px solid var(--hue,var(--accent))}
+.idea:hover{text-decoration:none;box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.idea .idea-number{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:color-mix(in srgb,var(--hue,var(--accent)) 18%,var(--card));color:var(--ink);font-weight:850;margin-bottom:12px;font-size:1.1rem}
+.idea p{font-size:.9rem;color:var(--muted);margin:.45rem 0 0}
+.idea .idea-count{position:absolute;top:14px;right:14px;font-size:.7rem;font-weight:750;color:var(--muted);background:var(--card-2);border:1px solid var(--hair);padding:2px 8px;border-radius:999px}
+
+/* interactive lab panel */
+.lab{margin:24px 0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);box-shadow:var(--shadow-md);overflow:hidden}
+.lab-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--hair);background:var(--card-2)}
+.lab-head h3{font-size:1rem}.lab-head p{margin:0;color:var(--muted);font-size:.82rem}
+.lab-body{padding:16px 18px 18px}
+.controls{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.control{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted);font-weight:650}
+.seg{display:inline-flex;border:1px solid var(--hair-strong);border-radius:999px;padding:2px;background:var(--card)}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:999px;font-size:.8rem;font-weight:700;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+input[type=range]{accent-color:var(--accent);width:160px}
+.btn{border:1px solid var(--hair-strong);background:var(--card);padding:7px 14px;border-radius:999px;font-size:.82rem;font-weight:700;cursor:pointer;color:var(--ink);touch-action:none;user-select:none;-webkit-user-select:none}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.holding{background:var(--c-pink);border-color:var(--c-pink);color:#fff}
+.readout{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.readout div{flex:1 1 150px;padding:10px 12px;border-radius:var(--r-sm);background:var(--card-2);border:1px solid var(--hair)}
+.readout b{display:block;font-size:1.3rem;line-height:1.1;letter-spacing:-.02em}
+.readout span{font-size:.74rem;color:var(--muted)}
+.readout b.bad{color:var(--bad)}.readout b.ok{color:var(--ok)}
+.lab svg{display:block;width:100%;height:auto}
+.lab svg text{font-family:var(--font);fill:var(--muted);font-size:11px;font-weight:600}
+.lab svg .tick{stroke:var(--hair-strong);stroke-width:1}
+.lab svg .lane{stroke:var(--hair);stroke-width:1}
+.lab-note{font-size:.82rem;color:var(--muted);margin:12px 0 0;padding-top:12px;border-top:1px solid var(--hair)}
+
+/* tile pad */
+.tile-layout{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(0,1.1fr);gap:clamp(18px,4vw,40px);align-items:start}
+.tile-pad{display:block;width:100%;max-width:380px;margin-inline:auto;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;border-radius:var(--r-md);background:var(--card-2);border:1px solid var(--hair)}
+.tile-pad .cell{fill:transparent;stroke:var(--hair-strong);stroke-width:1.5}
+.tile-pad .cell.hit{fill:color-mix(in srgb,var(--c-blue) 22%,transparent)}
+.tile-pad .ink{fill:none;stroke:var(--c-red);stroke-width:22;stroke-linecap:round;stroke-linejoin:round}
+.tile-pad .bound{fill:none;stroke:var(--warn);stroke-width:2;stroke-dasharray:7 6}
+.tile-pad .hint{font-size:15px;fill:var(--faint);font-weight:700}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:.74rem;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:12px;height:12px;border-radius:3px;display:inline-block}.swatch.hit{background:color-mix(in srgb,var(--c-blue) 24%,var(--card));border:1px solid var(--c-blue)}.swatch.path{height:4px;border-radius:99px;background:var(--c-red)}.swatch.bounds{background:transparent;border:2px dashed var(--warn)}
+
+/* idle demo */
+.jobs{display:grid;gap:8px;margin-top:6px}
+.job{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);background:var(--card-2);border:1px solid var(--hair);font-size:.86rem;transition:background .3s,border-color .3s}
+.job small{display:block;color:var(--muted);font-size:.74rem}
+.job .state{font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--hair);color:var(--muted)}
+.job.waiting .state{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--hair))}
+.job.running{background:var(--accent-wash);border-color:color-mix(in srgb,var(--accent) 45%,var(--hair))}.job.running .state{color:var(--accent-ink);border-color:var(--accent)}
+.job.done{opacity:.72}.job.done .state{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--hair))}
+.quiet-meter{height:10px;border-radius:99px;background:var(--card-2);border:1px solid var(--hair);overflow:hidden;margin-top:8px}
+.quiet-meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .08s linear}
+.quiet-meter i.busy{background:var(--c-pink)}
+.idle-layout{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr);gap:22px;align-items:start}
+
+/* boot timeline + bundle */
+.boot{display:grid;gap:6px;margin:22px 0}
+.boot-row{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;font-size:.8rem}
+.boot-row .lab-l{font-weight:750;text-align:right;color:var(--muted)}
+.boot-track{position:relative;height:34px;border-radius:8px;background:var(--card-2);border:1px solid var(--hair)}
+.boot-bar{position:absolute;top:4px;bottom:4px;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:.7rem;font-weight:750;white-space:nowrap;overflow:hidden;color:var(--ink);background:color-mix(in srgb,var(--hue,var(--c-blue)) 30%,var(--card));border:1px solid color-mix(in srgb,var(--hue,var(--c-blue)) 55%,transparent)}
+.boot-bar.stripe{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--hue) 28%,var(--card)) 0 6px,color-mix(in srgb,var(--hue) 12%,var(--card)) 6px 12px)}
+.boot-axis{display:grid;grid-template-columns:150px 1fr;gap:10px;font-size:.68rem;color:var(--faint)}
+.boot-axis div:last-child{display:flex;justify-content:space-between}
+.boot-list{display:none;margin:18px 0 10px;padding-left:22px;font-size:.9rem;color:var(--muted)}.boot-list li+li{margin-top:6px}.boot-list b{color:var(--ink)}
+.bundle{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px;margin:22px 0;align-items:start}
+.bundle-box{border-radius:var(--r-md);border:2px solid color-mix(in srgb,var(--accent) 55%,var(--hair));background:var(--accent-wash);padding:14px}
+.bundle-box h4,.bundle-out h4{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px}
+.bundle-out{border-radius:var(--r-md);border:2px dashed var(--hair-strong);padding:14px;background:var(--card)}
+.mods{display:flex;flex-wrap:wrap;gap:6px}
+.mod{font-family:var(--mono);font-size:.7rem;padding:5px 9px;border-radius:7px;background:var(--card);border:1px solid var(--hair);color:var(--ink)}
+.mod.lazy{background:var(--card-2);border-style:dashed}
+.mod small{font-family:var(--font);color:var(--muted);margin-left:4px}
+
+
+/* walkthrough */
+.walk{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:0;position:relative}
+.walk::before{content:"";position:absolute;left:19px;top:10px;bottom:10px;width:2px;background:var(--hair-strong)}
+.walk li{display:grid;grid-template-columns:40px 1fr;gap:16px;align-items:start;padding:0 0 22px;position:relative}
+.walk li::before{content:"";position:absolute;left:12px;top:6px;width:16px;height:16px;border-radius:99px;background:var(--card);border:3px solid var(--accent);z-index:1}
+.walk-tag{grid-column:2;font-size:.66rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);background:color-mix(in srgb,var(--hue,var(--accent)) 22%,var(--card));border:1px solid color-mix(in srgb,var(--hue,var(--accent)) 45%,var(--hair));padding:3px 9px;border-radius:999px;justify-self:start;margin-bottom:6px}
+.walk li>div{grid-column:2}
+.walk h4{font-size:1.02rem}.walk p{margin:.3rem 0 0;color:var(--muted);font-size:.92rem;max-width:72ch}
+
+/* charts */
+.chart{margin:22px 0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);padding:clamp(14px,2.5vw,22px);box-shadow:var(--shadow-sm)}
+.chart-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
+.chart-head h3{font-size:1rem}.chart-head p{margin:0;font-size:.8rem;color:var(--muted)}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart svg text{font-family:var(--font);font-size:11px;fill:var(--muted);font-weight:600}
+.chart svg .grid{stroke:var(--hair);stroke-width:1}
+.chart svg .ref{stroke:var(--gold);stroke-width:1.5}
+.chart svg .row-label{fill:var(--ink);font-weight:650}
+.chart svg .ring{stroke:var(--card);stroke-width:2}
+.chart-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.76rem;color:var(--muted);margin-top:8px}
+.chart-legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:99px;display:inline-block}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--paper);padding:7px 10px;border-radius:8px;font-size:.76rem;line-height:1.35;max-width:260px;box-shadow:var(--shadow-md);opacity:0;transform:translateY(4px);transition:opacity .12s}
+.tip.show{opacity:1;transform:none}
+.chart-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px}
+.chart-table th,.chart-table td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--hair)}
+.chart-table th{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.chart-table td.num{font-variant-numeric:tabular-nums;text-align:right}
+.chart-table th.num{text-align:right}
+.toggle-table{font-size:.76rem;border:0;background:transparent;color:var(--accent-ink);cursor:pointer;padding:0;font-weight:700}
+.heat{display:grid;grid-template-columns:150px repeat(4,1fr);gap:4px;margin-top:10px}
+.heat .h{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 4px;font-weight:750;text-align:center}
+.heat .rl{font-size:.8rem;font-weight:700;display:block;padding:10px 8px 0 0;line-height:1.2}.heat .rl small{display:block;color:var(--muted);font-weight:600;font-size:.68rem;margin-top:3px}
+.heat .cell{position:relative;padding:12px 6px;border-radius:8px;text-align:center;font-weight:800;font-size:.9rem;font-variant-numeric:tabular-nums;color:var(--ink);border:1px solid var(--hair)}
+.heat .cell small{display:block;font-size:.66rem;font-weight:650;color:var(--muted)}
+.heat .cell.over{outline:2px solid var(--bad)}
+
+/* code */
+.codeblock{background:var(--code-bg);color:var(--code-ink);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-md);margin:22px 0}
+.codehead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.1);font-family:var(--mono);font-size:.7rem;color:var(--code-muted);flex-wrap:wrap}
+.codehead a{color:var(--code-blue)}
+pre{margin:0;padding:16px;overflow:auto;font:12.5px/1.65 var(--mono);tab-size:2}code{font-family:var(--mono)}
+.kw{color:var(--code-pink)}.fn{color:var(--code-blue)}.str{color:var(--code-green)}.num{color:var(--code-orange)}.cm{color:var(--code-muted);font-style:italic}.type{color:var(--code-type)}
+:not(pre)>code{font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.13em .42em;border-radius:5px;color:var(--ink)}
+
+/* mechanism list inside bricks */
+.mech-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:22px 0}
+.mech{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;padding:14px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}
+.mech-glyph{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:color-mix(in srgb,var(--hue,var(--accent)) 16%,var(--card));color:var(--ink);font-weight:850;font-size:.78rem;text-align:center;line-height:1}
+.mech h4{font-size:.92rem}.mech p{margin:.25rem 0 0;color:var(--muted);font-size:.83rem}
+.mech .src{display:block;margin-top:6px;overflow-wrap:anywhere;font-family:var(--mono);font-size:.68rem;color:var(--faint)}
+.mech .src a{color:var(--accent-ink)}
+
+/* numbers */
+.numbers{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.number{padding:13px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}
+.number b{display:block;font-size:1.45rem;line-height:1;color:var(--accent-ink);letter-spacing:-.02em}
+.number span{font-size:.76rem;color:var(--muted);display:block;margin-top:5px}
+
+/* compare panels */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.compare-panel{padding:18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--hair)}
+.compare-panel h3{display:flex;align-items:center;gap:8px;font-size:1rem}
+.compare-panel ul{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:.87rem}.compare-panel li+li{margin-top:7px}
+
+/* rejected */
+.grave{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:22px 0}
+.grave article{padding:14px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair);border-left:4px solid var(--bad)}
+.grave h4{font-size:.9rem}.grave p{margin:.3rem 0 0;color:var(--muted);font-size:.83rem}
+
+/* inventory */
+.inv-bar{position:sticky;top:var(--nav-h);z-index:20;background:var(--paper);padding:10px 0;margin-top:18px;border-bottom:1px solid var(--hair);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inv-bar .chips{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;flex:1 1 300px;min-width:0}
+.inv-bar .chips::-webkit-scrollbar{display:none}
+.inv-bar .chips button{flex:0 0 auto;border:1px solid var(--hair-strong);background:var(--card);padding:5px 11px;border-radius:999px;font-size:.76rem;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap}
+.inv-bar .chips button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.inv-bar input{flex:0 1 220px;min-width:140px;border:1px solid var(--hair-strong);background:var(--card);border-radius:999px;padding:6px 12px;font:inherit;font-size:.82rem;color:var(--ink)}
+.inv-count{font-size:.76rem;color:var(--muted);white-space:nowrap}
+.inv-group{margin-top:26px}
+.inv-group h3{font-size:1rem;display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:2px solid var(--hue,var(--accent))}
+.inv-group h3 small{font-weight:650;color:var(--muted);font-size:.76rem}
+.inv-rows{display:grid;gap:8px;margin-top:10px}
+.inv-row{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;min-width:0;padding:12px 14px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}
+.inv-n{font-family:var(--mono);font-size:.74rem;color:var(--faint);padding-top:3px}
+.inv-row h4{font-size:.92rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inv-row p{margin:.25rem 0 0;font-size:.84rem;color:var(--muted)}
+.inv-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.inv-meta a,.inv-meta span{max-width:100%;overflow-wrap:anywhere;font-size:.68rem;padding:3px 8px;border-radius:999px;border:1px solid var(--hair);background:var(--card-2);font-family:var(--mono);color:var(--accent-ink)}
+.inv-meta span{font-family:var(--font);color:var(--muted)}
+.badge{font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:999px}
+.badge.rev{background:color-mix(in srgb,var(--warn) 18%,var(--card));color:var(--warn)}
+.badge.new{background:color-mix(in srgb,var(--ok) 18%,var(--card));color:var(--ok)}
+.badge.hist{background:color-mix(in srgb,var(--faint) 18%,var(--card));color:var(--muted)}
+.inv-empty{padding:24px;text-align:center;color:var(--muted);font-size:.9rem}
+
+/* glossary + sources */
+.glossary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.gterm{padding:14px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-sm)}
+.gterm dt{font-weight:850;font-size:.84rem}.gterm dd{margin:.35rem 0 0;color:var(--muted);font-size:.8rem}
+.source-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.84rem}.source-table th,.source-table td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--hair);vertical-align:top}.source-table th{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}.source-table td:first-child{font-family:var(--mono);font-size:.76rem}.source-table td:last-child{color:var(--muted)}
+.adr-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.adr-links a{font-size:.76rem;padding:6px 10px;border:1px solid var(--hair);border-radius:999px;background:var(--card)}
+.site-foot{border-top:1px solid var(--hair);background:var(--card-2)}.site-foot .shell{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:22px;padding-bottom:26px;color:var(--muted);font-size:.84rem}.site-foot p{margin:0}.site-foot .crayons i{width:15px;height:5px}
+
+@media(min-width:961px){.inv-rows{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:960px){
+  .terms,.idea-grid,.glossary{grid-template-columns:repeat(2,1fr)}
+  .tile-layout,.idle-layout,.bundle{grid-template-columns:1fr}
+  .numbers{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:720px){
+  .masthead-sketch{display:none}.crumbs{width:100%;margin-left:0;margin-top:6px}
+  .terms,.idea-grid,.mech-list,.compare,.grave,.glossary{grid-template-columns:1fr}
+  .brick-head{gap:12px}.brick-glyph{width:46px;height:46px;font-size:1.25rem;border-radius:14px}
+  .boot{display:none}.boot-list{display:block}
+  .heat{grid-template-columns:92px repeat(4,1fr)}.heat .cell{padding:9px 3px;font-size:.78rem}.heat .rl{font-size:.72rem}
+  .source-table{display:block;overflow-x:auto}
+  .inv-bar input{flex:1 1 auto;min-width:0}
+  .readout b{font-size:1.1rem}
+}
+@media(max-width:480px){
+  h1{font-size:2.3rem}.numbers{grid-template-columns:1fr 1fr}
+  .heat{grid-template-columns:64px repeat(4,1fr)}.heat .h{font-size:.6rem}.heat .rl{font-size:.68rem}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.idea:hover{transform:none}}
+</style>
+</head>
+<body id="perf-explainer">
+<header class="masthead">
+  <svg class="masthead-sketch" aria-hidden="true" viewBox="0 0 560 320">
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 240 L60 240 L60 120 L100 120 L100 240 L140 240 L140 60 L180 60 L180 240 L220 240 L220 150 L260 150 L260 240 L300 240 L300 90 L340 90 L340 240 L380 240 L380 170 L420 170 L420 240 L460 240 L460 40 L500 40 L500 240 L540 240" stroke="var(--c-blue)" stroke-width="14"/>
+      <path d="M20 200 C120 140 220 260 320 180 S480 120 540 200" stroke="var(--c-pink)" stroke-width="12"/>
+    </g>
+  </svg>
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="../../index.html">
+        <span class="crayons" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+        <span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span>
+      </a>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="../../index.html">Collections</a><span class="sep">/</span><a href="../2026-07-31-deployment-target-matrix/index.html">Performance</a><span class="sep">/</span><span class="here" aria-current="page">How it stays fast</span></nav>
+    </div>
+    <div class="masthead-body">
+      <p class="eyebrow">Performance explainer · verified against main on September 5, 2026</p>
+      <h1>How Splotch keeps up with a toddler's finger</h1>
+      <p class="tagline">A drawing app for two-year-olds has one job: the ink must appear where the finger is, on the very next picture the screen shows. This page builds up, one brick at a time, how the app spends its <b>16.7 milliseconds per frame</b>, and catalogs every mechanism in the code that protects that budget.</p>
+      <div class="stat-row">
+        <span class="chip accent"><b>16.7 ms</b> per frame at 60 Hz</span>
+        <span class="chip"><b>≤ 1%</b> lost frame time to ship</span>
+        <span class="chip"><b>101</b> mechanisms, each verified in the source</span>
+        <span class="chip"><b>6</b> habits that explain almost all of them</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="quicknav" aria-label="On this page">
+  <div class="shell">
+    <a href="#budget">The budget</a>
+    <a href="#map">Six habits</a>
+    <a href="#per-frame"><span class="nav-num">1</span>Per frame</a>
+    <a href="#tiles"><span class="nav-num">2</span>Only what changed</a>
+    <a href="#idle"><span class="nav-num">3</span>At idle</a>
+    <a href="#startup"><span class="nav-num">4</span>Startup</a>
+    <a href="#offload"><span class="nav-num">5</span>Off the main thread</a>
+    <a href="#network"><span class="nav-num">6</span>Network</a>
+    <a href="#stroke">One stroke</a>
+    <a href="#wins">Measured wins</a>
+    <a href="#today">Today</a>
+    <a href="#scoring">Scoring</a>
+    <a href="#rejected">Rejected</a>
+    <a href="#inventory">Inventory</a>
+    <a href="#glossary">Glossary</a>
+  </div>
+</nav>
+
+<main>
+  <div class="shell">
+
+    <!-- ============================== BUDGET ============================== -->
+    <section id="budget">
+      <p class="section-kicker">Start here</p>
+      <h2>Everything has to fit inside one frame</h2>
+      <p class="lede">A screen never shows motion. It shows a stack of still pictures, one after another, fast enough that the eye fills in the movement. Each picture has a deadline. Every mechanism on this page exists to hit that deadline while a child scribbles as fast as they can.</p>
+
+      <div class="terms">
+        <article class="term-card"><h4>Frame <span>the picture</span></h4><p>One still image the display shows. A 60 Hz iPad shows 60 per second, one every 16.7 ms. A 120 Hz Android phone shows one every 8.3 ms. That gap is the <dfn>beat</dfn>.</p></article>
+        <article class="term-card"><h4>Main thread <span>the worker</span></h4><p>The single lane in which the browser runs the app's JavaScript, computes styles, lays out the page, and paints. If the lane is busy when the beat arrives, the frame is late.</p></article>
+        <article class="term-card"><h4>requestAnimationFrame <span>rAF</span></h4><p>The browser's "call me right before the next frame" hook. Splotch does its per-frame drawing work inside it, so the work lands exactly once per picture.</p></article>
+        <article class="term-card"><h4>Late frame <span>a miss</span></h4><p>A frame whose work ran past the beat. The display repeats the previous picture, so the ink lags the finger. Too many in a row reads as stutter.</p></article>
+        <article class="term-card"><h4>Lost frame time <span>the score</span></h4><p>Of all the time a finger is touching the glass, the share spent inside late frames. Splotch ships a drawing only when a real device holds this at or below <b>1%</b>.</p></article>
+        <article class="term-card"><h4>Paint latency <span>the feel</span></h4><p>Time from a finger movement to the frame that showed its ink. Gated at P95 ≤ 20 ms, P99 ≤ 33 ms, and never above 50 ms, in absolute milliseconds because a 50 ms hitch is visible at any refresh rate.</p></article>
+      </div>
+
+      <div class="lab" id="lab-budget">
+        <div class="lab-head"><h3>Try it: spend a frame budget</h3><p>Drag the slider to change how much work runs per frame. Watch when frames start to miss.</p></div>
+        <div class="lab-body">
+          <div class="controls">
+            <div class="control">Display <div class="seg" role="group" aria-label="Refresh rate"><button data-hz="60" aria-pressed="true">60 Hz · iPad</button><button data-hz="120" aria-pressed="false">120 Hz · phone</button></div></div>
+            <label class="control">Work per frame <input type="range" id="budget-work" min="1" max="40" value="9" step="0.5" aria-label="Work per frame in milliseconds"> <output id="budget-work-out">9 ms</output></label>
+          </div>
+          <svg id="budget-svg" viewBox="0 0 720 140" role="img" aria-label="Frame timeline showing work bars against frame ticks"></svg>
+          <div class="readout">
+            <div><b id="budget-beat">16.7 ms</b><span>the beat (time between frames)</span></div>
+            <div><b id="budget-late">0 of 12</b><span>frames late</span></div>
+            <div><b id="budget-lost">0%</b><span>lost frame time (gate: ≤ 1%)</span></div>
+          </div>
+          <p class="lab-note">The same 9 ms of work fits comfortably at 60 Hz and misses every frame at 120 Hz. That is why the phone rows of the performance matrix are scored at their own beat, and why so much of this page is about making the per-frame work small rather than merely "fast enough on my laptop".</p>
+        </div>
+      </div>
+
+      <div class="callout"><strong>What "fast" means here.</strong> Not a benchmark score. A physical iPad and a physical Android phone are driven by real, OS-injected touches through ten repeated gestures, and the app passes only if lost frame time stays under 1% and paint latency stays under the gates above. The <a href="#scoring">scoring section</a> explains how a capture earns the right to be scored at all.</div>
+    </section>
+
+    <!-- ============================== MAP ============================== -->
+    <section id="map">
+      <p class="section-kicker">The map</p>
+      <h2>Six habits explain almost every mechanism</h2>
+      <p class="lede">A hundred and one optimizations sound like a pile. They are not. Read the code and the same six habits show up again and again. The first four do most of the work; the last two cover the edges. Each card is a section below.</p>
+      <div class="idea-grid">
+        <a class="idea" href="#per-frame" style="--hue:var(--c-blue)"><span class="idea-count" data-count-for="frame"></span><div class="idea-number">1</div><h3>Do it per frame, not per event</h3><p>A finger produces more samples than the display can show. Collect them and paint once per picture.</p></a>
+        <a class="idea" href="#tiles" style="--hue:var(--c-orange)"><span class="idea-count" data-count-for="changed"></span><div class="idea-number">2</div><h3>Touch only what changed</h3><p>Split the paper into tiles, track the dirty rectangle, and never repaint or copy a pixel the stroke did not reach.</p></a>
+        <a class="idea" href="#idle" style="--hue:var(--c-green)"><span class="idea-count" data-count-for="idle"></span><div class="idea-number">3</div><h3>Do it at idle, never under a finger</h3><p>Anything that can wait, waits: until no pointer is down, input has been quiet, and two frames in a row ran on time.</p></a>
+        <a class="idea" href="#startup" style="--hue:var(--c-purple)"><span class="idea-count" data-count-for="startup"></span><div class="idea-number">4</div><h3>Keep it off the startup path</h3><p>The first stroke should work before the app has finished loading. Everything not needed for it loads later, and tests pin the boundary.</p></a>
+        <a class="idea" href="#offload" style="--hue:var(--c-pink)"><span class="idea-count" data-count-for="offload"></span><div class="idea-number">5</div><h3>Move heavy work off the main thread</h3><p>Let the compositor do transforms and blends, and let workers do encoding and rasterization, so the drawing lane stays clear.</p></a>
+        <a class="idea" href="#network" style="--hue:var(--c-yellow)"><span class="idea-count" data-count-for="network"></span><div class="idea-number">6</div><h3>Never let the network hold a frame</h3><p>Cache aggressively, download in the background, decode before showing, and never start a big fetch while a child is drawing.</p></a>
+      </div>
+    </section>
+
+    <!-- ============================== BRICK 1 ============================== -->
+    <section id="per-frame">
+      <div class="brick-head"><div class="brick-glyph" style="--hue:var(--c-blue)" aria-hidden="true">🎞️</div><div><p class="section-kicker">Habit 1</p><h2>Do it per frame, not per event</h2></div></div>
+      <p class="lede">A touch digitizer reports finger positions faster than the screen can show them. On the iPad the engine measured 1.9 to 4.2 movement samples per painted frame. If every sample triggered painting, the same frame would be drawn two to four times over, and the extra passes would be invisible.</p>
+
+      <div class="prose">
+        <p>Two terms make this concrete. A <dfn>pointer event</dfn> is the browser telling the page "the finger moved to x, y". <dfn>Coalesced events</dfn> are the in-between samples the digitizer recorded since the last event; the browser batches them and exposes them through <code>getCoalescedEvents()</code>. Splotch reads every one of those samples so a fast scribble curves instead of turning into long straight chords. It just does not <em>paint</em> on each of them.</p>
+        <p>Instead, each pointer has a queue. A movement pushes its samples onto the queue and asks for one animation frame. When that frame arrives, the queue drains into a single render operation per pointer, carrying every sample as its own curve segment. The ink is identical to painting per event, and the per-operation cost (finding which tiles the stroke touches, capturing undo pixels, running the brush) is paid once. Lifting the finger drains the queue synchronously so nothing is lost.</p>
+      </div>
+
+      <div class="lab" id="lab-events">
+        <div class="lab-head"><h3>Try it: samples versus frames</h3><p>A 100 ms window of drawing on a 60 Hz screen. Change the digitizer rate and the painting strategy.</p></div>
+        <div class="lab-body">
+          <div class="controls">
+            <div class="control">Digitizer <div class="seg" role="group" aria-label="Digitizer sample rate"><button data-rate="60" aria-pressed="false">60 Hz</button><button data-rate="120" aria-pressed="true">120 Hz</button><button data-rate="240" aria-pressed="false">240 Hz</button></div></div>
+            <div class="control">Paint <div class="seg" role="group" aria-label="Painting strategy"><button data-mode="event" aria-pressed="true">per event</button><button data-mode="frame" aria-pressed="false">per frame</button></div></div>
+          </div>
+          <svg id="events-svg" viewBox="0 0 720 170" role="img" aria-label="Pointer samples on the top lane, frames on the bottom lane, and one raster operation per sample or per frame"></svg>
+          <div class="readout">
+            <div><b id="events-samples">12</b><span>pointer samples in 100 ms</span></div>
+            <div><b id="events-ops">12</b><span>raster operations</span></div>
+            <div><b id="events-ratio">2.0</b><span>samples per painted frame</span></div>
+          </div>
+          <p class="lab-note">Per frame, the operation count is pinned to the display rate no matter how fast the digitizer runs. Per event, it scales with the hardware, and a 240 Hz stylus digitizer would quadruple the painting work for zero visible gain.</p>
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/strokeRasterQueue.ts#L136-L150">web/src/lib/drawing/strokeRasterQueue.ts</a></span><span>one frame request, one drain</span></div>
+<pre><code class="lang-ts">function flushAll() {
+  if (rasterFrame !== 0) {
+    cancelAnimationFrame(rasterFrame);
+    rasterFrame = 0;
+  }
+  drainQueues();          // finger lifted: paint what is left right now
+}
+
+function schedule() {
+  if (rasterFrame !== 0) return;   // a frame is already booked
+  rasterFrame = requestAnimationFrame(() => {
+    rasterFrame = 0;
+    drainQueues();        // every pointer's queued samples become one op each
+  });
+}</code></pre>
+      </div>
+
+      <h3>The same habit, elsewhere</h3>
+      <div class="mech-list" style="--hue:var(--c-blue)">
+        <article class="mech"><div class="mech-glyph">rect</div><div><h4>Never measure the canvas per move</h4><p>Mapping a screen point to paper needs the canvas rectangle. Asking the browser for it forces a <dfn>layout</dfn> (recomputing every element's position) on every move. The engine caches the rectangle and refreshes it only on resize, scroll, or rotation.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/canvasMeasure.ts#L37-L98">canvasMeasure.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">0 alloc</div><div><h4>No allocation on the hot path</h4><p>The crayon brush reads its parameters three times per operation. Those reads go through non-cloning accessors so the per-move code creates no throwaway arrays, a rule written into the repo's Svelte guidance.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/crayonBrush.ts#L309-L322">crayonBrush.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">halo</div><div><h4>Pointer halos move once per frame</h4><p>The ring that follows each finger stores its pending position in a plain record and moves once per animation frame, latest position wins, with a GPU-composited transform.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/components/PointerHalos.svelte#L73-L113">PointerHalos.svelte</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">cap 8</div><div><h4>Backpressure on merged crayon moves</h4><p>If a frame stalls, the queue could merge dozens of samples into one operation whose bounding box spans tiles the ink never touched. Crayon operations split after 8 merged moves so that cannot happen.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/strokeRasterQueue.ts#L20">strokeRasterQueue.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">150 ms</div><div><h4>Trailing resize rebuild</h4><p>A resize refreshes the cached rectangle immediately but rebuilds the tile backings only after 150 ms without another resize, so a rotation's burst of events pays for one wipe and repaint, not five.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/engine.ts#L424-L434">engine.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">1/rAF</div><div><h4>Reveal one block per frame</h4><p>The Settings pane mounts its below-the-fold sections one per frame after its fly-in, and the What's New list reveals one release per frame; mounting them together measured 43 to 47 ms on desktop WebKit.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/components/settings/WideShell.svelte#L202-L212">WideShell.svelte</a> · <a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/components/settings/WhatsNewSection.svelte#L21-L44">WhatsNewSection.svelte</a></span></div></article>
+      </div>
+
+      <div class="callout warn"><strong>A runtime exception, chosen on purpose.</strong> The crayon merges per frame in the native app but paints per move in Safari. Safari prices a pattern-filled stroke by its path length, so merging buys nothing there, while the native WKWebView prices per operation, so merging is a win. The choice is made at build time from the single <code>CAPACITOR=true</code> signal (ADR-0146).</div>
+    </section>
+
+    <!-- ============================== BRICK 2 ============================== -->
+    <section id="tiles">
+      <div class="brick-head"><div class="brick-glyph" style="--hue:var(--c-orange)" aria-hidden="true">🧱</div><div><p class="section-kicker">Habit 2</p><h2>Touch only what changed</h2></div></div>
+      <p class="lede">A stroke changes a sliver of the paper. If the app treated the paper as one big bitmap, every stroke, every undo, and every theme switch would pay for the whole surface. So the paper is not one bitmap. It is twenty.</p>
+
+      <div class="prose">
+        <p>The visible drawing surface is a grid of 4 columns by 5 rows of small canvases called <dfn>tiles</dfn>. Every render operation carries a conservative <dfn>bounding box</dfn>: the smallest rectangle that could contain its ink, padded by half the stroke width plus two pixels for anti-aliasing. Before painting, the renderer checks that box against each tile and skips the ones it cannot touch. That check is called <dfn>culling</dfn>, and it is the single decision the rest of this section builds on.</p>
+        <p>A tile that has never been inked stays <em>hidden</em>. A hidden canvas costs the <dfn>compositor</dfn> (the part of the browser that stacks layers into the final picture) nothing, and it has no backing memory until the first stroke reaches it. On the target iPad, mutating one large canvas hit a cliff somewhere between 1.6 and 2.3 megapixels per surface; twenty tiles sit well under it (ADR-0085).</p>
+      </div>
+
+      <div class="lab" id="lab-tiles">
+        <div class="lab-head"><h3>Try it: draw on the tiles</h3><p>Drag on the paper. Only the tiles your stroke's padded box reaches light up.</p></div>
+        <div class="lab-body">
+          <div class="tile-layout">
+            <div>
+              <svg id="tile-pad" class="tile-pad" viewBox="0 0 400 500" role="img" aria-label="A 4 by 5 tile grid you can draw on; touched tiles highlight"></svg>
+              <div class="legend"><span><i class="swatch hit"></i>tile that pays render + undo capture</span><span><i class="swatch path"></i>ink</span><span><i class="swatch bounds"></i>padded bounding box</span></div>
+            </div>
+            <div>
+              <div class="readout">
+                <div><b id="tiles-hit">0 of 20</b><span>tiles touched</span></div>
+                <div><b id="tiles-skip">100%</b><span>of the paper skipped</span></div>
+                <div><b id="tiles-patch">0%</b><span>of the paper copied for undo</span></div>
+              </div>
+              <p class="lab-note" style="border:0;padding-top:0">The undo figure is the dirty rectangle's area. Undo does not snapshot the paper; it snapshots each touched tile once, before the first change, then crops that copy to the rectangle the command actually dirtied. A short scribble in a corner keeps a few kilobytes, not a screen's worth of pixels. Draw a long diagonal to see the price of a conservative box: tiles inside the rectangle but away from the ink still pay.</p>
+              <button class="btn" id="tiles-clear" type="button">Clear the paper</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/tiledRenderer.ts#L296-L303">web/src/lib/drawing/tiledRenderer.ts</a></span><span>the hot decision: cull, back, snapshot, paint</span></div>
+<pre><code class="lang-ts">for (const [index, tile] of liveTiles.entries()) {
+  if (geometryIntersectsTile(op, tile)) {
+    ensureNormalTileBacking(tile);            // first touch allocates the bitmap
+    prepareTileForMutation(tile, index);
+    if (command && !command.wasEmpty) {
+      undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
+    }
+    // ...render the op into this one tile
+  }
+}</code></pre>
+      </div>
+
+      <h3>Undo is a pixel patch, not a replay</h3>
+      <div class="prose">
+        <p>Undo keeps a <dfn>patch</dfn> per touched tile: the pre-change pixels, cropped to the dirty rectangle at commit. Undoing is a clear plus a copy back, which is why it stays under a frame even on a full paper. Patches live under a byte budget of six papers' worth of pixels with a minimum of two commands kept, and history is capped at 20 steps. Commands older than the undo window are <dfn>folded</dfn>: rasterized into an offscreen base layer, one every 1.5 seconds of idle, never while a finger is down.</p>
+      </div>
+      <div class="numbers">
+        <div class="number"><b>20</b><span>undo steps kept</span></div>
+        <div class="number"><b>6 ×</b><span>paper-size byte budget for patches</span></div>
+        <div class="number"><b>1.5 s</b><span>idle before one old command folds</span></div>
+        <div class="number"><b>103 → 17 ms</b><span>undo after a paper-restoring resize, once the extra repaint was skipped</span></div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/tiledRenderer.ts#L238-L250">web/src/lib/drawing/tiledRenderer.ts</a></span><span>retention is a byte budget, not a count</span></div>
+<pre><code class="lang-ts">const budget =
+  liveTiles.reduce((total, tile) => total + tile.width * tile.height * 4, 0) *
+  TILED_UNDO_PATCH_BUDGET_PAPER_MULTIPLE;               // 6 papers of RGBA
+let bytes = history
+  .slice(-undoableCommands)
+  .reduce((total, command) => total + undoPatches.bytes(command), 0);
+while (undoableCommands > MIN_TILED_UNDO_COMMANDS && bytes > budget) {
+  // drop the oldest patch; the command stays replayable from its vectors
+}</code></pre>
+      </div>
+
+      <h3>The same habit, elsewhere</h3>
+      <div class="mech-list" style="--hue:var(--c-orange)">
+        <article class="mech"><div class="mech-glyph">2×</div><div><h4>Capped device pixel ratio</h4><p>The <dfn>device pixel ratio</dfn> is how many physical pixels one CSS pixel covers. Tiles rasterize at the device ratio capped at 2. A 3× panel would cost 9× the pixels for detail a finger cannot draw, and the value is fixed for the session so a mid-session change never rescales every tile.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/engine.ts#L180-L186">engine.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">¼</div><div><h4>Downscaled empty scan</h4><p>"Is the paper blank?" is answered by copying each tile at a quarter scale into one persistent scratch canvas flagged for reads, about 16× fewer pixels, and stopping at the first tile with ink. The main canvases never get a read flag that would push them off the GPU.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/emptyScan.ts">emptyScan.ts</a> · <a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/tiledRenderer.ts#L507-L511">tiledRenderer.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">2 rAF</div><div><h4>Deferred hidden-tile clear</h4><p>After a clear, wiping a hidden tile's backing is postponed by two presented frames, so the wipe never lands inside the gesture's own frames.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/tiledSurfaces.ts#L259-L266">tiledSurfaces.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">1/rAF</div><div><h4>Progressive clear capture</h4><p>Clearing hides all tiles instantly but captures their undo snapshots one per frame; if a new stroke reaches a tile first, that tile's snapshot is taken on the spot.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/progressiveClearCapture.ts">progressiveClearCapture.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">rect</div><div><h4>Crayon restamps only the op's rectangle</h4><p>On the web the crayon redraws its glaze inside each operation's padded rectangle. Trying the frame's union of rectangles measured 2.62% lost frame time and the whole pass's bounds 2.18%; cost tracks area, not the number of copies.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/crayonPassBuffer.ts#L402-L427">crayonPassBuffer.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">CSS</div><div><h4>Animations scoped to visibility</h4><p>The drag-to-clear coachmark's two looping animations once ran forever on their hidden state, 72% of all animation style invalidations in a trace. They now apply only under <code>.visible</code>: 5,847 invalidations became 0.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/components/ClearCoachmark.svelte#L145-L157">ClearCoachmark.svelte</a></span></div></article>
+      </div>
+    </section>
+
+    <!-- ============================== BRICK 3 ============================== -->
+    <section id="idle">
+      <div class="brick-head"><div class="brick-glyph" style="--hue:var(--c-green)" aria-hidden="true">🌙</div><div><p class="section-kicker">Habit 3</p><h2>Do it at idle, never under a finger</h2></div></div>
+      <p class="lede">Plenty of work is worth doing but not worth doing now: warming a font, mounting a dialog nobody has opened, folding old undo history, checking whether the eraser emptied the page. All of it goes through one scheduler that refuses to run while a child is drawing.</p>
+
+      <div class="prose">
+        <p><dfn>Idle time</dfn> is a stretch where the main thread has nothing urgent to do. Chrome exposes it through <code>requestIdleCallback</code>. Safari does not, so the scheduler approximates idleness itself: no pointer is down, no input has arrived for 300 ms, and two consecutive animation frames arrived within 25 ms of each other, which proves the lane is clear. If any check fails it tries again 250 ms later. A second, stricter entry point used for background mounting waits 750 ms of quiet and spaces its slices 750 ms apart, and it uses the cooperative check even where the native callback exists.</p>
+      </div>
+
+      <div class="lab" id="lab-idle">
+        <div class="lab-head"><h3>Try it: hold the finger down</h3><p>Press and hold the button to simulate a stroke. Deferred jobs wait; release and watch them drain.</p></div>
+        <div class="lab-body">
+          <div class="idle-layout">
+            <div>
+              <button class="btn primary" id="idle-hold" type="button">Hold to draw</button>
+              <div class="control" style="margin-top:14px">Quiet for <b id="idle-quiet" style="margin-left:4px">0 ms</b><span style="margin-left:4px">/ 300 ms</span></div>
+              <div class="quiet-meter" aria-hidden="true"><i id="idle-meter"></i></div>
+              <p class="lab-note" style="border:0"><span id="idle-status">Nothing is scheduled yet. The queue fills as soon as you touch the paper.</span></p>
+              <button class="btn" id="idle-reset" type="button" style="margin-top:8px">Reset</button>
+            </div>
+            <div class="jobs" id="idle-jobs" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/idle.ts#L115-L124">web/src/lib/idle.ts</a></span><span>the cooperative idle check</span></div>
+<pre><code class="lang-ts">frame = requestAnimationFrame((first) => {
+  frame = requestAnimationFrame((second) => {
+    if (cancelled) return;
+    if (second - first > FRAME_BUSY_GAP_MS || !signalsAreQuiet()) {
+      requeue();          // a frame ran long, or input arrived: try again later
+      return;
+    }
+    fn();                 // two clean frames in a row: the lane is free
+  });
+});</code></pre>
+      </div>
+
+      <div class="numbers">
+        <div class="number"><b>300 ms</b><span>input quiet before ordinary idle work</span></div>
+        <div class="number"><b>25 ms</b><span>max gap between two frames to count as clear</span></div>
+        <div class="number"><b>750 ms</b><span>quiet, and spacing, for background dialog mounts</span></div>
+        <div class="number"><b>250 ms</b><span>retry delay when the check fails</span></div>
+      </div>
+
+      <h3>What waits for idle</h3>
+      <div class="mech-list" style="--hue:var(--c-green)">
+        <article class="mech"><div class="mech-glyph">8</div><div><h4>Boot-hidden overlays</h4><p>Seven dialogs and the install banner ship in one lazy chunk imported at idle, then mount one per background slice. A tap on any of them jumps the queue and mounts immediately.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/boot/bootHiddenOverlays.ts#L71-L82">bootHiddenOverlays.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">400 ms</div><div><h4>Eraser empty scan</h4><p>After an eraser lift, checking whether the page went blank costs 4.5 to 12.3 ms on Android against an 8.3 ms frame. It only enables a button, so it waits 400 ms of idle.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/idleEmptyScan.ts">idleEmptyScan.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">wax</div><div><h4>Crayon textures, prebuilt and warmed</h4><p>The crayon's paper-tooth fields are built from fixed seeds at idle after boot. Picking a color warms its wax tiles in 8-row chunks under a 2 ms per-frame deadline; a stroke that arrives first builds synchronously.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/crayonBrush.ts#L522-L531">crayonBrush.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">SW</div><div><h4>Service worker after three strokes</h4><p>The offline cache is not installed at load. A first visit registers it only after three committed strokes, then at idle, and not at all under the browser's data-saver flag, so precaching never saturates a slow connection during the first strokes.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/routes/%2Bpage.svelte#L62-L73">+page.svelte</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">226 ms</div><div><h4>Export warm-up</h4><p>The save compositor and its paper texture (a 226 ms fetch) warm at idle so the first tap on the camera does not stall.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/engine.ts#L1264-L1271">engine.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">📚</div><div><h4>Coloring packs, file by file</h4><p>Extra coloring books download in the background, and every single file waits for idle before its fetch, so a book install never competes with a stroke.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/coloringPacks/webStore.ts#L16-L29">webStore.ts</a></span></div></article>
+      </div>
+    </section>
+
+    <!-- ============================== BRICK 4 ============================== -->
+    <section id="startup">
+      <div class="brick-head"><div class="brick-glyph" style="--hue:var(--c-purple)" aria-hidden="true">🚀</div><div><p class="section-kicker">Habit 4</p><h2>Keep it off the startup path</h2></div></div>
+      <p class="lede">A toddler does not wait for a spinner. The page arrives as finished HTML with its styles inlined, the drawing engine starts before the framework has even loaded, and everything that is not needed for the first stroke is loaded later, in a separate file, with a test that fails if it creeps back in.</p>
+
+      <div class="prose">
+        <p>Two words carry this section. <dfn>Hydration</dfn> is the moment the JavaScript framework (Svelte) takes over the static HTML and makes it interactive; on the iPad it is a ~375 ms block of main-thread work. A <dfn>bundle</dfn> is one JavaScript file the browser downloads and parses before it can run; the <dfn>startup bundle</dfn> is the set of files the page needs before the first frame. Every module kept out of it is bytes not downloaded, not parsed, and not executed before the child can draw.</p>
+      </div>
+
+      <div class="boot" aria-label="Boot timeline">
+        <div class="boot-row"><div class="lab-l">HTML + inline CSS</div><div class="boot-track"><div class="boot-bar" style="--hue:var(--c-purple);left:0;width:10%">prerendered</div></div></div>
+        <div class="boot-row"><div class="lab-l">State stamp</div><div class="boot-track"><div class="boot-bar" style="--hue:var(--c-purple);left:10%;width:6%">inline</div></div></div>
+        <div class="boot-row"><div class="lab-l">Drawing engine</div><div class="boot-track"><div class="boot-bar" style="--hue:var(--c-blue);left:16%;width:10%">boots</div><div class="boot-bar stripe" style="--hue:var(--c-blue);left:26%;width:74%;border-left:0;border-radius:0 6px 6px 0">accepting strokes</div></div></div>
+        <div class="boot-row"><div class="lab-l">Hydration</div><div class="boot-track"><div class="boot-bar" style="--hue:var(--c-pink);left:26%;width:34%">~375 ms long task</div></div></div>
+        <div class="boot-row"><div class="lab-l">Idle work</div><div class="boot-track"><div class="boot-bar" style="--hue:var(--c-green);left:64%;width:12%">overlays chunk</div><div class="boot-bar" style="--hue:var(--c-green);left:77%;width:10%">fonts</div><div class="boot-bar" style="--hue:var(--c-green);left:88%;width:12%">packs…</div></div></div>
+        <div class="boot-row"><div class="lab-l">Service worker</div><div class="boot-track"><div class="boot-bar stripe" style="--hue:var(--c-yellow);left:82%;width:18%">after 3 strokes</div></div></div>
+        <div class="boot-axis"><div></div><div><span>page requested</span><span>first stroke possible</span><span>later</span></div></div>
+      </div>
+      <ol class="boot-list">
+        <li><b>HTML arrives</b> already rendered, with every stylesheet inlined in its head.</li>
+        <li><b>The state stamp</b> runs inline and paints the saved theme and layout before anything else.</li>
+        <li><b>The drawing engine boots</b> and starts accepting strokes.</li>
+        <li><b>Hydration</b> runs its ~375 ms task while the engine keeps drawing underneath it.</li>
+        <li><b>Idle work</b> begins only after that: the overlay chunk, fonts, coloring packs.</li>
+        <li><b>The service worker</b> registers after the third committed stroke.</li>
+      </ol>
+      <p class="muted" style="font-size:.82rem;margin-top:-6px">Not to scale. The point is the ordering: the engine is live before hydration starts, and the idle work only begins after it ends.</p>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/engine.ts#L1191-L1198">web/src/lib/drawing/engine.ts</a></span><span>the component adopts an engine that is already running</span></div>
+<pre><code class="lang-ts">export function adoptDrawingCanvas(canvasElement: HTMLCanvasElement, options: InitOptions = {}) {
+  if (!engineOwnsCanvas(canvasElement)) return initDrawingCanvas(canvasElement, options);
+  attachCallbacks(options);                      // earlyBoot already drew the first strokes
+  callbacks.onUndoStateChange?.(canUndo);
+  callbacks.onCanvasEmptyChange?.(canvasEmpty);
+  notifyViewChange();
+  return { teardown: teardownEngine };
+}</code></pre>
+      </div>
+
+      <h3>What is in the startup bundle, and what is not</h3>
+      <div class="bundle">
+        <div class="bundle-box"><h4>Startup bundle</h4><div class="mods"><span class="mod">earlyBoot</span><span class="mod">engine</span><span class="mod">tiledRenderer</span><span class="mod">strokeRasterQueue</span><span class="mod">crayonBrush</span><span class="mod">idle</span><span class="mod">storage <small>sync reads</small></span><span class="mod">DrawingCanvas</span><span class="mod">ActionsPanel</span></div></div>
+        <div class="bundle-out"><h4>Loaded later, on demand or at idle</h4><div class="mods"><span class="mod lazy">screenshot + exportDrawing <small>at press</small></span><span class="mod lazy">folderSave <small>at press</small></span><span class="mod lazy">overlay chunk <small>8 dialogs, idle</small></span><span class="mod lazy">coloringPacks/manager <small>idle</small></span><span class="mod lazy">idb <small>first durable write</small></span><span class="mod lazy">@capacitor/* plugins <small>native only</small></span><span class="mod lazy">magicSheet.worker</span><span class="mod lazy">pngEncoder.worker</span><span class="mod lazy">ErrorScreen <small>only on crash</small></span><span class="mod lazy">ParentalGate <small>privacy page</small></span></div></div>
+      </div>
+
+      <div class="callout"><strong>The boundary is a test, not a convention.</strong> <code>web/tests/startup-bundle.spec.ts</code> loads the built app, collects every module the page preloads, and fails if a save-pipeline or coloring-pack marker appears in any of them. It also checks that the markers still exist in the build, so the test cannot pass by accident. One consequence: a tiny helper needed on both sides of the boundary is <em>duplicated</em> rather than shared, because a single static import would let the bundler re-partition the chunks. A drift test keeps the two copies identical.</div>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/components/ActionsPanel.svelte#L324-L332">web/src/lib/components/ActionsPanel.svelte</a></span><span>a memoized import that forgets a failure</span></div>
+<pre><code class="lang-ts">function loadScreenshotModule() {
+  if (screenshotModulePromise) return screenshotModulePromise;
+  const loading = import('$lib/drawing/screenshot').catch((error) => {
+    if (screenshotModulePromise === loading) screenshotModulePromise = null;  // retry next tap
+    throw error;
+  });
+  screenshotModulePromise = loading;
+  return loading;
+}</code></pre>
+      </div>
+
+      <h3>The same habit, elsewhere</h3>
+      <div class="mech-list" style="--hue:var(--c-purple)">
+        <article class="mech"><div class="mech-glyph">html</div><div><h4>Pre-hydration state stamp</h4><p>An inline script reads saved settings (theme, brush, drawer state, button scale) from localStorage before the first paint and stamps them onto <code>&lt;html&gt;</code>, so a returning child sees the right theme with no flash. A drift test pins the script's keys to the app's.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/app.html#L95-L183">app.html</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">css</div><div><h4>All CSS inlined</h4><p><code>inlineStyleThreshold: Infinity</code> puts every stylesheet into the prerendered head, which ended a flash of unstyled content on iPadOS.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/svelte.config.js#L36">svelte.config.js</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">tgt</div><div><h4>Build target is the real browser floor</h4><p>The bundler compiles for Chrome 111, Firefox 114, and Safari 16.4 rather than a lowest common denominator, so it emits smaller modern syntax. A test fails if the target list drifts from the documented floor.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/browserTargets.ts#L8">browserTargets.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">✂</div><div><h4>Instrumentation compiled away</h4><p>Profiling marks and the dev harness are literal <code>false</code> in production, so the bundler removes their code, and a release scan rejects a build that kept any.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/defines.ts#L16-L23">defines.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">sync</div><div><h4>Settings read synchronously</h4><p>All setting reads are synchronous from localStorage so reactive state initializes with the right value on the first render. On native, writes mirror to the platform store without being awaited.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/storage.ts">storage.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">1×</div><div><h4>Single-flight helpers</h4><p>Overlapping callers of a lazy import or a fetch share one in-flight promise; a promise that rejects resets itself so the next caller retries instead of inheriting the failure.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/singleFlight.ts">singleFlight.ts</a> · <a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/idb.ts#L15-L48">idb.ts</a></span></div></article>
+      </div>
+    </section>
+
+    <!-- ============================== BRICK 5 ============================== -->
+    <section id="offload">
+      <div class="brick-head"><div class="brick-glyph" style="--hue:var(--c-pink)" aria-hidden="true">🧵</div><div><p class="section-kicker">Habit 5</p><h2>Move heavy work off the main thread</h2></div></div>
+      <p class="lede">The main thread is where strokes are painted, so anything else that can run somewhere else, should. Two "somewhere elses" exist in a browser: the compositor, which applies transforms and blends on the GPU, and web workers, which run JavaScript on a separate thread.</p>
+
+      <div class="compare">
+        <article class="compare-panel"><h3><span aria-hidden="true">🖼️</span> Give it to the compositor</h3><ul>
+          <li><b>Rotation never repaints ink.</b> The tile grid is presented through one CSS transform on a permanently promoted layer (<code>will-change: transform</code>). Rotating the device with a drawing on screen moves a layer; it does not touch a single tile pixel. A test asserts the promotion is present.</li>
+          <li><b>Hidden tiles are not layers.</b> An empty tile is <code>hidden</code>, so the compositor never stacks it. Un-hiding dozens of transparent canvases used to cost 40 to 50 ms on every theme switch.</li>
+          <li><b>Animated overlays are promoted.</b> The polaroid, confetti, progress dial, clear button, and color sheet carry <code>will-change</code> or <code>contain</code> so their motion does not invalidate the page around them.</li>
+          <li><b>Halos move by transform.</b> Each pointer's ring moves with <code>translate3d</code>, which the compositor animates without a layout or paint.</li>
+        </ul></article>
+        <article class="compare-panel"><h3><span aria-hidden="true">🧵</span> Give it to a worker</h3><ul>
+          <li><b>PNG export.</b> Saving a drawing captures each tile as a transferable <code>ImageBitmap</code>, hands them to a worker with an <code>OffscreenCanvas</code>, and composes, downscales the preview, and encodes there. The main thread never reads pixels back. WebKit was measured encoding 163 to 206 ms on the main thread when asked to do it "in parallel".</li>
+          <li><b>Magic brush sheets.</b> The color sheet the Magic brush reveals is fetched, decoded, and rasterized in a worker with a 15 s timeout and a main-thread fallback.</li>
+          <li><b>Both workers are cached singletons</b> that recreate themselves on failure, so a crashed worker costs one retry, not a permanent fallback.</li>
+        </ul></article>
+      </div>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/components/LiveSurface.svelte#L74-L80">web/src/lib/components/LiveSurface.svelte</a></span><span>a comment that a test enforces</span></div>
+<pre><code class="lang-css">.live-paper-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  /* Permanent promotion avoids the rotation undo spike; engine-rotation.spec.ts enforces it. */
+  will-change: transform;
+}</code></pre>
+      </div>
+
+      <h3>The crayon: three ways to deposit wax, two of them shipping</h3>
+      <div class="prose">
+        <p>The crayon is the most expensive brush because it is a texture, not a color: two passes of deterministic paper tooth, blended so that overlapping wax darkens. How that blend reaches the tile is the one place where the two shipping targets diverge, and the decision was remeasured three times this summer.</p>
+        <p>The original design (ADR-0068) kept two extra hidden canvases per tile, blended in CSS with <code>mix-blend-mode: darken</code>, so the live preview cost no pixel readback. On the native WKWebView those composited planes turned out to be the entire cost: with them present the crayon lost 1.21 to 1.87% of frame time, without them 0.02 to 0.46% (ADR-0148). The native build now applies the glaze arithmetic directly on the ink tile, per operation, with no buffer and no copy. The web build instead restores and re-glazes each operation's padded rectangle from an offscreen shadow (ADR-0147). The plane elements still exist in the DOM but are hidden all session and never allocated a backing.</p>
+      </div>
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/engine.ts#L75-L78">web/src/lib/drawing/engine.ts</a></span><span>one build-time signal picks the pipeline</span></div>
+<pre><code class="lang-ts">configureCrayonDeposition(
+  __IS_CAPACITOR__ ? 'glaze-direct' : 'restamp',
+  () => activePointers.size > 0
+);</code></pre>
+      </div>
+
+      <h3>The same habit, elsewhere</h3>
+      <div class="mech-list" style="--hue:var(--c-pink)">
+        <article class="mech"><div class="mech-glyph">LRU</div><div><h4>Bounded wax-tile cache</h4><p>Colorized crayon tiles are cached per color and pass, capped at 32 entries (palette size plus one custom color, times two passes). Eviction also resets the pattern cache so detached canvases cannot pile up.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/crayonBrush.ts#L384">crayonBrush.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">pat</div><div><h4>Pattern caches everywhere</h4><p>Canvas patterns for both the crayon and the Magic brush are cached per drawing context, and a one-entry memo skips re-hashing the six identical pattern lookups a crayon frame makes.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/crayonBrush.ts#L560-L619">crayonBrush.ts</a> · <a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/magicBrush.ts#L486-L527">magicBrush.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">edge</div><div><h4>Never copy a surface onto itself</h4><p>Extending the Magic sheet's edges by sampling the sheet itself triggered a full-surface flush in WebKit, about 100 ms of a 1.1 s theme freeze. Edge strips are drawn from the source image instead.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/magicBrush.ts#L411-L424">magicBrush.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">4 s</div><div><h4>Screenshot cooldown</h4><p>After a save, MobileSafari needs time to reclaim full-page surfaces, so a second tap within 4 s is coalesced into the first. The snapshot is taken at pointer-down, before the button's own animation.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/screenshotTiming.ts#L10">screenshotTiming.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">webp</div><div><h4>WebP for AI uploads</h4><p>The PNG sent to the image API is re-encoded as WebP at quality 0.85 when the browser supports it and the result is smaller, a fraction of the bytes for flat-color art.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/aiImage.ts#L35-L88">aiImage.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">🎵</div><div><h4>Procedural clear sound</h4><p>The drag-to-clear feedback is synthesized from oscillators driven by drag distance rather than loaded from an asset, so there is nothing to fetch and no length to match.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/audio/drawingSound.ts#L314">drawingSound.ts</a></span></div></article>
+      </div>
+    </section>
+
+    <!-- ============================== BRICK 6 ============================== -->
+    <section id="network">
+      <div class="brick-head"><div class="brick-glyph" style="--hue:var(--c-yellow)" aria-hidden="true">📡</div><div><p class="section-kicker">Habit 6</p><h2>Never let the network hold a frame</h2></div></div>
+      <p class="lede">The network is the one resource the app cannot schedule. So the rules are about not needing it: cache what has already been seen, fetch in the background, and make sure nothing on screen ever waits on a byte that has not arrived.</p>
+
+      <div class="chart" id="chart-cache">
+        <div class="chart-head"><h3>How long the edge is allowed to keep each file</h3><p>Cache-Control lifetimes set by the Netlify configuration, in days.</p></div>
+        <svg id="cache-svg" viewBox="0 0 720 200" role="img" aria-label="Bar chart of cache lifetimes per file class"></svg>
+      </div>
+      <div class="prose">
+        <p>Built JavaScript and CSS carry a content hash in their filename, so they can be cached for a year and marked <code>immutable</code>: a new build gets a new name. Sounds, icons, and coloring art are stable filenames that change rarely, so they get a week, with a rename-on-change rule. The service worker file and the version endpoint are the two things that must never be stale, so they are <code>no-store</code>.</p>
+      </div>
+
+      <div class="codeblock">
+        <div class="codehead"><span><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/components/DrawingCanvas.svelte#L214-L225">web/src/lib/components/DrawingCanvas.svelte</a></span><span>decode before you show</span></div>
+<pre><code class="lang-ts">const img = new Image();
+img.fetchPriority = 'high';
+img.src = url;
+const show = () => {
+  if (!stale) {
+    displayedOverlayUrl = url;      // swap only when the pixels are ready
+  }
+};
+img.decode().then(show, show);      // on failure, show anyway: same broken state</code></pre>
+      </div>
+      <div class="prose">
+        <p>That snippet is the fix behind one of this summer's measured wins. When a child picks a coloring page, the new line art is fetched and decoded off-screen, and the visible image swaps by opacity only once <code>decode()</code> resolves. The previous page stays visible meanwhile. On a physical iPad the landscape page swap went from 25 to 19 ms at P95, and its worst frame from 31 to 20 ms.</p>
+      </div>
+
+      <h3>The same habit, elsewhere</h3>
+      <div class="mech-list" style="--hue:var(--c-yellow)">
+        <article class="mech"><div class="mech-glyph">5 s</div><div><h4>Network first, but not forever</h4><p>Page navigations try the network first and fall back to the cached shell after 5 s, so a stalled connection never leaves a child looking at a blank tab.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/vite.config.ts#L174-L182">vite.config.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">📖</div><div><h4>One starter book, the rest in the background</h4><p>Only the first coloring book is precached. The others install book by book into versioned cache storage with per-file byte and SHA-256 checks, blocked on data-saver, cellular, or 2G, and paused when the tab is hidden.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/coloringPacks/manager.ts#L48-L55">manager.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">1152</div><div><h4>Capped image resolutions</h4><p>Coloring fills ship at 1152 px on the long edge and thumbnails at 240 px, with responsive size tiers for the web and a single canonical file on native.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/state/books.ts#L58-L118">books.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">warm</div><div><h4>Tiered prefetch with cancellation</h4><p>Cover thumbnails warm at idle when the book opens, a book's pages warm on press, and the other orientation's art warms only after the picked page has decoded. Picking a page cancels every other in-flight warm so the chosen page gets the bandwidth.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/imagePrefetch.ts">imagePrefetch.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">24 h</div><div><h4>Preflight cached a day</h4><p>API responses send <code>Access-Control-Max-Age: 86400</code> so a browser asks permission once per day, not once per request.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/hooks.server.ts#L28-L38">hooks.server.ts</a></span></div></article>
+        <article class="mech"><div class="mech-glyph">🔄</div><div><h4>Updates that never interrupt a drawing</h4><p>A new service worker activates silently only when versions match, and the page reloads for it only when the tab is hidden <em>and</em> the canvas is blank. Checks run hourly and on focus; a cache-bust is attempted once per version.</p><span class="src"><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/pwa/updates.ts#L230-L240">updates.ts</a></span></div></article>
+      </div>
+    </section>
+
+
+    <!-- ============================== ONE STROKE ============================== -->
+    <section id="stroke">
+      <p class="section-kicker">Putting it together</p>
+      <h2>One stroke, start to finish</h2>
+      <p class="lede">Here is everything above in the order a child experiences it. Each step names the habit at work, so you can see that the six are not six separate systems. They are one system, read from different angles.</p>
+      <ol class="walk">
+        <li><span class="walk-tag" style="--hue:var(--c-purple)">4 · startup</span><div><h4>The page arrives</h4><p>Prerendered HTML with every stylesheet inlined. An inline script stamps the saved theme and layout onto the document before the first paint. The drawing engine boots from a side-effect import and is accepting strokes before the framework's 375 ms hydration task even starts. The save pipeline, the dialogs, the coloring-pack downloader, and the native plugins are in other files that have not been requested yet.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-blue)">1 · per frame</span><div><h4>A finger touches the glass</h4><p>The pointer is captured. Its screen position maps to paper through a cached rectangle, not a layout query. The input canvas is 1 pixel wide, so the compositor pays nothing for it. A halo ring appears on a GPU-composited transform.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-blue)">1 · per frame</span><div><h4>The finger moves</h4><p>Every batched digitizer sample is read, so the curve is smooth, and pushed onto the pointer's queue. One animation frame is requested if none is booked. When it arrives, the queue drains into one render operation carrying every sample as its own curve segment.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-orange)">2 · only what changed</span><div><h4>The operation is painted</h4><p>Its padded bounding box is tested against the 20 tiles. Only intersecting tiles allocate a backing on first touch, capture a one-time undo snapshot, are un-hidden, and run the brush. The crayon re-glazes only the operation's rectangle on the web, or applies its glaze per op directly on the tile in the native app.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-green)">3 · at idle</span><div><h4>Meanwhile, everything else waits</h4><p>A pointer is down, so the idle scheduler refuses every deferred job: no dialog mounts, no history fold, no wax warm-up, no coloring-pack fetch, no font warm. The rotation hold, the resize settle timer, and the drawer's motion marker make sure a device rotation mid-stroke costs one layer transform and not a repaint.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-orange)">2 · only what changed</span><div><h4>The finger lifts</h4><p>The queue drains synchronously so no sample is lost. The command commits: each touched tile's snapshot is cropped to the dirty rectangle and joins a byte-budgeted history. If it was an eraser stroke, the "is the page blank now?" scan is scheduled for 400 ms of idle rather than run on the spot. On the third committed stroke of a first visit, the service worker is allowed to register.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-green)">3 · at idle</span><div><h4>The quiet after</h4><p>After 300 ms of quiet and two clean frames, deferred work drains one slice at a time: the overlay chunk imports, the color picker mounts, the coloring book mounts, the oldest command outside the undo window folds into the raster base, the export compositor and its paper texture warm, and a coloring book downloads file by file. Any tap on a dialog jumps that queue and mounts it at once.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-pink)">5 · off main thread</span><div><h4>The camera button</h4><p>The screenshot module loads at press. The tiles are captured as transferable bitmaps at pointer-down, composed and encoded to PNG in a worker, and previewed from a worker-side downscale. A second tap inside 4 s is folded into the first so MobileSafari can reclaim its surfaces.</p></div></li>
+        <li><span class="walk-tag" style="--hue:var(--c-yellow)">6 · network</span><div><h4>A coloring page is picked</h4><p>The picker shows raster selectors, not live SVG. The chosen page's line art fetches at high priority, decodes off-screen, and swaps in by opacity only when ready; every other in-flight warm is canceled so it gets the bandwidth. The picker itself retires on the compositor before the paper changes underneath it, and under a finger it has no backdrop blur to pay for.</p></div></li>
+      </ol>
+      <div class="callout ok"><strong>The test at the end.</strong> On the physical iPad and the physical Android phone, with real injected touches through ten repeated gestures, lost frame time stays under 1% for every brush, and paint latency stays under 20 ms at the 95th percentile. The <a href="#today">heatmap below</a> is that claim, cell by cell.</div>
+    </section>
+
+    <!-- ============================== WINS ============================== -->
+    <section id="wins">
+      <p class="section-kicker">Receipts</p>
+      <h2>The measured wins</h2>
+      <p class="lede">Every mechanism above was kept because a number moved. These are the before-and-after pairs recorded in the ADRs, issue threads, and scratchpad notes, on the device they were measured on.</p>
+
+      <div class="chart" id="chart-wins">
+        <div class="chart-head"><h3>Before and after, in milliseconds</h3><p>Lower is better. The gold line is one 60 Hz frame (16.7 ms). <button class="toggle-table" type="button" data-table="wins-table">Show as table</button></p></div>
+        <svg id="wins-svg" role="img" aria-label="Dumbbell chart of frame times before and after each fix"></svg>
+        <div class="chart-legend"><span><i class="dot" style="background:var(--faint)"></i>before</span><span><i class="dot" style="background:var(--accent)"></i>after</span><span><i class="dot" style="background:var(--gold);width:14px;height:3px;border-radius:2px"></i>one frame at 60 Hz</span></div>
+        <div id="wins-table" hidden></div>
+      </div>
+
+      <div class="chart" id="chart-crayon">
+        <div class="chart-head"><h3>Crayon lost frame time on the physical iPad</h3><p>Share of in-contact time in late frames. The crayon's ship gate on iPad is 1.5%. <button class="toggle-table" type="button" data-table="crayon-table">Show as table</button></p></div>
+        <svg id="crayon-svg" role="img" aria-label="Dumbbell chart of crayon lost frame time before and after each change"></svg>
+        <div class="chart-legend"><span><i class="dot" style="background:var(--faint)"></i>before</span><span><i class="dot" style="background:var(--accent)"></i>after</span><span><i class="dot" style="background:var(--gold);width:14px;height:3px;border-radius:2px"></i>1.5% gate</span></div>
+        <div id="crayon-table" hidden></div>
+      </div>
+
+      <div class="chart" id="chart-costs">
+        <div class="chart-head"><h3>How big is a millisecond?</h3><p>Costs that were once paid inside a frame, or nearly were, next to the two frame budgets. <button class="toggle-table" type="button" data-table="costs-table">Show as table</button></p></div>
+        <svg id="costs-svg" role="img" aria-label="Bar chart of measured costs in milliseconds against the 60 Hz and 120 Hz frame budgets"></svg>
+        <div id="costs-table" hidden></div>
+        <p class="muted" style="font-size:.82rem;margin:10px 0 0">Ranges are drawn as the measured span. Every bar longer than the frame it competes with is something the app now does at idle, in a worker, one slice per frame, or not at all.</p>
+      </div>
+    </section>
+
+    <!-- ============================== TODAY ============================== -->
+    <section id="today">
+      <p class="section-kicker">Where it stands</p>
+      <h2>Lost frame time on the physical devices, today</h2>
+      <p class="lede">The performance matrix captured on September 3, 2026 at product commit d17100cb. Each cell is the <em>worst</em> of four modes (portrait and landscape, light and dark) for that device and brush. Darker means more lost time; a red outline would mean a gate breach. There are none.</p>
+      <div class="chart" id="chart-today">
+        <div class="chart-head"><h3>Worst-mode lost frame time, by device and brush</h3><p>Gate: 1% (crayon on iPad: 1.5%). Source: the deployment-target matrix.</p></div>
+        <div class="heat" id="heat"></div>
+        <div class="chart-legend" id="heat-legend"></div>
+      </div>
+      <div class="numbers">
+        <div class="number"><b>15–16 ms</b><span>paint latency P95, iPad web and native (60 Hz)</span></div>
+        <div class="number"><b>7.4–8 ms</b><span>paint latency P95, Android web and native (120 Hz)</span></div>
+        <div class="number"><b>0.83%</b><span>worst physical cell (Magic, Android web)</span></div>
+        <div class="number"><b>0.00%</b><span>most native cells</span></div>
+      </div>
+      <p class="prose muted" style="font-size:.9rem">The native apps are noticeably cleaner than the same code in a browser tab. That gap is not the app's code; it is Safari and Chrome doing more per frame than a WKWebView or Android WebView does. Open the <a href="../2026-07-31-deployment-target-matrix/index.html">full matrix</a> for every mode, the undo and action rows, and the provenance behind each cell.</p>
+    </section>
+
+    <!-- ============================== SCORING ============================== -->
+    <section id="scoring">
+      <p class="section-kicker">How the numbers are earned</p>
+      <h2>A capture has to prove itself before it is scored</h2>
+      <p class="lede">A performance number is only as honest as the recording behind it. The harness that produced the chart above refuses more captures than it scores, and the rules for refusing are the interesting part.</p>
+      <div class="terms">
+        <article class="term-card"><h4>Trusted touch</h4><p>Input is injected at the OS level so events arrive with <code>isTrusted: true</code>. Fake JavaScript pointer events skip the machinery that makes input expensive, and once stayed perfectly smooth on a build where a real finger froze for 1.4 s.</p></article>
+        <article class="term-card"><h4>Density floor</h4><p>A capture must deliver at least 0.9 pointer moves per observed frame, with a 95th-percentile gap under 25 ms. A robot that under-drives the screen produces fake, flattering numbers; a rate floor was tried first and rejected because it encoded the display's speed.</p></article>
+        <article class="term-card"><h4>Dominant interval</h4><p>The beat is never assumed. Frame gaps are binned in half-millisecond buckets and the biggest bucket's median is the rhythm the display actually held. A fixed 16.67 ms assumption mis-scored every 120 Hz capture.</p></article>
+        <article class="term-card"><h4>Refresh regime</h4><p>Numbers from different beats are not comparable: the same iPad cell read 1.3% at a 17 ms beat and 8.19% at an 8 ms beat, both computed correctly. Each target declares its regime, and a capture at the wrong one is refused and retried.</p></article>
+        <article class="term-card"><h4>Pair credit</h4><p>A late frame immediately followed by a short one, summing to two beats, is scheduler jitter around a steady display, not loss. 93% of an iPad's "late" frames were such pairs; genuinely lost Android frames pair 0% of the time.</p></article>
+        <article class="term-card"><h4>Trust ledger</h4><p>Every published run lists, never scores, its trust dimensions: input fidelity, regime, repeats, plan, eraser refills, page identity, runtime, and host quiet, the last deliberately marked unrecorded until it can be measured.</p></article>
+      </div>
+      <p class="prose muted" style="font-size:.9rem">The full terminology and the two validation grids live in <code>docs/PERFORMANCE.md</code>; the profiling runbooks are under <code>docs/PROFILING*.md</code>.</p>
+    </section>
+
+    <!-- ============================== REJECTED ============================== -->
+    <section id="rejected">
+      <p class="section-kicker">The graveyard</p>
+      <h2>Tried, measured, and taken out</h2>
+      <p class="lede">A performance page that only lists wins is a sales pitch. These are the mechanisms that looked right, were built, and lost to a number.</p>
+      <div class="grave">
+        <article><h4>Low-latency canvas (<code>desynchronized: true</code>)</h4><p>Passed every headless gate at 59.5 fps, then rendered the canvas opaque black on a real Android WebView: a hardware overlay plane does not alpha-composite with the DOM under it. ADR-0051.</p></article>
+        <article><h4>Font preload link</h4><p>A <code>&lt;link rel=preload&gt;</code> for the UI font was benchmarked against the idle <code>document.fonts.load()</code> warm and showed no win on the drawing route, which paints no text. ADR-0075.</p></article>
+        <article><h4>Service worker at load</h4><p>Registering the offline cache on first paint saturated slow connections during the first strokes. Replaced by the three-stroke gate. ADR-0022.</p></article>
+        <article><h4>Two resident theme images</h4><p>Keeping both light and dark line art mounted and toggling opacity measured 0 ms but added a layer for no meaningful margin over the decode gate. ADR-0087, trial 22.</p></article>
+        <article><h4>Sheet and theme-image snapshot caching</h4><p>Caching the Magic sheet snapshot and the theme images across switches showed no improvement and was backed out. ADR-0087, trials 15 and 16.</p></article>
+        <article><h4>Stroke simplification at commit</h4><p>A point-reduction pass on committed strokes made sense when history was replayed. The tiled per-frame-op architecture replays nothing, and the pipeline was deleted. ADR-0036, superseded by ADR-0066.</p></article>
+        <article><h4>CSS-blended crayon preview planes</h4><p>The original crayon design, two extra canvases per tile blended in CSS. On the native WKWebView the composited planes were the entire crayon cost. Retired on both targets; the elements remain hidden in the DOM. ADR-0147, ADR-0148.</p></article>
+        <article><h4>A "deferred stamp" crayon pipeline</h4><p>Measured about 4× better on native than the planes, and rejected anyway: the color visibly shifted when the finger lifted. Appearance is a gate too. ADR-0147.</p></article>
+        <article><h4>A WebGL crayon renderer</h4><p>A 5,700-line spike whose own session recommended shipping it. Rejected: GPU cost tracked the render target's area rather than the drawn work (a scissor rectangle bought exactly 0 ms), and under Chromium's software fallback every variant was 2 to 3× slower than the canvas crayon, which therefore could never be retired. ADR-0153.</p></article>
+        <article><h4>Cadence ceilings and coalescing checks</h4><p>On the measurement side: an input-rate ceiling rejected a real fast hand at 178 to 268 moves per second, and the per-runtime coalescing check turned out to measure page delivery, not input. Both retired. ADR-0141, ADR-0144.</p></article>
+      </div>
+    </section>
+
+    <!-- ============================== INVENTORY ============================== -->
+    <section id="inventory">
+      <p class="section-kicker">The full list</p>
+      <h2>Every mechanism, sorted by habit</h2>
+      <p class="lede">The complete inventory from <code>docs/PERFORMANCE.md</code>, re-checked entry by entry against the source at commit 3c01779. Entries whose description changed since the doc was written are marked <span class="badge rev">revised</span>; mechanisms the doc did not list yet are marked <span class="badge new">new</span>. Every file link points at the verified commit, so the line numbers hold.</p>
+      <div class="inv-bar" id="inv-bar">
+        <div class="chips" role="group" aria-label="Filter by habit">
+          <button data-filter="all" aria-pressed="true">All</button>
+          <button data-filter="frame" aria-pressed="false">1 · Per frame</button>
+          <button data-filter="changed" aria-pressed="false">2 · Only what changed</button>
+          <button data-filter="idle" aria-pressed="false">3 · At idle</button>
+          <button data-filter="startup" aria-pressed="false">4 · Startup</button>
+          <button data-filter="offload" aria-pressed="false">5 · Off main thread</button>
+          <button data-filter="network" aria-pressed="false">6 · Network</button>
+        </div>
+        <input type="search" id="inv-search" placeholder="Search titles, files, ADRs…" aria-label="Search the inventory">
+        <span class="inv-count" id="inv-count"></span>
+      </div>
+      <div id="inv-list"></div>
+    </section>
+
+    <!-- ============================== GLOSSARY ============================== -->
+    <section id="glossary">
+      <p class="section-kicker">Keep beside the code</p>
+      <h2>Jargon decoder</h2>
+      <dl class="glossary">
+        <div class="gterm"><dt>Beat</dt><dd>The steady gap between frames the display holds: 16.7 ms at 60 Hz, 8.3 ms at 120 Hz. Measured from each capture, never assumed.</dd></div>
+        <div class="gterm"><dt>Bounding box</dt><dd>The smallest rectangle that could contain an operation's ink, padded for stroke width and anti-aliasing. Drives culling and undo cropping.</dd></div>
+        <div class="gterm"><dt>Bundle / chunk</dt><dd>One JavaScript file the browser must download and parse before running it. The startup bundle is what the first frame needs.</dd></div>
+        <div class="gterm"><dt>Coalesced events</dt><dd>The digitizer samples the browser batched between two pointer events, exposed by <code>getCoalescedEvents()</code>.</dd></div>
+        <div class="gterm"><dt>Compositor</dt><dd>The browser stage that stacks painted layers into the final picture, usually on the GPU. Transforms, opacity, and blends can run there without repainting.</dd></div>
+        <div class="gterm"><dt>Culling</dt><dd>Skipping tiles whose bounds cannot intersect an operation.</dd></div>
+        <div class="gterm"><dt>Device pixel ratio (DPR)</dt><dd>Physical pixels per CSS pixel. Splotch renders at min(DPR, 2).</dd></div>
+        <div class="gterm"><dt>Dirty rectangle</dt><dd>The smallest conservative pixel box a command may have changed.</dd></div>
+        <div class="gterm"><dt>Fold</dt><dd>Rasterize an old, no-longer-undoable command into the offscreen raster base so its vectors can be dropped.</dd></div>
+        <div class="gterm"><dt>Hydration</dt><dd>The framework attaching behavior to prerendered HTML. About 375 ms of main-thread work on the iPad.</dd></div>
+        <div class="gterm"><dt>Idle</dt><dd>A stretch where the main thread has nothing urgent. Splotch's definition: no pointer down, input quiet, two clean frames.</dd></div>
+        <div class="gterm"><dt>ImageBitmap / OffscreenCanvas</dt><dd>A decoded bitmap that can be transferred to a worker, and a canvas that lives there.</dd></div>
+        <div class="gterm"><dt>Layout (reflow)</dt><dd>The browser recomputing element positions. Reading <code>getBoundingClientRect()</code> after a change forces one.</dd></div>
+        <div class="gterm"><dt>Lost frame time</dt><dd>Share of in-contact time spent inside late frames. Gate: 1%.</dd></div>
+        <div class="gterm"><dt>Main thread</dt><dd>The single lane running JavaScript, style, layout, and paint. A busy lane means a late frame.</dd></div>
+        <div class="gterm"><dt>P95 / P99</dt><dd>The value 95% (or 99%) of samples fall under. A P95 of 20 ms means one frame in twenty was slower.</dd></div>
+        <div class="gterm"><dt>Paint latency</dt><dd>Finger movement to the frame that showed its ink.</dd></div>
+        <div class="gterm"><dt>Patch</dt><dd>A cropped pre-command pixel snapshot used to reverse the newest command.</dd></div>
+        <div class="gterm"><dt>Precache</dt><dd>Files the service worker downloads on install so they open offline: the app shell and the starter book only.</dd></div>
+        <div class="gterm"><dt>rAF</dt><dd><code>requestAnimationFrame</code>: run this once, right before the next frame. The loop only continues if the callback re-requests it.</dd></div>
+        <div class="gterm"><dt>Readback</dt><dd>Copying pixels from the GPU back to JavaScript. Slow, and it can push a canvas off the GPU permanently.</dd></div>
+        <div class="gterm"><dt>Service worker</dt><dd>A background script that intercepts the page's network requests and can answer from a cache.</dd></div>
+        <div class="gterm"><dt>Single flight</dt><dd>Overlapping callers share one in-flight promise instead of starting duplicate work.</dd></div>
+        <div class="gterm"><dt>Tile</dt><dd>One cell in the 4 × 5 grid of live canvases that together present the paper.</dd></div>
+        <div class="gterm"><dt>will-change</dt><dd>A CSS hint that an element will animate a property, so the browser gives it its own compositor layer up front.</dd></div>
+        <div class="gterm"><dt>Worker</dt><dd>A JavaScript thread separate from the main one. No DOM access, but it can own an OffscreenCanvas.</dd></div>
+        <div class="gterm"><dt>WKWebView / WebView</dt><dd>The embedded browser engine inside the iOS and Android native apps. Same code, different compositor behavior from Safari and Chrome.</dd></div>
+      </dl>
+
+      <h3 style="margin-top:42px">Where to read the production implementation</h3>
+      <table class="source-table">
+        <thead><tr><th>File</th><th>Owns</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/strokeRasterQueue.ts">strokeRasterQueue.ts</a></td><td>The per-pointer sample queue, the single frame request, the crayon granularity branch, and the merged-moves cap.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/idle.ts">idle.ts</a></td><td>Both idle schedulers, the input-quiet tracking, and the double-frame busy check.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/tiledRenderer.ts">tiledRenderer.ts</a></td><td>Tile culling, hidden-tile lifecycle, patch undo, byte budget, idle folding, clear choreography, empty scan.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/engine.ts">engine.ts</a></td><td>Pointer handling, coalesced replay, DPR cap, resize settle, re-entry resync, crayon deposition selection, export warm-up.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/crayonPassBuffer.ts">crayonPassBuffer.ts</a> + <a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/drawing/crayonBrush.ts">crayonBrush.ts</a></td><td>The three deposition modes, restamp rectangles, wax-tile cache, warm-up deadline, pattern memos.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/boot/bootHiddenOverlays.ts">boot/bootHiddenOverlays.ts</a></td><td>The lazy overlay chunk, the one-per-slice mount pump, and the demand path that jumps the queue.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/tests/startup-bundle.spec.ts">tests/startup-bundle.spec.ts</a></td><td>The test that pins the save pipeline and coloring-pack I/O outside the startup bundle.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/web/src/lib/pwa/updates.ts">pwa/updates.ts</a></td><td>Stroke-gated registration, the canvas-empty update lifecycle, and the hourly and focus checks.</td></tr>
+          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/3c017796622f374d428ee91c74b731b00964a63f/docs/PERFORMANCE.md">docs/PERFORMANCE.md</a></td><td>The inventory this page was seeded from, plus the scoring terminology and validation grids.</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top:34px">Architectural records behind this page</h3>
+      <div class="adr-links" id="adr-links"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot"><div class="shell"><span class="crayons" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><p>A hand-authored explainer, verified against main at 3c01779 on September 5, 2026 · <a href="../../index.html">All scrapbook collections</a> · <a href="https://github.com/KyleMit/Splotch">GitHub</a></p></div></footer>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+/* ---------- data: inventory ---------- */
+window.__PERF_INVENTORY__ = [];
+</script>
+<script src="inventory.js"></script>
+<script src="page.js"></script>
+</body>
+</html>
