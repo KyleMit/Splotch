@@ -1,0 +1,142 @@
+<!-- Source: .ruler/skill-notes/ship-issue.md.template -->
+
+# ship-issue — design notes
+
+## Why the skill exists at all
+
+Every piece of this pipeline already existed as a skill. What did not exist was the *sequence*, and
+the sequence is where the judgment lives: which review the rival gets, how many rounds are worth
+paying for, and what happens to whatever is still open when the rounds run out. Composing them by
+hand each time produced a different pipeline every session — usually one that either skipped the
+independent review or looped on it indefinitely.
+
+The name was settled on 2026-09-02 alongside the `run-rival-agent` handler/rival vocabulary, ahead
+of this implementation. Verb-noun, because invoking it performs a procedure with side effects.
+
+## The two-round bound
+
+The bound is the skill's main opinion, and it is a budget, not a quality target. A review loop with
+no bound optimizes toward zero findings, which a non-trivial PR never reaches — a competent
+adversarial reviewer can always produce one more finding, and the marginal one is worth less than
+the round it costs. Two rounds buys the two things that actually matter: an outside opinion, and
+evidence that the response to it held up. Round two exists specifically because `run-rival-agent`
+resumes the reviewer thread, so it verifies its own earlier findings rather than re-reading the diff
+cold — that is a different and stronger check than a second independent pass would be.
+
+The one-round short-circuit (round one found nothing that changed code → skip round two) is not an
+optimization detail. Re-reviewing an unchanged commit is the loop's most common wasted round.
+
+The rival's own launcher budget is three rounds before it demands `--fresh`. Two fits under it with
+room, deliberately: a session that needs to relaunch after a failed round is not immediately out of
+budget.
+
+## Why the review prompt gets adapted rather than passed through
+
+`create-pr-review-prompt` writes for a fresh agent session that will run `leave-pr-review` and post
+its own findings. The rival is neither: it carries its own review contract and findings schema from
+`tools/rival-agent/rival-prompt.md`, and the handler posts on its behalf with `post-review.mjs`.
+Handing it the template verbatim would tell it to invoke a skill it is not running and to post a
+review it has no reach to post.
+
+Stripping the posting authorization specifically is load-bearing rather than tidy. An early version
+of the pairing had enough reach that the reviewer used a built-in GitHub tool to post to its own PR
+unasked; the broker exists so the only way out is through the handler. A prompt that re-authorizes
+posting is asking for that failure back.
+
+What survives the strip is the half of `create-pr-review-prompt` the rival cannot generate for
+itself — the authoring session's privileged knowledge of where the work is weakest. That is the
+whole reason to run the prompt skill here instead of launching the rival bare.
+
+## Mergeable is a shared endpoint, not part of the merge
+
+Both modes drive the PR to mergeable; the mode decides only whether the merge click happens. The
+first draft got this wrong — it read CI in the verdict step but put the conflict and not-a-draft
+checks inside the autonomous gate, so a default run could truthfully report "shippable" on a PR that
+was red or conflicting. The user's framing fixed it: the default mode should get the work "all the
+way up to mergeable … but just not do the actual merge".
+
+The distinction is worth holding onto because it decides where every future condition goes. Anything
+that describes **whether the work is done** belongs in step 8 and applies to both modes. Only things
+that describe **the act of merging** — re-verifying the head has not moved, the blocker list, the
+merge method — belong in step 9. A condition filed on the wrong side either lets the default mode
+hand back an unfinished PR, or makes the autonomous mode the only path that checks something both
+modes need.
+
+That also fixed a duplication: the gate used to restate step 8's conditions, which meant two lists
+that could drift. It now defers to step 8 and adds only a live-state re-verification, on the ground
+that the verdict can be minutes stale by merge time — a push, a new review, or a moved base
+invalidates it.
+
+Driving CI to green is likewise both modes' job, with the pre-existing-vs-introduced split borrowed
+from `burn-down-backlog`: a failure the PR caused is fixed here, one that reproduces on `main` is
+named in the thread and carried to the action items. Absorbing a pre-existing failure into the PR
+was rejected there for good reasons and they hold here.
+
+## The autonomous merge gate
+
+The mode exists because the bounded loop already produces the evidence a merge decision needs — an
+independent review, a response to it, and a green trunk check — and stopping to ask anyway wastes an
+unattended run. What makes it safe is that the gate is **conjunctive and verified from live state**:
+every condition or no merge, with the failed one named. A gate that degrades to "probably fine"
+under any single failure is not a gate.
+
+Three conditions carry more weight than they look:
+
+* **A downgraded reviewer withdraws merge authority.** If `rival:health` fails, the run may
+  substitute a same-vendor subagent to keep moving, but it then finishes as an open PR. The
+  alternative — merge on the substituted review — was rejected because it converts the mode's one
+  real guarantee into a formality exactly when nobody is watching. The failure mode it prevents is
+  silent: same-vendor review passes, everything looks identical in the log, and the independence the
+  merge rested on is gone.
+* **Skipped is not green.** Several workflows here carry `paths`/`paths-ignore` filters, so a check
+  can report neutral without having run. Concluding green from an absence of red is the specific
+  mistake; the gate requires reading the required-check list. The `push`-to-`main` jobs are carved
+  out because they *cannot* be green pre-merge, and treating them as a hold would deadlock the mode.
+* **Nothing unpushed.** Merging ships the remote, so a local commit the run made but did not push is
+  silently dropped from the merge — and the run would still report success.
+
+Merge method is `--merge`, not squash or rebase: `main` is a merge-commit trunk. Branch protection
+is never bypassed — GitHub refusing is a correct outcome to report.
+
+## Why autonomous does not file the follow-up issues
+
+The mode automates exactly one new decision — merging — and nothing else. Filing issues was
+explicitly reserved for the user when the skill was specified, and an unattended run is a *worse*
+moment to start populating the backlog, not a better one. But the leftovers would evaporate with the
+branch, so autonomous mode posts them as a comment on the PR before merging: durable, attached to
+the work, and still nobody's backlog until the user says so. Two alternatives were weighed and
+dropped — filing them (widens the mode past what was asked, and agent-filed issues nobody requested
+are noise) and reporting them only in the final message (an unattended run's report may not be read
+for days, and the branch is gone by then).
+
+The general principle worth keeping: an autonomous mode should automate the decision it was asked to
+automate and inherit every other boundary unchanged. Each extra thing it quietly takes over is one
+the user did not get to decline.
+
+## Rejected and deferred
+
+* **Merging in the default mode.** Still out of scope, and the default's authorization is unchanged:
+  branch, PR, and posting the review. Merging moved behind `mode=autonomous` rather than becoming a
+  prompt, because a confirmation the user has to answer is not automation and a merge nobody
+  authorized is not safe — naming the mode is the authorization. This matches `create-stacked-prs`,
+  which also separates building a stack from merging it.
+* **Opening the follow-up issues.** Also deliberate. The end-of-run action items are drafted and
+  shown, never filed — a batch of agent-filed issues nobody asked for is backlog noise, and the
+  triage cost lands on the user either way. Drafting them is the useful part; filing them is one
+  click they should get to make.
+* **Having `burn-down-backlog` delegate here.** Intended (it was named in the 2026-09-02 decision
+  alongside the skill name) but not done in the same change. The two overlap heavily from the branch
+  step onward; the difference is that `burn-down-backlog` owns *selecting* an unclaimed issue and
+  reviews with a same-vendor subagent rather than the rival. Folding it in means deciding whether
+  that subagent path survives as a fallback — see the health-check fallback below, which is the same
+  question in miniature.
+* **Failing hard when `rival:health` fails.** Rejected: a missing `codex login` is a five-second fix
+  the user may not be present for, and silently downgrading to a same-vendor subagent would be worse
+  than either. The skill names the trade-off and offers both, rather than choosing.
+
+## Unvalidated
+
+The skill has not yet been run end to end. The pieces are individually exercised, but the seams —
+the adapted prompt file surviving `--prompt-file` validation, and the round-two delta prompt
+reaching a resumed reviewer as `extraInstructions` — are read from `tools/rival-agent/launch.mjs`
+and `prompt.mjs`, not observed. The first real run should check both.

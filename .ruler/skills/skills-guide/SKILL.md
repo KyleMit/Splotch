@@ -86,15 +86,16 @@ a shared skill can name `run-rival-agent` without knowing which runner it is on.
 
 These augment the built-in PR flows rather than replacing them.
 
-| Skill                     | Use when you are…                                                                       |
-| ------------------------- | --------------------------------------------------------------------------------------- |
-| `create-stacked-prs`      | **Sequencing** a multi-issue campaign into a chain of stacked PRs                       |
-| `pr-screenshots`          | **Opening** a PR that touches UI — screenshot/before-after/gif conventions              |
-| `create-pr-review-prompt` | **Handing off** this session's PRs to an independent reviewer — builds the prompt       |
-| `leave-pr-review`         | **Authoring** a review — local checkout, empirical verification, posts by default       |
-| `address-pr-review`       | **Receiving** a review — triage every comment, fix or rebut, reply and resolve          |
-| `implement-issue-stack`   | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-rival-agent` |
-| `triage-dependabot-prs`   | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest      |
+| Skill                     | Use when you are…                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `create-stacked-prs`      | **Sequencing** a multi-issue campaign into a chain of stacked PRs                                                                        |
+| `pr-screenshots`          | **Opening** a PR that touches UI — screenshot/before-after/gif conventions                                                               |
+| `create-pr-review-prompt` | **Handing off** this session's PRs to an independent reviewer — builds the prompt                                                        |
+| `leave-pr-review`         | **Authoring** a review — local checkout, empirical verification, posts by default                                                        |
+| `address-pr-review`       | **Receiving** a review — triage every comment, fix or rebut, reply and resolve                                                           |
+| `ship-issue`              | **Shipping** one issue or task end to end — implement, PR, rival review, address, drive to mergeable; merges too under `mode=autonomous` |
+| `implement-issue-stack`   | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-rival-agent`                                                  |
+| `triage-dependabot-prs`   | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest                                                       |
 
 `create-stacked-prs` comes first in that table for a reason: it decides the *shape* of the campaign
 before any single PR exists, and every later skill in the group has to respect that shape. Its one
@@ -111,6 +112,18 @@ and emits the prompt that has an independent agent run `leave-pr-review` — ful
 areas after. `leave-pr-review` posts its findings by default (invoking it is the authorization;
 `mode=chat` and `mode=issues` redirect them), and `address-pr-review` then works the comments on the
 author's side.
+
+`ship-issue` is the single-unit pipeline through this whole group: it takes one issue number or a
+free-form task, implements it, opens the PR, then runs `create-pr-review-prompt` → `run-rival-agent`
+→ `address-pr-review` as a **bounded** loop — two review rounds at most, after which whatever is
+still open is reported as an action item rather than chased into a third round. Both modes take the
+PR all the way to **mergeable** — CI driven to green, conflicts reconciled, every thread answered —
+and it drafts, but never opens, the follow-up issues. Invoked as `mode=autonomous` it also
+**merges** the PR, but only behind a full gate — a real rival review that posted, every required
+check green on the merged head, every thread resolved, nothing unpushed — and a downgraded reviewer
+withdraws that authority rather than lowering the bar. Reach for `implement-issue-stack` instead
+when several ordered issues ship as a chain, and `burn-down-backlog` when the question is *which*
+issue to pick up rather than how to ship a chosen one.
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
