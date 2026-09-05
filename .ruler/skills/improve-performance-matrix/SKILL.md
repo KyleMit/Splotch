@@ -20,6 +20,21 @@ An explicit user request to run this improvement campaign authorizes its normal 
 branches, commits, pushes, draft PRs, stack links, and `start-capture-session` device reservation.
 Merely loading the skill for planning or reference does not. Neither form authorizes merging.
 
+## The campaign advances one reviewed PR at a time
+
+The scheduling loop is:
+
+```text
+bounded product pass → verify → commit → open/link PR → rival round 1 → address → rival round 2 → address → green CI → next pass
+```
+
+Opening and reviewing the PR are part of completing the product pass, not end-of-campaign shipping.
+Do not begin another accepted treatment, put a child PR above the current one, or accumulate more
+product commits while either required rival round or CI is outstanding. This ordering lets an early
+finding remain in the PR that introduced it; postponing review until several layers exist forces an
+ordinary local correction into a sweep-up PR at the stack tip and lets a mistaken premise compound
+through later experiments.
+
 ## Product work is the deliverable
 
 This is not a harness-improvement campaign. Splotch's profiling harness is mature and presumed
@@ -77,10 +92,11 @@ campaign prompt, PR body, report, or memory.
 3. Treat the PR stack as the campaign's working structure, not an end-of-campaign packaging step.
    Open the first draft PR as soon as its first coherent commit is pushed. For every later accepted
    cluster, branch from the current stack tip, push and open its next draft PR immediately, and link
-   the expanded chain before starting another cluster. Never accumulate multiple accepted clusters
-   on one campaign branch for later decomposition; rejected or inconclusive experiments stay local
-   and are backed out. The campaign invocation already authorizes these draft PRs and stack links,
-   so do not wait for a later request to create them.
+   the expanded chain. Complete both rival rounds, address their findings, and get the current PR's
+   CI green before starting another cluster. Never accumulate multiple accepted clusters on one
+   campaign branch for later decomposition; rejected or inconclusive experiments stay local and are
+   backed out. The campaign invocation already authorizes these draft PRs and stack links, so do not
+   wait for a later request to create them.
 4. Keep the current stack-tip PR body as the live campaign ledger, copying the ledger forward
    whenever the stack grows; older PR bodies remain scoped snapshots. Record the baseline inventory,
    shipped clusters, current cluster, remaining work, exact product commits, raw artifact
@@ -283,21 +299,25 @@ that lower PR. Put review fixes and newly discovered issues in the current stack
 remain coherent, or create a feedback/findings PR stacked from the tip. Never rewrite lower history
 for an ordinary finding.
 
-Every newly opened PR gets a fresh independent cross-runner review before another stack layer is
-started:
+Every newly opened PR gets **two** fresh independent cross-runner review rounds before another stack
+layer is started:
 
-* on either runner, use `run-rival-agent` with `--pr <that PR>`: serve the rival's broker requests
-  as the native handler, then post its findings with the poster. Validate and address the posted
-  findings before moving the checkout or starting the next layer.
+1. Use `run-rival-agent` with `--pr <that PR>`: serve the rival's broker requests as the native
+   handler, post its findings with the poster, then validate and address every posted finding.
+2. Start a second fresh `run-rival-agent` round after round one's disposition, even when round one
+   found nothing. Address its findings before moving the checkout or starting the next layer. If
+   round two causes a material fix, run another fresh verification round over that fix.
 
-Do not substitute same-session self-review or postpone the reviews until wrap-up. If the required
+Two rounds means two completed rival invocations; CI, same-session self-review, a skipped automation
+job, and rerunning tests do not count. Do not postpone the reviews until wrap-up. If the required
 reviewer runner is unavailable, stop adding stack layers and report the blocker.
 
 For each delivered cluster:
 
 1. use `address-pr-review` for every inline thread, review summary, and conversation comment;
 2. reproduce findings, fix or rebut them with evidence, reply, and resolve every thread;
-3. rerun the same reviewer after material fixes;
+3. complete both rival rounds and run an additional verification round after any material round-two
+   fix;
 4. follow `pr-screenshots` when a PR changes visible UI;
 5. keep the current stack tip green, verify the live PR head matches the tested SHA, and do not
    start the next stack layer until its independent review is complete and the current tip's CI is
