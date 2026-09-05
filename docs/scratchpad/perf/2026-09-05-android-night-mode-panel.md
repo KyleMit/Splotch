@@ -67,5 +67,30 @@ source. Provisional treatment artifacts remain local until clean committed certi
 All seven source hashes were unchanged after promotion; retained files passed identifier scans. Six
 focused browser tests, type checking, and targeted lint passed. The new tests observe real
 transition events during Night Mode activation and preserve transition timing during the live size
-preview and after Settings closes. Clean committed certification, two rival review rounds, and green
-CI remain required. The authoritative four-row matrix is unchanged.
+preview and after Settings closes. Clean committed certification follows below. Two rival review
+rounds and green CI remain required. The authoritative four-row matrix is unchanged.
+
+## Clean committed certification
+
+Product 141288da477011a82a3c23a880e0f4df236eee32 passed all 35 action groups on its first complete
+landscape/light certification, with three scored repeats after one warmup, valid activation in every
+sample, and no unconfirmed maximum warnings. Night Mode enable maxima were 16.7 / 33.3 / 16.8 ms
+(scored P95 16.9 ms); disable and Settings-open maxima were each 16.8 / 16.8 / 16.8 ms. Idle control
+was 16.8 / 16.8 / 16.8 ms.
+
+| Rotation                          | First frames (ms) | Scored-repeat maxima (ms) |
+| --------------------------------- | ----------------- | ------------------------- |
+| Empty-clear landscape to portrait | 2.2 / 3.2 / 2.1   | 16.8 / 16.7 / 16.8        |
+| Empty-clear portrait to landscape | 12.7 / 13.1 / 3.1 | 16.8 / 16.8 / 16.8        |
+| Inked landscape to portrait       | 8.3 / 8.9 / 8.7   | 16.8 / 16.8 / 16.8        |
+| Inked portrait to landscape       | 14.4 / 4.9 / 3.9  | 16.7 / 16.8 / 16.7        |
+
+The control and this capture have identical action groups, repeats, mode, transport, activation
+configuration, refresh pin, and complete action-plan metadata. The clean build provenance recorded
+this product commit with `dirty: false`. The keeper retained the whole capture in
+`perf-profiles/evidence/2026-09-05-epic-1567-night-mode-committed/`; its index maps the source
+`night-mode-committed-treatment/android-device-web/landscape-light/actions/actions.json` beneath the
+raw root. Its SHA-256 is `29847e4483d3a78add3ed9e87e5d68d55ffb0eb9246c9ccf6f38be23914fa012`. All
+eight study source hashes were unchanged after promotion, and retained files passed identifier
+scans. This focused mode does not replace the final four-row physical matrix. Rival reviews and CI
+remain required before the next branch.
