@@ -5,6 +5,7 @@ const requested: FakeImage[] = [];
 
 interface DeferredDecode {
   resolve: () => void;
+  reject: () => void;
 }
 
 class FakeImage {
@@ -30,8 +31,8 @@ class FakeImage {
 
   decode() {
     this.decodeCalls += 1;
-    return new Promise<void>((resolve) => {
-      this.deferredDecode = { resolve };
+    return new Promise<void>((resolve, reject) => {
+      this.deferredDecode = { resolve, reject };
     });
   }
 }
@@ -105,6 +106,17 @@ describe('image prefetch cancellation', () => {
     expect(requested[2].removedAttributes).toEqual(['src']);
   });
 
+  it('allows a cancelled decode to be retried immediately', async () => {
+    const { cancelImagePrefetchesExcept, predecodeImage } = await import('./imagePrefetch');
+
+    predecodeImage('/cover.webp');
+    cancelImagePrefetchesExcept('/selected.webp');
+    predecodeImage('/cover.webp');
+
+    expect(requested).toHaveLength(2);
+    expect(requested[1].decodeCalls).toBe(1);
+  });
+
   it('does not cancel an image whose transfer already completed', async () => {
     const { cancelImagePrefetchesExcept, prefetchImages } = await import('./imagePrefetch');
 
@@ -115,11 +127,10 @@ describe('image prefetch cancellation', () => {
     expect(requested[0].removedAttributes).toEqual([]);
   });
 
-  it('retains a selected image until its decode completes', async () => {
+  it('keeps an in-flight decode cancellable until its transfer completes', async () => {
     const { cancelImagePrefetchesExcept, predecodeImage } = await import('./imagePrefetch');
 
     predecodeImage('/selected.svg');
-    requested[0].onload?.();
     cancelImagePrefetchesExcept('/other.svg');
 
     expect(requested[0].decodeCalls).toBe(1);
@@ -127,6 +138,53 @@ describe('image prefetch cancellation', () => {
 
     requested[0].deferredDecode?.resolve();
     await Promise.resolve();
+  });
+
+  it('does not cancel a completed transfer while its decode remains pending', async () => {
+    const { cancelImagePrefetchesExcept, predecodeImage } = await import('./imagePrefetch');
+
+    predecodeImage('/selected.svg');
+    requested[0].onload?.();
+    cancelImagePrefetchesExcept('/other.svg');
+
+    expect(requested[0].removedAttributes).toEqual([]);
+
+    requested[0].deferredDecode?.resolve();
+    await Promise.resolve();
+  });
+
+  it('upgrades an earlier fetch to decode before its transfer completes', async () => {
+    const { predecodeImage, prefetchImages } = await import('./imagePrefetch');
+
+    prefetchImages(['/selected.svg']);
+    predecodeImage('/selected.svg');
+
+    expect(requested).toHaveLength(1);
+    expect(requested[0].decodeCalls).toBe(1);
+  });
+
+  it('decodes from cache when an earlier fetch already completed', async () => {
+    const { predecodeImage, prefetchImages } = await import('./imagePrefetch');
+
+    prefetchImages(['/selected.svg']);
+    requested[0].onload?.();
+    predecodeImage('/selected.svg');
+
+    expect(requested).toHaveLength(2);
+    expect(requested[1].decodeCalls).toBe(1);
+  });
+
+  it('retries a decode after the previous attempt rejects', async () => {
+    const { predecodeImage } = await import('./imagePrefetch');
+
+    predecodeImage('/selected.svg');
+    requested[0].onload?.();
+    requested[0].deferredDecode?.reject();
+    await new Promise((resolve) => setTimeout(resolve));
+    predecodeImage('/selected.svg');
+
+    expect(requested).toHaveLength(2);
+    expect(requested[1].decodeCalls).toBe(1);
   });
 
   it('decodes every responsive selector in a requested set', async () => {

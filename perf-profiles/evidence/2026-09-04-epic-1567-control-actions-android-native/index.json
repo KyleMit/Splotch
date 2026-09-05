@@ -1,0 +1,52 @@
+{
+  "campaign": "2026-09-04-epic-1567-control-actions-android-native",
+  "productCommit": "3c017796622f374d428ee91c74b731b00964a63f",
+  "capturedFrom": "perf-profiles/epic-1567-final-3c017796-native-retry",
+  "study": "discrete-action controls for the epic 1567 Android native treatments",
+  "kept": [
+    {
+      "file": "actions--9f945a16.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "android-device-native/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--5986bb84.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "android-device-native/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--43dd4c0e.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "android-device-native/portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--2b7fadae.json",
+      "target": "android-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "android-device-native/portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

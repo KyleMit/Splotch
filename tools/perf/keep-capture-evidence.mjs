@@ -28,6 +28,15 @@ import { attributionOf } from './lib/capture-attribution.mjs';
 export const EVIDENCE_ROOT = 'perf-profiles/evidence';
 export const REDACTED_DEVICE_IDENTIFIER = '[redacted]';
 
+function isActionSuite(parsed) {
+  return (
+    parsed?.actionPlan &&
+    typeof parsed.actionPlan === 'object' &&
+    Array.isArray(parsed?.samples) &&
+    parsed.samples.some((sample) => Array.isArray(sample?.postActionFrameGapsMs))
+  );
+}
+
 export function redactDeviceIdentifiers(parsed) {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return parsed;
   if (parsed.handCapture === true && typeof parsed.device === 'string') {
@@ -210,7 +219,8 @@ export async function keepCaptureEvidence({
     } catch {
       continue;
     }
-    if (!rawReportOf(parsed)) continue;
+    const actionSuite = isActionSuite(parsed);
+    if (!rawReportOf(parsed) && !actionSuite) continue;
     const promoted = redactDeviceIdentifiers(parsed);
     const relativePath = relative(root, file);
     candidates.push({
@@ -224,7 +234,7 @@ export async function keepCaptureEvidence({
         (parsed.handCapture === true ? parsed.runtime : null) ??
         'unknown',
       handCapture: parsed.handCapture === true,
-      brush: brushOf(parsed, relativePath),
+      brush: actionSuite ? 'actions' : brushOf(parsed, relativePath),
       mode: modeOf(parsed),
       fidelity: parsed.fidelity ?? null,
       // Computed from the artifact's own report URL at promotion time (issue
@@ -246,7 +256,7 @@ export async function keepCaptureEvidence({
         : {}),
     });
   }
-  if (!candidates.length) fail(`no capture with a raw frame table under ${corpus}`);
+  if (!candidates.length) fail(`no drawing capture or action suite under ${corpus}`);
 
   const selected = selectEvidence(candidates, { keepAll });
   const noValidRepresentative = failedRepresentativeProblem(selected, { allowFailed });

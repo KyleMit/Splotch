@@ -293,7 +293,6 @@
     width: min(92vw, 500px);
     max-height: var(--card-height-cap);
     overflow: hidden;
-    will-change: transform, opacity;
   }
 
   .settings-modal.wide {

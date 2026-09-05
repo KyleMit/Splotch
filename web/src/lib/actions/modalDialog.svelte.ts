@@ -92,6 +92,7 @@ function closeAfterContentRetirementPaint(node: HTMLDialogElement, getOptions: (
   const initiallyInert = new Map(contentRoots.map((root) => [root, root.hasAttribute('inert')]));
   const compositorRetirement = getOptions().retirement === 'compositor';
   if (compositorRetirement) {
+    for (const animation of node.getAnimations()) animation.cancel();
     node.style.opacity = '0';
     for (const root of contentRoots) {
       root.inert = true;

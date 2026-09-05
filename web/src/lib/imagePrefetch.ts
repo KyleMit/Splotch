@@ -1,16 +1,17 @@
-// Warms the browser HTTP cache for a set of image URLs so they're already
-// decoded (or in flight) by the time an <img> asks for them. Used by the Coloring
-// Book Picker: cover thumbs are warmed on idle so the first open paints instantly,
-// a book's page selectors are warmed when its tile is pressed, and the selected canonical
-// overlay stays warm on hover/press so applying it to the canvas is immediate.
+// Warms the browser HTTP cache for a set of image URLs. Callers can either fetch
+// bytes opportunistically or also request decode before an imminent paint. Used
+// by the Coloring Book Picker for idle cover fetches, book-selector fetch/decode,
+// and the selected canonical overlay.
 //
-// Each logical image is keyed by its canonical src and requested once per
-// session via a detached Image(); srcset may select a responsive candidate. The
-// element is never inserted, so it just primes the cache and is GC'd. No-ops
-// during SSR where Image is undefined.
+// Each logical image is keyed by its canonical src. Responsive requests may let
+// srcset select another candidate, but the canonical key still coordinates fetch,
+// decode, and cancellation. Detached elements are retained only while their
+// transfer or decode is active. No-ops during SSR where Image is undefined.
 
 const warmed = new Set<string>();
 const activePrefetches = new Map<string, HTMLImageElement>();
+const activeDecodes = new Map<string, HTMLImageElement>();
+const decoded = new Set<string>();
 
 export interface ResponsiveImageRequest {
   src: string;
@@ -18,12 +19,7 @@ export interface ResponsiveImageRequest {
   sizes: string;
 }
 
-function prefetchImage(
-  request: string | ResponsiveImageRequest,
-  retainUntilDecoded: boolean
-): void {
-  const url = typeof request === 'string' ? request : request.src;
-  if (!url || warmed.has(url)) return;
+function createImage(request: string | ResponsiveImageRequest, url: string): HTMLImageElement {
   warmed.add(url);
   const img = new Image();
   img.decoding = 'async';
@@ -34,17 +30,34 @@ function prefetchImage(
   const release = () => {
     if (activePrefetches.get(url) === img) activePrefetches.delete(url);
   };
-  img.onerror = release;
+  img.onload = release;
+  img.onerror = () => {
+    release();
+    warmed.delete(url);
+  };
   activePrefetches.set(url, img);
   img.src = url;
-  if (retainUntilDecoded) {
-    void img
-      .decode()
-      .catch(() => undefined)
-      .finally(release);
-  } else {
-    img.onload = release;
-  }
+  return img;
+}
+
+function prefetchImage(request: string | ResponsiveImageRequest): void {
+  const url = typeof request === 'string' ? request : request.src;
+  if (!url || warmed.has(url)) return;
+  createImage(request, url);
+}
+
+function predecodeImageRequest(request: string | ResponsiveImageRequest): void {
+  const url = typeof request === 'string' ? request : request.src;
+  if (!url || decoded.has(url) || activeDecodes.has(url)) return;
+  const img = activePrefetches.get(url) ?? createImage(request, url);
+  activeDecodes.set(url, img);
+  void img
+    .decode()
+    .then(() => decoded.add(url))
+    .catch(() => undefined)
+    .finally(() => {
+      if (activeDecodes.get(url) === img) activeDecodes.delete(url);
+    });
 }
 
 export function cancelImageRequest(img: HTMLImageElement): void {
@@ -55,14 +68,14 @@ export function cancelImageRequest(img: HTMLImageElement): void {
 export function prefetchImages(requests: Iterable<string | ResponsiveImageRequest>): void {
   if (typeof Image === 'undefined') return;
   for (const request of requests) {
-    prefetchImage(request, false);
+    prefetchImage(request);
   }
 }
 
 export function predecodeImages(requests: Iterable<string | ResponsiveImageRequest>): void {
   if (typeof Image === 'undefined') return;
   for (const request of requests) {
-    prefetchImage(request, true);
+    predecodeImageRequest(request);
   }
 }
 
@@ -75,6 +88,7 @@ export function cancelImagePrefetchesExcept(preservedUrl: string): void {
     if (url === preservedUrl) continue;
     cancelImageRequest(img);
     activePrefetches.delete(url);
+    if (activeDecodes.get(url) === img) activeDecodes.delete(url);
     warmed.delete(url);
   }
 }

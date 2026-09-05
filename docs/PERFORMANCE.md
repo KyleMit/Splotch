@@ -451,7 +451,8 @@ entry 87. Paths under `web/src/` unless noted.*
 ### XIV. Cross-cutting
 
 82. **`will-change`/`contain` promotions** on animated overlay layers (polaroid, confetti, dial,
-    clear button, color sheet, paper views) — the LiveSurface one is test-enforced.
+    clear button, color sheet, paper views) and the scaling brush trigger — the LiveSurface one is
+    test-enforced.
 83. **rAF-throttled scrollspies + IntersectionObserver scroll cues** — no per-frame DOM measurement
     on privacy/design/changelog/Settings scrolling. `actions/scrollCue.ts`,
     `WideShell.svelte:428-440`. *issue #907*

@@ -81,15 +81,13 @@
     );
   });
 
-  // Pressing/hovering a book tile warms that book's screen-sized selectors before
-  // the sub-grid renders. Hovering a page warms its canonical canvas SVG.
-  function prefetchBookPages(book: Book) {
-    predecodeImages(
-      book.pages.map((page) =>
-        imageRequest(
-          pageSelectorImageSource(page, orientation, resolvedTheme()),
-          COLORING_IMAGE_SIZES.pageSelector[orientation]
-        )
+  // Hover fetches selector bytes without decoding an entire book. A press is the
+  // stronger intent signal that decodes the imminent selector grid before paint.
+  function bookPageRequests(book: Book) {
+    return book.pages.map((page) =>
+      imageRequest(
+        pageSelectorImageSource(page, orientation, resolvedTheme()),
+        COLORING_IMAGE_SIZES.pageSelector[orientation]
       )
     );
   }
@@ -127,6 +125,7 @@
     const dialogRetired = waitForDialogRetirement(dialogEl);
     coloringBookModal.hide();
     await dialogRetired;
+    await nextFrame();
     clearColoringPageWithMagicUndo();
   }
 
@@ -222,8 +221,8 @@
               type="button"
               aria-label="{book.name} coloring book"
               onclick={(e) => swapView(book, e)}
-              onpointerenter={() => prefetchBookPages(book)}
-              onpointerdown={() => prefetchBookPages(book)}
+              onpointerenter={() => prefetchImages(bookPageRequests(book))}
+              onpointerdown={() => predecodeImages(bookPageRequests(book))}
             >
               <img
                 src={coverImage.src}

@@ -85,6 +85,8 @@
   }
 
   .action-button {
+    /* The trigger scales on press; pre-promotion prevents the first pressed
+       frame from paying layer creation inside the interaction budget. */
     will-change: transform;
   }
 
