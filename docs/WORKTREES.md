@@ -104,6 +104,25 @@ A subagent with `isolation: worktree` in its frontmatter gets its own worktree, 
 that isolation today. An agent that needs to run `npm run …` in its own worktree has to install
 first.
 
+## Retiring a worktree
+
+Nothing above runs in reverse on its own: a finished session leaves its worktree, its branch, and
+its gitignored output behind. Two scripts in `tools/git-housekeeping/` retire agent worktrees, and
+the `prune-git-workspace` skill runs them in order with the branch cleanup that follows:
+
+1. `npm run worktrees:salvage` moves gitignored evidence worth keeping — `perf-profiles/` captures
+   and red-team `decrypted/` and `output/` — to `~/Code/splotch-worktree-evidence/<worktree id>/`.
+   `git worktree remove` deletes ignored paths without asking, so this runs first.
+2. `npm run worktrees:prune` removes each agent worktree that is clean, merged into `origin/main`,
+   salvaged, locked by nobody, and no process's working directory, printing `removed`, `kept`, or
+   `skip (in use)` with the reason. It never touches the main checkout, the worktree it runs from, a
+   worktree outside the agent roots (`.claude/worktrees/`, `~/.codex/worktrees/`, `/tmp`), or any
+   branch.
+
+Both are dry runs until `-- --apply`. A worktree another session is using shows up as
+`skip (in use)` with the process ids, which is the expected shape on a host running several agents
+at once; leave it.
+
 ## Sharing the host
 
 Agent-managed worktrees share host ports and machine capacity, whichever runner cut them. The rules

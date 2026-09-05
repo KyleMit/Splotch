@@ -924,6 +924,13 @@ The one thing worth reverting is a debug override that changes what the device r
 — `adb shell dumpsys battery reset` if the watch ever forced a plugged state. Everything else stays
 up.
 
+When a human does say otherwise, the sanctioned path is `npm run perf:release` (the
+`release-capture-session` skill), not a hand-rolled kill. It stops only rig processes a checkout of
+this repo owns — any worktree, current or pruned — drains Appium's sessions before signalling it so
+no WebDriverAgent is stranded on the iPad, leaves the root-owned tunnel and every foreign listener
+alone, refuses while a campaign is live, and then puts the phone back to stock on purpose, which
+means the phone sleeps and locks and the next session needs a person at it.
+
 ## Instruments scope: `--all-processes` is not the perturbation you expect
 
 The intuition is reasonable — sampling every thread in every process should cost more than sampling
