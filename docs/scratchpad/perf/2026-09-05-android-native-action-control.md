@@ -110,8 +110,9 @@ by this control.
 ## Retained preflight provenance
 
 The following verbatim input/rotation excerpt is from local `splotch-1567-native-preflight.log`
-(`npm run perf:preflight -- --wake-android --verify-android-input`). Device-enumeration and
-host-port lines are omitted from this excerpt; the original log is unchanged. Its SHA-256 is
+(`npm run perf:preflight -- --wake-android --verify-android-input`). Only the input and rotation
+verification section is quoted; the npm banner and other readiness checks are omitted. Every omitted
+check passed, and the original log is unchanged. Its SHA-256 is
 `ae486f9af7a2df05b439e28b5ddb1b580b3de12b6a4f6afc19f3691846dbf87c`. This floor-control preflight
 proves the input path and rotation check, not drawing fidelity of the four native action captures.
 
