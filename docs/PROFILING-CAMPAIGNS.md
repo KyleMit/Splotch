@@ -1185,6 +1185,27 @@ Each is worth recognizing in a number.
   regime.** A long sweep can keep aggregate idle under its gates while a target changes from clean
   to slow. Inspect the per-repeat samples and preserve the raw artifact.
 
+## Serial CDP touch acknowledgements can slow the scroll itself
+
+The September epic-1567 Android coloring-scroll control scored 33.4 / 33.3 / 33.4 ms repeat maxima
+on unchanged main. Its trace showed scroll draws about 50 ms apart while browser begin-frame events
+continued every 16.7 ms, with one 0.133 ms raster task in the inspected repeat's first 900 ms. This
+was not evidence for removing selected-overlay predecode: the sustained cadence did not match a
+one-off decode cost.
+
+`PlaywrightWebDriver.movePointer` awaited each CDP touch acknowledgement and then slept another
+frame interval. The coloring-scroll path instead asks Chrome to generate the complete touch swipe
+with `Input.synthesizeScrollGesture`, retaining its coordinates and intended duration. The browser
+then presented scroll updates about 16.7 ms apart. A non-traced complete portrait/light action sweep
+passed all 49 actions; scroll maxima were 33.3 / 33.3 / 16.8 ms, P95 16.8 ms. No product code or
+scoring rule changed. ADR-0092 records the scope and retained evidence.
+
+The traced diagnostic also failed its idle control, which remains in the comparison corpus. A useful
+trace is not automatically certification. Capture `scrollDelivery` distinguishes the
+browser-generated path; historical serial-input captures remain historical evidence, not equivalent
+measurements of the corrected gesture. Do not generalize this finding to a different action or
+replace drawing/clear input without its own evidence.
+
 ## A red cell describes the commit it was captured at, not the product
 
 **Before treating a red cell as a product problem, rebuild the commit it was captured at and confirm

@@ -570,18 +570,22 @@ async function measureColoringPageScroll(client, sessionId, execute) {
     const x = Math.round(bounds.x + bounds.width / 2);
     const startY = Math.round(bounds.y + bounds.height * 0.75);
     const endY = Math.round(bounds.y + bounds.height * 0.3);
-    await performNativeGesture(client, sessionId, webContext, [
-      { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
-      { type: 'pointerDown', button: 0 },
-      {
-        type: 'pointerMove',
-        duration: COLORING_SCROLL_MS,
-        origin: 'viewport',
-        x,
-        y: endY,
-      },
-      { type: 'pointerUp', button: 0 },
-    ]);
+    if (client.cdp) {
+      await client.scrollTouchGesture({ x, startY, endY, durationMs: COLORING_SCROLL_MS });
+    } else {
+      await performNativeGesture(client, sessionId, webContext, [
+        { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
+        { type: 'pointerDown', button: 0 },
+        {
+          type: 'pointerMove',
+          duration: COLORING_SCROLL_MS,
+          origin: 'viewport',
+          x,
+          y: endY,
+        },
+        { type: 'pointerUp', button: 0 },
+      ]);
+    }
   }
   const readyAt = await waitForReady(
     execute,
@@ -593,7 +597,11 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
   await sleep(ACTION_SETTLE_MS);
   return {
-    sample: { ...sample, activation: transport.activation },
+    sample: {
+      ...sample,
+      activation: transport.activation,
+      ...(client.cdp && !useWheel ? { scrollDelivery: 'cdp-synthesized-scroll' } : {}),
+    },
     notApplicableReason: null,
   };
 }

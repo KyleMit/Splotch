@@ -27,13 +27,13 @@ GPU and Chrome build, and the third made the matrix neither repeatable nor auton
 
 ## Decision
 
-Android Chrome discrete-action profiles use `perf:android:web:actions`, implemented by
-`scripts/perf/android-web-actions.mjs`, instead of the Appium browser session:
+Android Chrome discrete-action profiles use `perf:android:browser:actions`, implemented by
+`tools/perf/android/capture-browser-actions.mjs`, instead of the Appium browser session:
 
 * ADB launches an explicitly marked profiler tab and forwards Chrome's `chrome_devtools_remote`
   socket. The runner closes only old Splotch tabs carrying its profiler query parameters; it never
   closes an ordinary user tab.
-* `scripts/perf/playwright-webdriver.mjs` adapts Playwright and direct `Input.dispatchTouchEvent`
+* `tools/perf/lib/webdriver-client.mjs` adapts Playwright and direct `Input.dispatchTouchEvent`
   calls to the WebDriver-shaped interface expected by `runActionSweep()`. The Android and iPad paths
   therefore share the exact action plan, in-page probe, result schema, and gates rather than sharing
   an unreliable transport.
@@ -44,6 +44,30 @@ Android Chrome discrete-action profiles use `perf:android:web:actions`, implemen
 * Rotation uses ADB system settings and restores both the original rotation and auto-rotation
   preferences in `finally`. Browser coordinates are already CSS pixels, so their mapping excludes
   browser chrome while native Appium mappings retain the ADR-0090 behavior.
+
+### Coloring-scroll delivery (September 2026)
+
+The coloring-grid swipe uses `Input.synthesizeScrollGesture` with a touch source, its existing
+start/end coordinates, and speed derived from the intended gesture duration. The browser schedules
+the complete gesture. Taps, drawing/clear streams, desktop wheel input, and Appium input retain
+their existing paths. The sample records `scrollDelivery: cdp-synthesized-scroll`; the ready
+predicate, activity window, and frame gates are unchanged.
+
+The serial CDP move loop awaited each acknowledgement and then slept for another frame interval. On
+physical Android it delivered scroll updates about 50 ms apart despite a 16.7 ms browser frame
+clock. The original control scored 33.4 / 33.3 / 33.4 ms repeat maxima, P95 33.3 ms. The Chrome
+trace showed only one 0.133 ms raster task in the first 900 ms of the inspected repeat.
+Browser-generated touch restored draw updates to roughly 16.7 ms without a product change. The
+complete portrait/light action sequence then passed all 49 actions; scroll maxima were 33.3 / 33.3 /
+16.8 ms, P95 16.8 ms.
+
+The
+[comparison corpus](../../perf-profiles/evidence/2026-09-05-epic-1567-android-scroll-study/index.json)
+retains the original failure and the traced diagnostic's idle failures. The
+[canonical validation](../../perf-profiles/evidence/2026-09-05-epic-1567-android-scroll-canonical/index.json)
+measures the same main product. This is a capture correction, not a product optimization or a
+four-row release certification. A protocol failure remains a capture failure; silently falling back
+to the slow serial stream would make the provenance ambiguous.
 
 Appium remains the transport for iOS and native Capacitor action profiles, where it provides the
 native shell, context switching, and real-device XCUITest input required by ADR-0090. Direct CDP is

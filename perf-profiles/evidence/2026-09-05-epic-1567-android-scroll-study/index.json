@@ -1,0 +1,41 @@
+{
+  "campaign": "2026-09-05-epic-1567-android-scroll-study",
+  "productCommit": "196a97757782a93ccb7a53cbb9aae3d313db2e56",
+  "capturedFrom": "perf-profiles/epic-1567-september-resume/main-control",
+  "study": "Compare serial CDP touch delivery with browser-generated scrolling on the same main product; retain traced idle failures alongside scroll results.",
+  "kept": [
+    {
+      "file": "actions--90204c50.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "android-browser-gesture-diagnostic/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--f4acbe98.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "android-coloring-trace/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "android-portrait-light-coloring--8376bb82.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "android-portrait-light-coloring.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}
