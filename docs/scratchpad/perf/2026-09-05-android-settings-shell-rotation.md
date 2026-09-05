@@ -66,6 +66,41 @@ physical device identifiers. Type checking and the performance build passed. All
 Chromium Settings-flow and Settings-mount tests passed. The new test withholds idle callbacks,
 verifies the closed shell waits, then proves opening and visible rotation bypass that wait.
 
-A clean committed treatment capture, rival reviews, and CI remain required before this PR is ready.
+## Clean reviewed treatment
+
+Product commit d92ba50b9440938d84e82d9f13cb2423963fc71c also coalesces both breakpoint values into
+one update and clears the button-size preview when its slider unmounts. Its first full
+landscape/light certification passed 34 of 35 groups, with no unconfirmed maximum warnings. Every
+group had three scored repeats after one warmup and valid activation in all four samples.
+
+| Action                            | First frames (ms)  | Scored-repeat maxima (ms) |
+| --------------------------------- | ------------------ | ------------------------- |
+| Empty-clear landscape to portrait | 4.5 / 0.1 / 14.8   | 16.8 / 16.8 / 16.8        |
+| Empty-clear portrait to landscape | 9.4 / 13.8 / 14.3  | 16.8 / 16.8 / 16.8        |
+| Inked landscape to portrait       | 5.5 / 13.5 / 9.3   | 16.8 / 16.7 / 16.7        |
+| Inked portrait to landscape       | 10.6 / 1.9 / 9.8   | 16.7 / 16.8 / 16.7        |
+| Open Settings                     | 12.5 / 12.8 / 12.1 | 16.8 / 16.8 / 16.7        |
+| Enable compact Night Mode         | 0.8 / 1.4 / 5.3    | 33.3 / 33.3 / 33.3        |
+
+All four rotations passed. Compact Night Mode activation remained red (scored P95 33.3 ms), despite
+passing in the earlier full control and provisional treatment. This is a preserved campaign red, not
+a fully green treatment sweep or proof that shell scheduling caused the Night Mode failure. Idle
+control maxima were 16.8 / 16.8 / 16.8 ms. No capture was retried to obtain a passing result.
+
+The raw source is
+`settings-shell-reviewed-treatment/android-device-web/landscape-light/actions/actions.json` beneath
+the study root, SHA-256 `dea91f7eb88ff1f4473300377cdfa92377a2cc25af8affb03b11110703a33e3e`. The
+keeper retained it whole in `perf-profiles/evidence/2026-09-05-epic-1567-settings-shell-reviewed/`
+with the measured product commit. All eight study source hashes remained unchanged after promotion;
+the retained capture and index passed identifier scans. The clean performance build recorded that
+same commit with `dirty: false` before capture.
+
+Four focused browser tests passed: foreground demand, eventual closed-shell prewarming without a
+transient wide pane, slider unmount during rotation, and Escape during a still-live slider drag.
+Removing the slider cleanup or restoring independent breakpoint callbacks made the corresponding
+regression fail; the committed files were restored. Type checking, lint, formatting, and CI passed
+at the product commit. All four findings in rival round one were addressed; round two remains
+required before the next branch.
+
 The authoritative four-row matrix remains on its older product commit; none of these focused results
 substitutes for the final physical recapture.
