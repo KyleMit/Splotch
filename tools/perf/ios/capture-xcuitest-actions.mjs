@@ -531,7 +531,8 @@ async function measureClick({
   return { ...sample, activation: activationMode };
 }
 
-async function measureColoringPageScroll(client, sessionId, execute) {
+// Exported to exercise dispatch and captured provenance together without a physical device.
+export async function measureColoringPageScroll(client, sessionId, execute) {
   const selector = '#coloring-book-dialog';
   const scrollability = await execute(`
     const dialog = document.querySelector(${JSON.stringify(selector)});
@@ -552,6 +553,7 @@ async function measureColoringPageScroll(client, sessionId, execute) {
 
   const transport = coloringScrollTransport(client);
   const useWheel = transport.activation === 'trusted-wheel';
+  let scrollDelivery = null;
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(COLORING_SCROLL_ACTION_LABEL)}, ${JSON.stringify(selector)}, ${JSON.stringify(
@@ -572,6 +574,7 @@ async function measureColoringPageScroll(client, sessionId, execute) {
     const endY = Math.round(bounds.y + bounds.height * 0.3);
     if (client.cdp) {
       await client.scrollTouchGesture({ x, startY, endY, durationMs: COLORING_SCROLL_MS });
+      scrollDelivery = 'cdp-synthesized-scroll';
     } else {
       await performNativeGesture(client, sessionId, webContext, [
         { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
@@ -600,7 +603,7 @@ async function measureColoringPageScroll(client, sessionId, execute) {
     sample: {
       ...sample,
       activation: transport.activation,
-      ...(client.cdp && !useWheel ? { scrollDelivery: 'cdp-synthesized-scroll' } : {}),
+      ...(scrollDelivery ? { scrollDelivery } : {}),
     },
     notApplicableReason: null,
   };
