@@ -419,9 +419,10 @@ entry 87. Paths under `web/src/` unless noted.*
 73. **Session-keyed image prefetch cache + cancellation** — detached `Image()` warms once per URL
     per session; picking a page aborts every other in-flight warm so the chosen page gets the
     bandwidth. `lib/imagePrefetch.ts`. *ADR-0045*
-74. **Tiered warms** — cover thumbs at idle on open (re-run on theme change); a book's pages on tile
-    press/hover; the *other orientation's* art at idle only after the picked page decodes.
-    `ColoringBook.svelte:63-79`, `DrawingCanvas.svelte:231-251`. *ADR-0045*
+74. **Tiered warms** — cover thumbs at idle on open (re-run on theme change); a book's pages fetched
+    on tile hover and decoded on press, so mouse exploration does not decode every selector; the
+    *other orientation's* art at idle only after the picked page decodes.
+    `ColoringBook.svelte:63-95`, `DrawingCanvas.svelte:231-251`. *ADR-0045*
 75. **Decode-gated overlay swap** — new line art decodes off-DOM (`img.decode()`,
     `fetchPriority='high'`) and swaps by opacity only when ready; current art stays visible
     meanwhile. The displayed image keeps `decoding="async"` so WebKit can rasterize the decoded

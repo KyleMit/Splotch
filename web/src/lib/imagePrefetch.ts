@@ -30,9 +30,12 @@ function createImage(request: string | ResponsiveImageRequest, url: string): HTM
   const release = () => {
     if (activePrefetches.get(url) === img) activePrefetches.delete(url);
   };
+  // Once the bytes arrive, cancellation cannot recover bandwidth; activeDecodes
+  // keeps the element alive only until decode settles.
   img.onload = release;
   img.onerror = () => {
-    release();
+    if (activePrefetches.get(url) !== img) return;
+    activePrefetches.delete(url);
     warmed.delete(url);
   };
   activePrefetches.set(url, img);

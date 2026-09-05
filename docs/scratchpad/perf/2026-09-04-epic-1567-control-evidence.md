@@ -21,15 +21,21 @@ The complete discrete-action controls are preserved separately because every sco
 of a causal comparison:
 
 * `2026-09-04-epic-1567-control-actions` contains all four modes for iPad web, iPad native, and
-  Android web (12 action suites).
+  Android web (12 action suites, 33.5 MB minified).
 * `2026-09-04-epic-1567-control-actions-android-native` contains all four Android native modes (four
-  action suites).
+  action suites, 22.9 MB minified).
 
 All six evidence indexes name the same product commit. `keep-capture-evidence.mjs` copied each
 measurement whole and replaced hardware identifiers only in the tracked copies; the gitignored
 source artifacts remain unchanged. Action comparisons derive each scored repeat independently with
 `scoredActionFrameGaps()` from `tools/perf/lib/action-stats.mjs`; pooled P95, P99, and maximum
 values are never counted as additional repeats.
+
+The keep-all exception adds 56.4 MB, well above ADR-0138's roughly 4.5 MB per-campaign planning
+reference. This campaign accepts that permanent repository cost because the whole-capture rule
+forbids trimming measurement payloads and every retained action repeat is load-bearing control
+evidence for one or more treatment comparisons. The indexes and this note keep that choice
+reviewable before merge.
 
 ## Android native retry provenance
 

@@ -106,6 +106,20 @@ describe('image prefetch cancellation', () => {
     expect(requested[2].removedAttributes).toEqual(['src']);
   });
 
+  it('ignores a cancelled image error after a replacement owns the URL', async () => {
+    const { cancelImagePrefetchesExcept, prefetchImages } = await import('./imagePrefetch');
+
+    prefetchImages(['/cover.webp']);
+    cancelImagePrefetchesExcept('/selected.webp');
+    prefetchImages(['/cover.webp']);
+    requested[0].onerror?.();
+    prefetchImages(['/cover.webp']);
+    cancelImagePrefetchesExcept('/selected.webp');
+
+    expect(requested).toHaveLength(2);
+    expect(requested[1].removedAttributes).toEqual(['src']);
+  });
+
   it('allows a cancelled decode to be retried immediately', async () => {
     const { cancelImagePrefetchesExcept, predecodeImage } = await import('./imagePrefetch');
 
