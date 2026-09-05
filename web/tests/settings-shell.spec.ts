@@ -94,8 +94,8 @@ test('rotating during a button-size drag releases the unmounted preview', async 
   const modal = await beginButtonSizeDrag(page);
   await page.setViewportSize({ width: 844, height: 390 });
   await expect(modal).toHaveClass(/compact/);
-  await page.mouse.up();
   await expect(modal).not.toHaveClass(/resizing/);
+  await page.mouse.up();
   await expect(modal.locator('#quickNightToggle')).toBeVisible();
   await modal.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(modal).not.toBeVisible();

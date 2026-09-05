@@ -82,10 +82,11 @@ group had three scored repeats after one warmup and valid activation in all four
 | Open Settings                     | 12.5 / 12.8 / 12.1 | 16.8 / 16.8 / 16.7        |
 | Enable compact Night Mode         | 0.8 / 1.4 / 5.3    | 33.3 / 33.3 / 33.3        |
 
-All four rotations passed. Compact Night Mode activation remained red (scored P95 33.3 ms), despite
-passing in the earlier full control and provisional treatment. This is a preserved campaign red, not
-a fully green treatment sweep or proof that shell scheduling caused the Night Mode failure. Idle
-control maxima were 16.8 / 16.8 / 16.8 ms. No capture was retried to obtain a passing result.
+All four rotations passed. Compact Night Mode activation is red again here (scored P95 33.3 ms),
+after passing in the earlier full control and provisional treatment. This is a borderline campaign
+cell, not a fully green treatment sweep or proof that shell scheduling caused the Night Mode
+failure. Idle control maxima were 16.8 / 16.8 / 16.8 ms. No capture was retried to obtain a passing
+result.
 
 The raw source is
 `settings-shell-reviewed-treatment/android-device-web/landscape-light/actions/actions.json` beneath
@@ -99,8 +100,11 @@ Four focused browser tests passed: foreground demand, eventual closed-shell prew
 transient wide pane, slider unmount during rotation, and Escape during a still-live slider drag.
 Removing the slider cleanup or restoring independent breakpoint callbacks made the corresponding
 regression fail; the committed files were restored. Type checking, lint, formatting, and CI passed
-at the product commit. All four findings in rival round one were addressed; round two remains
-required before the next branch.
+at the product commit. Both rival review rounds completed. Round two independently repeated the four
+tests and both negative controls, passed 99 affected production-mode browser tests, and rescored the
+retained control and treatment. Its two nits clarified the Night Mode comparison and moved the
+unmount assertion before pointer release. Trace attribution and clean-build provenance remain
+locally verifiable from the raw study rather than from the retained PR artifacts.
 
 The authoritative four-row matrix remains on its older product commit; none of these focused results
 substitutes for the final physical recapture.
