@@ -6,9 +6,10 @@ and no unconfirmed maximum warnings. This is a control of the reviewed product, 
 experiment.
 
 The old landscape/dark empty-clear landscape-to-portrait red did not reproduce: first frames were
-5.6 / 1.1 / 1.4 ms and scored-repeat maxima were 16.5 / 8.4 / 8.4 ms. No additional product change
-is justified by this control. The historical failure remains part of the earlier matrix; this
-action-only capture does not replace that matrix.
+5.6 / 1.1 / 1.4 ms and scored-repeat maxima were 16.5 / 8.4 / 8.4 ms. These samples pass the
+existing gates. This single-arm control cannot establish which prior treatment, if any, or change in
+the device environment accounts for the difference. The historical failure remains part of the
+earlier matrix; this action-only capture does not replace that matrix.
 
 ## Build and capture provenance
 
@@ -79,6 +80,13 @@ Landscape/light compact Night Mode enable maxima were 25.0 / 25.0 / 25.0 ms (sco
 disabling was 16.7 / 16.8 / 16.6 ms. All Settings, coloring, drawing-sound, and undo action groups
 passed. Whole retained artifacts contain every action and repeat.
 
+Landscape/light empty-clear landscape-to-portrait rotation recorded maxima of 33.4 / 8.4 / 33.3 ms.
+The two largest gaps in this corpus are only 0.1 and 0.2 ms below the 33.5 ms maximum gate. At the
+observed 8.3 ms idle cadence they span approximately four frame intervals. The gate is an absolute
+time limit whose source rationale cites two 60 Hz intervals; passing it does not mean this WebView
+sustained its idle cadence. ADR-0156 retains that limit, so these are narrow passes rather than
+confirmed breaches. Both rotation modes still require the final matrix recapture.
+
 ## Retention and limits
 
 Raw root: `perf-profiles/epic-1567-september-resume/native-reviewed-control/`. The keeper promoted
@@ -98,3 +106,31 @@ This does not complete the physical Android row: four-brush drawing and split-tr
 required. Action undo does not satisfy issue #1630. The final single-product-commit four-row
 recapture and strict matrix remain outstanding; issues #1563 and #1567 stay open. No child is closed
 by this control.
+
+## Retained preflight provenance
+
+The following verbatim input/rotation excerpt is from local `splotch-1567-native-preflight.log`
+(`npm run perf:preflight -- --wake-android --verify-android-input`). Device-enumeration and
+host-port lines are omitted from this excerpt; the original log is unchanged. Its SHA-256 is
+`ae486f9af7a2df05b439e28b5ddb1b580b3de12b6a4f6afc19f3691846dbf87c`. This floor-control preflight
+proves the input path and rotation check, not drawing fidelity of the four native action captures.
+
+```text
+verifying Android input against the floor control…
+✓ android input          1.02 moves/frame (122 contact moves/s), at or above the trusted-input density floor
+                         observed: pressure p50 1 · no contact geometry reported
+
+verifying the device and page both rotate…
+✓ android rotation       page followed the device through landscape and portrait
+```
+
+The post-capture WebView query was retained in local `splotch-1567-native-postflight.json`, SHA-256
+`e23cd4d47acf5c3084154900959278fedfedeecef5a57d24b5828789f5963dae`. Its complete identifier-free
+contents are:
+
+```json
+{
+  "webView": "Current WebView package (name, version): (com.google.android.webview, 151.0.7922.199)",
+  "checkedAt": "2026-09-05T18:47:22.314Z"
+}
+```
