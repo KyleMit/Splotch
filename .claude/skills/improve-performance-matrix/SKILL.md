@@ -307,18 +307,25 @@ is started:
 2. Start a second `run-rival-agent` round after round one's disposition, even when round one found
    nothing. Resume the first review conversation as that skill specifies so the rival can verify its
    own findings. Address the second round before moving the checkout or starting the next layer. If
-   round two causes a material fix, run another verification round over that fix.
+   its findings cause a material fix, run another verification round over that fix.
 
 Two rounds means two completed rival invocations; CI, same-session self-review, a skipped automation
 job, and rerunning tests do not count. Do not postpone the reviews until wrap-up. If the required
 reviewer runner is unavailable, stop adding stack layers and report the blocker.
 
+The resumed rival conversation has a three-round budget. If a material fix lands after the second
+round reports — whether prompted by that round, a human comment, or CI — use round three to verify
+it. If round three finds another material issue, address it and use `--fresh` for one final
+verification pass. If that fresh pass finds another material issue, stop adding layers and report
+the repeated-review blocker to the user rather than extending the loop without a bound.
+
 For each delivered cluster:
 
-1. use `address-pr-review` for every inline thread, review summary, and conversation comment;
+1. invoke `address-pr-review` explicitly restricted to the newly opened current-tip PR with nothing
+   above it, and include every inline thread, review summary, and conversation comment on that PR;
 2. reproduce findings, fix or rebut them with evidence, reply, and resolve every thread;
-3. complete both rival rounds and run an additional verification round after any material round-two
-   fix;
+3. complete both rival rounds and follow the bounded verification policy above after any material
+   fix made once the second round has reported;
 4. follow `pr-screenshots` when a PR changes visible UI;
 5. keep the current stack tip green, verify the live PR head matches the tested SHA, and do not
    start the next stack layer until its independent review is complete and the current tip's CI is

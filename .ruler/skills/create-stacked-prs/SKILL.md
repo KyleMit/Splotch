@@ -218,7 +218,9 @@ never be green beforehand; they are not a reason to hold the stack.
 The preferred path is to review each PR before it has a child. Fix valid findings on that current
 tip, rerun the required reviewer rounds, and only then branch the next layer. The stacked-campaign
 fallback below exists for feedback that arrives late or for a stack that was already built; it is
-not a reason to postpone review until wrap-up.
+not a reason to postpone review until wrap-up. When using `address-pr-review` for this early gate,
+explicitly restrict its invocation to that single current-tip PR with nothing above it so the
+per-layer exception in that skill applies.
 
 Work the feedback with the `address-pr-review` skill — its stacked-campaign mode exists for exactly
 this shape, and it detects the chain itself. Inside a stack it sweeps the feedback from **every open

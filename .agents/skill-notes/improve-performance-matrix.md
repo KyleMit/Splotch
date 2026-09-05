@@ -56,3 +56,11 @@ changes can preserve behavior and still encode a mistaken causal theory; the res
 checks the disposition of the first even when that first pass reported no findings. It resumes the
 first reviewer conversation so that disposition has context. A material fix from round two earns an
 additional verification round rather than treating the second review as a ceremony.
+
+The first rival review caught two boundary cases. `address-pr-review` must be explicitly restricted
+to the single current-tip PR or its normal stacked-campaign mode creates a feedback child while the
+review gate is still open. And a verification rule scoped only to round-two fixes drops material
+changes prompted later by a human or CI. The skill now keys the extra verification on any material
+fix after round two and bounds the three-round ceiling: one fresh final pass is allowed after a
+material round-three finding, then another material finding stops new layers and returns the blocker
+to the user.

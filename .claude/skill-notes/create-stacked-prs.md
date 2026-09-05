@@ -46,6 +46,12 @@ review while the PR is still the tip, when a valid fix can remain beside the cha
 The stacked-campaign feedback PR remains necessary for late feedback and already-built stacks, but
 is a fallback rather than the default review schedule.
 
+The first rival review of this correction found a cross-skill collision: `address-pr-review` only
+uses its per-layer exception when the invocation explicitly restricts it to the single current-tip
+PR. Merely naming that PR still triggers the whole-stack sweep and creates a feedback PR above it —
+the child that the early review gate forbids. The stack skill therefore names the exact scoping that
+activates the exception instead of assuming tip position alone changes the receiving skill's mode.
+
 ## Where the merged packets disagreed, and how it was resolved
 
 * **PR numbers vs. URLs for `gh stack link`.** The mechanics packet said "pass PR numbers, not
