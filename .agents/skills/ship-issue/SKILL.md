@@ -50,18 +50,29 @@ Two intake paths. Both end with a written done-when you can verify against.
   alone has shipped the wrong thing here before.
 * If the issue belongs to an epic or names sub-issues, run `enumerate-sub-issues` first — an epic's
   prose is not a reliable child list.
-* **Claim it before writing code**: apply the `in-progress` label and assign yourself. This is what
-  keeps a parallel session (or a `burn-down-backlog` run) off the same issue, so it happens now, not
-  at PR time.
-* Skip nothing silently: an issue labelled `needs-triage`, `needs-scoping`, or `needs-adr` is a
-  decision the user owes you. Say what is blocked and stop instead of guessing.
+* **Clear every stop condition before mutating anything on GitHub.** All three, in this order:
+  * **Is it actionable?** An issue labelled `needs-triage`, `needs-scoping`, or `needs-adr` is a
+    decision the user owes you. Say what is blocked and stop instead of guessing.
+  * **Is it already claimed?** An `in-progress` label or an assignee from another session means
+    someone else is on it. Say so and stop rather than racing them; taking a claimed issue is how
+    two sessions silently do the same work twice.
+  * **Is the tree clean?** Stop if it is not — never fold the user's uncommitted work into this run.
+* **Then claim it**: apply the `in-progress` label and assign yourself, still before writing any
+  code. This is what keeps a parallel session (or a `burn-down-backlog` run) off the same issue, so
+  it happens now rather than at PR time.
+
+  Claiming **after** the stop conditions is the whole point of the ordering. A claim applied first
+  and then abandoned leaves `in-progress` on an issue nobody is working, and `burn-down-backlog`
+  filters that label out of its pickups — so one aborted run would strand the issue from every
+  future automated pickup, with nothing to announce it. Any blocker found *later*, once the claim is
+  real, still gets the rollback in step 2.
 
 **A free-form task:** there is no issue to read or claim. Restate the task as a done-when spec in
 one or two sentences and carry it into the PR body as the "why" — a PR that closes no issue must
 explain itself entirely on its own. Do not open an issue just to have one to close.
 
-Either way, stop before touching code if the tree is dirty — never fold the user's uncommitted work
-into this run. If the spec is ambiguous enough that two readings produce materially different
+Either way — for the free-form path, where there is no issue to check, the clean-tree condition
+above still applies. If the spec is ambiguous enough that two readings produce materially different
 software, ask the one question that resolves it rather than picking a reading and building it; in
 `mode=autonomous` there is nobody to ask, so pick the reading that is easiest to reverse, say so in
 the PR body, and treat the other reading as an action item. A spec too ambiguous for even that — one
