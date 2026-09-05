@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<meta name="description" content="A visual explanation of Splotch's production drawing engine, including multi-touch strokes, tiled rendering, rasterization, undo patches, crayon compositing, Magic brush sheets, rotation, and export."/>
-<title>How Splotch's drawing engine works</title>
+<meta name="description" content="How a drawing app turns finger movement into pixels, and how Splotch built its engine: frame-batched input, a 4×5 tile grid, pixel-patch undo, idle folding, worker export, with an interactive stroke lab and a glossary."/>
+<title>How the drawing engine works</title>
 <style>
 :root{
   color-scheme:light dark;
@@ -16,174 +16,279 @@
   --c-red:#ec534e;--c-orange:#f89c45;--c-yellow:#f9d24f;
   --c-green:#8cc864;--c-blue:#62a2e9;--c-purple:#ab71e1;--c-pink:#f47cb0;
   --code-bg:#211f29;--code-ink:#f2eef8;--code-muted:#aaa4b7;
-  --code-blue:#8fc7ff;--code-green:#91d18b;--code-orange:#f6b46b;--code-pink:#f39bc2;
+  --code-blue:#8fc7ff;--code-green:#91d18b;--code-orange:#f6b46b;--code-pink:#f39bc2;--code-type:#d8b4fe;
   --shadow-sm:0 1px 2px rgba(30,28,40,.05);
   --shadow-md:0 1px 2px rgba(30,28,40,.05),0 10px 26px rgba(30,28,40,.07);
-  --shadow-lg:0 2px 6px rgba(30,28,40,.06),0 22px 48px rgba(30,28,40,.12);
-  --r-sm:9px;--r-md:16px;--r-lg:22px;--shell:1160px;
+  --r-sm:9px;--r-md:16px;--r-lg:22px;--shell:1120px;--nav-h:48px;
   --font:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
 }
 @media (prefers-color-scheme:dark){
-  :root{
-    --paper:#131418;--paper-2:#0f1013;--card:#1d1f27;--card-2:#181a20;
-    --ink:#e9e7e2;--muted:#a8a4af;--faint:#807d89;
-    --hair:#34373f;--hair-strong:#464a55;
+  :root:not([data-theme=light]){
+    --paper:#131418;--paper-2:#0f1013;--card:#1c1e24;--card-2:#191b20;
+    --ink:#e9e7e2;--muted:#a19da8;--faint:#797682;
+    --hair:#2b2e36;--hair-strong:#3a3e48;
     --accent:#7aa8ff;--accent-ink:#a9c6ff;--accent-wash:#1b2536;
     --gold:#d9a441;--ok:#5cc078;--warn:#e6a545;--bad:#e8695c;
     --shadow-sm:0 1px 2px rgba(0,0,0,.3);
     --shadow-md:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.4);
-    --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 22px 48px rgba(0,0,0,.5);
   }
 }
+:root[data-theme=dark]{
+  --paper:#131418;--paper-2:#0f1013;--card:#1c1e24;--card-2:#191b20;
+  --ink:#e9e7e2;--muted:#a19da8;--faint:#797682;
+  --hair:#2b2e36;--hair-strong:#3a3e48;
+  --accent:#7aa8ff;--accent-ink:#a9c6ff;--accent-wash:#1b2536;
+  --gold:#d9a441;--ok:#5cc078;--warn:#e6a545;--bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.4);
+}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.58;-webkit-font-smoothing:antialiased}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
 a{color:var(--accent-ink);text-decoration:none}
 a:hover{text-decoration:underline;text-underline-offset:3px}
-button{font:inherit}
+button{font:inherit;color:inherit}
 .shell{width:100%;max-width:var(--shell);margin:0 auto;padding-inline:clamp(16px,4vw,44px)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-.masthead{position:relative;overflow:hidden;background:radial-gradient(120% 140% at 100% 0,color-mix(in srgb,var(--accent-wash) 62%,transparent),transparent 60%),linear-gradient(180deg,var(--card-2),var(--paper));border-bottom:1px solid var(--hair)}
-.masthead .shell{padding-top:clamp(16px,3vw,26px);padding-bottom:clamp(28px,5vw,54px)}
+/* ---- Masthead ---- */
+.masthead{position:relative;overflow:hidden;background:radial-gradient(120% 140% at 100% 0,color-mix(in srgb,var(--accent-wash) 60%,transparent),transparent 60%),linear-gradient(180deg,var(--card-2),var(--paper));border-bottom:1px solid var(--hair)}
+.masthead .shell{padding-top:clamp(16px,3vw,26px);padding-bottom:clamp(26px,4vw,44px)}
 .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-height:34px}
 .brand{display:inline-flex;align-items:center;gap:10px;color:var(--ink);font-weight:700;letter-spacing:-.01em}
 .brand:hover{text-decoration:none}.brand:hover .brand-name{color:var(--accent-ink)}
 .brand-name{font-size:15px}.brand-sub{color:var(--muted);font-weight:600}.brand-sub::before{content:"/";margin:0 5px;color:var(--faint);font-weight:400}
 .crayons{display:inline-flex;gap:4px;flex:0 0 auto}.crayons i{display:block;border-radius:99px;width:16px;height:6px}
 .crumbs{margin-left:auto;display:flex;align-items:center;gap:2px;font-size:13px;color:var(--muted);flex-wrap:wrap}.crumbs a{color:var(--muted)}.crumbs .sep{color:var(--faint);margin:0 5px}.crumbs .here{color:var(--ink);font-weight:650}
-.masthead-body{margin-top:clamp(22px,4vw,38px);position:relative;z-index:1;max-width:900px}
-.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;color:var(--gold);font-weight:750}
-h1{font-size:clamp(2.2rem,6vw,4.6rem);line-height:.98;margin:.32rem 0 0;letter-spacing:-.052em;text-wrap:balance;font-weight:850}
-.tagline{color:var(--muted);max-width:70ch;margin:.9rem 0 0;font-size:clamp(1rem,1.5vw,1.16rem)}
-.tagline b{color:var(--ink)}
-.stat-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:19px}
+.masthead-body{margin-top:clamp(20px,4vw,34px);position:relative;z-index:1;max-width:820px}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;color:var(--gold);font-weight:750;margin:0}
+h1{font-size:clamp(2rem,5.2vw,3.7rem);line-height:1.02;margin:.35rem 0 0;letter-spacing:-.04em;text-wrap:balance;font-weight:850}
+.tagline{color:var(--muted);max-width:64ch;margin:.9rem 0 0;font-size:clamp(1rem,1.5vw,1.14rem)}
+.tagline b{color:var(--ink);font-weight:650}
+.stat-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
 .chip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:.76rem;font-weight:650;padding:5px 11px;border-radius:999px;background:var(--card);border:1px solid var(--hair);color:var(--muted)}
 .chip b{color:var(--ink)}.chip.accent{background:var(--accent-wash);border-color:transparent;color:var(--accent-ink)}
-.masthead-sketch{position:absolute;right:clamp(-95px,-3vw,-20px);bottom:-85px;width:clamp(300px,42vw,520px);height:300px;opacity:.2;pointer-events:none}
+.masthead-sketch{position:absolute;right:clamp(-95px,-3vw,-20px);bottom:-85px;width:clamp(300px,42vw,520px);height:300px;opacity:.18;pointer-events:none}
 
-.quicknav{border-bottom:1px solid var(--hair);background:color-mix(in srgb,var(--paper) 92%,transparent)}
-.quicknav .shell{display:flex;gap:8px;flex-wrap:wrap;padding-block:12px}
-.quicknav a{font-size:.78rem;color:var(--muted);padding:5px 10px;border-radius:999px;border:1px solid transparent}.quicknav a:hover{color:var(--accent-ink);background:var(--accent-wash);text-decoration:none}
+/* ---- Sticky section nav ---- */
+.pagenav{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--hair)}
+.pagenav .shell{display:flex;align-items:center;gap:10px;height:var(--nav-h)}
+.pagenav-list{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0;padding:0;list-style:none;flex:1;min-width:0;mask-image:linear-gradient(90deg,transparent,#000 10px,#000 calc(100% - 18px),transparent)}
+.pagenav-list::-webkit-scrollbar{display:none}
+.pagenav-list a{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:.8rem;font-weight:650;color:var(--muted);padding:6px 10px;border-radius:999px;border:1px solid transparent;scroll-margin-inline:12px}
+.pagenav-list a .n{font-size:.66rem;color:var(--faint);font-variant-numeric:tabular-nums}
+.pagenav-list a:hover{color:var(--accent-ink);background:var(--accent-wash);text-decoration:none}
+.pagenav-list a[aria-current=true]{color:var(--accent-ink);background:var(--accent-wash);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.pagenav-list a[aria-current=true] .n{color:var(--accent-ink)}
+.theme-btn{flex:0 0 auto;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:999px;border:1px solid var(--hair);background:var(--card);cursor:pointer;color:var(--muted)}
+.theme-btn:hover{color:var(--accent-ink);border-color:var(--accent)}
+.theme-btn svg{width:16px;height:16px}
+.theme-btn .moon{display:none}
+:root[data-theme=dark] .theme-btn .sun{display:none}:root[data-theme=dark] .theme-btn .moon{display:block}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .theme-btn .sun{display:none}:root:not([data-theme=light]) .theme-btn .moon{display:block}}
+.progress{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--accent);transition:width .1s linear}
 
-main .shell{padding-top:clamp(34px,5vw,62px);padding-bottom:clamp(62px,8vw,100px)}
-section{scroll-margin-top:18px;margin-top:clamp(58px,8vw,94px)}
+/* ---- Content ---- */
+main .shell{padding-top:clamp(30px,5vw,56px);padding-bottom:clamp(60px,8vw,96px)}
+section{scroll-margin-top:calc(var(--nav-h) + 14px);margin-top:clamp(56px,8vw,92px)}
 section:first-child{margin-top:0}
-.section-kicker{font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:750;margin:0 0 4px}
-h2{font-size:clamp(1.7rem,3.4vw,2.65rem);line-height:1.08;letter-spacing:-.035em;margin:0;text-wrap:balance}
-h3{font-size:1.13rem;line-height:1.25;margin:0;letter-spacing:-.012em}
-p{margin:.72rem 0}.section-lead{color:var(--muted);max-width:76ch;font-size:1.03rem;margin:.7rem 0 24px}
-.lede{font-size:clamp(1.13rem,2vw,1.35rem);line-height:1.48;max-width:75ch;margin:0 0 28px;color:var(--ink)}
+.kicker{font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:750;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+.kicker .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--accent-wash);color:var(--accent-ink);font-size:.72rem;letter-spacing:0}
+h2{font-size:clamp(1.6rem,3.3vw,2.45rem);line-height:1.08;letter-spacing:-.032em;margin:0;text-wrap:balance}
+h3{font-size:1.12rem;line-height:1.25;margin:0;letter-spacing:-.012em}
+h4{font-size:.95rem;margin:0}
+p{margin:.72rem 0;max-width:72ch}
+.lead{color:var(--muted);font-size:1.06rem;margin:.75rem 0 22px}
+.lede{font-size:clamp(1.1rem,1.9vw,1.3rem);line-height:1.5;max-width:66ch;margin:.75rem 0 24px}
 .muted{color:var(--muted)}
-.callout{border-left:4px solid var(--accent);padding:13px 16px;background:var(--accent-wash);border-radius:0 var(--r-sm) var(--r-sm) 0;margin:20px 0;color:var(--ink)}
+.small{font-size:.86rem}
+ul.plain{margin:.5rem 0;padding-left:20px}ul.plain li+li{margin-top:.35rem}
+.callout{border-left:4px solid var(--accent);padding:13px 16px;background:var(--accent-wash);border-radius:0 var(--r-sm) var(--r-sm) 0;margin:20px 0;max-width:80ch}
+.callout p{margin:.35rem 0}.callout p:first-child{margin-top:0}.callout p:last-child{margin-bottom:0}
 .callout.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 11%,var(--card))}
+.callout.note{border-color:var(--hair-strong);background:var(--card-2)}
 .callout strong{font-weight:800}
+h3.sub{margin-top:36px}
+a.term{color:inherit;text-decoration:underline dotted color-mix(in srgb,var(--accent) 65%,transparent);text-underline-offset:3px;text-decoration-thickness:1.5px}
+a.term:hover{color:var(--accent-ink);text-decoration-style:solid}
 
-.eli5-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
-.idea{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:18px;box-shadow:var(--shadow-sm)}
-.idea-number{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:var(--accent-wash);color:var(--accent-ink);font-weight:850;margin-bottom:12px}.idea p{font-size:.92rem;color:var(--muted);margin:.45rem 0 0}
+/* cards + grids */
+.grid{display:grid;gap:12px;margin:22px 0}
+.grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px 18px;box-shadow:var(--shadow-sm);min-width:0}
+.card p{margin:.4rem 0 0;color:var(--muted);font-size:.9rem}
+.card.tint{border-top:4px solid var(--hue,var(--accent))}
+.card:has(> .glyph){display:grid;grid-template-columns:34px 1fr;column-gap:12px;align-items:center}.card:has(> .glyph) > p{grid-column:1/-1}.card .glyph{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:var(--accent-wash);color:var(--accent-ink);font-weight:850;font-size:.72rem;letter-spacing:-.02em}
+.card .glyph.hue{background:color-mix(in srgb,var(--hue,var(--accent)) 18%,var(--card));color:var(--ink)}
+.steps{counter-reset:step}
+.steps .card{position:relative;padding-left:56px}
+.steps .card::before{counter-increment:step;content:counter(step);position:absolute;left:16px;top:16px;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:var(--accent-wash);color:var(--accent-ink);font-weight:850;font-size:.85rem}
 
-.journey{margin-top:28px;padding:clamp(16px,2vw,24px);background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);box-shadow:var(--shadow-md)}
-.journey-head{display:flex;justify-content:space-between;gap:16px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px}.journey-head p{margin:0;color:var(--muted);font-size:.86rem}
-.journey-track{display:grid;grid-template-columns:repeat(6,1fr);gap:22px;position:relative}
-.journey-track::before{content:"";position:absolute;top:28px;left:7%;right:7%;height:2px;background:var(--hair-strong)}
-.stage{position:relative;z-index:1;border:0;background:transparent;color:var(--muted);padding:0;cursor:pointer;text-align:center;min-width:0}
-.stage-mark{display:grid;place-items:center;margin:0 auto 8px;width:56px;height:56px;border-radius:18px;border:2px solid var(--hair-strong);background:var(--card);font-size:1.3rem;box-shadow:var(--shadow-sm)}
-.stage-label{font-size:.78rem;font-weight:750;display:block}.stage:hover .stage-mark{border-color:var(--accent)}
-.stage[aria-pressed=true]{color:var(--accent-ink)}.stage[aria-pressed=true] .stage-mark{background:var(--accent);border-color:var(--accent);color:white;box-shadow:0 0 0 5px var(--accent-wash)}
-.journey-detail{min-height:74px;margin-top:18px;padding:14px 16px;border-radius:var(--r-sm);background:var(--card-2);border:1px solid var(--hair);font-size:.93rem}.journey-detail b{display:block;margin-bottom:2px}
+/* pipeline (responsive chain of nodes) */
+.pipe{display:flex;align-items:stretch;gap:0;margin:22px 0;padding:0;list-style:none}
+.pipe li{flex:1 1 0;min-width:0;position:relative;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:12px 10px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);box-shadow:var(--shadow-sm);margin-right:26px}
+.pipe li:last-child{margin-right:0}
+.pipe li:not(:last-child)::after{content:"";position:absolute;right:-20px;top:50%;width:14px;height:14px;border-top:2px solid var(--faint);border-right:2px solid var(--faint);transform:translateY(-50%) rotate(45deg)}
+.pipe b{font-size:.86rem;display:block}.pipe small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px}
+.pipe li.hot{border-color:color-mix(in srgb,var(--accent) 45%,var(--hair));background:var(--accent-wash)}
+.pipe li.worker{border-color:color-mix(in srgb,var(--c-purple) 45%,var(--hair));background:color-mix(in srgb,var(--c-purple) 10%,var(--card))}
+.pipe-caption{color:var(--muted);font-size:.82rem;margin-top:-8px}
 
-.flow-map{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:center;gap:9px;margin:26px 0 8px}
-.flow-node{min-height:112px;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:12px 8px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);box-shadow:var(--shadow-sm)}
-.flow-node b{font-size:.88rem}.flow-node small{display:block;color:var(--muted);font-size:.72rem;margin-top:4px}.flow-node.hot{border-color:color-mix(in srgb,var(--accent) 45%,var(--hair));background:var(--accent-wash)}
-.flow-arrow{text-align:center;color:var(--faint);font-size:1.4rem}.flow-branch{display:grid;grid-template-columns:1fr 1fr;gap:8px}.flow-branch .flow-node{min-height:52px;padding:8px}.flow-caption{color:var(--muted);font-size:.82rem;text-align:center;margin-top:10px}
+/* layer stack */
+.stack{display:grid;gap:8px;margin:22px 0;max-width:640px}
+.stack .layer{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--layer-color) 45%,var(--hair));background:color-mix(in srgb,var(--layer-color) 10%,var(--card))}
+.stack .layer-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:11px;background:color-mix(in srgb,var(--layer-color) 22%,var(--card));font-size:1.1rem}
+.stack .layer b{display:block;font-size:.9rem}.stack .layer small{display:block;color:var(--muted);font-size:.76rem}
+.stack .z{font-size:.68rem;color:var(--faint);font-family:var(--mono);white-space:nowrap}
+.tile-mini{display:grid;grid-template-columns:repeat(4,7px);gap:2px}.tile-mini i{width:7px;height:5px;background:var(--c-blue);border-radius:1px;opacity:.75}
 
-.two-col{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(300px,.92fr);gap:clamp(24px,5vw,58px);align-items:start}
-.layer-figure{min-height:510px;position:relative;perspective:900px;margin-top:10px;overflow:hidden}
-.layer{position:absolute;left:8%;right:2%;height:108px;border:1px solid color-mix(in srgb,var(--layer-color) 48%,var(--hair));border-radius:18px;background:color-mix(in srgb,var(--layer-color) 12%,var(--card));box-shadow:var(--shadow-md);transform:rotateX(58deg) rotateZ(-4deg) translateY(var(--layer-y));transform-origin:center;display:flex;align-items:center;padding:18px 24px;gap:14px}
-.layer:nth-child(1){--layer-y:0px;--layer-color:var(--c-purple);z-index:5}.layer:nth-child(2){--layer-y:88px;--layer-color:var(--c-blue);z-index:4}.layer:nth-child(3){--layer-y:176px;--layer-color:var(--c-orange);z-index:3}.layer:nth-child(4){--layer-y:264px;--layer-color:var(--c-green);z-index:2}.layer:nth-child(5){--layer-y:352px;--layer-color:var(--c-yellow);z-index:1}
-.layer-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--layer-color) 20%,var(--card));font-size:1.2rem;flex:0 0 auto}.layer b{display:block;font-size:.9rem}.layer small{display:block;font-size:.73rem;color:var(--muted)}
-.tile-mini{display:grid;grid-template-columns:repeat(4,10px);gap:2px}.tile-mini i{width:10px;height:8px;background:var(--c-blue);border-radius:2px;opacity:.7}
+/* stroke stages */
+.stages{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:18px 0 12px}
+.stage{border:1px solid var(--hair);background:var(--card);border-radius:12px;padding:10px 6px;cursor:pointer;text-align:center;color:var(--muted);min-width:0}
+.stage:hover{border-color:var(--accent)}
+.stage .mark{display:block;font-size:1.15rem;line-height:1;margin-bottom:6px}
+.stage .lbl{display:block;font-size:.74rem;font-weight:750}
+.stage[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.stage-detail{padding:14px 16px;border-radius:var(--r-sm);background:var(--card-2);border:1px solid var(--hair);font-size:.93rem;min-height:72px;max-width:none}
+.stage-detail b{display:block;margin-bottom:2px}
 
-.fact-list{display:grid;gap:12px;margin:22px 0}.fact{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}.fact-mark{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--card-2);border:1px solid var(--hair);font-weight:800;color:var(--accent-ink)}.fact p{margin:.25rem 0 0;color:var(--muted);font-size:.91rem}
+/* the lab */
+.lab{margin-top:22px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);box-shadow:var(--shadow-md);overflow:clip}
+.lab-toolbar{position:sticky;top:var(--nav-h);z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
+.lab-toolbar .group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lab-toolbar .grp-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:750;margin-right:2px}
+.tog{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:650;padding:5px 10px;border-radius:999px;border:1px solid var(--hair);background:var(--card);color:var(--muted);cursor:pointer;user-select:none}
+.tog i{width:10px;height:10px;border-radius:3px;background:var(--sw,var(--accent));opacity:.45}
+.tog[aria-pressed=true]{color:var(--ink);border-color:color-mix(in srgb,var(--sw,var(--accent)) 60%,var(--hair));background:color-mix(in srgb,var(--sw,var(--accent)) 12%,var(--card))}
+.tog[aria-pressed=true] i{opacity:1}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;padding:6px 12px;border-radius:999px;border:1px solid var(--hair);background:var(--card);cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:default}.btn:disabled:hover{border-color:var(--hair);color:inherit}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.primary:hover{color:#fff}
+.swatches{display:inline-flex;gap:5px}
+.swatch-btn{width:22px;height:22px;border-radius:999px;border:2px solid transparent;cursor:pointer;padding:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.swatch-btn[aria-pressed=true]{border-color:var(--ink)}
+.range{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;color:var(--muted)}
+.range input{width:90px;accent-color:var(--accent)}
+.lab-stage{position:relative;background:var(--paper-2);padding:clamp(10px,2vw,18px)}
+.lab-canvas{display:block;width:100%;height:auto;aspect-ratio:4/3;border-radius:6px;background:#fdfbf6;box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 18px rgba(0,0,0,.08);touch-action:none;cursor:crosshair;max-width:calc(70vh * 4 / 3);margin:0 auto}
+.lab-hint{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:var(--muted);font-weight:650;font-size:.95rem;text-align:center;padding:20px}
+.lab-hint span{background:color-mix(in srgb,var(--card) 88%,transparent);padding:8px 14px;border-radius:999px;border:1px dashed var(--hair-strong)}
+.lab-hint[hidden]{display:none}
+.lab-foot{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;padding:12px 14px 14px;border-top:1px solid var(--hair)}
+.readouts{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.78rem;color:var(--muted)}
+.readouts b{color:var(--ink);font-variant-numeric:tabular-nums}
+.ledger{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;min-height:30px}
+.ledger-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:750;margin-right:4px}
+.lg{min-width:40px;padding:5px 8px;border-radius:9px;text-align:center;font-size:.7rem;font-weight:800;border:1px solid var(--hair);background:var(--card-2);color:var(--muted)}
+.lg.undoable{background:color-mix(in srgb,var(--c-blue) 14%,var(--card));border-color:color-mix(in srgb,var(--c-blue) 40%,var(--hair));color:var(--ink)}
+.lg.undoable::after{content:"patch";display:block;font-size:.55rem;color:var(--accent-ink);font-weight:750}
+.lg.waiting{background:color-mix(in srgb,var(--warn) 12%,var(--card));border-color:color-mix(in srgb,var(--warn) 40%,var(--hair));color:var(--ink)}
+.lg.waiting::after{content:"waiting";display:block;font-size:.55rem;color:var(--warn);font-weight:750}
+.lg.folded{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--c-purple) 14%,var(--card)),color-mix(in srgb,var(--c-purple) 14%,var(--card)) 4px,var(--card) 4px,var(--card) 8px);border-color:color-mix(in srgb,var(--c-purple) 40%,var(--hair));color:var(--ink)}
+.lg.folded::after{content:"in base";display:block;font-size:.55rem;color:var(--c-purple);font-weight:750}
+.lg.active{border:2px dashed var(--warn);background:var(--card)}
+.lg.active::after{content:"active";display:block;font-size:.55rem;color:var(--warn);font-weight:750}
+.lab-note{font-size:.8rem;color:var(--muted);margin:0}
 
-.timeline{margin:24px 0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:18px;box-shadow:var(--shadow-sm)}
-.timeline-grid{display:grid;grid-template-columns:88px repeat(7,minmax(70px,1fr));gap:7px;align-items:stretch}
-.time{font-size:.68rem;text-align:center;color:var(--faint);padding:2px}.lane-label{display:flex;align-items:center;font-size:.78rem;font-weight:800}.event{min-height:54px;border-radius:10px;border:1px solid var(--hair);background:var(--card-2);padding:7px;font-size:.71rem;text-align:center;display:flex;align-items:center;justify-content:center}.event.a{background:color-mix(in srgb,var(--c-blue) 16%,var(--card));border-color:color-mix(in srgb,var(--c-blue) 32%,var(--hair))}.event.b{background:color-mix(in srgb,var(--c-pink) 16%,var(--card));border-color:color-mix(in srgb,var(--c-pink) 32%,var(--hair))}.event.commit{background:color-mix(in srgb,var(--ok) 16%,var(--card));border-color:color-mix(in srgb,var(--ok) 36%,var(--hair));font-weight:800}.event.empty{border-color:transparent;background:transparent}
-.timeline-narrow{display:none}.timeline-note{display:flex;gap:10px;align-items:center;margin-top:14px;padding-top:13px;border-top:1px solid var(--hair);font-size:.82rem;color:var(--muted)}
+/* timeline */
+.timeline{margin:22px 0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;box-shadow:var(--shadow-sm);max-width:820px}
+.tl-grid{display:grid;grid-template-columns:78px repeat(7,minmax(0,1fr));gap:6px}
+.tl-t{font-size:.68rem;text-align:center;color:var(--faint)}
+.tl-lane{display:flex;align-items:center;font-size:.78rem;font-weight:800}
+.ev{min-height:50px;border-radius:9px;border:1px solid var(--hair);background:var(--card-2);padding:6px 4px;font-size:.7rem;text-align:center;display:flex;align-items:center;justify-content:center;line-height:1.25}
+.ev.a{background:color-mix(in srgb,var(--c-blue) 16%,var(--card));border-color:color-mix(in srgb,var(--c-blue) 32%,var(--hair))}
+.ev.b{background:color-mix(in srgb,var(--c-pink) 16%,var(--card));border-color:color-mix(in srgb,var(--c-pink) 32%,var(--hair))}
+.ev.commit{background:color-mix(in srgb,var(--ok) 16%,var(--card));border-color:color-mix(in srgb,var(--ok) 36%,var(--hair));font-weight:800}
+.ev.empty{border-color:transparent;background:transparent}
+.tl-list{display:none}
+.tl-note{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding-top:12px;border-top:1px solid var(--hair);font-size:.84rem;color:var(--muted)}
 
-.codeblock{background:var(--code-bg);color:var(--code-ink);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-md);margin:22px 0}
-.codehead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.1);font-family:var(--mono);font-size:.7rem;color:var(--code-muted)}
-pre{margin:0;padding:16px;overflow:auto;font:12px/1.65 var(--mono);tab-size:2}code{font-family:var(--mono)}
-.kw{color:var(--code-pink)}.fn{color:var(--code-blue)}.str{color:var(--code-green)}.num{color:var(--code-orange)}.cm{color:var(--code-muted)}.type{color:#d8b4fe}
-:not(pre)>code{font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.13em .42em;border-radius:5px;color:var(--ink)}
+/* code */
+.codeblock{background:var(--code-bg);color:var(--code-ink);border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-md);margin:20px 0;max-width:820px}
+.codehead{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.1);font-family:var(--mono);font-size:.7rem;color:var(--code-muted)}
+pre{margin:0;padding:14px 16px;overflow:auto;font:12.5px/1.65 var(--mono);tab-size:2}code{font-family:var(--mono)}
+.kw{color:var(--code-pink)}.fn{color:var(--code-blue)}.str{color:var(--code-green)}.num{color:var(--code-orange)}.cm{color:var(--code-muted)}.type{color:var(--code-type)}
+:not(pre)>code{font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.12em .4em;border-radius:5px;color:var(--ink)}
 
-.algorithm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.algorithm{border-top:3px solid var(--hue,var(--accent));padding:14px;background:var(--card);border-radius:0 0 var(--r-sm) var(--r-sm);box-shadow:var(--shadow-sm)}.algorithm p{margin:.38rem 0 0;color:var(--muted);font-size:.84rem}
+/* tables */
+.tbl-wrap{overflow-x:auto;margin:20px 0;border:1px solid var(--hair);border-radius:var(--r-md);background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th,td{text-align:left;padding:10px 13px;border-top:1px solid var(--hair);vertical-align:top}
+thead th{border-top:0;background:var(--card-2);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+td:first-child{font-weight:750;white-space:nowrap}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.pick td{background:color-mix(in srgb,var(--ok) 10%,var(--card))}
+td.mono{font-family:var(--mono);font-size:.78rem;white-space:nowrap}
 
-.tile-layout{display:grid;grid-template-columns:minmax(280px,.92fr) minmax(0,1.08fr);gap:clamp(22px,5vw,52px);align-items:center;margin-top:24px}
-.tile-svg-wrap{padding:18px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);box-shadow:var(--shadow-md)}
-.tile-svg{display:block;width:100%;height:auto}.tile-svg .paper{fill:var(--card-2);stroke:var(--hair-strong)}.tile-svg .grid{stroke:var(--hair-strong);stroke-width:2}.tile-svg .hit{fill:color-mix(in srgb,var(--c-blue) 18%,var(--card));stroke:var(--c-blue);stroke-width:1.6}.tile-svg .stroke{fill:none;stroke:var(--c-red);stroke-width:18;stroke-linecap:round;stroke-linejoin:round}.tile-svg .bound{fill:none;stroke:var(--warn);stroke-width:2;stroke-dasharray:7 6}.tile-svg text{fill:var(--muted);font:600 12px var(--font)}
-.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:.74rem;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:12px;height:12px;border-radius:3px;display:inline-block}.swatch.hit{background:color-mix(in srgb,var(--c-blue) 24%,var(--card));border:1px solid var(--c-blue)}.swatch.path{height:4px;border-radius:99px;background:var(--c-red)}.swatch.bounds{background:transparent;border:2px dashed var(--warn)}
-.numbers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}.number{padding:13px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}.number b{display:block;font-size:1.4rem;line-height:1;color:var(--accent-ink)}.number span{font-size:.76rem;color:var(--muted)}
+/* numbers */
+.numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0}
+.number{padding:14px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}
+.number b{display:block;font-size:1.35rem;line-height:1.1;color:var(--accent-ink);letter-spacing:-.02em}
+.number span{display:block;font-size:.78rem;color:var(--muted);margin-top:4px}
 
-.history-figure{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-lg);padding:clamp(16px,3vw,28px);box-shadow:var(--shadow-md);margin:24px 0}
-.history-row{display:grid;grid-template-columns:180px 1fr;gap:15px;align-items:center;padding:13px 0;border-top:1px solid var(--hair)}.history-row:first-child{border-top:0}.history-label b{display:block;font-size:.85rem}.history-label small{display:block;color:var(--muted);font-size:.72rem}.ledger{display:flex;gap:7px;min-width:0;flex-wrap:wrap}.ledger-item{min-width:48px;padding:9px 8px;border-radius:10px;text-align:center;font-size:.72rem;font-weight:800;background:var(--card-2);border:1px solid var(--hair)}.ledger-item.raster{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--c-purple) 12%,var(--card)),color-mix(in srgb,var(--c-purple) 12%,var(--card)) 5px,var(--card) 5px,var(--card) 10px);border-color:color-mix(in srgb,var(--c-purple) 35%,var(--hair))}.ledger-item.vector{background:color-mix(in srgb,var(--c-blue) 13%,var(--card));border-color:color-mix(in srgb,var(--c-blue) 35%,var(--hair))}.ledger-item.patch{position:relative}.ledger-item.patch::after{content:"patch";display:block;font-size:.55rem;color:var(--accent-ink);margin-top:2px}.ledger-item.active{background:color-mix(in srgb,var(--warn) 14%,var(--card));border:2px dashed var(--warn)}
+/* blit hero */
+.blit{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,4vw,40px);align-items:center;margin:22px 0}
+.blit-word{font-size:clamp(3.4rem,10vw,6.5rem);font-weight:900;letter-spacing:-.08em;line-height:.85;color:var(--accent);text-shadow:5px 5px 0 var(--accent-wash)}
+.blit p{margin:.35rem 0 0}
+.pixels-demo{display:grid;grid-template-columns:1fr 40px 1fr;gap:10px;align-items:center;max-width:560px;margin:14px 0}
+.pixbox{padding:10px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}
+.pixbox b{display:block;font-size:.76rem;margin-bottom:6px}
+.pixels{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;aspect-ratio:2}
+.pixels i{background:var(--c-blue);border-radius:1px}.pixels i:nth-child(3n){background:var(--c-purple)}
+.pix-arrow{text-align:center;font-size:1.6rem;color:var(--accent)}
 
-.life-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}.life-step{position:relative;padding:16px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md)}.life-step::before{content:attr(data-step);display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:var(--accent-wash);color:var(--accent-ink);font-weight:850;margin-bottom:10px}.life-step p{font-size:.83rem;color:var(--muted);margin:.4rem 0 0}
-.frame-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}.frame{padding:12px;border-radius:var(--r-sm);border:1px solid var(--hair);background:var(--card);text-align:center}.frame b{display:block;font-size:.75rem}.frame-tiles{display:grid;grid-template-columns:repeat(4,12px);gap:2px;justify-content:center;margin:10px auto}.frame-tiles i{width:12px;height:10px;border-radius:2px;background:var(--c-blue)}.frame.hide .frame-tiles{opacity:.15}.frame.capture .frame-tiles i:nth-child(n+2){opacity:.15}.frame.clear .frame-tiles i{background:transparent;border:1px solid var(--hair)}.frame small{font-size:.68rem;color:var(--muted)}
+/* rotation demo */
+.rot{display:grid;grid-template-columns:auto auto;gap:24px;justify-content:start;align-items:end;margin:18px 0}
+.device{border:7px solid var(--ink);border-radius:20px;background:var(--paper-2);padding:12px;display:grid;place-items:center}
+.device.portrait{width:150px;height:220px}.device.landscape{width:290px;height:200px}
+.sheet{width:100%;height:100%;background:#fdfbf6;border:1px solid var(--hair-strong);border-radius:3px;position:relative;overflow:hidden}
+.device.landscape .sheet{width:57%}
+.sheet::after{content:"";position:absolute;inset:18% 12%;border-radius:99px;border:10px solid var(--c-red);border-right-color:var(--c-blue);transform:rotate(18deg)}
+.device-cap{text-align:center;font-size:.76rem;color:var(--muted);margin-top:8px}
 
-.blit-hero{display:grid;grid-template-columns:minmax(0,.9fr) minmax(320px,1.1fr);gap:clamp(24px,5vw,58px);align-items:center;margin-top:22px}.blit-word{font-size:clamp(4rem,12vw,8.2rem);font-weight:900;letter-spacing:-.09em;line-height:.8;color:var(--accent);text-shadow:6px 6px 0 var(--accent-wash)}.blit-def{font-size:1.12rem}.blit-def strong{display:block;font-size:1.55rem;margin-bottom:8px}
-.pixel-copy{display:grid;grid-template-columns:1fr 54px 1fr;gap:12px;align-items:center;margin-top:18px}.pixel-box{padding:13px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}.pixel-box b{display:block;font-size:.8rem;margin-bottom:7px}.pixels{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;aspect-ratio:2}.pixels i{background:var(--c-blue);border-radius:1px}.pixels i:nth-child(3n){background:var(--c-purple)}.copy-arrow{text-align:center;font-size:2rem;color:var(--accent)}
-
-.raster-table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);overflow:hidden;margin:24px 0;font-size:.86rem}.raster-table th,.raster-table td{text-align:left;padding:12px 14px;border-top:1px solid var(--hair);vertical-align:top}.raster-table thead th{border-top:0;background:var(--card-2);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.raster-table td:first-child{font-weight:800;white-space:nowrap}.raster-table td:nth-child(2){color:var(--muted)}
-
-.brush-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}.brush{padding:16px;border:1px solid var(--hair);border-top:4px solid var(--brush);border-radius:var(--r-md);background:var(--card);box-shadow:var(--shadow-sm)}.brush-icon{font-size:1.45rem;margin-bottom:8px}.brush p{font-size:.82rem;color:var(--muted);margin:.4rem 0 0}
-.crayon-pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;align-items:center;margin:25px 0}.crayon-stage{min-height:124px;padding:12px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--hair);text-align:center;display:flex;flex-direction:column;justify-content:center}.crayon-stage b{font-size:.79rem}.crayon-stage small{font-size:.68rem;color:var(--muted);margin-top:4px}.crayon-arrow{text-align:center;color:var(--faint);font-size:1.4rem}
-.tooth{width:64px;height:64px;margin:0 auto 8px;border-radius:50%;background-color:var(--c-blue);background-image:radial-gradient(circle at 20% 30%,transparent 0 3px,var(--c-blue) 4px),radial-gradient(circle at 70% 65%,transparent 0 2px,var(--c-blue) 3px),radial-gradient(circle at 45% 80%,transparent 0 4px,var(--c-blue) 5px);box-shadow:inset 0 0 0 6px color-mix(in srgb,var(--c-blue) 70%,transparent)}
-.glaze{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:center;padding:18px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);margin:22px 0}.color-sample{min-height:88px;border-radius:13px;display:grid;place-items:center;text-align:center;color:#1d1d27;font-size:.75rem;font-weight:850;padding:8px}.sample-blue{background:#62a2e9}.sample-yellow{background:#f9d24f}.sample-green{background:#62a292}.operator{font-weight:900;color:var(--muted);text-align:center}.glaze-formula{text-align:center;font:12px/1.5 var(--mono);color:var(--muted);margin-top:10px}
-
-.coord-flow{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;align-items:center;margin:24px 0}.coord{padding:14px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);text-align:center;min-height:110px;display:flex;flex-direction:column;justify-content:center}.coord b{font-size:.83rem}.coord small{font-size:.7rem;color:var(--muted);margin-top:4px}.coord-arrow{text-align:center;color:var(--faint);font-size:1.35rem}
-.rotation-demo{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}.device{aspect-ratio:1.55;border:8px solid var(--ink);border-radius:22px;background:var(--paper-2);padding:16px;display:grid;place-items:center}.device.portrait{aspect-ratio:.68;max-height:310px;justify-self:center;width:200px}.paper-demo{width:100%;height:100%;background:var(--card);border:1px solid var(--hair-strong);border-radius:3px;position:relative;overflow:hidden}.device.landscape .paper-demo{width:44%;height:100%}.paper-demo::after{content:"";position:absolute;inset:17% 10%;border-radius:99px;border:12px solid var(--c-red);border-right-color:var(--c-blue);transform:rotate(18deg)}.device-caption{text-align:center;font-size:.78rem;color:var(--muted);margin-top:8px}
-
-.export-flow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:center;margin:25px 0}.export-node{padding:14px 9px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);text-align:center;min-height:110px;display:flex;flex-direction:column;justify-content:center}.export-node b{font-size:.79rem}.export-node small{font-size:.68rem;color:var(--muted);margin-top:4px}.export-node.worker{border-color:color-mix(in srgb,var(--c-purple) 42%,var(--hair));background:color-mix(in srgb,var(--c-purple) 10%,var(--card))}.export-arrow{text-align:center;color:var(--faint);font-size:1.3rem}
-
-.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}.compare-panel{padding:18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--hair)}.compare-panel h3{display:flex;align-items:center;gap:8px}.compare-panel ul{margin:10px 0 0;padding-left:20px;color:var(--muted);font-size:.87rem}.compare-panel li+li{margin-top:7px}
-.algo-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:22px 0}.algo-row{display:grid;grid-template-columns:42px 1fr;gap:12px;padding:14px;border-radius:var(--r-sm);background:var(--card);border:1px solid var(--hair)}.algo-glyph{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:var(--accent-wash);color:var(--accent-ink);font-weight:850}.algo-row p{margin:.25rem 0 0;color:var(--muted);font-size:.82rem}
-
-.glossary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}.term{padding:14px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-sm)}.term dt{font-weight:850;font-size:.84rem}.term dd{margin:.35rem 0 0;color:var(--muted);font-size:.8rem}
-.source-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.84rem}.source-table th,.source-table td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--hair);vertical-align:top}.source-table th{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}.source-table td:first-child{font-family:var(--mono);font-size:.76rem}.source-table td:last-child{color:var(--muted)}
+/* glossary */
+.glossary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:22px}
+.gterm{padding:14px 16px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-sm);scroll-margin-top:calc(var(--nav-h) + 14px)}
+.gterm dt{font-weight:850;font-size:.92rem}
+.gterm dd{margin:.4rem 0 0;color:var(--muted);font-size:.86rem}
+.gterm:target{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-wash)}
+.back-btn{position:fixed;right:16px;bottom:16px;z-index:40;box-shadow:var(--shadow-md)}
+.back-btn[hidden]{display:none}
 .adr-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.adr-links a{font-size:.76rem;padding:6px 10px;border:1px solid var(--hair);border-radius:999px;background:var(--card)}
-
 .site-foot{border-top:1px solid var(--hair);background:var(--card-2)}.site-foot .shell{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:22px;padding-bottom:26px;color:var(--muted);font-size:.84rem}.site-foot p{margin:0}.site-foot .crayons i{width:15px;height:5px}
 
 @media(max-width:960px){
-  .journey-track{grid-template-columns:repeat(3,1fr);row-gap:18px}.journey-track::before{display:none}
-  .flow-map{grid-template-columns:1fr}.flow-arrow{transform:rotate(90deg)}
-  .two-col,.tile-layout,.blit-hero{grid-template-columns:1fr}.layer-figure{max-width:650px;width:100%;margin-inline:auto}.tile-svg-wrap{max-width:590px;margin-inline:auto}
-  .algorithm-grid{grid-template-columns:repeat(2,1fr)}.life-grid{grid-template-columns:repeat(2,1fr)}
-  .brush-grid{grid-template-columns:repeat(2,1fr)}.crayon-pipeline{grid-template-columns:1fr}.crayon-arrow{transform:rotate(90deg)}
-  .coord-flow,.export-flow{grid-template-columns:1fr}.coord-arrow,.export-arrow{transform:rotate(90deg)}
-  .glossary{grid-template-columns:repeat(2,1fr)}
+  .grid.c4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.c3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stages{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:720px){
-  .masthead-sketch{display:none}.crumbs{width:100%;margin-left:0;margin-top:6px}.quicknav .shell{gap:3px}.quicknav a{padding:4px 7px}
-  .eli5-grid{grid-template-columns:1fr}.timeline-grid{display:none}.timeline-narrow{display:grid;gap:8px}.timeline-narrow .event{display:grid;grid-template-columns:75px 1fr;text-align:left;min-height:auto}.timeline-narrow .event b{font-size:.67rem;text-transform:uppercase;letter-spacing:.08em}
-  .algorithm-grid,.numbers,.frame-strip,.compare,.algo-list,.glossary{grid-template-columns:1fr}.history-row{grid-template-columns:1fr}.raster-table{display:block;overflow-x:auto}.raster-table td:first-child{white-space:normal}
-  .glaze{grid-template-columns:1fr}.operator{transform:rotate(90deg)}.rotation-demo{grid-template-columns:1fr}.device.landscape{max-width:410px;width:100%;justify-self:center}.source-table{display:block;overflow-x:auto}
+  .masthead-sketch{display:none}.crumbs{width:100%;margin-left:0;margin-top:6px}
+  .grid.c2,.grid.c3,.grid.c4,.numbers,.glossary{grid-template-columns:1fr}
+  .pipe{flex-direction:column;gap:8px;padding-left:18px;border-left:2px solid var(--hair-strong);margin-left:6px}.pipe li{margin-right:0;text-align:left;justify-content:flex-start;padding:9px 12px;flex-direction:row;align-items:baseline;gap:8px;flex-wrap:wrap}.pipe li:not(:last-child)::after{display:none}.pipe li::before{content:"";position:absolute;left:-24px;top:50%;width:10px;height:10px;border-radius:99px;background:var(--hair-strong);transform:translateY(-50%)}.pipe li.hot::before{background:var(--accent)}.pipe li.worker::before{background:var(--c-purple)}.pipe small{margin-top:0}
+  .tl-grid{display:none}.tl-list{display:grid;gap:6px}.tl-list .ev{display:grid;grid-template-columns:64px 1fr;text-align:left;min-height:auto;gap:8px}.tl-list .ev b{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em}
+  .blit{grid-template-columns:1fr}
+  .rot{grid-template-columns:1fr;justify-items:start}
+  .lab-foot{grid-template-columns:1fr}
+  .tbl-wrap{border:0;background:transparent}table,tbody,tr,td{display:block}thead{display:none}tr{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-sm);padding:6px 0;margin-bottom:8px}.tbl-wrap td{border:0;padding:6px 12px;white-space:normal;text-align:left}td::before{content:attr(data-label);display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:750;margin-bottom:1px}td:first-child{font-weight:800}td:first-child::before{display:none}tr.pick{border-color:color-mix(in srgb,var(--ok) 50%,var(--hair))}tr.pick td{background:transparent}
+  .lab-toolbar{gap:6px 8px;padding:8px 10px}.lab-toolbar .grp-label{display:none}.lab-toolbar .group{gap:5px}.tog{padding:4px 8px;font-size:.74rem}.btn{padding:5px 10px;font-size:.76rem}.range{gap:4px}.range input{width:64px}.swatch-btn{width:20px;height:20px}.lead{font-size:1rem}
+  .stack .layer{grid-template-columns:40px 1fr}.stack .z{display:none}
 }
 @media(max-width:480px){
-  h1{font-size:2.4rem}.journey-track{grid-template-columns:repeat(2,1fr)}.stage-mark{width:50px;height:50px}.layer-figure{min-height:430px}.layer{left:0;height:92px;padding:12px 15px}.layer:nth-child(2){--layer-y:72px}.layer:nth-child(3){--layer-y:144px}.layer:nth-child(4){--layer-y:216px}.layer:nth-child(5){--layer-y:288px}.layer small{font-size:.65rem}.life-grid,.brush-grid{grid-template-columns:1fr}.pixel-copy{grid-template-columns:1fr}.copy-arrow{transform:rotate(90deg)}.blit-word{font-size:4rem}
+  .stages{grid-template-columns:repeat(3,1fr);gap:6px}.stage{padding:8px 4px}.stage .lbl{font-size:.68rem}
+  .pixels-demo{grid-template-columns:1fr}.pix-arrow{transform:rotate(90deg)}
+  .device.landscape{width:100%;max-width:290px}
 }
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media(prefers-reduced-motion:reduce){.progress{transition:none}}
 </style>
 </head>
-<body id="engine-explainer">
+<body>
 <header class="masthead">
   <svg class="masthead-sketch" aria-hidden="true" viewBox="0 0 560 320">
     <g fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 252 C92 88 175 312 253 126 S405 237 538 49" stroke="var(--c-blue)" stroke-width="25"/>
-      <path d="M45 247 C113 122 178 289 255 145 S407 231 523 76" stroke="var(--paper)" stroke-width="4" stroke-dasharray="2 17"/>
       <path d="M109 46 C182 145 286 16 367 91 S486 89 535 137" stroke="var(--c-pink)" stroke-width="13"/>
     </g>
   </svg>
@@ -196,111 +301,181 @@ pre{margin:0;padding:16px;overflow:auto;font:12px/1.65 var(--mono);tab-size:2}co
       <nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">Collections</a><span class="sep">/</span><span class="here" aria-current="page">Drawing engine</span></nav>
     </div>
     <div class="masthead-body">
-      <p class="eyebrow">Architecture snapshot · August 18, 2026</p>
-      <h1>How Splotch turns fingers into pixels</h1>
-      <p class="tagline">An ELI5 tour first, then the real machinery: <b>many fingers, one command group; vector operations painted into a 4×4 tile grid; pixel patches for fast undo; idle raster folding; and worker-based export.</b></p>
+      <p class="eyebrow">Architecture explainer · September 2026</p>
+      <h1>How the drawing engine works</h1>
+      <p class="tagline">A drawing app has four jobs: <b>read the finger, turn movement into a line, put pixels on screen before the next frame, and remember enough to undo and save.</b> This page walks through each job, shows how Splotch does it, and lets you try the important parts.</p>
       <div class="stat-row">
-        <span class="chip accent"><b>4 × 4</b> live ink tiles</span>
-        <span class="chip"><b>20</b> normal undo steps</span>
-        <span class="chip"><b>2×</b> live-resolution cap</span>
+        <span class="chip accent"><b>4 × 5</b> live ink tiles</span>
+        <span class="chip"><b>20</b> undo steps</span>
+        <span class="chip"><b>1 op</b> per frame</span>
         <span class="chip"><b>1.5 s</b> idle before folding</span>
+        <span class="chip"><b>Worker</b> PNG encode</span>
       </div>
     </div>
   </div>
 </header>
 
-<nav class="quicknav" aria-label="On this page">
+<nav class="pagenav" aria-label="Sections">
   <div class="shell">
-    <a href="#eli5">ELI5</a><a href="#map">Big picture</a><a href="#input">Input</a><a href="#tiles">Tiles</a><a href="#undo">Undo</a><a href="#raster">Raster & BLIT</a><a href="#brushes">Brushes</a><a href="#space">Paper space</a><a href="#export">Export</a><a href="#ledger">Hard numbers</a><a href="#glossary">Glossary</a>
+    <ul class="pagenav-list" id="pagenav">
+      <li><a href="#start"><span class="n">1</span>Start</a></li>
+      <li><a href="#stroke"><span class="n">2</span>Try it</a></li>
+      <li><a href="#parts"><span class="n">3</span>Parts</a></li>
+      <li><a href="#input"><span class="n">4</span>Input</a></li>
+      <li><a href="#tiles"><span class="n">5</span>Tiles</a></li>
+      <li><a href="#undo"><span class="n">6</span>Undo</a></li>
+      <li><a href="#pixels"><span class="n">7</span>Pixels</a></li>
+      <li><a href="#brushes"><span class="n">8</span>Brushes</a></li>
+      <li><a href="#paper"><span class="n">9</span>Paper</a></li>
+      <li><a href="#save"><span class="n">10</span>Save</a></li>
+      <li><a href="#numbers"><span class="n">11</span>Numbers</a></li>
+      <li><a href="#glossary"><span class="n">12</span>Glossary</a></li>
+    </ul>
+    <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch between light and dark">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
   </div>
+  <div class="progress" id="progress" aria-hidden="true"></div>
 </nav>
 
 <main>
   <div class="shell">
-    <section id="eli5">
-      <p class="section-kicker">Start here</p>
-      <h2>The whole engine, explained like you’re five</h2>
-      <p class="lede">Imagine a clear desk mat on top of sixteen small sheets of drawing paper. Your fingers move on the clear mat. A helper turns those movements into little drawing instructions, gives each instruction only to the sheets it touches, and keeps tiny “before” photos so Undo can put those pixels back.</p>
 
-      <div class="eli5-grid">
-        <article class="idea"><div class="idea-number">1</div><h3>Fingers make instructions</h3><p>Splotch does not save “Finger A is at x/y” as the picture. It turns movement into dots and smooth curved path operations.</p></article>
-        <article class="idea"><div class="idea-number">2</div><h3>Small canvases do the painting</h3><p>The big visible area is split into sixteen ink tiles. A curve crossing four tiles paints four small surfaces, not one giant iPad-sized surface.</p></article>
-        <article class="idea"><div class="idea-number">3</div><h3>Undo keeps “before” pieces</h3><p>Before a command changes a tile, the engine copies it. At commit it crops that copy to just the dirty rectangle. Undo pastes those pixels back.</p></article>
+    <!-- 1 ---------------------------------------------------------------- -->
+    <section id="start">
+      <p class="kicker"><span class="r">1</span>Start here</p>
+      <h2>What a drawing engine has to do</h2>
+      <p class="lede">Every drawing app, from a paint program to a toddler doodle app, solves the same four problems. The solutions differ. The problems do not.</p>
+
+      <div class="grid c4">
+        <article class="card tint" style="--hue:var(--c-blue)"><div class="glyph hue">1</div><h3>Read the finger</h3><p>The browser sends <a class="term" href="#g-pointer-event">pointer events</a> many times a second. The engine has to know which finger each event belongs to, where it is on the paper, and when a finger has lifted.</p></article>
+        <article class="card tint" style="--hue:var(--c-green)"><div class="glyph hue">2</div><h3>Make a line</h3><p>Events are dots. A line needs a curve through them that looks smooth, keeps up with a fast scribble, and does not draw bridges across gaps.</p></article>
+        <article class="card tint" style="--hue:var(--c-orange)"><div class="glyph hue">3</div><h3>Show it fast</h3><p>Ink has to appear under the finger within one display <a class="term" href="#g-frame">frame</a>. On a big tablet the slow part is not the drawing math. It is the browser pushing a huge changed surface to the screen.</p></article>
+        <article class="card tint" style="--hue:var(--c-purple)"><div class="glyph hue">4</div><h3>Remember</h3><p>Undo must put the old pixels back. Save must produce a full-size picture. Both have to work without freezing the drawing, and without keeping unlimited history in memory.</p></article>
       </div>
 
-      <div class="journey" aria-labelledby="journey-title">
-        <div class="journey-head"><h3 id="journey-title">Follow one stroke</h3><p>Select a stage to zoom in on what changes.</p></div>
-        <div class="journey-track" role="group" aria-label="Stroke stages">
-          <button class="stage" type="button" data-stage="input" aria-pressed="true"><span class="stage-mark" aria-hidden="true">☝️</span><span class="stage-label">1. Input</span></button>
-          <button class="stage" type="button" data-stage="ops" aria-pressed="false"><span class="stage-mark" aria-hidden="true">⌁</span><span class="stage-label">2. Operations</span></button>
-          <button class="stage" type="button" data-stage="tiles" aria-pressed="false"><span class="stage-mark" aria-hidden="true">▦</span><span class="stage-label">3. Tiles</span></button>
-          <button class="stage" type="button" data-stage="patch" aria-pressed="false"><span class="stage-mark" aria-hidden="true">✂️</span><span class="stage-label">4. Undo patch</span></button>
-          <button class="stage" type="button" data-stage="history" aria-pressed="false"><span class="stage-mark" aria-hidden="true">▤</span><span class="stage-label">5. History</span></button>
-          <button class="stage" type="button" data-stage="export" aria-pressed="false"><span class="stage-mark" aria-hidden="true">🖼️</span><span class="stage-label">6. Export</span></button>
-        </div>
-        <div class="journey-detail" id="journey-detail" aria-live="polite"><b>Input: a contact stream begins.</b> The transparent full-size canvas receives pointer events, captures the pointer, and maps screen coordinates back into the drawing’s permanent paper coordinates.</div>
+      <h3 class="sub">How Splotch answers them, in one paragraph</h3>
+      <p>Splotch keeps the drawing in two forms at once. Recent strokes stay as <a class="term" href="#g-vector">vector</a> instructions ("a blue path, 18 px wide, through these points"). Older strokes are baked into pixels. The visible paper is not one big <a class="term" href="#g-canvas">canvas</a> but a grid of twenty smaller ones, so a stroke only repaints the <a class="term" href="#g-tile">tiles</a> it crosses. Before a stroke changes a tile, the engine copies the pixels that are about to change, so Undo is a paste rather than a replay. Saving hands the finished tiles to a <a class="term" href="#g-worker">worker</a> thread, which assembles and encodes the PNG while the child keeps drawing.</p>
+
+      <div class="grid c3">
+        <article class="card"><div class="glyph">A</div><h3>Instructions, not pictures</h3><p>Finger movement becomes small drawing instructions called <a class="term" href="#g-op">ops</a>. An op can be replayed at any size, which is what makes export and rotation possible.</p></article>
+        <article class="card"><div class="glyph">B</div><h3>Small surfaces paint faster</h3><p>The paper is split into a 4 × 5 grid. A curve crossing three tiles paints three small surfaces, not one tablet-sized one. This was the single biggest performance win.</p></article>
+        <article class="card"><div class="glyph">C</div><h3>Undo keeps "before" pieces</h3><p>Before a stroke changes a tile, the engine copies it. When the stroke ends, the copy is cropped to the changed rectangle. Undo pastes it back.</p></article>
       </div>
+
+      <div class="callout note"><p><strong>Reading tips.</strong> Dotted-underlined words link to the <a href="#glossary">glossary</a> at the end. A floating button brings you back. The crayon brush has its own texture pipeline and is described on a separate page, so here it appears only as one of the four brushes.</p></div>
     </section>
 
-    <section id="map">
-      <p class="section-kicker">The big picture</p>
-      <h2>One conductor, several kinds of memory</h2>
-      <p class="section-lead"><code>engine.ts</code> is an imperative module singleton. Svelte pushes tool choices in and receives a few callbacks out, but pointer-speed work and canvas pixels stay outside the reactive render loop.</p>
+    <!-- 2 ---------------------------------------------------------------- -->
+    <section id="stroke">
+      <p class="kicker"><span class="r">2</span>Try it</p>
+      <h2>One stroke, start to finish</h2>
+      <p class="lead">Pick a stage to read what happens, then draw on the paper below to watch it happen. The lab runs a simplified copy of the real engine's rules: the same 4 × 5 grid, the same midpoint curves, the same one-op-per-frame batching, and the same "copy before you change it" undo. The lab keeps 4 undo steps so folding is visible quickly. The real app keeps 20.</p>
 
-      <div class="flow-map" role="img" aria-label="Flow from pointer events through the engine, operations, renderer, tile pixels, history, and export">
-        <div class="flow-node"><b>Pointer events</b><small>touch · pen · mouse</small></div><div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-node hot"><b>Engine conductor</b><small>coordinates · pointers · tools</small></div><div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-node"><b>Stroke operations</b><small>dot · path · flush · clear</small></div><div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-branch"><div class="flow-node"><b>Live tiles</b><small>pixels now</small></div><div class="flow-node"><b>Undo/history</b><small>pixels + vectors</small></div></div>
+      <div class="stages" role="group" aria-label="Stroke stages" id="stages">
+        <button class="stage" type="button" data-stage="input" aria-pressed="true"><span class="mark" aria-hidden="true">☝️</span><span class="lbl">1. Input</span></button>
+        <button class="stage" type="button" data-stage="ops" aria-pressed="false"><span class="mark" aria-hidden="true">〰️</span><span class="lbl">2. Ops</span></button>
+        <button class="stage" type="button" data-stage="tiles" aria-pressed="false"><span class="mark" aria-hidden="true">▦</span><span class="lbl">3. Tiles</span></button>
+        <button class="stage" type="button" data-stage="patch" aria-pressed="false"><span class="mark" aria-hidden="true">✂️</span><span class="lbl">4. Patch</span></button>
+        <button class="stage" type="button" data-stage="history" aria-pressed="false"><span class="mark" aria-hidden="true">🗂️</span><span class="lbl">5. History</span></button>
+        <button class="stage" type="button" data-stage="export" aria-pressed="false"><span class="mark" aria-hidden="true">🖼️</span><span class="lbl">6. Save</span></button>
       </div>
-      <div class="flow-map" style="grid-template-columns:repeat(5,minmax(0,1fr))" role="img" aria-label="Rendering branches to the display and to PNG export">
-        <div class="flow-node"><b>Shared <code>renderOp</code></b><small>same brush semantics everywhere</small></div><div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-branch"><div class="flow-node"><b>Display</b><small>only occupied tiles shown</small></div><div class="flow-node"><b>Raster base</b><small>old commands folded</small></div></div><div class="flow-arrow" aria-hidden="true">→</div>
-        <div class="flow-node hot"><b>PNG worker</b><small>paper + texture + ink + line art</small></div>
-      </div>
-      <p class="flow-caption">The screen is a presentation of state; it is not the only copy of the drawing.</p>
+      <div class="stage-detail" id="stage-detail" aria-live="polite"><b>Input: a finger touches the glass.</b> A transparent full-size canvas on top of everything receives the pointer event, captures the pointer so the stroke cannot be stolen by a button, and converts the screen position into paper coordinates. In the lab, the small dots are the raw samples the browser delivered.</div>
 
-      <div class="two-col" style="margin-top:44px">
-        <div>
-          <h3>The layer stack you actually see</h3>
-          <p class="muted">The “background tiling” is easy to misname. The warm paper is a CSS color + repeated texture. The <em>ink surfaces</em> and the <em>history base</em> are what use the 4×4 canvas grid.</p>
-          <div class="fact-list">
-            <div class="fact"><div class="fact-mark">A</div><div><b>Coloring-page line art</b><p>A transparent black or white image, composited normally above the ink.</p></div></div>
-            <div class="fact"><div class="fact-mark">B</div><div><b>Transparent input canvas</b><p>Full CSS size for hit testing, but only a 1×1 bitmap in production. It receives input and paints nothing.</p></div></div>
-            <div class="fact"><div class="fact-mark">C</div><div><b>Tiled live paper view</b><p>Sixteen normal-ink canvases, with two lazy crayon-preview planes per tile.</p></div></div>
-            <div class="fact"><div class="fact-mark">D</div><div><b>Paper sheet</b><p>A CSS paper color plus a small repeated handmade-paper texture.</p></div></div>
+      <div class="lab" id="lab">
+        <div class="lab-toolbar">
+          <div class="group" role="group" aria-label="Show">
+            <span class="grp-label">Show</span>
+            <button class="tog" type="button" data-show="samples" aria-pressed="true" style="--sw:var(--ink)"><i></i>Samples</button>
+            <button class="tog" type="button" data-show="chords" aria-pressed="false" style="--sw:var(--c-red)"><i></i>Chords</button>
+            <button class="tog" type="button" data-show="tiles" aria-pressed="false" style="--sw:var(--c-blue)"><i></i>Tiles</button>
+            <button class="tog" type="button" data-show="patch" aria-pressed="false" style="--sw:var(--warn)"><i></i>Patches</button>
+          </div>
+          <div class="group" role="group" aria-label="Brush">
+            <span class="grp-label">Brush</span>
+            <span class="swatches" id="swatches"></span>
+            <label class="range">Width <input type="range" id="width" min="4" max="40" value="16" aria-label="Stroke width"/><span id="width-out">16</span> px</label>
+          </div>
+          <div class="group">
+            <button class="btn" type="button" id="lab-undo" disabled>↶ Undo</button>
+            <button class="btn" type="button" id="lab-clear" disabled>Clear</button>
           </div>
         </div>
-        <figure class="layer-figure" aria-label="Exploded layer diagram of the Splotch drawing surface">
-          <div class="layer"><div class="layer-icon">⌁</div><div><b>Coloring line art</b><small>Transparent overlay · ordinary source-over</small></div></div>
-          <div class="layer"><div class="layer-icon">☝️</div><div><b>Input canvas</b><small>Full hit target · transparent · 1×1 bitmap</small></div></div>
-          <div class="layer"><div class="layer-icon"><span class="tile-mini"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div><div><b>Normal ink tiles</b><small>4×4 full-resolution surfaces · hidden when empty</small></div></div>
-          <div class="layer"><div class="layer-icon">🖍️</div><div><b>Crayon preview planes</b><small>Bottom “darken” + top translucent copy · lazy</small></div></div>
-          <div class="layer"><div class="layer-icon">▧</div><div><b>Paper sheet</b><small>Theme color + repeated paper grain</small></div></div>
-        </figure>
+        <div class="lab-stage">
+          <canvas class="lab-canvas" id="lab-canvas" width="800" height="600" aria-label="Drawing lab. Draw with a mouse, finger, or pen to see how the engine handles a stroke."></canvas>
+          <div class="lab-hint" id="lab-hint"><span>Draw here with a finger, pen, or mouse</span></div>
+        </div>
+        <div class="lab-foot">
+          <div>
+            <div class="readouts" aria-live="polite">
+              <span>Samples <b id="r-samples">0</b></span>
+              <span>Ops <b id="r-ops">0</b></span>
+              <span>Tiles touched <b id="r-tiles">0</b> / 20</span>
+              <span>Undoable <b id="r-undo">0</b> / 4</span>
+              <span>Folded into base <b id="r-folded">0</b></span>
+            </div>
+            <div class="ledger" id="ledger"><span class="ledger-label">History</span><span class="muted small" id="ledger-empty">empty</span></div>
+          </div>
+          <p class="lab-note">One command per stroke. After 1.5 s of no input, the oldest command past the undo limit folds into the pixel base and loses its patch.</p>
+        </div>
       </div>
     </section>
 
+    <!-- 3 ---------------------------------------------------------------- -->
+    <section id="parts">
+      <p class="kicker"><span class="r">3</span>The parts</p>
+      <h2>One conductor, several kinds of memory</h2>
+      <p class="lead">The engine is a plain TypeScript module, not a Svelte component. The UI pushes tool choices in and receives a few callbacks out. Pointer handling and canvas pixels never go through the reactive render loop, because a reactive update per pointer event would be far too slow.</p>
+
+      <h4 class="muted" style="margin-top:22px">While drawing</h4>
+      <ol class="pipe" aria-label="Flow from pointer events to pixels on screen">
+        <li><b>Pointer events</b><small>touch · pen · mouse</small></li>
+        <li class="hot"><b>Engine</b><small>coordinates · fingers · tools</small></li>
+        <li><b>Ops</b><small>dot · path · clear</small></li>
+        <li><b>Shared renderer</b><small>same brush rules everywhere</small></li>
+        <li><b>Live tiles</b><small>pixels on screen this frame</small></li>
+      </ol>
+      <h4 class="muted">The same ops also go to</h4>
+      <ol class="pipe" aria-label="Flow from ops to history and export">
+        <li><b>Vector tail</b><small>the newest 20 commands + their patches</small></li>
+        <li><b>Pixel base</b><small>older commands, baked when idle</small></li>
+        <li class="worker"><b>Save worker</b><small>paper + texture + tiles + line art → PNG</small></li>
+      </ol>
+      <p class="pipe-caption">The screen is one view of the drawing. It is not the only copy.</p>
+
+      <h3 class="sub">The layer stack you actually see</h3>
+      <p>From top to bottom, the drawing area is four DOM layers. The warm paper is CSS, not a canvas. Only the ink and the pixel base use the tile grid.</p>
+      <div class="stack" role="list" aria-label="Layer stack, top to bottom">
+        <div class="layer" role="listitem" style="--layer-color:var(--c-purple)"><div class="layer-icon">✏️</div><div><b>Coloring-page line art</b><small>A transparent image. Drawn above the ink so lines stay crisp over color.</small></div></div>
+        <div class="layer" role="listitem" style="--layer-color:var(--c-blue)"><div class="layer-icon">☝️</div><div><b>Input canvas</b><small>Full size for hit testing, but its bitmap is 1 × 1 pixel. It receives input and paints nothing.</small></div></div>
+        <div class="layer" role="listitem" style="--layer-color:var(--c-green)"><div class="layer-icon"><span class="tile-mini"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div><div><b>Live ink tiles</b><small>Twenty full-resolution canvases in a 4 × 5 grid. Hidden while empty. Each tile also owns two crayon canvases that the web build keeps hidden.</small></div></div>
+        <div class="layer" role="listitem" style="--layer-color:var(--c-orange)"><div class="layer-icon">▧</div><div><b>Paper sheet</b><small>A CSS background color plus a small repeating paper texture image.</small></div></div>
+      </div>
+      <p class="small muted">Not in the DOM: twenty more offscreen canvases hold the <a class="term" href="#g-pixel-base">pixel base</a>, the baked older strokes. They use the same 4 × 5 layout so a tile can be folded into its base tile with one copy.</p>
+    </section>
+
+    <!-- 4 ---------------------------------------------------------------- -->
     <section id="input">
-      <p class="section-kicker">Deep dive 1</p>
-      <h2>Many fingers, one undoable stroke group</h2>
-      <p class="section-lead">Every active contact gets its own <code>PointerState</code>—position, midpoint, width, brush flags, crayon seed, speed samples, and edge-gesture state. But all contacts that overlap in time write into one shared <code>StrokeGroupCommand</code>.</p>
+      <p class="kicker"><span class="r">4</span>Input</p>
+      <h2>Many fingers, one undoable stroke</h2>
+      <p class="lead">Each finger on the glass gets its own record: position, last midpoint, width, brush flags, and a small speed history. But every finger that is down at the same time writes into one shared command. Lifting one finger does not end the command. Lifting the last one does.</p>
 
       <div class="timeline" aria-label="Two-finger command timeline">
-        <div class="timeline-grid">
-          <div></div><div class="time">t0</div><div class="time">t1</div><div class="time">t2</div><div class="time">t3</div><div class="time">t4</div><div class="time">t5</div><div class="time">t6</div>
-          <div class="lane-label">Finger A</div><div class="event a">down<br/>dot A</div><div class="event a">move<br/>path A</div><div class="event a">move<br/>path A</div><div class="event a">up</div><div class="event empty"></div><div class="event empty"></div><div class="event empty"></div>
-          <div class="lane-label">Finger B</div><div class="event empty"></div><div class="event b">down<br/>dot B</div><div class="event b">move<br/>path B</div><div class="event b">move<br/>path B</div><div class="event b">move<br/>path B</div><div class="event b">up</div><div class="event commit">commit group</div>
+        <div class="tl-grid">
+          <div></div><div class="tl-t">t0</div><div class="tl-t">t1</div><div class="tl-t">t2</div><div class="tl-t">t3</div><div class="tl-t">t4</div><div class="tl-t">t5</div><div class="tl-t">t6</div>
+          <div class="tl-lane">Finger A</div><div class="ev a">down<br/>dot</div><div class="ev a">move<br/>path</div><div class="ev a">move<br/>path</div><div class="ev a">up</div><div class="ev empty"></div><div class="ev empty"></div><div class="ev empty"></div>
+          <div class="tl-lane">Finger B</div><div class="ev empty"></div><div class="ev b">down<br/>dot</div><div class="ev b">move<br/>path</div><div class="ev b">move<br/>path</div><div class="ev b">move<br/>path</div><div class="ev b">up</div><div class="ev commit">commit</div>
         </div>
-        <div class="timeline-narrow">
-          <div class="event a"><b>t0 · A</b><span>down → dot A; group opens</span></div><div class="event b"><b>t1 · B</b><span>down → dot B; same group</span></div><div class="event a"><b>t2 · A</b><span>path A</span></div><div class="event b"><b>t3 · B</b><span>path B</span></div><div class="event a"><b>t4 · A</b><span>up; B is still active</span></div><div class="event b"><b>t5 · B</b><span>path B, then up</span></div><div class="event commit"><b>t6</b><span>last pointer gone → commit one group</span></div>
+        <div class="tl-list">
+          <div class="ev a"><b>t0 · A</b><span>down: dot, command opens</span></div><div class="ev b"><b>t1 · B</b><span>down: dot, same command</span></div><div class="ev a"><b>t2 · A</b><span>path</span></div><div class="ev b"><b>t3 · B</b><span>path</span></div><div class="ev a"><b>t4 · A</b><span>up, but B is still down</span></div><div class="ev b"><b>t5 · B</b><span>path, then up</span></div><div class="ev commit"><b>t6</b><span>last finger gone: commit one command</span></div>
         </div>
-        <div class="timeline-note"><span aria-hidden="true">↩︎</span><span>One Undo removes both fingers’ interleaved operations because “all fingers down together” is the product’s unit of intent.</span></div>
+        <div class="tl-note"><span aria-hidden="true">↶</span><span>One Undo removes both fingers' work. "All fingers down together" is the unit a toddler means by "that".</span></div>
       </div>
 
       <div class="codeblock">
         <div class="codehead"><span>web/src/lib/drawing/engine.ts</span><span>abridged</span></div>
-        <pre><code><span class="kw">const</span> <span class="fn">activePointers</span> = <span class="kw">new</span> <span class="type">Map</span>&lt;<span class="type">number</span>, <span class="type">PointerState</span>&gt;();
+        <pre><code><span class="kw">const</span> activePointers = <span class="kw">new</span> <span class="type">Map</span>&lt;<span class="type">number</span>, <span class="type">PointerState</span>&gt;();
 
 <span class="kw">function</span> <span class="fn">beginStrokeGroup</span>() {
   <span class="kw">if</span> (groupHasDrawn) <span class="kw">return</span>;
@@ -310,59 +485,47 @@ pre{margin:0;padding:16px;overflow:auto;font:12px/1.65 var(--mono);tab-size:2}co
 
 <span class="cm">// A finger lifting does not commit while another finger remains.</span>
 activePointers.<span class="fn">delete</span>(event.pointerId);
-<span class="kw">if</span> (activePointers.size === <span class="num">0</span>) <span class="fn">finishStrokeGroup</span>();</code></pre>
+<span class="kw">if</span> (activePointers.size === <span class="r">0</span>) <span class="fn">finishStrokeGroup</span>();</code></pre>
       </div>
 
-      <h3>How raw motion becomes a smooth line</h3>
-      <p>The browser often delivers one <code>pointermove</code> per display frame, but includes intermediate samples through <code>getCoalescedEvents()</code>. Splotch consumes all of them. For each raw point, it draws a quadratic curve from the previous midpoint to the new midpoint, using the previous raw point as the control point. Adjacent curves share a tangent, so corners look smooth without a heavy fitting algorithm.</p>
+      <h3 class="sub">From dots to a smooth line</h3>
+      <p>The browser usually delivers one <code>pointermove</code> per display frame, but the touch hardware samples faster than that. The extra samples are available through <a class="term" href="#g-coalesced">getCoalescedEvents()</a>, and Splotch reads all of them. A fast scribble on an iPad produces about two to four samples per frame.</p>
+      <p>For each sample, the engine draws a <a class="term" href="#g-quadratic">quadratic curve</a> from the previous midpoint to the new midpoint, using the previous raw sample as the control point. Neighbouring curves share a tangent where they meet, so corners look smooth with no curve-fitting step. Turn on "Straight chords" in the lab to see what the raw samples look like without this.</p>
 
       <div class="codeblock">
-        <div class="codehead"><span>midpoint quadratic smoothing</span><span>one segment per input sample</span></div>
-        <pre><code><span class="kw">const</span> midX = (pointer.x + point.x) / <span class="num">2</span>;
-<span class="kw">const</span> midY = (pointer.y + point.y) / <span class="num">2</span>;
-op.segs.<span class="fn">push</span>({
-  cx: pointer.x, cy: pointer.y,
-  x: midX, y: midY
-});
+        <div class="codehead"><span>midpoint smoothing</span><span>one curve segment per sample</span></div>
+        <pre><code><span class="kw">for</span> (<span class="kw">const</span> { x, y } <span class="kw">of</span> points) {
+  <span class="kw">const</span> midX = (pointer.x + x) / <span class="r">2</span>;
+  <span class="kw">const</span> midY = (pointer.y + y) / <span class="r">2</span>;
+  op.segs.<span class="fn">push</span>({ cx: pointer.x, cy: pointer.y, x: midX, y: midY });
+  pointer.x = x; pointer.y = y;
+}
+<span class="cm">// later, when the op is painted:</span>
 context.<span class="fn">quadraticCurveTo</span>(seg.cx, seg.cy, seg.x, seg.y);</code></pre>
       </div>
 
-      <div class="algorithm-grid">
-        <article class="algorithm" style="--hue:var(--c-blue)"><h3>Coalesced samples</h3><p>Replays the browser’s hidden in-between points so fast scribbles do not collapse into long straight chords.</p></article>
-        <article class="algorithm" style="--hue:var(--c-green)"><h3>Pointer capture</h3><p>Keeps a stroke flowing across floating buttons and canvas edges instead of ending when hit testing changes.</p></article>
-        <article class="algorithm" style="--hue:var(--c-orange)"><h3>Edge-swipe classifier</h3><p>Buffers touch starts in OS gesture bands, then discards inward swipes or commits cross-edge/tap motion as ink.</p></article>
-        <article class="algorithm" style="--hue:var(--c-pink)"><h3>Resume detector</h3><p>A gap over 100 ms plus a jump over 10% of the paper’s short side becomes a new contact, avoiding a stray bridge line.</p></article>
-        <article class="algorithm" style="--hue:var(--c-purple)"><h3>Pen-stream repair</h3><p>Adopts WebKit Apple Pencil contact streams that arrive as moves with no new pointerdown after a fast UI tap.</p></article>
-        <article class="algorithm" style="--hue:var(--c-red)"><h3>Speed window</h3><p>A 100 ms sliding distance window drives pencil-scratch audio volume without reacting to every tiny jitter.</p></article>
+      <h3 class="sub">One op per frame, not one per event</h3>
+      <p>Painting inside the event handler would repaint the same frame two to four times, and every pass pays the per-tile cost again. Instead the engine queues the samples and drains them once per <a class="term" href="#g-raf">animation frame</a> into a single path op. The pixels are identical, because the op still carries every sample as its own curve segment. The per-op bookkeeping is paid once. Watch the "Ops" counter in the lab grow more slowly than "Samples".</p>
+
+      <div class="grid c3">
+        <article class="card tint" style="--hue:var(--c-blue)"><h3>Pointer capture</h3><p>On the first touch, the input canvas <a class="term" href="#g-pointer-capture">captures</a> the pointer. The stroke keeps flowing even if the finger crosses a floating button or leaves the canvas edge.</p></article>
+        <article class="card tint" style="--hue:var(--c-green)"><h3>Resume detector</h3><p>A gap over 100 ms combined with a jump over 10% of the paper's short side is treated as a new contact, not a continuation. This stops a stray line bridging two separate touches.</p></article>
+        <article class="card tint" style="--hue:var(--c-orange)"><h3>Edge-swipe guard</h3><p>A touch that starts within 24 px of a system gesture edge is buffered for its first 12 px of travel. An inward swipe is discarded as a system gesture. Anything else becomes ink.</p></article>
+        <article class="card tint" style="--hue:var(--c-pink)"><h3>Pen-stream repair</h3><p>WebKit sometimes starts an Apple Pencil stroke with a move and no <code>pointerdown</code>, after a fast tap. The engine tracks every pointer that went down anywhere in the page and adopts a pen move whose id it never saw.</p></article>
+        <article class="card tint" style="--hue:var(--c-purple)"><h3>Cached measurement</h3><p>The canvas rectangle is measured once and cached, so the pointer path never forces the browser to lay out the page. A rectangle with zero area is refused, because adopting one would silently collapse the paper to nothing.</p></article>
+        <article class="card tint" style="--hue:var(--c-red)"><h3>Speed window</h3><p>A 100 ms sliding window of distance drives the volume of the drawing sound. It reacts to real speed changes without twitching on every tiny jitter.</p></article>
       </div>
-      <div class="callout"><strong>Style is captured per pointer.</strong> Color, width, eraser, Magic, crayon, and crayon seed are copied into <code>PointerState</code> when that contact begins. Later UI changes do not rewrite already-emitted operations.</div>
+      <div class="callout"><p><strong>Style is frozen per finger.</strong> Color, width, eraser, Magic, and crayon flags are copied into the finger's record when that finger touches down. Changing the color mid-stroke with another hand does not rewrite ops that are already painted.</p></div>
     </section>
 
+    <!-- 5 ---------------------------------------------------------------- -->
     <section id="tiles">
-      <p class="section-kicker">Deep dive 2</p>
-      <h2>Why the paper is tiled</h2>
-      <p class="section-lead">On a large iPad, JavaScript could finish drawing quickly and still leave WebKit hundreds of milliseconds behind while it flushed one huge mutated canvas to the display. The decisive variable was the maximum size of one active surface—not the total painted pixel count. Sixteen smaller canvases kept the same full resolution while removing the presentation starvation.</p>
+      <p class="kicker"><span class="r">5</span>Tiles</p>
+      <h2>Why the paper is cut into twenty pieces</h2>
+      <p class="lead">On a large iPad, the JavaScript finished painting quickly and the screen still froze for hundreds of milliseconds. The browser was flushing one huge changed canvas to the display. The variable that mattered was the size of the largest surface that changed, not the total number of pixels painted. Splitting the paper into a grid of smaller canvases kept the same resolution and removed the freeze.</p>
 
-      <div class="tile-layout">
-        <figure class="tile-svg-wrap">
-          <svg class="tile-svg" viewBox="0 0 440 320" role="img" aria-labelledby="tile-title tile-desc">
-            <title id="tile-title">A curved stroke culled to a subset of a 4 by 4 tile grid</title><desc id="tile-desc">Only blue highlighted tiles whose paper bounds intersect the padded red stroke are rendered. An orange dashed box shows the conservative dirty bounds.</desc>
-            <rect class="paper" x="20" y="20" width="400" height="280" rx="10"/>
-            <rect class="hit" x="20" y="20" width="100" height="70"/><rect class="hit" x="120" y="20" width="100" height="70"/><rect class="hit" x="120" y="90" width="100" height="70"/><rect class="hit" x="220" y="90" width="100" height="70"/><rect class="hit" x="220" y="160" width="100" height="70"/><rect class="hit" x="320" y="160" width="100" height="70"/><rect class="hit" x="320" y="230" width="100" height="70"/>
-            <g class="grid"><path d="M120 20v280M220 20v280M320 20v280M20 90h400M20 160h400M20 230h400"/></g>
-            <path class="bound" d="M45 37h337v236H45z"/>
-            <path class="stroke" d="M67 68 C122 42 161 119 208 126 S277 184 296 194 S346 204 370 250"/>
-            <text x="28" y="314">Illustration: 7 touched tiles, 9 untouched</text>
-          </svg>
-          <figcaption class="legend"><span><i class="swatch hit"></i>rendered tile</span><span><i class="swatch path"></i>stroke</span><span><i class="swatch bounds"></i>padded bounds</span></figcaption>
-        </figure>
-        <div>
-          <h3>Cull first, paint second</h3>
-          <p>Dots and paths carry paper-space geometry. The renderer finds a conservative box around the start, control points, and endpoints, expands it by half the stroke width plus a 2 px anti-alias bleed, and tests that box against each tile’s paper bounds.</p>
-          <p>Only intersecting tiles allocate backing stores, capture undo state, become visible, and run <code>renderOp()</code>. Tile transforms subtract the tile’s x/y origin, so operations remain in one global paper coordinate system.</p>
-          <div class="numbers"><div class="number"><b>16</b><span>normal live ink canvases</span></div><div class="number"><b>+32</b><span>possible crayon preview planes</span></div><div class="number"><b>0</b><span>empty tiles kept in the compositor</span></div><div class="number"><b>1×1</b><span>input canvas bitmap</span></div></div>
-        </div>
-      </div>
+      <h3 class="sub">Cull first, paint second</h3>
+      <p>Every op carries paper-space geometry. Before painting, the renderer computes a box around the op's points and control points, pads it by half the stroke width plus a 2 px <a class="term" href="#g-aa">anti-aliasing</a> bleed, and tests that box against each tile. This is <a class="term" href="#g-culling">culling</a>. Only tiles the box touches allocate memory, get an undo copy, become visible, and run the renderer. Each tile's drawing <a class="term" href="#g-transform">transform</a> subtracts the tile's origin, so every op stays in one global paper coordinate system.</p>
 
       <div class="codeblock">
         <div class="codehead"><span>web/src/lib/drawing/tiledRenderer.ts</span><span>the hot decision</span></div>
@@ -371,360 +534,712 @@ context.<span class="fn">quadraticCurveTo</span>(seg.cx, seg.cy, seg.x, seg.y);<
 
   <span class="fn">ensureNormalTileBacking</span>(tile);
   <span class="fn">prepareTileForMutation</span>(tile, index);
-  <span class="kw">if</span> (command) undoPatches.<span class="fn">capture</span>(
-    command, tile, index, <span class="fn">opDeviceBounds</span>(tile, op)
-  );
+  <span class="kw">if</span> (command) undoPatches.<span class="fn">capture</span>(command, tile, index, <span class="fn">opDeviceBounds</span>(tile, op));
   <span class="fn">renderOp</span>(tile.ctx, op);
 }</code></pre>
       </div>
 
-      <div class="compare">
-        <article class="compare-panel"><h3><span aria-hidden="true">🧱</span> Live ink tiles</h3><ul><li>Attached to the page and physically presented.</li><li>Hidden whenever they contain no visible ink.</li><li>Crayon preview backings allocate only when touched.</li><li>CSS positions snap boundaries to device pixels.</li></ul></article>
-        <article class="compare-panel"><h3><span aria-hidden="true">🗄️</span> History-base tiles</h3><ul><li>Offscreen raster storage for old, non-undoable commands.</li><li>Created only when folding starts.</li><li>Track a <code>painted</code> bit so blank bases do not blit.</li><li>Use the same 4×4 paper topology.</li></ul></article>
+      <h3 class="sub">How the grid size was chosen</h3>
+      <p>The grid started as 4 × 4. A later sweep on the physical iPad compared one smaller and two larger grids, using the crayon brush because it stresses surfaces the most. Each row is three captures of the same gesture. "Lost frames" is the share of frames the screen failed to present on time.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Grid</th><th class="r">Largest surface</th><th class="r">Crayon lost frames</th><th>Magic brush</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td data-label="Grid">3 × 3</td><td class="r" data-label="Largest surface">0.547 Mpx</td><td class="r" data-label="Crayon lost frames">93.8%</td><td data-label="Magic brush">not run</td><td data-label="Result">Collapsed. Rejected after one capture.</td></tr>
+            <tr><td data-label="Grid">4 × 4</td><td class="r" data-label="Largest surface">0.308 Mpx</td><td class="r" data-label="Crayon lost frames">0.96 – 1.18%</td><td data-label="Magic brush">passed</td><td data-label="Result">The previous grid. Over the 1% gate.</td></tr>
+            <tr class="pick"><td data-label="Grid">4 × 5</td><td class="r" data-label="Largest surface">0.246 Mpx</td><td class="r" data-label="Crayon lost frames">0.21 – 0.30%</td><td data-label="Magic brush">passed</td><td data-label="Result">Shipped. The only grid that cleared both brushes.</td></tr>
+            <tr><td data-label="Grid">5 × 5</td><td class="r" data-label="Largest surface">0.197 Mpx</td><td class="r" data-label="Crayon lost frames">0.33 – 0.36%</td><td data-label="Magic brush">failed</td><td data-label="Result">More tiles means more surfaces to visit per op. Magic regressed.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">The slow 4 × 4 frames carried at most 1 ms of engine JavaScript. The time was in the browser's own surface work, which is why the fix was topology rather than code.</p>
+
+      <div class="grid c2">
+        <article class="card"><h3>Live ink tiles</h3><ul class="plain small muted"><li>Attached to the page and presented by the browser.</li><li>Hidden whenever they contain no ink, so empty tiles cost the compositor nothing.</li><li>Tile edges are floored to whole device pixels before being converted back to CSS size, so neighbours butt exactly with no seam and no overlap.</li></ul></article>
+        <article class="card"><h3>Pixel-base tiles</h3><ul class="plain small muted"><li>Offscreen storage for strokes that are too old to undo.</li><li>Created only when the first fold happens.</li><li>Track a "painted" bit so a blank base tile is never copied.</li><li>Same 4 × 5 layout as the live tiles.</li></ul></article>
       </div>
 
-      <div class="callout warn"><strong>Measured reason, not aesthetic preference.</strong> The original full-resolution iPad surface showed roughly 417 ms of render starvation per drawing-second and paint P95 around 480 ms. The tiled vector-history prototype measured zero starvation and roughly one-refresh paint latency. Tiling changes topology, not resolution.</div>
+      <h3 class="sub">Knowing when the paper is blank</h3>
+      <p>Undo, Clear, and the camera button disable themselves when the paper is empty. Checking that means reading pixels back, which is slow on a GPU-backed canvas and gets slower if you do it often. So each tile is copied at quarter size onto one small CPU-side scratch canvas and scanned there. Even that costs a few milliseconds across twenty tiles, so the scan waits until 400 ms after the last input rather than running during a stroke.</p>
     </section>
 
+    <!-- 6 ---------------------------------------------------------------- -->
     <section id="undo">
-      <p class="section-kicker">Deep dive 3</p>
-      <h2>The undo lifecycle: vectors on top, pixels underneath</h2>
-      <p class="section-lead">Production undo is a hybrid. Recent commands remain as vector operations <em>and</em> own cropped pixel patches of what was underneath them. Old commands lose undo patches, then fold into a tiled raster base after the child stops drawing.</p>
+      <p class="kicker"><span class="r">6</span>Undo</p>
+      <h2>Vectors on top, pixels underneath</h2>
+      <p class="lead">Undo is a hybrid. Recent commands are kept as vector ops <em>and</em> own cropped pixel <a class="term" href="#g-patch">patches</a> of what was under them. Old commands lose their patches, then fold into the pixel base while the child is not drawing. The lab's history strip shows the same three states.</p>
 
-      <figure class="history-figure" aria-label="Hybrid history showing a raster base, pending vector prefix, undoable vector tail with patches, and active command">
-        <div class="history-row"><div class="history-label"><b>Tiled raster base</b><small>already compacted pixels</small></div><div class="ledger"><div class="ledger-item raster">C1–12</div></div></div>
-        <div class="history-row"><div class="history-label"><b>Non-undoable prefix</b><small>waiting for idle folds</small></div><div class="ledger"><div class="ledger-item vector">C13</div><div class="ledger-item vector">C14</div></div></div>
-        <div class="history-row"><div class="history-label"><b>Undoable vector tail</b><small>ops + cropped “before” pixels</small></div><div class="ledger"><div class="ledger-item vector patch">C15</div><div class="ledger-item vector patch">C16</div><div class="ledger-item vector patch">C17</div><div class="ledger-item vector patch">C18</div></div></div>
-        <div class="history-row"><div class="history-label"><b>Active command</b><small>temporary full-tile copies</small></div><div class="ledger"><div class="ledger-item active">C19</div></div></div>
-      </figure>
-      <p class="muted">The small counts above are illustrative. The normal product cap is 20 undoable commands.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Layer</th><th>What it holds</th><th>Lab label</th></tr></thead>
+          <tbody>
+            <tr><td data-label="Layer">Pixel base</td><td data-label="What it holds">Commands already baked into twenty offscreen tiles. Not undoable.</td><td data-label="Lab label">in base</td></tr>
+            <tr><td data-label="Layer">Waiting to fold</td><td data-label="What it holds">Vector commands past the undo limit, waiting for 1.5 s of idle.</td><td data-label="Lab label">waiting</td></tr>
+            <tr><td data-label="Layer">Undoable tail</td><td data-label="What it holds">The newest 20 commands: vector ops plus cropped "before" pixels per touched tile.</td><td data-label="Lab label">patch</td></tr>
+            <tr><td data-label="Layer">Active command</td><td data-label="What it holds">Whatever is being drawn right now, with temporary full-tile copies.</td><td data-label="Lab label">active</td></tr>
+          </tbody>
+        </table>
+      </div>
 
-      <div class="life-grid">
-        <article class="life-step" data-step="1"><h3>Begin</h3><p>The first pixel of the whole multi-finger group records whether the canvas was empty and opens one active command.</p></article>
-        <article class="life-step" data-step="2"><h3>First tile mutation</h3><p>Copy that tile once, then union every operation’s transformed dirty bounds into the command’s rectangle.</p></article>
-        <article class="life-step" data-step="3"><h3>Commit</h3><p>Crop each temporary tile copy to its dirty rectangle; push the command; retain up to 20 steps.</p></article>
-        <article class="life-step" data-step="4"><h3>Budget</h3><p>If patches exceed six aggregate papers of RGBA bytes, drop the oldest patches but keep at least the newest two.</p></article>
-        <article class="life-step" data-step="5"><h3>Wait</h3><p>Pointerdown cancels compaction. After 1.5 seconds without input, one non-undoable command may fold.</p></article>
-        <article class="life-step" data-step="6"><h3>Fold</h3><p>Replay that command through the same renderer into the offscreen 4×4 raster base, then discard its vector entry.</p></article>
-        <article class="life-step" data-step="7"><h3>Undo</h3><p>Pop the newest command; clear only its dirty patch rectangles and blit the saved “before” pixels back.</p></article>
-        <article class="life-step" data-step="8"><h3>Fallback</h3><p>If tile geometry changed or another finger is live, replay history so in-flight pixels and patch pre-state remain correct.</p></article>
+      <h3 class="sub">The life of one command</h3>
+      <div class="grid c4 steps">
+        <article class="card"><h3>Begin</h3><p>The first pixel of the stroke group records whether the paper was blank and opens one active command. A command that began on blank paper captures no patches at all. Undo just blanks its tiles.</p></article>
+        <article class="card"><h3>First touch of a tile</h3><p>On non-blank paper, copy that whole tile once. Then grow the command's <a class="term" href="#g-dirty-rect">dirty rectangle</a> with every op's padded bounds.</p></article>
+        <article class="card"><h3>Commit</h3><p>Crop each tile copy to its dirty rectangle and push the command. Keep at most 20 undoable.</p></article>
+        <article class="card"><h3>Budget</h3><p>If all patches together exceed six papers' worth of bytes, drop the oldest patch. That command stops being undoable and joins the waiting row. The newest two commands always keep their patches.</p></article>
+        <article class="card"><h3>Wait</h3><p>Any touch cancels folding. After 1.5 s without input, one command past the limit may fold. Then wait again.</p></article>
+        <article class="card"><h3>Fold</h3><p>Replay that command through the same renderer into the offscreen pixel base. Discard its vector ops.</p></article>
+        <article class="card"><h3>Undo</h3><p>Pop the newest command. Clear only its patch rectangles and paste the saved pixels back. That is one <a class="term" href="#g-blit">BLIT</a> per tile.</p></article>
+        <article class="card"><h3>Fallback</h3><p>If the tile size changed or another finger is still down, replay history instead so the pixels stay correct.</p></article>
       </div>
 
       <div class="codeblock">
-        <div class="codehead"><span>ordinary tiled undo</span><span>identity-space patch restore</span></div>
+        <div class="codehead"><span>web/src/lib/drawing/tiledRenderer.ts</span><span>ordinary undo, per touched tile</span></div>
         <pre><code>tile.ctx.<span class="fn">save</span>();
-tile.ctx.<span class="fn">setTransform</span>(<span class="num">1</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>, <span class="num">0</span>);
-tile.ctx.<span class="fn">clearRect</span>(patch.x, patch.y, patch.width, patch.height);
-tile.ctx.<span class="fn">drawImage</span>(patch.canvas, patch.x, patch.y); <span class="cm">// the restoring BLIT</span>
+tile.ctx.<span class="fn">setTransform</span>(<span class="r">1</span>, <span class="r">0</span>, <span class="r">0</span>, <span class="r">1</span>, <span class="r">0</span>, <span class="r">0</span>);
+tile.ctx.<span class="fn">clearRect</span>(snapshot.x, snapshot.y, snapshot.canvas.width, snapshot.canvas.height);
+tile.ctx.<span class="fn">drawImage</span>(snapshot.canvas, snapshot.x, snapshot.y); <span class="cm">// the restoring BLIT</span>
 tile.ctx.<span class="fn">restore</span>();</code></pre>
       </div>
 
-      <h3>Clear is one command, but it is spread across frames</h3>
-      <p>Clearing several full tiles and snapshotting them synchronously caused long iPad frames. The current clear hides affected tiles immediately, then captures at most one visible tile per animation frame. Each backing is physically cleared two presented frames later. An immediate Undo either restores completed patches or simply unhides still-preserved backings.</p>
-      <div class="frame-strip" role="img" aria-label="Progressive clear over four frames">
-        <div class="frame"><b>Frame 0 · hide</b><div class="frame-tiles"><i></i><i></i><i></i><i></i></div><small>clear looks instant</small></div>
-        <div class="frame hide"><b>Frame 1 · capture</b><div class="frame-tiles"><i></i><i></i><i></i><i></i></div><small>one tile copied</small></div>
-        <div class="frame capture"><b>Frames 2… · continue</b><div class="frame-tiles"><i></i><i></i><i></i><i></i></div><small>one copy per frame</small></div>
-        <div class="frame clear"><b>After 2 frames · wipe</b><div class="frame-tiles"><i></i><i></i><i></i><i></i></div><small>hidden backings cleared</small></div>
-      </div>
-      <div class="callout"><strong>Why patches, not replay, for ordinary Undo?</strong> Replaying twenty commands across sixteen tiles reached roughly 1.8 seconds on the physical iPad. Cropped dirty patches brought the engine portion of a normal undo to about 0–1 ms while keeping live drawing fast.</div>
+      <div class="callout"><p><strong>Why patches instead of replay?</strong> Replaying twenty commands across all tiles took about 1.8 seconds on the physical iPad. A cropped patch paste takes about 0 to 1 ms. Undo only ever removes the newest command, so a patch is always correct: nothing newer can have changed those pixels.</p></div>
+
+      <h3 class="sub">Clear is one command spread across frames</h3>
+      <p>Clearing many full tiles and copying them all in one go caused long frames. Clear now hides the affected tiles immediately, so it looks instant. Then it copies at most one tile per animation frame for the undo patch, and wipes each hidden tile two frames after its copy. An Undo that arrives mid-way either restores the finished patches or simply unhides the tiles that were never wiped.</p>
     </section>
 
-    <section id="raster">
-      <p class="section-kicker">Deep dive 4</p>
-      <h2>Rasterization, vectors, and what “BLIT” means</h2>
-      <div class="blit-hero">
-        <div><div class="blit-word">BLIT</div><p class="muted">Pronounced like “blit.”</p></div>
-        <div class="blit-def"><strong>A fast rectangle-shaped pixel copy.</strong><p>The name comes from “bit block transfer.” In this Canvas 2D engine, a BLIT is usually a <code>drawImage(sourceCanvas, …)</code> call that copies already-rasterized pixels from one canvas or bitmap into another. It does not re-run curve geometry or brush math.</p></div>
+    <!-- 7 ---------------------------------------------------------------- -->
+    <section id="pixels">
+      <p class="kicker"><span class="r">7</span>Pixels</p>
+      <h2>Vectors, rasters, and what "BLIT" means</h2>
+      <div class="blit">
+        <div class="blit-word" aria-hidden="true">BLIT</div>
+        <div><h3>A fast copy of a rectangle of pixels.</h3><p>The word comes from "bit block transfer". In a Canvas 2D engine it is usually a <code>drawImage(sourceCanvas, …)</code> call that copies pixels that already exist from one canvas into another. No curve math runs. No brush logic runs. It is the cheapest thing a canvas can do, as long as the source is small.</p></div>
+      </div>
+      <div class="pixels-demo" aria-label="A rectangle of pixels copied from a source bitmap to a destination">
+        <div class="pixbox"><b>Source rectangle</b><div class="pixels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="pix-arrow" aria-hidden="true">→</div><div class="pixbox"><b>Destination gets the same pixels</b><div class="pixels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
       </div>
 
-      <div class="pixel-copy" aria-label="Pixel rectangle copied from a source bitmap to a destination bitmap">
-        <div class="pixel-box"><b>Source pixel rectangle</b><div class="pixels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="copy-arrow" aria-hidden="true">→</div><div class="pixel-box"><b>Destination receives the same pixels</b><div class="pixels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="callout warn"><p><strong>"Vector" does not mean "never turned into pixels".</strong> Recent history stores ops such as "a quadratic path, 18 px wide, blue". The moment the renderer paints that op onto a canvas, the browser <a class="term" href="#g-raster">rasterizes</a> it into pixels. Splotch keeps both forms on purpose, at different stages.</p></div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Where pixels appear</th><th>What is rasterized or copied</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td data-label="Where pixels appear">Live tile</td><td data-label="What is rasterized or copied">A dot or path op becomes pixels at once.</td><td data-label="Why">The child must see ink under the finger this frame.</td></tr>
+            <tr><td data-label="Where pixels appear">Undo patch</td><td data-label="What is rasterized or copied">The tile's pixels are copied before the command changes them, then cropped.</td><td data-label="Why">Undo can restore them without replaying history.</td></tr>
+            <tr><td data-label="Where pixels appear">Pixel base</td><td data-label="What is rasterized or copied">An old vector command is replayed into an offscreen tile.</td><td data-label="Why">Keeps the amount of vector history bounded.</td></tr>
+            <tr><td data-label="Where pixels appear">Magic sheet</td><td data-label="What is rasterized or copied">A coloring fill image or a rainbow is rasterized to a paper-sized bitmap, usually in a worker.</td><td data-label="Why">Magic strokes can fill from one stable, non-repeating <a class="term" href="#g-pattern">pattern</a>.</td></tr>
+            <tr><td data-label="Where pixels appear">Export</td><td data-label="What is rasterized or copied">Finished tile bitmaps are BLITed into a full-page canvas in a worker, then encoded as PNG.</td><td data-label="Why">Keeps the big full-page surface off the UI thread.</td></tr>
+          </tbody>
+        </table>
       </div>
 
-      <div class="callout warn"><strong>Vector does not mean “never rasterized.”</strong> Recent history stores semantic operations such as “quadratic path, 18 px wide, blue.” The moment <code>renderOp()</code> paints that operation onto a canvas, the browser rasterizes it into RGBA pixels. Splotch deliberately keeps both forms at different stages.</div>
-
-      <table class="raster-table">
-        <thead><tr><th>Where pixels appear</th><th>What gets rasterized or copied</th><th>Why</th></tr></thead>
-        <tbody>
-          <tr><td>Live tile</td><td>A dot/path operation becomes pixels immediately.</td><td>The child must see ink under the finger.</td></tr>
-          <tr><td>Undo patch</td><td>Pre-command tile pixels are copied, then cropped.</td><td>Undo can restore changed pixels without replaying history.</td></tr>
-          <tr><td>History base</td><td>An old vector command is replayed into offscreen tiled pixels.</td><td>Bound the amount of vector history kept around.</td></tr>
-          <tr><td>Crayon pass</td><td>Texture ops rasterize into two tile-local preview buffers, then two BLITs stamp the pass.</td><td>Mix once per pass and avoid self-compounding.</td></tr>
-          <tr><td>Magic sheet</td><td>A fill image or rainbow is rasterized into a paper-sized bitmap, usually in a worker.</td><td>Magic paths can fill from one stable no-repeat pattern.</td></tr>
-          <tr><td>Export</td><td>Settled tile <code>ImageBitmap</code>s are BLITed into a full paper canvas in a worker, then encoded as PNG.</td><td>Keep the expensive full-page surface off the UI thread.</td></tr>
-        </tbody>
-      </table>
-
-      <h3>Four operation kinds drive the production tiled stream</h3>
-      <div class="algorithm-grid">
-        <article class="algorithm" style="--hue:var(--c-blue)"><h3><code>dot</code></h3><p>A filled circle at contact start, carrying color, radius, and brush flags.</p></article>
-        <article class="algorithm" style="--hue:var(--c-green)"><h3><code>path</code></h3><p>A start point plus midpoint-smoothed quadratic segments, width, pointer id, and brush flags.</p></article>
-        <article class="algorithm" style="--hue:var(--c-orange)"><h3><code>crayonFlush</code></h3><p>Stamp each dirty crayon pass buffer into its normal tile, then hide and clear the preview planes.</p></article>
-        <article class="algorithm" style="--hue:var(--c-red)"><h3><code>clear</code></h3><p>Reset crayon state and clear the target in device space.</p></article>
+      <h3 class="sub">The four op kinds</h3>
+      <div class="grid c4">
+        <article class="card tint" style="--hue:var(--c-blue)"><h3><code>dot</code></h3><p>A filled circle where a finger touched down. Carries color, radius, and brush flags.</p></article>
+        <article class="card tint" style="--hue:var(--c-green)"><h3><code>path</code></h3><p>A start point plus midpoint-smoothed curve segments, a width, the owning pointer id, and brush flags.</p></article>
+        <article class="card tint" style="--hue:var(--c-orange)"><h3><code>crayonFlush</code></h3><p>Marks the end of a crayon pass. What it does depends on the crayon pipeline for that build.</p></article>
+        <article class="card tint" style="--hue:var(--c-red)"><h3><code>clear</code></h3><p>Wipe the target. Because it is an op, a Clear is undoable like any stroke.</p></article>
       </div>
-      <p class="muted">The union also contains <code>crayonPassRaster</code>, but the production tiled renderer records raw crayon ops plus flushes. The raster-op path belongs to the retained legacy <code>/dev/engine</code> renderer and its white-box history coverage.</p>
+      <p class="small muted">Brush flags on a dot or path: <code>erase</code>, <code>magic</code> with its captured sheet, and <code>crayon</code> with its texture seed.</p>
     </section>
 
+    <!-- 8 ---------------------------------------------------------------- -->
     <section id="brushes">
-      <p class="section-kicker">Deep dive 5</p>
-      <h2>One geometry pipeline, four paint personalities</h2>
-      <p class="section-lead">Every brush produces the same dot/path geometry. The flags on the operation decide how <code>renderOp()</code> turns that shape into pixels.</p>
+      <p class="kicker"><span class="r">8</span>Brushes</p>
+      <h2>One geometry pipeline, four paint styles</h2>
+      <p class="lead">Every brush produces the same dot and path ops. The flags on the op decide how the shared renderer turns that shape into pixels. This is what keeps undo, export, and rotation brush-agnostic.</p>
 
-      <div class="brush-grid">
-        <article class="brush" style="--brush:var(--c-blue)"><div class="brush-icon" aria-hidden="true">🖊️</div><h3>Pen</h3><p>Solid color, <code>source-over</code>. It is the simplest route: stroke or fill the shape directly.</p></article>
-        <article class="brush" style="--brush:var(--c-green)"><div class="brush-icon" aria-hidden="true">⌫</div><h3>Eraser</h3><p>Opaque shape with <code>destination-out</code>. Alpha is removed, so paper underneath becomes visible.</p></article>
-        <article class="brush" style="--brush:var(--c-purple)"><div class="brush-icon" aria-hidden="true">🪄</div><h3>Magic</h3><p>Fills the same shape with a no-repeat pattern from a coloring fill or held random rainbow.</p></article>
-        <article class="brush" style="--brush:var(--c-orange)"><div class="brush-icon" aria-hidden="true">🖍️</div><h3>Crayon</h3><p>Two density passes of deterministic paper tooth, accumulated and mixed once per deposition pass.</p></article>
+      <div class="grid c4">
+        <article class="card tint" style="--hue:var(--c-blue)"><div class="glyph hue" aria-hidden="true">🖊️</div><h3>Pen</h3><p>Solid color with <a class="term" href="#g-source-over">source-over</a> <a class="term" href="#g-compositing">compositing</a>. Stroke or fill the shape directly. The simplest route.</p></article>
+        <article class="card tint" style="--hue:var(--c-green)"><div class="glyph hue" aria-hidden="true">⌫</div><h3>Eraser</h3><p>The same shape with <a class="term" href="#g-destination-out">destination-out</a>. It removes alpha instead of adding color, so the paper shows through.</p></article>
+        <article class="card tint" style="--hue:var(--c-purple)"><div class="glyph hue" aria-hidden="true">🪄</div><h3>Magic</h3><p>Fills the shape with a pattern cut from a hidden color sheet: the coloring page's colored version, or a rainbow on blank paper.</p></article>
+        <article class="card tint" style="--hue:var(--c-orange)"><div class="glyph hue" aria-hidden="true">🖍️</div><h3>Crayon</h3><p>Paints a wax texture and mixes it with the color underneath. Its pipeline differs between the web build and the native app, and it has its own page.</p></article>
       </div>
 
-      <h3>Magic brush: paint through an immutable color sheet</h3>
-      <p>A coloring-page fill—or a generated rainbow on blank paper—is contain-fitted into the engine’s paper space. When the platform supports it, a worker fetches, decodes, rasterizes, and transfers an <code>ImageBitmap</code>. Each tile crops its own pattern source so WebKit never samples one giant full-page pattern during live drawing.</p>
-      <p>The first time a Magic operation paints, it captures the current sheet snapshot on that operation. Removing or swapping the coloring page recodes retained Magic ops to the new page’s sheet as one undoable command; a theme change recodes them in place without adding an undo step. An operation created before an asynchronous sheet is ready initially paints nothing; one gated repaint resolves it when the sheet arrives.</p>
+      <h3 class="sub">Magic: paint through a color sheet</h3>
+      <p>The colored version of a coloring page, or a generated rainbow, is fitted into paper space to make a "sheet". Where the platform allows it, a worker fetches, decodes, and rasterizes that sheet and hands back an <a class="term" href="#g-imagebitmap">ImageBitmap</a>. A Magic stroke does not paint a color. It paints a window onto the sheet, so scribbling reveals the picture underneath.</p>
+      <ul class="plain">
+        <li><b>Each tile crops its own pattern.</b> WebKit samples a full-page pattern slowly, so every tile gets a pattern source cut to its own rectangle and offset to line up.</li>
+        <li><b>The first paint captures the sheet.</b> A Magic op remembers which sheet it painted from. Changing pages later does not silently recolor old ink.</li>
+        <li><b>Page changes recode.</b> Applying or removing a coloring page recodes the retained Magic ops to the new sheet as one undoable command. Ink that has already folded into the pixel base is rebuilt from a kept raster baseline plus the folded ops, in draw order.</li>
+        <li><b>Not ready yet means paint nothing.</b> An op created before its sheet arrives paints nothing, and one repaint resolves it when the sheet lands.</li>
+        <li><b>Rainbows are pooled.</b> Ten random gradients are generated up front, each with a random angle, 5 to 8 stops, and a hue sweep that wraps past 360° so every rainbow misses a different color.</li>
+      </ul>
 
-      <div class="crayon-pipeline" role="img" aria-label="Crayon pipeline from fixed noise to a tile pattern, phase shifted pass, preview buffers, and stamped normal ink">
-        <div class="crayon-stage"><div class="tooth" aria-hidden="true"></div><b>Fixed tooth field</b><small>tileable value noise + dither</small></div><div class="crayon-arrow" aria-hidden="true">→</div>
-        <div class="crayon-stage"><b>2 density patterns</b><small>100% width / 45% coverage<br/>68% width / 63% coverage</small></div><div class="crayon-arrow" aria-hidden="true">→</div>
-        <div class="crayon-stage"><b>Seed phase shift</b><small>new pass moves pits to new paper positions</small></div><div class="crayon-arrow" aria-hidden="true">→</div>
-        <div class="crayon-stage"><b>2 preview planes</b><small>bottom darken + top at 45% opacity</small></div><div class="crayon-arrow" aria-hidden="true">→</div>
-        <div class="crayon-stage"><b>2-BLIT stamp</b><small>normal tile receives one subtractive glaze</small></div>
-      </div>
-
-      <h3>Why crayon uses two BLITs</h3>
-      <p>Dozens of path ops overlap inside one gesture. Mixing each op with the paper underneath would compound repeatedly. Instead, the entire deposition pass accumulates at full opacity on preview buffers, then mixes exactly once:</p>
-      <div class="glaze" aria-label="Crayon color mixing example">
-        <div class="color-sample sample-blue">new blue wax<br/><code>S</code></div><div class="operator">over</div><div class="color-sample sample-yellow">yellow underneath<br/><code>D</code></div><div class="operator">→</div><div class="color-sample sample-green">green-dominant crossing<br/><code>out</code></div>
-      </div>
-      <p class="glaze-formula">BLIT 1: darken at α = 1 → min(S, D)<br/>BLIT 2: source-over at α = 1 − m → out = (1 − m)S + m·min(S, D), with m = 0.55</p>
-      <div class="codeblock">
-        <div class="codehead"><span>web/src/lib/drawing/crayonPassBuffer.ts</span><span>the two-BLIT glaze</span></div>
-        <pre><code>target.globalCompositeOperation = <span class="str">'darken'</span>;
-target.globalAlpha = <span class="num">1</span>;
-<span class="fn">blit</span>();
-
-target.globalCompositeOperation = <span class="str">'source-over'</span>;
-target.globalAlpha = <span class="num">1</span> - mix;
-<span class="fn">blit</span>();</code></pre>
-      </div>
-      <div class="callout"><strong>The nice fixed point:</strong> <code>min(c, c) = c</code>. Red crayon over red crayon can fill different tooth pits without progressively darkening the red. Different colors still mix subtractively.</div>
-
-      <h3>Crayon’s other algorithms</h3>
-      <div class="algo-list">
-        <article class="algo-row"><div class="algo-glyph">N</div><div><h3>Tileable value noise</h3><p>Four wrapped octaves build a deterministic 256×256 height field from fixed-seed Mulberry32 random numbers.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">0/1</div><div><h3>Binary alpha + ordered dither</h3><p>Every wax texel is fully opaque or fully clear, keeping repeated overlapping ops pixel-stable during replay.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">↩</div><div><h3>Pass splitting</h3><p>A turn sharper than 100° or re-entry near older ink starts a new seed phase, so back-and-forth scribbles build up without lifting.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">64</div><div><h3>Checkpoint flush</h3><p>A very long pass stamps every 64 path ops so a tile-local preview buffer never accumulates compositor-sized dirty work.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">2ms</div><div><h3>Frame-budgeted warmup</h3><p>New color texture tiles build in row chunks with a two-millisecond frame deadline; synchronous build remains the correctness fallback.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">LRU</div><div><h3>Bounded pattern cache</h3><p>Recently used color/pass canvases stay cached; old custom colors evict so detached canvas memory cannot grow forever.</p></div></article>
-      </div>
+      <div class="callout note"><p><strong>Crayon, in one sentence.</strong> Crayon paints a fixed wax texture through the same ops, and mixes new wax with what is underneath using a darken-then-blend rule. On the web it restamps each op onto the ink tile from an offscreen shadow; in the native app it applies the mix per op directly. Both were chosen by measurement on the physical iPad, and the full story lives on the crayon page.</p></div>
     </section>
 
-    <section id="space">
-      <p class="section-kicker">Deep dive 6</p>
-      <h2>Coordinate spaces, sharpness, and rotation</h2>
-      <p class="section-lead">Operations are never tied to the current phone orientation. They live in “paper space,” a stable pixel coordinate system adopted from the viewport. The screen is just a view onto that paper.</p>
+    <!-- 9 ---------------------------------------------------------------- -->
+    <section id="paper">
+      <p class="kicker"><span class="r">9</span>Paper space</p>
+      <h2>Coordinates, sharpness, rotation, and recovery</h2>
+      <p class="lead">Ops are never tied to the phone's current orientation. They live in <a class="term" href="#g-paper-space">paper space</a>, a fixed pixel coordinate system adopted from the viewport when drawing starts. The screen is a view onto that paper.</p>
 
-      <div class="coord-flow" role="img" aria-label="Coordinate conversion flow from browser client coordinates to paper and tile-local device pixels">
-        <div class="coord"><b>Browser client x/y</b><small>CSS pixels in the viewport</small></div><div class="coord-arrow" aria-hidden="true">→</div>
-        <div class="coord"><b>Screen backing x/y</b><small>cached rect × render scale</small></div><div class="coord-arrow" aria-hidden="true">→</div>
-        <div class="coord"><b>Inverse paper view</b><small>undo CSS contain-fit transform</small></div><div class="coord-arrow" aria-hidden="true">→</div>
-        <div class="coord"><b>Paper coordinates</b><small>stored in every operation</small></div><div class="coord-arrow" aria-hidden="true">→</div>
-        <div class="coord"><b>Tile-local device pixels</b><small>global paper transform − tile origin</small></div>
+      <ol class="pipe" aria-label="Coordinate conversion from browser to tile">
+        <li><b>Browser client x/y</b><small>CSS pixels in the viewport</small></li>
+        <li><b>Backing x/y</b><small>cached rect × render scale</small></li>
+        <li><b>Inverse view</b><small>undo the contain-fit transform</small></li>
+        <li class="hot"><b>Paper x/y</b><small>stored in every op</small></li>
+        <li><b>Tile-local x/y</b><small>paper − tile origin</small></li>
+      </ol>
+
+      <h3 class="sub">The paper locks when it has ink</h3>
+      <p>On a blank canvas, a resize adopts the new viewport size. Once there is ink, a rotation keeps the old paper size. The paper sheet, the line art, and the whole tile wrapper receive one CSS <a class="term" href="#g-contain-fit">contain-fit</a> transform that scales and centers them in the new viewport. Pointer input goes through the inverse of the same matrix. No tile is resized and no ink is replayed. Rotating back reveals the exact original pixels.</p>
+      <div class="rot">
+        <div><div class="device portrait"><div class="sheet"></div></div><div class="device-cap">Paper adopted in portrait</div></div>
+        <div><div class="device landscape"><div class="sheet"></div></div><div class="device-cap">Same pixels, fitted in landscape</div></div>
+      </div>
+      <div class="callout"><p><strong>Why CSS and not canvas resizing?</strong> Resizing every live canvas on rotation produced frames of 56 to 57 ms on the physical iPad. Presenting the existing pixels through one CSS transform brought the worst frame to about 20 to 31 ms.</p></div>
+
+      <h3 class="sub">Two scales</h3>
+      <div class="grid c2">
+        <article class="card"><h3>Live resolution</h3><ul class="plain small muted"><li><code>renderScale = min(devicePixelRatio, 2)</code></li><li>Fixed for the whole engine session.</li><li>Stroke widths start in CSS pixels and scale once.</li><li>A 3× phone draws at 2×. Nobody can see the difference under a finger, and it halves the pixel count.</li></ul></article>
+        <article class="card"><h3>Export resolution</h3><ul class="plain small muted"><li><code>exportScale = max(devicePixelRatio, 2)</code></li><li>A 1× laptop still saves a 2× picture.</li><li>When the two scales match, the saved picture reuses the live tiles.</li><li>When they differ, the vector history is replayed at export scale.</li></ul></article>
       </div>
 
-      <div class="two-col" style="margin-top:35px">
-        <div>
-          <h3>The paper locks when it has ink</h3>
-          <p>On a blank canvas, a resize adopts the new viewport. With ink, a real orientation change keeps the old paper dimensions. The paper sheet, coloring overlay, and entire live tile wrapper receive one CSS contain-fit-and-center matrix. Pointer input runs through the inverse matrix.</p>
-          <p>No tile is resized, no settled ink is replayed, and returning to the original orientation reveals the exact original pixels. In tiled production, contacts that begin in the temporary letterbox margin are ignored because that margin is not paper.</p>
-          <div class="callout"><strong>Why CSS?</strong> Resizing 48 possible live canvases on rotation could produce 56–57 ms physical-iPad frames. Presenting the existing paper-sized pixels with one CSS transform reduced the measured maximum to roughly 20–31 ms.</div>
-        </div>
-        <figure>
-          <div class="rotation-demo">
-            <div><div class="device portrait"><div class="paper-demo"></div></div><div class="device-caption">Paper adopted in portrait</div></div>
-            <div><div class="device landscape"><div class="paper-demo"></div></div><div class="device-caption">Same pixels contain-fit in landscape</div></div>
-          </div>
-        </figure>
-      </div>
+      <h3 class="sub">The engine starts before the page is interactive</h3>
+      <p>The home page is prerendered HTML. As soon as the engine module loads, it finds the existing input canvas and starts listening for pointers. Later, when Svelte <a class="term" href="#g-hydration">hydrates</a>, the drawing component adopts the running engine and wires up its callbacks. Without this, the canvas looked ready for several hundred milliseconds while it could not draw.</p>
 
-      <div class="compare">
-        <article class="compare-panel"><h3>Live resolution</h3><ul><li><code>renderScale = min(devicePixelRatio, 2)</code></li><li>Fixed for the engine session.</li><li>Stroke widths begin as CSS pixels, then scale once.</li><li>Tiling preserves this resolution.</li></ul></article>
-        <article class="compare-panel"><h3>Export resolution</h3><ul><li><code>exportScale = max(devicePixelRatio, 2)</code></li><li>Independent from the live scale cap.</li><li>Matched 2× exports reuse settled live tiles.</li><li>Mismatched scales replay vectors at export scale.</li></ul></article>
-      </div>
-
-      <h3>The engine boots before Svelte hydration</h3>
-      <p>The home page is prerendered. As soon as the engine module evaluates, it finds the existing <code>#drawingCanvas</code> and initializes pointer handling. Later, <code>DrawingCanvas.svelte</code> adopts that running singleton, attaches callbacks, and pushes reactive color/tool state. This avoids a several-hundred-millisecond “canvas looks ready but cannot draw yet” window.</p>
+      <h3 class="sub">When the browser throws the pixels away</h3>
+      <p>A backgrounded tab or app can lose its canvas contents and drawing state. This is <a class="term" href="#g-context-loss">context loss</a>. An Android phone came back from the background with a blank paper where new ink appeared only as small clipped fragments, because each tile's transform had reset to identity while the app kept running. The engine now listens for the browser's loss and restore events on every surface, and on every resume it also probes each context for its expected round line caps and tile transform, since some resets are silent. Recovery rebinds all contexts, reapplies their state, and repaints from the pixel base plus the vector tail.</p>
     </section>
 
-    <section id="export">
-      <p class="section-kicker">Deep dive 7</p>
-      <h2>Saving without freezing the drawing thread</h2>
-      <p class="section-lead">The shareable PNG contains the resolved theme’s paper color, repeated paper texture, strokes, and transparent coloring-page line art. The full page is assembled in a worker whenever the settled tiled fast path is available.</p>
+    <!-- 10 --------------------------------------------------------------- -->
+    <section id="save">
+      <p class="kicker"><span class="r">10</span>Save</p>
+      <h2>Saving without freezing the drawing</h2>
+      <p class="lead">The saved PNG contains the paper color, the paper texture, the ink, and the coloring-page line art. Assembling a full-size page and encoding it is slow, so the whole job runs on a worker whenever the browser supports the pieces.</p>
 
-      <div class="export-flow" role="img" aria-label="PNG export flow from synchronous stroke snapshot to image bitmaps, worker composition, and PNG blob">
-        <div class="export-node"><b>Synchronous snapshot</b><small>before any await</small></div><div class="export-arrow" aria-hidden="true">→</div>
-        <div class="export-node"><b>Visible tile bitmaps</b><small>only settled occupied tiles</small></div><div class="export-arrow" aria-hidden="true">→</div>
-        <div class="export-node worker"><b>Worker full page</b><small>OffscreenCanvas</small></div><div class="export-arrow" aria-hidden="true">→</div>
-        <div class="export-node"><b>Composition</b><small>paper → texture → tiles → line art</small></div><div class="export-arrow" aria-hidden="true">→</div>
-        <div class="export-node worker"><b>PNG encode</b><small>lossless Blob</small></div>
-      </div>
+      <ol class="pipe" aria-label="PNG export flow">
+        <li><b>Snapshot</b><small>synchronous, before any await</small></li>
+        <li><b>Tile bitmaps</b><small>only visible, settled tiles</small></li>
+        <li class="worker"><b>Worker composes</b><small>OffscreenCanvas at export scale</small></li>
+        <li><b>Stack</b><small>paper → texture → tiles → line art</small></li>
+        <li class="worker"><b>PNG encode</b><small>15 s timeout, one retry on context loss</small></li>
+      </ol>
 
       <div class="codeblock">
-        <div class="codehead"><span>web/src/lib/drawing/engine.ts</span><span>ordering is a correctness rule</span></div>
-        <pre><code><span class="kw">export async function</span> <span class="fn">exportCanvasBlob</span>(...) {
-  <span class="kw">const</span> scale = <span class="fn">currentExportScale</span>();
+        <div class="codehead"><span>web/src/lib/drawing/engine.ts</span><span>the order is a correctness rule</span></div>
+        <pre><code><span class="kw">const</span> scale = <span class="fn">currentExportScale</span>();
 
-  <span class="cm">// Must happen before loading the save-time module.</span>
-  <span class="kw">const</span> snapshot = <span class="fn">snapshotStrokes</span>(scale);
+<span class="cm">// Must happen before loading the export module.</span>
+<span class="kw">const</span> snapshots = <span class="fn">snapshotStrokes</span>(scale, capturePreview);
 
-  <span class="kw">const</span> { composeExportPng } = <span class="kw">await import</span>(<span class="str">'./exportDrawing'</span>);
-  <span class="kw">return</span> <span class="fn">composeExportPng</span>(snapshot, scale, overlayImage, options);
-}</code></pre>
+<span class="kw">const</span> { composeExportPng } = <span class="kw">await import</span>(<span class="str">'./exportDrawing'</span>);
+<span class="kw">return</span> <span class="fn">composeExportPng</span>(snapshots.export, scale, overlaySource, options);</code></pre>
       </div>
-      <p>That snapshot-before-<code>await</code> ordering protects save-on-delete: a caller can start an export and immediately clear the live engine without blanking the saved image. The export module and texture are warmed at idle but remain out of the startup preload graph.</p>
+      <p>Taking the snapshot before the first <code>await</code> is what makes save-on-delete safe. The Clear button starts an export and wipes the paper in the same tap. Because the snapshot is already taken, the saved picture is complete even though the live tiles are empty by the time the worker runs.</p>
 
-      <div class="compare">
-        <article class="compare-panel"><h3>Fast path</h3><ul><li>No active pointers.</li><li>Live and export scales match.</li><li><code>createImageBitmap</code>, Worker, and OffscreenCanvas exist.</li><li>Only the worker owns a full-page canvas.</li></ul></article>
-        <article class="compare-panel"><h3>Compatibility path</h3><ul><li>Active stroke, scale mismatch, or missing APIs.</li><li>Replay raster base + retained commands into an export surface.</li><li>Worker encoding when possible; main-thread encoding fallback.</li><li>Same shared compositor rules.</li></ul></article>
+      <div class="grid c2">
+        <article class="card"><h3>Fast path</h3><ul class="plain small muted"><li>No finger is down.</li><li>Live scale equals export scale, which in practice means a 2× or higher display.</li><li><code>createImageBitmap</code>, <code>Worker</code>, and <code>OffscreenCanvas</code> exist.</li><li>Only the worker ever owns a full-page canvas.</li></ul></article>
+        <article class="card"><h3>Compatibility path</h3><ul class="plain small muted"><li>A stroke is in progress, the scales differ, or an API is missing.</li><li>Replay the pixel base and the vector tail into an export surface.</li><li>Encode in the worker when possible, else on the main thread.</li><li>Same compositor rules, so the result looks the same.</li></ul></article>
+      </div>
+
+      <div class="grid c3">
+        <article class="card"><h3>Preview thumbnail</h3><p>The polaroid animation needs a small image fast. It is downscaled from the worker's own composition rather than decoded from the finished PNG. That won a device race: 24 ms against 49 ms.</p></article>
+        <article class="card"><h3>Cooldown</h3><p>Mobile Safari needs time to reclaim full-page surfaces. The camera button waits 4 seconds between saves.</p></article>
+        <article class="card"><h3>Save to a folder</h3><p>On desktop Chromium a chosen folder handle is stored in IndexedDB, the only storage that can hold it. A one-bit flag in localStorage says whether a folder exists, so the common case never loads that code.</p></article>
       </div>
     </section>
 
-    <section id="ledger">
-      <p class="section-kicker">Receipts, not vibes</p>
-      <h2>The hard-won numbers</h2>
-      <p class="lede">Almost everything above exists because a physical iPad said the previous design was too slow. The tiled paper, the patch undo, the worker exports — each landed with before/after captures from the real device under trusted synthetic touch, and each rejected alternative died by measurement, not by opinion.</p>
+    <!-- 11 --------------------------------------------------------------- -->
+    <section id="numbers">
+      <p class="kicker"><span class="r">11</span>The numbers</p>
+      <h2>What the measurements said</h2>
+      <p class="lede">Almost everything above exists because a physical iPad said the previous design was too slow. Each change landed with before-and-after captures on the real device, driven by trusted synthetic touch and scored from a recording of the screen itself. Emulators and headless browsers passed while the real screen froze.</p>
 
       <div class="numbers">
-        <div class="number"><b>480 → 16 ms</b><span>drawing paint P95 on a physical iPad; the worst frame fell from 696 to 32 ms</span></div>
-        <div class="number"><b>417 → 0 ms</b><span>render starvation per drawing second — the “dead screen while scribbling” metric</span></div>
-        <div class="number"><b>1,780 → 10 ms</b><span>undo tap to next presented frame, P95</span></div>
-        <div class="number"><b>~1,000 → 33 ms</b><span>night-mode theme switch while a full drawing is on screen</span></div>
-        <div class="number"><b>401 → 25 ms</b><span>worst main-thread block while saving a screenshot</span></div>
-        <div class="number"><b>141 → 28 ms</b><span>worst Magic-brush stroke frame after the audio-resume and blank-patch fixes</span></div>
+        <div class="number"><b>480 → 16 ms</b><span>drawing paint time, 95th percentile, on the physical iPad. The worst frame fell from 696 to 32 ms.</span></div>
+        <div class="number"><b>417 → 0 ms</b><span>per second of drawing during which the screen showed nothing new. The "dead screen while scribbling" number.</span></div>
+        <div class="number"><b>1,780 → 10 ms</b><span>from an Undo tap to the next presented frame, 95th percentile.</span></div>
+        <div class="number"><b>~1,000 → 33 ms</b><span>night-mode theme switch with a full drawing on screen.</span></div>
+        <div class="number"><b>401 → 25 ms</b><span>worst main-thread block while saving a picture.</span></div>
+        <div class="number"><b>141 → 28 ms</b><span>worst Magic-brush frame after the audio and blank-patch fixes.</span></div>
       </div>
 
-      <h3>Learned the hard way: platform facts you cannot see from a laptop</h3>
-      <div class="algo-list">
-        <article class="algo-row"><div class="algo-glyph">2.3M</div><div><h3>The canvas flush cliff</h3><p>On the target iPad, mutating one large canvas starved rendering; the surface-size cliff was bounded between roughly 1.6 and 2.3 megapixels per surface for that device and workload — an observed bound, not a universal WebKit constant. Sixteen tiles sit well below it. Thirty-two lost separately, to over-tiling costs: more canvases, more target visits, more seams.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">163</div><div><h3><code>toBlob</code> blocks WebKit</h3><p>The spec says encode “in parallel”; WebKit encodes 163–206 ms on the main thread. Deferring those encodes cut a 2,390 ms stroke-end freeze to 1 ms — the experiment that convinced today’s tiled undo to never encode at all: over budget, it evicts the oldest patches instead.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">60</div><div><h3>Safari’s hidden Hz cap</h3><p><code>requestAnimationFrame</code> runs at 60 Hz on a 120 Hz ProMotion iPad, so the real frame budget is 16.7 ms, not 8.3 — discovered only by scoring a capture of the actual screen.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">GPU</div><div><h3>The <code>desynchronized</code> trap</h3><p>The low-latency canvas hint passed every headless gate at 59.5 FPS — then rendered the canvas opaque black on a real Android WebView, because a hardware overlay plane does not alpha-composite with the DOM stacked beneath it.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">200×</div><div><h3>Never read a big canvas per op</h3><p><code>drawImage</code> <em>from</em> a large freshly painted canvas forces a full source-surface snapshot — measured at ~200× the cost of a pattern fill under software rendering. Composite small layers onto big surfaces, never the reverse.</p></div></article>
+      <h3 class="sub">Platform facts you cannot see from a laptop</h3>
+      <div class="grid c2">
+        <article class="card"><div class="glyph">2.3M</div><h3>The canvas flush cliff</h3><p>On the target iPad, changing one large canvas starved the display. The cliff sat between roughly 1.6 and 2.3 megapixels per surface for that device. That is an observed bound, not a WebKit constant. Twenty tiles sit well below it.</p></article>
+        <article class="card"><div class="glyph">163</div><h3><code>toBlob</code> blocks WebKit</h3><p>The spec says PNG encoding runs in parallel. WebKit spent 163 to 206 ms on the main thread. Moving encodes off the thread cut a 2,390 ms stroke-end freeze to 1 ms, and is why undo never encodes anything: over budget, it drops old patches instead.</p></article>
+        <article class="card"><div class="glyph">60</div><h3>Safari's hidden refresh cap</h3><p><code>requestAnimationFrame</code> runs at 60 Hz on a 120 Hz iPad. The real budget is 16.7 ms per frame, not 8.3. This was only visible by scoring a capture of the actual screen.</p></article>
+        <article class="card"><div class="glyph">GPU</div><h3>The <code>desynchronized</code> trap</h3><p>The low-latency canvas hint passed every headless gate, then rendered the canvas solid black on a real Android WebView. A hardware overlay plane does not blend with the DOM underneath it.</p></article>
+        <article class="card"><div class="glyph">200×</div><h3>Never read a big canvas per op</h3><p><code>drawImage</code> <em>from</em> a large freshly painted canvas forces a full copy of that surface. Measured at about 200 times the cost of a pattern fill. Composite small layers onto big ones, never the reverse.</p></article>
+        <article class="card"><div class="glyph">97%</div><h3>Reading a composited canvas per op freezes the page</h3><p>One crayon experiment read the on-screen tile after every op. It lost 97% of frames, because each read forces the GPU pipeline to drain. Reads happen at most once per pass, off the input path.</p></article>
       </div>
 
-      <h3>The graveyard: working code, killed by a number</h3>
-      <div class="fact-list">
-        <div class="fact"><div class="fact-mark">†</div><div><b>Command-replay undo</b><p>Beautiful in June: kilobytes of history, 0.1 ms undos. Dead in July: the first textured brush broke the bit-identical-replay contract, and crayon commits hitched 1,171–2,222 ms. Byte-exact snapshots won; only the byte budget survived.</p></div></div>
-        <div class="fact"><div class="fact-mark">†</div><div><b>Web-font preload</b><p>Mechanically worked — font fetch 1,950 → 911 ms — and still lost: it consistently cost ~140 ms of LCP on a route that paints no text, by stealing bandwidth from the paper texture.</p></div></div>
-        <div class="fact"><div class="fact-mark">†</div><div><b>Baked paper-grain tiles</b><p>A finished, green implementation measured 0.49 → 0.50 ms (light) and 0.58 → 0.53 ms (dark) — a null result with a sign disagreement. ~350 working lines closed unmerged, with a post-mortem of how the original sweep fooled itself.</p></div></div>
-        <div class="fact"><div class="fact-mark">†</div><div><b>Per-stroke crayon isolation</b><p>Prototyped so a textured stroke could composite once and stay bit-identical while command-replay undo simplified and re-chunked its operations — which would have permitted soft fractional-alpha tooth: ~6× worse draw and ~100× worse undo. Rejected in the same PR that measured it.</p></div></div>
-        <div class="fact"><div class="fact-mark">†</div><div><b>Blob-resize save preview</b><p>Three candidates raced on device for the polaroid thumbnail: decode-and-resize the finished PNG lost at 49 ms; downscaling the export worker’s own composition won at 24 ms.</p></div></div>
+      <h3 class="sub">Working code, retired by a number</h3>
+      <div class="grid c2">
+        <article class="card"><h3>Replay-based undo</h3><p>Small and fast in June: kilobytes of history, 0.1 ms undos. Retired in July: the first textured brush broke the "replay gives identical pixels" contract, and crayon commits stalled for 1.2 to 2.2 seconds. Pixel patches won. Only the byte budget survived.</p></article>
+        <article class="card"><h3>Web-font preload</h3><p>It worked: font fetch fell from 1,950 to 911 ms. It still lost, because it cost about 140 ms of first paint on a route that draws no text, by taking bandwidth from the paper texture.</p></article>
+        <article class="card"><h3>Pre-baked paper texture tiles</h3><p>A finished, green implementation measured 0.49 → 0.50 ms in light mode and 0.58 → 0.53 ms in dark mode. A null result that disagreed with itself. About 350 lines closed unmerged.</p></article>
+        <article class="card"><h3>Crayon on WebGL</h3><p>A GPU renderer for the wax texture was built and measured. Its cost tracked the size of the render target, not the amount drawn, so it carried the same large-surface problem the tiles were built to avoid. Recorded as a dead end rather than shipped.</p></article>
+        <article class="card"><h3>Isolated crayon strokes</h3><p>Compositing each textured stroke once would have allowed soft, partial-alpha wax. It measured about 6× worse to draw and 100× worse to undo. Rejected in the same pull request that measured it.</p></article>
+        <article class="card"><h3>Fully subtractive crayon</h3><p>Pure "darken" mixing is free to paint per op, because applying it twice changes nothing. A human drew with it and rejected it at once: blue over yellow stays green forever, and the crayon feels like it refuses to work.</p></article>
       </div>
 
-      <div class="callout"><strong>The method is the moral:</strong> no emulator or headless gate reproduced the iPad stall — synthetic gates passed while the real screen visibly froze. Every fix on this page was a single-variable trial on the physical device (forty-four for the tile grid alone, each backed out before the next), driven by trusted XCUITest touch at 100–170 moves per second and scored from a capture of the screen itself.</div>
+      <div class="callout"><p><strong>The method is the moral.</strong> Every fix on this page was a single-variable trial on the physical device, each backed out before the next. The tile grid alone took forty-four such trials. Input came from trusted automation at 100 to 170 moves per second, and results were scored from a screen recording, never from what JavaScript reported about itself.</p></div>
     </section>
 
-    <section id="algorithms">
-      <p class="section-kicker">What else is hiding in here?</p>
-      <h2>The supporting algorithms worth knowing</h2>
-      <div class="algo-list">
-        <article class="algo-row"><div class="algo-glyph">AABB</div><div><h3>Conservative bounds</h3><p>Control-point hull + half stroke width + 2 px AA bleed drives tile culling, crayon dirty bounds, and undo patch crops.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">¼</div><div><h3>Downscaled empty scan</h3><p>Each tile is copied to a 0.25× CPU scratch canvas and alpha-scanned there, avoiding readback flags on GPU drawing surfaces.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">fit</div><div><h3>Contain-fit transform</h3><p><code>min(boxW/paperW, boxH/paperH)</code>, then center. The same matrix presents paper and inversely maps input.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">rAF</div><div><h3>Progressive scheduling</h3><p>Clear capture, hidden tile migration, and crayon warming split work across animation frames so no one flush monopolizes a frame.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">LIFO</div><div><h3>Patch correctness</h3><p>Undo only restores the newest command. Last-in-first-out ordering guarantees untouched pixels already match the command’s pre-state.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">W</div><div><h3>Worker ownership</h3><p>Magic-sheet rasterization and full-page PNG composition transfer bitmaps across threads instead of allocating giant UI-thread surfaces.</p></div></article>
-        <article class="algo-row"><div class="algo-glyph">1×</div><div><h3>Single-replay recovery</h3><p>A lost worker canvas context gets exactly one full replay from inputs retained in the worker — restored state is never trusted — then a stable failure code retires it.</p></div></article>
-      </div>
-      <div class="callout warn"><strong>Not currently Ramer–Douglas–Peucker.</strong> Older ADRs describe a replay-era stroke simplifier, but that architecture was superseded. The production tiled tail retains operations at their emitted render granularity; exact geometry also keeps crayon flush ordering and binary texture stable.</div>
-    </section>
-
+    <!-- 12 --------------------------------------------------------------- -->
     <section id="glossary">
-      <p class="section-kicker">Keep beside the code</p>
-      <h2>Jargon decoder</h2>
+      <p class="kicker"><span class="r">12</span>Glossary</p>
+      <h2>The words, explained</h2>
+      <p class="lead">Each entry says what the thing is, why it matters here, and where it shows up in Splotch. Written in plain technical English.</p>
       <dl class="glossary">
-        <div class="term"><dt>Anti-aliasing (AA)</dt><dd>Partly transparent edge pixels that make a curve look smooth instead of stair-stepped.</dd></div>
-        <div class="term"><dt>Backing store</dt><dd>The real bitmap dimensions of a canvas, distinct from its CSS width and height on screen.</dd></div>
-        <div class="term"><dt>BLIT</dt><dd>A rectangular copy of already-rasterized pixels, usually implemented here with <code>drawImage</code>.</dd></div>
-        <div class="term"><dt>Command</dt><dd>One undoable group of operations—normally every finger whose contact overlaps in time.</dd></div>
-        <div class="term"><dt>Compositing</dt><dd>The rule for combining new pixels with old ones: source-over, destination-out, darken, and alpha.</dd></div>
-        <div class="term"><dt>Culling</dt><dd>Skipping tiles whose bounds cannot intersect an operation.</dd></div>
-        <div class="term"><dt>Dirty rectangle</dt><dd>The smallest conservative pixel box a command may have changed.</dd></div>
-        <div class="term"><dt>DPR</dt><dd>Device pixel ratio: how many physical display pixels correspond to one CSS pixel.</dd></div>
-        <div class="term"><dt>Fold / compact</dt><dd>Rasterize an old, non-undoable vector command into the tiled history base.</dd></div>
-        <div class="term"><dt>ImageBitmap</dt><dd>A transferable decoded bitmap used to hand tile or Magic-sheet pixels to a worker efficiently.</dd></div>
-        <div class="term"><dt>Operation (op)</dt><dd>A render instruction such as dot, quadratic path, crayon flush, or clear.</dd></div>
-        <div class="term"><dt>Paper space</dt><dd>The stable coordinate system in which operations, Magic sheets, and history live.</dd></div>
-        <div class="term"><dt>Patch</dt><dd>A cropped pre-command pixel snapshot used to reverse the newest command.</dd></div>
-        <div class="term"><dt>Raster</dt><dd>A grid of RGBA pixels. Canvas backing stores, patches, history bases, and PNGs are rasters.</dd></div>
-        <div class="term"><dt>Source-over</dt><dd>Normal painting: place the source over the destination using source alpha.</dd></div>
-        <div class="term"><dt>Destination-out</dt><dd>Eraser compositing: source alpha removes destination alpha.</dd></div>
-        <div class="term"><dt>Tile</dt><dd>One cell in the 4×4 live or history surface grid.</dd></div>
-        <div class="term"><dt>Vector</dt><dd>Semantic geometry and paint data that can be rendered again at a chosen scale.</dd></div>
+        <div class="gterm" id="g-aa"><dt>Anti-aliasing</dt><dd>The browser makes the edge of a curve look smooth by painting partly transparent pixels along it. Those edge pixels reach slightly outside the exact shape. Splotch adds 2 px to every bounding box so culling and undo patches include them.</dd></div>
+        <div class="gterm" id="g-raf"><dt>Animation frame</dt><dd>The browser presents a new image to the screen at a steady rate, usually 60 times a second. <code>requestAnimationFrame</code> runs your code once before each frame. Splotch drains queued samples, captures clear patches, and warms caches one step per frame so no single frame does too much.</dd></div>
+        <div class="gterm" id="g-backing"><dt>Backing store</dt><dd>The real bitmap behind a canvas, measured in device pixels. It can be a different size from the canvas's CSS size on screen. Splotch's input canvas has a 1 × 1 backing store but a full-size CSS box.</dd></div>
+        <div class="gterm" id="g-blit"><dt>BLIT</dt><dd>Short for "bit block transfer". A copy of a rectangle of existing pixels from one bitmap to another, with no drawing math. In Canvas 2D it is a <code>drawImage</code> call with a canvas or bitmap as the source. Splotch uses BLITs for undo, folding, and export.</dd></div>
+        <div class="gterm" id="g-canvas"><dt>Canvas</dt><dd>An HTML element that holds a bitmap you can draw on with JavaScript. The "2D context" is the drawing API: paths, fills, strokes, transforms, and compositing rules. Splotch uses about sixty on-screen canvases and twenty offscreen ones.</dd></div>
+        <div class="gterm" id="g-coalesced"><dt>Coalesced events</dt><dd>Touch hardware samples position more often than the browser fires <code>pointermove</code>. The skipped samples are attached to the event and available through <code>getCoalescedEvents()</code>. Reading them keeps fast scribbles curved instead of turning them into long straight chords.</dd></div>
+        <div class="gterm" id="g-command"><dt>Command</dt><dd>One undoable unit. In Splotch it is every finger that was down at the same time, from the first touch to the last lift. A Clear is also one command.</dd></div>
+        <div class="gterm" id="g-compositing"><dt>Compositing</dt><dd>The rule for combining new pixels with the pixels already there. The rule is set by <code>globalCompositeOperation</code>. Splotch uses source-over for pen and Magic, destination-out for the eraser, and darken for crayon mixing.</dd></div>
+        <div class="gterm" id="g-contain-fit"><dt>Contain-fit</dt><dd>Scale something by <code>min(boxWidth / paperWidth, boxHeight / paperHeight)</code> so all of it fits inside a box, then center it. The same matrix presents the paper after rotation and maps pointer input back onto it.</dd></div>
+        <div class="gterm" id="g-context-loss"><dt>Context loss</dt><dd>The operating system can take a canvas's graphics memory away, usually when the app is in the background. The pixels and the drawing state are gone when it comes back. Splotch listens for the browser's loss and restore events, probes for silent resets on resume, and repaints from history.</dd></div>
+        <div class="gterm" id="g-culling"><dt>Culling</dt><dd>Skipping work that cannot affect the result. Here it means skipping every tile whose rectangle does not touch an op's padded bounding box. A short stroke usually touches one or two tiles out of twenty.</dd></div>
+        <div class="gterm" id="g-destination-out"><dt>Destination-out</dt><dd>A compositing rule where the new shape removes alpha from what is already there instead of adding color. It is how the eraser works: the paper shows through the hole.</dd></div>
+        <div class="gterm" id="g-dpr"><dt>Device pixel ratio</dt><dd>How many physical screen pixels make up one CSS pixel. A phone with a ratio of 3 has three hardware pixels per CSS pixel in each direction. Splotch draws at no more than 2 and saves at no less than 2.</dd></div>
+        <div class="gterm" id="g-dirty-rect"><dt>Dirty rectangle</dt><dd>The smallest box that safely contains every pixel a command may have changed. Splotch grows it as ops arrive and uses it to crop undo patches. It is conservative: a little too big is fine, too small is a bug.</dd></div>
+        <div class="gterm" id="g-fold"><dt>Fold</dt><dd>Take an old vector command, paint it into the offscreen pixel base, and delete its vector form. This bounds how much history is kept. Folding only runs after 1.5 s of no input, one command at a time.</dd></div>
+        <div class="gterm" id="g-frame"><dt>Frame and frame budget</dt><dd>One image presented to the screen. At 60 Hz there are 16.7 ms between frames, and all input handling, drawing, and browser work for that frame must fit inside it. A frame that misses is a "lost frame" and shows up as a stutter.</dd></div>
+        <div class="gterm" id="g-hydration"><dt>Hydration</dt><dd>When a prerendered HTML page becomes interactive because the JavaScript framework attaches to it. It can take a few hundred milliseconds. Splotch starts the engine before hydration so the first touch is never lost.</dd></div>
+        <div class="gterm" id="g-imagebitmap"><dt>ImageBitmap</dt><dd>A decoded picture that can be handed to another thread without copying. Splotch transfers tile bitmaps to the export worker and Magic sheets back from the sheet worker this way.</dd></div>
+        <div class="gterm" id="g-main-thread"><dt>Main thread</dt><dd>The single thread that runs page JavaScript, handles input, and lays out the page. Anything slow on it delays the next frame. Splotch moves PNG encoding and sheet rasterization to workers to keep it free.</dd></div>
+        <div class="gterm" id="g-offscreen"><dt>OffscreenCanvas</dt><dd>A canvas that is not in the page and can live on a worker. The export worker builds the full-page picture on one so the main thread never owns a tablet-sized surface.</dd></div>
+        <div class="gterm" id="g-op"><dt>Op (operation)</dt><dd>One drawing instruction. Splotch has four kinds: dot, path, crayonFlush, and clear. A path op holds a start point, a list of curve segments, a width, and brush flags. Ops are what history stores and what the renderer paints.</dd></div>
+        <div class="gterm" id="g-paper-space"><dt>Paper space</dt><dd>The fixed coordinate system the drawing lives in, in device pixels of the paper as it was adopted. Ops, tiles, patches, and Magic sheets all use it. Rotation changes how paper space is shown, never what is in it.</dd></div>
+        <div class="gterm" id="g-patch"><dt>Patch</dt><dd>A cropped copy of a tile's pixels from just before a command changed them. Undo pastes the patch back. Patches are cheap to restore but cost memory, so a byte budget drops the oldest ones.</dd></div>
+        <div class="gterm" id="g-pattern"><dt>Pattern</dt><dd>A canvas fill made from an image instead of a color. Magic strokes use a pattern cut from the color sheet, aligned so the picture appears in place. Crayon uses patterns of wax texture.</dd></div>
+        <div class="gterm" id="g-pixel-base"><dt>Pixel base</dt><dd>Twenty offscreen tiles that hold every command too old to undo, as plain pixels. It is the bottom layer of history. Live tiles show the base plus the vector tail plus whatever is being drawn.</dd></div>
+        <div class="gterm" id="g-pointer-capture"><dt>Pointer capture</dt><dd>Telling the browser to keep sending a pointer's events to one element even when the pointer moves over something else. Without it, dragging across a button would end the stroke.</dd></div>
+        <div class="gterm" id="g-pointer-event"><dt>Pointer event</dt><dd>The browser's single event type for mouse, touch, and pen. Each contact has a pointer id, and the events are <code>pointerdown</code>, <code>pointermove</code>, and <code>pointerup</code>. Splotch handles all input through them.</dd></div>
+        <div class="gterm" id="g-p95"><dt>P95</dt><dd>The 95th percentile. If paint time P95 is 16 ms, then 95 out of 100 frames painted in 16 ms or less. It describes the typical bad case rather than the average, which hides stutter.</dd></div>
+        <div class="gterm" id="g-quadratic"><dt>Quadratic curve</dt><dd>A curve defined by a start point, one control point, and an end point. The line bends toward the control point without passing through it. Splotch draws one per input sample, from midpoint to midpoint, with the raw sample as the control point.</dd></div>
+        <div class="gterm" id="g-raster"><dt>Raster, rasterize</dt><dd>A raster is a grid of colored pixels. To rasterize is to turn a shape description into that grid. Canvas backing stores, patches, the pixel base, and PNG files are all rasters.</dd></div>
+        <div class="gterm" id="g-source-over"><dt>Source-over</dt><dd>The default compositing rule: put the new pixels on top, using their transparency to blend with what is there. Pen and Magic use it.</dd></div>
+        <div class="gterm" id="g-tile"><dt>Tile</dt><dd>One cell of the 4 × 5 grid that covers the paper. Each tile is its own canvas with its own backing store. Twenty live tiles are in the page; twenty base tiles are offscreen.</dd></div>
+        <div class="gterm" id="g-transform"><dt>Transform</dt><dd>A small matrix that moves, scales, or rotates coordinates before drawing. Each tile's context carries a transform that subtracts the tile's origin, so an op in paper coordinates lands in the right spot on that tile.</dd></div>
+        <div class="gterm" id="g-vector"><dt>Vector</dt><dd>A drawing stored as shapes and instructions rather than pixels. It can be redrawn at any size. Splotch's recent history is vector so it can be replayed for export at a different scale or after a recovery.</dd></div>
+        <div class="gterm" id="g-worker"><dt>Worker</dt><dd>A separate JavaScript thread with no access to the page. It cannot block input or frames. Splotch uses one to rasterize Magic sheets and one to compose and encode PNGs.</dd></div>
       </dl>
 
-      <h3 style="margin-top:42px">Where to read the production implementation</h3>
-      <table class="source-table">
-        <thead><tr><th>File</th><th>Owns</th></tr></thead>
-        <tbody>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/engine.ts">engine.ts</a></td><td>Public facade, paper coordinates, pointer map, multi-finger command boundaries, tool projection, and synchronous export snapshot.</td></tr>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/tiledRenderer.ts">tiledRenderer.ts</a></td><td>Production live rendering, vector tail, patch undo, idle folding, clear choreography, and tile snapshots.</td></tr>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/tiledSurfaces.ts">tiledSurfaces.ts</a></td><td>Live canvases, lazy crayon planes, hidden backing lifecycle, and offscreen raster-base tiles.</td></tr>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/strokeOps.ts">strokeOps.ts</a></td><td>The operation vocabulary and the shared <code>renderOp()</code> dispatcher.</td></tr>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/tiledUndoPatches.ts">tiledUndoPatches.ts</a></td><td>Full-tile pre-state capture, dirty-bound union, crop, byte accounting, and patch lookup.</td></tr>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/crayonBrush.ts">crayonBrush.ts</a> + <a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/crayonPassBuffer.ts">crayonPassBuffer.ts</a></td><td>Tooth generation, patterns, pass splitting, buffer accumulation, and the two-BLIT glaze.</td></tr>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/magicBrush.ts">magicBrush.ts</a></td><td>Color/rainbow sheet lifecycle, worker rasterization, immutable snapshots, and tile-local patterns.</td></tr>
-          <tr><td><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/components/DrawingCanvas.svelte">DrawingCanvas.svelte</a></td><td>The DOM layer stack, 48 possible tile canvases, CSS paper presentation, and Svelte callback bridge.</td></tr>
-        </tbody>
-      </table>
-      <div class="callout warn"><strong>Important fork in the codebase:</strong> <code>undoHistory.ts</code> and the <code>/dev/engine</code> white-box harness retain the older snapshot-paper renderer. They are useful historical coverage, but they do not describe production undo or production tile topology.</div>
+      <h3 class="sub">Where to read the code</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Owns</th></tr></thead>
+          <tbody>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/engine.ts">engine.ts</a></td><td data-label="Owns">Public entry point, paper coordinates, the pointer map, multi-finger command boundaries, tool state, and the synchronous export snapshot.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/strokeRasterQueue.ts">strokeRasterQueue.ts</a></td><td data-label="Owns">Queues pointer samples and rasterizes them as one op per frame.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/tiledRenderer.ts">tiledRenderer.ts</a></td><td data-label="Owns">Live rendering, the vector tail, patch undo, idle folding, progressive clear, and context recovery.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/liveTiles.ts">liveTiles.ts</a></td><td data-label="Owns">The 4 × 5 grid constants, imported by the renderer and the markup so they cannot disagree.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/tiledSurfaces.ts">tiledSurfaces.ts</a></td><td data-label="Owns">Live canvases, hidden-tile lifecycle, and the offscreen pixel-base tiles.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/strokeOps.ts">strokeOps.ts</a></td><td data-label="Owns">The op vocabulary and the shared renderer that paints an op onto any context.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/tiledUndoPatches.ts">tiledUndoPatches.ts</a></td><td data-label="Owns">Full-tile capture, dirty-rectangle union, cropping, byte accounting, and patch lookup.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/magicBrush.ts">magicBrush.ts</a></td><td data-label="Owns">Color sheet lifecycle, worker rasterization, per-op sheet capture, and per-tile patterns.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/paperView.ts">paperView.ts</a></td><td data-label="Owns">The contain-fit math that presents locked paper after rotation.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/drawing/exportDrawing.ts">exportDrawing.ts</a></td><td data-label="Owns">The export fast path and compatibility path, and the shared compositor rules.</td></tr>
+            <tr><td class="mono" data-label="File"><a href="https://github.com/KyleMit/Splotch/blob/main/web/src/lib/components/LiveSurface.svelte">LiveSurface.svelte</a></td><td data-label="Owns">The tile canvases in the DOM, generated from the grid constants.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn"><p><strong>A fork to know about.</strong> <code>undoHistory.ts</code> and the <code>/dev/engine</code> harness keep the older single-canvas renderer for tests. They do not describe production undo or the tile grid.</p></div>
 
-      <h3 style="margin-top:34px">Architectural records behind this snapshot</h3>
+      <h3 class="sub">Decision records behind this page</h3>
       <div class="adr-links">
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0004-imperative-canvas-engine.md">ADR-0004 · imperative engine</a>
-        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0015-capped-dpr-canvas-rendering.md">ADR-0015 · DPR cap</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0015-capped-dpr-canvas-rendering.md">ADR-0015 · resolution cap</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0043-magic-brush-color-sheet-reveal.md">ADR-0043 · Magic brush</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0050-locked-paper-view-on-rotation.md">ADR-0050 · paper lock</a>
-        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0051-desynchronized-canvas-low-latency.md">ADR-0051 · rejected desynchronized canvas</a>
-        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0065-crayon-brush-textured-wax.md">ADR-0065 · crayon</a>
-        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0082-resident-snapshot-tier-byte-budget.md">ADR-0082 · snapshot byte budget</a>
-        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0085-tiled-live-canvas-for-ipad-webkit.md">ADR-0085 · tiled renderer</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0051-desynchronized-canvas-low-latency.md">ADR-0051 · desynchronized canvas, rejected</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0072-early-engine-boot-adopt-contract.md">ADR-0072 · boot before hydration</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0082-resident-snapshot-tier-byte-budget.md">ADR-0082 · patch byte budget</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0085-tiled-live-canvas-for-ipad-webkit.md">ADR-0085 · tiled renderer and the 4 × 5 grid</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md">ADR-0086 · patch undo</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0087-frame-bound-theme-switch-on-ipad-webkit.md">ADR-0087 · theme switch</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0088-frame-bound-screenshot-export-on-ipad-webkit.md">ADR-0088 · export</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0089-css-presented-tiled-paper-on-rotation.md">ADR-0089 · CSS rotation</a>
-        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0091-alpha-overlays-and-worker-magic-sheets.md">ADR-0091 · worker Magic sheets</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0090-tiered-real-ipad-performance-regression-gates.md">ADR-0090 · physical iPad gates</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0091-alpha-overlays-and-worker-magic-sheets.md">ADR-0091 · worker Magic sheets</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0110-single-replay-worker-canvas-context-recovery.md">ADR-0110 · worker context recovery</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0121-recode-retained-magic-ink-with-coloring-appearance.md">ADR-0121 · Magic ink recode</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0132-recover-reset-live-tile-contexts-on-resume.md">ADR-0132 · live-tile context recovery</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0146-crayon-op-granularity-per-runtime.md">ADR-0146 · ops per frame</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0153-reject-webgl-crayon-renderer.md">ADR-0153 · WebGL crayon, rejected</a>
       </div>
     </section>
   </div>
 </main>
 
-<footer class="site-foot"><div class="shell"><span class="crayons" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><p>A hand-authored snapshot of the production engine, updated August 18, 2026 · <a href="../index.html">All scrapbook collections</a> · <a href="https://github.com/KyleMit/Splotch">GitHub</a></p></div></footer>
+<button class="btn primary back-btn" id="back-btn" type="button" hidden>↑ Back to where you were</button>
+
+<footer class="site-foot"><div class="shell"><span class="crayons" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><p>A hand-written explainer of the production engine, checked against the code in September 2026 · <a href="../index.html">All scrapbook collections</a> · <a href="https://github.com/KyleMit/Splotch">GitHub</a></p></div></footer>
 
 <script>
 (() => {
-  const root = document.getElementById('engine-explainer');
-  const detail = document.getElementById('journey-detail');
-  if (!root || !detail) return;
-  const copy = {
-    input: ['Input: a contact stream begins.', 'The transparent full-size canvas receives pointer events, captures the pointer, and maps screen coordinates back into the drawing’s permanent paper coordinates.'],
-    ops: ['Operations: movement becomes reusable geometry.', 'Coalesced input samples become a start dot and midpoint-smoothed quadratic path operations. Each operation carries the contact’s captured brush style.'],
-    tiles: ['Tiles: only intersecting surfaces paint.', 'The renderer expands the operation bounds for stroke width and anti-aliasing, culls the 4×4 grid, and runs the shared renderer on touched tiles only.'],
-    patch: ['Undo patch: save what is about to change.', 'On the first mutation of each tile, the engine copies its pre-command pixels. Dirty bounds grow with the command; commit crops the copies to those rectangles.'],
-    history: ['History: recent vectors ride above old pixels.', 'The command joins the undoable vector tail. Once it falls outside that window, 1.5 seconds of idle time lets the engine fold it into the tiled raster base.'],
-    export: ['Export: compose the paper away from input.', 'A synchronous snapshot freezes the intended strokes. Settled tile bitmaps, paper texture, theme color, and line art are assembled and encoded as PNG—usually in a worker.']
+  'use strict';
+
+  /* ---- theme toggle ---- */
+  const root = document.documentElement;
+  const themeBtn = document.getElementById('theme-btn');
+  const THEME_KEY = 'splotch-scrapbook-theme';
+  try { const saved = localStorage.getItem(THEME_KEY); if (saved === 'light' || saved === 'dark') root.dataset.theme = saved; } catch {}
+  themeBtn.addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem(THEME_KEY, root.dataset.theme); } catch {}
+    lab.draw();
+  });
+
+  /* ---- sticky nav: active section + progress ---- */
+  const navLinks = Array.from(document.querySelectorAll('#pagenav a'));
+  const sections = navLinks.map((a) => document.querySelector(a.getAttribute('href')));
+  const progress = document.getElementById('progress');
+  let ticking = false;
+  function updateNav() {
+    ticking = false;
+    const navH = document.querySelector('.pagenav').offsetHeight;
+    let current = 0;
+    sections.forEach((s, i) => { if (s && s.getBoundingClientRect().top <= navH + 24) current = i; });
+    navLinks.forEach((a, i) => {
+      const on = i === current;
+      if (on !== (a.getAttribute('aria-current') === 'true')) {
+        a.setAttribute('aria-current', on ? 'true' : 'false');
+        if (on) a.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+      }
+    });
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    progress.style.width = (max > 0 ? Math.min(1, window.scrollY / max) * 100 : 0) + '%';
+  }
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(updateNav); } }, { passive: true });
+  addEventListener('resize', updateNav);
+  updateNav();
+
+  /* ---- glossary back button ---- */
+  const backBtn = document.getElementById('back-btn');
+  let returnY = null;
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a.term');
+    if (!link) return;
+    returnY = window.scrollY;
+    backBtn.hidden = false;
+  });
+  backBtn.addEventListener('click', () => {
+    if (returnY !== null) window.scrollTo({ top: returnY, behavior: 'smooth' });
+    backBtn.hidden = true;
+    returnY = null;
+    if (location.hash) history.replaceState(null, '', location.pathname);
+  });
+
+  /* ---- stroke stages ---- */
+  const stageCopy = {
+    input: ['Input: a finger touches the glass.', 'A transparent full-size canvas on top of everything receives the pointer event, captures the pointer so the stroke cannot be stolen by a button, and converts the screen position into paper coordinates. In the lab, the small dots are the raw samples the browser delivered.', { samples: true }],
+    ops: ['Ops: movement becomes instructions.', 'The samples from each frame become one path op: a start point plus one quadratic curve per sample, from midpoint to midpoint. The op carries the color, width, and brush flags that were frozen when the finger touched down. Compare the smooth curve with the straight chords through the raw samples.', { samples: true, chords: true }],
+    tiles: ['Tiles: only the surfaces the op touches get painted.', 'The renderer pads the op’s bounding box by half the stroke width plus 2 px, tests it against the 4 × 5 grid, and paints only the tiles it overlaps. Everything else is skipped. The blue tiles are the ones this stroke touched.', { tiles: true }],
+    patch: ['Patch: copy what is about to change.', 'The first time a stroke touches a tile, the engine copies that tile. As ops arrive the dirty rectangle grows. When the stroke ends, each copy is cropped to its rectangle. The orange boxes are the patches this stroke would keep.', { patch: true, tiles: true }],
+    history: ['History: recent strokes stay editable, old ones bake.', 'The finished command joins the undoable tail with its patches. Once it falls past the limit it waits, and after 1.5 s of no input it folds into the pixel base and its vectors are discarded. Watch the strip under the paper.', {}],
+    export: ['Save: compose the picture away from the input thread.', 'A synchronous snapshot freezes the drawing. Finished tile bitmaps, the paper color, the texture, and the line art are assembled and encoded as a PNG, usually on a worker, while drawing continues.', {}]
   };
-  const buttons = Array.from(root.querySelectorAll('[data-stage]'));
-  for (const button of buttons) {
-    button.addEventListener('click', () => {
-      for (const candidate of buttons) candidate.setAttribute('aria-pressed', String(candidate === button));
-      const selected = copy[button.dataset.stage];
-      if (selected) detail.innerHTML = '<b>' + selected[0] + '</b>' + selected[1];
+  const stageDetail = document.getElementById('stage-detail');
+  const stageButtons = Array.from(document.querySelectorAll('#stages [data-stage]'));
+  const showButtons = Array.from(document.querySelectorAll('.lab [data-show]'));
+  const show = { samples: true, chords: false, tiles: false, patch: false };
+  function applyShow() {
+    for (const b of showButtons) b.setAttribute('aria-pressed', String(!!show[b.dataset.show]));
+    lab.draw();
+  }
+  for (const b of stageButtons) {
+    b.addEventListener('click', () => {
+      for (const c of stageButtons) c.setAttribute('aria-pressed', String(c === b));
+      const [title, body, layers] = stageCopy[b.dataset.stage];
+      stageDetail.innerHTML = '<b></b>';
+      stageDetail.firstChild.textContent = title;
+      stageDetail.append(document.createTextNode(' ' + body));
+      for (const k of Object.keys(show)) show[k] = !!layers[k];
+      applyShow();
     });
   }
+  for (const b of showButtons) b.addEventListener('click', () => { show[b.dataset.show] = !show[b.dataset.show]; applyShow(); });
+
+  /* ---- the lab: a small model of the tiled engine ---- */
+  const COLS = 4, ROWS = 5;
+  const UNDO_LIMIT = 4;
+  const FOLD_IDLE_MS = 1500;
+  const AA_PAD = 2;
+  const PAPER_W = 800, PAPER_H = 600;
+  const HUES = ['#ec534e', '#f89c45', '#f9d24f', '#8cc864', '#62a2e9', '#ab71e1', '#f47cb0'];
+
+  const canvas = document.getElementById('lab-canvas');
+  const ctx = canvas.getContext('2d');
+  const base = document.createElement('canvas');
+  base.width = PAPER_W; base.height = PAPER_H;
+  const baseCtx = base.getContext('2d');
+  const hint = document.getElementById('lab-hint');
+  const undoBtn = document.getElementById("lab-undo");
+  const clearBtn = document.getElementById("lab-clear");
+  const widthInput = document.getElementById('width');
+  const widthOut = document.getElementById('width-out');
+  const swatches = document.getElementById('swatches');
+  const ledger = document.getElementById('ledger');
+  const ledgerEmpty = document.getElementById('ledger-empty');
+  const readout = { samples: document.getElementById('r-samples'), ops: document.getElementById('r-ops'), tiles: document.getElementById('r-tiles'), undo: document.getElementById('r-undo'), folded: document.getElementById('r-folded') };
+
+  const state = { color: HUES[4], width: 16, commands: [], active: null, pending: [], nextId: 1, foldedCount: 0, foldTimer: null, flash: null, activePointerId: null, prev: null };
+
+  HUES.forEach((hue) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'swatch-btn'; b.style.background = hue;
+    b.setAttribute('aria-label', 'Color ' + hue); b.setAttribute('aria-pressed', String(hue === state.color));
+    b.addEventListener('click', () => { state.color = hue; for (const s of swatches.children) s.setAttribute('aria-pressed', String(s === b)); });
+    swatches.append(b);
+  });
+  widthInput.addEventListener('input', () => { state.width = Number(widthInput.value); widthOut.textContent = widthInput.value; });
+
+  const tileW = PAPER_W / COLS, tileH = PAPER_H / ROWS;
+  function tileRect(i) { return { x: (i % COLS) * tileW, y: Math.floor(i / COLS) * tileH, w: tileW, h: tileH }; }
+
+  function paperPoint(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (PAPER_W / r.width), y: (e.clientY - r.top) * (PAPER_H / r.height) };
+  }
+
+  /* An op is one frame's batch of samples plus the curve segments built from them. */
+  function buildOp(cmd, points) {
+    const op = { startX: cmd.midX, startY: cmd.midY, segs: [], raw: points.slice() };
+    for (const p of points) {
+      const midX = (cmd.x + p.x) / 2, midY = (cmd.y + p.y) / 2;
+      op.segs.push({ cx: cmd.x, cy: cmd.y, x: midX, y: midY });
+      cmd.x = p.x; cmd.y = p.y; cmd.midX = midX; cmd.midY = midY;
+    }
+    op.bounds = paddedBounds(op, cmd.width);
+    op.tiles = [];
+    for (let i = 0; i < COLS * ROWS; i++) if (intersects(op.bounds, tileRect(i))) op.tiles.push(i);
+    return op;
+  }
+  function paddedBounds(op, width) {
+    let x0 = op.startX, y0 = op.startY, x1 = op.startX, y1 = op.startY;
+    for (const s of op.segs) { x0 = Math.min(x0, s.cx, s.x); y0 = Math.min(y0, s.cy, s.y); x1 = Math.max(x1, s.cx, s.x); y1 = Math.max(y1, s.cy, s.y); }
+    const pad = width / 2 + AA_PAD;
+    return { x: x0 - pad, y: y0 - pad, w: x1 - x0 + pad * 2, h: y1 - y0 + pad * 2 };
+  }
+  function intersects(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+  function clip(a, b) {
+    const x = Math.max(a.x, b.x), y = Math.max(a.y, b.y);
+    return { x, y, w: Math.min(a.x + a.w, b.x + b.w) - x, h: Math.min(a.y + a.h, b.y + b.h) - y };
+  }
+
+  /* Per-tile dirty rectangles: the union, within each touched tile, of every op's padded box. */
+  function patchRects(cmd) {
+    const rects = new Map();
+    const dot = { x: cmd.dot.x - cmd.width / 2 - AA_PAD, y: cmd.dot.y - cmd.width / 2 - AA_PAD, w: cmd.width + AA_PAD * 2, h: cmd.width + AA_PAD * 2 };
+    const boxes = [dot, ...cmd.ops.map((o) => o.bounds)];
+    for (let i = 0; i < COLS * ROWS; i++) {
+      const t = tileRect(i);
+      let u = null;
+      for (const b of boxes) {
+        if (!intersects(b, t)) continue;
+        const c = clip(b, t);
+        u = u ? { x: Math.min(u.x, c.x), y: Math.min(u.y, c.y), w: Math.max(u.x + u.w, c.x + c.w) - Math.min(u.x, c.x), h: Math.max(u.y + u.h, c.y + c.h) - Math.min(u.y, c.y) } : c;
+      }
+      if (u) rects.set(i, u);
+    }
+    return rects;
+  }
+
+  function paintCommand(target, cmd) {
+    target.save();
+    target.lineCap = 'round'; target.lineJoin = 'round';
+    target.strokeStyle = cmd.color; target.fillStyle = cmd.color; target.lineWidth = cmd.width;
+    target.beginPath(); target.arc(cmd.dot.x, cmd.dot.y, cmd.width / 2, 0, Math.PI * 2); target.fill();
+    for (const op of cmd.ops) {
+      target.beginPath(); target.moveTo(op.startX, op.startY);
+      for (const s of op.segs) target.quadraticCurveTo(s.cx, s.cy, s.x, s.y);
+      target.stroke();
+    }
+    target.restore();
+  }
+
+  function css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+
+  function draw() {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    ctx.clearRect(0, 0, PAPER_W, PAPER_H);
+    ctx.fillStyle = dark ? '#2a2c34' : '#fdfbf6';
+    ctx.fillRect(0, 0, PAPER_W, PAPER_H);
+    ctx.drawImage(base, 0, 0);
+    for (const cmd of state.commands) if (!cmd.folded) paintCommand(ctx, cmd);
+    if (state.active) paintCommand(ctx, state.active);
+
+    const focus = state.active ?? state.commands.filter((c) => !c.folded).at(-1) ?? null;
+    const touched = new Set();
+    if (focus) { for (const op of focus.ops) for (const t of op.tiles) touched.add(t); for (let i = 0; i < COLS * ROWS; i++) if (intersects({ x: focus.dot.x - focus.width / 2 - AA_PAD, y: focus.dot.y - focus.width / 2 - AA_PAD, w: focus.width + AA_PAD * 2, h: focus.width + AA_PAD * 2 }, tileRect(i))) touched.add(i); }
+
+    /* grid + touched tiles */
+    ctx.save();
+    if (show.tiles && focus) {
+      ctx.fillStyle = dark ? 'rgba(98,162,233,.22)' : 'rgba(98,162,233,.2)';
+      for (const i of touched) { const t = tileRect(i); ctx.fillRect(t.x, t.y, t.w, t.h); }
+    }
+    ctx.strokeStyle = dark ? 'rgba(255,255,255,.14)' : 'rgba(35,33,42,.14)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let c = 1; c < COLS; c++) { ctx.moveTo(c * tileW, 0); ctx.lineTo(c * tileW, PAPER_H); }
+    for (let r = 1; r < ROWS; r++) { ctx.moveTo(0, r * tileH); ctx.lineTo(PAPER_W, r * tileH); }
+    ctx.stroke();
+    if (show.tiles && focus) {
+      ctx.strokeStyle = '#62a2e9'; ctx.lineWidth = 2;
+      for (const i of touched) { const t = tileRect(i); ctx.strokeRect(t.x + 1, t.y + 1, t.w - 2, t.h - 2); }
+    }
+    ctx.restore();
+
+    /* patch rectangles */
+    if (show.patch && focus) {
+      ctx.save();
+      ctx.strokeStyle = css('--warn') || '#e08a1e'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+      for (const r of patchRects(focus).values()) ctx.strokeRect(r.x, r.y, r.w, r.h);
+      ctx.restore();
+    }
+
+    /* chords + samples */
+    if (focus && (show.chords || show.samples)) {
+      const pts = [focus.dot, ...focus.ops.flatMap((o) => o.raw)];
+      ctx.save();
+      if (show.chords) {
+        ctx.strokeStyle = '#ec534e'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+        for (const p of pts.slice(1)) ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+      if (show.samples) {
+        ctx.fillStyle = dark ? '#ffffff' : '#23212a';
+        for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.restore();
+    }
+
+    /* undo flash: the patch rectangles of the command that was just removed */
+    if (state.flash) {
+      const age = performance.now() - state.flash.at;
+      if (age < 700) {
+        ctx.save();
+        ctx.globalAlpha = 1 - age / 700;
+        ctx.fillStyle = 'rgba(224,138,30,.25)'; ctx.strokeStyle = '#e08a1e'; ctx.lineWidth = 2;
+        for (const r of state.flash.rects) { ctx.fillRect(r.x, r.y, r.w, r.h); ctx.strokeRect(r.x, r.y, r.w, r.h); }
+        ctx.restore();
+        requestAnimationFrame(draw);
+      } else state.flash = null;
+    }
+    updateReadouts(focus, touched);
+  }
+
+  function updateReadouts(focus, touched) {
+    const samples = focus ? 1 + focus.ops.reduce((n, o) => n + o.raw.length, 0) : 0;
+    readout.samples.textContent = samples;
+    readout.ops.textContent = focus ? 1 + focus.ops.length : 0;
+    readout.tiles.textContent = touched.size;
+    const undoable = state.commands.filter((c) => !c.folded).length;
+    readout.undo.textContent = Math.min(undoable, UNDO_LIMIT);
+    readout.folded.textContent = state.foldedCount;
+    undoBtn.disabled = undoable === 0 || !!state.active;
+    clearBtn.disabled = (state.commands.length === 0 && !state.active);
+    renderLedger();
+  }
+
+  function renderLedger() {
+    for (const el of Array.from(ledger.querySelectorAll('.lg'))) el.remove();
+    const live = state.commands.filter((c) => !c.folded);
+    const items = [...state.commands.filter((c) => c.folded).slice(-3), ...live];
+    ledgerEmpty.hidden = items.length > 0 || !!state.active;
+    items.forEach((c) => {
+      const el = document.createElement('span');
+      const idx = live.indexOf(c);
+      const cls = c.folded ? 'folded' : (live.length - idx > UNDO_LIMIT ? 'waiting' : 'undoable');
+      el.className = 'lg ' + cls; el.textContent = 'C' + c.id;
+      ledger.append(el);
+    });
+    if (state.active) { const el = document.createElement('span'); el.className = 'lg active'; el.textContent = 'C' + state.active.id; ledger.append(el); }
+  }
+
+  /* folding: after idle, one command past the limit bakes into the base */
+  function scheduleFold() {
+    clearTimeout(state.foldTimer);
+    state.foldTimer = setTimeout(foldOldest, FOLD_IDLE_MS);
+  }
+  function foldOldest() {
+    if (state.active) return;
+    const live = state.commands.filter((c) => !c.folded);
+    if (live.length <= UNDO_LIMIT) return;
+    const cmd = live[0];
+    paintCommand(baseCtx, cmd);
+    cmd.folded = true; cmd.ops = cmd.ops.map((o) => ({ ...o, raw: [] }));
+    state.foldedCount++;
+    draw();
+    scheduleFold();
+  }
+
+  /* one op per animation frame, from the queued samples */
+  let rafPending = false;
+  function drainQueue() {
+    rafPending = false;
+    if (!state.active || state.pending.length === 0) return;
+    const points = state.pending.splice(0);
+    state.active.ops.push(buildOp(state.active, points));
+    draw();
+  }
+  function queue(points) {
+    state.pending.push(...points);
+    if (!rafPending) { rafPending = true; requestAnimationFrame(drainQueue); }
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (state.activePointerId !== null) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    state.activePointerId = e.pointerId;
+    clearTimeout(state.foldTimer);
+    const p = paperPoint(e);
+    state.active = { id: state.nextId++, color: state.color, width: state.width, dot: p, ops: [], x: p.x, y: p.y, midX: p.x, midY: p.y };
+    hint.hidden = true;
+    draw();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== state.activePointerId || !state.active) return;
+    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    queue((events.length ? events : [e]).map(paperPoint));
+  });
+  function finish(e) {
+    if (e.pointerId !== state.activePointerId) return;
+    state.activePointerId = null;
+    if (state.pending.length) { state.active.ops.push(buildOp(state.active, state.pending.splice(0))); }
+    state.commands.push(state.active);
+    state.active = null;
+    draw();
+    scheduleFold();
+  }
+  canvas.addEventListener('pointerup', finish);
+  canvas.addEventListener('pointercancel', finish);
+
+  undoBtn.addEventListener('click', () => {
+    const live = state.commands.filter((c) => !c.folded);
+    const cmd = live.at(-1);
+    if (!cmd) return;
+    state.commands.splice(state.commands.indexOf(cmd), 1);
+    state.flash = { at: performance.now(), rects: Array.from(patchRects(cmd).values()) };
+    draw();
+    scheduleFold();
+  });
+  clearBtn.addEventListener('click', () => {
+    clearTimeout(state.foldTimer);
+    state.commands = []; state.active = null; state.pending = []; state.foldedCount = 0; state.flash = null;
+    baseCtx.clearRect(0, 0, PAPER_W, PAPER_H);
+    hint.hidden = false;
+    draw();
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+
+  const lab = { draw };
+  draw();
 })();
 </script>
 </body>
