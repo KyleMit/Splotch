@@ -13,7 +13,8 @@ after resize. In the first scored inked landscape-to-portrait rotation, a 31.7 m
 an 18.5 ms style recalculation over 218 elements. The first-frame delay was 37.9 ms. No
 engine-resize marks appeared inside that first-frame window. The empty-clear diagnostic first-frame
 delays were 26.1 / 22.5 / 15.0 ms; this focused diagnostic does not replace the failed full-plan
-control.
+control. The control diagnostic also failed `clear drawing for blank rotation` and
+`clear restored drawing after blank rotation`, as did the treatment trace.
 
 Settings stays laid out while hidden to prewarm its first presentation (ADR-0049). Its media-query
 listeners also rebuilt the hidden responsive shell synchronously when the drawing page rotated. The
