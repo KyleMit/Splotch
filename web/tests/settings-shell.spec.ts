@@ -109,3 +109,40 @@ test('Escape preserves a live button-size drag until pointer release', async ({ 
   await page.mouse.up();
   await expect(modal).not.toHaveClass(/resizing/);
 });
+
+test('Night Mode does not animate the Action Panel behind Settings', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await gotoApp(page);
+  await openSettingsModal(page);
+  const panel = page.locator('.actions-panel');
+  const transitions = await panel.evaluateHandle((element) => {
+    const events: string[] = [];
+    element.addEventListener('transitionrun', (event) => {
+      if (event instanceof TransitionEvent) events.push(event.propertyName);
+    });
+    return events;
+  });
+  await page.locator('#quickNightToggle').click();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+  expect(await transitions.jsonValue()).toEqual([]);
+  await transitions.dispose();
+});
+
+test('the live size preview retains Action Panel transition timing', async ({ page }) => {
+  const modal = await beginButtonSizeDrag(page);
+  const button = page.locator('#coloringBookButton');
+  const durations = () =>
+    button.evaluate((element) =>
+      getComputedStyle(element).transitionDuration.split(',').map(parseFloat)
+    );
+  expect((await durations()).some((duration) => duration > 0)).toBe(true);
+  await page.mouse.up();
+  await expect.poll(async () => (await durations()).every((duration) => duration === 0)).toBe(true);
+  await modal.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect.poll(async () => (await durations()).some((duration) => duration > 0)).toBe(true);
+});
