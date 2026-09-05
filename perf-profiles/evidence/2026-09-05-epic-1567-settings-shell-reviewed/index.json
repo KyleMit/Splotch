@@ -1,0 +1,19 @@
+{
+  "campaign": "2026-09-05-epic-1567-settings-shell-reviewed",
+  "productCommit": "d92ba50b9440938d84e82d9f13cb2423963fc71c",
+  "capturedFrom": "perf-profiles/epic-1567-september-resume/settings-shell-reviewed-treatment",
+  "study": "Clean committed landscape-light Settings shell treatment; rotations pass and compact Night Mode remains red",
+  "kept": [
+    {
+      "file": "actions--8ec8a1aa.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "android-device-web/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

@@ -108,9 +108,12 @@
     window.removeEventListener('pointercancel', onPointerUp);
   }
 
-  // $effect teardown (never runs on the server) drops any listeners still live
-  // if the component unmounts mid-drag — onDestroy would touch window during SSR.
-  $effect(() => removeWindowListeners);
+  // Unmount can interrupt a drag before pointerup; release its shared preview state
+  // as well as its listeners. Effect teardown keeps window access client-only.
+  $effect(() => () => {
+    removeWindowListeners();
+    setActive(false);
+  });
 
   function onKeyDown(event: KeyboardEvent) {
     let next = value;

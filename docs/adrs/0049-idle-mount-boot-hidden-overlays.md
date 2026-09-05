@@ -156,6 +156,25 @@ their completion a hidden precondition could time out before the trace's explici
 began. The settle window is ten seconds so the deferred work remains inside the trace rather than
 being shifted beyond it.
 
+## Amendment (2026-09): responsive shell reconstruction is prewarming
+
+The hidden Settings card remains laid out, so replacing its responsive shell during rotation pays
+construction and style recalculation even while the child is looking at the drawing. Closed-shell
+media-query changes therefore use the existing idle scheduler. The wide and compact matches are read
+in one operation: applying them independently can transiently construct the wide pane while a phone
+is moving between the hub and compact shells.
+
+Foreground demand bypasses this scheduling. Opening Settings cancels pending work and reads the
+current viewport immediately; an open dialog or active button-size preview continues to follow
+viewport changes synchronously. Slider teardown releases its active preview state when a shell
+replacement interrupts a drag, while closing the dialog during a still-mounted drag does not end
+that preview prematurely.
+
+This preserves the laid-out prewarm rather than moving all construction to the next open. Idle
+scheduling does not make construction free or guarantee that a callback fits a frame. The physical
+control, provisional treatment, trace limitations, and committed recapture belong in
+[`2026-09-05-android-settings-shell-rotation.md`](../scratchpad/perf/2026-09-05-android-settings-shell-rotation.md).
+
 ## Escape hatch if the overlay set grows heavier
 
 The single barrel chunk (`CVCStUCq.js`, ~56 KB) evaluates all six overlays in one synchronous task
