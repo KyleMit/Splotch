@@ -26,8 +26,8 @@ test('the bare proof-sheet hub preserves the page before it in history', async (
   await page.goto('/proof-sheet-prior-page');
   await page.goto('/coloring-book-proof-sheets/index.html');
 
-  await expect(page).toHaveTitle('Splotch proof sheets — Farm');
-  await expect(page.locator('#sheet')).toHaveAttribute('src', 'farm.html');
+  await expect(page).toHaveTitle('Farm — Coloring-book proof sheets · Splotch');
+  await expect(page.locator('#sheet')).toHaveAttribute('data-sheet', 'farm.html');
 
   await page.goBack();
 
@@ -52,7 +52,22 @@ test('the tab strip exposes ARIA tab semantics', async ({ page }) => {
   );
   await expect(page.getByRole('tab', { name: 'Farm' })).toHaveAttribute('aria-selected', 'false');
   await expect(page.locator('#sheet')).toHaveAttribute('aria-labelledby', 'tab-dinosaur');
-  // Deliberately no history traversal after the click: a tab click pushes a synchronous hash
-  // entry AND an async iframe entry, so back() here races the iframe commit — the exact flake
-  // that sank the first attempt.
+  await expect(page.locator('#sheet')).toHaveAttribute('data-sheet', 'dinosaur.html');
+  // Deliberately no history traversal after the click: a tab click pushes a hash entry, and
+  // back() here would race the sheet fetch that the new category kicks off.
+});
+
+test('the hub draws a category from the data embedded in its sheet', async ({ page }) => {
+  await page.goto('/coloring-book-proof-sheets/index.html#farm/cow');
+
+  const pageSection = page.locator('#page-cow');
+  await expect(pageSection.getByRole('heading', { name: 'Cow' })).toBeVisible();
+  await expect(pageSection.locator('figure')).toHaveCount(4);
+  await expect(pageSection.locator('.frame:not(.pending) canvas')).toHaveCount(4);
+  await expect(pageSection.locator('.score').first()).toContainText('outline');
+
+  await page.getByRole('group', { name: 'Show' }).getByRole('button', { name: 'Night' }).click();
+
+  await expect(pageSection.locator('figure.light').first()).toBeHidden();
+  await expect(pageSection.locator('figure.night').first()).toBeVisible();
 });

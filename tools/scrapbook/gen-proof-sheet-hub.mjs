@@ -1,8 +1,8 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { ROOT } from '../lib/proc.mjs';
-import { chromeStyle, compactTopbar } from './lib/scrapbook-chrome.mjs';
+import { chromeStyle, compactTopbar, siteFooter } from './lib/scrapbook-chrome.mjs';
 
 export const PROOF_SHEET_HUB_PATH = join(
   ROOT,
@@ -11,36 +11,66 @@ export const PROOF_SHEET_HUB_PATH = join(
   'index.html'
 );
 
-const EXTRA_CSS = `
-html,body{height:100%}
-body{display:flex;flex-direction:column}
-.proof-sheet-header{flex:0 0 auto;background:var(--card-2);border-bottom:1px solid var(--hair);box-shadow:0 1px 0 rgba(20,18,26,.06),0 6px 16px rgba(20,18,26,.05)}
-.titlebar{display:flex;align-items:center;gap:.55rem;padding:.6rem 1rem .55rem;flex-wrap:wrap}
-.count{color:var(--muted);font-size:.78rem;white-space:nowrap}
-.tabsrow{display:flex;align-items:center;gap:.4rem;padding:0 .6rem .6rem}
-.tabs{display:flex;gap:.4rem;overflow-x:auto;scrollbar-width:thin;padding:.15rem;flex:1 1 auto}
-.tabs button{flex:0 0 auto;border:1px solid transparent;background:var(--tab-bg);color:var(--tab-fg);font:inherit;font-size:.9rem;font-weight:600;padding:.35rem .8rem;border-radius:999px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
-.tabs button:hover{border-color:var(--accent)}
-.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.nudge{flex:0 0 auto;width:2rem;height:2rem;border:1px solid var(--hair);background:var(--paper);color:var(--ink);border-radius:50%;cursor:pointer;font-size:1.1rem;line-height:1;display:grid;place-items:center}
-.nudge:hover{border-color:var(--accent);color:var(--accent)}
-main{flex:1 1 auto;min-height:0}
-iframe{width:100%;height:100%;border:0;display:block;background:var(--paper)}
-:root{--tab-bg:#efeae1;--tab-fg:#4a4650}
-@media (prefers-color-scheme:dark){:root{--tab-bg:#24262d;--tab-fg:#c4c8d0}}
-@media (max-width:560px){.count{display:none}}
-`;
+// The look (CSS) and the browser runtime (client JS) live in real files under
+// proof-sheet-hub-assets/ so they get editor highlighting, Prettier, and ESLint;
+// this module only assembles the shell around them.
+const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), 'proof-sheet-hub-assets');
+const css = readFileSync(join(ASSETS_DIR, 'proof-sheet-hub.css'), 'utf8');
+const clientJs = readFileSync(join(ASSETS_DIR, 'proof-sheet-hub.client.js'), 'utf8');
 
-const CATEGORIES = `[
-        { id: 'farm', name: 'Farm', pages: 6 },
-        { id: 'dinosaur', name: 'Dinosaurs', pages: 6 },
-        { id: 'creatures', name: 'Creatures', pages: 6 },
-        { id: 'nature', name: 'Nature', pages: 6 },
-        { id: 'objects', name: 'Objects', pages: 6 },
-        { id: 'shapes', name: 'Shapes', pages: 6 },
-        { id: 'space', name: 'Space', pages: 6 },
-        { id: 'vehicles', name: 'Vehicles', pages: 6 },
-      ]`;
+// The category registry. `pages` is the distinct page count each sibling sheet
+// carries; tools/scrapbook/lib/scrapbook-index.mjs parses this literal back out of
+// the built page (`const CATEGORIES = [ { id: '…', …, pages: N } ]`) and fails the
+// scrapbook check when a sheet disagrees, so keep that shape when editing.
+const CATEGORIES = [
+  { id: 'farm', name: 'Farm', pages: 6 },
+  { id: 'dinosaur', name: 'Dinosaurs', pages: 6 },
+  { id: 'creatures', name: 'Creatures', pages: 6 },
+  { id: 'nature', name: 'Nature', pages: 6 },
+  { id: 'objects', name: 'Objects', pages: 6 },
+  { id: 'shapes', name: 'Shapes', pages: 6 },
+  { id: 'space', name: 'Space', pages: 6 },
+  { id: 'vehicles', name: 'Vehicles', pages: 6 },
+];
+
+// Each sheet's size on disk drives the hub's download progress bar: the server
+// gzips the sheet, so the response's own Content-Length is the compressed size.
+function sheetBytes(id) {
+  try {
+    return statSync(join(dirname(PROOF_SHEET_HUB_PATH), `${id}.html`)).size;
+  } catch {
+    return null;
+  }
+}
+
+function categoriesLiteral() {
+  const rows = CATEGORIES.map(
+    (c) =>
+      `        { id: '${c.id}', name: '${c.name}', pages: ${c.pages}, bytes: ${sheetBytes(c.id)} },`
+  );
+  return `[\n${rows.join('\n')}\n      ]`;
+}
+
+function seg(id, label, options) {
+  const buttons = options
+    .map(([value, text]) => `<button type="button" data-value="${value}">${text}</button>`)
+    .join('');
+  return `<div class="seg" id="${id}" role="group" aria-label="${label}">${buttons}</div>`;
+}
+
+const VIEW_OPTIONS = [
+  ['outline', 'Outline'],
+  ['fill', 'Fill'],
+  ['combined', 'Combined'],
+];
+const SHOW_OPTIONS = [
+  ['both', 'Both'],
+  ['light', 'Light'],
+  ['night', 'Night'],
+];
+
+const swatches = (hues) =>
+  `<span class="swatches" aria-hidden="true">${hues.map((h) => `<i style="background:var(--c-${h})"></i>`).join('')}</span>`;
 
 export function buildColoringBookProofSheetHub() {
   return `<!doctype html>
@@ -48,92 +78,88 @@ export function buildColoringBookProofSheetHub() {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Splotch coloring-book proof sheets</title>
-    ${chromeStyle(EXTRA_CSS)}
+    <title>Coloring-book proof sheets · Splotch</title>
+    ${chromeStyle(css)}
   </head>
   <body>
-    <header class="proof-sheet-header">
-      <div class="titlebar">
-        ${compactTopbar({
-          home: '../index.html',
-          crumbs: [
-            { label: 'Scrapbook', href: '../index.html' },
-            { label: 'Coloring-book proof sheets' },
-          ],
-        })}
+    <header class="hub-head">
+      <div class="shell">
+        <div class="topbar">
+          ${compactTopbar({
+            home: '../index.html',
+            crumbs: [
+              { label: 'Scrapbook', href: '../index.html' },
+              { label: 'Coloring-book proof sheets' },
+            ],
+          })}
+        </div>
+        <div class="intro">
+          <h1>Coloring-book proof sheets</h1>
+          <p class="lede">
+            Every coloring page in the app, drawn from the image files that ship with it.
+            Each page comes in a <b>wide</b> and a <b>tall</b> version, and each version has
+            four layers: a pen outline, a chalk outline for night mode, and one colored fill
+            per theme. Pick a category, then switch views to check each layer on its own or
+            stacked the way the app draws it.
+          </p>
+          <details class="legend-wrap" id="legend" open>
+            <summary>How to read a tile</summary>
+            <div class="legend">
+            <div><b><span class="key">1</span>Outline</b>The line art alone: black pen on light paper, white chalk on night paper.</div>
+            <div><b><span class="key">2</span>Fill</b>The colored fill alone. Shipped fills carry no outline pixels; the app draws the outline on top.</div>
+            <div><b><span class="key">3</span>Combined</b>Fill under outline, over paper. This is what a child sees, so judge a page here.</div>
+            <div><b>Outline % ${swatches(['green', 'yellow', 'red'])}</b>How much of the pen outline the light fill keeps, scored on the raw fill before its outline pixels were removed. Green from 99%, yellow from 96%, red below.</div>
+            </div>
+          </details>
+          <p class="keys">
+            <kbd>←</kbd> <kbd>→</kbd> category<span class="sep">·</span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> view<span class="sep">·</span><kbd>B</kbd> <kbd>L</kbd> <kbd>N</kbd> both / light / night<span class="sep">·</span>click a tile to cycle its view alone
+          </p>
+        </div>
       </div>
-      <nav class="tabsrow">
-        <button class="nudge" id="prev" title="Previous category (←)" aria-label="Previous category">&#8592;</button>
-        <div class="tabs" id="tabs" role="tablist" aria-label="Coloring categories"></div>
-        <button class="nudge" id="next" title="Next category (→)" aria-label="Next category">&#8594;</button>
-        <span class="count" id="count"></span>
-      </nav>
     </header>
+    <div class="toolbar" id="toolbar">
+      <div class="shell">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Coloring categories"></div>
+        <div class="segs">
+          ${seg('viewSeg', 'View', VIEW_OPTIONS)}
+          ${seg('showSeg', 'Show', SHOW_OPTIONS)}
+        </div>
+      </div>
+    </div>
     <main>
-      <iframe id="sheet" role="tabpanel" title="Category proof sheet"></iframe>
+      <section class="shell sheet" id="sheet" role="tabpanel" data-show="both">
+        <div class="cat-head">
+          <h2 id="catTitle"></h2>
+          <span class="meta" id="catMeta"></span>
+          <a class="open" id="catOpen" href="#"></a>
+        </div>
+        <nav class="pages-nav" id="pagesNav" aria-label="Pages in this category"></nav>
+        <div class="status" id="status" role="status" hidden>
+          <span id="statusText"></span>
+          <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+        </div>
+        <div id="pages"></div>
+      </section>
     </main>
+    ${siteFooter({ home: '../index.html' })}
+    <button class="to-top" id="toTop" type="button" aria-label="Back to top" hidden>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>
+    </button>
+    <dialog class="zoom-dialog" id="zoom" aria-label="Zoomed tile">
+      <div class="zoom-bar">
+        <span class="title" id="zoomTitle"></span>
+        ${seg('zoomSeg', 'View', VIEW_OPTIONS)}
+        <button class="close" id="zoomClose" type="button" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="zoom-stage" id="zoomStage"><canvas id="zoomCanvas"></canvas></div>
+      <button class="zoom-step prev" id="zoomPrev" type="button" aria-label="Previous tile">&#8592;</button>
+      <button class="zoom-step next" id="zoomNext" type="button" aria-label="Next tile">&#8594;</button>
+    </dialog>
     <script>
-      const CATEGORIES = ${CATEGORIES};
-
-      const tabsEl = document.getElementById('tabs');
-      const frame = document.getElementById('sheet');
-      const countEl = document.getElementById('count');
-      const buttons = {};
-      let current = -1;
-
-      CATEGORIES.forEach((cat, i) => {
-        const b = document.createElement('button');
-        b.textContent = cat.name;
-        b.id = \`tab-\${cat.id}\`;
-        b.dataset.id = cat.id;
-        b.setAttribute('role', 'tab');
-        b.setAttribute('aria-controls', 'sheet');
-        b.addEventListener('click', () => { show(i); });
-        tabsEl.appendChild(b);
-        buttons[cat.id] = b;
-      });
-
-      const indexFromHash = () => {
-        const id = (location.hash || '').replace(/^#/, '');
-        const i = CATEGORIES.findIndex((c) => c.id === id);
-        return i === -1 ? 0 : i;
-      };
-
-      const show = (i, skipHash, initialLoad) => {
-        i = (i + CATEGORIES.length) % CATEGORIES.length;
-        if (i === current) return;
-        current = i;
-        const cat = CATEGORIES[i];
-        frame.src = \`\${cat.id}.html\`;
-        countEl.textContent = \`Category \${i + 1} of \${CATEGORIES.length} · \${cat.pages} pages\`;
-        Object.keys(buttons).forEach((id) => {
-          buttons[id].classList.toggle('on', id === cat.id);
-          buttons[id].setAttribute('aria-selected', String(id === cat.id));
-        });
-        frame.setAttribute('aria-labelledby', buttons[cat.id].id);
-        buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
-        if (!skipHash) {
-          if (location.hash.replace(/^#/, '') !== cat.id) {
-            if (initialLoad) history.replaceState(null, '', \`#\${cat.id}\`);
-            else location.hash = \`#\${cat.id}\`;
-          }
-        }
-        document.title = \`Splotch proof sheets — \${cat.name}\`;
-      };
-
-      document.getElementById('prev').addEventListener('click', () => { show(current - 1); });
-      document.getElementById('next').addEventListener('click', () => { show(current + 1); });
-
-      window.addEventListener('keydown', (e) => {
-        if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-        if (e.key === 'ArrowLeft') { show(current - 1); }
-        else if (e.key === 'ArrowRight') { show(current + 1); }
-      });
-
-      window.addEventListener('hashchange', () => { show(indexFromHash(), true); });
-
-      show(indexFromHash(), false, true);
+      const CATEGORIES = ${categoriesLiteral()};
     </script>
+    <script>
+${clientJs}    </script>
   </body>
 </html>
 `;
