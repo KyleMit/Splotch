@@ -69,8 +69,12 @@ where the wrong pick ships the wrong software — is a blocked unit in either mo
 
 ## 2. Implement
 
-* **Branch** from the latest `origin/main`: `claude/issue-<NN>-<slug>`, or `claude/<task-slug>` for
-  a free-form task. Push it early with `git push -u origin <branch>`.
+* **Branch** from the latest `origin/main`, naming it `<runner-prefix>/issue-<NN>-<slug>` — or
+  `<runner-prefix>/<task-slug>` for a free-form task. The prefix is the **active runner's** own
+  convention, not a fixed string: `claude/` from Claude Code, `codex/` from Codex (which
+  `implement-issue-stack` already uses). Take it from the branches the current runner has created in
+  this repo rather than assuming, so the branch is attributed to the agent that actually made it.
+  Push it early with `git push -u origin <branch>`.
 * **Consult the area's skill rather than guessing** — `architecture` to place code, `design` for
   anything with a style or a user-facing string, `api` for endpoints, `mobile` for native, `testing`
   for tests. Reading the skill costs less than a review round spent on a convention you invented.
