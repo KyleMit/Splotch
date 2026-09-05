@@ -33,7 +33,8 @@ AGENTS.md              linguist-generated=true
 .claude/skill-notes/analyze-session-transcripts.md   linguist-generated=false
 .agents/skill-notes/analyze-session-transcripts.md   linguist-generated=false
 
-# Kept action suites are immutable measurement payloads. Their readable index
-# and provenance are reviewed as text; rendering multi-megabyte one-line JSON
-# as a diff exhausts review tooling without making the samples reviewable.
-perf-profiles/evidence/**/actions--*.json binary
+# Kept captures are immutable measurement payloads. Their readable index and
+# provenance are reviewed as text; rendering multi-megabyte one-line JSON as a
+# diff exhausts review tooling without making the samples reviewable.
+perf-profiles/evidence/**/*.json            binary
+perf-profiles/evidence/**/index.json         text diff
