@@ -105,8 +105,8 @@ strip the parts that belong to that contract and keep only what steers:
 
 * **Drop the skill invocation and the posting authorization.** The rival does not run
   `leave-pr-review` and must never be told to post — an early version of the pairing that had reach
-  to GitHub posted a review to its own PR unasked. Posting is step 6's `post-review.mjs`, run by
-  you.
+  to GitHub posted a review to its own PR unasked. Posting is step 5, through the package's own
+  publisher, run by you.
 * **Drop the PR enumeration and the boundaries paragraph.** `--pr <n>` already pins the scope, and
   the sandbox already enforces read-only.
 * **Keep** the focus areas, the adversarial pass on the overall approach, the full-sweep-first
@@ -118,35 +118,35 @@ absolute path to a regular file and rejects anything over 256 KB.
 
 ## 5. Run the rival review
 
-Follow `run-rival-agent` — this is its PR-review path, not a summary of it:
+**Follow the `run-rival-agent` package loaded in this session, verbatim** — its Preflight, Launch,
+Serve the broker loop, Post the findings, and Rounds sections, in that order. Do not reproduce its
+commands from here or from memory. This skill is generated for both providers, and the two packages
+share the concepts and the flag vocabulary while differing completely in what is actually executed:
+each provider's package launches the *other* vendor's CLI, from its own paths, with its own
+preflight and its own publisher. A command spelled out in this file would be the wrong command in
+half the sessions it runs in — and the failure is quiet, because asking a vendor to review its own
+output still produces a plausible review.
 
-```bash
-npm run --silent rival:health
-```
+What belongs to this skill is only how the rival is *steered*:
 
-```bash
-npm run --silent rival:launch -- --pr <n> --prompt-file <abs path> > /private/tmp/rival-launch-<unique>.json 2> /private/tmp/rival-launch-<unique>.log
-```
+* **Scope it to the PR** — the `--pr <n>` scope, which is what the package's publisher needs.
+* **Hand it the adapted prompt** from step 4 as the extra-instructions prompt file, at an absolute
+  path.
+* **Serve every broker request** until the run reports done or failed, judging each on its own
+  merits — a targeted test is routine, a full Playwright suite is host-exclusive and worth
+  declining, and a decline is a normal answer the rival records as unverified.
+* **Post the findings** through the package's own publisher once the run is done.
+* **Round two resumes, never `--fresh`** — a resumed reviewer verifies whether its own round-one
+  findings were actually addressed instead of meeting the code cold, which is the whole reason round
+  two is worth paying for. Give it a prompt file carrying only the delta: what changed since round
+  one, and what you rejected. Never spend a `--fresh` reviewer to dodge a finding you did not like.
 
-Launch it in background mode, note the `session: <dir>` line, then **serve the broker loop** until
-it reports `done` or `failed`, judging each request on its own merits — a targeted test is routine,
-a full Playwright suite is host-exclusive and worth declining, and a decline is a normal answer that
-the rival records as unverified. Post the result:
-
-```bash
-node tools/rival-agent/post-review.mjs --pr <n> --session <dir>
-```
-
-Round two launches the same way with no `--fresh`: the launcher resumes the reviewer, so it verifies
-whether its own round-one findings were actually addressed instead of meeting the code cold. Give
-round two a prompt file carrying only the delta — what changed since round one and what you rejected
-— and never spend a `--fresh` reviewer to dodge a finding you did not like.
-
-If the rival cannot run at all (`rival:health` fails, no ChatGPT plan login), do not silently skip
-the review: say so, and offer either to stop until the user runs `codex login` or to substitute a
-fresh `general-purpose` subagent running `leave-pr-review` with the PR number and nothing else. A
-same-vendor subagent is a weaker independence guarantee — name that trade-off rather than papering
-over it.
+If the rival cannot run at all — the package's preflight fails, or its credentials are missing — do
+not silently skip the review. Report what the preflight said and let its own remediation stand;
+never invent a login step, which is provider-specific and easy to get backwards. Then offer either
+to stop until the user fixes it, or to substitute a fresh independent subagent in the current runner
+running `leave-pr-review` with the PR number and nothing else. A same-runner subagent is a weaker
+independence guarantee — name that trade-off rather than papering over it.
 
 In `mode=autonomous` that substitution is allowed to keep the run moving but **withdraws the merge
 authority**: a PR whose only review came from the same vendor that wrote it finishes as an open PR
