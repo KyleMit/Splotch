@@ -299,14 +299,15 @@ that lower PR. Put review fixes and newly discovered issues in the current stack
 remain coherent, or create a feedback/findings PR stacked from the tip. Never rewrite lower history
 for an ordinary finding.
 
-Every newly opened PR gets **two** fresh independent cross-runner review rounds before another stack
-layer is started:
+Every newly opened PR gets **two** independent cross-runner review rounds before another stack layer
+is started:
 
 1. Use `run-rival-agent` with `--pr <that PR>`: serve the rival's broker requests as the native
    handler, post its findings with the poster, then validate and address every posted finding.
-2. Start a second fresh `run-rival-agent` round after round one's disposition, even when round one
-   found nothing. Address its findings before moving the checkout or starting the next layer. If
-   round two causes a material fix, run another fresh verification round over that fix.
+2. Start a second `run-rival-agent` round after round one's disposition, even when round one found
+   nothing. Resume the first review conversation as that skill specifies so the rival can verify its
+   own findings. Address the second round before moving the checkout or starting the next layer. If
+   round two causes a material fix, run another verification round over that fix.
 
 Two rounds means two completed rival invocations; CI, same-session self-review, a skipped automation
 job, and rerunning tests do not count. Do not postpone the reviews until wrap-up. If the required
