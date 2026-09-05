@@ -714,9 +714,9 @@ describe('page inventory output', () => {
 
     const html = readFileSync(join(out, 'index.html'), 'utf8');
     expect(html).toContain('Drawing canvas');
-    expect(html).not.toContain('class="critique-note"');
-    expect(html).not.toContain('class="shot has-critique');
-    expect(html).not.toContain('data-severity-filter');
+    expect(html).not.toContain('class="review"');
+    expect(html).not.toContain('data-facet="severity"');
+    expect(html).toContain('data-severity="unreviewed"');
   });
 
   it('attaches complete hash-bound feedback without changing images', () => {
@@ -734,19 +734,18 @@ describe('page inventory output', () => {
 
     const html = readFileSync(join(out, 'index.html'), 'utf8');
     for (const severity of ['pass', 'low', 'medium', 'high']) {
-      expect(html).toContain(`has-critique severity-${severity}`);
+      expect(html).toContain(`class="shot severity-${severity}"`);
       expect(html).toContain(`data-severity="${severity}"`);
-      expect(html).toContain(`name="severity" value="${severity}"`);
+      expect(html).toContain(`data-facet="severity" value="${severity}"`);
     }
     expect(html).toContain('Filter by severity');
-    expect(html).toContain('name="severity" value="all" checked');
-    expect(html).toContain('Showing 16 of 16 snapshots');
     expect(html).toContain('<h4>Light mode</h4>');
     expect(html).toContain('<h4>Night mode</h4>');
-    expect(html).toContain('Small iPhone · Landscape');
-    expect(html).toContain('Portrait · 375 × 812 pt');
-    expect(html).toContain("shot.hidden=severity!=='all'&&shot.dataset.severity!==severity");
-    expect(html).toContain("surface.hidden=!surface.querySelector('.shot:not([hidden])')");
+    expect(html).toContain('<strong>Small iPhone</strong><span>812 × 375</span>');
+    expect(html).toContain('data-where="iPhone 13 mini · Portrait · 375 × 812 · light mode"');
+    expect(html).toContain('class="orientation-label">Landscape</p>');
+    expect(html).toContain('severity.size && !severity.has(d.severity)');
+    expect(html).toContain("surface.hidden = !surface.querySelector('.shot:not([hidden])')");
     expect(html).toContain('Clear &lt;canvas&gt; &amp; controls.');
     expect(html).toContain(
       '<strong>Recommendation:</strong> Fix iphone-16-pro-max-landscape &lt;soon&gt;.'
