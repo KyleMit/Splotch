@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createModal } from '$lib/state/modal.svelte';
 import { modalDialog, waitForDialogRetirement } from './modalDialog.svelte';
 
@@ -283,6 +283,10 @@ describe('modalDialog', () => {
     const modal = createModal();
     const dialog = document.body.appendChild(document.createElement('dialog'));
     const content = dialog.appendChild(document.createElement('div'));
+    const cancelFlyIn = vi.fn();
+    Object.defineProperty(dialog, 'getAnimations', {
+      value: () => [{ cancel: cancelFlyIn }],
+    });
     const destroy = $effect.root(() => {
       const action = modalDialog(dialog, () => ({
         open: modal.open,
@@ -299,6 +303,7 @@ describe('modalDialog', () => {
       await Promise.resolve();
 
       expect(dialog.style.opacity).toBe('0');
+      expect(cancelFlyIn).toHaveBeenCalledOnce();
       expect(content.style.pointerEvents).toBe('none');
       expect(content.style.visibility).toBe('');
 

@@ -4,6 +4,7 @@ import {
   CUSTOM_SWATCH_COLOR,
   gotoApp,
   isBlueDominant,
+  openSettingsModal,
   PICKER_GREEN,
   retryOpen,
   settleFlyIn,
@@ -459,6 +460,22 @@ test('the drawer motion marker clears when a state change starts no transition',
   const panel = page.locator('.actions-panel');
   await page.getByRole('button', { name: 'Collapse controls' }).click();
   await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
+});
+
+test('disabling advanced controls does not animate the drawer behind Settings', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await openSettingsModal(page);
+  await page.addStyleTag({
+    content: `:root { --duration-fast: ${STALLED_DRAWER_TRANSITION_DURATION} !important; }`,
+  });
+
+  const panel = page.locator('.actions-panel');
+  await page.locator('#advancedControlsToggle').click();
+  await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
+  await expect(panel).not.toHaveAttribute('data-drawer-open', '');
 });
 
 // Tapping the trigger again is the third path that closes a flyout, and the

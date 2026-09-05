@@ -1,0 +1,18 @@
+{
+  "campaign": "2026-09-05-epic-1567-advanced-controls-control",
+  "productCommit": "bf4c22adeb1c49415006745b6f9929e0293200f3",
+  "capturedFrom": "perf-profiles/epic-1567-advanced-controls-ab/control",
+  "kept": [
+    {
+      "file": "ipad-device-web-actions.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-web/portrait-light/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

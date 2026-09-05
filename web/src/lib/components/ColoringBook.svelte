@@ -26,6 +26,8 @@
   import {
     cancelImageRequest,
     cancelImagePrefetchesExcept,
+    predecodeImage,
+    predecodeImages,
     prefetchImages,
     type ResponsiveImageRequest,
   } from '$lib/imagePrefetch';
@@ -79,20 +81,18 @@
     );
   });
 
-  // Pressing/hovering a book tile warms that book's screen-sized selectors before
-  // the sub-grid renders. Hovering a page warms its canonical canvas SVG.
-  function prefetchBookPages(book: Book) {
-    prefetchImages(
-      book.pages.map((page) =>
-        imageRequest(
-          pageSelectorImageSource(page, orientation, resolvedTheme()),
-          COLORING_IMAGE_SIZES.pageSelector[orientation]
-        )
+  // Hover fetches selector bytes without decoding an entire book. A press is the
+  // stronger intent signal that decodes the imminent selector grid before paint.
+  function bookPageRequests(book: Book) {
+    return book.pages.map((page) =>
+      imageRequest(
+        pageSelectorImageSource(page, orientation, resolvedTheme()),
+        COLORING_IMAGE_SIZES.pageSelector[orientation]
       )
     );
   }
   function prefetchPageOverlay(page: ColoringPage) {
-    prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
+    predecodeImage(pageOverlayImage(page, orientation, resolvedTheme()));
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the
@@ -221,8 +221,8 @@
               type="button"
               aria-label="{book.name} coloring book"
               onclick={(e) => swapView(book, e)}
-              onpointerenter={() => prefetchBookPages(book)}
-              onpointerdown={() => prefetchBookPages(book)}
+              onpointerenter={() => prefetchImages(bookPageRequests(book))}
+              onpointerdown={() => predecodeImages(bookPageRequests(book))}
             >
               <img
                 src={coverImage.src}

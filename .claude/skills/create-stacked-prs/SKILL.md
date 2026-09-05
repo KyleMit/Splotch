@@ -54,6 +54,12 @@ There is no documented or enforced maximum stack size — a 13-PR chain linked i
   own campaign" in `docs/PROFILING-CAMPAIGNS.md`.
 * **Open each PR as soon as its first commit lands.** Do not batch them to the end — an unopened PR
   is invisible to review and to CI.
+* **Treat each opened PR as the review gate before building above it.** When the task requires
+  independent review rounds, start them as soon as the PR opens, address or rebut every finding
+  while that PR is still the stack tip, complete the required follow-up rounds, and let required CI
+  finish before creating the next branch. Do not accumulate accepted product commits while review is
+  waiting. A valid finding caught here can stay with the PR that introduced it; after a child PR
+  exists, the same fix has to become a sweep-up change at the tip.
 * **Order the stack so cheap, unblocked work sits at the bottom.** Anything above a stuck PR is
   stuck with it. Put risky, slow, or dependency-heavy work near the top.
 * **Name what each PR closes** in its body — `Fixes #123`. That is a deliberate issue reference, so
@@ -208,6 +214,13 @@ strands anything local. Jobs gated on
 never be green beforehand; they are not a reason to hold the stack.
 
 ## Responding to review
+
+The preferred path is to review each PR before it has a child. Fix valid findings on that current
+tip, rerun the required reviewer rounds, and only then branch the next layer. The stacked-campaign
+fallback below exists for feedback that arrives late or for a stack that was already built; it is
+not a reason to postpone review until wrap-up. When using `address-pr-review` for this early gate,
+explicitly restrict its invocation to that single current-tip PR with nothing above it so the
+per-layer exception in that skill applies.
 
 Work the feedback with the `address-pr-review` skill — its stacked-campaign mode exists for exactly
 this shape, and it detects the chain itself. Inside a stack it sweeps the feedback from **every open

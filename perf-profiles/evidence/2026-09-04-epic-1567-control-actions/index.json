@@ -1,0 +1,140 @@
+{
+  "campaign": "2026-09-04-epic-1567-control-actions",
+  "productCommit": "3c017796622f374d428ee91c74b731b00964a63f",
+  "capturedFrom": "perf-profiles/epic-1567-final-3c017796",
+  "study": "discrete-action controls for the epic 1567 iPad web, iPad native, and Android web treatments",
+  "kept": [
+    {
+      "file": "actions--fc8962c0.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "android-device-web/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--8ec8a1aa.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "android-device-web/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--83204431.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "android-device-web/portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--cde8e7ab.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "android-device-web/portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--f25cc136.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--4a0ce15d.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--952ec974.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--3379a69f.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--06d55dd3.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-web/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--ceb1beaf.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-web/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--94f6cf20.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-web/portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--318f7e00.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-web/portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

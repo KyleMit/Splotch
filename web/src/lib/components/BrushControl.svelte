@@ -84,6 +84,12 @@
     position: relative;
   }
 
+  .action-button {
+    /* The trigger scales on press; pre-promotion prevents the first pressed
+       frame from paying layer creation inside the interaction budget. */
+    will-change: transform;
+  }
+
   :global(
       html[data-off-crayon][data-off-magic][data-off-eraser]
         .actions-panel:not([data-action-panel-live])
