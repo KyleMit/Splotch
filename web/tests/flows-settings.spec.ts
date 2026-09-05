@@ -412,6 +412,36 @@ test('landscape phone renders compact quick toggles', async ({ page }) => {
   await expect(page.getByText('Switch to portrait for the full settings')).toBeVisible();
 });
 
+test('Settings opens the current shell before pending background prewarming', async ({ page }) => {
+  const modal = await openSettingsModalCompact(page);
+  await modal.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(modal).not.toBeVisible();
+
+  // Hold background work to prove foreground demand does not wait for an idle slot.
+  await page.evaluate(() => {
+    window.requestIdleCallback = () => 0;
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(() => page.evaluate(() => matchMedia('(orientation: portrait)').matches))
+    .toBe(true);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+  await expect(modal).toHaveClass(/compact/);
+
+  await openSettingsModal(page);
+  await expect(modal).not.toHaveClass(/compact/);
+  await expect(modal.locator('.hub-list')).toBeVisible();
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(modal).toHaveClass(/compact/);
+  await expect(modal.locator('#quickNightToggle')).toBeVisible();
+});
+
 test('the orientation lock selector cycles portrait, landscape, and off', async ({ page }) => {
   await openSettingsModalCompact(page);
 

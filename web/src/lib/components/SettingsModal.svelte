@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import PressFeedbackCloseButton from './PressFeedbackCloseButton.svelte';
   import type { CommonIconName } from './iconTypes';
@@ -20,33 +19,13 @@
   import { settings, setSound } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
   import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
-
-  // Seeds from the live viewport at construction time (before first paint) so
-  // a flag that's already true on open renders its shell on the first frame —
-  // no narrow-then-wide flash — then keeps itself live via a `change` listener
-  // until the component is destroyed.
-  function mediaQueryFlag(query: string): { readonly current: boolean } {
-    let current = $state(browser ? matchMedia(query).matches : false);
-    $effect(() => {
-      if (typeof matchMedia === 'undefined') return;
-      const mql = matchMedia(query);
-      const apply = () => (current = mql.matches);
-      apply();
-      mql.addEventListener('change', apply);
-      return () => mql.removeEventListener('change', apply);
-    });
-    return {
-      get current() {
-        return current;
-      },
-    };
-  }
+  import { settingsMediaQueryFlag } from './settings/settingsMediaQuery.svelte';
 
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar
   // + content pane. The choice is viewport width, so a rotate re-picks it live.
   const WIDE_QUERY = '(min-width: 700px)';
-  const wide = mediaQueryFlag(WIDE_QUERY);
+  const wide = settingsMediaQueryFlag(WIDE_QUERY);
 
   // A landscape *phone* has plenty of width (so it would match WIDE_QUERY) but
   // almost no height — the full section list is unusably cramped there. Detect
@@ -56,7 +35,7 @@
   // is derived from the threshold rather than restated, so retuning the floor
   // cannot leave shell selection disagreeing with the orientation defaults.
   const COMPACT_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 1}px)`;
-  const compact = mediaQueryFlag(COMPACT_QUERY);
+  const compact = settingsMediaQueryFlag(COMPACT_QUERY);
 
   // 'hub' = the phone top-level list; a section id = that section is drilled
   // into. Only the phone shell navigates: the wide shell stacks every section in
