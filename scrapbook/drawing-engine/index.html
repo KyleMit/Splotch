@@ -583,10 +583,10 @@ context.<span class="fn">quadraticCurveTo</span>(seg.cx, seg.cy, seg.x, seg.y);<
 
       <h3 class="sub">The life of one command</h3>
       <div class="grid c4 steps">
-        <article class="card"><h3>Begin</h3><p>The first pixel of the stroke group records whether the paper was blank and opens one active command.</p></article>
-        <article class="card"><h3>First touch of a tile</h3><p>Copy that whole tile once. Then grow the command's <a class="term" href="#g-dirty-rect">dirty rectangle</a> with every op's padded bounds.</p></article>
+        <article class="card"><h3>Begin</h3><p>The first pixel of the stroke group records whether the paper was blank and opens one active command. A command that began on blank paper captures no patches at all. Undo just blanks its tiles.</p></article>
+        <article class="card"><h3>First touch of a tile</h3><p>On non-blank paper, copy that whole tile once. Then grow the command's <a class="term" href="#g-dirty-rect">dirty rectangle</a> with every op's padded bounds.</p></article>
         <article class="card"><h3>Commit</h3><p>Crop each tile copy to its dirty rectangle and push the command. Keep at most 20 undoable.</p></article>
-        <article class="card"><h3>Budget</h3><p>If all patches together exceed six papers' worth of bytes, drop the oldest patches, but always keep the newest two commands undoable.</p></article>
+        <article class="card"><h3>Budget</h3><p>If all patches together exceed six papers' worth of bytes, drop the oldest patch. That command stops being undoable and joins the waiting row. The newest two commands always keep their patches.</p></article>
         <article class="card"><h3>Wait</h3><p>Any touch cancels folding. After 1.5 s without input, one command past the limit may fold. Then wait again.</p></article>
         <article class="card"><h3>Fold</h3><p>Replay that command through the same renderer into the offscreen pixel base. Discard its vector ops.</p></article>
         <article class="card"><h3>Undo</h3><p>Pop the newest command. Clear only its patch rectangles and paste the saved pixels back. That is one <a class="term" href="#g-blit">BLIT</a> per tile.</p></article>
