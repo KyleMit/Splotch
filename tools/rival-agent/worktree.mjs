@@ -13,6 +13,11 @@ export function git(repoRoot, args, { env, allowFailure = false } = {}) {
     env: env ? { ...process.env, ...env } : process.env,
     maxBuffer: GIT_OUTPUT_MAX_BUFFER_BYTES,
   });
+  if (result.error?.code === 'ENOBUFS') {
+    throw new Error(
+      `git ${args.join(' ')} produced more than ${GIT_OUTPUT_MAX_BUFFER_BYTES} bytes; raise GIT_OUTPUT_MAX_BUFFER_BYTES`
+    );
+  }
   if (result.error) throw result.error;
   if (result.status !== 0) {
     if (allowFailure) return undefined;
