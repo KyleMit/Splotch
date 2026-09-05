@@ -132,7 +132,11 @@ export async function servedBuildFingerprintProblem(
   }
 
   if (nativeApp && !nativeBuild) {
-    return 'Native capture requires the native static export. Run `npm run perf:build:cap` first.';
+    return (
+      'Native capture requires the native static export. Run `npm run perf:build:cap`, ' +
+      'then restart the preview against that export. `perf:serve` serves web builds; ' +
+      'see the native preview recipe in docs/PROFILING-CAMPAIGNS.md.'
+    );
   }
 
   const { digests } = await servedChunkDigests(base, fetchText);

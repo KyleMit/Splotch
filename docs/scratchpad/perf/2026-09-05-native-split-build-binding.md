@@ -1,9 +1,11 @@
 # Native split-capture build binding
 
 The native pen/undo capture requested a native export, but the shared freshness guard rejected that
-export before measurement. PR #1683 passes the requested runtime from both split-capture entry
-points into the guard. Web captures still reject native output; native captures reject web output.
-Both retain the served application-chunk byte checks and build-time commit attribution.
+export before measurement. PR #1683 passes the automated split-capture runtime into the guard.
+Automated web captures still reject native output; automated native captures reject web output. Both
+retain the served application-chunk byte checks and build-time commit attribution. Hand-input
+calibration keeps its existing web-preview contract: the guided operator serves that build inside
+the native WebView. Extending the new variant requirement to that caller would break its setup.
 
 ## Product and instrument
 
@@ -39,6 +41,21 @@ byte and hashed. This matters because a campaign retry reuses its output paths. 
 snapshot, rather than those later-overwritten paths, is the source of the invalid evidence. No valid
 performance red was retried for a greener number. A short two-gesture/two-undo diagnostic passed
 fidelity after the unlock; it is setup evidence, not the canonical ten-repeat control.
+
+The invalid captures retain the requested mode in their original metadata and keeper index. Their
+observed geometry is different:
+
+| Retained invalid artifact | Requested mode | Observed viewport | Observed canvas |
+| ------------------------- | -------------- | ----------------- | --------------- |
+| `start--05c12a90.json`    | portrait/light | 780 × 360         | 591 × 360       |
+| `end--e030332c.json`      | portrait/light | 780 × 360         | 591 × 360       |
+
+The initial capture log reports a 360 × 672 canvas before each invalid run; the final report is
+landscape. The readiness producer includes `geometry.orientation` unconditionally, derived from its
+viewport at that moment. The observed sequence supports a late native rotation after that snapshot,
+not a claim that an absent orientation field caused these two failures. The complete initial ready
+payload was not retained, so that field cannot be inspected retrospectively. The runner's optional
+orientation check is unchanged; neither failed artifact is relabeled or made scoreable here.
 
 ## Verification and scope
 

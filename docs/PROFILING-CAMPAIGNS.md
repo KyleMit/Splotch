@@ -182,6 +182,18 @@ keep whichever report saw more input.
 frames but zero pointer events. Before measuring, check that `document.elementFromPoint` at the
 canvas centre actually hits the canvas.
 
+**A native orientation lock can rotate the page after split-capture readiness.** A retained
+landscape lock in Android Settings let the initial probe report portrait canvas bounds, then moved
+the WebView into landscape before the gestures arrived. The result had thousands of trusted touch
+events but none on the canvas; sibling attempts rejected the settled orientation before measurement.
+Before native split drawing, inspect the product's orientation controls and record their state.
+Unlock through the selected Settings control, verify the settled page and canvas geometry, and
+restore the observed preference when the device work is finished. Do not bypass persistence with a
+test-only storage mutation. A passing browser preflight does not prove the native app's preference.
+The invalid captures and successful post-unlock control are retained in
+[`2026-09-05-native-split-build-binding.md`](scratchpad/perf/2026-09-05-native-split-build-binding.md).
+If a resume reuses output paths, snapshot and hash the failed artifacts before it overwrites them.
+
 **An interrupted action sweep can leave the Android panel pinned at 60Hz.** The android action sweep
 pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and restores them in its
 `finally` — but Ctrl-C, a `fail()` on an unserved URL or stale build, and kill -9 all exit without
@@ -1077,8 +1089,21 @@ that Capacitor could not load a remote page, and the actual explanation was that
 serving a 404ing manifest since the last `cap:sync`. The build-freshness guard caught it on the next
 capture, minutes after the issue was filed.
 
-After any `cap sync`, rebuild the web target **and restart the preview server** before capturing
-again.
+Before resuming **web** capture after `cap sync`, rebuild the web target **and restart the preview
+server**. Automated native split capture requires the native static export instead: build with
+`npm run perf:build:cap`, then start an explicitly native preview on an unused port:
+
+```sh
+CAPACITOR=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/run-web-tool.mjs vite preview \
+  --host 0.0.0.0 --port <unused-preview-port> --strictPort
+```
+
+Point a separately resolved probe host at that preview. `perf:serve` and the generic preflight's
+probe-reuse check are web-oriented; they reject a native export. Leave existing services alone and
+verify the native preview through the automated runner's variant-aware served-build check. A build
+without a clean build-time provenance stamp records a null product commit; never stamp it later
+merely to make a capture claim the current HEAD. The guided hand-input calibration workflow keeps
+its web-preview contract inside the native WebView and does not certify native product behavior.
 
 ### Your control has to be concurrent, not remembered
 

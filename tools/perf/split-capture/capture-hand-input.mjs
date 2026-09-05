@@ -315,7 +315,6 @@ export async function captureHandInput({
 
   const servedBuild = await assertServedBuildIsFresh(host, {
     allowForeignBuild: allowForeignBuild !== undefined,
-    nativeApp,
   });
 
   const runtime = captureRuntime(platform, nativeApp);
