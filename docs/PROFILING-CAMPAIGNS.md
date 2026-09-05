@@ -1201,10 +1201,12 @@ passed all 49 actions; scroll maxima were 33.3 / 33.3 / 16.8 ms, P95 16.8 ms. No
 scoring rule changed. ADR-0092 records the scope and retained evidence.
 
 The traced diagnostic also failed its idle control, which remains in the comparison corpus. A useful
-trace is not automatically certification. Capture `scrollDelivery` distinguishes the
-browser-generated path; historical serial-input captures remain historical evidence, not equivalent
-measurements of the corrected gesture. Do not generalize this finding to a different action or
-replace drawing/clear input without its own evidence.
+trace is not automatically certification. Captures made with the corrected runner record
+`scrollDelivery` for the browser-generated path. The retained diagnostic predates that field: the
+study index's `source` value `android-browser-gesture-diagnostic/actions.json` identifies that arm.
+Absence of the field in historical evidence does not identify its delivery. Historical serial-input
+captures are not equivalent measurements of the corrected gesture. Do not generalize this finding to
+a different action or replace drawing/clear input without its own evidence.
 
 ## A red cell describes the commit it was captured at, not the product
 
