@@ -255,6 +255,7 @@ const REPORT_SCRIPT = `<script>
   const root = document.documentElement;
   const toolbar = document.querySelector('.toolbar');
   const shots = [...document.querySelectorAll('.shot')];
+  const rows = [...document.querySelectorAll('.orientation')];
   const themes = [...document.querySelectorAll('.theme-captures')];
   const surfaces = [...document.querySelectorAll('.surface')];
   const groups = [...document.querySelectorAll('.group')];
@@ -301,6 +302,7 @@ const REPORT_SCRIPT = `<script>
           if (!shot.hidden) shown += 1;
         }
       }
+      for (const row of rows) row.hidden = !row.querySelector('.shot:not([hidden])');
       for (const section of themes) section.hidden = !section.querySelector('.shot:not([hidden])');
       for (const surface of surfaces) surface.hidden = !surface.querySelector('.shot:not([hidden])');
       for (const group of groups) group.hidden = !group.querySelector('.surface:not([hidden])');
