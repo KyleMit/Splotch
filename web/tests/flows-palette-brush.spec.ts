@@ -4,8 +4,8 @@ import {
   CUSTOM_SWATCH_COLOR,
   gotoApp,
   isBlueDominant,
-  PICKER_GREEN,
   openSettingsModal,
+  PICKER_GREEN,
   retryOpen,
   settleFlyIn,
   swatch,
@@ -468,6 +468,9 @@ test('disabling advanced controls does not animate the drawer behind Settings', 
   await gotoApp(page);
   await openDrawer(page);
   await openSettingsModal(page);
+  await page.addStyleTag({
+    content: `:root { --duration-fast: ${STALLED_DRAWER_TRANSITION_DURATION} !important; }`,
+  });
 
   const panel = page.locator('.actions-panel');
   await page.locator('#advancedControlsToggle').click();
