@@ -17,6 +17,7 @@ import {
 
 let root;
 let repo;
+const LARGE_GIT_OUTPUT_BYTES = 2 * 1024 * 1024;
 
 function sh(args, cwd = repo) {
   return execFileSync('git', args, {
@@ -102,6 +103,14 @@ describe('scope resolution', () => {
 });
 
 describe('disposable worktree and packet', () => {
+  it('reads Git output larger than the child-process default buffer', () => {
+    writeFileSync(join(repo, 'large.txt'), 'x'.repeat(LARGE_GIT_OUTPUT_BYTES));
+    sh(['add', 'large.txt']);
+    sh(['commit', '-q', '-m', 'large output']);
+
+    expect(git(repo, ['show', 'HEAD:large.txt'])).toHaveLength(LARGE_GIT_OUTPUT_BYTES);
+  });
+
   // `--ignore-scripts` alone left pnpmfile hooks running at launch; the control run proves the
   // marker would appear without the pin, so the assertion is not vacuous.
   it('installs without running a PR-controlled pnpmfile hook', () => {

@@ -597,6 +597,67 @@ describe('keep-capture-evidence', () => {
     }
   });
 
+  it('keeps every action-suite mode with redacted device identifiers', async () => {
+    const corpusDir = mkdtempSync(join(tmpdir(), 'splotch-action-corpus-'));
+    const evidenceDir = mkdtempSync(join(tmpdir(), 'splotch-action-evidence-'));
+    const sourceDir = join(corpusDir, 'ipad-device-web', 'portrait-light', 'actions');
+    mkdirSync(sourceDir, { recursive: true });
+    const source = join(sourceDir, 'actions.json');
+    writeFileSync(
+      source,
+      JSON.stringify({
+        actionPlan: { labels: ['open brush menu'] },
+        samples: [
+          {
+            label: 'open brush menu',
+            repeat: 1,
+            warmup: false,
+            postActionFrameGapsMs: [16.7, 18.2],
+          },
+        ],
+        orientation: 'PORTRAIT',
+        theme: 'light',
+        device: { name: 'hardware-id', os: '18.6', id: 'hardware-id' },
+      })
+    );
+    const sourceBefore = readFileSync(source, 'utf8');
+    const quiet = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    try {
+      const { selected } = await keepCaptureEvidence({
+        corpus: relative(ROOT, corpusDir),
+        campaign: 'action-suite-test',
+        productCommit: PRODUCT_COMMIT,
+        keepAll: true,
+        study: 'action control repeats',
+        evidenceRoot: relative(ROOT, evidenceDir),
+      });
+      expect(selected).toHaveLength(1);
+      expect(selected[0]).toMatchObject({
+        target: 'ipad-device-web',
+        brush: 'actions',
+        mode: 'PORTRAIT-light',
+      });
+      const promoted = JSON.parse(
+        readFileSync(
+          join(evidenceDir, 'action-suite-test', evidenceFileName(selected[0], { keepAll: true })),
+          'utf8'
+        )
+      );
+      expect(promoted.device).toEqual({
+        name: REDACTED_DEVICE_IDENTIFIER,
+        os: '18.6',
+        id: REDACTED_DEVICE_IDENTIFIER,
+      });
+      expect(promoted.samples[0].postActionFrameGapsMs).toEqual([16.7, 18.2]);
+      expect(readFileSync(source, 'utf8')).toBe(sourceBefore);
+    } finally {
+      quiet.mockRestore();
+      rmSync(corpusDir, { recursive: true, force: true });
+      rmSync(evidenceDir, { recursive: true, force: true });
+    }
+  });
+
   // Two hand captures of different runtimes both resolved to the unknown target
   // and collided on `unknown:pen`, so promoting a hand corpus silently dropped
   // one platform's calibration — the capture a person had already paid for.

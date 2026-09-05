@@ -13,6 +13,7 @@
     ui,
     coloringBookModal,
     aiPromptModal,
+    settingsModal,
     openAiSettings,
     SCREENSHOT_BUTTON_ID,
   } from '$lib/state/ui.svelte';
@@ -188,6 +189,10 @@
     }
     if (lastDrawerExpanded === expanded) return;
     lastDrawerExpanded = expanded;
+    if (settingsModal.open && !ui.resizingActionButtons) {
+      stopDrawerMotion();
+      return;
+    }
     drawerMotion = true;
     scheduleDrawerMotionProbe();
   });

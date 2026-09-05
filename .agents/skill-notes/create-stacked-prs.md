@@ -31,6 +31,27 @@ with a carve-out for `implement-issue-stack`'s per-issue rounds, which address t
 anything stacks above it. Both skills state the rule; the collision survives here as the reason the
 mode exists.
 
+## Review belongs between layers
+
+A 2026-09-04 performance campaign accumulated seven coherent commits on one branch, then opened the
+whole stack only when the user asked whether the work was PR-deliverable. The skill already said to
+open each PR when its first commit lands, but did not connect that timing strongly enough to review:
+all seven layers existed before the first rival review, so any early finding would already need a
+sweep-up fix at the tip and could have invalidated later product experiments.
+
+The correction makes an opened PR a review gate before the next branch is cut whenever the task
+requires independent rounds. This is not a universal demand for a particular reviewer or number of
+rounds; the invoking workflow owns those requirements. It is a stacking invariant about timing:
+review while the PR is still the tip, when a valid fix can remain beside the change that caused it.
+The stacked-campaign feedback PR remains necessary for late feedback and already-built stacks, but
+is a fallback rather than the default review schedule.
+
+The first rival review of this correction found a cross-skill collision: `address-pr-review` only
+uses its per-layer exception when the invocation explicitly restricts it to the single current-tip
+PR. Merely naming that PR still triggers the whole-stack sweep and creates a feedback PR above it —
+the child that the early review gate forbids. The stack skill therefore names the exact scoping that
+activates the exception instead of assuming tip position alone changes the receiving skill's mode.
+
 ## Where the merged packets disagreed, and how it was resolved
 
 * **PR numbers vs. URLs for `gh stack link`.** The mechanics packet said "pass PR numbers, not
