@@ -7,6 +7,7 @@ import {
   WARMUP_REPEATS,
   actionFailures,
   actionRows,
+  inkRotationActionLabel,
   rotationActionLabel,
   rotationFirstFrameNa,
   summarizeActions,
@@ -1627,7 +1628,7 @@ export async function runActionSweep({
         execute,
         current,
         other,
-        `with ink: ${rotationActionLabel(current, other)}`
+        inkRotationActionLabel(current, other)
       )
     );
     await record(
@@ -1637,7 +1638,7 @@ export async function runActionSweep({
         execute,
         other,
         originalOrientation,
-        `with ink: ${rotationActionLabel(other, originalOrientation)}`
+        inkRotationActionLabel(other, originalOrientation)
       )
     );
   }

@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   ACTION_FRAME_MAX_GATE_MS,
+  ACTION_GATE_ALLOWANCE_TARGET,
   IOS_ACTION_GATE_ALLOWANCES,
+  IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
   ACTION_FRAME_P95_GATE_MS,
   ACTION_SETTLE_TAIL_FRAMES,
+  actionGateAllowancesFor,
+  inkRotationActionLabel,
   scoredActionFrameGaps,
   summarizeActionGroup,
 } from '../lib/action-stats.mjs';
@@ -1087,6 +1091,73 @@ describe('runActionSweep callers', () => {
       expect(source).toContain('sweep.actionPlan');
       expect(source).not.toMatch(/for \(const sample of sweep\)/);
       expect(source).not.toMatch(/\.\.\.sweep\.map\(/);
+    }
+  });
+});
+
+// ADR-0160: the P95 ledger is a set of measured, per-action residuals for the
+// calibrated iPad web row — sized from committed evidence, rendered with its
+// basis, applied by matrix target id like ADR-0137's lost-frame exceptions,
+// and reaching no other target.
+describe('the calibrated iPad web allowance ledger', () => {
+  const covered = [
+    'open Settings',
+    'close Settings',
+    'select coloring page',
+    'switch light theme to dark',
+    inkRotationActionLabel('PORTRAIT', 'LANDSCAPE'),
+  ];
+
+  it('names exactly the actions ADR-0160 covers', () => {
+    expect(Object.keys(IOS_ACTION_GATE_ALLOWANCES.p95).sort()).toEqual([...covered].sort());
+    expect(Object.keys(IOS_ACTION_GATE_ALLOWANCES.max)).toEqual(['open Settings']);
+  });
+
+  it('sits above the base P95 gate and below the max gate on every entry', () => {
+    for (const [label, ms] of Object.entries(IOS_ACTION_GATE_ALLOWANCES.p95)) {
+      expect(ms, label).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
+      expect(ms, label).toBeLessThan(ACTION_FRAME_MAX_GATE_MS);
+      expect(Number.isInteger(ms), label).toBe(true);
+    }
+  });
+
+  it('carries a basis naming a committed evidence corpus for every entry', () => {
+    for (const statistic of ['p95', 'max']) {
+      for (const [label, entry] of Object.entries(IOS_ACTION_GATE_ALLOWANCE_ENTRIES[statistic])) {
+        expect(entry.ms, label).toBe(IOS_ACTION_GATE_ALLOWANCES[statistic][label]);
+        expect(entry.basis, label).toMatch(/\S/);
+        for (const corpus of entry.basis.match(/perf-profiles\/evidence\/[\w.-]+/g) ?? []) {
+          expect(existsSync(join(ROOT, corpus, 'index.json')), `${label}: ${corpus}`).toBe(true);
+        }
+      }
+    }
+    for (const [label, entry] of Object.entries(IOS_ACTION_GATE_ALLOWANCE_ENTRIES.p95)) {
+      expect(entry.basis, label).toMatch(/perf-profiles\/evidence\//);
+    }
+  });
+
+  it('applies to the calibrated iPad web target and to no other', () => {
+    expect(actionGateAllowancesFor(ACTION_GATE_ALLOWANCE_TARGET)).toBe(IOS_ACTION_GATE_ALLOWANCES);
+    expect(ACTION_GATE_ALLOWANCE_TARGET).toBe('ipad-device-web');
+    for (const target of ['ipad-device-native', 'android-device-web', 'ipad-simulator-web']) {
+      expect(actionGateAllowancesFor(target)).toEqual({});
+    }
+    expect(actionGateAllowancesFor(undefined)).toEqual({});
+  });
+
+  it('passes a covered action inside its allowance and fails it one quantum past', () => {
+    for (const [label, ms] of Object.entries(IOS_ACTION_GATE_ALLOWANCES.p95)) {
+      const inside = Array.from({ length: 40 }, (_, i) => frame(i * 16.7, i < 3 ? ms : 16.7));
+      const past = Array.from({ length: 40 }, (_, i) => frame(i * 16.7, i < 3 ? ms + 1 : 16.7));
+      expect(
+        summarizeActionGroup([action(inside)], label, IOS_ACTION_GATE_ALLOWANCES).passed,
+        label
+      ).toBe(true);
+      expect(
+        summarizeActionGroup([action(past)], label, IOS_ACTION_GATE_ALLOWANCES).passed,
+        label
+      ).toBe(false);
+      expect(summarizeActionGroup([action(inside)], label).passed, `${label} base`).toBe(false);
     }
   });
 });

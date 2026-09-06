@@ -1,7 +1,13 @@
 # ADR-0137: Codify Lost-Frame Gate Exceptions, Not Per-Cell Budgets
 
 **Status:** Accepted — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md);
-depends on [ADR-0136](0136-browser-target-lost-frame-gate.md). **Date:** 2026-08
+depends on [ADR-0136](0136-browser-target-lost-frame-gate.md); extended by
+[ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md). **Date:** 2026-08
+
+> **Extended by [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md):**
+> the rules this record sets for the lost-frame exception table — sized from the worst single
+> capture, keyed by matrix target id, rendered beside the gates with its basis, entries that only
+> ratchet down — now also govern the action P95 allowance ledger for the calibrated iPad web row.
 
 ## Context
 

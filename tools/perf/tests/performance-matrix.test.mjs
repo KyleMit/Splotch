@@ -6,6 +6,7 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  IOS_ACTION_GATE_ALLOWANCES,
 } from '../lib/action-stats.mjs';
 import {
   mergeActionResults,
@@ -232,7 +233,17 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport, captureRuntime, engine, actionPlan }
+  {
+    orientation,
+    theme,
+    summaries,
+    samples,
+    transport,
+    captureRuntime,
+    engine,
+    actionPlan,
+    gateAllowances,
+  }
 ) {
   const path = join(directory, name);
   writeFileSync(
@@ -247,6 +258,7 @@ function writeActionCapture(
       captureRuntime,
       engine,
       actionPlan,
+      gateAllowances,
     })
   );
   return name;
@@ -1938,5 +1950,154 @@ describe('trust publishes instrument silence as unrecorded', () => {
       state: 'unrecorded',
       detail: 'pressure(uncalibrated)+contactGeometry(uncalibrated)',
     });
+  });
+});
+
+// ADR-0160: the matrix scores a capture under the SHIPPED allowance policy for
+// its target, never under the ledger the artifact recorded, so a policy change
+// reaches every published cell on regeneration — and the allowance rides on
+// the result, is priced into the heat ratio, and is rendered beside the gates.
+describe('per-target action allowances', () => {
+  const label = 'select coloring page';
+  const allowedP95 = IOS_ACTION_GATE_ALLOWANCES.p95[label];
+  const allowedSample = (warmup) => ({
+    ...actionSample(label, warmup),
+    postActionFrameGapsMs: Array.from({ length: 20 }, () => allowedP95 - 1),
+  });
+
+  function matrixFor(targetOverrides, captureOverrides = {}) {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-allowance-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [
+        ...[true, false, false, false].map((warmup) => actionSample('idle frame control', warmup)),
+        ...[true, false, false, false].map(allowedSample),
+      ],
+      ...captureOverrides,
+    });
+    const target = {
+      ...manifestTarget([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      ...targetOverrides,
+    };
+    return normalizeMatrix({ ...manifest([]), targets: [target] }, manifestDirectory);
+  }
+
+  it('scores the calibrated iPad web row under the shipped ledger, whatever the artifact recorded', () => {
+    expect(allowedP95).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
+    const matrix = matrixFor(
+      { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },
+      { captureRuntime: 'ios-safari', gateAllowances: {} }
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toEqual({ p95Ms: allowedP95 });
+    expect(result.postActionFrames.p95).toBe(allowedP95 - 1);
+  });
+
+  it('keeps every other target on the base gates, whatever the artifact recorded', () => {
+    const matrix = matrixFor(
+      { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
+      { captureRuntime: 'ios-capacitor-webview', gateAllowances: IOS_ACTION_GATE_ALLOWANCES }
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  // A summary-only artifact keeps the verdict it was written with, so the shipped
+  // policy cannot reach it: on the ledger's target the fold refuses rather than
+  // labelling a stored verdict with an allowance it never scored under, and on
+  // every other target it folds as before, carrying no allowance.
+  it('refuses a summary-only capture on the ledger target and folds it plainly elsewhere', () => {
+    const summaryOnly = {
+      samples: undefined,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: false,
+        },
+      ],
+    };
+    expect(() =>
+      matrixFor({ id: 'ipad-device-web', fidelity: 'physical-safari-gated' }, summaryOnly)
+    ).toThrow('allowance policy (ADR-0160) cannot be applied');
+    const matrix = matrixFor(
+      { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
+      summaryOnly
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  // The stored verdict of a summary-only artifact was scored under the ledger
+  // it recorded. A native artifact carrying the iPad ledger stores PASS at a
+  // P95 the native row's base gate fails, so the fold refuses it — in both the
+  // structured and the legacy flat recorded shapes — rather than publishing a
+  // verdict the target never scored.
+  it('refuses a summary-only capture whose recorded ledger is not the target policy', () => {
+    const storedPass = (gateAllowances) => ({
+      samples: undefined,
+      gateAllowances,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: true,
+        },
+      ],
+    });
+    const native = { id: 'ipad-device-native', fidelity: 'physical-native-advisory' };
+    expect(() => matrixFor(native, storedPass(IOS_ACTION_GATE_ALLOWANCES))).toThrow(
+      'recorded gateAllowances that target ipad-device-native does not grant'
+    );
+    expect(() => matrixFor(native, storedPass({ [label]: allowedP95 }))).toThrow('does not grant');
+    const plain = matrixFor(native, storedPass({ p95: {}, max: {} }));
+    const result = plain.targets[0].modes[0].actions.results.find((entry) => entry.label === label);
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  it('renders the ledger beside the gates and names the allowance in the cell verdict', () => {
+    const matrix = matrixFor(
+      { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },
+      { captureRuntime: 'ios-safari' }
+    );
+    expect(matrix.gates.actions.postActionAllowances.target).toBe('ipad-device-web');
+    expect(matrix.gates.actions.postActionAllowances.p95[label].ms).toBe(allowedP95);
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain(`**${label}** — post-action P95 ≤ ${allowedP95} ms.`);
+    expect(markdown).toContain('**open Settings** — post-action max ≤ 56 ms.');
+    const html = renderReport(matrix);
+    expect(html).toContain('Action allowances on <code>ipad-device-web</code>');
+    expect(html).toContain(
+      `PASS under a recorded allowance (post P95 ≤ ${allowedP95} ms; ADR-0160)`
+    );
   });
 });
