@@ -336,6 +336,30 @@ looks like: a recording spanning 200 painted `requestAnimationFrame` frames emit
 that coarse cannot attribute per-frame cost between two brushes. Reach for `xctrace` against the
 native build for frame-level timing, and use the bridge for what the page itself can measure.
 
+## The action probe's frame clock is the vsync schedule, not the main thread
+
+`tools/perf/probes/action-probe.js` stamps each frame with the `requestAnimationFrame` callback's
+timestamp argument. Chrome hands a main-thread frame the vsync time of the `BeginFrame` that
+requested it, so a callback that runs late still carries an on-time stamp. The gap the probe scores
+can therefore stay a clean 16.7 ms while the main thread is blocked for most of two vsync periods,
+and reads 33.4 when the request slips a whole additional vsync. The probe records timestamp
+differences, not their cause: how far the task overruns and where it lands against the vsync both
+decide whether the second beat shows, and the rendering model also permits skipped or throttled
+rendering opportunities.
+
+The 2026-09-06 issue-1696 trace of the Android compact-shell Night Mode toggle is the measured case:
+the click's rAF-aligned input task ran 26–39 ms on `CrRendererMain` in every one of eight toggle
+repeats (event dispatch plus the Svelte flush, a 9.5–14.7 ms whole-document style recalc, and
+prepaint), the compositor logged a `DroppedFrame` at the first `BeginFrame` after the click every
+time, and the probe reported 16.7 ms gaps in six of the eight; the two that read 33.4 carried the
+two longest tasks. The same cell then read 33.4 in all four repeats of a full-plan run on the same
+build, and 16.8 / 33.4 / 16.8 in a later full-plan run of the same product. So on this probe a
+one-beat gap is not proof the frame fit, and a two-beat gap says a frame overran without saying what
+overran it — the 2026-09-05 scroll study's two-beat cadence was delivery, this toggle's was product.
+A cell that flips between runs at a steady 33.3 is consistent with work sitting just over one 60 Hz
+period and is not proof of it. Attribute from a paired trace's main-thread task, never from whether
+the probe happened to see the second beat.
+
 ## Input cadence is a result, not a detail
 
 **Check the fidelity verdict on every capture, and never score a run that fails it.** Appium's
