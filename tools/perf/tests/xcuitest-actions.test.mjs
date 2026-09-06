@@ -1153,9 +1153,10 @@ describe('the calibrated iPad web allowance ledger', () => {
 // ADR-0162: the physical Android web row's one allowance, the compact-shell
 // theme flip. Its value is pinned to the committed evidence rather than typed:
 // one 0.1 ms clock quantum above the worst committed scored P95 of the cell,
-// which lands it exactly on the max gate, so a P95 past it is by construction
-// a confirmed max breach and the allowance never passes a frame the max gate
-// would fail.
+// which lands it exactly on the max gate. Pooled P95 counts gaps and max
+// confirmation counts repeats, so the allowance is at least as strict as the
+// max gate and never passes a cell the max gate would fail; the concentrated-
+// gap case below is where it is stricter.
 describe('the physical Android web allowance ledger', () => {
   const label = `disable ${compactSettingsActionLabel('Night Mode')}`;
   const ms = ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95[label];
