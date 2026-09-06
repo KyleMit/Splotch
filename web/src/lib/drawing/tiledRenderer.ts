@@ -111,9 +111,8 @@ function migrateHiddenBackingsAcrossFrames() {
     if (revision !== backingMigration.revision) return;
     const tile = liveTiles[index++];
     if (tile?.canvas.hidden) ensureNormalTileBacking(tile);
-    if (index < liveTiles.length) {
-      requestAnimationFrame(migrateNext);
-    } else backingMigration.pending = false;
+    if (index < liveTiles.length) requestAnimationFrame(migrateNext);
+    else backingMigration.pending = false;
   };
   requestAnimationFrame(migrateNext);
 }
@@ -338,25 +337,18 @@ function foldOldestCommand() {
   const command = history.shift();
   if (!command) return;
   if (PERF_MARKS) performance.mark('engine.fold:start');
-  try {
-    undoPatches.delete(command);
-    ensureHistoryBase();
-    magicRecode.beforeFold(command);
-    clipTilesToPaper(historyBase, paper);
-    for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
-    restoreTileContexts(historyBase);
-    magicRecode.afterFold(command);
-  } finally {
-    if (PERF_MARKS) {
-      performance.mark('engine.fold:end');
-      performance.measure('engine.fold', 'engine.fold:start', 'engine.fold:end');
-    }
-  }
+  undoPatches.delete(command);
+  ensureHistoryBase();
+  magicRecode.beforeFold(command);
+  clipTilesToPaper(historyBase, paper);
+  for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
+  restoreTileContexts(historyBase);
+  magicRecode.afterFold(command);
+  if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
 }
 
 function cancelHistoryFold() {
-  if (historyFoldTimer === null) return;
-  clearTimeout(historyFoldTimer);
+  if (historyFoldTimer !== null) clearTimeout(historyFoldTimer);
   historyFoldTimer = null;
 }
 

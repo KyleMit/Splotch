@@ -756,6 +756,17 @@ samples fails the job. Every tier attempts to upload `undo-scenarios.json` and `
 after a failure; an early build/browser failure may leave no reports, which warns without masking
 the original error.
 
+**A slow history settle is not an incomplete scenario.** After each scenario's batched draw the
+harness waits for tiled history to reach its idle steady state — no open command, nothing left for
+the fold loop to fold — before it reads the memory table and starts the undo phase. That wait is
+diagnostic: the `engine.commit` samples the gate scores are complete before it begins. So its
+deadline (`DEFAULT_HISTORY_SETTLE_TIMEOUT_MS` in `tools/perf/web/run-undo-scenarios.mjs`) bounds
+wall clock only. An expired wait records `settle.settled: false` with the whole poll trace on the
+scenario result, marks the report row "history unsettled", and the gate scores the scenario as
+measured. Through 2026-09-06 that expiry was a thrown skip and fingerprinted as
+`crayon-scribbles:incomplete` on roughly one main push in four, because a shared runner stalls the
+page's main thread for 5–10 s after a crayon burst before the first poll can return (ADR-0161).
+
 The workflow's concurrency group folds `github.sha` in for `push` events. Pull requests still
 collapse per ref so a new push cancels the run it supersedes, but back-to-back merges no longer
 cancel each other — which would drop a commit's only WebKit coverage exactly when merge traffic is

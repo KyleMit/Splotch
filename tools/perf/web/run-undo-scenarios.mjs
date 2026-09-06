@@ -74,9 +74,20 @@ const { flag, throttle, port, build } = parsePerfArgs({
   ],
   entry,
 });
+// Bounds the wait for tiled history to reach the idle steady state its fold
+// loop leaves behind (TILE_HISTORY_FOLD_IDLE_MS between folds, one command per
+// fold, until history.length <= undoableCommands). The deepest backlog a
+// scenario can leave is its stroke count less MIN_TILED_UNDO_COMMANDS, and the
+// 2026-09-06 runner traces (issue 1578) put a main-thread stall of 5–10 s
+// between the crayon burst and the first poll, before the first fold timer
+// could fire; this is that worst backlog plus the stall with margin. Expiry is
+// recorded on the result and reported, never treated as missing coverage — the
+// commit samples the gate scores are complete before this wait begins.
+// tools/perf/tests/history-settle-deadline.test.mjs holds it to that derivation.
+const DEFAULT_HISTORY_SETTLE_TIMEOUT_MS = 45_000;
 const HISTORY_SETTLE_TIMEOUT_MS = requireNumberFlag(
   'history-settle-timeout-ms',
-  flag('history-settle-timeout-ms', '10000'),
+  flag('history-settle-timeout-ms', String(DEFAULT_HISTORY_SETTLE_TIMEOUT_MS)),
   entry
 );
 const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
@@ -393,12 +404,19 @@ const readHistorySample = (page, sinceMs) =>
     return { debug, now: performance.now(), measures, frames };
   }, sinceMs);
 
-// Tiled history may finish progressive patch capture or fold old commands into
-// base tiles after the batched draw phase returns. The harness needs a quiescent
-// reading, not a policy-specific shape, so it polls the complete debug contract
-// until consecutive samples agree.
+// The steady state tiled history reaches after a batched draw: no command is
+// still open, and the idle fold loop has nothing left to fold
+// (scheduleTiledHistoryFold's own condition, read through the debug contract).
+// A reading taken earlier describes a history that is still compacting, and
+// which side of the folds it lands on depends only on how fast the host was —
+// the 2026-09-06 traces show a fast host reading twenty-two retained commands
+// and no base tiles where a shared runner read twenty and a full base.
+const historyIsQuiescent = (d) => d.pendingCommands === 0 && d.historyLength <= d.snapshots;
+
 const SETTLE_POLL_MS = 100;
-const SETTLE_STABLE_SAMPLES = 4;
+// A quiescent reading is confirmed by one more identical poll, so a capture that
+// the debug contract does not announce as pending cannot slip between them.
+const SETTLE_STABLE_SAMPLES = 2;
 const SETTLE_FIELDS = [
   'snapshots',
   'liveRasters',
@@ -416,20 +434,25 @@ const formatMeasures = (measures) =>
     .map(([name, durations]) => `${name}=[${durations.join(',')}]`)
     .join(' ') || 'none';
 
-function formatSettleTrace(trace) {
-  return trace
-    .map(
-      (sample, index) =>
-        `#${index + 1} +${sample.atMs}ms read ${sample.readMs}ms ` +
-        `${sample.changed ? 'changed' : 'same'} ${formatMeasures(sample.measures)}` +
-        (sample.frames
-          ? ` frames=${sample.frames.count}@${sample.frames.firstMs}..${sample.frames.lastMs}ms gap=${sample.frames.maxGapMs}ms`
-          : '')
-    )
-    .join('; ');
+function formatSettleSample(sample, index) {
+  return (
+    `#${index + 1} +${sample.atMs}ms read ${sample.readMs}ms ` +
+    `${sample.changed ? 'changed' : 'same'} ${formatMeasures(sample.measures)}` +
+    (sample.frames
+      ? ` frames=${sample.frames.count}@${sample.frames.firstMs}..${sample.frames.lastMs}ms gap=${sample.frames.maxGapMs}ms`
+      : '')
+  );
 }
 
-async function settleHistory(page, sinceMs, timeoutMs = 10_000) {
+const formatSettleTrace = (trace) => trace.map(formatSettleSample).join('; ');
+
+// Waits for the steady state above and reports how the wait went. The deadline
+// bounds wall clock only: an expired wait returns the last reading with
+// `settled: false` and the whole trace, because on a saturated main thread the
+// polls themselves are what spend the budget — each read round trip queues
+// behind whatever the host is doing — and a scenario whose commit samples are
+// already complete has lost nothing the gate scores.
+async function settleHistory(page, sinceMs, timeoutMs = HISTORY_SETTLE_TIMEOUT_MS) {
   const t0 = Date.now();
   const trace = [];
   let prev = null;
@@ -454,29 +477,25 @@ async function settleHistory(page, sinceMs, timeoutMs = 10_000) {
       frames: sample.frames ?? null,
       reading: settleReading(d),
     });
-    console.log(`  settle ${formatSettleTrace(trace.slice(-1)).replace(/^#\d+/, `#${samples}`)}`);
-    if (stable >= SETTLE_STABLE_SAMPLES - 1) {
+    const settled = historyIsQuiescent(d) && stable >= SETTLE_STABLE_SAMPLES - 1;
+    const expired = samples >= SETTLE_STABLE_SAMPLES && Date.now() - t0 > timeoutMs;
+    // A fold backlog is read one identical poll at a time for seconds, so the
+    // log keeps the polls that carry information — the first, every change, and
+    // the last — while the artifact keeps the whole trace.
+    if (samples === 1 || changed || settled || expired) {
+      console.log(`  settle ${formatSettleSample(trace.at(-1), samples - 1)}`);
+    }
+    if (settled) {
       return { debug: d, settled: true, samples, elapsedMs: Date.now() - t0, trace };
     }
     // The wall clock alone cannot expire this wait, because on a saturated main
-    // thread the polls themselves are what spend it: each read round trip queues
-    // behind the work being waited on, so a slow host can burn the whole budget
-    // on two or three reads and time out on a history nothing was still
-    // changing. Quiescence is only visible once SETTLE_STABLE_SAMPLES readings
-    // exist, so until that many have been taken there is nothing for a timeout
-    // to have been long enough for.
-    if (samples >= SETTLE_STABLE_SAMPLES && Date.now() - t0 > timeoutMs) {
-      const elapsedMs = Date.now() - t0;
-      const error = new Error(
-        `history never settled within ${timeoutMs} ms: undoEntries=${d.snapshots} ` +
-          `livePatchEntries=${d.liveRasters} patchBytes=${d.rasterBytes} ` +
-          `baseTiles=${d.baseRasters} baseRasterBytes=${d.baseRasterBytes} ` +
-          `historyCommands=${d.historyLength} pendingCommands=${d.pendingCommands} ` +
-          `(want ${SETTLE_STABLE_SAMPLES} consecutive identical samples; ` +
-          `took ${samples} in ${elapsedMs} ms; ${formatSettleTrace(trace)})`
-      );
-      error.settle = { settled: false, samples, elapsedMs, trace };
-      throw error;
+    // thread the polls themselves are what spend it: each read round trip
+    // queues behind the work being waited on, so a slow host can burn the whole
+    // budget on one read. The steady state is only confirmable once
+    // SETTLE_STABLE_SAMPLES readings exist, so until that many have been taken
+    // there is nothing for a deadline to have been long enough for (ADR-0158).
+    if (expired) {
+      return { debug: d, settled: false, samples, elapsedMs: Date.now() - t0, trace };
     }
     prev = d;
     await sleep(SETTLE_POLL_MS);
@@ -502,6 +521,15 @@ export async function runUndoScenario(
 
   const settle = await settleHistory(page, drawEnd, historySettleTimeoutMs);
   const { debug } = settle;
+  if (debug != null && !settle.settled) {
+    console.warn(
+      `  history did not reach its idle steady state within ${historySettleTimeoutMs} ms ` +
+        `(${settle.samples} samples; last reading undoEntries=${debug.snapshots} ` +
+        `historyCommands=${debug.historyLength} pendingCommands=${debug.pendingCommands}); ` +
+        'continuing — the commit samples were complete before the wait began. ' +
+        `Trace: ${formatSettleTrace(settle.trace)}`
+    );
+  }
   const heapAfterDraw = await heapBytes(page);
 
   const undoStart = await now(page);
@@ -724,7 +752,6 @@ export async function runUndoScenarios() {
           crayon: !!sc.crayon,
           skipped: true,
           error: message,
-          ...(error?.settle ? { settle: error.settle } : {}),
         });
       }
       if (timeline) {
@@ -1121,6 +1148,14 @@ function reportCommitGate(
   return base;
 }
 
+// A completed scenario whose history never reached its idle steady state is
+// still a measured scenario — the status says so rather than the row vanishing.
+function historyStatus(scenario) {
+  const settle = scenario.settle;
+  if (!settle || settle.settled || scenario.debug == null) return 'Completed';
+  return `Completed; history unsettled after ${settle.elapsedMs} ms (${settle.samples} samples)`;
+}
+
 function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
   const out = [];
   out.push('# Undo scenario profile (tiled history, ADR-0085/ADR-0086)\n');
@@ -1156,7 +1191,7 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
       continue;
     }
     out.push(
-      `| ${s.label} | ${s.strokes} | Completed | ${s.debug?.snapshots ?? 'n/a'} | ` +
+      `| ${s.label} | ${s.strokes} | ${historyStatus(s)} | ${s.debug?.snapshots ?? 'n/a'} | ` +
         `${s.debug?.liveRasters ?? 'n/a'} | ${s.debug?.historyLength ?? 'n/a'} | ` +
         `${s.debug?.baseRasters ?? 'n/a'} | ${f1(toMiB(s.debug?.rasterBytes ?? 0))} | ` +
         `${f1(toMiB(s.debug?.baseRasterBytes ?? 0))} | ${s.debug?.pendingCommands ?? 'n/a'} |`

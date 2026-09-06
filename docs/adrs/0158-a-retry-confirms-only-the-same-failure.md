@@ -1,7 +1,17 @@
 # ADR-0158: A Retry Confirms Only the *Same* Failure
 
-**Status:** Active — amends [ADR-0140](0140-commit-gate-host-control-and-breach-confirmation.md)
+**Status:** Active — amends [ADR-0140](0140-commit-gate-host-control-and-breach-confirmation.md);
+amended by [ADR-0161](0161-history-settle-waits-for-the-fold-loop-and-never-decides-coverage.md)
 **Date:** 2026-09
+
+## Amendment — 2026-09-06: the settle wait no longer decides coverage
+
+ADR-0161 traced the settle timeout this ADR guarded. The 10 s went to a browser task and the crayon
+shadow drain after the burst, not to history; the folds cost tens of milliseconds. The settle now
+waits for the fold loop's own steady state, records an expired wait on the scenario result instead
+of throwing, and carries the poll sequence this ADR noted the artifact lacked. So "a history that is
+genuinely still moving still fails" below no longer holds: it is recorded and reported, and
+`<key>:incomplete` means a thrown scenario only. Everything else here stands.
 
 ## Context
 
