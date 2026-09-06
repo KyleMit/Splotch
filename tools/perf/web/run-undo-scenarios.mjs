@@ -247,7 +247,14 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
 // stack AND exercises the depth-cap shift path.
 const MAX_UNDO_DEPTH = 20;
 const MAX_UNDO_STEPS = 60;
-const STROKES = requireNumberFlag('strokes', flag('strokes', String(MAX_UNDO_DEPTH + 2)), entry);
+// Named so the settle deadline's drift guard can read the scenario volume the
+// deadline was derived from (tools/perf/tests/history-settle-deadline.test.mjs).
+const DEFAULT_SCENARIO_STROKES = MAX_UNDO_DEPTH + 2;
+const STROKES = requireNumberFlag(
+  'strokes',
+  flag('strokes', String(DEFAULT_SCENARIO_STROKES)),
+  entry
+);
 
 function buildScenarios(width, height) {
   const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));
