@@ -29,7 +29,19 @@ Each triple is calculated separately from the three non-warmup samples using
 `scoredActionFrameGaps`. Scored P95 uses the existing pooled scored-frame distribution; it is not
 one of the three repeat maxima. All four activations per group were valid. The difference in
 readiness P50 is an observation from unchanged code, not a latency improvement attributed to a
-product treatment. The Appium polling path and readiness predicate are unchanged.
+product treatment. The Appium polling path and readiness predicate are unchanged. Both fresh
+dismissal P95s are exactly the inclusive 20 ms gate, with no margin. Landscape/dark's maxima, 23 /
+23 / 23 ms, are not lower than the earlier red's 22 / 22 / 23 ms; its verdict changes because pooled
+P95 moves from 21 to 20 ms.
+
+The scored-frame pools also differ: fresh light has 27 / 32 / 27 frames (86 total), compared with 31
+/ 31 / 31 (93) earlier; fresh dark has 27 / 28 / 31 (86), compared with 27 / 31 / 32 (90). Observed
+readiness clusters near 35 or 135 ms within individual captures. The runner waits for the readiness
+poll and then a fixed settling period, so earlier observed readiness also ends the raw capture
+window earlier. The associated scored pools are therefore not equal-sized. This count difference
+alone does not explain the verdict change: the existing nearest-rank P95 selects the fifth-largest
+gap for all three pool sizes (86, 90, and 93), which is 20 ms in both fresh pools and 21 ms in both
+earlier pools. Neither a product speedup nor a scorer correction is inferred.
 
 ## Complete control results
 
@@ -42,10 +54,12 @@ single-repeat maximum warnings were recorded. The three surviving reds are retai
 | landscape/dark  | open Settings        | 27 / 28 / 27             | 27              | 326 / 334                |
 | landscape/dark  | select coloring page | 30 / 27 / 29             | 29              | 127 / 133                |
 
-Landscape/light Open Settings passes with maxima 27 / 29 / 28 ms, scored P95 25 ms, and readiness
-332 / 334 ms. The existing tablet Open Settings allowance remains P95 26 ms and maximum 56 ms; other
-actions retain the base P95 20 ms and maximum 33.5 ms, with maximum breaches requiring confirmation
-in two scored repeats. No threshold, allowance, scorer, action plan, or product code changed.
+Landscape/light Open Settings, red in the earlier complete control at P95 27 ms, also did not
+reproduce: maxima 27 / 29 / 28 ms, scored P95 25 ms, and readiness 332 / 334 ms. Three of the six
+earlier landscape reds reproduced; the two dismissals and light-mode Settings opening did not. The
+existing tablet Open Settings allowance remains P95 26 ms and maximum 56 ms; other actions retain
+the base P95 20 ms and maximum 33.5 ms, with maximum breaches requiring confirmation in two scored
+repeats. No threshold, allowance, scorer, action plan, or product code changed.
 
 ## Provenance and retention
 

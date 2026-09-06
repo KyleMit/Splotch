@@ -1232,6 +1232,22 @@ Each is worth recognizing in a number.
   regime.** A long sweep can keep aggregate idle under its gates while a target changes from clean
   to slow. Inspect the per-repeat samples and preserve the raw artifact.
 
+### A readiness poll can change the pool behind an action P95
+
+The XCUITest action runner waits for observed readiness, then a fixed settling period before
+finishing the probe. An earlier successful poll therefore ends the raw capture window earlier;
+compared captures can also have different scored-frame counts. Record those counts alongside
+readiness and the three repeat maxima when a verdict changes near a gate. Do not attribute a
+readiness change on unchanged code to a product speedup, or assume a different pool size explains a
+verdict without checking the percentile's ordinal position and actual gaps.
+
+The
+[landscape Settings control study](scratchpad/perf/2026-09-05-landscape-settings-retirement-controls.md)
+measured fresh dismissal pools of 86 frames versus earlier pools of 93 and 90. Their nearest-rank
+P95 selected the fifth-largest gap in every case: 20 ms in the fresh controls, 21 ms earlier. Both
+fresh passes sat exactly on the inclusive gate, and dark-mode per-repeat maxima did not improve. The
+candidate was never applied; every earlier red remains preserved.
+
 ## Serial CDP touch acknowledgements can slow the scroll itself
 
 The September epic-1567 Android coloring-scroll control scored 33.4 / 33.3 / 33.4 ms repeat maxima
