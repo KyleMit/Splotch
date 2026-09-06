@@ -47,12 +47,14 @@ signature is the opposite of the scroll study's: a busy main thread under a stea
 an idle one. **Attribution: product** — the whole-document restyle of the theme flip with the
 compact Settings shell open, sitting just over one 60 Hz period.
 
-The probe's frame clock explains the flip-flopping verdicts. `action-probe.js` stamps frames with
-the `requestAnimationFrame` timestamp argument, which is the vsync time of the `BeginFrame` that
-requested the main frame; a late callback keeps its on-time stamp. The probe therefore reported 16.7
-ms gaps in six of the eight traced repeats whose main thread was blocked for most of two periods,
-and 33.4 only when the request slipped an extra vsync. A two-beat red on this probe is faithful; a
-green is not proof the frame fit. `docs/PROFILING-CAMPAIGNS.md` carries the rule.
+The probe's frame clock explains how the same product can read red and green. `action-probe.js`
+stamps frames with the `requestAnimationFrame` timestamp argument, which is the vsync time of the
+`BeginFrame` that requested the main frame; a late callback keeps its on-time stamp. The probe
+therefore reported 16.7 ms gaps in six of the eight traced repeats whose main thread was blocked for
+most of two periods, and 33.4 in the two that carried the longest tasks. The probe records timestamp
+differences, not their cause: a one-beat gap is not proof the frame fit, and a two-beat gap says a
+frame overran without saying what overran it — the trace does. `docs/PROFILING-CAMPAIGNS.md` carries
+the rule.
 
 ## Bounded treatment
 
