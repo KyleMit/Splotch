@@ -59,6 +59,40 @@ own server, never stopping theirs. `CLAUDE.md`'s concurrent-worktree rule says t
 *"Treat `EADDRINUSE` as a request to select another port and retry… Stop only a PID, process group,
 or tool handle created and recorded by the current session."*
 
+**`perf:campaign` for a physical-iPad target has no `wdaLocalPort` flag, so a foreign `iproxy` on
+8100 fails every cell before it captures anything.** A different session's
+`iproxy -u <udid>
+8100:8100` (or a borrowed Appium's forward) owns host 8100, and the campaign's
+built-in capabilities default WDA there — so each cell dies with Appium's
+`The port #8100 is occupied by an other process` and writes no artifact, three attempts each, the
+whole queue P1. The preflight resolves and reports a free WDA port (8110), but the campaign's flags
+(`--device-id`, `--appium-url`, `--probe-host`, …) have no way to pass it through. The route is a
+**capabilities file**: both `capture-xcuitest-screen` and `capture-xcuitest-actions` take
+`--capabilities-file` and use it verbatim through `capabilitiesFromFile` (its `alwaysMatch`),
+replacing the builtin caps entirely — so the file must carry the whole native cap set, not just the
+port:
+
+```json
+{
+  "alwaysMatch": {
+    "appium:bundleId": "art.splotch.app",
+    "platformName": "iOS",
+    "appium:automationName": "XCUITest",
+    "appium:udid": "<hardware-udid>",
+    "appium:xcodeConfigFile": "<abs path to ios/local.xcconfig>",
+    "appium:updatedWDABundleId": "art.splotch.WebDriverAgentRunner",
+    "appium:wdaLaunchTimeout": 180000,
+    "appium:wdaStartupRetries": 1,
+    "appium:wdaLocalPort": 8110
+  }
+}
+```
+
+Pass it as `--capabilities-file=<path>` alongside `--device-id` (still read separately for
+provenance). The port-occupied ledger rows are all `missing-or-invalid-json` with no artifact, so
+clearing the ledger and rerunning is safe (see *Recapturing matrix cells*). This bit the 2026-09-06
+iPad-native recapture: 69 cells P1 on 8100 before the caps file, then 20/20 clean on 8110.
+
 ## A build that is not the build you think
 
 **`pkill -f serve-profile-build` does not stop the preview server.** It kills the wrapper; the vite
