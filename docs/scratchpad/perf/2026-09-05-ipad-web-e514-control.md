@@ -40,6 +40,12 @@ failure was retried for a passing number.
 | portrait-light  | magic  | 16 / 21 / 36               | 1.00%            | PASS    |
 | portrait-light  | pen    | 16 / 24 / 42               | 1.37%            | RED     |
 
+The target-aware matrix/rescore budget is 1% for pen, Magic, and eraser, and 1.5% for crayon under
+ADR-0137's `ipad-device-web:crayon` exception. The comparison is inclusive (`<=`), so the
+portrait/light Magic result at 1.00% passes exactly at the boundary. These original captures stored
+the base 1% budget for every brush; crayon measured 0.22–0.47%, so all verdicts also agree with the
+target-aware rescorer. No artifact or threshold was changed.
+
 All drawing captures pass trusted-touch fidelity and every paint-time check. The ten drawing
 failures are lost-frame-share breaches, not invalid captures. Crayon passes in every mode. These
 observations motivate testing raster batching but do not establish a cause. No GPU bottleneck or

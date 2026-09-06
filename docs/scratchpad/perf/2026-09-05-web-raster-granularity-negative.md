@@ -67,8 +67,14 @@ into the authoritative matrix. Reverting the source does not retroactively chang
 or their provenance.
 
 The original raw captures remain under `perf-profiles/epic-1567-raster-granularity/` in their
-respective control and isolated candidate worktrees. The exact patch is retained in the local
-experiment receipt.
+respective control and isolated candidate worktrees. The full 843-byte patch is retained locally at
+`/tmp/splotch-1567-raster-granularity-candidate.patch`; the experiment receipt is
+`/tmp/splotch-1567-raster-granularity-study.json`. Its SHA-256 covers the default-context output of
+`git diff -- web/src/lib/drawing/strokeRasterQueue.ts` after applying the one-line edit above to the
+clean base, including the Git/index headers, numbered hunk header, and context. It is not the hash
+of the abbreviated display block. Reapplying that exact edit at
+e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3 and hashing that default diff reproduces the table's patch
+hash after the temporary files are gone.
 
 | Raw artifact                     | SHA-256                                                            |
 | -------------------------------- | ------------------------------------------------------------------ |
