@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Splotch coloring-book proof sheets</title>
+    <title>Coloring-book proof sheets · Splotch</title>
     <style>
 :root{
   color-scheme: light dark;
@@ -223,112 +223,1512 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
 }
 
 /* page */
+/* Page-specific look for the coloring-book proof-sheet hub. Colors come from the
+   shared scrapbook chrome tokens (scrapbook-chrome.mjs); only layout lives here.
+   Tile paper is fixed per theme (light paper, night paper) regardless of the
+   page's own light/dark mode, because a tile reproduces what the app draws. */
+.hub-head .shell {
+  padding-top: clamp(14px, 2.5vw, 22px);
+}
+.intro {
+  padding: clamp(18px, 3vw, 30px) 0 clamp(16px, 2.5vw, 24px);
+}
+.intro h1 {
+  font-size: clamp(1.7rem, 3.8vw, 2.4rem);
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  text-wrap: balance;
+}
+.intro .lede {
+  color: var(--muted);
+  max-width: 68ch;
+  margin: 0.55rem 0 0;
+  text-wrap: pretty;
+}
+.intro .lede b {
+  color: var(--ink);
+  font-weight: 650;
+}
+.legend-wrap {
+  margin-top: 14px;
+}
+.legend-wrap summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.legend-wrap summary::-webkit-details-marker {
+  display: none;
+}
+.legend-wrap summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.12s;
+}
+.legend-wrap[open] summary::before {
+  transform: rotate(45deg);
+}
+.legend-wrap summary:hover {
+  color: var(--ink);
+}
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.legend > div {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  padding: 10px 12px 11px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.legend b {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  margin-bottom: 3px;
+}
+.legend .key {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--faint);
+  border: 1px solid var(--hair-strong);
+  border-radius: 5px;
+  padding: 0 5px;
+  line-height: 1.5;
+}
+.legend .swatches {
+  display: inline-flex;
+  gap: 4px;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+.legend .swatches i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.keys {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: var(--faint);
+}
+.keys kbd {
+  font: inherit;
+  font-size: 0.78em;
+  padding: 1px 6px;
+  border: 1px solid var(--hair-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--card);
+  color: var(--ink);
+}
+.keys .sep {
+  margin: 0 8px;
+}
+@media (hover: none) {
+  .keys {
+    display: none;
+  }
+}
 
-html,body{height:100%}
-body{display:flex;flex-direction:column}
-.proof-sheet-header{flex:0 0 auto;background:var(--card-2);border-bottom:1px solid var(--hair);box-shadow:0 1px 0 rgba(20,18,26,.06),0 6px 16px rgba(20,18,26,.05)}
-.titlebar{display:flex;align-items:center;gap:.55rem;padding:.6rem 1rem .55rem;flex-wrap:wrap}
-.count{color:var(--muted);font-size:.78rem;white-space:nowrap}
-.tabsrow{display:flex;align-items:center;gap:.4rem;padding:0 .6rem .6rem}
-.tabs{display:flex;gap:.4rem;overflow-x:auto;scrollbar-width:thin;padding:.15rem;flex:1 1 auto}
-.tabs button{flex:0 0 auto;border:1px solid transparent;background:var(--tab-bg);color:var(--tab-fg);font:inherit;font-size:.9rem;font-weight:600;padding:.35rem .8rem;border-radius:999px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
-.tabs button:hover{border-color:var(--accent)}
-.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.nudge{flex:0 0 auto;width:2rem;height:2rem;border:1px solid var(--hair);background:var(--paper);color:var(--ink);border-radius:50%;cursor:pointer;font-size:1.1rem;line-height:1;display:grid;place-items:center}
-.nudge:hover{border-color:var(--accent);color:var(--accent)}
-main{flex:1 1 auto;min-height:0}
-iframe{width:100%;height:100%;border:0;display:block;background:var(--paper)}
-:root{--tab-bg:#efeae1;--tab-fg:#4a4650}
-@media (prefers-color-scheme:dark){:root{--tab-bg:#24262d;--tab-fg:#c4c8d0}}
-@media (max-width:560px){.count{display:none}}
+/* ---- Sticky toolbar --------------------------------------------------- */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+}
+.toolbar .shell {
+  display: flex;
+  align-items: center;
+  gap: 8px 14px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  flex-wrap: wrap;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+  flex: 1 1 360px;
+  min-width: 0;
+  --fade-l: 0px;
+  --fade-r: 0px;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)),
+    transparent
+  );
+}
+.tabs.fade-l {
+  --fade-l: 36px;
+}
+.tabs.fade-r {
+  --fade-r: 36px;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tabs button {
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 650;
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.tabs button:hover {
+  background: var(--card);
+  color: var(--ink);
+}
+.tabs button[aria-selected='true'] {
+  background: var(--accent);
+  color: #fff;
+}
+.segs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.seg {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: var(--card);
+  padding: 2px;
+}
+.seg button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seg button:hover {
+  color: var(--ink);
+}
+.seg button[aria-pressed='true'] {
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+@media (max-width: 1160px) {
+  .toolbar .shell {
+    gap: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .tabs {
+    flex-basis: 100%;
+  }
+  .segs {
+    margin-left: 0;
+  }
+}
+@media (max-width: 640px) {
+  .segs {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .seg button {
+    padding: 4px 8px;
+    font-size: 0.76rem;
+  }
+}
+
+/* ---- Sheet ------------------------------------------------------------- */
+main .shell {
+  padding-top: clamp(18px, 3vw, 28px);
+  padding-bottom: clamp(40px, 6vw, 72px);
+}
+.cat-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px 14px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+.cat-head h2 {
+  font-size: clamp(1.3rem, 2.6vw, 1.6rem);
+  margin: 0;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+.cat-head .meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.cat-head .open {
+  margin-left: auto;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+.pages-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 clamp(16px, 2.5vw, 24px);
+}
+.pages-nav a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  color: var(--muted);
+}
+.pages-nav a:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  margin: 0 0 14px;
+  min-height: 24px;
+}
+.status[hidden] {
+  display: none;
+}
+.progress {
+  flex: 1 1 160px;
+  max-width: 320px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--hair);
+  overflow: hidden;
+}
+.progress i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width 0.15s linear;
+}
+.progress.indeterminate i {
+  width: 35%;
+  animation: slide 1.1s ease-in-out infinite alternate;
+}
+@keyframes slide {
+  from {
+    transform: translateX(-40%);
+  }
+  to {
+    transform: translateX(240%);
+  }
+}
+.error {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--bad) 10%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--bad) 35%, var(--hair));
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  margin: 0 0 18px;
+}
+.error b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.page {
+  scroll-margin-top: calc(var(--bar-h, 64px) + 10px);
+  margin: 0 0 clamp(28px, 4vw, 44px);
+}
+.page-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+.page-head h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.page-head .id {
+  color: var(--faint);
+  font-size: 0.78rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.page-body {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(10px, 1.8vw, 18px);
+  align-items: start;
+}
+.tile {
+  margin: 0;
+  min-width: 0;
+  scroll-margin-top: calc(var(--bar-h, 64px) + 10px);
+}
+.tile.wide {
+  grid-column: span 3;
+}
+.tile.tall {
+  grid-column: span 2;
+}
+.tile.tall.light {
+  grid-column: 2 / span 2;
+}
+/* Light-only or night-only: the page's wide and tall tiles share one row at equal
+   height — a 3:2 next to a 2:3 is 9:4 by width. */
+.sheet[data-show='light'] .tile.night,
+.sheet[data-show='night'] .tile.light {
+  display: none;
+}
+.sheet[data-show='light'] .page-body,
+.sheet[data-show='night'] .page-body {
+  grid-template-columns: 9fr 4fr;
+}
+.sheet[data-show='light'] .tile,
+.sheet[data-show='night'] .tile {
+  grid-column: auto;
+}
+@media (max-width: 640px) {
+  .page-body,
+  .sheet[data-show='light'] .page-body,
+  .sheet[data-show='night'] .page-body {
+    grid-template-columns: 1fr;
+  }
+  .tile.wide,
+  .tile.tall,
+  .tile.tall.light {
+    grid-column: auto;
+  }
+}
+.frame-wrap {
+  position: relative;
+}
+.frame {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  aspect-ratio: 3 / 2;
+}
+.tile.tall .frame {
+  aspect-ratio: 2 / 3;
+}
+.frame:focus-visible,
+.zoom:focus-visible,
+.tabs button:focus-visible,
+.seg button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.frame canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.frame.pending {
+  background: linear-gradient(100deg, var(--card) 40%, var(--card-2) 50%, var(--card) 60%);
+  background-size: 250% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+.view-tag[hidden] {
+  display: none;
+}
+.view-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: rgba(20, 18, 26, 0.55);
+  padding: 2px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.zoom {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(20, 18, 26, 0.55);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.zoom svg {
+  width: 15px;
+  height: 15px;
+}
+.frame-wrap:hover .zoom,
+.zoom:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .zoom {
+    opacity: 0.9;
+  }
+}
+figcaption {
+  display: flex;
+  align-items: center;
+  gap: 6px 8px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+  font-size: 0.8rem;
+}
+.cell-name {
+  font-weight: 600;
+  color: var(--ink);
+  margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+.theme-tag {
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.theme-tag.light {
+  background: color-mix(in srgb, var(--c-yellow) 28%, transparent);
+  color: color-mix(in srgb, var(--c-orange) 60%, var(--ink));
+}
+.theme-tag.night {
+  background: color-mix(in srgb, var(--c-blue) 22%, transparent);
+  color: color-mix(in srgb, var(--c-blue) 55%, var(--ink));
+}
+.score {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.score.good {
+  background: color-mix(in srgb, var(--c-green) 20%, transparent);
+  color: color-mix(in srgb, var(--c-green) 70%, var(--ink));
+}
+.score.ok {
+  background: color-mix(in srgb, var(--c-yellow) 26%, transparent);
+  color: color-mix(in srgb, var(--c-orange) 75%, var(--ink));
+}
+.score.warn {
+  background: color-mix(in srgb, var(--c-red) 18%, transparent);
+  color: color-mix(in srgb, var(--c-red) 80%, var(--ink));
+}
+.missing {
+  font-size: 0.72rem;
+  color: var(--bad);
+  font-weight: 600;
+}
+
+/* ---- Back to top -------------------------------------------------------- */
+.to-top {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 15;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--hair-strong);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.to-top[hidden] {
+  display: none;
+}
+.to-top svg {
+  width: 18px;
+  height: 18px;
+}
+.to-top:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---- Zoom dialog -------------------------------------------------------- */
+.zoom-dialog {
+  border: 0;
+  padding: 0;
+  margin: auto;
+  width: min(100vw, 1600px);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  background: transparent;
+  color: var(--ink);
+}
+.zoom-dialog::backdrop {
+  background: rgba(10, 9, 14, 0.82);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.zoom-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.zoom-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  color: #fff;
+}
+.zoom-bar .title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-right: auto;
+}
+.zoom-bar .title span {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  margin-left: 6px;
+}
+.zoom-bar .seg {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.zoom-bar .seg button {
+  color: rgba(255, 255, 255, 0.7);
+}
+.zoom-bar .seg button:hover {
+  color: #fff;
+}
+.zoom-bar .seg button[aria-pressed='true'] {
+  background: #fff;
+  color: #1e1c26;
+}
+.zoom-bar .close,
+.zoom-step {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.zoom-bar .close:hover,
+.zoom-step:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.zoom-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 56px 16px;
+  cursor: pointer;
+}
+.zoom-stage canvas {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+}
+.zoom-step {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.zoom-step.prev {
+  left: 10px;
+}
+.zoom-step.next {
+  right: 10px;
+}
+@media (max-width: 640px) {
+  .zoom-bar {
+    padding: 8px 10px;
+  }
+  .zoom-bar .title {
+    flex: 1 1 auto;
+  }
+  .zoom-bar .seg {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+  }
+  .zoom-stage {
+    padding: 0 8px 56px;
+  }
+  .zoom-step {
+    top: auto;
+    bottom: 10px;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame.pending,
+  .progress.indeterminate i {
+    animation: none;
+  }
+  .tabs button,
+  .zoom,
+  .progress i {
+    transition: none;
+  }
+}
 </style>
   </head>
   <body>
-    <header class="proof-sheet-header">
-      <div class="titlebar">
-        <a class="brand" href="../index.html"><span class="crayons crayons-lg" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
+    <header class="hub-head">
+      <div class="shell">
+        <div class="topbar">
+          <a class="brand" href="../index.html"><span class="crayons crayons-lg" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
       <nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">Scrapbook</a><span class="sep">/</span><span class="here" aria-current="page">Coloring-book proof sheets</span></nav>
+        </div>
+        <div class="intro">
+          <h1>Coloring-book proof sheets</h1>
+          <p class="lede">
+            Every coloring page in the app, drawn from the image files that ship with it.
+            Each page comes in a <b>wide</b> and a <b>tall</b> version, and each version has
+            four layers: a pen outline, a chalk outline for night mode, and one colored fill
+            per theme. Pick a category, then switch views to check each layer on its own or
+            stacked the way the app draws it.
+          </p>
+          <details class="legend-wrap" id="legend" open>
+            <summary>How to read a tile</summary>
+            <div class="legend">
+            <div><b><span class="key">1</span>Outline</b>The line art alone: black pen on light paper, white chalk on night paper.</div>
+            <div><b><span class="key">2</span>Fill</b>The colored fill alone. Shipped fills carry no outline pixels; the app draws the outline on top.</div>
+            <div><b><span class="key">3</span>Combined</b>Fill under outline, over paper. This is what a child sees, so judge a page here.</div>
+            <div><b>Outline % <span class="swatches" aria-hidden="true"><i style="background:var(--c-green)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-red)"></i></span></b>How much of the pen outline the light fill keeps, scored on the raw fill before its outline pixels were removed. Green from 99%, yellow from 96%, red below.</div>
+            </div>
+          </details>
+          <p class="keys">
+            <kbd>←</kbd> <kbd>→</kbd> category<span class="sep">·</span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> view<span class="sep">·</span><kbd>B</kbd> <kbd>L</kbd> <kbd>N</kbd> both / light / night<span class="sep">·</span>click a tile to cycle its view alone
+          </p>
+        </div>
       </div>
-      <nav class="tabsrow">
-        <button class="nudge" id="prev" title="Previous category (←)" aria-label="Previous category">&#8592;</button>
-        <div class="tabs" id="tabs" role="tablist" aria-label="Coloring categories"></div>
-        <button class="nudge" id="next" title="Next category (→)" aria-label="Next category">&#8594;</button>
-        <span class="count" id="count"></span>
-      </nav>
     </header>
+    <div class="toolbar" id="toolbar">
+      <div class="shell">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Coloring categories"></div>
+        <div class="segs">
+          <div class="seg" id="viewSeg" role="group" aria-label="View"><button type="button" data-value="outline">Outline</button><button type="button" data-value="fill">Fill</button><button type="button" data-value="combined">Combined</button></div>
+          <div class="seg" id="showSeg" role="group" aria-label="Show"><button type="button" data-value="both">Both</button><button type="button" data-value="light">Light</button><button type="button" data-value="night">Night</button></div>
+        </div>
+      </div>
+    </div>
     <main>
-      <iframe id="sheet" role="tabpanel" title="Category proof sheet"></iframe>
+      <section class="shell sheet" id="sheet" role="tabpanel" data-show="both">
+        <div class="cat-head">
+          <h2 id="catTitle"></h2>
+          <span class="meta" id="catMeta"></span>
+          <a class="open" id="catOpen" href="#"></a>
+        </div>
+        <nav class="pages-nav" id="pagesNav" aria-label="Pages in this category"></nav>
+        <div class="status" id="status" role="status" hidden>
+          <span id="statusText"></span>
+          <div class="progress" id="progress" aria-hidden="true"><i></i></div>
+        </div>
+        <div id="pages"></div>
+      </section>
     </main>
+    <footer class="site-foot">
+  <div class="shell">
+    <span class="crayons crayons-sm" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+    <p>Committed run outputs from the Splotch generators — see <code>scrapbook/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="../index.html">All collections</a></p>
+  </div>
+</footer>
+    <button class="to-top" id="toTop" type="button" aria-label="Back to top" hidden>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>
+    </button>
+    <dialog class="zoom-dialog" id="zoom" aria-label="Zoomed tile">
+      <div class="zoom-bar">
+        <span class="title" id="zoomTitle"></span>
+        <div class="seg" id="zoomSeg" role="group" aria-label="View"><button type="button" data-value="outline">Outline</button><button type="button" data-value="fill">Fill</button><button type="button" data-value="combined">Combined</button></div>
+        <button class="close" id="zoomClose" type="button" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="zoom-stage" id="zoomStage"><canvas id="zoomCanvas"></canvas></div>
+      <button class="zoom-step prev" id="zoomPrev" type="button" aria-label="Previous tile">&#8592;</button>
+      <button class="zoom-step next" id="zoomNext" type="button" aria-label="Next tile">&#8594;</button>
+    </dialog>
     <script>
       const CATEGORIES = [
-        { id: 'farm', name: 'Farm', pages: 6 },
-        { id: 'dinosaur', name: 'Dinosaurs', pages: 6 },
-        { id: 'creatures', name: 'Creatures', pages: 6 },
-        { id: 'nature', name: 'Nature', pages: 6 },
-        { id: 'objects', name: 'Objects', pages: 6 },
-        { id: 'shapes', name: 'Shapes', pages: 6 },
-        { id: 'space', name: 'Space', pages: 6 },
-        { id: 'vehicles', name: 'Vehicles', pages: 6 },
+        { id: 'farm', name: 'Farm', pages: 6, bytes: 6348091 },
+        { id: 'dinosaur', name: 'Dinosaurs', pages: 6, bytes: 6699069 },
+        { id: 'creatures', name: 'Creatures', pages: 6, bytes: 7590638 },
+        { id: 'nature', name: 'Nature', pages: 6, bytes: 5499232 },
+        { id: 'objects', name: 'Objects', pages: 6, bytes: 4909609 },
+        { id: 'shapes', name: 'Shapes', pages: 6, bytes: 3670195 },
+        { id: 'space', name: 'Space', pages: 6, bytes: 5438266 },
+        { id: 'vehicles', name: 'Vehicles', pages: 6, bytes: 6927587 },
       ];
+    </script>
+    <script>
+// Browser runtime for the coloring-book proof-sheet hub. The generator emits the
+// category registry as a `CATEGORIES` global ahead of this script. Each category's
+// sheet (<id>.html, built by tools/asset-gen/coloring/gen-book-proof-sheet.mjs) is
+// fetched on demand and the JSON it embeds as `window.__COLORING_BOOK_PROOF_SHEET__`
+// is cut out of the HTML text — the same contract tools/scrapbook/lib/scrapbook-index.mjs
+// reads at check time — so the hub draws the sheet's tiles itself instead of framing
+// the sheet. The compositing mirrors the sheet's own client runtime
+// (coloring-book-proof-sheet.client.js) and DrawingCanvas.svelte.
 
-      const tabsEl = document.getElementById('tabs');
-      const frame = document.getElementById('sheet');
-      const countEl = document.getElementById('count');
-      const buttons = {};
-      let current = -1;
+const SHEET_DATA_MARKER = 'window.__COLORING_BOOK_PROOF_SHEET__ = ';
+// The bracket is escaped so the closing tag cannot end the inline script this file
+// is embedded in.
+const SHEET_DATA_END = ';\x3c/script>';
 
-      CATEGORIES.forEach((cat, i) => {
-        const b = document.createElement('button');
-        b.textContent = cat.name;
-        b.id = `tab-${cat.id}`;
-        b.dataset.id = cat.id;
-        b.setAttribute('role', 'tab');
-        b.setAttribute('aria-controls', 'sheet');
-        b.addEventListener('click', () => { show(i); });
-        tabsEl.appendChild(b);
-        buttons[cat.id] = b;
+const PAPER = { light: '#fcfbf8', dark: '#211f29' };
+const BLEND = { light: 'multiply', dark: 'screen' };
+const VIEWS = ['outline', 'fill', 'combined'];
+const VIEW_LABEL = { outline: 'Outline', fill: 'Fill', combined: 'Combined' };
+const SHOWS = ['both', 'light', 'night'];
+const THEME_LABEL = { light: 'Light', dark: 'Night' };
+const ORIENTS = ['wide', 'tall'];
+
+// Tile canvases render at 640 CSS px on the long edge, scaled by the device pixel
+// ratio up to a cap that keeps 24 canvases per category inside mobile memory.
+const TILE_RENDER_BASE_PX = 640;
+const TILE_RENDER_MAX_PX = 1024;
+const ZOOM_RENDER_MAX_PX = 1536;
+// Luma below which a line-art pixel counts as outline when punching a fresh
+// sample fill (asset-gen lib/punch-fill.mjs); shipped fills are drawn as-is.
+const OUTLINE_LUMA = 150;
+const SCORE_GOOD_PCT = 99;
+const SCORE_OK_PCT = 96;
+const BACK_TO_TOP_AFTER_PX = 600;
+const PROGRESS_HOLD_BEFORE_PARSE = 0.99;
+const BYTES_PER_MB = 1024 * 1024;
+
+const tabsEl = document.getElementById('tabs');
+const viewSegEl = document.getElementById('viewSeg');
+const showSegEl = document.getElementById('showSeg');
+const toolbarEl = document.getElementById('toolbar');
+const sheetEl = document.getElementById('sheet');
+const catTitleEl = document.getElementById('catTitle');
+const catMetaEl = document.getElementById('catMeta');
+const catOpenEl = document.getElementById('catOpen');
+const pagesNavEl = document.getElementById('pagesNav');
+const pagesEl = document.getElementById('pages');
+const statusEl = document.getElementById('status');
+const statusTextEl = document.getElementById('statusText');
+const progressEl = document.getElementById('progress');
+const progressBarEl = progressEl.firstElementChild;
+const toTopEl = document.getElementById('toTop');
+const legendEl = document.getElementById('legend');
+const zoomEl = document.getElementById('zoom');
+const zoomTitleEl = document.getElementById('zoomTitle');
+const zoomSegEl = document.getElementById('zoomSeg');
+const zoomCanvas = document.getElementById('zoomCanvas');
+const zoomStageEl = document.getElementById('zoomStage');
+
+const tabButtons = CATEGORIES.map((cat, i) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = cat.name;
+  b.id = `tab-${cat.id}`;
+  b.setAttribute('role', 'tab');
+  b.setAttribute('aria-controls', 'sheet');
+  b.setAttribute('aria-selected', 'false');
+  b.addEventListener('click', () => selectCategory(i));
+  tabsEl.appendChild(b);
+  return b;
+});
+
+const state = { category: -1, view: 'combined', show: 'both', loadToken: 0 };
+const sheetCache = new Map();
+let tiles = [];
+let zoomTile = null;
+let zoomView = null;
+
+// ---- Fetching a sheet -------------------------------------------------------
+
+function fitInto(w, h, maxPx) {
+  const s = Math.min(1, maxPx / Math.max(w, h));
+  return [Math.round(w * s), Math.round(h * s)];
+}
+
+function formatMb(bytes) {
+  return `${(bytes / BYTES_PER_MB).toFixed(1)} MB`;
+}
+
+async function fetchSheetText(cat, onProgress) {
+  const res = await fetch(`${cat.id}.html`);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.body) return res.text();
+  // The sheet is served gzip-encoded, so the response's Content-Length is the
+  // compressed size while the reader yields decompressed bytes; the byte count
+  // recorded at build time is the right denominator.
+  const total = cat.bytes || Number(res.headers.get('content-length')) || 0;
+  const reader = res.body.getReader();
+  const chunks = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    onProgress(total ? Math.min(received / total, PROGRESS_HOLD_BEFORE_PARSE) : null);
+  }
+  const all = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    all.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return new TextDecoder().decode(all);
+}
+
+function parseSheet(html) {
+  const at = html.indexOf(SHEET_DATA_MARKER);
+  if (at === -1) throw new Error('the sheet has no embedded proof-sheet data');
+  const from = at + SHEET_DATA_MARKER.length;
+  const to = html.indexOf(SHEET_DATA_END, from);
+  return JSON.parse(html.slice(from, to));
+}
+
+function loadSheet(cat, onProgress) {
+  if (!sheetCache.has(cat.id)) {
+    const p = fetchSheetText(cat, onProgress)
+      .then(parseSheet)
+      .catch((err) => {
+        sheetCache.delete(cat.id);
+        throw err;
       });
+    sheetCache.set(cat.id, p);
+    return p;
+  }
+  onProgress(1);
+  return sheetCache.get(cat.id);
+}
 
-      const indexFromHash = () => {
-        const id = (location.hash || '').replace(/^#/, '');
-        const i = CATEGORIES.findIndex((c) => c.id === id);
-        return i === -1 ? 0 : i;
-      };
+function loadImage(uri) {
+  return new Promise((resolve) => {
+    if (!uri) {
+      resolve(null);
+      return;
+    }
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => resolve(null);
+    im.src = uri;
+  });
+}
 
-      const show = (i, skipHash, initialLoad) => {
-        i = (i + CATEGORIES.length) % CATEGORIES.length;
-        if (i === current) return;
-        current = i;
-        const cat = CATEGORIES[i];
-        frame.src = `${cat.id}.html`;
-        countEl.textContent = `Category ${i + 1} of ${CATEGORIES.length} · ${cat.pages} pages`;
-        Object.keys(buttons).forEach((id) => {
-          buttons[id].classList.toggle('on', id === cat.id);
-          buttons[id].setAttribute('aria-selected', String(id === cat.id));
-        });
-        frame.setAttribute('aria-labelledby', buttons[cat.id].id);
-        buttons[cat.id].scrollIntoView({ block: 'nearest', inline: 'center' });
-        if (!skipHash) {
-          if (location.hash.replace(/^#/, '') !== cat.id) {
-            if (initialLoad) history.replaceState(null, '', `#${cat.id}`);
-            else location.hash = `#${cat.id}`;
-          }
-        }
-        document.title = `Splotch proof sheets — ${cat.name}`;
-      };
+// ---- Compositing --------------------------------------------------------------
 
-      document.getElementById('prev').addEventListener('click', () => { show(current - 1); });
-      document.getElementById('next').addEventListener('click', () => { show(current + 1); });
+// Fresh sample fills still carry their outline; cut it away with the line art as
+// a mask so the outline layer drawn on top is the only outline. Shipped fills are
+// already fills-only and re-cutting them stitches a dotted ring around every line.
+function punchedFill(fill, lineArt, w, h) {
+  const fc = document.createElement('canvas');
+  fc.width = w;
+  fc.height = h;
+  const fx = fc.getContext('2d');
+  fx.drawImage(fill, 0, 0, w, h);
+  if (!lineArt) return fc;
+  const mc = document.createElement('canvas');
+  mc.width = w;
+  mc.height = h;
+  const mx = mc.getContext('2d', { willReadFrequently: true });
+  mx.drawImage(lineArt, 0, 0, w, h);
+  const px = mx.getImageData(0, 0, w, h);
+  const d = px.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const luma = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    d[i + 3] = luma < OUTLINE_LUMA ? 255 : 0;
+  }
+  mx.putImageData(px, 0, 0);
+  fx.globalCompositeOperation = 'destination-out';
+  fx.drawImage(mc, 0, 0);
+  return fc;
+}
 
-      window.addEventListener('keydown', (e) => {
-        if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-        if (e.key === 'ArrowLeft') { show(current - 1); }
-        else if (e.key === 'ArrowRight') { show(current + 1); }
-      });
+// Night paper takes white lines: the chalk asset is drawn ink-on-white like the
+// pen, so it is inverted before the screen blend. Canvas filters are the cheap
+// path; a pixel pass covers engines without them.
+function invertedImage(img, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const cx = c.getContext('2d', { willReadFrequently: true });
+  cx.drawImage(img, 0, 0, w, h);
+  const px = cx.getImageData(0, 0, w, h);
+  const d = px.data;
+  for (let i = 0; i < d.length; i += 4) {
+    d[i] = 255 - d[i];
+    d[i + 1] = 255 - d[i + 1];
+    d[i + 2] = 255 - d[i + 2];
+  }
+  cx.putImageData(px, 0, 0);
+  return c;
+}
 
-      window.addEventListener('hashchange', () => { show(indexFromHash(), true); });
+function drawLineArt(ctx, lineArt, theme, w, h) {
+  ctx.save();
+  ctx.globalCompositeOperation = BLEND[theme];
+  if (theme === 'dark') {
+    if (typeof ctx.filter === 'string') {
+      ctx.filter = 'invert(1)';
+      ctx.drawImage(lineArt, 0, 0, w, h);
+    } else {
+      ctx.drawImage(invertedImage(lineArt, w, h), 0, 0);
+    }
+  } else {
+    ctx.drawImage(lineArt, 0, 0, w, h);
+  }
+  ctx.restore();
+}
 
-      show(indexFromHash(), false, true);
+function layersFor(tile) {
+  const { theme, imgs } = tile;
+  return {
+    fill: theme === 'dark' ? imgs.night : imgs.light,
+    lineArt: theme === 'dark' ? imgs.chalk || imgs.lineArt : imgs.lineArt,
+  };
+}
+
+function drawView(canvas, tile, view, maxPx) {
+  const { fill, lineArt } = layersFor(tile);
+  const ref = fill || lineArt;
+  if (!ref) return false;
+  const [w, h] = fitInto(ref.naturalWidth, ref.naturalHeight, maxPx);
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (view === 'fill') {
+    if (fill) ctx.drawImage(fill, 0, 0, w, h);
+    else {
+      ctx.fillStyle = PAPER[tile.theme];
+      ctx.fillRect(0, 0, w, h);
+    }
+    return true;
+  }
+  ctx.fillStyle = PAPER[tile.theme];
+  ctx.fillRect(0, 0, w, h);
+  if (view === 'combined' && fill) {
+    if (tile.source === 'samples') ctx.drawImage(punchedFill(fill, lineArt, w, h), 0, 0);
+    else ctx.drawImage(fill, 0, 0, w, h);
+  }
+  if (lineArt) drawLineArt(ctx, lineArt, tile.theme, w, h);
+  return true;
+}
+
+function tileRenderMaxPx() {
+  const dpr = window.devicePixelRatio || 1;
+  return Math.min(TILE_RENDER_MAX_PX, Math.round(TILE_RENDER_BASE_PX * dpr));
+}
+
+function renderTile(tile) {
+  if (!tile.imgs) return;
+  const view = tile.view || state.view;
+  drawView(tile.canvas, tile, view, tileRenderMaxPx());
+  // The badge marks a tile whose view was cycled away from the toolbar's.
+  tile.tag.hidden = !tile.view;
+  tile.tag.textContent = VIEW_LABEL[view];
+  tile.frame.classList.remove('pending');
+}
+
+function renderAllTiles() {
+  for (const t of tiles) renderTile(t);
+}
+
+// ---- Building a category --------------------------------------------------------
+
+function groupPages(cells) {
+  const pages = [];
+  const byId = new Map();
+  for (const cell of cells) {
+    let page = byId.get(cell.id);
+    if (!page) {
+      page = { id: cell.id, name: cell.name, cells: {} };
+      byId.set(cell.id, page);
+      pages.push(page);
+    }
+    page.cells[cell.orient] = cell;
+  }
+  return pages;
+}
+
+function scoreClass(pct) {
+  return pct >= SCORE_GOOD_PCT ? 'good' : pct >= SCORE_OK_PCT ? 'ok' : 'warn';
+}
+
+function zoomIcon() {
+  return (
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>'
+  );
+}
+
+function tileLabel(tile) {
+  return `${tile.cell.name} ${tile.cell.orient}, ${THEME_LABEL[tile.theme].toLowerCase()}`;
+}
+
+function buildTile(cell, theme, source, imgsPromise) {
+  const fig = document.createElement('figure');
+  fig.className = `tile ${cell.orient} ${theme === 'dark' ? 'night' : 'light'}`;
+  fig.dataset.theme = theme;
+  const wrap = document.createElement('div');
+  wrap.className = 'frame-wrap';
+  const frame = document.createElement('button');
+  frame.type = 'button';
+  frame.className = 'frame pending';
+  const canvas = document.createElement('canvas');
+  const tag = document.createElement('span');
+  tag.className = 'view-tag';
+  tag.hidden = true;
+  frame.append(canvas, tag);
+  const zoom = document.createElement('button');
+  zoom.type = 'button';
+  zoom.className = 'zoom';
+  zoom.innerHTML = zoomIcon();
+  wrap.append(frame, zoom);
+
+  const cap = document.createElement('figcaption');
+  const themeTag = document.createElement('span');
+  themeTag.className = `theme-tag ${theme === 'dark' ? 'night' : 'light'}`;
+  themeTag.textContent = THEME_LABEL[theme];
+  const name = document.createElement('span');
+  name.className = 'cell-name';
+  name.textContent = `${cell.id}-${cell.orient}`;
+  cap.append(themeTag, name);
+  if (theme === 'light' && cell.keep != null) {
+    const score = document.createElement('span');
+    score.className = `score ${scoreClass(cell.keep)}`;
+    score.textContent = `outline ${cell.keep.toFixed(1)}%`;
+    score.title = `${cell.keep.toFixed(1)}% of the pen outline survives in the light fill`;
+    cap.appendChild(score);
+  }
+  if (theme === 'dark' && !cell.night) cap.appendChild(missingNote('no night fill'));
+  if (theme === 'dark' && !cell.chalk) cap.appendChild(missingNote('no chalk outline'));
+  fig.append(wrap, cap);
+
+  const tile = { el: fig, frame, canvas, tag, cell, theme, source, imgs: null, view: null };
+  frame.setAttribute('aria-label', `${tileLabel(tile)}: cycle view`);
+  zoom.setAttribute('aria-label', `${tileLabel(tile)}: zoom`);
+  frame.addEventListener('click', () => {
+    const cur = tile.view || state.view;
+    tile.view = VIEWS[(VIEWS.indexOf(cur) + 1) % VIEWS.length];
+    renderTile(tile);
+  });
+  zoom.addEventListener('click', () => openZoom(tile));
+  imgsPromise.then((imgs) => {
+    tile.imgs = imgs;
+    renderTile(tile);
+  });
+  return tile;
+}
+
+function missingNote(text) {
+  const note = document.createElement('span');
+  note.className = 'missing';
+  note.textContent = text;
+  return note;
+}
+
+function buildPage(page, source) {
+  const section = document.createElement('section');
+  section.className = 'page';
+  section.id = `page-${page.id}`;
+  const head = document.createElement('div');
+  head.className = 'page-head';
+  const h3 = document.createElement('h3');
+  h3.textContent = page.name;
+  head.appendChild(h3);
+  if (page.id !== page.name.toLowerCase()) {
+    const id = document.createElement('span');
+    id.className = 'id';
+    id.textContent = page.id;
+    head.appendChild(id);
+  }
+  const body = document.createElement('div');
+  body.className = 'page-body';
+  const built = [];
+  for (const orient of ORIENTS) {
+    const cell = page.cells[orient];
+    if (!cell) continue;
+    const imgs = Promise.all([
+      loadImage(cell.lineArt),
+      loadImage(cell.chalk),
+      loadImage(cell.light),
+      loadImage(cell.night),
+    ]).then(([lineArt, chalk, light, night]) => ({ lineArt, chalk, light, night }));
+    for (const theme of ['light', 'dark']) {
+      const tile = buildTile(cell, theme, source, imgs);
+      body.appendChild(tile.el);
+      built.push(tile);
+    }
+  }
+  section.append(head, body);
+  return { el: section, tiles: built };
+}
+
+function buildSkeleton(cat) {
+  pagesEl.replaceChildren();
+  for (let i = 0; i < cat.pages; i++) {
+    const section = document.createElement('section');
+    section.className = 'page';
+    const body = document.createElement('div');
+    body.className = 'page-body';
+    for (const orient of ORIENTS) {
+      for (const theme of ['light', 'dark']) {
+        const fig = document.createElement('figure');
+        fig.className = `tile ${orient} ${theme === 'dark' ? 'night' : 'light'}`;
+        const frame = document.createElement('div');
+        frame.className = 'frame pending';
+        fig.appendChild(frame);
+        body.appendChild(fig);
+      }
+    }
+    section.appendChild(body);
+    pagesEl.appendChild(section);
+  }
+}
+
+function renderCategory(cat, data) {
+  const pages = groupPages(data.cells);
+  const tileCount = data.cells.length * 2;
+  const files = data.source === 'samples' ? 'sample files' : 'shipped files';
+  catMetaEl.textContent = `${pages.length} pages · ${tileCount} tiles · ${files}`;
+  pagesNavEl.replaceChildren(
+    ...pages.map((p) => {
+      const a = document.createElement('a');
+      a.href = `#${cat.id}/${p.id}`;
+      a.textContent = p.name;
+      return a;
+    })
+  );
+  tiles = [];
+  pagesEl.replaceChildren();
+  for (const page of pages) {
+    const built = buildPage(page, data.source);
+    pagesEl.appendChild(built.el);
+    tiles.push(...built.tiles);
+  }
+}
+
+function showStatus(text, fraction) {
+  statusEl.hidden = false;
+  statusTextEl.textContent = text;
+  progressEl.hidden = fraction === undefined;
+  progressEl.classList.toggle('indeterminate', fraction === null);
+  progressBarEl.style.width = fraction ? `${Math.round(fraction * 100)}%` : '0';
+}
+
+function showError(cat, err) {
+  statusEl.hidden = true;
+  pagesEl.replaceChildren();
+  const box = document.createElement('div');
+  box.className = 'error';
+  box.innerHTML = `<b>Could not load ${cat.name}.</b>`;
+  const p = document.createElement('span');
+  p.textContent = `${err.message}. `;
+  const a = document.createElement('a');
+  a.href = `${cat.id}.html`;
+  a.textContent = `Open ${cat.id}.html directly`;
+  box.append(p, a, document.createTextNode('.'));
+  pagesEl.appendChild(box);
+}
+
+// ---- Category selection -------------------------------------------------------------
+
+// The hash is `#<category>` or `#<category>/<page>`.
+function hashParts() {
+  const [category, page] = location.hash.replace(/^#/, '').split('/');
+  return { category, page };
+}
+
+function indexFromHash() {
+  const i = CATEGORIES.findIndex((c) => c.id === hashParts().category);
+  return i === -1 ? 0 : i;
+}
+
+function scrollToHashPage() {
+  const { page } = hashParts();
+  const target = page && document.getElementById(`page-${page}`);
+  if (target) target.scrollIntoView({ block: 'start' });
+}
+
+async function selectCategory(i, { fromHash = false, initial = false } = {}) {
+  i = (i + CATEGORIES.length) % CATEGORIES.length;
+  if (i === state.category) return;
+  state.category = i;
+  const cat = CATEGORIES[i];
+  const token = ++state.loadToken;
+
+  tabButtons.forEach((b, j) => b.setAttribute('aria-selected', String(j === i)));
+  tabButtons[i].scrollIntoView({ block: 'nearest', inline: 'center' });
+  sheetEl.setAttribute('aria-labelledby', tabButtons[i].id);
+  sheetEl.dataset.sheet = `${cat.id}.html`;
+  document.title = `${cat.name} — Coloring-book proof sheets · Splotch`;
+  if (!fromHash && hashParts().category !== cat.id) {
+    if (initial) history.replaceState(null, '', `#${cat.id}`);
+    else location.hash = `#${cat.id}`;
+  }
+  if (!initial) sheetEl.scrollIntoView({ block: 'start' });
+  if (zoomEl.open) zoomEl.close();
+
+  catTitleEl.textContent = cat.name;
+  catMetaEl.textContent = `${cat.pages} pages`;
+  catOpenEl.href = `${cat.id}.html`;
+  catOpenEl.textContent = `Open ${cat.id}.html`;
+  pagesNavEl.replaceChildren();
+  tiles = [];
+  buildSkeleton(cat);
+  const size = cat.bytes ? ` (${formatMb(cat.bytes)})` : '';
+  showStatus(`Loading ${cat.name}${size}…`, cat.bytes ? 0 : null);
+
+  try {
+    const data = await loadSheet(cat, (fraction) => {
+      if (token === state.loadToken) showStatus(`Loading ${cat.name}${size}…`, fraction);
+    });
+    if (token !== state.loadToken) return;
+    statusEl.hidden = true;
+    renderCategory(cat, data);
+    scrollToHashPage();
+  } catch (err) {
+    if (token === state.loadToken) showError(cat, err);
+  }
+}
+
+window.addEventListener('hashchange', async () => {
+  await selectCategory(indexFromHash(), { fromHash: true });
+  scrollToHashPage();
+});
+
+// ---- View + show controls ------------------------------------------------------------
+
+function setSeg(segEl, value) {
+  for (const b of segEl.querySelectorAll('button')) {
+    b.setAttribute('aria-pressed', String(b.dataset.value === value));
+  }
+}
+
+function setView(view) {
+  state.view = view;
+  setSeg(viewSegEl, view);
+  for (const t of tiles) t.view = null;
+  renderAllTiles();
+}
+
+function setShow(show) {
+  state.show = show;
+  setSeg(showSegEl, show);
+  sheetEl.dataset.show = show;
+}
+
+viewSegEl.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b) setView(b.dataset.value);
+});
+showSegEl.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b) setShow(b.dataset.value);
+});
+
+// ---- Zoom dialog -----------------------------------------------------------------
+
+function visibleTiles() {
+  if (state.show === 'both') return tiles;
+  const theme = state.show === 'night' ? 'dark' : 'light';
+  return tiles.filter((t) => t.theme === theme);
+}
+
+function renderZoom() {
+  if (!zoomTile || !zoomTile.imgs) return;
+  drawView(zoomCanvas, zoomTile, zoomView, ZOOM_RENDER_MAX_PX);
+  setSeg(zoomSegEl, zoomView);
+  zoomTitleEl.innerHTML = '';
+  zoomTitleEl.append(
+    `${zoomTile.cell.name} · ${zoomTile.cell.orient}`,
+    Object.assign(document.createElement('span'), { textContent: THEME_LABEL[zoomTile.theme] })
+  );
+}
+
+function openZoom(tile) {
+  zoomTile = tile;
+  zoomView = tile.view || state.view;
+  renderZoom();
+  if (!zoomEl.open) zoomEl.showModal();
+}
+
+function zoomStep(delta) {
+  const list = visibleTiles();
+  const at = list.indexOf(zoomTile);
+  if (at === -1 || !list.length) return;
+  zoomTile = list[(at + delta + list.length) % list.length];
+  renderZoom();
+}
+
+function zoomSetView(view) {
+  zoomView = view;
+  renderZoom();
+}
+
+zoomSegEl.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b) zoomSetView(b.dataset.value);
+});
+zoomStageEl.addEventListener('click', (e) => {
+  if (e.target !== zoomCanvas) {
+    zoomEl.close();
+    return;
+  }
+  zoomSetView(VIEWS[(VIEWS.indexOf(zoomView) + 1) % VIEWS.length]);
+});
+document.getElementById('zoomPrev').addEventListener('click', () => zoomStep(-1));
+document.getElementById('zoomNext').addEventListener('click', () => zoomStep(1));
+document.getElementById('zoomClose').addEventListener('click', () => zoomEl.close());
+
+// ---- Keyboard ---------------------------------------------------------------------
+
+window.addEventListener('keydown', (e) => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  const viewIndex = ['1', '2', '3'].indexOf(e.key);
+  if (zoomEl.open) {
+    if (e.key === 'ArrowLeft') zoomStep(-1);
+    else if (e.key === 'ArrowRight') zoomStep(1);
+    else if (viewIndex !== -1) zoomSetView(VIEWS[viewIndex]);
+    else return;
+    e.preventDefault();
+    return;
+  }
+  if (e.key === 'ArrowLeft') selectCategory(state.category - 1);
+  else if (e.key === 'ArrowRight') selectCategory(state.category + 1);
+  else if (viewIndex !== -1) setView(VIEWS[viewIndex]);
+  else if (e.key === 'l' || e.key === 'n' || e.key === 'b') {
+    setShow(SHOWS[['b', 'l', 'n'].indexOf(e.key)]);
+  }
+});
+
+// ---- Legend, sticky bar height, back to top --------------------------------------------
+
+// The legend is a full screen of cards on a phone, so it starts folded there.
+const NARROW_VIEWPORT = '(max-width: 640px)';
+if (window.matchMedia(NARROW_VIEWPORT).matches) legendEl.open = false;
+
+function syncBarHeight() {
+  document.documentElement.style.setProperty('--bar-h', `${toolbarEl.offsetHeight}px`);
+}
+if ('ResizeObserver' in window) new ResizeObserver(syncBarHeight).observe(toolbarEl);
+syncBarHeight();
+
+// Fade the edge of the tab strip that still hides tabs.
+function syncTabsFade() {
+  const hiddenRight = tabsEl.scrollLeft + tabsEl.clientWidth < tabsEl.scrollWidth - 1;
+  tabsEl.classList.toggle('fade-l', tabsEl.scrollLeft > 1);
+  tabsEl.classList.toggle('fade-r', hiddenRight);
+}
+tabsEl.addEventListener('scroll', syncTabsFade, { passive: true });
+window.addEventListener('resize', syncTabsFade);
+syncTabsFade();
+
+function syncToTop() {
+  toTopEl.hidden = window.scrollY < BACK_TO_TOP_AFTER_PX;
+}
+window.addEventListener('scroll', syncToTop, { passive: true });
+toTopEl.addEventListener('click', () => window.scrollTo({ top: 0 }));
+syncToTop();
+
+setView(state.view);
+setShow(state.show);
+selectCategory(indexFromHash(), { initial: true });
     </script>
   </body>
 </html>
