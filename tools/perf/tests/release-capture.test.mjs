@@ -207,9 +207,9 @@ describe('adb forwards', () => {
   it('parses the forward list and marks only devtools forwards as rig debris', () => {
     const forwards = parseAdbForwards(
       [
-        'R5CRC3AVCXM tcp:9224 localabstract:chrome_devtools_remote',
-        'R5CRC3AVCXM tcp:9244 localabstract:webview_devtools_remote_12345',
-        'R5CRC3AVCXM tcp:5555 tcp:5555',
+        'R5CFAKESER1 tcp:9224 localabstract:chrome_devtools_remote',
+        'R5CFAKESER1 tcp:9244 localabstract:webview_devtools_remote_12345',
+        'R5CFAKESER1 tcp:5555 tcp:5555',
         '',
       ].join('\n')
     );

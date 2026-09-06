@@ -408,7 +408,7 @@ Two distinct causes were behind it, and the first is the one that generalizes:
 
 * **Something returns `user_rotation` to 0 across a relaunch, and it is not established what.** This
   was recorded as "`am force-stop` resets `user_rotation` to 0 on this Samsung under Android 16",
-  and that specific claim does not reproduce: 8 trials on R5CRC3AVCXM kept it at 1 across
+  and that specific claim does not reproduce: 8 trials on the rig phone kept it at 1 across
   force-stop, with Chrome stopped, with Chrome foregrounded first, and across the whole rotate →
   force-stop → launch sequence. The lost landscape cells were real and one fault injection did
   observe a LANDSCAPE request returning PORTRAIT with the setting reading 0 — but that read came

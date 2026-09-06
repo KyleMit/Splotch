@@ -200,7 +200,7 @@ function capabilityValue(capabilities, name) {
   return capabilities?.[name] ?? capabilities?.[`appium:${name}`];
 }
 
-function isPhysicalAppleUdid(value) {
+export function isPhysicalAppleUdid(value) {
   return /^(?:[0-9a-f]{8}-[0-9a-f]{16}|[0-9a-f]{40})$/i.test(String(value ?? ''));
 }
 

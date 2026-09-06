@@ -334,10 +334,10 @@ the command/log.
 
 ## Physical Android native
 
-Install a marked build on the verified serial. `android:run:device` pins one registered handset,
-which is **not** the phone the committed `android-device-*` rows were measured on — check the row's
-`environment` string against `adb:devices` before assuming the script targets it, and address any
-other phone through `ANDROID_SERIAL`:
+Install a marked build on the verified serial. `android:run:device` resolves the sole attached
+physical phone dynamically (emulators ignored) and fails on ambiguity — it does not verify that the
+phone is the one the committed `android-device-*` rows were measured on. Check the row's
+`environment` string against `adb:devices`, and address a specific phone through `ANDROID_SERIAL`:
 
 ```sh
 PERF_MARKS=true PUBLIC_ENABLE_DEV_HARNESS=true ANDROID_SERIAL=<serial> npm run android:run

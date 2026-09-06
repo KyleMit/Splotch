@@ -1,5 +1,5 @@
 # Captured stdout of measure-rotation-events-ios.mjs, physical iPad
-# 00008103-0006202E3CF1001E via Appium Safari, 2026-08-25 (same session as
+# [redacted] via Appium Safari, 2026-08-25 (same session as
 # the sweeps in this corpus). Three runs are preserved: the first sequential
 # design (arms drifted together — the reason the interleaved design exists)
 # and the interleaved rerun the ADR quotes.

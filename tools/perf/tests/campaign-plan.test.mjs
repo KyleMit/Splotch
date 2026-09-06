@@ -646,7 +646,7 @@ describe('campaign ledger', () => {
 });
 
 const SPLIT_HOST = {
-  deviceId: 'R5CRC3AVCXM',
+  deviceId: 'R5CFAKESER1',
   probeHost: 'http://192.168.1.9:4175',
   cdpPort: '9234',
   url: 'http://127.0.0.1:4173/',
@@ -665,7 +665,7 @@ describe('split transport', () => {
     for (const cell of splitCells({ items: ['pen-undo', 'crayon', 'magic', 'eraser'] })) {
       expect(cell.command).toBe(SPLIT_SCREEN_COMMAND);
       expect(cell.args).toContain('--platform=android');
-      expect(cell.args).toContain('--device-serial=R5CRC3AVCXM');
+      expect(cell.args).toContain('--device-serial=R5CFAKESER1');
       expect(cell.args).toContain('--host=http://192.168.1.9:4175');
     }
   });
@@ -714,7 +714,7 @@ describe('split transport', () => {
       expect(cell.command).toBe(SPLIT_SCREEN_COMMAND);
       expect(cell.args).toContain('--platform=android');
       expect(cell.args).toContain('--native-app');
-      expect(cell.args).toContain('--device-serial=R5CRC3AVCXM');
+      expect(cell.args).toContain('--device-serial=R5CFAKESER1');
     }
     expect(actions.command).toBe('perf:ios:xcuitest:actions');
     expect(actions.args).toContain('--native-app');
@@ -1458,7 +1458,7 @@ describe('a split-transport target without its device identity', () => {
   });
 
   it('is satisfied once the identity is supplied', () => {
-    expect(splitTransportIdentityProblem(android, { deviceId: 'R5CRC3AVCXM' })).toBeNull();
+    expect(splitTransportIdentityProblem(android, { deviceId: 'R5CFAKESER1' })).toBeNull();
     expect(splitTransportIdentityProblem(ios, { wdaUrl: 'http://127.0.0.1:8110' })).toBeNull();
   });
 

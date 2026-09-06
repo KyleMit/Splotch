@@ -23,7 +23,7 @@
         "contactWidthP50": 83.42,
         "contactHeightP50": 83.42
       },
-      "device": "00008103-0006202E3CF1001E",
+      "device": "[redacted]",
       "pageDelivery": "remote-probe-host",
       "drawSeconds": 25
     },
@@ -48,7 +48,7 @@
         "contactWidthP50": 83.42,
         "contactHeightP50": 83.42
       },
-      "device": "00008103-0006202E3CF1001E",
+      "device": "[redacted]",
       "pageDelivery": "remote-probe-host",
       "drawSeconds": 25
     }

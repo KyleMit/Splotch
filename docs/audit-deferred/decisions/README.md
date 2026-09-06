@@ -20,7 +20,7 @@
 | #  | Finding                                                                        | Priority | Decision doc                                             | Verdict |
 | -- | ------------------------------------------------------------------------------ | -------- | -------------------------------------------------------- | ------- |
 | 15 | `--experimental-strip-types` flag pair repeated 10× and stale                  | P2       | [strip-types-flags.md](strip-types-flags.md)             | FIX     |
-| —  | Personal device identifiers hard-coded into committed scripts                  | P3       | [personal-device-scripts.md](personal-device-scripts.md) | DROP    |
+| —  | Personal device identifiers hard-coded into committed scripts                  | P3       | [personal-device-scripts.md](personal-device-scripts.md) | FIX     |
 | —  | Dev/preview port numbers are magic values scattered across scripts and configs | P3       | [dev-port-magic-values.md](dev-port-magic-values.md)     | DROP    |
 | —  | Off-scale hardcoded font sizes where the token scale is the convention         | P4       | [off-scale-font-sizes.md](off-scale-font-sizes.md)       | DROP    |
 | —  | Three different SSR-guard idioms across the state modules                      | P4       | [ssr-guard-idioms.md](ssr-guard-idioms.md)               | DROP    |

@@ -9,11 +9,13 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isMain, runMain } from '../../lib/proc.mjs';
+import { fail, isMain, runMain } from '../../lib/proc.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const APPIUM = process.env.APPIUM_URL ?? 'http://127.0.0.1:4723';
-const UDID = process.env.IOS_UDID ?? '00008103-0006202E3CF1001E';
+const UDID =
+  process.env.IOS_UDID ??
+  fail('[capture-crayon-appearance] set IOS_UDID to the target iPad hardware UDID (idevice_id -l)');
 const OUT = process.argv[2] ?? 'perf-profiles/native2/appearance/shot.png';
 
 const CROSSING_SETTLE_MS = 900;

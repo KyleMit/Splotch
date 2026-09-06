@@ -46,15 +46,15 @@ describe('operatorSessionPlan', () => {
       steps: ['grant', 'android-hand', 'ios-hand'],
       brushes: ['pen', 'crayon'],
       orientations: ['PORTRAIT', 'LANDSCAPE'],
-      androidSerial: 'R5CRC3AVCXM',
-      iosUdid: '00008103-0006202E3CF1001E',
+      androidSerial: 'R5CFAKESER1',
+      iosUdid: '00008103-DEADBEEFDEADBEEF',
     });
     expect(plan.filter((item) => item.step === 'grant')).toHaveLength(1);
     expect(plan.filter((item) => item.step === 'android-hand')).toHaveLength(4);
     expect(plan.filter((item) => item.step === 'ios-hand')).toHaveLength(4);
     expect(plan.every((item) => item.skipped === null)).toBe(true);
-    expect(plan.find((item) => item.step === 'ios-hand').device).toBe('00008103-0006202E3CF1001E');
-    expect(plan.find((item) => item.step === 'android-hand').device).toBe('R5CRC3AVCXM');
+    expect(plan.find((item) => item.step === 'ios-hand').device).toBe('00008103-DEADBEEFDEADBEEF');
+    expect(plan.find((item) => item.step === 'android-hand').device).toBe('R5CFAKESER1');
   });
 
   it('marks a missing device as skipped rather than dropping its items', () => {
@@ -88,18 +88,18 @@ describe('handCaptureArgs', () => {
       ...base,
       platform: 'android',
       host: 'http://192.168.40.53:4175',
-      device: 'R5CRC3AVCXM',
+      device: 'R5CFAKESER1',
     });
     expect(android.args).toContain('--open=adb');
-    expect(android.args).toContain('--device-serial=R5CRC3AVCXM');
+    expect(android.args).toContain('--device-serial=R5CFAKESER1');
     const ios = handCaptureArgs({
       ...base,
       platform: 'ios',
       host: 'http://192.168.40.53:4175',
-      device: '00008103-0006202E3CF1001E',
+      device: '00008103-DEADBEEFDEADBEEF',
     });
     expect(ios.args).toContain('--open=devicectl');
-    expect(ios.args).toContain('--device-udid=00008103-0006202E3CF1001E');
+    expect(ios.args).toContain('--device-udid=00008103-DEADBEEFDEADBEEF');
     expect(ios.args.some((arg) => arg === '--open=manual')).toBe(false);
   });
 
@@ -177,11 +177,11 @@ describe('grant log', () => {
 describe('openWithDevicectl', () => {
   it('launches the installed bundle with terminate-existing so the page reloads fresh', () => {
     const exec = vi.fn();
-    openWithDevicectl({ udid: '00008103-0006202E3CF1001E', exec });
+    openWithDevicectl({ udid: '00008103-DEADBEEFDEADBEEF', exec });
     const [command, args] = exec.mock.calls[0];
     expect(command).toBe('xcrun');
     expect(args).toContain('--terminate-existing');
-    expect(args).toContain('00008103-0006202E3CF1001E');
+    expect(args).toContain('00008103-DEADBEEFDEADBEEF');
     expect(args.at(-1)).toBe('art.splotch.app');
   });
 });

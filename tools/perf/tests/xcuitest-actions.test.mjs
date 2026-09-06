@@ -162,7 +162,7 @@ describe('createActionSession', () => {
 });
 
 describe('actionGateAllowances', () => {
-  const physicalIpadUdid = '00008103-0006202E3CF1001E';
+  const physicalIpadUdid = '00008103-DEADBEEFDEADBEEF';
   const physicalIpadSession = {
     capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' },
   };

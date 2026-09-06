@@ -6,15 +6,16 @@ developer and release runbook is [`docs/MOBILE/android.md`](../../../docs/MOBILE
 
 ## Entry points
 
-| Entry point                     | Public command(s)                                                                                            |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `setup-emulator.mjs`            | `npm run android:setup`                                                                                      |
-| `run-emulator.mjs`              | `android:boot`, `android:emulator`, `android:live`                                                           |
-| `run-gradle.mjs`                | `android:apk`, `android:apk:release`, `android:run`, `android:run:device`, `android:bundle`, `android:clean` |
-| `run-smoke-test.mjs`            | `npm run test:android`                                                                                       |
-| `print-emulator-api-levels.mjs` | Android deploy workflow matrix                                                                               |
-| `verify-release-bundle.mjs`     | `npm run android:verify`                                                                                     |
-| `open-release-bundle.mjs`       | `npm run android:open`                                                                                       |
+| Entry point                     | Public command(s)                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| `setup-emulator.mjs`            | `npm run android:setup`                                                                  |
+| `run-emulator.mjs`              | `android:boot`, `android:emulator`, `android:live`                                       |
+| `run-gradle.mjs`                | `android:apk`, `android:apk:release`, `android:run`, `android:bundle`, `android:clean`   |
+| `run-on-device.mjs`             | `npm run android:run:device` — installs on the sole attached physical phone (issue 1645) |
+| `run-smoke-test.mjs`            | `npm run test:android`                                                                   |
+| `print-emulator-api-levels.mjs` | Android deploy workflow matrix                                                           |
+| `verify-release-bundle.mjs`     | `npm run android:verify`                                                                 |
+| `open-release-bundle.mjs`       | `npm run android:open`                                                                   |
 
 `run-emulator.mjs` retains its `boot`, `emulator`, and `live` modes. `run-gradle.mjs` forwards the
 requested tasks to the committed wrapper from the `android/` project directory.
