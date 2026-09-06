@@ -1234,12 +1234,12 @@ Each is worth recognizing in a number.
 
 ### A readiness poll can change the pool behind an action P95
 
-The XCUITest action runner waits for observed readiness, then a fixed settling period before
-finishing the probe. An earlier successful poll therefore ends the raw capture window earlier;
-compared captures can also have different scored-frame counts. Record those counts alongside
-readiness and the three repeat maxima when a verdict changes near a gate. Do not attribute a
-readiness change on unchanged code to a product speedup, or assume a different pool size explains a
-verdict without checking the percentile's ordinal position and actual gaps.
+The XCUITest action runner waits for observed readiness, then the settling period configured for
+that action before finishing the probe. An earlier successful poll therefore ends the raw capture
+window earlier; compared captures can also have different scored-frame counts. Record those counts
+alongside readiness and the three repeat maxima when a verdict changes near a gate. Do not attribute
+a readiness change on unchanged code to a product speedup, or assume a different pool size explains
+a verdict without checking the percentile's ordinal position and actual gaps.
 
 The
 [landscape Settings control study](scratchpad/perf/2026-09-05-landscape-settings-retirement-controls.md)
