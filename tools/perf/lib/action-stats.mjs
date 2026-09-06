@@ -130,11 +130,14 @@ export const IOS_ACTION_GATE_ALLOWANCE_ENTRIES = {
 // quantum: Chrome's rAF clock resolves to 0.1 ms where Safari's is whole
 // milliseconds, so one step above the worst committed 33.4 ms reading is
 // 33.5 — the max gate itself, and the two coincide on purpose. Three scored
-// repeats pool about 52 gaps, so the P95 is the third-highest and reads two
-// beats only when every repeat carries one; a P95 past 33.5 is then by
-// construction a confirmed max breach (ADR-0156). The allowance admits the
-// recurring two-beat frame and nothing the max gate would not already fail.
-// The enable direction and every other Android action stay on the base gate.
+// repeats pool about 52 gaps, so the P95 is the third-highest and a P95 past
+// 33.5 needs three over-gate gaps; spread one per repeat (every committed
+// two-beat reading) the max gate confirms the breach on its own (ADR-0156),
+// and concentrated in one repeat only this allowance fails the cell. It is at
+// least as strict as the max gate on every three-repeat capture and never
+// passes a cell the max gate would fail; 34 ms would pass the concentrated
+// case. The enable direction and every other Android action stay on the base
+// gate.
 const ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES = {
   [`disable ${compactSettingsActionLabel('Night Mode')}`]: {
     ms: 33.5,
@@ -147,7 +150,8 @@ const ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES = {
       "puts the click's input task at 26-39 ms on CrRendererMain in every repeat — 9-12 ms of dispatch and a " +
       '9.5-14.7 ms whole-document style recalc for the theme token flip that the bounded closed-dialog treatment ' +
       '(PR 1702) did not move — with a DroppedFrame at the first BeginFrame after every click. One 0.1 ms clock ' +
-      'quantum above the worst reading, so a P95 past it is a confirmed max breach; the three-beat frame still fails.',
+      'quantum above the worst reading and equal to the max gate, so a P95 past it needs three over-gate gaps: ' +
+      'spread across repeats the max gate confirms them, concentrated in one repeat this allowance alone fails them.',
   },
 };
 const ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES_MS = Object.fromEntries(

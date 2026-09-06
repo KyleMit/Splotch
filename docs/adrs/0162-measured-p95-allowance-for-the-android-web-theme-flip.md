@@ -40,9 +40,10 @@ f42d0994b27979731c8acc215e6e1f2385b85955, evidence in
   16.7 ms gaps in six of the eight traced repeats whose main thread was blocked for most of two
   periods (issue #1704, `docs/PROFILING-CAMPAIGNS.md`). On this probe a two-beat red is faithful and
   a green is not proof the frame fit. Three scored repeats pool about 52 scored gaps, so the pooled
-  P95 is the third-highest gap: it reads two beats only when every repeat's request slipped the
-  extra vsync, and one beat when any repeat's did not. The cell therefore flips between two readings
-  of the same frame, not between two frames.
+  P95 is the third-highest gap: it reads two beats only when at least three scored gaps carry the
+  second beat — in every committed two-beat reading, one per repeat — and one beat when fewer of the
+  three requests slipped the extra vsync. The cell therefore flips between two readings of the same
+  frame, not between two frames.
 
 Options weighed in #1703:
 
@@ -72,17 +73,20 @@ single capture of the cell, never a median, set exactly one rounding quantum abo
 probe's own quantum. ADR-0160's quantum was one millisecond because Safari's rAF clock resolves to
 whole milliseconds; Chrome's resolves to 0.1 ms, so the worst committed reading of 33.4 ms is
 cleared by 33.5 ms and by nothing smaller. That lands the allowance exactly on the 33.5 ms max gate,
-and the coincidence is the point rather than an accident: a pooled P95 past 33.5 requires every
-scored repeat to carry a frame past 33.5, which is a confirmed max breach under ADR-0156's
-two-of-three rule. The allowance therefore admits the recurring two-beat frame and nothing the max
-gate would not already fail; the P95 gate on this cell is retired into the max gate rather than
-loosened past it. The whole-millisecond alternative, 34 ms, produces identical verdicts on every
-three-repeat capture — a P95 between 33.5 and 34 is still three breaching repeats — and was rejected
-only because it would be the first entry in the family to sit above the max gate, inviting the
-reading that a frame the max gate calls a breach is one the P95 gate tolerates. The 33.5 ms max
-gate, the first-frame gate, and every drawing and undo gate are untouched; the enable direction and
-every other action on the row stay on the base 20 ms gate. The three-beat frame (50 ms) fails both
-gates.
+and the two gates then divide the work by what each counts. The pooled P95 counts gaps: a P95 past
+33.5 needs at least three scored gaps past 33.5 across the three repeats. The max gate counts
+repeats: ADR-0156 confirms a breach only when two of the three scored repeats carry one. When the
+three over-gate gaps fall in different repeats — the shape of every committed two-beat reading, one
+per repeat — the max gate confirms the breach on its own. When they concentrate in one repeat —
+three overruns from a single activation, the other two clean — the max gate stays unconfirmed and
+only this P95 allowance fails the cell. The allowance is therefore at least as strict as the max
+gate on every three-repeat capture and stricter in the concentrated case; it never passes a cell the
+max gate would fail. The whole-millisecond alternative, 34 ms, is a looser policy rather than an
+equivalent one: it passes the concentrated case, and it would be the first entry in the family to
+sit above the max gate, inviting the reading that a frame the max gate calls a breach is one the P95
+gate tolerates. It was rejected on both grounds. The 33.5 ms max gate, the first-frame gate, and
+every drawing and undo gate are untouched; the enable direction and every other action on the row
+stay on the base 20 ms gate. The three-beat frame (50 ms) fails both gates.
 
 The measured basis is every committed `android-device-web` action capture in
 `perf-profiles/evidence/` that offers the compact shell — the landscape modes at product commits
@@ -90,7 +94,9 @@ The measured basis is every committed `android-device-web` action capture in
 `docs/scratchpad/perf/2026-09-06-adr-0162-android-night-flip-rescore.md`: the three two-beat
 readings flip to PASS and none stays red. The value is pinned to that corpus rather than typed:
 `tools/perf/tests/xcuitest-actions.test.mjs` re-scores every committed capture of the cell and fails
-if the allowance is not one 0.1 ms quantum above the worst of them, or is not the max gate.
+if the allowance is not one 0.1 ms quantum above the worst of them, or is not the max gate; the same
+suite holds the concentrated-gap case, where the allowance fails a cell the max gate leaves
+unconfirmed and a 34 ms allowance would pass.
 
 **Why the allowance is granted despite the flapping.** The allowance covers a cost the trace shows
 recurring on every activation — the main thread blocked for most of two periods in all eight traced
@@ -111,9 +117,10 @@ issue #1704's decision and are unchanged here.
 * a product change alters the transition — a theme switch that no longer restyles the whole
   document, or a compact shell that no longer offers the quick toggle — after which the entry is
   re-measured and lowered or removed;
-* a canonical capture reads past the allowance. That is a red cell and, on this cell, a confirmed
-  max breach. Entries only ratchet down; raising one needs the same evidence as adding it: device
-  measurements, three scored repeats, and the alternatives tried and rejected (ADR-0137).
+* a canonical capture reads past the allowance. That is a red cell — a confirmed max breach when the
+  over-gate gaps fall in different repeats, a P95 failure alone when they concentrate in one.
+  Entries only ratchet down; raising one needs the same evidence as adding it: device measurements,
+  three scored repeats, and the alternatives tried and rejected (ADR-0137).
 
 ### 2. The ledgers become a per-target registry
 
@@ -149,13 +156,14 @@ dark-mode toggles (issue #1694), and the drawing lost-frame budgets held for the
   trace already settled.
 * \+ The allowance is visible wherever the number is read — its own ledger paragraph beside the
   gates, its basis in the paragraph, and `ADR-0162` in the cell's tooltip.
-* \+ A regression is still caught. The allowance is the max gate, so a P95 past it is a confirmed
-  two-of-three max breach and a three-beat frame fails outright; nothing the max gate would fail now
-  passes.
+* \+ A regression is still caught. The allowance is the max gate, so a P95 past it means at least
+  three over-gate gaps: spread across repeats the max gate confirms them, concentrated in one repeat
+  the allowance fails them, and a three-beat frame fails outright. Nothing the max gate would fail
+  now passes.
 * − One action on a release-gate row is documented rather than solved, and the P95 gate on that cell
-  no longer adds anything the max gate does not: the cell's verdict is the two-of-three rule alone.
-  The reopen conditions are conventions the tooling cannot enforce; the ratchet-down rule and the
-  evidence-pinned test are what hold the line.
+  now adds only the concentrated-gap case to what the max gate decides. The reopen conditions are
+  conventions the tooling cannot enforce; the ratchet-down rule and the evidence-pinned test are
+  what hold the line.
 * − The allowance does not repair the probe. A green on this cell remains a reading the main thread
   may have overrun (issue #1704); the allowance stops the red from being counted as an unexplained
   remainder, and stops the green from being counted as a fix.

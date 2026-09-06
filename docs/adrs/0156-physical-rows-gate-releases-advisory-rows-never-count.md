@@ -18,7 +18,9 @@
 > recorded product outcome under decision 1 is a measured P95 allowance rather than a fix — its
 > two-beat frame is the whole-document restyle of the theme token flip, attributed from a paired
 > trace (issue 1696). Decision 4's 33.5 ms max gate and two-of-three confirmation rule are
-> untouched; the allowance sits exactly at that gate, so a P95 past it is a confirmed max breach.
+> untouched; the allowance sits exactly at that gate, so a P95 past it needs three over-gate gaps,
+> which decision 4 confirms when they fall in different repeats and the allowance alone fails when
+> they fall in one.
 
 ## Context
 

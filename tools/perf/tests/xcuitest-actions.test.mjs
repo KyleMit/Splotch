@@ -1220,6 +1220,32 @@ describe('the physical Android web allowance ledger', () => {
     expect(summary.passed).toBe(false);
   });
 
+  // Pooled P95 counts gaps; max confirmation counts repeats (ADR-0156). Three
+  // over-gate gaps from one activation leave the max unconfirmed, and only the
+  // allowance fails the cell — a 34 ms allowance would pass it, which is why
+  // 33.5 is the stricter policy rather than an equivalent one (ADR-0162).
+  it('fails three over-gate gaps concentrated in one repeat, which the max gate leaves unconfirmed', () => {
+    const past = ms + 0.1;
+    const repeat = (slowFrames, warmup) =>
+      action(
+        Array.from({ length: 17 }, (_, i) => frame(i * 16.7, slowFrames.has(i) ? past : 16.7)),
+        { label, warmup }
+      );
+    const concentrated = [
+      repeat(new Set(), true),
+      repeat(new Set([1, 2, 3]), false),
+      repeat(new Set(), false),
+      repeat(new Set(), false),
+    ];
+    const summary = summarizeActionGroup(concentrated, label, ANDROID_WEB_ACTION_GATE_ALLOWANCES);
+    expect(summary.frames.p95).toBe(past);
+    expect(summary.frames.maxBreachSamples).toBe(1);
+    expect(summary.frames.maxUnconfirmed).toBe(true);
+    expect(summary.passed).toBe(false);
+    const wholeMillisecond = { p95: { [label]: Math.ceil(ms) }, max: {} };
+    expect(summarizeActionGroup(concentrated, label, wholeMillisecond).passed).toBe(true);
+  });
+
   it('carries a basis naming committed evidence corpora that exist', () => {
     const { basis } = ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES.p95[label];
     const corpora = basis.match(/perf-profiles\/evidence\/[\w.-]+/g) ?? [];
