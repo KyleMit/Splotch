@@ -9,7 +9,7 @@
     hasPunchedBackground,
     styleThumbPath,
   } from '$lib/ai/styles';
-  import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { createDialogTheme } from '$lib/state/dialogTheme.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { createAiPreviewLoader } from './aiPreview';
 
@@ -17,7 +17,8 @@
 
   // The covers are forked art, not a filtered light asset — each theme has its
   // own AI render (see tools/asset-gen/style-covers/gen-style-covers.mjs).
-  const theme = $derived(resolvedTheme());
+  // They re-source only while the prompt is open (createDialogTheme).
+  const dialogTheme = createDialogTheme(aiPromptModal);
 
   const previewLoader = createAiPreviewLoader(
     () => exportCanvasBlob({ includePaperTexture: false }),
@@ -67,7 +68,7 @@
       <legend>Pick a style</legend>
       <div class="ai-style-options">
         {#each STYLE_NAMES as s (s)}
-          {@const thumb = styleThumbPath(s, theme)}
+          {@const thumb = styleThumbPath(s, dialogTheme.current)}
           <button
             type="button"
             class="ai-style-option"

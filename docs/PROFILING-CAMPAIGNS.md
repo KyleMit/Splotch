@@ -336,6 +336,25 @@ looks like: a recording spanning 200 painted `requestAnimationFrame` frames emit
 that coarse cannot attribute per-frame cost between two brushes. Reach for `xctrace` against the
 native build for frame-level timing, and use the bridge for what the page itself can measure.
 
+## The action probe's frame clock is the vsync schedule, not the main thread
+
+`tools/perf/probes/action-probe.js` stamps each frame with the `requestAnimationFrame` callback's
+timestamp argument. Chrome hands a main-thread frame the vsync time of the `BeginFrame` that
+requested it, so a callback that runs late still carries an on-time stamp. The gap the probe scores
+therefore stays a clean 16.7 ms while the main thread is blocked for most of two vsync periods, and
+reads 33.4 only when the request slips a whole additional vsync — which is a scheduling accident,
+not a difference in work.
+
+The 2026-09-06 issue-1696 trace of the Android compact-shell Night Mode toggle is the measured case:
+the click's rAF-aligned input task ran 26–39 ms on `CrRendererMain` in every one of eight toggle
+repeats (event dispatch plus the Svelte flush, a 9.5–14.7 ms whole-document style recalc, and
+prepaint), the compositor logged a `DroppedFrame` at the first `BeginFrame` after the click every
+time, and the probe reported 16.7 ms gaps in six of the eight. The same cell then read 33.4 in all
+four repeats of a full-plan run on the same build. So on this probe a two-beat action red is
+faithful, a green is not proof the frame fit, and a cell that flips between runs at a steady 33.3 is
+the signature of work sitting just over one 60 Hz period. Attribute it from a paired trace's
+main-thread task, never from whether the probe happened to see the second beat.
+
 ## Input cadence is a result, not a detail
 
 **Check the fidelity verdict on every capture, and never score a run that fails it.** Appium's
