@@ -74,13 +74,13 @@ basis is every committed iPad web action capture in `perf-profiles/evidence/` at
 readings under the ledger is in `docs/scratchpad/perf/2026-09-06-adr-0160-allowance-rescore.md`: 33
 flip to PASS and none stays red.
 
-| Action                                     | Allowance | Worst committed P95                                                          | Other committed readings                                     | Attribution                                                                                                                                           |
-| ------------------------------------------ | --------: | ---------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open Settings`                            |     29 ms | 28 (`2026-09-05-epic-1567-advanced-controls-certification`, landscape/dark)  | 27 in seven captures across three modes; 23–26 in eight more | Traced: animation completion, compositing-hierarchy changes, layer removal, paint; `contain` candidate negative                                       |
-| `close Settings`                           |     22 ms | 21 (`…-ipad-e514-control` landscape/light and dark; `…-ipad-paper-control`)  | 17–20 in fifteen captures                                    | Shared with the picker: dialog retirement over the full-screen paper layer; **no dedicated trace**                                                    |
-| `select coloring page`                     |     30 ms | 29 (`2026-09-05-epic-1567-landscape-retirement-controls`, landscape/dark)    | 26–28 in seven captures; portrait/light 17–19                | Traced in-frame: GPU IOSurface pool eviction, surface creation, Metal submission; seven mechanisms negative                                           |
-| `switch light theme to dark`               |     23 ms | 22 (`…-ipad-e514-control`, portrait/light)                                   | 17 in fifteen captures                                       | Single-capture excursion; the full-document restyle recomposites every layer in one frame (ADR-0087); **no dedicated trace**                          |
-| `with ink: PORTRAIT to LANDSCAPE rotation` |     26 ms | 25 (`2026-09-05-epic-1567-ipad-paper-control`, portrait/light, two captures) | 22–24 in four captures; landscape-origin direction 17–18     | Traced: first full post-resize interval, GPU surface-pool eviction and command submission beside WebContent layout; compositor pre-promotion negative |
+| Action                                     | Allowance | Worst committed P95                                                          | Other committed readings                                    | Attribution                                                                                                                                           |
+| ------------------------------------------ | --------: | ---------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open Settings`                            |     29 ms | 28 (`2026-09-05-epic-1567-advanced-controls-certification`, landscape/dark)  | 27 in six captures across three modes; 20–26 in eleven more | Traced: animation completion, compositing-hierarchy changes, layer removal, paint; `contain` candidate negative                                       |
+| `close Settings`                           |     22 ms | 21 (`…-ipad-e514-control` landscape/light and dark; `…-ipad-paper-control`)  | 17–20 in fifteen captures                                   | Shared with the picker: dialog retirement over the full-screen paper layer; **no dedicated trace**                                                    |
+| `select coloring page`                     |     30 ms | 29 (`2026-09-05-epic-1567-landscape-retirement-controls`, landscape/dark)    | 26–28 in eight captures; portrait/light 17–19               | Traced in-frame: GPU IOSurface pool eviction, surface creation, Metal submission; seven mechanisms negative                                           |
+| `switch light theme to dark`               |     23 ms | 22 (`…-ipad-e514-control`, portrait/light)                                   | 17 in fifteen captures                                      | Single-capture excursion; the full-document restyle recomposites every layer in one frame (ADR-0087); **no dedicated trace**                          |
+| `with ink: PORTRAIT to LANDSCAPE rotation` |     26 ms | 25 (`2026-09-05-epic-1567-ipad-paper-control`, portrait/light, two captures) | 22–24 in four captures; landscape-origin direction 17–18    | Traced: first full post-resize interval, GPU surface-pool eviction and command submission beside WebContent layout; compositor pre-promotion negative |
 
 Two of the five carry no dedicated trace. They are granted on the same evidence class as their
 traced siblings — the same dialog-retirement surface swap, the same one-frame recomposite — and the
@@ -91,7 +91,7 @@ Everything else about the ledger is unchanged. It applies to the calibrated phys
 capture only: the iOS harness still records it into each capture as `gateAllowances`, the matrix
 generator applies it by target id (§3), and the iPad native row, both Android physical rows, every
 simulator and emulator, and every desktop engine stay on the base 20 ms gate. The
-`with ink: LANDSCAPE to PORTRAIT rotation` direction gets nothing: it reads 17–18 ms in seventeen
+`with ink: LANDSCAPE to PORTRAIT rotation` direction gets nothing: it reads 17–18 ms in sixteen
 committed captures and 23 ms once. The `open Settings` 56 ms max allowance keeps its
 capture-environment reopen condition from ADR-0090's 2026-08-26 amendment. The 33.5 ms max gate, the
 first-frame gate, and every drawing and undo gate are untouched — an allowance covers a measured P95
@@ -166,10 +166,13 @@ row lands (issue #1563).
   regression.
 * − **The published matrix cannot record this change on its own diff yet.** Its physical rows are
   built from `perf-profiles/epic-1567-final-9af487b3/`, a gitignored raw corpus that no longer
-  exists on any checkout; the generator fails on the first missing source, and the preserved-
-  evidence path cannot substitute because it deliberately withholds a current verdict. The rescore
-  in this ADR's scratchpad note is the record for now; the first regeneration with raw inputs — the
-  #1563 fold — is where the eleven cells flip in `data.json`.
+  exists on any checkout, so the generator fails on the first missing source and the matrix cannot
+  be regenerated at its product commit. A partial report is possible — a separate manifest folding
+  the four committed e5142fab action captures with every other section marked preserved would carry
+  current allowance verdicts for those four modes — but that folds the e5142fab rows, which the
+  owner deferred to the android-device-native fold (#1563) so the matrix stays at one coherent
+  commit. The rescore in this ADR's scratchpad note is the record for now; that fold is where the
+  eleven cells flip in `data.json`.
 * − The matrix's action verdict is now the shipped policy's, not the artifact's. A capture command
   still prints its own verdict under the ledger it was given, so a capture with base-gate
   classification prints `FAIL` for a cell the matrix passes — the same reading rule ADR-0137 already

@@ -830,7 +830,20 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   // rotation gate silently removed by the declaration. Such an artifact stays
   // gated, and its 100 ms first frames turn the misfile into a red cell
   // instead of an N/A.
-  const summaries = profile.samples
+  // A summary-only artifact (no raw samples) keeps the verdict it was written
+  // with, so the shipped policy cannot be applied to it. On a target with a
+  // ledger that verdict would silently be whichever ledger the capture was
+  // given, so the fold refuses rather than labelling a stored verdict with an
+  // allowance it never scored under; on every other target the stored verdict
+  // is the base-gate one and folds as before, carrying no allowance.
+  const scoredFromSamples = Boolean(profile.samples);
+  if (!scoredFromSamples && Object.keys(allowances).length) {
+    throw new Error(
+      `${spec.source} carries summaries but no raw samples, so target ${targetId}'s ` +
+        `allowance policy (ADR-0160) cannot be applied to it — fold a capture with samples`
+    );
+  }
+  const summaries = scoredFromSamples
     ? summarizeActions(profile.samples, [], allowances, (label) =>
         rotationFirstFrameNa(runtime, label, recordedEngine)
       )
@@ -1648,7 +1661,7 @@ function actionModeCells(mode, label, labels, gates) {
       const verdict = attributable
         ? result.passed
           ? unconfirmed
-            ? 'PASS, max unconfirmed (over the gate in one scored repeat, not the two ADR-0156 requires)'
+            ? `PASS, max unconfirmed (over the gate in one scored repeat, not the two ADR-0156 requires)${allowanceVerdictSuffix(result)}`
             : `PASS${allowanceVerdictSuffix(result)}`
           : `FAIL${allowanceVerdictSuffix(result)}`
         : `unscoreable: this mode\u2019s idle frame control is ${mode.actions?.controlEvidence ?? 'absent'}`;

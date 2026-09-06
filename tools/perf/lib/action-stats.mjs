@@ -28,8 +28,8 @@ const IOS_ACTION_FRAME_P95_ALLOWANCES = {
     ms: 29,
     basis:
       'Worst committed P95 28 ms (perf-profiles/evidence/2026-09-05-epic-1567-advanced-controls-certification, ' +
-      'landscape/dark at ebc7673b), 27 ms in seven further September 2026 captures across three modes at ' +
-      '3c017796, 9af487b3 and e5142fab. The pane is prewarmed (ADR-0049 amendment) and its open still ' +
+      'landscape/dark at ebc7673b), 27 ms in six further September 2026 captures across three modes at ' +
+      '3c017796, 9af487b3 and e5142fab, 20-26 ms in eleven more. The pane is prewarmed (ADR-0049 amendment) and its open still ' +
       'carries the showModal flip and the heaviest section reveal; Instruments aligns the remaining slow ' +
       'frames with animation completion, compositing-hierarchy changes, layer removal and paint, and the ' +
       'bounded `contain: layout paint` candidate measured negative. Raised from the 26 ms of ADR-0090 under ADR-0160.',
@@ -46,7 +46,7 @@ const IOS_ACTION_FRAME_P95_ALLOWANCES = {
     ms: 30,
     basis:
       'Worst committed P95 29 ms (perf-profiles/evidence/2026-09-05-epic-1567-landscape-retirement-controls, ' +
-      'landscape/dark at e5142fab), 26-28 ms in seven further captures, portrait/light green at 17. The 29 ms ' +
+      'landscape/dark at e5142fab), 26-28 ms in eight further captures, portrait/light green at 17. The 29 ms ' +
       'frame sampled in Instruments is GPU-process IOSurface pool eviction, surface creation and Metal ' +
       'submission with no app evaluation in-frame; seven bounded product mechanisms measured negative or ' +
       'insufficient (issue 1569, 2026-09-06 disposition).',

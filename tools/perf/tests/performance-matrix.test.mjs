@@ -233,7 +233,17 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport, captureRuntime, engine, actionPlan }
+  {
+    orientation,
+    theme,
+    summaries,
+    samples,
+    transport,
+    captureRuntime,
+    engine,
+    actionPlan,
+    gateAllowances,
+  }
 ) {
   const path = join(directory, name);
   writeFileSync(
@@ -248,6 +258,7 @@ function writeActionCapture(
       captureRuntime,
       engine,
       actionPlan,
+      gateAllowances,
     })
   );
   return name;
@@ -1996,6 +2007,41 @@ describe('per-target action allowances', () => {
     const matrix = matrixFor(
       { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
       { captureRuntime: 'ios-capacitor-webview', gateAllowances: IOS_ACTION_GATE_ALLOWANCES }
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  // A summary-only artifact keeps the verdict it was written with, so the shipped
+  // policy cannot reach it: on the ledger's target the fold refuses rather than
+  // labelling a stored verdict with an allowance it never scored under, and on
+  // every other target it folds as before, carrying no allowance.
+  it('refuses a summary-only capture on the ledger target and folds it plainly elsewhere', () => {
+    const summaryOnly = {
+      samples: undefined,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: false,
+        },
+      ],
+    };
+    expect(() =>
+      matrixFor({ id: 'ipad-device-web', fidelity: 'physical-safari-gated' }, summaryOnly)
+    ).toThrow('allowance policy (ADR-0160) cannot be applied');
+    const matrix = matrixFor(
+      { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
+      summaryOnly
     );
     const result = matrix.targets[0].modes[0].actions.results.find(
       (entry) => entry.label === label

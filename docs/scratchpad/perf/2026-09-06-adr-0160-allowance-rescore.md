@@ -8,10 +8,13 @@ figure below is the scorer's own pooled post-action P95 / max over the three sco
 
 The published matrix could not be regenerated to carry this diff itself: its physical rows are built
 from `perf-profiles/epic-1567-final-9af487b3/`, a gitignored raw corpus that no checkout on this
-machine holds any more, so `npm run gen:performance-matrix` fails with `ENOENT` on its first source.
-The preserved-evidence path deliberately withholds a current verdict, so it cannot stand in. This
-note is the record until the next regeneration with raw inputs (the android-device-native fold,
-issue 1563), where the eleven e5142fab cells flip in `data.json`.
+machine holds any more, so `npm run gen:performance-matrix` fails with `ENOENT` on its first source
+and the matrix cannot be regenerated at its product commit. A partial report from a separate
+manifest — the four committed e5142fab action captures, every other section marked preserved — would
+carry current allowance verdicts for those four modes, but it would fold the e5142fab rows, which
+the owner deferred to the android-device-native fold (issue 1563) so the matrix stays at one
+coherent commit. This note is the record until that fold, where the eleven e5142fab cells flip in
+`data.json`.
 
 Sizing rule: each allowance is one whole millisecond above the worst committed single capture of its
 cell (ADR-0137's worst-single-capture rule; the scorer's percentile rounds to whole milliseconds).
