@@ -28,11 +28,12 @@ List the open PRs and keep only `dependabot[bot]` ones. `mcp__github__list_pull_
 enormous bodies — expect the result to overflow and need slicing from the saved file, or filter with
 `search_pull_requests`. Record for each: number, package, from → to version, and semver jump.
 
-**Check whether the batch is the whole batch.** `.github/dependabot.yml` sets no
-`open-pull-requests-limit` for npm, so the default of 5 applies: once five are open Dependabot stops
-opening more, and the remainder queue invisibly — no PR, no comment, nothing in the list saying they
-exist. If the count of open Dependabot PRs equals the limit, say so in the write-up. The batch is
-truncated, and merging it frees slots for the rest rather than finishing the job.
+**Check whether the batch is the whole batch.** Read the `open-pull-requests-limit` for each
+ecosystem in `.github/dependabot.yml` (Dependabot's default when unset is 5). Once that many are
+open Dependabot stops opening more, and the remainder queue invisibly — no PR, no comment, nothing
+in the list saying they exist. If the count of open Dependabot PRs for an ecosystem equals its
+limit, say so in the write-up. The batch is truncated, and merging it frees slots for the rest
+rather than finishing the job.
 
 For every PR, pull the **diff** (small for npm bumps, one line for action pins) and the **check
 runs**. A red PR is a finding, not a blocker to investigation — read the failing job log, because
