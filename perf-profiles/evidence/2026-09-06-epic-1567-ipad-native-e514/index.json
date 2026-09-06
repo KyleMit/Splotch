@@ -1,0 +1,261 @@
+{
+  "campaign": "2026-09-06-epic-1567-ipad-native-e514",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+  "capturedFrom": "perf-profiles/epic-1567-final-e5142fab",
+  "study": "Complete physical iPad native release-gate row at e5142fab (== current main web/src tree): four modes x four brushes + pen-undo + action sweeps + 3 drift references, for the final single-commit four-row matrix",
+  "kept": [
+    {
+      "file": "actions--f25cc136.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--3d6af6b8.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--f3e2ab36.json",
+      "target": "ipad-device-native",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--3b8c571e.json",
+      "target": "ipad-device-native",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--b898ae43.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--4a0ce15d.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--7eaebef5.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--a41f4325.json",
+      "target": "ipad-device-native",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--05bc5db3.json",
+      "target": "ipad-device-native",
+      "brush": "magic",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--97f65662.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/landscape-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--952ec974.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--fbe1944d.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--4141e655.json",
+      "target": "ipad-device-native",
+      "brush": "eraser",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--f4607a72.json",
+      "target": "ipad-device-native",
+      "brush": "magic",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--5c0fa235.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--3379a69f.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--3882f16d.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--13cfb5db.json",
+      "target": "ipad-device-native",
+      "brush": "eraser",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--10462572.json",
+      "target": "ipad-device-native",
+      "brush": "magic",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--2b58a7df.json",
+      "target": "ipad-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/portrait-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "end--a0138b06.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/references/portrait-light/end.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "middle--80225ecb.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/references/portrait-light/middle.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "start--6a8e0be6.json",
+      "target": "ipad-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "ipad-device-native/references/portrait-light/start.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

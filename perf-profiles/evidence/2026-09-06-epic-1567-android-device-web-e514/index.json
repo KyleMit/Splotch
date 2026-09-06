@@ -1,0 +1,261 @@
+{
+  "campaign": "2026-09-06-epic-1567-android-device-web-e514",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+  "capturedFrom": "perf-profiles/epic-1567-final-e5142fab",
+  "study": "Complete physical android-device-web release-gate row at e5142fab (== current main web/src tree) for the final four-row matrix: four modes x four brushes + pen-undo + action sweeps + 3 drift refs",
+  "kept": [
+    {
+      "file": "actions--fc8962c0.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "android-device-web/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--450cfe1a.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--74a7464e.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--595c8311.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--1408d15e.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--8ec8a1aa.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "android-device-web/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--5c1eae4f.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--cbb2f3c8.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--fa9d782a.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--de184f6d.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/landscape-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--83204431.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "android-device-web/portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--abdc25bf.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--6c94651b.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--c9357e00.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--ed4865b1.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--cde8e7ab.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "android-device-web/portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--2cd404db.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--a28df41f.json",
+      "target": "android-device-web",
+      "brush": "eraser",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--2819b7f5.json",
+      "target": "android-device-web",
+      "brush": "magic",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--843190de.json",
+      "target": "android-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/portrait-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "end--370d85ab.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/references/portrait-light/end.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "middle--4617d78a.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/references/portrait-light/middle.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "start--2280edf6.json",
+      "target": "android-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "android-device-web/references/portrait-light/start.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}
