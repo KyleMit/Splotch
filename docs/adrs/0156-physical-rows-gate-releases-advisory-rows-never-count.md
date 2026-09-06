@@ -13,6 +13,13 @@
 > measured 26 ms P95 allowance in the ADR-0090 shape it asked for; the landscape-origin direction,
 > the 33.5 ms max gate, and every other target keep this record's rule.
 
+> **Amended by [ADR-0162](0162-measured-p95-allowance-for-the-android-web-theme-flip.md):** the
+> physical Android web row's `disable Night Mode in the compact shell` cell is the second cell whose
+> recorded product outcome under decision 1 is a measured P95 allowance rather than a fix — its
+> two-beat frame is the whole-document restyle of the theme token flip, attributed from a paired
+> trace (issue 1696). Decision 4's 33.5 ms max gate and two-of-three confirmation rule are
+> untouched; the allowance sits exactly at that gate, so a P95 past it is a confirmed max breach.
+
 ## Context
 
 The deployment-target performance matrix publishes eleven targets. Its generator already names one

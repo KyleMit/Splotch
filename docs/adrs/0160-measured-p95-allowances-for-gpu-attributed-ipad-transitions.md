@@ -3,7 +3,15 @@
 **Status:** Active — amends
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md),
 [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md), and
-[ADR-0137](0137-lost-frame-gate-exceptions.md) **Date:** 2026-09
+[ADR-0137](0137-lost-frame-gate-exceptions.md); amended by
+[ADR-0162](0162-measured-p95-allowance-for-the-android-web-theme-flip.md) **Date:** 2026-09
+
+> **Amended by [ADR-0162](0162-measured-p95-allowance-for-the-android-web-theme-flip.md):** the
+> allowance family gains a second ledger row. `android-device-web` carries one measured P95
+> allowance for `disable Night Mode in the compact shell`, and decision 3's "the ledger for
+> `ipad-device-web`, the empty map for every other target" becomes a per-target registry
+> (`ACTION_GATE_ALLOWANCE_LEDGERS`). Every sizing, ratchet, rendering, and reopen rule here is
+> unchanged; the iPad ledger itself is untouched.
 
 ## Context
 

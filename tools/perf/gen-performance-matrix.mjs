@@ -9,8 +9,7 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
-  ACTION_GATE_ALLOWANCE_TARGET,
-  IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
+  ACTION_GATE_ALLOWANCE_LEDGERS,
   actionGateAllowancesFor,
   rotationFirstFrameNa,
   summarizeActions,
@@ -795,8 +794,9 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   // target (ADR-0160), not under the `gateAllowances` it recorded: the record
   // is the capture-time verdict's provenance, and a policy change must reach
   // every published cell on regeneration so the diff is the record (the
-  // ADR-0156 pattern). Only the calibrated iPad web row has a ledger; every
-  // other target stays on the base gates whatever its artifact recorded.
+  // ADR-0156 pattern). Only the ledger rows — the calibrated iPad web row
+  // (ADR-0160) and the physical Android web row (ADR-0162) — score under one;
+  // every other target stays on the base gates whatever its artifact recorded.
   const allowances = actionGateAllowancesFor(targetId);
   // Rotation first-frame applicability keys on the capture RUNTIME, never the
   // transport — `transport: "browser"` is the Appium web transport generally,
@@ -1373,13 +1373,12 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
         postActionFrameP95Ms: ACTION_FRAME_P95_GATE_MS,
         postActionFrameMaxMs: ACTION_FRAME_MAX_GATE_MS,
         postActionFrameMaxConfirmingSamples: MAX_BREACH_CONFIRMING_SAMPLES,
-        // The per-action allowance ledgers and the one target they apply to,
+        // The per-action allowance ledgers, one per target that carries one,
         // rendered beside the gates for the same reason the lost-frame
-        // exceptions are (ADR-0137, ADR-0160).
-        postActionAllowances: {
-          target: ACTION_GATE_ALLOWANCE_TARGET,
-          ...IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
-        },
+        // exceptions are (ADR-0137, ADR-0160, ADR-0162).
+        postActionAllowances: Object.entries(ACTION_GATE_ALLOWANCE_LEDGERS).map(
+          ([target, { adrs, entries }]) => ({ target, adrs, ...entries })
+        ),
       },
     },
     targets: manifest.targets.map((target) =>
@@ -1609,15 +1608,24 @@ function actionRatio(result, gates) {
   );
 }
 
-// Names the recorded allowance a passing cell was scored under, so the
-// tooltip never presents an allowed 27 ms P95 as a base-gate pass.
-function allowanceVerdictSuffix(result) {
+// Names the recorded allowance a passing cell was scored under and the ADRs
+// that grant its target's ledger, so the tooltip never presents an allowed
+// 27 ms P95 as a base-gate pass.
+function allowanceVerdictSuffix(result, ledger) {
   const allowance = result.gateAllowance;
   if (!allowance) return '';
   const parts = [];
   if (Number.isFinite(allowance.p95Ms)) parts.push(`post P95 ≤ ${fmt(allowance.p95Ms)} ms`);
   if (Number.isFinite(allowance.maxMs)) parts.push(`post max ≤ ${fmt(allowance.maxMs)} ms`);
-  return ` under a recorded allowance (${parts.join(', ')}; ADR-0160)`;
+  const adrs = ledger?.adrs ?? [];
+  const granted = adrs.length ? `; ${adrs.join(', ')}` : '';
+  return ` under a recorded allowance (${parts.join(', ')}${granted})`;
+}
+
+// A report rendered from a hand-built matrix (the tests') may carry no ledger
+// list at all; a target absent from the list has no ledger.
+function allowanceLedgerFor(gates, targetId) {
+  return (gates.postActionAllowances ?? []).find((ledger) => ledger.target === targetId) ?? null;
 }
 
 function firstFrameP95Text(result) {
@@ -1646,7 +1654,8 @@ function comparableActionLabels(targets) {
   ];
 }
 
-function actionModeCells(mode, label, labels, gates) {
+function actionModeCells(mode, label, labels, gates, targetId) {
+  const ledger = allowanceLedgerFor(gates, targetId);
   const resultsByLabel = new Map(
     (mode.actions ? comparableActionResults(mode.actions) : []).map((result) => [
       result.label,
@@ -1680,9 +1689,9 @@ function actionModeCells(mode, label, labels, gates) {
       const verdict = attributable
         ? result.passed
           ? unconfirmed
-            ? `PASS, max unconfirmed (over the gate in one scored repeat, not the two ADR-0156 requires)${allowanceVerdictSuffix(result)}`
-            : `PASS${allowanceVerdictSuffix(result)}`
-          : `FAIL${allowanceVerdictSuffix(result)}`
+            ? `PASS, max unconfirmed (over the gate in one scored repeat, not the two ADR-0156 requires)${allowanceVerdictSuffix(result, ledger)}`
+            : `PASS${allowanceVerdictSuffix(result, ledger)}`
+          : `FAIL${allowanceVerdictSuffix(result, ledger)}`
         : `unscoreable: this mode\u2019s idle frame control is ${mode.actions?.controlEvidence ?? 'absent'}`;
       const tooltip = `${index + 1}. ${result.label} · ${label} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
       const cellClass = !attributable
@@ -1719,7 +1728,8 @@ function actionHeatmap(matrix) {
             mode,
             cellLabel(target, mode),
             labels,
-            matrix.gates.actions
+            matrix.gates.actions,
+            target.id
           );
           const comparableResults = mode.actions ? comparableActionResults(mode.actions) : [];
           const passingCount = comparableResults.filter((result) => result.passed).length;
@@ -1892,15 +1902,15 @@ function renderLostFrameExceptionsMarkdown(exceptions) {
 }
 
 // Every action held to a measured allowance instead of the base post-action
-// gates, on the one target the ledger applies to. Rendered so a passing cell
-// under an allowance is never read as a base-gate pass (ADR-0160).
-function actionAllowanceEntries(allowances) {
-  if (!allowances) return [];
+// gates, per target that carries a ledger. Rendered so a passing cell under
+// an allowance is never read as a base-gate pass (ADR-0160).
+function actionAllowanceEntries(ledger) {
+  if (!ledger) return [];
   return [
     ['p95', 'post-action P95'],
     ['max', 'post-action max'],
   ].flatMap(([statistic, name]) =>
-    Object.entries(allowances[statistic] ?? {}).map(([label, { ms, basis }]) => ({
+    Object.entries(ledger[statistic] ?? {}).map(([label, { ms, basis }]) => ({
       label,
       statistic: name,
       ms,
@@ -1909,13 +1919,19 @@ function actionAllowanceEntries(allowances) {
   );
 }
 
-function renderActionAllowancesMarkdown(allowances) {
-  const entries = actionAllowanceEntries(allowances);
-  if (entries.length === 0) return '';
-  const lines = entries.map(
-    ({ label, statistic, ms, basis }) => `- **${label}** — ${statistic} ≤ ${fmt(ms)} ms. ${basis}`
-  );
-  return `Actions on \`${allowances.target}\` held to a measured allowance instead of the base post-action gates, and why (ADR-0090, ADR-0160); every other target scores them at the base gates:\n\n${lines.join('\n')}\n`;
+function renderActionAllowancesMarkdown(ledgers) {
+  return (ledgers ?? [])
+    .map((ledger) => {
+      const entries = actionAllowanceEntries(ledger);
+      if (entries.length === 0) return '';
+      const lines = entries.map(
+        ({ label, statistic, ms, basis }) =>
+          `- **${label}** — ${statistic} ≤ ${fmt(ms)} ms. ${basis}`
+      );
+      return `Actions on \`${ledger.target}\` held to a measured allowance instead of the base post-action gates, and why (${ledger.adrs.join(', ')}); every target without a ledger scores them at the base gates:\n\n${lines.join('\n')}\n`;
+    })
+    .filter(Boolean)
+    .join('\n');
 }
 
 function renderMarkdown(matrix) {
@@ -2672,16 +2688,20 @@ function lostFrameExceptionsHtml(exceptions) {
 }
 
 // The HTML twin of renderActionAllowancesMarkdown.
-function actionAllowancesHtml(allowances) {
-  const entries = actionAllowanceEntries(allowances);
-  if (entries.length === 0) return '';
-  const items = entries
-    .map(
-      ({ label, statistic, ms, basis }) =>
-        `<li><b>${esc(label)}</b> — ${esc(statistic)} ≤ ${fmt(ms)} ms. ${esc(basis)}</li>`
-    )
+function actionAllowancesHtml(ledgers) {
+  return (ledgers ?? [])
+    .map((ledger) => {
+      const entries = actionAllowanceEntries(ledger);
+      if (entries.length === 0) return '';
+      const items = entries
+        .map(
+          ({ label, statistic, ms, basis }) =>
+            `<li><b>${esc(label)}</b> — ${esc(statistic)} ≤ ${fmt(ms)} ms. ${esc(basis)}</li>`
+        )
+        .join('');
+      return `<p><b>Action allowances on <code>${esc(ledger.target)}</code> (${esc(ledger.adrs.join(', '))}).</b> Actions held to a measured allowance instead of the base post-action gates, and why; every target without a ledger scores them at the base gates:</p><ul class="note-list">${items}</ul>`;
+    })
     .join('');
-  return `<p><b>Action allowances on <code>${esc(allowances.target)}</code> (ADR-0090, ADR-0160).</b> Actions held to a measured allowance instead of the base post-action gates, and why; every other target scores them at the base gates:</p><ul class="note-list">${items}</ul>`;
 }
 
 function scoringNotes(matrix) {

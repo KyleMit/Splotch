@@ -225,8 +225,10 @@ This affects the capture-time verdict of every action in the ADR-0090/ADR-0160 l
 rotation max gate or any drawing gate. Keep an earlier artifact's recorded ledger unchanged;
 distinguish its base-gate verdict from a read-only comparison with the declared physical policy. A
 missing declaration is not evidence that the policy changed — and it does not reach the matrix,
-which scores the `ipad-device-web` row under the shipped ledger by target id regardless of what the
-artifact recorded (ADR-0160).
+which scores each ledger row (`ipad-device-web` under ADR-0160, `android-device-web` under ADR-0162)
+by target id regardless of what the artifact recorded. The Android CDP runner records no ledger at
+all and prints base-gate verdicts, so its capture-time `FAIL` on the compact-shell
+`disable Night Mode` cell is the reading rule of ADR-0160, not a disagreement with the matrix.
 
 **A native orientation lock can rotate the page after split-capture readiness.** A retained
 landscape lock in Android Settings let the initial probe report portrait canvas bounds, then moved

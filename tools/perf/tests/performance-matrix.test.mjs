@@ -6,6 +6,7 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  ANDROID_WEB_ACTION_GATE_ALLOWANCES,
   IOS_ACTION_GATE_ALLOWANCES,
 } from '../lib/action-stats.mjs';
 import {
@@ -15,7 +16,7 @@ import {
   renderReport,
 } from '../gen-performance-matrix.mjs';
 import { GESTURE_REPEATS, UNDO_COUNT } from '../lib/campaign-plan.mjs';
-import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
+import { FULL_ACTION_GROUPS, compactSettingsActionLabel } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
 const distribution = { p50: 1, p95: 1, p99: 1, max: 1 };
@@ -2084,20 +2085,78 @@ describe('per-target action allowances', () => {
     expect(result.gateAllowance).toBeUndefined();
   });
 
-  it('renders the ledger beside the gates and names the allowance in the cell verdict', () => {
+  it('renders every ledger beside the gates and names the allowance in the cell verdict', () => {
     const matrix = matrixFor(
       { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },
       { captureRuntime: 'ios-safari' }
     );
-    expect(matrix.gates.actions.postActionAllowances.target).toBe('ipad-device-web');
-    expect(matrix.gates.actions.postActionAllowances.p95[label].ms).toBe(allowedP95);
+    const ledgers = matrix.gates.actions.postActionAllowances;
+    expect(ledgers.map((ledger) => ledger.target)).toEqual([
+      'ipad-device-web',
+      'android-device-web',
+    ]);
+    const ipad = ledgers.find((ledger) => ledger.target === 'ipad-device-web');
+    expect(ipad.adrs).toEqual(['ADR-0090', 'ADR-0160']);
+    expect(ipad.p95[label].ms).toBe(allowedP95);
     const markdown = renderMarkdown(matrix);
     expect(markdown).toContain(`**${label}** — post-action P95 ≤ ${allowedP95} ms.`);
     expect(markdown).toContain('**open Settings** — post-action max ≤ 56 ms.');
+    expect(markdown).toContain(`**${nightModeLabel}** — post-action P95 ≤ ${nightModeP95} ms.`);
     const html = renderReport(matrix);
-    expect(html).toContain('Action allowances on <code>ipad-device-web</code>');
     expect(html).toContain(
-      `PASS under a recorded allowance (post P95 ≤ ${allowedP95} ms; ADR-0160)`
+      'Action allowances on <code>ipad-device-web</code> (ADR-0090, ADR-0160)'
     );
+    expect(html).toContain('Action allowances on <code>android-device-web</code> (ADR-0162)');
+    expect(html).toContain(
+      `PASS under a recorded allowance (post P95 ≤ ${allowedP95} ms; ADR-0090, ADR-0160)`
+    );
+  });
+
+  // ADR-0162: the physical Android web row scores under its own one-entry
+  // ledger, priced and named per that ADR, while the native Android row beside
+  // it stays on the base gates. The fixture has the committed capture's shape:
+  // one two-beat frame in each of ~17 scored gaps per repeat, so the pooled
+  // P95 over three repeats is the third-highest gap and reads the two beats.
+  const nightModeLabel = `disable ${compactSettingsActionLabel('Night Mode')}`;
+  const nightModeP95 = ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95[nightModeLabel];
+  const twoBeatSample = (warmup) => ({
+    ...actionSample(nightModeLabel, warmup),
+    postActionFrameGapsMs: [33.4, ...Array.from({ length: 16 }, () => 16.7)],
+  });
+  const androidCapture = (captureRuntime) => ({
+    captureRuntime,
+    samples: [
+      ...[true, false, false, false].map((warmup) => actionSample('idle frame control', warmup)),
+      ...[true, false, false, false].map(twoBeatSample),
+    ],
+  });
+
+  it('scores the physical Android web row under the ADR-0162 ledger and names it', () => {
+    expect(nightModeP95).toBe(33.5);
+    const matrix = matrixFor(
+      { id: 'android-device-web', fidelity: 'physical-web-advisory' },
+      androidCapture('android-chrome')
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === nightModeLabel
+    );
+    expect(result.postActionFrames.p95).toBe(33.4);
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toEqual({ p95Ms: nightModeP95 });
+    expect(renderReport(matrix)).toContain(
+      `PASS under a recorded allowance (post P95 ≤ ${nightModeP95} ms; ADR-0162)`
+    );
+  });
+
+  it('keeps the physical Android native row on the base gates for the same capture', () => {
+    const matrix = matrixFor(
+      { id: 'android-device-native', fidelity: 'physical-native-advisory' },
+      androidCapture('android-capacitor-webview')
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === nightModeLabel
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
   });
 });
