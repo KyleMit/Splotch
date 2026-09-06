@@ -52,8 +52,9 @@ outcome stays an explicit later ask to `create-adr`.
 | `lighthouse-audit`           | **Page-load** performance / Core Web Vitals on a throttled device; also an audit producer                      |
 
 `capture-performance-matrix` is the capture and refresh workflow. `improve-performance-matrix`
-consumes that evidence and owns the sustained improvement campaign through zero current, scoreable
-reds or a user-requested merge-ready wrap-up.
+consumes that evidence and owns the sustained improvement campaign through zero current, scoreable,
+unexplained reds on the release-gate rows (a red cell with an ADR-recorded, evidence-backed
+disposition counts as explained — ADR-0160) or a user-requested merge-ready wrap-up.
 
 ## Audit lifecycle — produce → vet → fix
 

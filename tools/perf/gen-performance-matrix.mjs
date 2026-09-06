@@ -9,6 +9,9 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  ACTION_GATE_ALLOWANCE_TARGET,
+  IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
+  actionGateAllowancesFor,
   rotationFirstFrameNa,
   summarizeActions,
   MAX_BREACH_CONFIRMING_SAMPLES,
@@ -764,13 +767,28 @@ function normalizeActionPlan(plan, source) {
   };
 }
 
+// The allowance a result was scored under rides beside it in data.json, so a
+// cell that passes only because of one is never read as a base-gate pass:
+// the heat ratio prices it against its own budget and the tooltip names it.
+// Absent from every result on the base gates.
+function actionGateAllowance(allowances, label) {
+  const gateAllowance = {};
+  if (Number.isFinite(allowances.p95?.[label])) gateAllowance.p95Ms = allowances.p95[label];
+  if (Number.isFinite(allowances.max?.[label])) gateAllowance.maxMs = allowances.max[label];
+  return Object.keys(gateAllowance).length ? { gateAllowance } : {};
+}
+
 function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   const profile = readJson(sourcePath(spec.source, sourceDirectory));
   validateCaptureMode(profile, mode, spec.source);
   const labels = spec.labels ? new Set(spec.labels) : null;
-  // A capture is re-scored under its own recorded gate exceptions (ADR-0090
-  // amendment); one without the field — every capture predating it, and every
-  // non-iOS target — stays on the base gates.
+  // A capture is re-scored under the SHIPPED allowance policy for its matrix
+  // target (ADR-0160), not under the `gateAllowances` it recorded: the record
+  // is the capture-time verdict's provenance, and a policy change must reach
+  // every published cell on regeneration so the diff is the record (the
+  // ADR-0156 pattern). Only the calibrated iPad web row has a ledger; every
+  // other target stays on the base gates whatever its artifact recorded.
+  const allowances = actionGateAllowancesFor(targetId);
   // Rotation first-frame applicability keys on the capture RUNTIME, never the
   // transport — `transport: "browser"` is the Appium web transport generally,
   // and Android Chrome over Appium must stay gated (ADR-0142). When both the
@@ -813,7 +831,7 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   // gated, and its 100 ms first frames turn the misfile into a red cell
   // instead of an N/A.
   const summaries = profile.samples
-    ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {}, (label) =>
+    ? summarizeActions(profile.samples, [], allowances, (label) =>
         rotationFirstFrameNa(runtime, label, recordedEngine)
       )
     : profile.summaries;
@@ -825,6 +843,7 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
       firstFrame: normalizedDistribution(summary.firstFrame),
       ready: normalizedDistribution(summary.ready),
       postActionFrames: normalizedActionFrames(summary.frames),
+      ...actionGateAllowance(allowances, summary.label),
       passed: summary.passed,
       source: spec.source,
       productCommit: spec.productCommit,
@@ -1322,6 +1341,13 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
         postActionFrameP95Ms: ACTION_FRAME_P95_GATE_MS,
         postActionFrameMaxMs: ACTION_FRAME_MAX_GATE_MS,
         postActionFrameMaxConfirmingSamples: MAX_BREACH_CONFIRMING_SAMPLES,
+        // The per-action allowance ledgers and the one target they apply to,
+        // rendered beside the gates for the same reason the lost-frame
+        // exceptions are (ADR-0137, ADR-0160).
+        postActionAllowances: {
+          target: ACTION_GATE_ALLOWANCE_TARGET,
+          ...IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
+        },
       },
     },
     targets: manifest.targets.map((target) =>
@@ -1543,12 +1569,23 @@ function actionRatio(result, gates) {
   return maximum(
     [
       [result.firstFrame.na === true ? null : result.firstFrame.p95, gates.firstFrameP95Ms],
-      [result.postActionFrames.p95, gates.postActionFrameP95Ms],
-      [result.postActionFrames.max, gates.postActionFrameMaxMs],
+      [result.postActionFrames.p95, result.gateAllowance?.p95Ms ?? gates.postActionFrameP95Ms],
+      [result.postActionFrames.max, result.gateAllowance?.maxMs ?? gates.postActionFrameMaxMs],
     ]
       .filter(([value]) => Number.isFinite(value))
       .map(([value, gate]) => value / gate)
   );
+}
+
+// Names the recorded allowance a passing cell was scored under, so the
+// tooltip never presents an allowed 27 ms P95 as a base-gate pass.
+function allowanceVerdictSuffix(result) {
+  const allowance = result.gateAllowance;
+  if (!allowance) return '';
+  const parts = [];
+  if (Number.isFinite(allowance.p95Ms)) parts.push(`post P95 ≤ ${fmt(allowance.p95Ms)} ms`);
+  if (Number.isFinite(allowance.maxMs)) parts.push(`post max ≤ ${fmt(allowance.maxMs)} ms`);
+  return ` under a recorded allowance (${parts.join(', ')}; ADR-0160)`;
 }
 
 function firstFrameP95Text(result) {
@@ -1612,8 +1649,8 @@ function actionModeCells(mode, label, labels, gates) {
         ? result.passed
           ? unconfirmed
             ? 'PASS, max unconfirmed (over the gate in one scored repeat, not the two ADR-0156 requires)'
-            : 'PASS'
-          : 'FAIL'
+            : `PASS${allowanceVerdictSuffix(result)}`
+          : `FAIL${allowanceVerdictSuffix(result)}`
         : `unscoreable: this mode\u2019s idle frame control is ${mode.actions?.controlEvidence ?? 'absent'}`;
       const tooltip = `${index + 1}. ${result.label} · ${label} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
       const cellClass = !attributable
@@ -1822,6 +1859,33 @@ function renderLostFrameExceptionsMarkdown(exceptions) {
   return `Cells held to a different lost-frame budget, and why (ADR-0137):\n\n${lines.join('\n')}\n`;
 }
 
+// Every action held to a measured allowance instead of the base post-action
+// gates, on the one target the ledger applies to. Rendered so a passing cell
+// under an allowance is never read as a base-gate pass (ADR-0160).
+function actionAllowanceEntries(allowances) {
+  if (!allowances) return [];
+  return [
+    ['p95', 'post-action P95'],
+    ['max', 'post-action max'],
+  ].flatMap(([statistic, name]) =>
+    Object.entries(allowances[statistic] ?? {}).map(([label, { ms, basis }]) => ({
+      label,
+      statistic: name,
+      ms,
+      basis,
+    }))
+  );
+}
+
+function renderActionAllowancesMarkdown(allowances) {
+  const entries = actionAllowanceEntries(allowances);
+  if (entries.length === 0) return '';
+  const lines = entries.map(
+    ({ label, statistic, ms, basis }) => `- **${label}** — ${statistic} ≤ ${fmt(ms)} ms. ${basis}`
+  );
+  return `Actions on \`${allowances.target}\` held to a measured allowance instead of the base post-action gates, and why (ADR-0090, ADR-0160); every other target scores them at the base gates:\n\n${lines.join('\n')}\n`;
+}
+
 function renderMarkdown(matrix) {
   const rows = modeRows(matrix);
   const drawingRows = rows.map((target) => {
@@ -1944,6 +2008,7 @@ under ADR-0142's \`resize\` anchor the value reads 0–2 ms by construction ther
 render N/A and rotation is scored by the post-action frame gates alone.
 
 ${renderLostFrameExceptionsMarkdown(matrix.gates.drawing.lostFrameTimeShareExceptions ?? {})}
+${renderActionAllowancesMarkdown(matrix.gates.actions.postActionAllowances)}
 ## Capture limitations
 
 ${limitations || '- None recorded.'}
@@ -2574,11 +2639,25 @@ function lostFrameExceptionsHtml(exceptions) {
   return `<p><b>Lost-frame budget exceptions (ADR-0137).</b> Cells held to a different lost-frame budget, and why:</p><ul class="note-list">${items}</ul>`;
 }
 
+// The HTML twin of renderActionAllowancesMarkdown.
+function actionAllowancesHtml(allowances) {
+  const entries = actionAllowanceEntries(allowances);
+  if (entries.length === 0) return '';
+  const items = entries
+    .map(
+      ({ label, statistic, ms, basis }) =>
+        `<li><b>${esc(label)}</b> — ${esc(statistic)} ≤ ${fmt(ms)} ms. ${esc(basis)}</li>`
+    )
+    .join('');
+  return `<p><b>Action allowances on <code>${esc(allowances.target)}</code> (ADR-0090, ADR-0160).</b> Actions held to a measured allowance instead of the base post-action gates, and why; every other target scores them at the base gates:</p><ul class="note-list">${items}</ul>`;
+}
+
 function scoringNotes(matrix) {
   const gates = matrix.gates;
   return `
     <p><b>Gates.</b> Drawing passes when blank-paper paint P95 ≤ ${gates.drawing.paintP95Ms} ms, P99 ≤ ${gates.drawing.paintP99Ms} ms, max ≤ ${gates.drawing.paintMaxMs} ms, and lost frame time stays under ${fmtPercent(gates.drawing.lostFrameTimeShare)} of in-contact time. Undo passes at engine P95 ≤ ${gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${gates.undo.nextFrameP95Ms} ms, and next-frame max ≤ ${gates.undo.nextFrameMaxMs} ms. An action passes at first-frame P95 ≤ ${gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤ ${gates.actions.postActionFrameMaxMs} ms. A post-action max over its gate counts only when ${gates.actions.postActionFrameMaxConfirmingSamples} of the three scored repeats show it (ADR-0156); one breaching repeat renders as a warning, not a failure. Ready P95 appears in tooltips but is not gated: its completion semantics differ per action, so a frame-gate pass says nothing about end-to-end response time.</p>
     ${lostFrameExceptionsHtml(gates.drawing.lostFrameTimeShareExceptions ?? {})}
+    ${actionAllowancesHtml(gates.actions.postActionAllowances)}
     <p><b>Release gate vs advisory.</b> The chip beside each target says which rows carry the calibrated release gate. Every other row is an advisory comparison whose host, transport, or browser engine differs from what actually ships.</p>
     <p><b>Unscoreable cells.</b> A hatched cell is neither a pass nor a failure. Its capture either failed an input-fidelity check — the number describes an input path the capture runner rejects — or was measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame budget. The tooltip names the reason.</p>
     <p><b>The idle-frame control.</b> Every action sweep includes a control sample that performs no interaction, proving the target can hold frames at rest. When the control fails its own gate the host was dropping frames on its own, so none of that mode’s action scores can be attributed to the app: the mode is marked “no control” and left out of the failure ranking.</p>

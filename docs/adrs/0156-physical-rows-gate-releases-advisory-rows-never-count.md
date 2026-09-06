@@ -2,7 +2,16 @@
 
 **Status:** Active — amends [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md),
 [ADR-0137](0137-lost-frame-gate-exceptions.md), and
-[ADR-0142](0142-rotation-actions-anchor-at-resize.md) **Date:** 2026-09
+[ADR-0142](0142-rotation-actions-anchor-at-resize.md); amended by
+[ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md) **Date:** 2026-09
+
+> **Amended by [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md):**
+> the completion gate in decision 3 now reads "zero current, scoreable, **unexplained** red cells on
+> the release-gate rows" — a red cell with an ADR-recorded, evidence-backed disposition counts
+> toward completion. Decision 5's no-allowance rule for rotation with ink is superseded for the
+> `with ink: PORTRAIT to LANDSCAPE rotation` direction on the calibrated iPad web row only, by a
+> measured 26 ms P95 allowance in the ADR-0090 shape it asked for; the landscape-origin direction,
+> the 33.5 ms max gate, and every other target keep this record's rule.
 
 ## Context
 

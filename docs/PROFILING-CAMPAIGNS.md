@@ -221,9 +221,12 @@ can omit `deviceName`, and a minimal file that reuses `webDriverAgentUrl` need n
 Pass `--device-class=tablet` on physical-iPad action captures and inspect the resulting
 `gateAllowances` before interpreting Settings results. Without tablet classification the runner
 records base gates, even when its device-ID and runtime checks prove a physical iOS Safari session.
-This affects the existing ADR-0090 Settings allowance, not the rotation gates. Keep an earlier
-artifact's recorded ledger unchanged; distinguish its base-gate verdict from a read-only comparison
-with the declared physical policy. A missing declaration is not evidence that the policy changed.
+This affects the capture-time verdict of every action in the ADR-0090/ADR-0160 ledger, not the
+rotation max gate or any drawing gate. Keep an earlier artifact's recorded ledger unchanged;
+distinguish its base-gate verdict from a read-only comparison with the declared physical policy. A
+missing declaration is not evidence that the policy changed — and it does not reach the matrix,
+which scores the `ipad-device-web` row under the shipped ledger by target id regardless of what the
+artifact recorded (ADR-0160).
 
 **A native orientation lock can rotate the page after split-capture readiness.** A retained
 landscape lock in Android Settings let the initial probe report portrait canvas bounds, then moved

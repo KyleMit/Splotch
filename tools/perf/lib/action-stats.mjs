@@ -1,23 +1,76 @@
 import { percentile } from './real-screen-stats.mjs';
 
 export const ACTION_FRAME_P95_GATE_MS = 20;
+// The one matrix row whose action cells score under the allowance ledgers
+// below: the calibrated physical iPad running Safari. Keyed by matrix target
+// id exactly as ADR-0137's lost-frame exceptions are, so the generator applies
+// the shipped policy to that row and every other target stays on the base
+// gates whatever its artifact recorded.
+export const ACTION_GATE_ALLOWANCE_TARGET = 'ipad-device-web';
 // Documented per-action exceptions to the P95 gate for the calibrated
-// physical-iOS capture ONLY (ADR-0090's amendment) — each a measured,
-// accepted residual rather than a loosened default, and never applied by
-// default: the scorer takes allowances as an argument, the iOS harness
-// passes this ledger and records it into its capture as `gateAllowances`,
-// and every other target (desktop, Android, and matrix re-summaries of
-// captures that carry no metadata) stays on the base gates. 'open Settings'
-// presents a prewarmed pane (ADR-0049 amendment; PR #1124): its open carries
-// exactly two ~21-25 ms frames that no hidden state can prepay — the
-// showModal flip itself, and the heaviest section's staged reveal — while
-// its worst frame halved against the tap-mount baseline (25 ms vs the base's
-// 47 ms) and the mid-animation 41-45 ms paint stalls were eliminated.
+// physical-iOS capture ONLY (ADR-0090's amendment, extended by ADR-0160) —
+// each a measured, accepted residual rather than a loosened default, and
+// never applied by default: the scorer takes allowances as an argument, the
+// iOS harness passes this ledger and records it into its capture as
+// `gateAllowances`, the matrix generator applies it to the target above, and
+// every other target (desktop, Android, the native shells) stays on the base
+// gates. Every entry is sized one rounding quantum above the worst committed
+// single capture of its cell (ADR-0137's worst-single-capture rule; the
+// scorer's percentile rounds to whole milliseconds), never above a median,
+// and only ratchets down — raising one needs the same evidence as adding it.
+// `basis` is rendered into the matrix beside the gates so a passing cell
+// never has to be read as a base-gate pass; the full measured tables, the
+// trace attribution, and each entry's reopen condition are in ADR-0160.
 // Measured on the physical iPad (iPadOS 26.5, 120 Hz). A regression past an
 // allowance still fails.
-const IOS_ACTION_FRAME_P95_ALLOWANCES_MS = {
-  'open Settings': 26,
+const IOS_ACTION_FRAME_P95_ALLOWANCES = {
+  'open Settings': {
+    ms: 29,
+    basis:
+      'Worst committed P95 28 ms (perf-profiles/evidence/2026-09-05-epic-1567-advanced-controls-certification, ' +
+      'landscape/dark at ebc7673b), 27 ms in seven further September 2026 captures across three modes at ' +
+      '3c017796, 9af487b3 and e5142fab. The pane is prewarmed (ADR-0049 amendment) and its open still ' +
+      'carries the showModal flip and the heaviest section reveal; Instruments aligns the remaining slow ' +
+      'frames with animation completion, compositing-hierarchy changes, layer removal and paint, and the ' +
+      'bounded `contain: layout paint` candidate measured negative. Raised from the 26 ms of ADR-0090 under ADR-0160.',
+  },
+  'close Settings': {
+    ms: 22,
+    basis:
+      'Worst committed P95 21 ms in three captures (perf-profiles/evidence/2026-09-05-epic-1567-ipad-e514-control ' +
+      'landscape/light and landscape/dark; 2026-09-05-epic-1567-ipad-paper-control portrait/light), 17-20 ms in ' +
+      'fifteen others. The same dialog retirement over a full-screen paper layer as the coloring picker; it ' +
+      'carries no dedicated trace, so ADR-0160 records the attribution as shared and the reopen condition as its own.',
+  },
+  'select coloring page': {
+    ms: 30,
+    basis:
+      'Worst committed P95 29 ms (perf-profiles/evidence/2026-09-05-epic-1567-landscape-retirement-controls, ' +
+      'landscape/dark at e5142fab), 26-28 ms in seven further captures, portrait/light green at 17. The 29 ms ' +
+      'frame sampled in Instruments is GPU-process IOSurface pool eviction, surface creation and Metal ' +
+      'submission with no app evaluation in-frame; seven bounded product mechanisms measured negative or ' +
+      'insufficient (issue 1569, 2026-09-06 disposition).',
+  },
+  'switch light theme to dark': {
+    ms: 23,
+    basis:
+      'Worst committed P95 22 ms (perf-profiles/evidence/2026-09-05-epic-1567-ipad-e514-control, ' +
+      'portrait/light), 17 ms in fifteen other captures. A single-capture excursion sized by ADR-0137 ' +
+      'worst-single-capture rule: the full-document restyle recomposites every layer in one frame (ADR-0087).',
+  },
+  [inkRotationActionLabel('PORTRAIT', 'LANDSCAPE')]: {
+    ms: 26,
+    basis:
+      'Worst committed P95 25 ms in two captures (perf-profiles/evidence/2026-09-05-epic-1567-ipad-paper-control, ' +
+      'portrait/light at 141288da), 22-24 ms in four others; the landscape-origin direction reads 17-18. The slow ' +
+      'frame is the first full post-resize interval of the OS rotation; the aligned trace holds GPU surface-pool ' +
+      'eviction and command submission beside WebContent layout, and paper-sheet compositor pre-promotion measured ' +
+      'negative. Supersedes ADR-0156 decision 5 for this direction only; the 33.5 ms max gate stays.',
+  },
 };
+const IOS_ACTION_FRAME_P95_ALLOWANCES_MS = Object.fromEntries(
+  Object.entries(IOS_ACTION_FRAME_P95_ALLOWANCES).map(([label, { ms }]) => [label, ms])
+);
 // Two exact 60 Hz vsync intervals are 33.33 ms; the next interval is the visible 50 ms freeze.
 export const ACTION_FRAME_MAX_GATE_MS = 33.5;
 // A matrix cell is one capture of three scored repeats, and a single two-beat
@@ -46,9 +99,20 @@ export const MAX_BREACH_CONFIRMING_SAMPLES = 2;
 // frame converts it to a product finding and retires this entry. 56 covers
 // the observed three-beat frame (3 x 16.7 = 50 ms) plus scheduling jitter; a
 // genuine product regression past it still fails.
-const IOS_ACTION_FRAME_MAX_ALLOWANCES_MS = {
-  'open Settings': 56,
+const IOS_ACTION_FRAME_MAX_ALLOWANCES = {
+  'open Settings': {
+    ms: 56,
+    basis:
+      'Capture-environment allowance (issue 1130, ADR-0090 2026-08-26 amendment): every hitch under the ' +
+      '44-55 ms open-Settings frame lands on the automation overlay stack with zero WebContent hitches, but ' +
+      'the trace attributes per layer and the real-finger control was confounded by the persistent ' +
+      'AutomationModeUI overlay. Covers the observed three-beat frame plus jitter; a clean-device control ' +
+      'that still shows the frame retires it.',
+  },
 };
+const IOS_ACTION_FRAME_MAX_ALLOWANCES_MS = Object.fromEntries(
+  Object.entries(IOS_ACTION_FRAME_MAX_ALLOWANCES).map(([label, { ms }]) => [label, ms])
+);
 // What the iOS harness passes and records: both ledgers, keyed by statistic.
 // A capture predating the split stored the flat P95 map; the scorer's
 // normalizer keeps those artifacts scoring exactly as they did.
@@ -56,11 +120,27 @@ export const IOS_ACTION_GATE_ALLOWANCES = {
   p95: IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
   max: IOS_ACTION_FRAME_MAX_ALLOWANCES_MS,
 };
+// The same ledgers with each entry's measured basis, for the matrix to render
+// beside its gates (ADR-0137's mitigation: an exemption is shown, never inferred).
+export const IOS_ACTION_GATE_ALLOWANCE_ENTRIES = {
+  p95: IOS_ACTION_FRAME_P95_ALLOWANCES,
+  max: IOS_ACTION_FRAME_MAX_ALLOWANCES,
+};
+
+// The shipped release-gate policy for a matrix target: the calibrated iPad
+// web row scores under the ledgers, every other row on the base gates. The
+// generator applies this rather than an artifact's recorded `gateAllowances`
+// so a policy change re-scores every published cell on regeneration and the
+// regeneration diff is the record (ADR-0160); the recorded field stays the
+// capture-time verdict's provenance.
+export function actionGateAllowancesFor(targetId) {
+  return targetId === ACTION_GATE_ALLOWANCE_TARGET ? IOS_ACTION_GATE_ALLOWANCES : {};
+}
 
 // Both allowance shapes reach the scorer: the structured {p95, max} ledgers
 // above, and the flat per-label P95 map every artifact recorded before the
-// max ledger existed (the matrix re-summarizes from the ARTIFACT's stored
-// gateAllowances, so the legacy shape must keep scoring as it always did —
+// max ledger existed (a capture-time verdict re-summarized from the
+// ARTIFACT's stored gateAllowances must keep scoring as it always did —
 // P95 allowance applied, max gate base).
 function normalizedAllowances(allowances) {
   if (allowances && (allowances.p95 || allowances.max)) {
@@ -80,6 +160,12 @@ export const ACTION_SETTLE_TAIL_FRAMES = 4;
 // structurally-zero pass it exists to remove.
 export function rotationActionLabel(from, to) {
   return `${from} to ${to} rotation`;
+}
+
+// The with-ink rotation label, owned here for the same reason: the sweep
+// that measures it and the allowance ledger that names it must agree.
+export function inkRotationActionLabel(from, to) {
+  return `with ink: ${rotationActionLabel(from, to)}`;
 }
 
 // Orientation-change measurements only. The click actions taken after a
