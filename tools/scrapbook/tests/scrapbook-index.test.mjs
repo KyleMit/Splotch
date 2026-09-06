@@ -62,6 +62,28 @@ describe('scrapbook index', () => {
     expect(index).not.toContain('href="model-eval/"');
   });
 
+  it('gives a nested registered page its own card and drops it from the parent list', () => {
+    const scrapbookDir = fixture();
+    const matrixDir = join(scrapbookDir, 'performance', '2026-07-31-deployment-target-matrix');
+    const explainerDir = join(scrapbookDir, 'performance', 'mechanisms');
+    mkdirSync(matrixDir, { recursive: true });
+    mkdirSync(explainerDir, { recursive: true });
+    writeFileSync(join(matrixDir, 'index.html'), '<!doctype html>');
+    writeFileSync(
+      join(explainerDir, 'index.html'),
+      '<nav><a href="#budget"><span class="nav-num">1</span>The budget</a\n><a href="#habits">Six &amp; more</a\n></nav>'
+    );
+
+    const index = buildScrapbookIndex(scrapbookDir);
+
+    expect(index).toContain('aria-label="How Splotch stays fast"');
+    expect(index).toContain('href="performance/mechanisms/index.html#budget">The budget<');
+    expect(index).toContain('href="performance/mechanisms/index.html#habits">Six &amp; more<');
+    expect(index).toContain('<span class="kind">2 sections</span>');
+    expect(index).not.toContain('>mechanisms<');
+    expect(index).not.toContain('<span class="kind">2 reports</span>');
+  });
+
   it('reports a registered collection with no linkable page', () => {
     const scrapbookDir = fixture();
     mkdirSync(join(scrapbookDir, 'model-eval'));

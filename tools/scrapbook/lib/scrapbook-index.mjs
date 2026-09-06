@@ -135,6 +135,25 @@ const GLYPHS = {
 <rect x="45" y="30" width="11" height="20" rx="1" fill="#26305a" stroke="none"/>
 <path d="M48.5 53.5h4"/>
 </svg>`,
+  gauge: `<svg viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path d="M9 46a23 23 0 0 1 46 0" stroke="var(--glyph-hair)" stroke-width="6"/>
+<path d="M9 46a23 23 0 0 1 12-20" stroke="var(--c-green)" stroke-width="6"/>
+<path d="M21 26a23 23 0 0 1 29 4" stroke="var(--c-yellow)" stroke-width="6"/>
+<path d="M50 30a23 23 0 0 1 5 16" stroke="var(--c-red)" stroke-width="6"/>
+<path d="M32 46L20 31" stroke="currentColor" stroke-width="3"/>
+<circle cx="32" cy="46" r="4" fill="currentColor"/>
+<path d="M14 56h36" stroke="var(--glyph-hair)" stroke-width="2"/>
+</svg>`,
+  rig: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<rect x="6" y="8" width="34" height="26" rx="4" fill="var(--glyph-paper)"/>
+<path d="M12 27c5-9 9-11 13-6s6 3 9-5" stroke="var(--c-red)" stroke-width="2.5"/>
+<path d="M23 34v6" stroke="var(--glyph-hair)"/>
+<path d="M23 40h24" stroke="var(--glyph-hair)"/>
+<rect x="44" y="12" width="14" height="22" rx="3" fill="var(--glyph-paper)"/>
+<path d="M47 22l3-4 2 6 3-8 2 6" stroke="var(--c-red)" stroke-width="1.8"/>
+<path d="M8 56c4 0 4-10 8-10s4 6 8 6 4-12 8-12 4 8 8 8 4-6 8-6 4 4 8 4" stroke="currentColor" stroke-width="2.2"/>
+<path d="M8 47h48" stroke="var(--glyph-hair)" stroke-dasharray="2 3"/>
+</svg>`,
 };
 
 // Section headings, in page order. `desc` is the plain-words subtitle.
@@ -157,15 +176,24 @@ function proofSheetCategories(hubPath) {
 }
 
 // The in-page navigation of a long explainer, read from the page itself so the
-// card's section links can never name a heading the page no longer has.
+// card's section links can never name a heading the page no longer has. The
+// label is the link body's text with any numbering dropped: a numbered nav puts
+// the ordinal in its own span, and a Prettier-wrapped page may break a closing
+// tag across lines (`</a\n>`).
 function sectionAnchors(pagePath) {
   if (!existsSync(pagePath)) return [];
   const html = readFileSync(pagePath, 'utf8');
-  const navs = [...html.matchAll(/<nav\b[\s\S]*?<\/nav>/g)].map((m) => m[0]).join('');
-  return [...navs.matchAll(/<a\s+[^>]*href="#([^"]+)"[^>]*>([^<]+)</g)].map(([, id, label]) => ({
-    id,
-    label: label.replace(/&amp;/g, '&').trim(),
-  }));
+  const navs = [...html.matchAll(/<nav\b[\s\S]*?<\/nav\s*>/g)].map((m) => m[0]).join('');
+  return [...navs.matchAll(/<a\s+[^>]*href="#([^"]+)"[^>]*>([\s\S]*?)<\/a\s*>/g)].map(
+    ([, id, body]) => ({
+      id,
+      label: body
+        .replace(/<span\b[^>]*>\s*\d+\s*<\/span\s*>/g, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&')
+        .trim(),
+    })
+  );
 }
 
 // First Markdown heading of a report, used as its link label. The headings end
@@ -177,10 +205,12 @@ function markdownTitle(path) {
 
 // Sub-collections of a type dir: every child folder with an HTML or Markdown
 // entry page, newest date prefix last. HTML pages link on-site, Markdown pages to
-// their rendered GitHub blob view.
+// their rendered GitHub blob view. A child that has its own registry card (an
+// explainer filed under a measurements folder) is that card's, not a report of
+// this one.
 function childReports(dir, type) {
   return readdirSync(dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && e.name !== 'assets')
+    .filter((e) => e.isDirectory() && e.name !== 'assets' && !REGISTRY[`${type}/${e.name}`])
     .map((e) => e.name)
     .sort()
     .map((name) => {
@@ -197,9 +227,10 @@ function childReports(dir, type) {
     .filter(Boolean);
 }
 
-// Curated presentation for the known scrapbook types. `entry` is the page a card
-// links to; `count` derives a short unit label from the type's directory; `inside`
-// lists the pages or sections a reader can jump straight to.
+// Curated presentation for the known scrapbook types, keyed by folder path under
+// scrapbook/ (a nested key gives one page inside a type its own card). `entry` is
+// the page a card links to; `count` derives a short unit label from the folder;
+// `inside` lists the pages or sections a reader can jump straight to.
 const REGISTRY = {
   'coloring-book-proof-sheets': {
     group: 'galleries',
@@ -344,6 +375,44 @@ const REGISTRY = {
       sectionAnchors(join(dir, 'index.html')).map(({ id, label }) => ({
         label,
         href: `drawing-engine/index.html#${id}`,
+      })),
+  },
+  'performance/mechanisms': {
+    group: 'explainers',
+    glyph: 'gauge',
+    hue: 'green',
+    title: 'How Splotch stays fast',
+    blurb:
+      'How the app spends its 16.7 milliseconds per frame, and every mechanism in the code that protects that budget: the tiled canvas, idle scheduling, the startup bundle, off-main-thread work, and network caching. Each one is checked against the code.',
+    entry: 'performance/mechanisms/index.html',
+    count: (dir) => {
+      const n = sectionAnchors(join(dir, 'index.html')).length;
+      return n ? `${n} sections` : null;
+    },
+    insideOpen: true,
+    inside: (dir) =>
+      sectionAnchors(join(dir, 'index.html')).map(({ id, label }) => ({
+        label,
+        href: `performance/mechanisms/index.html#${id}`,
+      })),
+  },
+  'performance/profiling-rig': {
+    group: 'explainers',
+    glyph: 'rig',
+    hue: 'purple',
+    title: 'How Splotch measures itself on real screens',
+    blurb:
+      'The profiling rig behind the performance matrix, one surface at a time: what touches the glass, what carries the numbers home, what the platform sees that the page cannot, how a capture campaign runs end to end, and the setup mistakes that produce plausible wrong numbers.',
+    entry: 'performance/profiling-rig/index.html',
+    count: (dir) => {
+      const n = sectionAnchors(join(dir, 'index.html')).length;
+      return n ? `${n} sections` : null;
+    },
+    insideOpen: true,
+    inside: (dir) =>
+      sectionAnchors(join(dir, 'index.html')).map(({ id, label }) => ({
+        label,
+        href: `performance/profiling-rig/index.html#${id}`,
       })),
   },
 };
@@ -672,8 +741,11 @@ export function buildScrapbookIndex(scrapbookDir) {
     .sort();
 
   // Known types first (registry order, grouped), then any unknown dirs as
-  // fallback cards in a group of their own.
-  const known = Object.keys(REGISTRY).filter((t) => typeDirs.includes(t));
+  // fallback cards in a group of their own. A registry key may name a folder
+  // nested inside a type (an explainer filed under performance/), so presence is
+  // checked on disk rather than against the top-level listing; the collection
+  // count in the masthead still counts top-level folders only.
+  const known = Object.keys(REGISTRY).filter((t) => existsSync(join(scrapbookDir, t)));
   const unknown = typeDirs.filter((t) => !REGISTRY[t]);
 
   const sections = Object.entries(GROUPS).map(([id, group]) =>
