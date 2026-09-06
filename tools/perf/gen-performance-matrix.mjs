@@ -1393,50 +1393,150 @@ function rowLabel(row) {
   return `${row.targetLabel} · ${row.modeLabel}`;
 }
 
-function statusChip(entry) {
-  if (entry.status !== 'captured') return '<span class="matrix-chip missing">Unavailable</span>';
-  const label = entry.fidelity === 'release-gate' ? 'Release gate' : 'Advisory';
-  return `<span class="matrix-chip ${entry.fidelity === 'release-gate' ? 'trusted' : ''}">${label}</span>`;
+function fidelityChip(fidelity) {
+  const gate = fidelity === GATE_FIDELITY;
+  return `<span class="matrix-chip${gate ? ' trusted' : ''}">${gate ? 'Release gate' : 'Advisory'}</span>`;
 }
 
-function drawingPlot(matrix, metric, gate, title) {
-  const rows = modeRows(matrix)
+// Preserved rows carry results from an earlier campaign (ADR-0138); without a
+// visible mark they read as current alongside the freshly captured rows.
+function targetIsPreserved(target) {
+  return target.modes.some((mode) => mode.preservedSections?.length);
+}
+
+function earlierCaptureChip(target) {
+  if (!targetIsPreserved(target)) return '';
+  const title =
+    'Results preserved from an earlier campaign — Commit provenance lists the source commits.';
+  return `<a class="matrix-chip earlier" href="#provenance" title="${esc(title)}">Earlier capture</a>`;
+}
+
+// The JS tooltip consumes the title attribute, so every cell also carries the
+// same text as a persistent aria-label — otherwise the first hover strips the
+// cell's accessible name.
+function tipCell(classes, text, tooltip, data = '') {
+  return `<span class="${classes}" tabindex="0"${data ? ` ${data}` : ''} title="${esc(tooltip)}" aria-label="${esc(tooltip)}">${text}</span>`;
+}
+
+function modeFilterAttrs(target, mode) {
+  return `data-target="${esc(target.id)}" data-orientation="${mode.orientation.toLowerCase()}" data-theme="${esc(mode.theme)}"`;
+}
+
+function cellLabel(target, mode) {
+  return `${target.label} · ${displayMode(mode)}`;
+}
+
+const DRAWING_METRIC_KEYS = ['p95', 'p99', 'max'];
+
+// Every paint metric rides the cell as data attributes so the metric switcher can
+// swap the displayed number and heat color client-side without re-rendering.
+function drawingOverviewCell(label, brush, entry, gates) {
+  const aggregate = entry.aggregate;
+  const brushLabel = BRUSH_LABELS[brush];
+  if (!drawingAggregateAvailable(aggregate)) {
+    return tipCell('mx-cell num missing', '—', `${label} · ${brushLabel} · not measured`);
+  }
+  // An unscoreable cell is neither pass nor fail, so it must not carry the
+  // product-failure styling; the tooltip says why instead.
+  const unscoreable = aggregate.scoreable === false;
+  const failed = !unscoreable && aggregate.blankPassed === false;
+  const metricGates = { p95: gates.paintP95Ms, p99: gates.paintP99Ms, max: gates.paintMaxMs };
+  const metricData = DRAWING_METRIC_KEYS.map(
+    (key) =>
+      `data-${key}="${fmt(aggregate.paint[key])}" data-${key}h="${heatClass(aggregate.paint[key] / metricGates[key])}"`
+  ).join(' ');
+  const lostData = `data-lost="${fmtPercent(aggregate.lostFrameTimeShare)}" data-losth="${heatClass(aggregate.lostFrameTimeShare / entry.gateShare)}"`;
+  const published = aggregate.publishedFidelityChecks?.length
+    ? ` · published verdict failed ${aggregate.publishedFidelityChecks.join(', ')}`
+    : '';
+  const why = unscoreable
+    ? ` · unscoreable: ${unscoreableReasons(aggregate).join(', ')}${published}`
+    : ` · ${aggregate.blankPassed ? 'PASS' : 'FAIL'}`;
+  const title = `${label} · ${brushLabel} · paint P95 ${fmt(aggregate.paint.p95)} / P99 ${fmt(aggregate.paint.p99)} / max ${fmt(aggregate.paint.max)} ms · lost frame time ${fmtPercent(aggregate.lostFrameTimeShare)} (budget ${fmtPercent(entry.gateShare)})${captureBasis(aggregate)}${why}`;
+  const heat = unscoreable ? 'unscoreable' : heatClass(aggregate.paint.p95 / metricGates.p95);
+  return tipCell(
+    `mx-cell num ${heat}${failed ? ' failed' : ''}`,
+    fmt(aggregate.paint.p95),
+    title,
+    `${metricData} ${lostData}`
+  );
+}
+
+function undoOverviewCell(label, mode, gates) {
+  if (!mode.undo) {
+    return tipCell('mx-cell missing', '—', `${label} · undo not measured`);
+  }
+  const undo = mode.undo;
+  const title = `${label} · ${undo.count} undos · engine P95 ${fmt(undo.engine.p95)} ms (gate ${gates.engineP95Ms} ms) · next-frame P95 ${fmt(undo.nextFrame.p95)} ms (gate ${gates.nextFrameP95Ms} ms) · next-frame max ${fmt(undo.nextFrame.max)} ms (gate ${gates.nextFrameMaxMs} ms) · ${undo.passed ? 'PASS' : 'FAIL'}`;
+  return tipCell(
+    `mx-cell mark ${undo.passed ? 'pass' : 'hot failed'}`,
+    undo.passed ? '✓' : '✕',
+    title
+  );
+}
+
+// Read the share as "worth a look" versus "broadly failing" — a legibility split
+// for the overview color only, never a gate. A fixed count over-alarmed: 3
+// failures out of 48 rendered as red as 14 out of 34.
+const OVERVIEW_ACTIONS_WARN_SHARE = 0.1;
+
+function actionsOverviewCell(label, mode) {
+  if (!mode.actions) {
+    const reason = mode.actionsUnavailableReason
+      ? `action capture unavailable: ${mode.actionsUnavailableReason}`
+      : 'actions not measured';
+    return tipCell('mx-cell missing', '—', `${label} · ${reason}`);
+  }
+  const comparable = comparableActionResults(mode.actions);
+  const passing = comparable.filter((result) => result.passed).length;
+  const score = `${passing}/${comparable.length}`;
+  if (mode.actions.scoreable === false) {
+    // Printing the passing count here would invite a verdict the evidence
+    // cannot support, so the cell says what happened instead.
+    const title = `${label} · unscored: this mode’s idle frame control is ${mode.actions.controlEvidence ?? 'absent'}, so no action score is attributable to the product (measured ${score} for reference)`;
+    return tipCell('mx-cell num unscoreable', 'no control', title);
+  }
+  const failedLabels = comparable.filter((result) => !result.passed).map((result) => result.label);
+  const heat =
+    failedLabels.length === 0
+      ? 'pass'
+      : failedLabels.length / comparable.length <= OVERVIEW_ACTIONS_WARN_SHARE
+        ? 'warn'
+        : 'hot';
+  const title = `${label} · ${score} actions passing${failedLabels.length ? ` · failing: ${failedLabels.join('; ')}` : ''}`;
+  return tipCell(`mx-cell num ${heat}`, score, title);
+}
+
+const OVERVIEW_COLUMNS = ['Pen', 'Crayon', 'Magic', 'Eraser', 'Undo', 'Actions'];
+
+function overviewMatrix(matrix) {
+  // Two sticky header rows: the group row names the drawing metric currently
+  // shown (the switcher scrolls away; this label must not), the column row
+  // names the cells. `mx-metric-label` is the element the switcher updates.
+  const head = `<div class="mx-head">
+    <div class="mx-row mx-groups"><div></div><span class="mx-group" id="mx-metric-label">Paint P95 · ms · gate ${matrix.gates.drawing.paintP95Ms} ms</span><span class="mx-group-note">verdict</span><span class="mx-group-note">passed</span></div>
+    <div class="mx-row mx-cols"><div class="mx-label">Mode</div>${OVERVIEW_COLUMNS.map((name) => `<span class="mx-col">${name}</span>`).join('')}</div>
+  </div>`;
+  const body = matrix.targets
     .map((target) => {
-      if (target.status !== 'captured') {
-        return `<div class="plot-row unavailable${target.firstTargetMode ? ' target-break' : ''}" title="${esc(target.reason)}">
-        <div class="plot-label"><span>${esc(target.targetLabel)}</span><small>${esc(target.modeLabel)} · unavailable</small></div>
-        <div class="plot-track"><i class="gate-line"></i></div>
-      </div>`;
-      }
-      const dots = BRUSHES.map((brush, index) => {
-        const result = target.drawing[brush].aggregate;
-        const value = result.paint[metric];
-        const ratio = Number.isFinite(value) ? Math.min(value / gate, 2) : null;
-        // An unscoreable cell is neither pass nor fail, so it must not carry the
-        // product-failure styling; the tooltip says why instead.
-        const unscoreable = result.scoreable === false;
-        const failed = !unscoreable && Number.isFinite(value) && value > gate;
-        const published = result.publishedFidelityChecks?.length
-          ? ` · published verdict failed ${result.publishedFidelityChecks.join(', ')}`
-          : '';
-        const why = unscoreable
-          ? ` · unscoreable: ${unscoreableReasons(result).join(', ')}${published}`
-          : '';
-        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms${captureBasis(result)}${why}`;
-        const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
-        return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${unscoreable ? ' unscoreable' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
-      }).join('');
-      return `<div class="plot-row${target.firstTargetMode ? ' target-break' : ''}">
-        <div class="plot-label"><span>${esc(target.targetLabel)}</span><small>${esc(target.modeLabel)}</small></div>
-        <div class="plot-track"><i class="gate-line"></i>${dots}</div>
-      </div>`;
+      const header = `<div class="mx-row mx-target" data-target-header="${esc(target.id)}"><div class="mx-target-label"><b>${target.number}. ${esc(target.label)}</b>${fidelityChip(target.fidelity)}${earlierCaptureChip(target)}<small>${esc(target.environment)}</small></div></div>`;
+      const rows = target.modes
+        .map((mode) => {
+          const attrs = modeFilterAttrs(target, mode);
+          if (mode.status !== 'captured') {
+            return `<div class="mx-row" ${attrs}><div class="mx-label">${esc(displayMode(mode))}</div><div class="mx-span">unavailable: ${esc(mode.reason)}</div></div>`;
+          }
+          const label = cellLabel(target, mode);
+          const cells = BRUSHES.map((brush) =>
+            drawingOverviewCell(label, brush, mode.drawing[brush], matrix.gates.drawing)
+          ).join('');
+          return `<div class="mx-row" ${attrs}><div class="mx-label">${esc(displayMode(mode))}</div>${cells}${undoOverviewCell(label, mode, matrix.gates.undo)}${actionsOverviewCell(label, mode)}</div>`;
+        })
+        .join('');
+      return header + rows;
     })
     .join('');
-  return `<section class="metric-panel">
-    <div class="metric-title"><h3>${esc(title)}</h3><span>gate ${gate} ms</span></div>
-    <div class="plot-axis"><span>0</span><span>gate</span><span>2× gate</span></div>
-    ${rows}
-  </section>`;
+  return `<div class="mx">${head}${body}</div>`;
 }
 
 function actionRatio(result, gates) {
@@ -1477,79 +1577,102 @@ function comparableActionLabels(targets) {
   ];
 }
 
+function actionModeCells(mode, label, labels, gates) {
+  const resultsByLabel = new Map(
+    (mode.actions ? comparableActionResults(mode.actions) : []).map((result) => [
+      result.label,
+      result,
+    ])
+  );
+  const coordinatesByLabel = new Map(
+    (mode.actionCoordinates ?? actionCoordinates(mode, labels)).map((coordinate) => [
+      coordinate.label,
+      coordinate,
+    ])
+  );
+  // A mode whose idle control failed cannot attribute any action score to the
+  // product, so its cells are marked rather than coloured by ratio — the same
+  // treatment a fidelity-failed drawing cell gets, for the same reason.
+  const attributable = mode.actions?.scoreable !== false;
+  return labels
+    .map((actionLabel, index) => {
+      const result = resultsByLabel.get(actionLabel);
+      if (!result) {
+        const coordinate = coordinatesByLabel.get(actionLabel);
+        const notApplicable = coordinate?.state === 'not-applicable';
+        const state = notApplicable ? 'N/A' : 'missing/unavailable';
+        const tooltip = `${index + 1}. ${actionLabel} · ${label} · ${state}: ${coordinate?.reason ?? 'no normalized coordinate'}`;
+        const cellClass = notApplicable ? 'not-applicable' : 'missing';
+        return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+      }
+      const ratio = actionRatio(result, gates);
+      const provenance = result.productCommit ? ` · measured at ${result.productCommit}` : '';
+      const unconfirmed = result.passed && result.postActionFrames.maxUnconfirmed === true;
+      const verdict = attributable
+        ? result.passed
+          ? unconfirmed
+            ? 'PASS, max unconfirmed (over the gate in one scored repeat, not the two ADR-0156 requires)'
+            : 'PASS'
+          : 'FAIL'
+        : `unscoreable: this mode\u2019s idle frame control is ${mode.actions?.controlEvidence ?? 'absent'}`;
+      const tooltip = `${index + 1}. ${result.label} · ${label} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
+      const cellClass = !attributable
+        ? 'unscoreable'
+        : unconfirmed
+          ? 'unconfirmed'
+          : heatClass(ratio);
+      return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+    })
+    .join('');
+}
+
 function actionHeatmap(matrix) {
-  const targets = modeRows(matrix);
-  const labels = matrix.actionLabels ?? comparableActionLabels(targets);
+  const labels = matrix.actionLabels ?? comparableActionLabels(modeRows(matrix));
   const columns = labels
     .map(
       (label, index) =>
         `<span class="action-number" title="${esc(label)}" aria-label="Action ${index + 1}: ${esc(label)}">${index + 1}</span>`
     )
     .join('');
-  const rows = targets
+  const body = matrix.targets
     .map((target) => {
-      const resultsByLabel = new Map(
-        (target.actions ? comparableActionResults(target.actions) : []).map((result) => [
-          result.label,
-          result,
-        ])
-      );
-      const coordinatesByLabel = new Map(
-        (target.actionCoordinates ?? actionCoordinates(target, labels)).map((coordinate) => [
-          coordinate.label,
-          coordinate,
-        ])
-      );
-      // A mode whose idle control failed cannot attribute any action score to the
-      // product, so its cells are marked rather than coloured by ratio — the same
-      // treatment a fidelity-failed drawing cell gets, for the same reason.
-      const attributable = target.actions?.scoreable !== false;
-      const cells = labels
-        .map((label, index) => {
-          const result = resultsByLabel.get(label);
-          if (!result) {
-            const coordinate = coordinatesByLabel.get(label);
-            const notApplicable = coordinate?.state === 'not-applicable';
-            const state = notApplicable ? 'N/A' : 'missing/unavailable';
-            const tooltip = `${index + 1}. ${label} · ${rowLabel(target)} · ${state}: ${coordinate?.reason ?? 'no normalized coordinate'}`;
-            const cellClass = notApplicable ? 'not-applicable' : 'missing';
-            return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+      const earlier = targetIsPreserved(target)
+        ? ' <small class="heat-earlier">earlier capture</small>'
+        : '';
+      const header = `<div class="heat-row target" data-target-header="${esc(target.id)}"><div class="heat-label"><b>${target.number}. ${esc(target.label)}${earlier}</b></div></div>`;
+      const rows = target.modes
+        .map((mode) => {
+          const attrs = modeFilterAttrs(target, mode);
+          if (mode.status !== 'captured') {
+            return `<div class="heat-row" ${attrs}><div class="heat-label"><span>${esc(displayMode(mode))}</span></div><div class="heat-note">unavailable: ${esc(mode.reason)}</div></div>`;
           }
-          const ratio = actionRatio(result, matrix.gates.actions);
-          const provenance = result.productCommit ? ` · measured at ${result.productCommit}` : '';
-          const unconfirmed = result.passed && result.postActionFrames.maxUnconfirmed === true;
-          const verdict = attributable
-            ? result.passed
-              ? unconfirmed
-                ? 'PASS, max unconfirmed (over the gate in one scored repeat, not the two ADR-0156 requires)'
-                : 'PASS'
-              : 'FAIL'
-            : `unscoreable: this mode\u2019s idle frame control is ${target.actions?.controlEvidence ?? 'absent'}`;
-          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${firstFrameP95Text(result)} · ready P95 ${fmt(result.ready?.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${verdict}${provenance}`;
-          const cellClass = !attributable
-            ? 'unscoreable'
-            : unconfirmed
-              ? 'unconfirmed'
-              : heatClass(ratio);
-          return `<span class="heat-cell ${cellClass}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
+          const cells = actionModeCells(
+            mode,
+            cellLabel(target, mode),
+            labels,
+            matrix.gates.actions
+          );
+          const comparableResults = mode.actions ? comparableActionResults(mode.actions) : [];
+          const passingCount = comparableResults.filter((result) => result.passed).length;
+          const score = !mode.actions
+            ? '—'
+            : mode.actions.scoreable !== false
+              ? `${passingCount}/${comparableResults.length}`
+              : 'no control';
+          return `<div class="heat-row" ${attrs}><div class="heat-label"><span>${esc(displayMode(mode))}</span><b>${score}</b></div><div class="heat-cells">${cells}</div></div>`;
         })
         .join('');
-      const comparableResults = target.actions ? comparableActionResults(target.actions) : [];
-      const passingCount = comparableResults.filter((result) => result.passed).length;
-      const score = !target.actions
-        ? '—'
-        : attributable
-          ? `${passingCount}/${comparableResults.length}`
-          : 'no control';
-      return `<div class="heat-row${target.firstTargetMode ? ' target-break' : ''}"><div class="heat-label"><span>${esc(target.targetLabel)}<small>${esc(target.modeLabel)}</small></span><b>${score}</b></div><div class="heat-cells">${cells}</div></div>`;
+      return header + rows;
     })
     .join('');
   const legend = labels
     .map((label, index) => `<li><b>${index + 1}</b><span>${esc(label)}</span></li>`)
     .join('');
   return `<div class="heat-scroll" style="--action-columns:${labels.length}">
-    <div class="heat-row header"><div class="heat-label">Target <small>passing</small></div><div class="heat-cells">${columns}</div></div>
-    ${rows}
+    <div class="heat-inner">
+    <div class="heat-row header"><div class="heat-label">Mode <small>passing</small></div><div class="heat-cells">${columns}</div></div>
+    ${body}
+    </div>
   </div>
   <details class="action-key"><summary>Action-number key</summary><ol>${legend}</ol></details>`;
 }
@@ -1604,25 +1727,14 @@ function undoTable(matrix) {
     .join('');
 }
 
-function targetCards(matrix) {
-  return matrix.targets
-    .map((target) => {
-      const modes = target.modes
-        .map((mode) => {
-          if (mode.status !== 'captured') {
-            return `<li class="unavailable"><div><b>${esc(displayMode(mode))}</b>${statusChip(mode)}</div><small>${esc(mode.reason)}</small></li>`;
-          }
-          const actionResults = mode.actions ? comparableActionResults(mode.actions) : [];
-          const passingCount = actionResults.filter((result) => result.passed).length;
-          return `<li><div><b>${esc(displayMode(mode))}</b>${statusChip(mode)}</div><small>${mode.actions ? `${passingCount}/${actionResults.length} actions passing` : 'Actions not measured'}</small></li>`;
-        })
-        .join('');
-      return `<article class="target-card">
-        <div><span class="target-number">${target.number}</span></div>
-        <h3>${esc(target.label)}</h3><p>${esc(target.environment)}</p><ul class="target-modes">${modes}</ul>
-      </article>`;
-    })
-    .join('');
+// A full 40-character SHA repeated 44 times is noise; the leading 12 characters
+// identify the commit and the full value stays one hover (and data.json) away.
+const DISPLAY_COMMIT_CHARS = 12;
+
+function commitCode(sha) {
+  if (typeof sha !== 'string' || !sha.trim()) return '—';
+  const short = sha.length > DISPLAY_COMMIT_CHARS ? `${sha.slice(0, DISPLAY_COMMIT_CHARS)}…` : sha;
+  return `<code title="${esc(sha)}">${esc(short)}</code>`;
 }
 
 function provenanceTable(matrix) {
@@ -1632,12 +1744,14 @@ function provenanceTable(matrix) {
         return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">Unavailable: ${esc(target.reason)}</td></tr>`;
       }
       const actionCommits = target.actions
-        ? [...new Set(target.actions.sources.map((source) => source.productCommit))].join(', ')
+        ? [...new Set(target.actions.sources.map((source) => source.productCommit))]
+            .map((commit) => commitCode(commit))
+            .join(', ')
         : '—';
       const actionCoverage = target.actions
         ? `${target.actions.finalProductCommitActionCount}/${comparableActionResults(target.actions).length}`
         : '—';
-      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td><code>${esc(target.drawingProductCommit)}</code></td><td><code>${esc(target.undoProductCommit)}</code></td><td>${actionCoverage}</td><td><code>${esc(actionCommits)}</code></td></tr>`;
+      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td>${commitCode(target.drawingProductCommit)}</td><td>${commitCode(target.undoProductCommit)}</td><td>${actionCoverage}</td><td>${actionCommits}</td></tr>`;
     })
     .join('');
 }
@@ -1930,9 +2044,548 @@ function releaseGateSentence(matrix) {
 }
 
 const EXTRA_CSS = `
-.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.target-modes{list-style:none;padding:0;margin:12px 0 0}.target-modes li{padding:8px 0;border-top:1px solid var(--hair)}.target-modes li>div{display:flex;justify-content:space-between;gap:8px;align-items:center}.target-modes b{font-size:.72rem}.target-modes small{display:block;margin-top:3px;color:var(--muted);font-size:.68rem}.target-modes .unavailable{opacity:.72}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-row.target-break,.heat-row.target-break{margin-top:10px}.plot-row.unavailable{opacity:.65}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.plot-dot.unscoreable{background:transparent;border-color:var(--dot);box-shadow:0 0 0 1px var(--card);opacity:.75}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:210px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label span small{display:block;color:var(--faint);font-weight:400}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block;position:relative}.heat-cell.missing{background:var(--card-2)}.heat-cell.not-applicable{background:transparent;box-shadow:inset 0 0 0 1px var(--hair)}.heat-cell.not-applicable:after{content:"";position:absolute;left:2px;right:2px;top:7px;border-top:1px solid var(--faint);transform:rotate(-45deg)}.heat-cell.unscoreable{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--hair-strong)}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-cell.unconfirmed{background:color-mix(in srgb,var(--warn) 78%,var(--card));box-shadow:inset 0 0 0 2px var(--card),inset 0 0 0 3px var(--warn)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:170px max-content}.heat-label span{max-width:140px;overflow:hidden;text-overflow:ellipsis}}
+/* ---- sticky mode toolbar --------------------------------------------------- */
+.matrix-toolbar{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--hair);
+  background:color-mix(in srgb,var(--paper) 92%,transparent);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.toolbar-row{display:flex;align-items:center;gap:14px;height:48px;overflow-x:auto;scrollbar-width:none}
+.toolbar-row::-webkit-scrollbar{display:none}
+.mode-chips{display:none}
+:root.js .mode-chips{display:flex;align-items:center;gap:6px}
+.toolbar-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.mode-chip{font:inherit;font-size:.76rem;font-weight:650;color:var(--muted);background:var(--card);
+  border:1px solid var(--hair);border-radius:999px;padding:4px 12px;cursor:pointer;white-space:nowrap}
+.mode-chip[aria-pressed=true]{color:var(--accent-ink);background:var(--accent-wash);
+  border-color:color-mix(in srgb,var(--accent) 35%,var(--hair))}
+.mode-chip[aria-pressed=true]::before{content:"✓ ";font-weight:800}
+.toolbar-sep{width:1px;height:18px;background:var(--hair-strong);flex:0 0 auto}
+.toolbar-count{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.toolbar-jump{margin-left:auto;display:flex;gap:14px;font-size:.78rem;font-weight:650;white-space:nowrap}
+.toolbar-jump a{color:var(--muted)}
+.toolbar-jump a:hover{color:var(--accent-ink)}
+.section-head{scroll-margin-top:calc(var(--toolbar-h,48px) + 16px)}
+
+/* ---- intro ------------------------------------------------------------------ */
+.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 10px}
+.matrix-links{display:flex;gap:4px 14px;flex-wrap:wrap;margin:0 0 6px;font-size:.84rem;color:var(--faint)}
+.matrix-links a{font-weight:650;text-decoration:underline;text-underline-offset:2px}
+.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;
+  background:var(--accent-wash);color:var(--accent-ink);white-space:nowrap}
+.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));
+  color:color-mix(in srgb,var(--ok) 55%,var(--ink))}
+.matrix-chip.earlier{background:color-mix(in srgb,var(--gold) 14%,var(--card));
+  color:color-mix(in srgb,var(--gold) 60%,var(--ink))}
+
+/* ---- drawing metric switcher ------------------------------------------------ */
+/* Without JS the buttons would be dead weight, but the note still explains the
+   default P95 view, so only the button group hides. */
+.seg-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.seg{display:none;background:var(--card);border:1px solid var(--hair);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+:root.js .seg{display:inline-flex}
+.seg-btn{font:inherit;font-size:.76rem;font-weight:700;color:var(--muted);background:transparent;
+  border:0;border-radius:7px;padding:5px 12px;cursor:pointer;white-space:nowrap}
+.seg-btn[aria-pressed=true]{background:var(--accent-wash);color:var(--accent-ink)}
+.seg-note{font-size:.76rem;color:var(--muted)}
+
+/* ---- overview matrix -------------------------------------------------------- */
+.mx{width:fit-content;max-width:100%;background:var(--card);border:1px solid var(--hair);
+  border-radius:var(--r-md);padding:0 16px 14px}
+.mx-row{display:grid;gap:4px;align-items:center;border-radius:7px;
+  grid-template-columns:minmax(230px,1fr) repeat(4,var(--mx-brush,72px)) var(--mx-undo,54px) var(--mx-actions,80px)}
+.mx-row:hover .mx-label{color:var(--ink)}
+.mx-head{position:sticky;top:var(--toolbar-h,48px);z-index:5;background:var(--card);
+  border-bottom:1px solid var(--hair);padding:8px 0 7px;font-size:.68rem;font-weight:700;color:var(--muted)}
+.mx-head{width:max-content;min-width:100%}
+.mx-groups{margin-bottom:2px}
+.mx-group{grid-column:2/6;text-align:center;font-weight:650;color:var(--muted);
+  border-bottom:1px solid var(--hair-strong);padding-bottom:2px}
+.mx-group-note{text-align:center;font-weight:600;color:var(--muted)}
+.mx-col{text-align:center}
+.mx-target{margin-top:12px}
+.mx-target-label{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;min-width:0;padding:6px 0 3px}
+.mx-target-label b{font-size:.8rem;white-space:nowrap}
+.mx-target-label small{color:var(--faint);font-size:.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx-label{font-size:.72rem;color:var(--muted)}
+.mx-span{grid-column:2/-1;font-size:.72rem;color:var(--faint)}
+.mx-cell{display:grid;place-items:center;height:28px;border-radius:7px;font-size:.72rem;font-weight:650;
+  font-variant-numeric:tabular-nums;cursor:default}
+.mx-cell.cool{background:color-mix(in srgb,var(--accent) 16%,var(--card-2))}
+.mx-cell.pass{background:color-mix(in srgb,var(--ok) 22%,var(--card-2))}
+.mx-cell.warn{background:color-mix(in srgb,var(--warn) 36%,var(--card-2))}
+.mx-cell.hot{background:color-mix(in srgb,var(--bad) 36%,var(--card-2))}
+.mx-cell.failed{box-shadow:inset 0 0 0 2px var(--bad)}
+.mx-cell.missing{background:var(--card-2);color:var(--faint)}
+.mx-cell.unscoreable{color:var(--muted);
+  background:repeating-linear-gradient(45deg,var(--card-2) 0 4px,color-mix(in srgb,var(--hair-strong) 55%,var(--card-2)) 4px 8px)}
+.mx-cell:focus-visible,.heat-cell:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.mx-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 8px}
+.mx-legend b{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.mx-legend span{display:inline-flex;gap:5px;align-items:center}
+.mx-legend .mx-cell{width:13px;height:13px;border-radius:4px;padding:0}
+.mx-note{font-size:.76rem;color:var(--muted);max-width:78ch;margin:0 0 12px}
+
+/* ---- action heatmap ---------------------------------------------------------- */
+.heat-scroll{--heat-cell:16px;overflow:auto;max-height:76vh;overscroll-behavior:contain;
+  background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:0 13px 13px}
+@media (pointer:coarse){.heat-scroll{--heat-cell:22px}}
+/* Every row must span the full scrolled content width or its sticky label has
+   nothing to pin against — min-width:100% on a row resolves against the
+   scrollport, so the width lives on this shared wrapper instead. */
+.heat-inner{width:max-content;min-width:100%}
+.heat-row{display:grid;grid-template-columns:158px max-content;gap:10px;align-items:center;margin:4px 0}
+.heat-row.header{position:sticky;top:0;z-index:6;background:var(--card);margin:0;
+  padding:12px 0 7px;border-bottom:1px solid var(--hair)}
+.heat-row.target{margin-top:12px}
+.heat-label{position:sticky;left:0;z-index:2;background:var(--card);display:flex;justify-content:space-between;
+  gap:8px;align-items:center;font-size:.72rem;white-space:nowrap;padding-right:8px;align-self:stretch}
+.heat-row.header .heat-label{z-index:7;font-weight:700}
+.heat-row.target .heat-label b{font-size:.76rem}
+.heat-label b{font-size:.68rem;color:var(--muted)}
+.heat-label span{color:var(--muted)}
+.heat-note{font-size:.7rem;color:var(--faint);white-space:nowrap}
+.heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),var(--heat-cell));gap:3px}
+.heat-cell,.action-number{width:var(--heat-cell);height:var(--heat-cell);border-radius:4px;display:block;position:relative}
+.heat-cell.missing{background:var(--card-2)}
+.heat-cell.not-applicable{background:transparent;box-shadow:inset 0 0 0 1px var(--hair)}
+.heat-cell.not-applicable:after{content:"";position:absolute;left:2px;right:2px;top:50%;
+  border-top:1px solid var(--faint);transform:rotate(-45deg)}
+.heat-cell.unscoreable{background:var(--card-2);box-shadow:inset 0 0 0 1px var(--hair-strong)}
+.action-number{font-size:.52rem;text-align:center;color:var(--muted);line-height:var(--heat-cell)}
+.heat-cell.cursor{outline:2px solid var(--accent);outline-offset:1px}
+.heat-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.heat-hint{color:var(--faint)}
+.heat-earlier{font-weight:600;color:color-mix(in srgb,var(--gold) 60%,var(--ink))}
+.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}
+.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}
+.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}
+.heat-cell.hot{background:var(--bad)}
+.heat-cell.unconfirmed{background:color-mix(in srgb,var(--warn) 78%,var(--card));
+  box-shadow:inset 0 0 0 2px var(--card),inset 0 0 0 3px var(--warn)}
+.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}
+.heat-legend span{display:inline-flex;gap:5px;align-items:center}
+.heat-legend i{width:12px;height:12px;border-radius:3px}
+.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}
+.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}
+.action-key ol{columns:3;column-gap:30px;padding-left:24px}
+.action-key li{break-inside:avoid;padding:2px 0}
+.rank-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);
+  padding:15px;margin-top:16px;max-width:640px}
+.rank-card h3{font-size:.95rem;margin:0 0 4px}
+.rank-scope{font-size:.72rem;color:var(--faint);margin:0 0 10px}
+.rank-list{list-style:none;padding:0;margin:0}
+.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}
+.rank-list li:first-child{border-top:0}
+.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;
+  background:var(--card-2);font-size:.68rem;font-weight:800}
+.rank-list b{display:block;font-size:.78rem}
+.rank-list small{display:block;color:var(--muted);font-size:.68rem}
+
+/* ---- filtered rows (mode chips) ---------------------------------------------- */
+.mx-row.filtered,.heat-row.filtered{display:none}
+
+/* ---- collapsed notes ---------------------------------------------------------- */
+.note{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);margin:0 0 10px}
+.note summary{display:flex;align-items:center;gap:10px;padding:13px 18px;cursor:pointer;list-style:none}
+.note summary::-webkit-details-marker{display:none}
+.note summary h2{font-size:.98rem;margin:0;font-weight:750;letter-spacing:-.01em}
+.note-count{font-size:.7rem;font-weight:700;color:var(--muted);background:var(--card-2);border-radius:999px;padding:2px 9px}
+.note summary:after{content:"\\25B8";margin-left:auto;color:var(--faint);transition:transform .12s}
+.note[open] summary:after{transform:rotate(90deg)}
+.note-body{padding:0 18px 16px;color:var(--muted);font-size:.85rem}
+.note-body p{margin:0 0 10px}
+.note-list{margin:0;padding-left:20px}
+.note-list li{margin:0 0 8px}
+
+/* ---- tables (undo, provenance, candidate actions) ----------------------------- */
+.provenance{overflow-x:auto;background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-sm);padding:10px}
+.provenance code{font-size:.68rem}
+table{width:100%;border-collapse:collapse;font-size:.72rem}
+th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}
+th:first-child{text-align:left}
+thead th{border-top:0;color:var(--muted);font-weight:650}
+tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}
+.muted{color:var(--faint);text-align:left}
+.verdict{font-weight:800}
+.verdict.pass{color:var(--ok)}
+.verdict.fail{color:var(--bad)}
 .candidate-actions th,.candidate-actions td{text-align:left;vertical-align:top}
+
+/* ---- tooltip ------------------------------------------------------------------ */
+/* pointer-events stays on so the tooltip itself can be hovered (to select or
+   magnify a long failing-actions list) without dismissing it. */
+.tip{position:fixed;z-index:80;max-width:min(360px,calc(100vw - 16px));background:var(--ink);color:var(--paper);
+  padding:8px 12px;border-radius:9px;font-size:.75rem;line-height:1.5;font-weight:500;
+  box-shadow:var(--shadow-lg)}
+
+@media (prefers-reduced-motion:reduce){
+  .note summary:after{transition:none}
+}
+@media (max-width:720px){
+  .section-head{flex-direction:column;align-items:flex-start;gap:2px}
+  .toolbar-jump,.toolbar-label,.toolbar-sep,.count-word{display:none}
+  .toolbar-row{gap:8px}
+  :root.js .mode-chips{gap:4px}
+  .mode-chip{padding:3px 7px;font-size:.68rem}
+  .toolbar-count{font-size:.68rem}
+  :root:not(.js) .matrix-toolbar{display:none}
+  .mx{width:auto;max-width:none;margin-inline:-16px;border-radius:0;border-left:0;border-right:0;padding-inline:6px}
+  .mx-row{--mx-brush:41px;--mx-undo:28px;--mx-actions:56px;gap:3px;
+    grid-template-columns:minmax(92px,1fr) repeat(4,var(--mx-brush)) var(--mx-undo) var(--mx-actions)}
+  .mx-cell{font-size:.62rem;height:26px}
+  .mx-label{font-size:.66rem}
+  .heat-row{grid-template-columns:118px max-content}
+  .heat-label{font-size:.66rem}
+  .action-key ol{columns:1}
+}
+@media (max-width:370px){
+  .toolbar-row{gap:6px}
+  .mode-chip{padding:2px 6px;font-size:.62rem}
+  :root.js .mode-chips{gap:3px}
+  .toolbar-count{font-size:.62rem}
+  .mx{padding-inline:4px}
+  .mx-row{--mx-brush:36px;--mx-undo:24px;--mx-actions:44px;gap:2px;
+    grid-template-columns:minmax(84px,1fr) repeat(4,var(--mx-brush)) var(--mx-undo) var(--mx-actions)}
+  .mx-cell{font-size:.56rem;height:24px}
+  .mx-label{font-size:.6rem}
+}
+
+/* ---- print ---------------------------------------------------------------- */
+@media print{
+  .matrix-toolbar,.seg,.tip{display:none}
+  .mx-head{position:static}
+  .heat-scroll{max-height:none;overflow:visible;--heat-cell:9px;padding-top:8px}
+  .heat-cells{gap:2px}
+  .heat-row{grid-template-columns:130px max-content}
+  .heat-row.header{position:static}
+  .heat-label{position:static;font-size:.6rem}
+  .action-key ol{columns:2}
+  .note{break-inside:avoid}
+}
 `;
+
+// Runs inline in the generated page: the tap/hover tooltip, the mode filters, and
+// the drawing metric switcher. The page stays fully readable without it — every
+// cell keeps a title attribute and all rows render visible.
+const PAGE_SCRIPT = `
+(() => {
+  document.documentElement.classList.add('js');
+
+  const toolbar = document.querySelector('.matrix-toolbar');
+  const setToolbarHeight = () => {
+    if (!toolbar) return;
+    document.documentElement.style.setProperty('--toolbar-h', toolbar.offsetHeight + 'px');
+  };
+  setToolbarHeight();
+  addEventListener('resize', setToolbarHeight);
+
+  const tip = document.createElement('div');
+  tip.className = 'tip';
+  tip.setAttribute('role', 'tooltip');
+  tip.hidden = true;
+  document.body.append(tip);
+  let tipAnchor = null;
+  let keyboardNavAt = 0;
+
+  const tipText = (el) => {
+    if (el.hasAttribute('title')) {
+      el.dataset.tip = el.getAttribute('title');
+      el.removeAttribute('title');
+    }
+    return el.dataset.tip || '';
+  };
+  const hideTip = () => {
+    tip.hidden = true;
+    tipAnchor = null;
+  };
+  const showTip = (el) => {
+    const text = tipText(el);
+    if (!text) return hideTip();
+    tip.textContent = text;
+    tip.hidden = false;
+    tipAnchor = el;
+    const box = el.getBoundingClientRect();
+    const size = tip.getBoundingClientRect();
+    const x = Math.min(
+      Math.max(8, box.left + box.width / 2 - size.width / 2),
+      innerWidth - size.width - 8
+    );
+    const clearance = (toolbar ? toolbar.offsetHeight : 0) + 8;
+    let y = box.top - size.height - 8;
+    if (y < clearance) y = box.bottom + 8;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  };
+
+  // Leaving a cell toward its tooltip crosses an 8px gap; an instant hide made
+  // the tooltip impossible to reach, so the hover path hides on a short delay
+  // that entering the tooltip (or another cell) cancels.
+  let hideTimer = null;
+  const cancelHide = () => {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = null;
+  };
+  document.addEventListener('pointerover', (event) => {
+    if (event.pointerType && event.pointerType !== 'mouse') return;
+    if (tip.contains(event.target)) return cancelHide();
+    const el = event.target.closest('[title], [data-tip]');
+    if (el) {
+      cancelHide();
+      showTip(el);
+    } else if (tipAnchor && !hideTimer) {
+      hideTimer = setTimeout(() => {
+        hideTimer = null;
+        hideTip();
+      }, 250);
+    }
+  });
+  // Always show, never toggle off: on touch the tap that follows focusin was
+  // closing the tooltip the focus had just opened. Dismissal is tapping
+  // elsewhere, Escape, or scrolling.
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('a, button, summary') || tip.contains(event.target)) return;
+    const el = event.target.closest('[title], [data-tip]');
+    if (!el) return hideTip();
+    showTip(el);
+  });
+  document.addEventListener('focusin', (event) => {
+    const el = event.target.closest('[title], [data-tip]');
+    if (el) showTip(el);
+    else hideTip();
+  });
+  addEventListener(
+    'scroll',
+    () => {
+      if (Date.now() - keyboardNavAt > 300) hideTip();
+    },
+    { capture: true, passive: true }
+  );
+  addEventListener('resize', hideTip);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') hideTip();
+  });
+
+  const pressed = {
+    orientation: { portrait: true, landscape: true },
+    theme: { light: true, dark: true },
+  };
+  const modeCount = document.getElementById('mode-count');
+  const applyModeFilters = () => {
+    const rows = document.querySelectorAll('[data-orientation][data-theme]');
+    let visibleCount = 0;
+    rows.forEach((row) => {
+      const visible =
+        pressed.orientation[row.dataset.orientation] && pressed.theme[row.dataset.theme];
+      row.classList.toggle('filtered', !visible);
+      if (visible && row.classList.contains('mx-row')) visibleCount += 1;
+    });
+    document.querySelectorAll('[data-target-header]').forEach((header) => {
+      const targetRows = document.querySelectorAll(
+        '[data-target="' + header.dataset.targetHeader + '"]'
+      );
+      const anyVisible = [...targetRows].some((row) => !row.classList.contains('filtered'));
+      header.classList.toggle('filtered', !anyVisible);
+    });
+    if (modeCount) {
+      modeCount.textContent =
+        visibleCount + '/' + document.querySelectorAll('.mx .mx-row[data-orientation]').length;
+    }
+  };
+  document.querySelectorAll('.mode-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const group = pressed[chip.dataset.kind];
+      const otherActive = Object.entries(group).some(
+        ([value, active]) => value !== chip.dataset.value && active
+      );
+      // Refuse to empty a dimension: with no orientation (or theme) selected
+      // every row disappears and the page looks broken.
+      if (group[chip.dataset.value] && !otherActive) return;
+      group[chip.dataset.value] = !group[chip.dataset.value];
+      chip.setAttribute('aria-pressed', String(group[chip.dataset.value]));
+      applyModeFilters();
+    });
+  });
+
+  const metricNote = document.getElementById('metric-note');
+  const metricHead = document.getElementById('mx-metric-label');
+  const HEAT_CLASSES = ['cool', 'pass', 'warn', 'hot', 'missing'];
+  document.querySelectorAll('.seg-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      document
+        .querySelectorAll('.seg-btn')
+        .forEach((other) => other.setAttribute('aria-pressed', String(other === button)));
+      const metric = button.dataset.metric;
+      document.querySelectorAll('.mx-cell[data-p95]').forEach((cell) => {
+        cell.textContent = cell.dataset[metric] || '\\u2014';
+        if (cell.classList.contains('unscoreable')) return;
+        cell.classList.remove(...HEAT_CLASSES);
+        cell.classList.add(cell.dataset[metric + 'h'] || 'missing');
+      });
+      if (metricNote) metricNote.textContent = button.dataset.note;
+      if (metricHead) metricHead.textContent = button.dataset.head;
+    });
+  });
+
+  // The heatmap's cells are deliberately not tab stops (there are ~2,400 of
+  // them); the pane is one stop and arrow keys walk the grid instead, with
+  // aria-activedescendant naming the selected cell for assistive tech.
+  const pane = document.querySelector('.heat-scroll');
+  if (pane) {
+    pane.tabIndex = 0;
+    pane.setAttribute('role', 'grid');
+    pane.setAttribute(
+      'aria-label',
+      'Discrete action results. Use the arrow keys to move between cells; each cell announces its measurement.'
+    );
+    pane.querySelectorAll('.heat-row').forEach((row) => row.setAttribute('role', 'row'));
+    pane
+      .querySelectorAll('.heat-cell, .heat-label, .action-number, .heat-note')
+      .forEach((cell) => cell.setAttribute('role', 'gridcell'));
+    let cursor = null;
+    let cellSequence = 0;
+    const DELTAS = { ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] };
+    pane.addEventListener('keydown', (event) => {
+      const delta = DELTAS[event.key];
+      if (!delta) return;
+      const grid = [...pane.querySelectorAll('.heat-row:not(.header):not(.filtered)')]
+        .map((row) => [...row.querySelectorAll('.heat-cell')])
+        .filter((cells) => cells.length);
+      if (!grid.length) return;
+      event.preventDefault();
+      if (!cursor) {
+        cursor = { row: 0, column: 0 };
+      } else {
+        cursor.row = Math.min(Math.max(0, cursor.row + delta[0]), grid.length - 1);
+        cursor.column = Math.min(
+          Math.max(0, cursor.column + delta[1]),
+          grid[cursor.row].length - 1
+        );
+      }
+      const cell = grid[cursor.row][cursor.column];
+      pane.querySelectorAll('.heat-cell.cursor').forEach((c) => c.classList.remove('cursor'));
+      cell.classList.add('cursor');
+      if (!cell.id) {
+        cellSequence += 1;
+        cell.id = 'heat-cell-' + cellSequence;
+      }
+      pane.setAttribute('aria-activedescendant', cell.id);
+      keyboardNavAt = Date.now();
+      cell.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      showTip(cell);
+    });
+    pane.addEventListener('blur', () => {
+      pane.querySelectorAll('.heat-cell.cursor').forEach((c) => c.classList.remove('cursor'));
+      pane.removeAttribute('aria-activedescendant');
+      cursor = null;
+    });
+  }
+
+  // Print: sticky panes and collapsed notes would drop most of the content, so
+  // everything opens for the printout and closes back afterwards.
+  let printOpened = [];
+  addEventListener('beforeprint', () => {
+    printOpened = [...document.querySelectorAll('details:not([open])')];
+    printOpened.forEach((details) => (details.open = true));
+    hideTip();
+  });
+  addEventListener('afterprint', () => {
+    printOpened.forEach((details) => (details.open = false));
+    printOpened = [];
+  });
+})();
+`;
+
+function modeToolbar(modeCount) {
+  const chip = (kind, value, label) =>
+    `<button type="button" class="mode-chip" data-kind="${kind}" data-value="${value}" aria-pressed="true">${label}</button>`;
+  return `<div class="matrix-toolbar">
+  <div class="shell toolbar-row">
+    <div class="mode-chips" role="group" aria-label="Which rows to show">
+      <span class="toolbar-label">Rows</span>
+      ${chip('orientation', 'portrait', 'Portrait')}
+      ${chip('orientation', 'landscape', 'Landscape')}
+      <span class="toolbar-sep"></span>
+      ${chip('theme', 'light', 'Light')}
+      ${chip('theme', 'dark', 'Dark')}
+      <span class="toolbar-count"><span id="mode-count">${modeCount}/${modeCount}</span><span class="count-word"> modes</span></span>
+    </div>
+    <nav class="toolbar-jump" aria-label="Sections"><a href="#results">Results</a><a href="#actions">Actions</a><a href="#notes">Notes</a></nav>
+  </div>
+</div>`;
+}
+
+function metricSwitcher(gates) {
+  const options = [
+    {
+      metric: 'p95',
+      label: 'Paint P95',
+      head: `Paint P95 · ms · gate ${gates.paintP95Ms} ms`,
+      note: `Brush cells show blank-paper paint P95 in ms · gate ${gates.paintP95Ms} ms`,
+    },
+    {
+      metric: 'p99',
+      label: 'P99',
+      head: `Paint P99 · ms · gate ${gates.paintP99Ms} ms`,
+      note: `Brush cells show blank-paper paint P99 in ms · gate ${gates.paintP99Ms} ms`,
+    },
+    {
+      metric: 'max',
+      label: 'Max',
+      head: `Paint max · ms · gate ${gates.paintMaxMs} ms`,
+      note: `Brush cells show the worst blank-paper paint in ms · gate ${gates.paintMaxMs} ms`,
+    },
+    {
+      metric: 'lost',
+      label: 'Lost frame time',
+      head: `Lost frame time · % of drawing time`,
+      note: `Brush cells show time lost to delayed frames as a share of drawing time · budget ${fmtPercent(gates.lostFrameTimeShare)} — tooltips carry each cell’s own budget`,
+    },
+  ];
+  const buttons = options
+    .map(
+      (option, index) =>
+        `<button type="button" class="seg-btn" aria-pressed="${index === 0}" data-metric="${option.metric}" data-head="${esc(option.head)}" data-note="${esc(option.note)}">${option.label}</button>`
+    )
+    .join('');
+  return `<div class="seg-row"><div class="seg" role="group" aria-label="Drawing metric">${buttons}</div><span class="seg-note" id="metric-note">${esc(options[0].note)}</span></div>`;
+}
+
+function overviewLegend() {
+  return `<div class="mx-legend"><b>Brush cells</b><span><i class="mx-cell cool"></i>≤ 0.75× gate</span><span><i class="mx-cell pass"></i>0.75–1×</span><span><i class="mx-cell warn"></i>1–1.5×</span><span><i class="mx-cell hot"></i>&gt; 1.5×</span><span><i class="mx-cell failed"></i>fails a drawing gate</span><span><i class="mx-cell unscoreable"></i>unscoreable</span><span><i class="mx-cell missing"></i>not measured</span></div>
+  <div class="mx-legend"><b>Undo</b><span>✓ pass · ✕ fail against the undo gates</span><b>Actions</b><span>passed/measured — green all pass, amber a few failing, red more than one in ten failing</span></div>`;
+}
+
+function noteDetails({ title, count = null, body, id = null, open = false }) {
+  const countChip = count === null ? '' : `<span class="note-count">${count}</span>`;
+  return `<details class="note"${id ? ` id="${id}"` : ''}${open ? ' open' : ''}><summary><h2>${title}</h2>${countChip}</summary><div class="note-body">${body}</div></details>`;
+}
+
+// The HTML twin of renderLostFrameExceptionsMarkdown: every cell held to
+// something other than the single lost-frame gate, so a reader never has to
+// infer an exemption from a passing number.
+function lostFrameExceptionsHtml(exceptions) {
+  const entries = Object.entries(exceptions);
+  if (entries.length === 0) return '';
+  const items = entries
+    .map(([cell, { share, reason }]) => {
+      const [targetId, brush] = cell.split(':');
+      return `<li><b>${esc(BRUSH_LABELS[brush] ?? brush)} on <code>${esc(targetId)}</code></b> — ${fmtPercent(share)}. ${esc(reason)}</li>`;
+    })
+    .join('');
+  return `<p><b>Lost-frame budget exceptions (ADR-0137).</b> Cells held to a different lost-frame budget, and why:</p><ul class="note-list">${items}</ul>`;
+}
+
+function scoringNotes(matrix) {
+  const gates = matrix.gates;
+  return `
+    <p><b>Gates.</b> Drawing passes when blank-paper paint P95 ≤ ${gates.drawing.paintP95Ms} ms, P99 ≤ ${gates.drawing.paintP99Ms} ms, max ≤ ${gates.drawing.paintMaxMs} ms, and lost frame time stays under ${fmtPercent(gates.drawing.lostFrameTimeShare)} of in-contact time. Undo passes at engine P95 ≤ ${gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${gates.undo.nextFrameP95Ms} ms, and next-frame max ≤ ${gates.undo.nextFrameMaxMs} ms. An action passes at first-frame P95 ≤ ${gates.actions.firstFrameP95Ms} ms, post-action frame P95 ≤ ${gates.actions.postActionFrameP95Ms} ms, and post-action frame max ≤ ${gates.actions.postActionFrameMaxMs} ms. A post-action max over its gate counts only when ${gates.actions.postActionFrameMaxConfirmingSamples} of the three scored repeats show it (ADR-0156); one breaching repeat renders as a warning, not a failure. Ready P95 appears in tooltips but is not gated: its completion semantics differ per action, so a frame-gate pass says nothing about end-to-end response time.</p>
+    ${lostFrameExceptionsHtml(gates.drawing.lostFrameTimeShareExceptions ?? {})}
+    <p><b>Release gate vs advisory.</b> The chip beside each target says which rows carry the calibrated release gate. Every other row is an advisory comparison whose host, transport, or browser engine differs from what actually ships.</p>
+    <p><b>Unscoreable cells.</b> A hatched cell is neither a pass nor a failure. Its capture either failed an input-fidelity check — the number describes an input path the capture runner rejects — or was measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame budget. The tooltip names the reason.</p>
+    <p><b>The idle-frame control.</b> Every action sweep includes a control sample that performs no interaction, proving the target can hold frames at rest. When the control fails its own gate the host was dropping frames on its own, so none of that mode’s action scores can be attributed to the app: the mode is marked “no control” and left out of the failure ranking.</p>
+    <p><b>One capture per cell.</b> Most drawing cells have one capture behind them; each tooltip states the count. A result close to a limit needs repeat captures before it is trusted either way (ADR-0136).</p>
+    <p><b>Focused action captures.</b> Sources are applied in their listed order within each mode. A focused capture replaces only its named actions and requires a full sweep from the same product commit; anything else is refused. Raw drawing tables and action samples are re-scored with the current metric definitions whenever this report is regenerated — stored verdicts are not trusted. A struck-through action cell is N/A under the action plan that mode’s product surface declared; a plain pale cell is missing or unavailable, and both tooltips keep the reason.</p>
+    <p><b>Rotation first frames on iPad Safari</b> are N/A rather than gated: under ADR-0142’s resize anchor the value reads 0–2 ms by construction, so rotation there is scored by the post-action frame gates alone.</p>`;
+}
 
 function renderCandidateActionsHtml(candidateActions) {
   if (!candidateActions.length) return '';
@@ -1942,10 +2595,11 @@ function renderCandidateActionsHtml(candidateActions) {
         `<tr><td><b>${esc(candidate.priority)}</b></td><td><b>${esc(candidate.action)}</b></td><td>${esc(candidate.rationale)}</td><td>${esc(candidate.applicability ?? '—')}</td><td>${esc(candidate.status ?? '—')}</td></tr>`
     )
     .join('');
-  return `
-  <div class="section-head"><h2>Candidate actions</h2><span class="desc">Additional gestures and workflows considered for this campaign</span></div>
-  <div class="provenance candidate-actions"><table><thead><tr><th>Priority</th><th>Action</th><th>Rationale</th><th>Applicability</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>
-`;
+  return noteDetails({
+    title: 'Candidate actions',
+    count: candidateActions.length,
+    body: `<p>Additional scenarios and their remaining coverage.</p><div class="provenance candidate-actions"><table><thead><tr><th>Priority</th><th>Action</th><th>Rationale</th><th>Applicability</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+  });
 }
 
 function renderReport(matrix) {
@@ -1955,55 +2609,52 @@ function renderReport(matrix) {
   ).length;
   const capturedModeCount = rows.filter((row) => row.status === 'captured').length;
   const actionCount = (matrix.actionLabels ?? comparableActionLabels(rows)).length;
-  const finalActionCount = rows.reduce(
-    (count, row) => count + (row.actions?.finalProductCommitActionCount ?? 0),
-    0
-  );
-  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> action columns charted</span><span class="chip"><b>${finalActionCount}</b> action rows at measured commit</span>`;
+  const limitations = [...(matrix.limitations ?? []), ...preservedEvidenceNotes(matrix)];
+  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> action${actionCount === 1 ? '' : 's'} measured</span>`;
   const header = masthead({
     title: 'Deployment-target performance matrix',
     tagline:
-      'Campaign evidence across physical devices, simulators, browsers, and native shells, with commit provenance on every measurement.',
+      'Drawing, undo, and interface-action frame timing across every deployment target, in four display modes each.',
     home: '../../index.html',
     crumbs: [{ label: 'Performance', href: '../' }, { label: matrix.recordedOn }],
     stats,
   });
+  const preservedTargetCount = matrix.targets.filter((target) =>
+    target.modes.some((mode) => mode.preservedSections?.length)
+  ).length;
+  const preservedSentence = preservedTargetCount
+    ? ` ${preservedTargetCount} of ${matrix.targets.length} targets are marked “Earlier capture”: their results are preserved from an earlier campaign, not re-measured here — Commit provenance lists their source commits.`
+    : '';
+  const ranked = rankedActionFailures(matrix);
+  const rankedCard = ranked
+    ? `<section class="rank-card"><h3>Actions failing in the most modes</h3><p class="rank-scope">Counted across all scoreable modes — the row filters above do not change this list.</p><ol class="rank-list">${ranked}</ol></section>`
+    : '';
   const body = `${header}
+${modeToolbar(rows.length)}
 <main><div class="shell">
-  <p class="matrix-intro"><code>${esc(matrix.productCommit)}</code> is the measured product commit. Each target keeps separate portrait/landscape and light/dark measurements. Focused captures, when present, replace only matching actions inside one mode. ${esc(releaseGateSentence(matrix))}</p>
-  <div class="matrix-links"><a class="matrix-link" href="data.json">Normalized results JSON</a><a class="matrix-link" href="index.md">Detailed narrative</a><a class="matrix-link" href="sources.json">Source manifest</a></div>
+  <p class="matrix-intro">Product commit ${commitCode(matrix.productCommit)}, captured ${esc(matrix.recordedOn)}.${preservedSentence} ${esc(releaseGateSentence(matrix))}</p>
+  <div class="matrix-links"><span>Data:</span><a href="data.json">normalized results JSON</a><a href="index.md">Markdown report</a><a href="sources.json">source manifest</a></div>
 
-  <div class="section-head"><h2>Capture limitations</h2><span class="desc">Constraints retained with the evidence</span></div>
-  <div class="method"><ul>${[...(matrix.limitations ?? []), ...preservedEvidenceNotes(matrix)].map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul></div>
-${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
+  <div class="section-head" id="results"><h2>Results by target</h2><span class="desc">Four modes per target · hover or tap any cell for the numbers behind it</span></div>
+  ${metricSwitcher(matrix.gates.drawing)}
+  ${overviewLegend()}
+  ${overviewMatrix(matrix)}
+  <p class="mx-note">Most drawing cells aggregate a single capture, so treat a result close to its limit as provisional; each tooltip states the cell’s capture count.</p>
 
-  <div class="section-head"><h2>Coverage</h2><span class="desc">${matrix.targets.length} deployment targets · four explicit modes each</span></div>
-  <div class="target-grid">${targetCards(matrix)}</div>
-
-  <div class="section-head"><h2>Commit provenance</h2><span class="desc">Drawing, undo, and action source commits remain explicit per mode</span></div>
-  <div class="provenance"><table><thead><tr><th>Target</th><th>Drawing</th><th>Undo</th><th>Final actions</th><th>Action source commits</th></tr></thead><tbody>${provenanceTable(matrix)}</tbody></table></div>
-
-  <div class="section-head"><h2>Drawing margin to gate</h2><span class="desc">Blank-paper aggregate · each panel is normalized to its own gate</span></div>
-  <div class="brush-legend">${BRUSHES.map((brush) => `<span><i class="brush-${brush}"></i>${BRUSH_LABELS[brush]}</span>`).join('')}<span>Dashed line = gate · ring = failure</span></div>
-  <div class="metric-grid">
-    ${drawingPlot(matrix, 'p95', matrix.gates.drawing.paintP95Ms, 'Paint P95')}
-    ${drawingPlot(matrix, 'p99', matrix.gates.drawing.paintP99Ms, 'Paint P99')}
-    ${drawingPlot(matrix, 'max', matrix.gates.drawing.paintMaxMs, 'Paint maximum')}
-  </div>
-
-  <div class="section-head"><h2>${actionCount}-action failure fingerprint</h2><span class="desc">Color is the worst ratio across first P95, post P95, and post max</span></div>
-  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span><span><i class="heat-cell unconfirmed"></i>pass, max over gate in one repeat</span><span><i class="heat-cell unscoreable"></i>no control</span><span><i class="heat-cell not-applicable"></i>N/A</span><span><i class="heat-cell missing"></i>missing/unavailable</span></div>
+  <div class="section-head" id="actions"><h2>Discrete actions</h2><span class="desc">${actionCount} action columns · coverage varies by mode · color is the worst of first-frame P95, post-action P95, and post-action max against its gate</span></div>
+  <div class="heat-legend"><span><i class="heat-cell cool"></i>≤ 0.75× gate</span><span><i class="heat-cell pass"></i>0.75–1×</span><span><i class="heat-cell warn"></i>1–1.5×</span><span><i class="heat-cell hot"></i>&gt; 1.5×</span><span><i class="heat-cell unconfirmed"></i>pass, max over gate in one repeat</span><span><i class="heat-cell unscoreable"></i>no control</span><span><i class="heat-cell not-applicable"></i>N/A</span><span><i class="heat-cell missing"></i>missing/unavailable</span><span class="heat-hint">The grid scrolls both ways · arrow keys step through cells</span></div>
   ${actionHeatmap(matrix)}
+  ${rankedCard}
 
-  <div class="ranked-grid">
-    <section class="rank-card"><h3>Most cross-mode failures</h3><ol class="rank-list">${rankedActionFailures(matrix)}</ol></section>
-    <section class="undo-card"><h3>Undo engine and next-frame timing</h3><table><thead><tr><th>Target</th><th>Engine P95</th><th>Next P95</th><th>Next max</th><th>Gate</th></tr></thead><tbody>${undoTable(matrix)}</tbody></table></section>
-  </div>
-
-  <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>A hollow dot is an <b>unscoreable</b> cell: the samples behind it either failed the input-fidelity gate — so the number describes an input path the capture runner rejects — or were measured at a refresh rate this target is not scored against, which prices the same drawing against a different frame beat and can be several times wrong in either direction. Either way it is neither a pass nor a failure, and its tooltip names the reason. Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode; each freshly-normalized dot's tooltip states how many captures back it, because a gate verdict from a single capture is one draw from that cell's run-to-run spread and is provisional rather than established (ADR-0136; issue 1290's own spread figures were retracted, leaving the question standing). Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode, and only when the mode also carries a full sweep at the same product commit — the fold refuses an unconfirmed focused source; all other labels retain their earlier measurement and provenance. Each full sweep records the action plan the product surface offered. A struck ghost cell is <b>N/A</b> under that plan; a filled pale cell is <b>missing/unavailable</b>, and both tooltips retain the reason. A capture predating the declaration stays missing rather than being guessed N/A. The idle-frame sample is a <b>control</b>: it performs no interaction and exists to prove the target can hold frames at rest, so a mode where it fails its own gate has no action score attributable to the product. Those measured cells are marked <b>no control</b> and the mode is left out of the cross-mode failure ranking, rather than counted as a mode full of product failures.</p></div>
+  <div class="section-head" id="notes"><h2>Notes and method</h2><span class="desc">What the cells do and do not claim</span></div>
+  ${noteDetails({ title: 'Capture limitations', count: limitations.length, body: `<ul class="note-list">${limitations.map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul>` })}
+  ${noteDetails({ title: 'How scoring works', body: scoringNotes(matrix) })}
+  ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
+  ${noteDetails({ title: 'Undo timing per mode', body: `<p>Engine time is the state rollback alone; next-frame adds the following rendered frame. Gates: engine P95 ≤ ${matrix.gates.undo.engineP95Ms} ms, next-frame P95 ≤ ${matrix.gates.undo.nextFrameP95Ms} ms, next-frame max ≤ ${matrix.gates.undo.nextFrameMaxMs} ms.</p><div class="provenance"><table><thead><tr><th>Target</th><th>Engine P95</th><th>Next P95</th><th>Next max</th><th>Gate</th></tr></thead><tbody>${undoTable(matrix)}</tbody></table></div>` })}
+  ${noteDetails({ title: 'Commit provenance', id: 'provenance', body: `<p>The product commit each cell’s evidence was captured at. “Actions at final commit” counts the action rows measured at this campaign’s final product commit.</p><div class="provenance"><table><thead><tr><th>Target</th><th>Drawing</th><th>Undo</th><th>Actions at final commit</th><th>Action source commits</th></tr></thead><tbody>${provenanceTable(matrix)}</tbody></table></div>` })}
 </div></main>
-${siteFooter({ home: '../../index.html' })}`;
+${siteFooter({ home: '../../index.html' })}
+<script>${PAGE_SCRIPT}</script>`;
   return page({
     title: `Deployment performance — ${matrix.recordedOn}`,
     extraCss: EXTRA_CSS,

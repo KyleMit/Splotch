@@ -273,7 +273,7 @@ describe('deployment matrix report', () => {
     ]);
     const html = renderReport(matrix);
 
-    expect(html).toContain('<b>1</b> action columns charted');
+    expect(html).toContain('<b>1</b> action measured');
     expect(html).toContain('<b>0/1</b>');
     expect(html).toContain('Action 1: expand action drawer');
     expect(html).toContain('Portrait · Light');
@@ -291,9 +291,11 @@ describe('deployment matrix report', () => {
     const grids = [...html.matchAll(/<div class="heat-cells">(.*?)<\/div>/g)];
 
     expect(html).toContain('style="--action-columns:49"');
-    expect(html).toContain('grid-template-columns:repeat(var(--action-columns),15px)');
+    expect(html).toContain('grid-template-columns:repeat(var(--action-columns),var(--heat-cell))');
     expect(html).not.toContain('repeat(46,15px)');
-    expect(grids).toHaveLength(5);
+    // The header row plus the one captured mode; unavailable modes render a
+    // spanning reason note instead of a grid of placeholder cells.
+    expect(grids).toHaveLength(2);
     for (const [, cells] of grids) {
       expect(cells.match(/class="(?:action-number|heat-cell)/g)).toHaveLength(49);
     }
@@ -400,8 +402,9 @@ describe('deployment matrix report', () => {
     expect(html).toContain('<i class="heat-cell unscoreable"></i>no control');
     expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
     expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
-    expect(html).toContain('<h2>5-action failure fingerprint</h2>');
-    expect(html).toContain('<b>5</b> action columns charted');
+    expect(html).toContain('<h2>Discrete actions</h2>');
+    expect(html).toContain('5 action columns');
+    expect(html).toContain('<b>5</b> actions measured');
   });
 
   it('applies an agreeing focused capture only to its measured labels', () => {
@@ -792,7 +795,7 @@ describe('deployment matrix report', () => {
       html.indexOf('<h2>Capture limitations</h2>')
     );
     expect(html.indexOf('<h2>Candidate actions</h2>')).toBeLessThan(
-      html.indexOf('<h2>Coverage</h2>')
+      html.indexOf('<h2>Commit provenance</h2>')
     );
   });
 
