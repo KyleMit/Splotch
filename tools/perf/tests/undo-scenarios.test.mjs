@@ -165,21 +165,25 @@ function fakePage({
   commitMaxMs = 1,
   commitCount = REALISTIC_COMMIT_SAMPLE_COUNT,
   commitDurationsMs = null,
-  // Only the churning history's reading, so a skip message quoting it can have
-  // come from no scenario but the one that timed out.
-  churningRasterBytes = 4096,
-  historyNeverSettles = false,
-  historyNeverSettlesOnNavigation = null,
+  // A fold backlog that never drains: every read on this navigation reports
+  // more retained commands than undo entries, the idle fold loop's own
+  // "still folding" condition.
+  foldBacklogNeverDrainsOnNavigation = null,
+  // A fold backlog that drains one command per read, so the settle has to
+  // wait through that many changing readings before it sees the steady state.
+  foldsPending = 0,
+  // The navigation whose engine reset throws — a scenario that genuinely
+  // never produced a measurement.
+  navigationFails = null,
 } = {}) {
   const commitSamples = commitDurationsMs ?? Array.from({ length: commitCount }, () => commitMaxMs);
   const now = mockTickingClock();
-  let historyRead = 0;
   let navigations = 0;
-  const historyIsChurning = () =>
-    historyNeverSettles || navigations === historyNeverSettlesOnNavigation;
+  let foldsLeft = 0;
   return {
     goto: vi.fn(async () => {
       navigations++;
+      foldsLeft = foldsPending;
     }),
     waitForSelector: vi.fn(async () => {}),
     waitForFunction: vi.fn(async () => {}),
@@ -187,17 +191,19 @@ function fakePage({
       {
         marker: 'getUndoDebug',
         result: () => {
-          const churning = historyIsChurning();
-          return {
+          const backlog =
+            navigations === foldBacklogNeverDrainsOnNavigation ? 1 : Math.max(foldsLeft--, 0);
+          const debug = {
             snapshots: 22,
             liveRasters: SETTLED_LIVE_RASTERS,
-            rasterBytes: churning ? churningRasterBytes + historyRead++ : 4096,
+            rasterBytes: 4096,
             blobBytes: 0,
             baseRasters: 4,
             baseRasterBytes: 8192,
-            historyLength: 22,
+            historyLength: 22 + backlog,
             pendingCommands: 0,
           };
+          return { debug, now: now(), measures: {} };
         },
       },
       {
@@ -224,7 +230,12 @@ function fakePage({
           return now();
         },
       },
-      { marker: 'resizeTo', result: () => {} },
+      {
+        marker: 'resizeTo',
+        result: () => {
+          if (navigations === navigationFails) throw new Error('engine reset failed');
+        },
+      },
     ]),
     screenshot: vi.fn(async () => {}),
   };
@@ -241,11 +252,12 @@ function fakeBrowser(page, { withCdp = true } = {}) {
 }
 
 describe('undo scenario profiling', () => {
-  it('writes artifacts and continues after a history-settle timeout', async () => {
-    // One scenario's patch bytes keep moving, so the settle
-    // poll never sees two identical samples and the scenario is skipped. The
-    // rest report stable history and settle immediately.
-    const page = fakePage({ churningRasterBytes: 4096, historyNeverSettlesOnNavigation: 3 });
+  it('keeps a scenario whose history never reaches its steady state, and says so', async () => {
+    // One scenario's fold loop never drains, so the settle deadline expires. The
+    // commit samples the gate scores were complete before the wait began, so
+    // the scenario is measured, not skipped: the artifact carries the settle
+    // trace, the report row names the unsettled history, and the run warns.
+    const page = fakePage({ foldBacklogNeverDrainsOnNavigation: 3 });
     const { browser } = fakeBrowser(page);
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -261,28 +273,63 @@ describe('undo scenario profiling', () => {
 
     const summary = JSON.parse(readFileSync(jsonPath, 'utf8'));
     expect(summary.scenarios).toHaveLength(7);
-    expect(summary.scenarios).toContainEqual(
-      expect.objectContaining({
-        key: 'short-marks',
-        skipped: true,
-        error: expect.stringContaining(
-          'history never settled within 20 ms: undoEntries=22 livePatchEntries=2'
-        ),
-      })
-    );
+    const unsettled = summary.scenarios.find((scenario) => scenario.key === 'short-marks');
+    expect(unsettled).not.toHaveProperty('skipped');
+    expect(unsettled).toMatchObject({
+      draw: { ops: 1 },
+      debug: { historyLength: 23, snapshots: 22 },
+      settle: { settled: false },
+    });
+    expect(unsettled.settle.samples).toBeGreaterThan(0);
+    expect(unsettled.settle.trace).toHaveLength(unsettled.settle.samples);
+    expect(unsettled.settle.trace.at(-1)).toMatchObject({
+      reading: { historyLength: 23, snapshots: 22, pendingCommands: 0 },
+    });
     const laterScenario = summary.scenarios.find((scenario) => scenario.key === 'mixed');
-    expect(laterScenario).toMatchObject({ draw: { ops: 1 } });
-    expect(laterScenario).not.toHaveProperty('skipped');
-    expect(readFileSync(markdownPath, 'utf8')).toContain(
-      'Skipped: history never settled within 20 ms: undoEntries=22 livePatchEntries=2'
+    expect(laterScenario).toMatchObject({ draw: { ops: 1 }, settle: { settled: true } });
+    expect(readFileSync(markdownPath, 'utf8')).toMatch(
+      /\| 22 short dot\/dash strokes, then undo all \| 22 \| Completed; history unsettled after \d+ ms \(\d+ samples\) \|/
     );
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Skipping undo scenario short-marks: history never settled within 20 ms'
-      )
+      expect.stringContaining('history did not reach its idle steady state within 20 ms')
     );
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('Skipping undo scenario'));
     expect(state.stop).toHaveBeenCalledOnce();
     expect(browser.close).toHaveBeenCalledOnce();
+  });
+
+  it('waits for the idle fold loop to drain before it reads the history', async () => {
+    // Which side of the folds a reading lands on used to depend only on host
+    // speed. The settle now waits until nothing is left to fold and confirms
+    // that reading once, so every host reports the same steady state.
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
+    const page = fakePage({ foldsPending: 3 });
+    fakeBrowser(page, { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    const summary = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    const [scenario] = summary.scenarios;
+    expect(scenario).toMatchObject({
+      key: 'multi-finger',
+      debug: { historyLength: 22, snapshots: 22 },
+      settle: { settled: true, samples: 5 },
+    });
+    expect(scenario.settle.trace.map((sample) => sample.reading.historyLength)).toEqual([
+      25, 24, 23, 22, 22,
+    ]);
+    expect(scenario.settle.trace.map((sample) => sample.changed)).toEqual([
+      false,
+      true,
+      true,
+      true,
+      false,
+    ]);
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('did not reach'));
   });
 
   it('does not time out a settled history on a host too slow to poll it', async () => {
@@ -308,7 +355,7 @@ describe('undo scenario profiling', () => {
     const summary = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
     expect(summary.scenarios[0]).not.toHaveProperty('skipped');
     expect(summary.scenarios[0]).toMatchObject({ key: 'multi-finger' });
-    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('never settled'));
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('did not reach'));
     expect(gate).toMatchObject({ gated: true, breaches: [] });
     expect(gate).not.toHaveProperty('evaluated');
     expect(process.exitCode).toBe(originalExitCode);
@@ -644,7 +691,9 @@ describe('the commit gate', () => {
 
   it('fails rather than certifies a WebKit run with skipped scenarios', async () => {
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
-    const page = fakePage({ historyNeverSettles: true });
+    // The scenario's own navigation is the second: the run resets the engine
+    // once before any scenario.
+    const page = fakePage({ navigationFails: 2 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -666,7 +715,7 @@ describe('the commit gate', () => {
       '--engine=webkit',
       '--scenarios=multi-finger,crayon-scribbles',
     ];
-    const page = fakePage({ commitMaxMs: 30, historyNeverSettlesOnNavigation: 3 });
+    const page = fakePage({ commitMaxMs: 30, navigationFails: 3 });
     fakeBrowser(page, { withCdp: false });
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});

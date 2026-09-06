@@ -10,6 +10,7 @@ import {
   getCrayonMix,
   getPerOpGlazeReturn,
 } from './crayonBrush';
+import { PERF_MARKS } from './perf';
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
 import type { DotOp, PathOp } from './strokeOps';
 
@@ -382,16 +383,31 @@ export function invalidateCrayonUnder(target: CanvasRenderingContext2D) {
   markShadowStale(target);
 }
 
+// Measured under PERF_MARKS like the engine's other stroke-end work, so a
+// harness watching the main thread after a stroke burst can tell this drain's
+// whole-tile reads apart from time the engine did not spend.
 function refreshPendingCrayonShadows() {
-  for (const target of pendingShadowRefresh) {
-    const buf = existingBufferFor(target);
-    // A hidden target is blank — the next pass takes the virgin path and
-    // never reads the shadow, so skip the read entirely.
-    if (buf && !buf.underValid && !buf.dirty && !target.canvas.hidden) {
-      captureUnderSnapshot(buf, target);
+  if (PERF_MARKS) performance.mark('engine.crayonShadow:start');
+  try {
+    for (const target of pendingShadowRefresh) {
+      const buf = existingBufferFor(target);
+      // A hidden target is blank — the next pass takes the virgin path and
+      // never reads the shadow, so skip the read entirely.
+      if (buf && !buf.underValid && !buf.dirty && !target.canvas.hidden) {
+        captureUnderSnapshot(buf, target);
+      }
+    }
+    pendingShadowRefresh.clear();
+  } finally {
+    if (PERF_MARKS) {
+      performance.mark('engine.crayonShadow:end');
+      performance.measure(
+        'engine.crayonShadow',
+        'engine.crayonShadow:start',
+        'engine.crayonShadow:end'
+      );
     }
   }
-  pendingShadowRefresh.clear();
 }
 
 // Restore the op's rect from the under shadow, then re-apply the two-blit
