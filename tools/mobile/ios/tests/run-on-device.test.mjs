@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolvePhysicalIosUdid } from '../run-on-device.mjs';
 
 const FAKE_UDID = '00008103-DEADBEEFDEADBEEF';
+const FAKE_LEGACY_UDID = 'deadbeef'.repeat(5);
 
 const listing = (devices) =>
   [
@@ -22,6 +23,19 @@ describe('resolvePhysicalIosUdid', () => {
   it('selects the sole hardware UDID, ignoring the host Mac and simulators', () => {
     const xctraceOutput = listing([`Some iPad (26.5) (${FAKE_UDID})`]);
     expect(resolvePhysicalIosUdid({ xctraceOutput, envUdid: undefined })).toBe(FAKE_UDID);
+  });
+
+  it('selects a legacy 40-hex UDID device', () => {
+    const xctraceOutput = listing([`Old iPad (12.5) (${FAKE_LEGACY_UDID})`]);
+    expect(resolvePhysicalIosUdid({ xctraceOutput, envUdid: undefined })).toBe(FAKE_LEGACY_UDID);
+  });
+
+  it('reports ambiguity across mixed UDID formats instead of picking one', () => {
+    const xctraceOutput = listing([
+      `Some iPad (26.5) (${FAKE_UDID})`,
+      `Old iPad (12.5) (${FAKE_LEGACY_UDID})`,
+    ]);
+    expect(() => resolvePhysicalIosUdid({ xctraceOutput, envUdid: undefined })).toThrow(/IOS_UDID/);
   });
 
   it('fails without a physical device', () => {

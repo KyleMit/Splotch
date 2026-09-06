@@ -7,15 +7,19 @@
 
 import { execFileSync } from 'node:child_process';
 import { fail, isMain, run } from '../../lib/proc.mjs';
+import { isPhysicalAppleUdid } from '../../perf/ios/capture-xcuitest-actions.mjs';
 
-// Hardware UDIDs are 8-hyphen-16 hex (capture-readiness.mjs); the host Mac and
-// simulators list UUID-shaped identifiers that do not match.
-const HARDWARE_UDID_IN_PARENS = /\(([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16})\)/g;
+// Each device line ends with its identifier in parens. isPhysicalAppleUdid
+// owns which shapes are physical hardware (modern 8-16 hex and legacy 40-hex);
+// the host Mac and simulators list 8-4-4-4-12 UUIDs it rejects.
+const PARENTHESIZED_IDENTIFIER = /\(([0-9A-Fa-f-]+)\)/g;
 
 export function resolvePhysicalIosUdid({ xctraceOutput, envUdid }) {
   if (envUdid) return envUdid;
   const devicesSection = xctraceOutput.split(/^== .*Simulators.*==$/m)[0];
-  const udids = [...devicesSection.matchAll(HARDWARE_UDID_IN_PARENS)].map((match) => match[1]);
+  const udids = [...devicesSection.matchAll(PARENTHESIZED_IDENTIFIER)]
+    .map((match) => match[1])
+    .filter(isPhysicalAppleUdid);
   if (udids.length === 1) return udids[0];
   if (udids.length === 0)
     throw new Error('[run-on-device] no physical iOS device attached (xcrun xctrace list devices)');
