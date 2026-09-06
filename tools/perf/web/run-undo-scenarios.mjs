@@ -377,7 +377,20 @@ const readHistorySample = (page, sinceMs) =>
       if (!m.name.startsWith('engine.') || m.startTime < since) continue;
       (measures[m.name] ??= []).push(Math.round(m.duration));
     }
-    return { debug, now: performance.now(), measures };
+    // The injected rAF sampler's stamps since the previous poll: a poll that
+    // returned late with no frames in between waited on one uninterruptible
+    // task, while frames throughout mean many tasks ran ahead of it.
+    const stamps = (window.__perf?.frameStamps ?? []).filter((t) => t >= since);
+    let maxGapMs = 0;
+    for (let i = 1; i < stamps.length; i++)
+      maxGapMs = Math.max(maxGapMs, stamps[i] - stamps[i - 1]);
+    const frames = {
+      count: stamps.length,
+      firstMs: stamps.length ? Math.round(stamps[0] - since) : null,
+      lastMs: stamps.length ? Math.round(stamps[stamps.length - 1] - since) : null,
+      maxGapMs: Math.round(maxGapMs),
+    };
+    return { debug, now: performance.now(), measures, frames };
   }, sinceMs);
 
 // Tiled history may finish progressive patch capture or fold old commands into
@@ -408,7 +421,10 @@ function formatSettleTrace(trace) {
     .map(
       (sample, index) =>
         `#${index + 1} +${sample.atMs}ms read ${sample.readMs}ms ` +
-        `${sample.changed ? 'changed' : 'same'} ${formatMeasures(sample.measures)}`
+        `${sample.changed ? 'changed' : 'same'} ${formatMeasures(sample.measures)}` +
+        (sample.frames
+          ? ` frames=${sample.frames.count}@${sample.frames.firstMs}..${sample.frames.lastMs}ms gap=${sample.frames.maxGapMs}ms`
+          : '')
     )
     .join('; ');
 }
@@ -435,6 +451,7 @@ async function settleHistory(page, sinceMs, timeoutMs = 10_000) {
       readMs: Date.now() - readStart,
       changed,
       measures: sample.measures,
+      frames: sample.frames ?? null,
       reading: settleReading(d),
     });
     console.log(`  settle ${formatSettleTrace(trace.slice(-1)).replace(/^#\d+/, `#${samples}`)}`);

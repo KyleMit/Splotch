@@ -53,6 +53,7 @@ it('derives every current window seam and engine measure family', () => {
     'backingMigrationPending',
     'baseRasterBytes',
     'engine.commit',
+    'engine.crayonShadow',
     'engine.draw',
     'engine.fold',
     'engine.resize',

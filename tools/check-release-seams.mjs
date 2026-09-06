@@ -15,6 +15,8 @@ const RELEASE_SEAM_SOURCE_FILES = [
   'web/src/lib/drawing/strokeRasterQueue.ts',
   // Carries `engine.fold`, the idle history compaction the settle trace attributes.
   'web/src/lib/drawing/tiledRenderer.ts',
+  // Carries `engine.crayonShadow`, the deferred whole-tile shadow reads after a crayon stroke.
+  'web/src/lib/drawing/crayonPassBuffer.ts',
   'web/src/lib/drawing/undoHistory.ts',
   'web/src/lib/drawing/emptyScan.ts',
   'web/src/lib/storeCapture.ts',
