@@ -25,7 +25,7 @@ can."
 
 ## Method
 
-* Device: iPad UDID 00008103-0006202E3CF1001E, Safari (ipad-device-web), portrait-light.
+* Device: iPad UDID [redacted], Safari (ipad-device-web), portrait-light.
 * Calibration note (corrected 2026-08-27 after review): native captures are **not**
   fidelity-uncalibrated — ADR-0144 retired `ios-capacitor-webview`'s last uncalibrated check, and
   these artifacts record `passed: true`, `uncalibrated: []`. Native is same-instrument comparative

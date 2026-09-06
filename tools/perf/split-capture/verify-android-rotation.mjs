@@ -19,7 +19,7 @@
 // a fault injection on 2026-08-23 did observe a LANDSCAPE request coming back
 // PORTRAIT with `user_rotation` reading 0, but that read happened after a subsequent
 // launch, so it does not isolate force-stop. Review could not reproduce it, and 8
-// further trials on R5CRC3AVCXM could not either: `user_rotation` stayed 1 across
+// further trials on the rig phone could not either: `user_rotation` stayed 1 across
 // force-stop with Chrome stopped, with Chrome foregrounded first, and across the full
 // rotate → force-stop → launch sequence.
 //

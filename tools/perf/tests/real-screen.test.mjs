@@ -177,23 +177,23 @@ describe('cacheEvictionAcceptable', () => {
 
 describe('capturedDeviceId', () => {
   it('prefers the explicitly requested device', () => {
-    expect(capturedDeviceId('00008103-0006202E3CF1001E', { capabilities: { udid: 'other' } })).toBe(
-      '00008103-0006202E3CF1001E'
+    expect(capturedDeviceId('00008103-DEADBEEFDEADBEEF', { capabilities: { udid: 'other' } })).toBe(
+      '00008103-DEADBEEFDEADBEEF'
     );
   });
 
   it('reads the negotiated session when a capability file supplied the target', () => {
-    expect(capturedDeviceId(undefined, { capabilities: { udid: 'R5CRC3AVCXM' } })).toBe(
-      'R5CRC3AVCXM'
+    expect(capturedDeviceId(undefined, { capabilities: { udid: 'R5CFAKESER1' } })).toBe(
+      'R5CFAKESER1'
     );
   });
 
   it('accepts the prefixed capability and the unwrapped session envelope', () => {
     expect(
       capturedDeviceId(undefined, {
-        value: { capabilities: { 'appium:udid': '00008103-0006202E3CF1001E' } },
+        value: { capabilities: { 'appium:udid': '00008103-DEADBEEFDEADBEEF' } },
       })
-    ).toBe('00008103-0006202E3CF1001E');
+    ).toBe('00008103-DEADBEEFDEADBEEF');
   });
 
   it('falls back to cloud only when no session names a device', () => {

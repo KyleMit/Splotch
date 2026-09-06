@@ -6,7 +6,8 @@
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
 
-const SERIAL = process.env.SERIAL ?? 'R5CRC3AVCXM';
+const SERIAL = process.env.SERIAL; // adb serial of the target phone (adb devices)
+if (!SERIAL) throw new Error('set SERIAL to the target Android serial');
 const CDP_PORT = Number(process.env.CDP_PORT ?? 9224);
 const ROUNDS = Number(process.env.ROUNDS ?? 6);
 const PAGES = {

@@ -3,11 +3,30 @@
 **Original finding:** [P3][maintainability] — `package.json` scripts `android:run:device`,
 `ios:run:emulator`, `ios:run:device` — deferred because the burndown attempt (which deleted the
 scripts and updated the mobile guidance) hit a sandbox that could not write the generated
-`.agents/skills/mobile` mirrors during `ruler:apply`. **Verdict:** DROP
+`.agents/skills/mobile` mirrors during `ruler:apply`. **Verdict:** FIX for the physical pins
+(reopened and implemented by issue #1645); DROP stands for the simulator pin.
+
+## Reopened 2026-09-06 by issue #1645
+
+Two of the DROP's premises went stale. The pinned `ANDROID_SERIAL` named the SM-S938U1 phone, but
+every committed physical-Android matrix target is the SM-G990U1 — the pin no longer anchored the
+matrix to its hardware. And #1645 (the identifier-scrub follow-up to #1643) made committed
+physical-device identifiers a privacy defect, not just a portability nit: the scrub removes every
+tracked hardware identifier and adds `check:device-identifiers` to keep them out, which forbids the
+committed literals this record had accepted.
+
+The remediation is close to the original option 1, minus the committed fallback: `run-on-device.mjs`
+wrappers (`tools/mobile/android/`, `tools/mobile/ios/`) resolve the sole attached physical device
+dynamically and fail with guidance on ambiguity, with `ANDROID_SERIAL` / `IOS_UDID` as explicit
+overrides. The zero-config single-device desk workflow is preserved without a committed serial.
+`ios:run:emulator`'s pinned simulator UDID stays: a simulator UUID identifies no physical hardware,
+the guard does not match it, and the original DROP reasoning still applies to it.
+
+The section below is the superseded 2026-08 analysis, kept for its option survey.
 
 ## Context
 
-Three npm scripts pin one developer's hardware: `ANDROID_SERIAL=R5CY128YMGF` (the SM-S938U1 phone),
+Three npm scripts pin one developer's hardware: `ANDROID_SERIAL=[redacted]` (the SM-S938U1 phone),
 `cap run ios --target C6012C49-…` (a simulator UDID), and `cap run ios --target 00008103-…` (the
 physical iPad). The finding argued these are personal config committed to the shared `package.json`,
 dead for any other contributor or CI, and proposed env-var resolution through the Node helpers, a

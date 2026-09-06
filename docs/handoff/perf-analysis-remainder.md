@@ -59,9 +59,9 @@ round confirmed its earlier findings addressed. Tip empirically verified on the 
 7. **Host-only review-launch scripts** (`~/.local/libexec/splotch-claude-*.mjs`, partly mirrored at
    `.agents/skills/run-rival-agent/scripts/`): bringing them into `tools/` was the Claude lane's
    secondary rec.
-8. **`personal-device-scripts.md` stale premise**: the pinned `ANDROID_SERIAL` names an SM-S938U1
-   while committed targets name SM-G990U1 — reopen the decision record (root instructions already
-   flag this).
+8. ~~**`personal-device-scripts.md` stale premise**~~ — resolved 2026-09-06: issue #1645 reopened
+   the record and replaced the physical pins with dynamic device resolution
+   (`tools/mobile/*/run-on-device.mjs`).
 
 ## Dropped with reasons (do not resurrect without new evidence)
 

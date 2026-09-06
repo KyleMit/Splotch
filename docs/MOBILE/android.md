@@ -143,8 +143,9 @@ storage, or the offline AI flow — not needed for canvas/perf work.
 
 * **`adb: more than one device/emulator`** (or Gradle installs onto the wrong target) — you have
   both a physical phone and an emulator connected. Set `ANDROID_SERIAL` to the phone's serial (from
-  `npm run adb:devices`) so adb and Gradle agree on the target, e.g. `npm run android:run:device`,
-  which pins the serial. Closing the emulator also resolves it.
+  `npm run adb:devices`) so adb and Gradle agree on the target, or run `npm run android:run:device`,
+  which resolves the sole attached physical phone itself (and honours `ANDROID_SERIAL` when several
+  are attached). Closing the emulator also resolves it.
 * **`INSTALL_FAILED_UPDATE_INCOMPATIBLE: … signatures do not match`** — a copy of `art.splotch.app`
   is already installed that was signed with a *different* key (a Play Store build, or a debug build
   from another machine — each machine's debug keystore is unique). Android won't overwrite across

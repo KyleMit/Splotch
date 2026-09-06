@@ -11,7 +11,7 @@ import {
   isGrantDenial,
 } from '../lib/grant-log.mjs';
 
-const UDID = '00008103-0006202E3CF1001E';
+const UDID = '00008103-DEADBEEFDEADBEEF';
 const HOUR_MS = 3_600_000;
 
 const DEVICE = grantLogDevice(UDID);
@@ -95,8 +95,13 @@ describe('grant log schema', () => {
   it('uses a stable per-device pseudonym and keeps the committed header aligned with the writer', () => {
     expect(grantLogDevice(UDID)).toBe(DEVICE);
     expect(grantLogDevice('another-device')).not.toBe(DEVICE);
-    expect(readFileSync(GRANT_LOG, 'utf8').split('\n')[0] + '\n').toBe(GRANT_LOG_HEADER);
-    expect(describeGrantHistory(UDID)).not.toContain('no recorded launch');
+    const committed = readFileSync(GRANT_LOG, 'utf8').split('\n');
+    expect(committed[0] + '\n').toBe(GRANT_LOG_HEADER);
+    // The committed log carries pseudonyms only — a raw UDID row would defeat
+    // the identifier scrub (issue #1645) and fail check-device-identifiers.
+    for (const line of committed.slice(1).filter(Boolean)) {
+      expect(line.split('\t')[1]).toMatch(/^device-[0-9a-f]{12}$/);
+    }
   });
 
   it('migrates legacy raw-UDID rows while reading an existing log', () => {

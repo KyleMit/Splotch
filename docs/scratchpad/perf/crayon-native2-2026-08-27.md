@@ -19,8 +19,8 @@ promising candidate goes in front of a human on the device early in its life, no
 
 ## Ground truth inherited (do not re-measure)
 
-Target: physical iPad `00008103-0006202E3CF1001E`, installed Capacitor app, WKWebView. Comparative
-A/B only — gate-class, not gate-scored (ADR-0144).
+Target: physical iPad `[redacted]`, installed Capacitor app, WKWebView. Comparative A/B only —
+gate-class, not gate-scored (ADR-0144).
 
 | Cell                                     | lost %           | read                                        |
 | ---------------------------------------- | ---------------- | ------------------------------------------- |
@@ -195,7 +195,7 @@ number:
 
 # Results
 
-All cells: physical iPad `00008103-0006202E3CF1001E`, iPadOS 26.5, installed Capacitor app
+All cells: physical iPad `[redacted]`, iPadOS 26.5, installed Capacitor app
 (`capacitor://localhost`, runtime `ios-capacitor-webview`), crayon, portrait, light,
 `--gesture-repeats=10`. Every sample is fidelity-PASS with `uncalibrated: []`, cadence 116–117
 moves/s, and `report.meta.counts.measures` in the thousands.

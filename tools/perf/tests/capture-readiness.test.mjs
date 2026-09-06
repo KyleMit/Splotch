@@ -27,13 +27,13 @@ describe('iOS device identifiers', () => {
   // CoreDevice UUID, Appium wants the hardware UDID, and the resulting error
   // ("Could not find a pair record") reads like an unreachable device.
   it('tells the hardware UDID from the CoreDevice UUID', () => {
-    expect(classifyIosIdentifier('00008103-0006202E3CF1001E')).toBe('hardware-udid');
+    expect(classifyIosIdentifier('00008103-DEADBEEFDEADBEEF')).toBe('hardware-udid');
     expect(classifyIosIdentifier('BF6A40F5-B68E-5029-9BF8-7798D202F71C')).toBe('core-device-uuid');
     expect(classifyIosIdentifier('')).toBe('missing');
   });
 
   it('accepts a hardware UDID without comment', () => {
-    expect(iosIdentifierProblem('00008103-0006202E3CF1001E')).toBeNull();
+    expect(iosIdentifierProblem('00008103-DEADBEEFDEADBEEF')).toBeNull();
   });
 
   it('names the confusion rather than reporting an unreachable device', () => {

@@ -11,6 +11,7 @@ live-reload, and clean commands stay inline in `package.json`, as documented in
 | ------------------------------ | ----------------------------------- | ----------------------------------------------- |
 | `run-simulator-smoke-test.mjs` | `npm run test:ios [-- --skip-sync]` | Build, install, and smoke an iOS simulator      |
 | `open-release-artifacts.mjs`   | `npm run ios:open`                  | Reveal `ios/App/build/ipa/` in the file manager |
+| `run-on-device.mjs`            | `npm run ios:run:device`            | `cap run ios` on the sole attached device       |
 
 The smoke runner requires macOS, full Xcode with an available iPhone simulator, installed project
 dependencies, and Maestro. It reuses a booted simulator when possible, otherwise boots the newest

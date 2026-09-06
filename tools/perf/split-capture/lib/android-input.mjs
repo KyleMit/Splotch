@@ -129,7 +129,7 @@ export const CHROME_PACKAGE = 'com.android.chrome';
 // requested orientation and no artifact was written — and it was attributed to
 // `am force-stop` returning `user_rotation` to 0 on Samsung/Android 16.
 //
-// That attribution did not survive re-testing: 8 trials on R5CRC3AVCXM kept
+// That attribution did not survive re-testing: 8 trials on the rig phone kept
 // `user_rotation` at 1 across force-stop, including with Chrome foregrounded first
 // and across the whole rotate → force-stop → launch sequence. The failure was real;
 // its mechanism is unexplained. Keep this order because it is free and cannot be the

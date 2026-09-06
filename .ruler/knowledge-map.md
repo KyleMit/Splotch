@@ -130,11 +130,12 @@ DROP, at least one is an outstanding FIX. The rule is **consult, verify against 
 evidence, then preserve or reopen**, not "a past DROP forbids this": a decision is a point-in-time
 judgement and its premises can go stale.
 
-They do go stale. `personal-device-scripts.md` keeps a pinned `ANDROID_SERIAL` partly on the grounds
-that it anchors the committed performance matrix to reproducible hardware — but it names an
-SM-S938U1, while both committed physical-Android targets name an SM-G990U1. That premise no longer
-holds, which is a reason to reopen the record rather than either to obey it or to quietly reverse
-it.
+They do go stale. `personal-device-scripts.md` kept a pinned `ANDROID_SERIAL` partly on the grounds
+that it anchored the committed performance matrix to reproducible hardware — while naming a phone
+the committed matrix no longer measured. Issue #1645 reopened the record with that evidence and
+replaced the physical pins with dynamic device resolution; the record now carries both the
+superseded analysis and the reopening. That is the pattern: reopen with evidence, never obey a stale
+record or quietly reverse it.
 
 If you discover any doc, skill, or rule is out of date while working, update it as part of the same
 task — don't leave it stale.

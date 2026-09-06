@@ -2,7 +2,8 @@
 // browser? Measures orientationchange -> resize -> first rAF on BOTH the floor
 // control (cheapest possible page) and the real app, same Safari, same iPad.
 const APPIUM = process.env.APPIUM ?? 'http://127.0.0.1:4723';
-const UDID = process.env.UDID ?? '00008103-0006202E3CF1001E';
+const UDID = process.env.UDID; // hardware UDID of the target iPad (idevice_id -l)
+if (!UDID) throw new Error('set UDID to the target iPad hardware UDID');
 const ROUNDS = Number(process.env.ROUNDS ?? 5);
 const PAGES = {
   floor: process.env.FLOOR_URL ?? 'http://192.168.40.53:4177/',

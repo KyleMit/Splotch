@@ -1,5 +1,5 @@
 # Captured stdout of measure-rotation-events-android.mjs, physical SM-G990U1
-# R5CRC3AVCXM via CDP, 2026-08-25. The floor arm stopped receiving events
+# [redacted] via CDP, 2026-08-25. The floor arm stopped receiving events
 # after round 0 (CDP bringToFront does not reliably switch Chrome-for-Android
 # tabs between rounds); the app arm carries the ordering evidence the ADR
 # quotes.

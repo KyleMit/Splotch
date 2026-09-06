@@ -2,8 +2,8 @@
 
 Investigation trail for issue 1237 — `perf:ios:xcuitest:actions --native-app` timed out on "undo
 clear after blank rotation" in both landscape modes, six attempts for six timeouts across two
-campaigns, while both portrait modes passed. Resolved 2026-08-25 on the physical iPad
-(00008103-0006202E3CF1001E) in eight instrumented device runs.
+campaigns, while both portrait modes passed. Resolved 2026-08-25 on the physical iPad ([redacted])
+in eight instrumented device runs.
 
 ## The failing sequence
 
