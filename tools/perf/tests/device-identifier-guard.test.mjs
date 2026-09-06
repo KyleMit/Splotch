@@ -58,7 +58,8 @@ describe('scanForDeviceIdentifiers', () => {
 });
 
 describe('tracked tree', () => {
-  it('contains no physical-device identifier', () => {
+  // Reads every tracked text file (~3 s locally, slower on CI runners).
+  it('contains no physical-device identifier', { timeout: 60_000 }, () => {
     expect(checkTrackedTree()).toEqual([]);
   });
 });
