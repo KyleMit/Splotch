@@ -2050,6 +2050,40 @@ describe('per-target action allowances', () => {
     expect(result.gateAllowance).toBeUndefined();
   });
 
+  // The stored verdict of a summary-only artifact was scored under the ledger
+  // it recorded. A native artifact carrying the iPad ledger stores PASS at a
+  // P95 the native row's base gate fails, so the fold refuses it — in both the
+  // structured and the legacy flat recorded shapes — rather than publishing a
+  // verdict the target never scored.
+  it('refuses a summary-only capture whose recorded ledger is not the target policy', () => {
+    const storedPass = (gateAllowances) => ({
+      samples: undefined,
+      gateAllowances,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: true,
+        },
+      ],
+    });
+    const native = { id: 'ipad-device-native', fidelity: 'physical-native-advisory' };
+    expect(() => matrixFor(native, storedPass(IOS_ACTION_GATE_ALLOWANCES))).toThrow(
+      'recorded gateAllowances that target ipad-device-native does not grant'
+    );
+    expect(() => matrixFor(native, storedPass({ [label]: allowedP95 }))).toThrow('does not grant');
+    const plain = matrixFor(native, storedPass({ p95: {}, max: {} }));
+    const result = plain.targets[0].modes[0].actions.results.find((entry) => entry.label === label);
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
   it('renders the ledger beside the gates and names the allowance in the cell verdict', () => {
     const matrix = matrixFor(
       { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },

@@ -771,6 +771,15 @@ function normalizeActionPlan(plan, source) {
 // cell that passes only because of one is never read as a base-gate pass:
 // the heat ratio prices it against its own budget and the tooltip names it.
 // Absent from every result on the base gates.
+// Whether an artifact's recorded `gateAllowances` names any action at all, in
+// either shape the field has had: the flat per-label P95 map of the earliest
+// captures, or the `{ p95, max }` ledgers since the max allowance split.
+function recordsAnyAllowance(recorded) {
+  if (!recorded || typeof recorded !== 'object') return false;
+  const ledgers = 'p95' in recorded || 'max' in recorded ? Object.values(recorded) : [recorded];
+  return ledgers.some((ledger) => ledger && Object.keys(ledger).length > 0);
+}
+
 function actionGateAllowance(allowances, label) {
   const gateAllowance = {};
   if (Number.isFinite(allowances.p95?.[label])) gateAllowance.p95Ms = allowances.p95[label];
@@ -831,16 +840,26 @@ function normalizeActionCapture(spec, sourceDirectory, mode, targetId) {
   // gated, and its 100 ms first frames turn the misfile into a red cell
   // instead of an N/A.
   // A summary-only artifact (no raw samples) keeps the verdict it was written
-  // with, so the shipped policy cannot be applied to it. On a target with a
-  // ledger that verdict would silently be whichever ledger the capture was
-  // given, so the fold refuses rather than labelling a stored verdict with an
-  // allowance it never scored under; on every other target the stored verdict
-  // is the base-gate one and folds as before, carrying no allowance.
+  // with — scored under whatever ledger the capture recorded — so the shipped
+  // policy cannot be applied to it. The fold accepts it only when that recorded
+  // ledger IS the target's policy: on the ledger target that is never true of
+  // a stored verdict (the policy is applied at fold time), and on every other
+  // target it is true only of an artifact that recorded no allowance at all.
+  // Anything else — a native artifact carrying the iPad ledger, say, whose
+  // stored PASS at 29 ms the native row's base gate would fail — is refused
+  // rather than folded as a verdict the target never scored.
   const scoredFromSamples = Boolean(profile.samples);
   if (!scoredFromSamples && Object.keys(allowances).length) {
     throw new Error(
       `${spec.source} carries summaries but no raw samples, so target ${targetId}'s ` +
         `allowance policy (ADR-0160) cannot be applied to it — fold a capture with samples`
+    );
+  }
+  if (!scoredFromSamples && recordsAnyAllowance(profile.gateAllowances)) {
+    throw new Error(
+      `${spec.source} carries summaries but no raw samples, and its stored verdicts were scored ` +
+        `under recorded gateAllowances that target ${targetId} does not grant (ADR-0160) — ` +
+        `fold a capture with samples`
     );
   }
   const summaries = scoredFromSamples
