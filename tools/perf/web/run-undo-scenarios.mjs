@@ -364,8 +364,21 @@ async function undoAll(page) {
   }, MAX_UNDO_STEPS);
 }
 
-const undoDebug = (page) =>
-  page.evaluate(() => (window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null));
+// One poll of the history debug contract, plus the engine.* measures that
+// landed since the previous poll and the page clock the next poll reads from.
+// The measures are what make a slow settle attributable: a poll that took
+// three seconds to return either queued behind an engine.fold or behind
+// nothing this build can name, and the trace tells the two apart.
+const readHistorySample = (page, sinceMs) =>
+  page.evaluate((since) => {
+    const debug = window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null;
+    const measures = {};
+    for (const m of performance.getEntriesByType('measure')) {
+      if (!m.name.startsWith('engine.') || m.startTime < since) continue;
+      (measures[m.name] ??= []).push(Math.round(m.duration));
+    }
+    return { debug, now: performance.now(), measures };
+  }, sinceMs);
 
 // Tiled history may finish progressive patch capture or fold old commands into
 // base tiles after the batched draw phase returns. The harness needs a quiescent
@@ -373,46 +386,80 @@ const undoDebug = (page) =>
 // until consecutive samples agree.
 const SETTLE_POLL_MS = 100;
 const SETTLE_STABLE_SAMPLES = 4;
-async function settleHistory(page, timeoutMs = 10_000) {
+const SETTLE_FIELDS = [
+  'snapshots',
+  'liveRasters',
+  'rasterBytes',
+  'baseRasters',
+  'baseRasterBytes',
+  'historyLength',
+  'pendingCommands',
+];
+const sameHistory = (a, b) => a != null && SETTLE_FIELDS.every((field) => a[field] === b[field]);
+const settleReading = (d) => Object.fromEntries(SETTLE_FIELDS.map((field) => [field, d[field]]));
+
+const formatMeasures = (measures) =>
+  Object.entries(measures)
+    .map(([name, durations]) => `${name}=[${durations.join(',')}]`)
+    .join(' ') || 'none';
+
+function formatSettleTrace(trace) {
+  return trace
+    .map(
+      (sample, index) =>
+        `#${index + 1} +${sample.atMs}ms read ${sample.readMs}ms ` +
+        `${sample.changed ? 'changed' : 'same'} ${formatMeasures(sample.measures)}`
+    )
+    .join('; ');
+}
+
+async function settleHistory(page, sinceMs, timeoutMs = 10_000) {
   const t0 = Date.now();
-  const sameHistory = (a, b) =>
-    a != null &&
-    a.snapshots === b.snapshots &&
-    a.liveRasters === b.liveRasters &&
-    a.rasterBytes === b.rasterBytes &&
-    a.baseRasters === b.baseRasters &&
-    a.baseRasterBytes === b.baseRasterBytes &&
-    a.historyLength === b.historyLength &&
-    a.pendingCommands === b.pendingCommands;
+  const trace = [];
   let prev = null;
   let stable = 0;
   let samples = 0;
+  let since = sinceMs;
   for (;;) {
-    const d = await undoDebug(page);
-    if (d == null) return null;
+    const readStart = Date.now();
+    const sample = await readHistorySample(page, since);
+    const d = sample.debug;
+    if (d == null)
+      return { debug: null, settled: false, samples, elapsedMs: Date.now() - t0, trace };
+    since = sample.now;
     samples++;
-    stable = sameHistory(prev, d) ? stable + 1 : 0;
-    if (stable >= SETTLE_STABLE_SAMPLES - 1) return d;
+    const changed = prev != null && !sameHistory(prev, d);
+    stable = prev != null && !changed ? stable + 1 : 0;
+    trace.push({
+      atMs: Date.now() - t0,
+      readMs: Date.now() - readStart,
+      changed,
+      measures: sample.measures,
+      reading: settleReading(d),
+    });
+    console.log(`  settle ${formatSettleTrace(trace.slice(-1)).replace(/^#\d+/, `#${samples}`)}`);
+    if (stable >= SETTLE_STABLE_SAMPLES - 1) {
+      return { debug: d, settled: true, samples, elapsedMs: Date.now() - t0, trace };
+    }
     // The wall clock alone cannot expire this wait, because on a saturated main
-    // thread the polls themselves are what spend it: each getUndoDebug() round
-    // trip queues behind the work being waited on, so a slow host can burn the
-    // whole budget on two or three reads and time out on a history nothing was
-    // still changing. Observed on the 2026-09-02 main gate, where every counter
-    // the timeout text reported matched the settled reading a second runner
-    // took for the same commit — consistent with undersampling, though the text
-    // omitted pendingCommands and kept no earlier sample, which is why this
-    // message now reports both. Quiescence is only visible
-    // once SETTLE_STABLE_SAMPLES readings exist, so until that many have been
-    // taken there is nothing for a timeout to have been long enough for.
+    // thread the polls themselves are what spend it: each read round trip queues
+    // behind the work being waited on, so a slow host can burn the whole budget
+    // on two or three reads and time out on a history nothing was still
+    // changing. Quiescence is only visible once SETTLE_STABLE_SAMPLES readings
+    // exist, so until that many have been taken there is nothing for a timeout
+    // to have been long enough for.
     if (samples >= SETTLE_STABLE_SAMPLES && Date.now() - t0 > timeoutMs) {
-      throw new Error(
+      const elapsedMs = Date.now() - t0;
+      const error = new Error(
         `history never settled within ${timeoutMs} ms: undoEntries=${d.snapshots} ` +
           `livePatchEntries=${d.liveRasters} patchBytes=${d.rasterBytes} ` +
           `baseTiles=${d.baseRasters} baseRasterBytes=${d.baseRasterBytes} ` +
           `historyCommands=${d.historyLength} pendingCommands=${d.pendingCommands} ` +
           `(want ${SETTLE_STABLE_SAMPLES} consecutive identical samples; ` +
-          `took ${samples} in ${Date.now() - t0} ms)`
+          `took ${samples} in ${elapsedMs} ms; ${formatSettleTrace(trace)})`
       );
+      error.settle = { settled: false, samples, elapsedMs, trace };
+      throw error;
     }
     prev = d;
     await sleep(SETTLE_POLL_MS);
@@ -436,7 +483,8 @@ export async function runUndoScenario(
     drawStrokes(page, sc.strokes, !!sc.crayon)
   );
 
-  const debug = await settleHistory(page, historySettleTimeoutMs);
+  const settle = await settleHistory(page, drawEnd, historySettleTimeoutMs);
+  const { debug } = settle;
   const heapAfterDraw = await heapBytes(page);
 
   const undoStart = await now(page);
@@ -469,6 +517,12 @@ export async function runUndoScenario(
     strokes: sc.strokes.length,
     crayon: !!sc.crayon,
     debug,
+    settle: {
+      settled: settle.settled,
+      samples: settle.samples,
+      elapsedMs: settle.elapsedMs,
+      trace: settle.trace,
+    },
     undoSteps: steps,
     draw: {
       ops: draw.count,
@@ -653,6 +707,7 @@ export async function runUndoScenarios() {
           crayon: !!sc.crayon,
           skipped: true,
           error: message,
+          ...(error?.settle ? { settle: error.settle } : {}),
         });
       }
       if (timeline) {

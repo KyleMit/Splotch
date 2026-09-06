@@ -54,6 +54,7 @@ it('derives every current window seam and engine measure family', () => {
     'baseRasterBytes',
     'engine.commit',
     'engine.draw',
+    'engine.fold',
     'engine.resize',
     'engine.scanEmpty',
     'engine.undo',

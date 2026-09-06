@@ -188,7 +188,7 @@ function fakePage({
         marker: 'getUndoDebug',
         result: () => {
           const churning = historyIsChurning();
-          return {
+          const debug = {
             snapshots: 22,
             liveRasters: SETTLED_LIVE_RASTERS,
             rasterBytes: churning ? churningRasterBytes + historyRead++ : 4096,
@@ -198,6 +198,7 @@ function fakePage({
             historyLength: 22,
             pendingCommands: 0,
           };
+          return { debug, now: now(), measures: {} };
         },
       },
       {

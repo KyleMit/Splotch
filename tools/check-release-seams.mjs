@@ -13,6 +13,8 @@ const RELEASE_SEAM_SOURCE_FILES = [
   // raster queue was extracted. A measure in a file missing from this list is
   // not scanned, so the derived token list silently loses it.
   'web/src/lib/drawing/strokeRasterQueue.ts',
+  // Carries `engine.fold`, the idle history compaction the settle trace attributes.
+  'web/src/lib/drawing/tiledRenderer.ts',
   'web/src/lib/drawing/undoHistory.ts',
   'web/src/lib/drawing/emptyScan.ts',
   'web/src/lib/storeCapture.ts',
