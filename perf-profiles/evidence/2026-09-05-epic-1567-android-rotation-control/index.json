@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-05-epic-1567-android-rotation-control",
+  "productCommit": "1496e4d72f747ca1c729e916f2aa4c2b3ad2a0c9",
+  "capturedFrom": "perf-profiles/epic-1567-september-resume/reviewed-control",
+  "study": "Full landscape-light control and separately traced rotation diagnostic before idle Settings shell treatment",
+  "kept": [
+    {
+      "file": "actions--8ec8a1aa.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "android-device-web/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--bdca2980.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "android-landscape-light-rotation-trace/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

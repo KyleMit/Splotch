@@ -1,0 +1,261 @@
+{
+  "campaign": "2026-09-05-epic-1567-ipad-e514-control",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+  "capturedFrom": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web",
+  "study": "Complete four-mode physical iPad web control, including first faithful drawing/action failures and all three same-session drift references before the next bounded product experiment.",
+  "kept": [
+    {
+      "file": "actions--c59c94ce.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--c499d2d4.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--aa32287a.json",
+      "target": "ipad-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--5bd3088e.json",
+      "target": "ipad-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--e48c8074.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": true,
+      "source": "landscape-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--45390d94.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--e0746f32.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--1963d407.json",
+      "target": "ipad-device-web",
+      "brush": "eraser",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--645f9a71.json",
+      "target": "ipad-device-web",
+      "brush": "magic",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--33c73d27.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": true,
+      "source": "landscape-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--8c8d5bb0.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--593ad36a.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--2c4ee83d.json",
+      "target": "ipad-device-web",
+      "brush": "eraser",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--715a110c.json",
+      "target": "ipad-device-web",
+      "brush": "magic",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--3b61adbc.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": true,
+      "source": "portrait-dark/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--518e26d0.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "crayon-real-screen--8914c2df.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/crayon-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "eraser-real-screen--d83efde2.json",
+      "target": "ipad-device-web",
+      "brush": "eraser",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/eraser-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "magic-real-screen--8de235d3.json",
+      "target": "ipad-device-web",
+      "brush": "magic",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/magic-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "pen-real-screen--3aef348d.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "portrait-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "end--e10e62c1.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "references/portrait-light/end.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "middle--6b3beb5e.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "references/portrait-light/middle.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "start--1035086a.json",
+      "target": "ipad-device-web",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "references/portrait-light/start.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

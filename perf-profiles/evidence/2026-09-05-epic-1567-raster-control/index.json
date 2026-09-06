@@ -1,0 +1,19 @@
+{
+  "campaign": "2026-09-05-epic-1567-raster-control",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+  "capturedFrom": "perf-profiles/epic-1567-raster-granularity/control",
+  "study": "First faithful same-session portrait-light pen control for the rejected per-move raster batching experiment; preserve its lost-frame-share failure and ten passing undo operations.",
+  "kept": [
+    {
+      "file": "pen-real-screen--1778f97c.json",
+      "target": "ipad-device-web",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

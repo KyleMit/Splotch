@@ -437,6 +437,7 @@
      resolved here that no press consumed — issue 1237) instead of onclick. -->
 <div
   class="actions-panel"
+  class:settings-covered={settingsModal.open && !ui.resizingActionButtons}
   data-drawer-motion={drawerMotion ? '' : undefined}
   style:left={leftOffset}
   style:--action-btn-size={buttonSize}
@@ -640,6 +641,10 @@
 
   .actions-panel[data-drawer-motion] .actions-drawer {
     transition: var(--drawer-transition);
+  }
+
+  .actions-panel.settings-covered {
+    --duration-base: 0ms;
   }
 
   .actions-drawer-inner {

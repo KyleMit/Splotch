@@ -182,6 +182,27 @@ keep whichever report saw more input.
 frames but zero pointer events. Before measuring, check that `document.elementFromPoint` at the
 canvas centre actually hits the canvas.
 
+**A reused iPad capabilities file still needs tablet classification.** A physical XCUITest session
+can omit `deviceName`, and a minimal file that reuses `webDriverAgentUrl` need not supply it either.
+Pass `--device-class=tablet` on physical-iPad action captures and inspect the resulting
+`gateAllowances` before interpreting Settings results. Without tablet classification the runner
+records base gates, even when its device-ID and runtime checks prove a physical iOS Safari session.
+This affects the existing ADR-0090 Settings allowance, not the rotation gates. Keep an earlier
+artifact's recorded ledger unchanged; distinguish its base-gate verdict from a read-only comparison
+with the declared physical policy. A missing declaration is not evidence that the policy changed.
+
+**A native orientation lock can rotate the page after split-capture readiness.** A retained
+landscape lock in Android Settings let the initial probe report portrait canvas bounds, then moved
+the WebView into landscape before the gestures arrived. The result had thousands of trusted touch
+events but none on the canvas; sibling attempts rejected the settled orientation before measurement.
+Before native split drawing, inspect the product's orientation controls and record their state.
+Unlock through the selected Settings control, verify the settled page and canvas geometry, and
+restore the observed preference when the device work is finished. Do not bypass persistence with a
+test-only storage mutation. A passing browser preflight does not prove the native app's preference.
+The invalid captures and successful post-unlock control are retained in
+[`2026-09-05-native-split-build-binding.md`](scratchpad/perf/2026-09-05-native-split-build-binding.md).
+If a resume reuses output paths, snapshot and hash the failed artifacts before it overwrites them.
+
 **An interrupted action sweep can leave the Android panel pinned at 60Hz.** The android action sweep
 pins `peak_refresh_rate`/`min_refresh_rate` for its duration (ADR-0143) and restores them in its
 `finally` — but Ctrl-C, a `fail()` on an unserved URL or stale build, and kill -9 all exit without
@@ -1077,8 +1098,34 @@ that Capacitor could not load a remote page, and the actual explanation was that
 serving a 404ing manifest since the last `cap:sync`. The build-freshness guard caught it on the next
 capture, minutes after the issue was filed.
 
-After any `cap sync`, rebuild the web target **and restart the preview server** before capturing
-again.
+Before resuming **web** capture after `cap sync`, rebuild the web target **and restart the preview
+server**. Automated native split capture requires the native static export instead. From a clean
+product checkout, build and stamp its provenance in the same operation, without changing HEAD or
+product sources between the two commands. Unlike `perf:build`, `perf:build:cap` has no automatic
+provenance hook:
+
+```sh
+npm run perf:build:cap && node tools/perf/write-build-provenance.mjs
+```
+
+Check that the resulting `web/build/.perf-build-provenance.json` records the intended commit with
+`dirty: false` before spending device time. If native sync changed tracked worktree scaffolding,
+restore only those generated path changes and verify the product sources and HEAD are unchanged
+before stamping, as part of that same build operation. A dirty product build cannot certify a
+commit. Then start an explicitly native preview on an unused port:
+
+```sh
+CAPACITOR=true PUBLIC_ENABLE_DEV_HARNESS=true node tools/run-web-tool.mjs vite preview \
+  --host 0.0.0.0 --port <unused-preview-port> --strictPort
+```
+
+Point a separately resolved probe host at that preview. `perf:serve` and the generic preflight's
+probe-reuse check are web-oriented; they reject a native export. Leave existing services alone and
+verify the native preview through the automated runner's variant-aware served-build check. A build
+without a clean build-time provenance stamp records a null product commit. Stamping the build just
+produced is required; stamping an older build later to make a capture claim the current HEAD is
+forbidden. The guided hand-input calibration workflow keeps its web-preview contract inside the
+native WebView and does not certify native product behavior.
 
 ### Your control has to be concurrent, not remembered
 
@@ -1184,6 +1231,45 @@ Each is worth recognizing in a number.
 * **A passing aggregate idle cell does not prove target-action repeats stayed in one performance
   regime.** A long sweep can keep aggregate idle under its gates while a target changes from clean
   to slow. Inspect the per-repeat samples and preserve the raw artifact.
+
+### A readiness poll can change the pool behind an action P95
+
+The XCUITest action runner waits for observed readiness, then the settling period configured for
+that action before finishing the probe. An earlier successful poll therefore ends the raw capture
+window earlier; compared captures can also have different scored-frame counts. Record those counts
+alongside readiness and the three repeat maxima when a verdict changes near a gate. Do not attribute
+a readiness change on unchanged code to a product speedup, or assume a different pool size explains
+a verdict without checking the percentile's ordinal position and actual gaps.
+
+The
+[landscape Settings control study](scratchpad/perf/2026-09-05-landscape-settings-retirement-controls.md)
+measured fresh dismissal pools of 86 frames versus earlier pools of 93 and 90. Their nearest-rank
+P95 selected the fifth-largest gap in every case: 20 ms in the fresh controls, 21 ms earlier. Both
+fresh passes sat exactly on the inclusive gate, and dark-mode per-repeat maxima did not improve. The
+candidate was never applied; every earlier red remains preserved.
+
+## Serial CDP touch acknowledgements can slow the scroll itself
+
+The September epic-1567 Android coloring-scroll control scored 33.4 / 33.3 / 33.4 ms repeat maxima
+on unchanged main. Its trace showed scroll draws about 50 ms apart while browser begin-frame events
+continued every 16.7 ms, with one 0.133 ms raster task in the inspected repeat's first 900 ms. This
+was not evidence for removing selected-overlay predecode: the sustained cadence did not match a
+one-off decode cost.
+
+`PlaywrightWebDriver.movePointer` awaited each CDP touch acknowledgement and then slept another
+frame interval. The coloring-scroll path instead asks Chrome to generate the complete touch swipe
+with `Input.synthesizeScrollGesture`, retaining its coordinates and intended duration. The browser
+then presented scroll updates about 16.7 ms apart. A non-traced complete portrait/light action sweep
+passed all 49 actions; scroll maxima were 33.3 / 33.3 / 16.8 ms, P95 16.8 ms. No product code or
+scoring rule changed. ADR-0092 records the scope and retained evidence.
+
+The traced diagnostic also failed its idle control, which remains in the comparison corpus. A useful
+trace is not automatically certification. Captures made with the corrected runner record
+`scrollDelivery` for the browser-generated path. The retained diagnostic predates that field: the
+study index's `source` value `android-browser-gesture-diagnostic/actions.json` identifies that arm.
+Absence of the field in historical evidence does not identify its delivery. Historical serial-input
+captures are not equivalent measurements of the corrected gesture. Do not generalize this finding to
+a different action or replace drawing/clear input without its own evidence.
 
 ## A red cell describes the commit it was captured at, not the product
 

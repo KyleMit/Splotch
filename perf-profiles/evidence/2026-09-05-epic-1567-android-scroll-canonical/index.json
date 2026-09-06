@@ -1,0 +1,19 @@
+{
+  "campaign": "2026-09-05-epic-1567-android-scroll-canonical",
+  "productCommit": "196a97757782a93ccb7a53cbb9aae3d313db2e56",
+  "capturedFrom": "perf-profiles/epic-1567-september-resume/android-scroll-delivery",
+  "study": "Complete canonical action validation of the narrow Android coloring-scroll delivery correction; product remains current main.",
+  "kept": [
+    {
+      "file": "actions--892a31e2.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "portrait-light/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

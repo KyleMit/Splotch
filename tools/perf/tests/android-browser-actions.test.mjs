@@ -102,6 +102,36 @@ describe('Playwright WebDriver trusted touch', () => {
       'Trusted wheel scrolling is not enabled'
     );
   });
+
+  it('delegates the complete touch swipe to Chrome with its direction and duration', async () => {
+    const cdp = { send: vi.fn().mockResolvedValue({}) };
+    const driver = new PlaywrightWebDriver({}, { cdp });
+
+    await driver.scrollTouchGesture({ x: 180, startY: 470, endY: 200, durationMs: 450 });
+
+    expect(cdp.send.mock.calls).toEqual([
+      [
+        'Input.synthesizeScrollGesture',
+        {
+          x: 180,
+          y: 470,
+          yDistance: -270,
+          speed: 600,
+          gestureSourceType: 'touch',
+          preventFling: true,
+        },
+      ],
+    ]);
+  });
+
+  it('propagates a browser gesture failure instead of reporting a completed swipe', async () => {
+    const cdp = { send: vi.fn().mockRejectedValue(new Error('gesture failed')) };
+    const driver = new PlaywrightWebDriver({}, { cdp });
+
+    await expect(
+      driver.scrollTouchGesture({ x: 180, startY: 470, endY: 200, durationMs: 450 })
+    ).rejects.toThrow('gesture failed');
+  });
 });
 
 // The action sweep pins the panel to 60Hz (ADR-0143) and must restore exactly

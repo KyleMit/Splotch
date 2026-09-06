@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-05-epic-1567-ipad-paper-control",
+  "productCommit": "141288da477011a82a3c23a880e0f4df236eee32",
+  "capturedFrom": "perf-profiles/epic-1567-ipad-paper-control",
+  "study": "Canonical portrait-light control and paired focused rotation control for a rejected paper-sheet compositor experiment; all scored repeats are retained.",
+  "kept": [
+    {
+      "file": "actions--9f43bfdf.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "canonical/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--5372bd09.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": null,
+      "source": "focused/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

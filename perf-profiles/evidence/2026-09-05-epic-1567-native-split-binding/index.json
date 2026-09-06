@@ -1,0 +1,85 @@
+{
+  "campaign": "2026-09-05-epic-1567-native-split-binding",
+  "productCommit": "8d0e1b4c1971b6240df3053c4da4ef2ae2494077",
+  "capturedFrom": "perf-profiles/epic-1567-native-binding-study",
+  "study": "Native split build-binding validation: preserve invalid orientation-lock attempts, a short setup diagnostic, and the complete pen/undo control with all three crayon references including its valid paint-max failure.",
+  "kept": [
+    {
+      "file": "pen-real-screen--1c36961d.json",
+      "target": "android-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "full-control/android-device-native/portrait-light/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "end--8593d781.json",
+      "target": "android-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "full-control/android-device-native/references/portrait-light/end.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "middle--562d6c39.json",
+      "target": "android-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "full-control/android-device-native/references/portrait-light/middle.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "start--871b7608.json",
+      "target": "android-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "full-control/android-device-native/references/portrait-light/start.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "end--e030332c.json",
+      "target": "android-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "invalid-before-unlock/android-device-native/references/portrait-light/end.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 1
+    },
+    {
+      "file": "start--05c12a90.json",
+      "target": "android-device-native",
+      "brush": "crayon",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": false,
+      "source": "invalid-before-unlock/android-device-native/references/portrait-light/start.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 1
+    },
+    {
+      "file": "pen-real-screen--414e38f3.json",
+      "target": "android-device-native",
+      "brush": "pen",
+      "mode": "PORTRAIT-light",
+      "fidelityPassed": true,
+      "source": "short-diagnostic/pen-real-screen.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 1,
+      "failedCandidateCount": 0
+    }
+  ]
+}

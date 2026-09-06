@@ -1,0 +1,19 @@
+{
+  "campaign": "2026-09-05-epic-1567-night-mode-control-trace",
+  "productCommit": "a9438fc73fbe80dd7afc734d9924d8611671fe14",
+  "capturedFrom": "perf-profiles/epic-1567-september-resume/night-mode-control-trace",
+  "study": "Focused Night Mode attribution control, separate from full-plan certification",
+  "kept": [
+    {
+      "file": "actions--765c6c3e.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

@@ -93,6 +93,22 @@ Appium under-drives its drawing stream too. Appium remains the Android native di
 transport, where its app shell and context switching are useful and the touch-cadence limitation is
 irrelevant. iPad web and native capture remain on Appium.
 
+For automated split capture, the served bundle must match the requested deployment variant: web
+captures reject a native static export, and native captures reject web output. Variant agreement
+does not replace identity: both paths compare the served application chunks with the local build
+bytes and retain the commit stamped when that build was produced. Capture-time HEAD cannot identify
+a bundle that predates a later harness or evidence commit.
+
+For automated native split capture, the installed app loads the instrumented native export through
+its capture-only `server.url`. This is remote probe delivery inside the native WebView, not an
+offline packaged-origin measurement. Its fixed URL does not carry the browser path's per-cell nonce,
+so the artifact preserves `pageIdentity: unprovable`; live report gating and served-build checks do
+not upgrade that into browser URL-identity proof. Packaged-origin native action captures remain
+separate.
+
+The guided hand-input calibration workflow retains its web-preview contract inside the native
+WebView. Its runtime names the input environment; it does not certify the native product build.
+
 ## Consequences
 
 * \+ A physical-device drawing capture no longer depends on a root-owned tunnel, on a Web Inspector

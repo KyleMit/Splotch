@@ -24,7 +24,7 @@ import {
   splitUndoEvidenceProblem,
   commandReportsRefreshRegime,
 } from '../lib/campaign-plan.mjs';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { WEB_ONLY_STATIC_FILES } from '../../mobile/lib/static-export.mjs';
 import { join } from 'node:path';
@@ -1241,6 +1241,47 @@ describe('servedBuildFingerprintProblem', () => {
     expect(
       await servedBuildFingerprintProblem('http://x/', { fetchText: serveFrom(dir), buildDir: dir })
     ).toBeNull();
+  });
+
+  it.each([
+    { nativeBuild: true, nativeApp: true, expected: null },
+    {
+      nativeBuild: true,
+      nativeApp: false,
+      expected: expect.stringMatching(/native static export/),
+    },
+    {
+      nativeBuild: false,
+      nativeApp: true,
+      expected: expect.stringMatching(/requires the native static export/),
+    },
+  ])(
+    'checks the requested build variant: $nativeBuild / $nativeApp',
+    async ({ nativeBuild, nativeApp, expected }) => {
+      const dir = fakeBuild();
+      if (nativeBuild) for (const file of WEB_ONLY_STATIC_FILES) rmSync(join(dir, file));
+      const problem = await servedBuildFingerprintProblem('http://x/', {
+        fetchText: serveFrom(dir),
+        buildDir: dir,
+        nativeApp,
+      });
+      expect(problem).toEqual(expected);
+    }
+  );
+
+  it('still rejects a native application chunk whose served bytes differ', async () => {
+    const dir = fakeBuild();
+    for (const file of WEB_ONLY_STATIC_FILES) rmSync(join(dir, file));
+    const fetchText = serveFrom(dir, (path, body) =>
+      path.endsWith('app.Bbb.js') ? `${body} changed` : body
+    );
+    expect(
+      await servedBuildFingerprintProblem('http://x/', {
+        fetchText,
+        buildDir: dir,
+        nativeApp: true,
+      })
+    ).toMatch(/different content/);
   });
 
   // The regression this covers: matching the ENTRY FILENAME is not identity. The

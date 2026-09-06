@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-05-epic-1567-landscape-retirement-controls",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+  "capturedFrom": "perf-profiles/epic-1567-landscape-retirement",
+  "study": "Both canonical landscape controls establish dismissal non-reproduction without replacing earlier red evidence.",
+  "kept": [
+    {
+      "file": "actions--afbdde35.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "control-landscape-dark/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--14063514.json",
+      "target": "ipad-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "control-landscape-light/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

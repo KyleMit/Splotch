@@ -531,7 +531,8 @@ async function measureClick({
   return { ...sample, activation: activationMode };
 }
 
-async function measureColoringPageScroll(client, sessionId, execute) {
+// Exported to exercise dispatch and captured provenance together without a physical device.
+export async function measureColoringPageScroll(client, sessionId, execute) {
   const selector = '#coloring-book-dialog';
   const scrollability = await execute(`
     const dialog = document.querySelector(${JSON.stringify(selector)});
@@ -552,6 +553,7 @@ async function measureColoringPageScroll(client, sessionId, execute) {
 
   const transport = coloringScrollTransport(client);
   const useWheel = transport.activation === 'trusted-wheel';
+  let scrollDelivery = null;
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(COLORING_SCROLL_ACTION_LABEL)}, ${JSON.stringify(selector)}, ${JSON.stringify(
@@ -570,18 +572,23 @@ async function measureColoringPageScroll(client, sessionId, execute) {
     const x = Math.round(bounds.x + bounds.width / 2);
     const startY = Math.round(bounds.y + bounds.height * 0.75);
     const endY = Math.round(bounds.y + bounds.height * 0.3);
-    await performNativeGesture(client, sessionId, webContext, [
-      { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
-      { type: 'pointerDown', button: 0 },
-      {
-        type: 'pointerMove',
-        duration: COLORING_SCROLL_MS,
-        origin: 'viewport',
-        x,
-        y: endY,
-      },
-      { type: 'pointerUp', button: 0 },
-    ]);
+    if (client.cdp) {
+      await client.scrollTouchGesture({ x, startY, endY, durationMs: COLORING_SCROLL_MS });
+      scrollDelivery = 'cdp-synthesized-scroll';
+    } else {
+      await performNativeGesture(client, sessionId, webContext, [
+        { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
+        { type: 'pointerDown', button: 0 },
+        {
+          type: 'pointerMove',
+          duration: COLORING_SCROLL_MS,
+          origin: 'viewport',
+          x,
+          y: endY,
+        },
+        { type: 'pointerUp', button: 0 },
+      ]);
+    }
   }
   const readyAt = await waitForReady(
     execute,
@@ -593,7 +600,11 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
   await sleep(ACTION_SETTLE_MS);
   return {
-    sample: { ...sample, activation: transport.activation },
+    sample: {
+      ...sample,
+      activation: transport.activation,
+      ...(scrollDelivery ? { scrollDelivery } : {}),
+    },
     notApplicableReason: null,
   };
 }
