@@ -224,50 +224,197 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
 
 /* page */
 
-  main.shell { display: flex; flex-direction: column; gap: 34px; padding-bottom: 64px; }
-  .lede { font-size: 17px; color: var(--muted); max-width: 66ch; margin: 0; }
-  section { display: flex; flex-direction: column; gap: 14px; }
-  section > h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
-  section > p { margin: 0; color: var(--muted); max-width: 74ch; }
-  .panel { background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 20px 22px; box-shadow: var(--shadow-sm); }
-  .verdict { border-left: 4px solid var(--accent); }
-  .verdict h3 { margin: 0 0 8px; font-size: 20px; }
-  .verdict p { margin: 0 0 10px; color: var(--muted); max-width: 72ch; }
-  .verdict p:last-child { margin-bottom: 0; }
-  pre { margin: 0; overflow-x: auto; background: var(--card-2); border: 1px solid var(--hair); border-radius: var(--r-sm); padding: 12px 14px; font-size: 12.5px; line-height: 1.5; }
-  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.92em; }
-  .tbl-wrap { overflow-x: auto; border: 1px solid var(--hair); border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
-  th { background: var(--card-2); border-bottom: 1px solid var(--hair-strong); text-align: left; padding: 10px 13px; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 700; white-space: nowrap; }
-  td { padding: 9px 13px; border-bottom: 1px solid var(--hair); }
-  tr:last-child td { border-bottom: none; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  tr.pick { background: var(--accent-wash); }
-  tr.pick td:first-child::after { content: " ← pick"; color: var(--accent-ink); font-weight: 700; font-size: 11px; }
-  .bars { display: grid; grid-template-columns: repeat(var(--n), minmax(38px, 1fr)); gap: 8px; align-items: end; height: 150px; padding-top: 18px; border-bottom: 1px solid var(--hair-strong); }
-  .bar { position: relative; background: var(--c-purple); border-radius: 4px 4px 0 0; min-height: 2px; }
-  .bar.best { background: var(--ok); }
-  .bar.bad { background: var(--bad); }
-  .bar span { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .bar-axis { display: grid; grid-template-columns: repeat(var(--n), minmax(38px, 1fr)); gap: 8px; font-size: 11px; color: var(--faint); text-align: center; margin-top: 6px; }
-  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-  .chart-title { font-size: 13px; font-weight: 700; margin: 0 0 2px; }
-  .chart-sub { font-size: 12px; color: var(--faint); margin: 0 0 10px; }
-  .hyp { display: flex; flex-direction: column; gap: 12px; }
-  .hyp-item { border: 1px solid var(--hair); border-radius: var(--r-sm); padding: 14px 16px; background: var(--card); }
-  .hyp-item.confirmed { border-left: 4px solid var(--ok); }
-  .hyp-item.falsified { border-left: 4px solid var(--bad); }
-  .hyp-item.overturned { border-left: 4px solid var(--warn); }
-  .hyp-claim { font-weight: 700; margin: 0 0 6px; }
-  .hyp-item dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; font-size: 13.5px; }
-  .hyp-item dt { color: var(--faint); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
-  .hyp-item dd { margin: 0; color: var(--muted); }
-  ul.notes { margin: 0; padding-left: 20px; color: var(--muted); display: flex; flex-direction: column; gap: 7px; }
-  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid; }
-  .pill.confirmed { color: var(--ok); border-color: var(--ok); }
-  .pill.falsified { color: var(--bad); border-color: var(--bad); }
-  .pill.overturned { color: var(--warn); border-color: var(--warn); }
-  .empty-note { color: var(--faint); font-style: italic; }
+  main.shell { display: flex; flex-direction: column; gap: clamp(40px, 6vw, 64px); }
+  .lede { font-size: clamp(1.02rem, 1.5vw, 1.12rem); color: var(--muted); max-width: 64ch; margin: 0; }
+  .lede b { color: var(--ink); font-weight: 650; }
+  section { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: calc(var(--jump-h, 60px) + 12px); }
+  section > h2 { margin: 0; font-size: clamp(1.35rem, 2.4vw, 1.6rem); letter-spacing: -0.015em; line-height: 1.15; }
+  section > h2 .eyebrow { display: block; margin-bottom: 6px; }
+  section > p, .sub > p { margin: 0; color: var(--muted); max-width: 70ch; }
+  section > p b, .sub > p b, .notes b { color: var(--ink); font-weight: 650; }
+  .sub { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+  .sub > h3 { margin: 0; font-size: 1.12rem; letter-spacing: -0.01em; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9em; }
+  pre { margin: 0; overflow-x: auto; background: var(--card-2); border: 1px solid var(--hair); border-radius: var(--r-sm); padding: 14px 16px; font-size: 12.5px; line-height: 1.55; }
+  pre code { background: none; padding: 0; font-size: 1em; }
+
+  /* sticky section nav */
+  .jump { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--paper) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--hair); }
+  .jump .shell { display: flex; align-items: center; gap: 12px; padding-top: 0; padding-bottom: 0; }
+  .jump-scroll { position: relative; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding: 8px 0; margin: 0 -4px; flex: 1; min-width: 0; -webkit-overflow-scrolling: touch; }
+  .jump-scroll.overflows { padding-right: 24px; mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+  .jump-scroll::-webkit-scrollbar { display: none; }
+  .jump a { flex: 0 0 auto; padding: 5px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: var(--muted); white-space: nowrap; transition: background .12s, color .12s; }
+  .jump a:hover { color: var(--ink); text-decoration: none; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .jump a.is-active { background: var(--accent-wash); color: var(--accent-ink); }
+  .jump-answer { display: none; flex: 0 0 auto; gap: 6px; align-items: center; font-size: 0.78rem; color: var(--muted); }
+  .jump-answer b { color: var(--ink); font-weight: 700; }
+  .jump-answer .sep { color: var(--faint); }
+  @media (min-width: 1080px) { .jump-answer { display: inline-flex; } }
+
+  /* answer tiles */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .tile { background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 18px 20px 16px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 4px; border-top: 4px solid var(--tile-hue, var(--accent)); }
+  .tile .k { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; }
+  .tile .v { font-size: clamp(2.2rem, 4vw, 2.8rem); line-height: 1; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .tile .rule { font-size: 0.85rem; font-weight: 650; color: var(--muted); }
+  .tile .why { color: var(--muted); font-size: 0.9rem; margin: 6px 0 0; }
+  .tile .why b { color: var(--ink); font-weight: 650; }
+
+  .calc { display: grid; grid-template-columns: 1fr auto; gap: 10px 22px; align-items: center; background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 16px 20px; box-shadow: var(--shadow-sm); }
+  .calc label { display: flex; flex-direction: column; gap: 6px; font-weight: 650; font-size: 0.92rem; }
+  .calc label span { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+  .calc .row { display: flex; align-items: center; gap: 12px; max-width: 420px; }
+  .calc input[type=range] { flex: 1; accent-color: var(--accent); min-width: 120px; }
+  .calc output.cores { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 1.3rem; min-width: 2.2ch; text-align: right; }
+  .calc .unit { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+  .calc .out { display: flex; gap: 18px; }
+  .calc .out div { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 64px; }
+  .calc .out output { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .calc .out .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+  .calc .fine { grid-column: 1 / -1; margin: 0; font-size: 0.82rem; color: var(--faint); }
+
+  /* hardware + glossary */
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .hw { background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+  .hw h3 { margin: 0 0 10px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .hw h3 .dot { width: 10px; height: 10px; border-radius: 99px; background: var(--hue); }
+  .hw dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 0.9rem; }
+  .hw dt { color: var(--faint); }
+  .hw dd { margin: 0; color: var(--ink); }
+  details.glossary-box { background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); box-shadow: var(--shadow-sm); }
+  details.glossary-box summary { cursor: pointer; padding: 12px 18px; font-weight: 700; font-size: 0.95rem; list-style: none; display: flex; align-items: center; gap: 10px; }
+  details.glossary-box summary::-webkit-details-marker { display: none; }
+  details.glossary-box summary .chev { margin-left: auto; color: var(--faint); transition: transform .15s; }
+  details.glossary-box[open] summary .chev { transform: rotate(180deg); }
+  .glossary { margin: 0; padding: 4px 18px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px; font-size: 0.88rem; }
+  .glossary div { display: flex; flex-direction: column; gap: 2px; }
+  .glossary dt { font-weight: 700; }
+  .glossary dd { margin: 0; color: var(--muted); }
+
+  /* sweep card: one row per worker count, bars inline with the numbers */
+  .sweep { margin: 0; background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .sweep-cap { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 14px 18px 12px; border-bottom: 1px solid var(--hair); background: var(--card-2); }
+  .sweep-cap b { font-size: 0.98rem; }
+  .sweep-cap span { color: var(--muted); font-size: 0.85rem; }
+  .sweep-cap .src { margin-left: auto; font-size: 0.8rem; }
+  .sw-row, .sw-head { display: grid; grid-template-columns: 5.6rem minmax(150px, 1.5fr) minmax(130px, 1.1fr) 9.5rem; gap: 0 18px; align-items: center; padding: 0 18px; }
+  .sweep.has-cpu .sw-row, .sweep.has-cpu .sw-head { grid-template-columns: 5.6rem minmax(150px, 1.5fr) minmax(130px, 1.1fr) 9.5rem 5.4rem 5.4rem; }
+  .sw-head { padding-top: 10px; padding-bottom: 8px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--hair); }
+  .sw-head small { display: block; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--faint); font-size: 0.74rem; }
+  .sw-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; }
+  .sw-row:last-child { border-bottom: 0; }
+  .sw-row.is-shipped { background: var(--accent-wash); }
+  .sw-w { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+  .sw-w .n { display: inline-flex; align-items: baseline; gap: 5px; font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; }
+  .sw-w small { font-weight: 600; font-size: 0.72rem; color: var(--muted); letter-spacing: 0; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.5; white-space: nowrap; }
+  .tag.ship { background: var(--accent); color: #fff; }
+  .tag.fast { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .bar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; min-width: 0; }
+  .bar .lbl { display: none; }
+  .bar .track { height: 12px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 7%, transparent); overflow: hidden; }
+  .bar .fill { height: 100%; width: calc(var(--v) * 100%); border-radius: 999px; background: var(--fill, var(--accent)); min-width: 3px; }
+  .bar .fill.zero { min-width: 0; width: 0; }
+  .bar .val { font-weight: 700; white-space: nowrap; font-size: 0.95rem; text-align: right; display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .bar .val small { font-weight: 500; color: var(--muted); font-size: 0.78rem; }
+  .bar.wall { --fill: var(--c-blue); }
+  .bar.wall.fastest { --fill: var(--ok); }
+  .bar.red.ok { --fill: var(--ok); }
+  .bar.red.warn { --fill: var(--warn); }
+  .bar.red.bad { --fill: var(--bad); }
+  .bar.tainted .fill { background: repeating-linear-gradient(135deg, var(--faint) 0 4px, transparent 4px 8px); opacity: .55; }
+  .bar.tainted .val { color: var(--faint); font-weight: 600; }
+  .sw-meta { font-size: 0.88rem; color: var(--ink); white-space: nowrap; }
+  .sw-meta small { color: var(--muted); font-size: 0.8rem; display: block; }
+  .sw-meta.tainted { color: var(--faint); }
+  .sw-meta .lbl { display: none; }
+  .sweep-foot { padding: 10px 18px 12px; font-size: 0.82rem; color: var(--muted); border-top: 1px solid var(--hair); background: var(--card-2); }
+  .sweep-foot p { margin: 0; }
+  .sweep-foot p + p { margin-top: 4px; }
+  .legend { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; color: var(--ink); }
+  .legend i { display: inline-block; width: 22px; height: 9px; border-radius: 99px; background: repeating-linear-gradient(135deg, var(--faint) 0 4px, transparent 4px 8px); opacity: .7; }
+  @media (max-width: 900px) {
+    .sw-head { display: none; }
+    .sw-row, .sweep.has-cpu .sw-row { grid-template-columns: 1fr; gap: 6px; padding-top: 12px; padding-bottom: 12px; }
+    .sw-w { flex-direction: row; align-items: center; gap: 10px; }
+    .sw-w .n { font-size: 1.05rem; }
+    .sw-meta b + small::before { content: " · "; color: var(--faint); }
+    .bar { grid-template-columns: 4.2rem 1fr auto; }
+    .bar .lbl { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+    .sw-metas { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 2px; }
+    .sw-meta small { display: inline; }
+    .sw-meta .lbl { display: inline; color: var(--muted); }
+    .sw-meta .lbl::after { content: ": "; }
+  }
+  @media (min-width: 901px) { .sw-metas { display: contents; } }
+
+  /* before/after cards */
+  .deltas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .delta { background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 14px 18px; box-shadow: var(--shadow-sm); }
+  .delta.is-shipped { border-color: color-mix(in srgb, var(--accent) 40%, var(--hair)); }
+  .delta h4 { margin: 0 0 10px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .delta .line { display: grid; grid-template-columns: 6.2rem 1fr auto; align-items: baseline; gap: 10px; padding: 6px 0; border-top: 1px solid var(--hair); font-variant-numeric: tabular-nums; }
+  .delta .line .k { color: var(--muted); font-size: 0.85rem; }
+  .delta .line .ba { font-size: 1.05rem; font-weight: 700; }
+  .delta .line .ba .arr { color: var(--faint); font-weight: 400; margin: 0 6px; }
+  .delta .line .d { font-size: 0.8rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .delta .d.good { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .delta .d.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+  .delta .d.flat { color: var(--muted); background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .delta .line.emph .ba { color: var(--ink); }
+  .delta .line:not(.emph) .ba { color: var(--muted); font-weight: 600; }
+
+  /* callouts + notes */
+  .callout { background: var(--card); border: 1px solid var(--hair); border-left: 4px solid var(--callout-hue, var(--accent)); border-radius: var(--r-md); padding: 16px 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; }
+  .callout h3 { margin: 0; font-size: 1.05rem; }
+  .callout p { margin: 0; color: var(--muted); max-width: 72ch; }
+  .callout p b { color: var(--ink); font-weight: 650; }
+  .callout.warn { --callout-hue: var(--warn); }
+  ul.notes { margin: 0; padding-left: 20px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; max-width: 78ch; }
+  ul.notes li::marker { color: var(--faint); }
+  ul.specs { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  ul.specs li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.9rem; }
+  ul.specs li .n { flex: 0 0 auto; min-width: 9.5rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  ul.specs li code { flex: 0 1 auto; }
+  .tag.fixed { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+
+  /* hypotheses */
+  .hyp { display: flex; flex-direction: column; gap: 10px; }
+  details.hyp-item { background: var(--card); border: 1px solid var(--hair); border-radius: var(--r-md); box-shadow: var(--shadow-sm); border-left: 4px solid var(--hyp-hue, var(--hair-strong)); }
+  details.hyp-item.falsified { --hyp-hue: var(--bad); }
+  details.hyp-item.overturned { --hyp-hue: var(--warn); }
+  details.hyp-item.confirmed { --hyp-hue: var(--ok); }
+  details.hyp-item summary { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; font-weight: 650; line-height: 1.4; }
+  details.hyp-item summary::-webkit-details-marker { display: none; }
+  details.hyp-item summary .pill { flex: 0 0 auto; margin-top: 2px; }
+  details.hyp-item summary .chev { margin-left: auto; flex: 0 0 auto; color: var(--faint); transition: transform .15s; margin-top: 4px; }
+  details.hyp-item[open] summary .chev { transform: rotate(180deg); }
+  details.hyp-item dl { margin: 0; padding: 0 16px 16px 16px; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 0.92rem; }
+  details.hyp-item dt { color: var(--faint); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 4px; font-weight: 700; }
+  details.hyp-item dd { margin: 0; color: var(--muted); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--hyp-hue); background: color-mix(in srgb, var(--hyp-hue) 14%, transparent); }
+
+  /* code with copy */
+  .codebox { position: relative; }
+  .codebox .copy { position: absolute; top: 10px; right: 10px; font: inherit; font-size: 0.76rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--hair-strong); background: var(--card); color: var(--muted); cursor: pointer; }
+  .codebox .copy:hover { color: var(--ink); border-color: var(--ink); }
+  .codebox .copy.done { color: var(--ok); border-color: var(--ok); }
+
+  @media (max-width: 760px) {
+    .tiles { grid-template-columns: 1fr; }
+    .calc { grid-template-columns: 1fr; }
+    .calc .out { justify-content: space-between; }
+    details.hyp-item summary { flex-wrap: wrap; gap: 8px 12px; }
+    details.hyp-item summary .pill { order: 1; }
+    details.hyp-item summary .chev { order: 2; margin-top: 0; }
+    details.hyp-item summary .claim { order: 3; flex: 1 1 100%; }
+    details.hyp-item dl { grid-template-columns: 1fr; gap: 2px 0; }
+    details.hyp-item dd { margin-bottom: 8px; }
+    .delta .line { grid-template-columns: 5rem 1fr; }
+    .delta .line .d { grid-column: 2; justify-self: start; }
+  }
+  @media (prefers-reduced-motion: reduce) { .jump a, details.hyp-item summary .chev { transition: none; } }
 </style>
 </head>
 <body>
@@ -280,448 +427,656 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
       <nav class="crumbs" aria-label="Breadcrumb"><a href="../index.html">Scrapbook</a><span class="sep">/</span><span class="here" aria-current="page">E2E tuning</span></nav>
     </div>
     <div class="masthead-body">
-      <h1>E2E tuning — workers, retries, and three real flakes</h1>
-      <p class="tagline">How many Playwright workers the suite should run with, measured rather than guessed — plus the flake investigation that ran alongside it.</p>
-      <div class="stat-row"><span class="chip">2026-07-29</span><span class="chip">59 local runs</span><span class="chip">203 tests each</span></div>
+      <h1>E2E tuning: workers, retries, and three real flakes</h1>
+      <p class="tagline">How many Playwright workers the suite runs with, and how many retries CI gets. Measured on two machines rather than guessed, along with the test bugs and the harness bug found on the way.</p>
+      <div class="stat-row"><span class="chip">Measured from 2026-07-29</span><span class="chip"><b>83</b> local runs</span><span class="chip"><b>235</b> CI runs</span><span class="chip">203–204 tests per run</span></div>
     </div>
   </div>
 </header>
 
+<nav class="jump" aria-label="Sections">
+  <div class="shell">
+    <div class="jump-scroll"><a href="#answer">The answer</a><a href="#method">Method</a><a href="#local">Local sweep</a><a href="#ci">CI sweep</a><a href="#harness">Harness bug</a><a href="#fixes">Test fixes &amp; retries</a><a href="#hypotheses">What was tried</a><a href="#retune">Re-tune</a></div>
+    <div class="jump-answer" aria-label="The answer"><span>Local <b>2</b></span><span class="sep">·</span><span>CI <b>4</b></span><span class="sep">·</span><span>CI retries <b>2</b></span></div>
+  </div>
+</nav>
+
 <main class="shell">
   <p class="lede">
-    The suite ran at 1, 2, 3, 4, 6 and 8 workers, eight repetitions each, round-robin so machine
-    drift could not favour any one configuration. Wall clock stops improving long before the flake
-    rate stops rising — this page records where that crossover sits, on which hardware, and what it
-    took to separate genuine test bugs from contention.
+    The full suite ran at 1, 2, 3, 4, 6 and 8 workers, many times over, on the local dev box and on
+    GitHub's CI runner. <b>Wall clock stops improving long before the flake rate stops rising.</b>
+    This page records where that crossover sits on each machine, and what it took to tell real
+    test bugs apart from CPU contention.
   </p>
 
-  <section>
-    <div class="panel verdict">
-      <h3>Two workers locally, four on CI</h3>
-      <p>
-        The two environments want different settings, for different reasons. Locally
-        (<code>retries: 0</code>) a red run costs a re-run plus the attention to triage it, and the
-        break-even is only ~15 seconds of attention — so 2 workers wins despite finishing ~10.2s
-        later (92.3s vs 82.1s).
-        On CI (<code>retries: 2</code>) flakes are absorbed cheaply and the flake rate barely moves
-        between 1 and 6 workers, so wall clock decides: 4 workers, the fastest setting measured.
-      </p>
-      <p>
-        One finding holds on both machines: CPU work per run divided by the uncontended baseline
-        tracks <strong>w/2</strong>, which means each Playwright worker demands about
-        <strong>2 cores</strong> to run unthrottled — a Chromium is several processes, not one.
-        Implied cores per worker came out 2.0–2.5 locally and 2.2–2.8 on CI. That is why
-        <code>workers: '100%'</code> (one worker per core) oversubscribes on any machine.
-      </p>
+  <section id="answer">
+    <h2>The answer</h2>
+    <div class="tiles">
+      <div class="tile" style="--tile-hue:var(--c-green)">
+        <span class="k">Local workers</span>
+        <span class="v">2</span>
+        <span class="rule">cores ÷ 2, no retries</span>
+        <p class="why">On the 4-core dev box. Runs finish <b>10.2s later</b> than at 4 workers, and went red <b>1 time in 16</b> instead of 4 in 8.</p>
+      </div>
+      <div class="tile" style="--tile-hue:var(--c-blue)">
+        <span class="k">CI workers</span>
+        <span class="v">4</span>
+        <span class="rule">one per core, retries on</span>
+        <p class="why">On the 4-vCPU runner. The fastest setting measured, at <b>66.5s</b> a run, and it went red <b>1 time in 35</b> against 3 in 35 for 3 workers.</p>
+      </div>
+      <div class="tile" style="--tile-hue:var(--c-orange)">
+        <span class="k">CI retries</span>
+        <span class="v">2</span>
+        <span class="rule">kept, and re-measured</span>
+        <p class="why">1 red run in 35 is 2.9%, but the 95% confidence interval reaches <b>12.9%</b>. That is not enough evidence to drop a retry.</p>
+      </div>
+    </div>
+    <p>
+      <b>The two machines want different settings because a red run costs different things.</b>
+      Locally there are no retries, so one flaky test means running the suite again and stopping
+      to look at why. That costs far more than the 10 seconds a higher worker count saves, so the
+      local count stays where the machine is not oversubscribed. On CI, retries make one flaky test
+      cheap, so the fastest count wins as long as its red-run rate is no worse than the alternatives.
+    </p>
+    <p>
+      <b>One finding held on both machines: a Playwright worker needs about 2 cores.</b>
+      A worker is a whole Chromium (browser, renderer, GPU, network and utility processes) plus a
+      Node runner. Total CPU time per run grew in step with workers ÷ 2 on both machines, which
+      put the cost at 2.0–2.5 cores per worker locally and 2.2–2.8 on CI. So
+      <code>workers: '100%'</code>, one worker per core, oversubscribes any machine by about 2×.
+    </p>
+    <div class="calc">
+      <label for="cores">Try the rule on your own machine<span>Drag to your logical core count. The rule from ADR-0078 gives the worker counts.</span>
+        <div class="row"><input id="cores" type="range" min="1" max="32" value="4"><output class="cores" id="cores-out" for="cores">4</output><span class="unit">cores</span></div>
+      </label>
+      <div class="out">
+        <div><output id="local-out" for="cores">2</output><span class="k">Local</span></div>
+        <div><output id="ci-out" for="cores">4</output><span class="k">CI</span></div>
+        <div><output>2</output><span class="k">CI retries</span></div>
+      </div>
+      <p class="fine">Only 4-core machines were ever measured, and both ran one thread per core. On a hyper-threaded machine the physical core count is the better input.</p>
     </div>
   </section>
 
-  <section>
-    <h2>Local sweep — before the test fixes</h2>
+  <section id="method">
+    <h2>How it was measured</h2>
     <p>
-      Intel Xeon @ 2.80GHz · 4 physical cores · no SMT (1 thread/core) · 15 GB. Latency inflation is each test's mean duration divided by its
-      own mean at 1 worker. CPU work is the summed duration of every test in the run — it should be
-      flat (same 203 tests) and is not, which is the contention tax made visible.
+      Both machines have 4 cores and no GPU, which makes the comparison about scheduling rather
+      than hardware class. The whole study ran with retries turned off, so nothing could hide a
+      failure from the count.
     </p>
-    <div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
-      <th class="num">Failures</th><th class="num">Per-test rate</th>
-      <th class="num">Latency inflation</th><th class="num">CPU work</th>
-    </tr></thead>
-    <tbody><tr>
-      <td>1</td>
-      <td class="num">168.7s</td>
-      <td class="num">1/3</td>
-      <td class="num">1</td>
-      <td class="num">0.164%</td>
-      <td class="num">1.00×</td>
-      <td class="num">152.4s</td>
-    </tr><tr>
-      <td>2</td>
-      <td class="num">94.6s</td>
-      <td class="num">0/8</td>
-      <td class="num">0</td>
-      <td class="num">0.000%</td>
-      <td class="num">1.27×</td>
-      <td class="num">179.5s</td>
-    </tr><tr class="pick">
-      <td>3</td>
-      <td class="num">85.3s</td>
-      <td class="num">2/8</td>
-      <td class="num">3</td>
-      <td class="num">0.185%</td>
-      <td class="num">1.67×</td>
-      <td class="num">225.4s</td>
-    </tr><tr>
-      <td>4</td>
-      <td class="num">80.2s</td>
-      <td class="num">3/8</td>
-      <td class="num">3</td>
-      <td class="num">0.185%</td>
-      <td class="num">2.13×</td>
-      <td class="num">293.3s</td>
-    </tr><tr>
-      <td>6</td>
-      <td class="num">81.4s</td>
-      <td class="num">8/8</td>
-      <td class="num">17</td>
-      <td class="num">1.047%</td>
-      <td class="num">3.06×</td>
-      <td class="num">—</td>
-    </tr><tr>
-      <td>8</td>
-      <td class="num">85.8s</td>
-      <td class="num">8/8</td>
-      <td class="num">27</td>
-      <td class="num">1.663%</td>
-      <td class="num">4.10×</td>
-      <td class="num">—</td>
-    </tr></tbody>
-  </table></div>
-    <div class="panel charts">
-      <div>
-        <p class="chart-title">Median wall clock</p>
-        <p class="chart-sub">lower is better</p>
-        <div class="bars" style="--n:6"><div class="bar" style="height:100%"><span>169s</span></div><div class="bar" style="height:56.075874333135744%"><span>95s</span></div><div class="bar" style="height:50.56312981624185%"><span>85s</span></div><div class="bar best" style="height:47.540011855364554%"><span>80s</span></div><div class="bar" style="height:48.25133372851216%"><span>81s</span></div><div class="bar" style="height:50.859513930053346%"><span>86s</span></div></div>
-    <div class="bar-axis" style="--n:6"><span>1w</span><span>2w</span><span>3w</span><span>4w</span><span>6w</span><span>8w</span></div>
-      </div>
-      <div>
-        <p class="chart-title">Runs with at least one failure</p>
-        <p class="chart-sub">lower is better · out of 8 (w=1: 3)</p>
-        <div class="bars" style="--n:6"><div class="bar" style="height:12.5%"><span>1</span></div><div class="bar best" style="height:2px"><span>0</span></div><div class="bar" style="height:25%"><span>2</span></div><div class="bar" style="height:37.5%"><span>3</span></div><div class="bar bad" style="height:100%"><span>8</span></div><div class="bar bad" style="height:100%"><span>8</span></div></div>
-    <div class="bar-axis" style="--n:6"><span>1w</span><span>2w</span><span>3w</span><span>4w</span><span>6w</span><span>8w</span></div>
-      </div>
+    <div class="duo">
+      <div class="hw" style="--hue:var(--c-green)">
+      <h3><span class="dot"></span>Local (cloud dev container)</h3>
+      <dl><dt>CPU</dt><dd>Intel Xeon @ 2.80 GHz</dd><dt>Cores</dt><dd>4 physical, 1 thread each</dd><dt>Memory</dt><dd>15 GB</dd><dt>GPU</dt><dd>none</dd></dl>
+    </div>
+      <div class="hw" style="--hue:var(--c-blue)">
+      <h3><span class="dot"></span>GitHub Actions ubuntu-latest</h3>
+      <dl><dt>Runner</dt><dd>ubuntu-latest</dd><dt>Cores</dt><dd>4 vCPU</dd><dt>Memory</dt><dd>16 GB</dd><dt>GPU</dt><dd>none, so Chromium rasterizes canvas in software</dd></dl>
+    </div>
     </div>
     <ul class="notes">
-      <li><strong>Returns collapse immediately.</strong> 1→2 saves 74.1s; 2→3 saves 9.3s; 3→4 saves 5.1s; 4→6 saves nothing; 6→8 costs 4.4s.</li>
-      <li><strong>Fragility becomes systemic past saturation.</strong> Distinct failing tests go 2 → 2 → 10 → 18 across 3, 4, 6, 8 workers — at 8 the failures reach specs with no canvas-timing character at all.</li>
-      <li><strong>One worker still flaked</strong> (1 failure in 3 runs), so reducing parallelism alone never reaches a clean suite.</li>
+      <li><b>Local runs went round-robin</b> across the worker counts, so a slow hour on the box could not favour any one setting.</li>
+      <li><b>CI runs got one runner per worker count</b>, so settings never competed with each other for CPU.</li>
+      <li><b>Every repetition is a full suite run</b> of 203 tests (204 after one was added), and a "red run" is any repetition with at least one failing test.</li>
+    </ul>
+    <details class="glossary-box">
+      <summary>How to read the sweep cards<span class="chev" aria-hidden="true">▾</span></summary>
+      <dl class="glossary">
+      <div><dt>Wall clock</dt><dd>Median seconds for one full suite run. Lower is better; the fastest row in each card is tagged.</dd></div>
+      <div><dt>Red runs</dt><dd>Runs with at least one failing test, out of the runs measured. This is what a retry count is chosen against.</dd></div>
+      <div><dt>Failing tests</dt><dd>Failed test executions across all runs, shown as one failure in every N executions.</dd></div>
+      <div><dt>Slowdown</dt><dd>Each test's mean duration divided by its own mean at 1 worker. Above 1× means tests are waiting on the CPU.</dd></div>
+      <div><dt>CPU</dt><dd>Total test seconds in one run. The same tests run every time, so any growth is time lost to contention.</dd></div>
+      </dl>
+    </details>
+  </section>
+
+  <section id="local">
+    <h2>Local sweep</h2>
+    <p>
+      Local (cloud dev container). First as the suite stood, then after three magic-brush tests
+      were fixed.
+    </p>
+    <figure class="sweep has-cpu">
+    <figcaption class="sweep-cap"><b>Before the test fixes</b><span>2026-07-29 · 8 runs per count (3 at 1 worker, at about 3 minutes each)</span></figcaption>
+    <div class="sw-head">
+      <div>Workers</div>
+      <div>Wall clock<small>median per run</small></div>
+      <div>Red runs<small>runs with a failure</small></div>
+      <div>Failed tests<small>total · one in N run</small></div>
+      <div>Slowdown<small>per test vs 1 worker</small></div><div>CPU<small>seconds per run</small></div>
+    </div>
+    <div class="sw-row">
+      <div class="sw-w"><span class="n">1<small>worker</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">168.7s</span>
+      </div>
+      <div class="bar red warn">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.333"></div></div>
+        <span class="val">1<small>of 3</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>1</b><small>1 in 609</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>1.00×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>152s</b></div></div>
+    </div><div class="sw-row is-shipped">
+      <div class="sw-w"><span class="n">2<small>workers</small></span><span class="tag ship">shipped</span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.561"></div></div>
+        <span class="val">94.6s</span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill zero" style="--v:0.000"></div></div>
+        <span class="val">0<small>of 8</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>0</b><small>none</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>1.27×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>180s</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">3<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.506"></div></div>
+        <span class="val">85.3s</span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.250"></div></div>
+        <span class="val">2<small>of 8</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>3</b><small>1 in 541</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>1.67×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>225s</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">4<small>workers</small></span></div>
+      <div class="bar wall fastest">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.475"></div></div>
+        <span class="val">80.2s<small><span class="tag fast">fastest</span></small></span>
+      </div>
+      <div class="bar red warn">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.375"></div></div>
+        <span class="val">3<small>of 8</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>3</b><small>1 in 541</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>2.13×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>293s</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">6<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.483"></div></div>
+        <span class="val">81.4s</span>
+      </div>
+      <div class="bar red bad">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">8<small>of 8</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>17</b><small>1 in 96</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>3.06×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>—</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">8<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.509"></div></div>
+        <span class="val">85.8s</span>
+      </div>
+      <div class="bar red bad">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">8<small>of 8</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>27</b><small>1 in 60</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>4.10×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>—</b></div></div>
+    </div>
+    
+  </figure>
+    <ul class="notes">
+      <li><b>Almost all the speed-up comes from the first extra worker.</b> 1→2 saves 74.1s, 2→3 saves 9.3s, 3→4 saves 5.1s, 4→6 costs 1.2s, 6→8 costs 4.4s.</li>
+      <li><b>Past 4 workers every run goes red.</b> The number of distinct failing tests goes 2, 2, 10, 18 at 3, 4, 6 and 8 workers. At 8, tests with no canvas timing in them start failing too.</li>
+      <li><b>Even 1 worker flaked</b> once in 3 runs, so a lower count on its own could never reach a clean suite. Some tests were genuinely broken.</li>
+    </ul>
+    <div class="sub">
+      <h3>After fixing three magic-brush tests</h3>
+      <p>Same box, a freshly started preview server, and the three repaired tests. Only the candidate counts were re-run.</p>
+      <figure class="sweep">
+    <figcaption class="sweep-cap"><b>After the test fixes</b><span>16 runs each at 2 and 3 workers, 8 at 4</span></figcaption>
+    <div class="sw-head">
+      <div>Workers</div>
+      <div>Wall clock<small>median per run</small></div>
+      <div>Red runs<small>runs with a failure</small></div>
+      <div>Failed tests<small>total · one in N run</small></div>
+      
+    </div>
+    <div class="sw-row is-shipped">
+      <div class="sw-w"><span class="n">2<small>workers</small></span><span class="tag ship">shipped</span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">92.3s</span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.063"></div></div>
+        <span class="val">1<small>of 16</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>1</b><small>1 in 3,248</small></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">3<small>workers</small></span></div>
+      <div class="bar wall fastest">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.875"></div></div>
+        <span class="val">80.8s<small><span class="tag fast">fastest</span></small></span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.188"></div></div>
+        <span class="val">3<small>of 16</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>3</b><small>1 in 1,083</small></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">4<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.889"></div></div>
+        <span class="val">82.1s</span>
+      </div>
+      <div class="bar red warn">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.500"></div></div>
+        <span class="val">4<small>of 8</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>5</b><small>1 in 325</small></div></div>
+    </div>
+    
+  </figure>
+      <ul class="notes">
+        <li><b>Magic-brush dropped out of the failure lists</b> at 3 and 4 workers entirely, and 6 workers went from 0 green runs in 8 to 5 in 8.</li>
+        <li><b>The best count did not move.</b> At 4 workers, 5 failures in 1,624 test executions after the fix is the same rate as 3 in 1,624 before it. Other tests with thin timing margins took over. The worker count sets the flake rate; test fixes only raise how high the count can go.</li>
+        <li><b>So local stays at 2 workers.</b> 92.3s and 1 red run in 16, against 82.1s and 4 red runs in 8 at 4.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="ci">
+    <h2>CI sweep</h2>
+    <p>
+      GitHub Actions ubuntu-latest, with the magic-brush fixes in place. The production config
+      sets <code>retries: 2</code> on CI, which would hide the very rate being measured, so retries
+      were off here too.
+    </p>
+    <figure class="sweep has-cpu">
+    <figcaption class="sweep-cap"><b>First CI sweep</b><span>5 runs per count, one runner each</span><span class="src"><a href="https://github.com/KyleMit/Splotch/actions/runs/30474047690" target="_blank" rel="noopener">run 30474047690</a></span></figcaption>
+    <div class="sw-head">
+      <div>Workers</div>
+      <div>Wall clock<small>median per run</small></div>
+      <div>Red runs<small>runs with a failure</small></div>
+      <div>Failed tests<small>total · one in N run</small></div>
+      <div>Slowdown<small>per test vs 1 worker</small></div><div>CPU<small>seconds per run</small></div>
+    </div>
+    <div class="sw-row">
+      <div class="sw-w"><span class="n">1<small>worker</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">95.2s</span>
+      </div>
+      <div class="bar red warn tainted">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.600"></div></div>
+        <span class="val">3<small>of 5</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta tainted"><span class="lbl">Failed tests</span><b>3</b><small>1 in 338</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>1.00×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>92s</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">2<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.731"></div></div>
+        <span class="val">69.6s</span>
+      </div>
+      <div class="bar red warn tainted">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.400"></div></div>
+        <span class="val">2<small>of 5</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta tainted"><span class="lbl">Failed tests</span><b>2</b><small>1 in 508</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>1.38×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>128s</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">3<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.663"></div></div>
+        <span class="val">63.1s</span>
+      </div>
+      <div class="bar red ok tainted">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.200"></div></div>
+        <span class="val">1<small>of 5</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta tainted"><span class="lbl">Failed tests</span><b>1</b><small>1 in 1,015</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>1.88×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>174s</b></div></div>
+    </div><div class="sw-row is-shipped">
+      <div class="sw-w"><span class="n">4<small>workers</small></span><span class="tag ship">shipped</span></div>
+      <div class="bar wall fastest">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.632"></div></div>
+        <span class="val">60.2s<small><span class="tag fast">fastest</span></small></span>
+      </div>
+      <div class="bar red warn tainted">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.400"></div></div>
+        <span class="val">2<small>of 5</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta tainted"><span class="lbl">Failed tests</span><b>2</b><small>1 in 508</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>2.34×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>216s</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">6<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.667"></div></div>
+        <span class="val">63.5s</span>
+      </div>
+      <div class="bar red ok tainted">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.200"></div></div>
+        <span class="val">1<small>of 5</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta tainted"><span class="lbl">Failed tests</span><b>2</b><small>1 in 508</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>3.58×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>331s</b></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">8<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.634"></div></div>
+        <span class="val">60.4s</span>
+      </div>
+      <div class="bar red bad tainted">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">5<small>of 5</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta tainted"><span class="lbl">Failed tests</span><b>9</b><small>1 in 113</small></div><div class="sw-meta"><span class="lbl">Slowdown</span><b>4.35×</b></div><div class="sw-meta"><span class="lbl">CPU</span><b>402s</b></div></div>
+    </div>
+    <div class="sweep-foot"><p><span class="legend"><i class="stripe"></i>Failure columns are not a real rate.</span> Every run reused one preview server and inherited the previous run's spent rate-limit windows, so some failures here were manufactured by the harness. The <a href="#harness">harness bug</a> section explains; the wall-clock column is unaffected.</p></div>
+  </figure>
+    <ul class="notes">
+      <li><b>Wall clock bottoms out at 4 workers</b> (60.2s). 8 workers is no faster and fails far more often.</li>
+      <li><b>1 worker still failed, with nothing to contend with.</b> Two of its three failures were 30-second timeouts. The runner has no GPU, so Chromium rasterizes the magic-brush reveal in software and that test sits near its 15-second budget however many workers run.</li>
+      <li><b>CI is faster than the local box overall</b> (60–95s against 80–169s) while being slower at canvas work. "Faster hardware" is not one number.</li>
+    </ul>
+    <div class="sub">
+      <h3>A bigger reveal timeout, tried and reverted</h3>
+      <p>
+        The CI failures landed right at the magic-reveal budget, so it was raised from 15s to 30s and
+        the two most informative counts were re-measured (<a href="https://github.com/KyleMit/Splotch/actions/runs/30476652762" target="_blank" rel="noopener">run 30476652762</a>).
+        The change helped in one place and hurt in the other.
+      </p>
+      <div class="deltas"><div class="delta is-shipped">
+      <h4>4 workers<span class="tag ship">shipped</span></h4>
+      <div class="line emph"><span class="k">Failing tests</span><span class="ba">2<span class="arr">→</span>0</span><span class="d good">−2</span></div>
+      <div class="line"><span class="k">Wall clock</span><span class="ba">60.2s<span class="arr">→</span>64.8s</span><span class="d bad">+4.6s</span></div>
+    </div><div class="delta">
+      <h4>1 worker</h4>
+      <div class="line"><span class="k">Failing tests</span><span class="ba">3<span class="arr">→</span>3</span><span class="d flat">no change</span></div>
+      <div class="line emph"><span class="k">Wall clock</span><span class="ba">95.2s<span class="arr">→</span>138.1s</span><span class="d bad">+42.9s</span></div>
+    </div></div>
+      <ul class="notes">
+        <li><b>At 4 workers it worked.</b> 5 green runs in 5 where there had been 3, for about 4.6s of wall clock per run.</li>
+        <li><b>At 1 worker it did not.</b> The same three tests failed, and now cost far more: with <code>test.slow()</code> in play, a reveal that never converges ran to its full 90s budget instead of failing at 30s. The median run went from 95s to 138s.</li>
+        <li><b>Those failures were never short on time.</b> The reveal helper loops draw, check, undo, redraw. A bigger budget just lets a loop that never converges run longer.</li>
+        <li><b>Reverted.</b> At 4 workers the two failures it fixed were already covered by retries, while a stuck reveal becoming the longest test in the run was a real cost. Bounding the loop's attempts fixed the genuinely slow cases instead.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="harness">
+    <h2>The harness was measuring itself</h2>
+    <p>
+      Every rate above came from runs that shared one preview server per worker count. That sharing
+      turned out to be most of what was being measured, so the retry question could not be answered
+      until the sweep driver was fixed and the CI numbers re-taken on 2026-07-30.
+    </p>
+    <div class="callout warn">
+      <h3>What went wrong</h3>
+      <p>
+        The suite deliberately fills the API's 60-second per-IP rate-limit windows: one spec
+        exhausts the bring-your-own-key bucket and bursts the managed token's. A run takes about as
+        long as those windows last, so the next run started with a spent budget, and its guard tests
+        got a <code>429 Too Many Requests</code> where they assert a <code>415</code>.
+      </p>
+      <ul class="notes">
+        <li>On the CI runner at 4 workers, <code>throttles a managed token hammered in a burst</code> failed in 12 of 12 runs. A deterministic failure had been counted as a flake rate.</li>
+        <li>Locally at 4 workers, the bring-your-own-key guard tests were 4 of the 5 failures across 7 runs.</li>
+        <li>Those are the specs most of the failure columns above are made of.</li>
+      </ul>
+      <p>
+        <b>The fix:</b> every run gets its own freshly started preview server, which clears the
+        in-memory limiter and matches what CI does anyway: one server, one suite run. The sweep
+        driver started that server itself at the time; Playwright's own <code>webServer</code> starts it
+        per run now (<a href="https://github.com/KyleMit/Splotch/issues/1044" target="_blank" rel="noopener">issue 1044</a>).
+      </p>
+    </div>
+    <figure class="sweep">
+    <figcaption class="sweep-cap"><b>Re-measured with a fresh server per run</b><span>2026-07-30 · 15 runs per count, one runner each</span><span class="src"><a href="https://github.com/KyleMit/Splotch/actions/runs/30512081902" target="_blank" rel="noopener">run 30512081902</a></span></figcaption>
+    <div class="sw-head">
+      <div>Workers</div>
+      <div>Wall clock<small>median per run</small></div>
+      <div>Red runs<small>runs with a failure</small></div>
+      <div>Failed tests<small>total · one in N run</small></div>
+      
+    </div>
+    <div class="sw-row">
+      <div class="sw-w"><span class="n">1<small>worker</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">140.2s</span>
+      </div>
+      <div class="bar red warn">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.400"></div></div>
+        <span class="val">6<small>of 15</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>6</b><small>1 in 510</small></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">2<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.601"></div></div>
+        <span class="val">84.2s</span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.133"></div></div>
+        <span class="val">2<small>of 15</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>3</b><small>1 in 1,020</small></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">3<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.497"></div></div>
+        <span class="val">69.7s</span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill zero" style="--v:0.000"></div></div>
+        <span class="val">0<small>of 15</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>0</b><small>none</small></div></div>
+    </div><div class="sw-row is-shipped">
+      <div class="sw-w"><span class="n">4<small>workers</small></span><span class="tag ship">shipped</span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.474"></div></div>
+        <span class="val">66.5s</span>
+      </div>
+      <div class="bar red warn">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.400"></div></div>
+        <span class="val">6<small>of 15</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>6</b><small>1 in 510</small></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">6<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.466"></div></div>
+        <span class="val">65.3s</span>
+      </div>
+      <div class="bar red bad">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">15<small>of 15</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>15</b><small>1 in 204</small></div></div>
+    </div><div class="sw-row">
+      <div class="sw-w"><span class="n">8<small>workers</small></span></div>
+      <div class="bar wall fastest">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.456"></div></div>
+        <span class="val">63.9s<small><span class="tag fast">fastest</span></small></span>
+      </div>
+      <div class="bar red bad">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:1.000"></div></div>
+        <span class="val">15<small>of 15</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>23</b><small>1 in 133</small></div></div>
+    </div>
+    <div class="sweep-foot"><p>Wall clock here includes the 4 or so seconds the driver spends starting and probing each fresh server, so compare the shape with the first CI sweep, not the values.</p></div>
+  </figure>
+    <ul class="notes">
+      <li><b>Almost all of this card is one test.</b> 6 workers failing in 15 of 15 runs is not a flake rate, it is a deterministic failure. <code>a burst of screenshot taps shares one save before allowing the next</code> waited a fixed 500ms for a save, so the more starved the worker, the more reliably it missed. Read on its own, the card says the rate climbs steeply with workers, and the first pass of this study believed it and set CI to 3 workers.</li>
+      <li><b>1 worker is still one of the worst settings</b> (6 red in 15) with no contention to blame. The GPU-less runner keeps canvas-heavy tests near their budgets however few workers run. That is why the curve is a U rather than a slope, and why the worker count alone could never reach zero.</li>
     </ul>
   </section>
 
-  <section>
-    <h2>Local sweep — after the test fixes</h2>
-    <p>Same hardware, freshly restarted preview server, three magic-brush tests repaired.</p>
-    <div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
-      <th class="num">Failures</th><th class="num">Per-test rate</th>
-      <th class="num">Latency inflation</th><th class="num">CPU work</th>
-    </tr></thead>
-    <tbody><tr>
-      <td>2</td>
-      <td class="num">92.3s</td>
-      <td class="num">1/16</td>
-      <td class="num">1</td>
-      <td class="num">0.031%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr class="pick">
-      <td>3</td>
-      <td class="num">80.8s</td>
-      <td class="num">3/16</td>
-      <td class="num">3</td>
-      <td class="num">0.092%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr>
-      <td>4</td>
-      <td class="num">82.1s</td>
-      <td class="num">4/8</td>
-      <td class="num">5</td>
-      <td class="num">0.308%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr></tbody>
-  </table></div>
+  <section id="fixes">
+    <h2>Fixing the tests, and the retry decision</h2>
+    <p>
+      Same runner image, 35 runs each at the two candidate counts, retries still off. This is the
+      evidence the shipped worker count and retry count rest on.
+    </p>
+    <figure class="sweep">
+    <figcaption class="sweep-cap"><b>After fixing the screenshot-save test</b><span>35 runs per count</span><span class="src"><a href="https://github.com/KyleMit/Splotch/actions/runs/30512301335" target="_blank" rel="noopener">run 1</a> · <a href="https://github.com/KyleMit/Splotch/actions/runs/30513168659" target="_blank" rel="noopener">run 2</a></span></figcaption>
+    <div class="sw-head">
+      <div>Workers</div>
+      <div>Wall clock<small>median per run</small></div>
+      <div>Red runs<small>runs with a failure</small></div>
+      <div>Failed tests<small>total · one in N run</small></div>
+      
+    </div>
+    <div class="sw-row">
+      <div class="sw-w"><span class="n">3<small>workers</small></span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.497"></div></div>
+        <span class="val">69.7s</span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.086"></div></div>
+        <span class="val">3<small>of 35</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>3</b><small>1 in 2,392</small></div></div>
+    </div><div class="sw-row is-shipped">
+      <div class="sw-w"><span class="n">4<small>workers</small></span><span class="tag ship">shipped</span></div>
+      <div class="bar wall fastest">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.474"></div></div>
+        <span class="val">66.5s<small><span class="tag fast">fastest</span></small></span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.029"></div></div>
+        <span class="val">1<small>of 35</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>1</b><small>1 in 7,175</small></div></div>
+    </div>
+    
+  </figure>
+    <p><b>The four red runs came from three tests</b>, all about zoom and pinch gesture state:</p>
+    <ul class="specs"><li><span class="n">2 of 35 at 3 workers</span><code>closing the overlay resets the zoom for the next open</code><span class="tag fixed">fixed since</span></li><li><span class="n">1 of 35 at 4 workers</span><code>navigating to another section resets the zoom</code><span class="tag fixed">fixed since</span></li><li><span class="n">1 of 35 at 3 workers</span><code>a pinch swallows the trailing click, so it never toggles the control beneath it</code><span class="tag fixed">fixed since</span></li></ul>
     <ul class="notes">
-      <li>The fixes cleared magic-brush out of the 3- and 4-worker failure lists entirely, and took 6 workers from 0/8 green to 5/8.</li>
-      <li>They did <strong>not</strong> move the optimum. At 4 workers the post-fix rate (5/1624) is statistically indistinguishable from the pre-fix rate (3/1624) — a different thin-margin tail simply took over. Contention level dominates; test fixes raise the ceiling.</li>
+      <li><b>The climb was the test, not the worker count.</b> 3 and 4 workers are statistically the same (Fisher's exact test, p = 0.61) and 4 is 3.2s faster per run, so CI went back to one worker per core. The detour through 3 workers stays in the record because the mistake generalises: a worker count tuned against a rate that one bad test dominates is really tuned around that test.</li>
+      <li><b>Retries stay at 2, and the confidence interval is the whole argument.</b> 1 red run in 35 is 2.9%, but one failure in 35 cannot establish a rate: the 95% interval reaches 12.9%. <code>retries: 0</code> goes red every time that happens. <code>retries: 1</code> needs the same test to fail twice, which looks like 0.1% if the attempts were independent, and they are not: the retry runs straight afterwards on the same starved machine. (The 3-worker row is kept separate on purpose. Pooling the two into "4 in 70" would quote a figure for a setting that was measured 35 times.)</li>
+      <li><b>Retried passes are no longer silent.</b> Each one becomes a GitHub Actions annotation plus a row in the job summary, so "green, but only on attempt 2" shows on the run page instead of in a log nobody opens.</li>
+      <li><b>Lowering the retry count depends on fixing those tests</b>, not on another sweep. Fixing one test took 4 workers from 6 red runs in 15 to 1 in 35.</li>
     </ul>
+    <div class="sub">
+      <h3>The three zoom tests were one bug, and the rate stayed put</h3>
+      <p>Same runner image, 35 runs at the shipped count, retries still off.</p>
+      <figure class="sweep">
+    <figcaption class="sweep-cap"><b>After fixing the zoom and pinch tests</b><span>35 runs</span><span class="src"><a href="https://github.com/KyleMit/Splotch/actions/runs/30581020210" target="_blank" rel="noopener">run 30581020210</a></span></figcaption>
+    <div class="sw-head">
+      <div>Workers</div>
+      <div>Wall clock<small>median per run</small></div>
+      <div>Red runs<small>runs with a failure</small></div>
+      <div>Failed tests<small>total · one in N run</small></div>
+      
+    </div>
+    <div class="sw-row is-shipped">
+      <div class="sw-w"><span class="n">4<small>workers</small></span><span class="tag ship">shipped</span></div>
+      <div class="bar wall ">
+        <span class="lbl">Wall</span>
+        <div class="track"><div class="fill" style="--v:0.533"></div></div>
+        <span class="val">74.7s</span>
+      </div>
+      <div class="bar red ok">
+        <span class="lbl">Red</span>
+        <div class="track"><div class="fill" style="--v:0.029"></div></div>
+        <span class="val">1<small>of 35</small></span>
+      </div>
+      <div class="sw-metas"><div class="sw-meta"><span class="lbl">Failed tests</span><b>1</b><small>1 in 7,140</small></div></div>
+    </div>
+    
+  </figure>
+      <p><b>The one red run came from a test that had never failed before</b>, in a different part of the app:</p>
+      <ul class="specs"><li><span class="n">1 of 35</span><code>pointer exploration still snaps a hexagon gap and commits the highlighted color</code></li></ul>
+      <ul class="notes">
+        <li><b>All three were one missing wait</b> in a helper they shared. A dialog opens by flying in from the button that launched it, starting at 5% scale on top of that button. The modal also ignores pointer events within 72px of that launch point for 600ms, so the tap that opened it cannot land on the content. For the first frames the whole dialog sits inside that dead zone: the Settings pane starts 6px from the launch point and only clears the radius about 13ms in. The tests read the pane's live rectangle and dispatched synthetic pointer events at it, skipping the checks a real click performs, so the pinch landed in the dead zone and did nothing.</li>
+        <li><b>A CSS animation only advances when a frame renders</b>, which is how contention got in: a starved worker holds the dialog on that first keyframe far longer than 13ms. The tell was <code>a two-finger pinch enlarges the pane</code>, a structurally identical test with 0 failures in 70 runs, whose one extra round trip lets the fly-in move on first.</li>
+        <li><b>Fixing it did not move the retry count.</b> The three tests went 0 for 35, and in the same sweep a colour-picker test that had never failed went red once. The red-run rate at the shipped count is where it was, so <code>retries: 2</code> stays and the next fix starts from that test. A rate that one test dominates is still not a rate.</li>
+      </ul>
+    </div>
   </section>
 
-  <section>
-    <h2>CI sweep — GitHub Actions ubuntu-latest</h2>
-    <p>
-      Run one worker count per runner, so configurations never contend with each other. Retries are
-      disabled for the measurement (the production config sets <code>retries: 2</code> on CI, which
-      would mask the rate being measured).
-    </p>
-    <div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
-      <th class="num">Failures</th><th class="num">Per-test rate</th>
-      <th class="num">Latency inflation</th><th class="num">CPU work</th>
-    </tr></thead>
-    <tbody><tr>
-      <td>1</td>
-      <td class="num">95.2s</td>
-      <td class="num">3/5</td>
-      <td class="num">3</td>
-      <td class="num">0.296%</td>
-      <td class="num">1.00×</td>
-      <td class="num">92.3s</td>
-    </tr><tr>
-      <td>2</td>
-      <td class="num">69.6s</td>
-      <td class="num">2/5</td>
-      <td class="num">2</td>
-      <td class="num">0.197%</td>
-      <td class="num">1.38×</td>
-      <td class="num">127.7s</td>
-    </tr><tr>
-      <td>3</td>
-      <td class="num">63.1s</td>
-      <td class="num">1/5</td>
-      <td class="num">1</td>
-      <td class="num">0.099%</td>
-      <td class="num">1.88×</td>
-      <td class="num">173.8s</td>
-    </tr><tr class="pick">
-      <td>4</td>
-      <td class="num">60.2s</td>
-      <td class="num">2/5</td>
-      <td class="num">2</td>
-      <td class="num">0.197%</td>
-      <td class="num">2.34×</td>
-      <td class="num">216.1s</td>
-    </tr><tr>
-      <td>6</td>
-      <td class="num">63.5s</td>
-      <td class="num">1/5</td>
-      <td class="num">2</td>
-      <td class="num">0.197%</td>
-      <td class="num">3.58×</td>
-      <td class="num">330.7s</td>
-    </tr><tr>
-      <td>8</td>
-      <td class="num">60.4s</td>
-      <td class="num">5/5</td>
-      <td class="num">9</td>
-      <td class="num">0.887%</td>
-      <td class="num">4.35×</td>
-      <td class="num">401.9s</td>
-    </tr></tbody>
-  </table></div>
-    <ul class="notes">
-      <li><b>The flake rate is flat from 1 to 6 workers</b> (1–3 failures per 1015 executions) and only breaks at 8. Contention is not the dominant driver here, which is the opposite of the local result.</li>
-      <li><b>One worker was the second-WORST setting</b> — 3 failures, two of them 30s timeouts. With zero contention, that rules contention out as the cause: the runner has no GPU, so Chromium rasterizes the magic-brush reveal in software and the reveal sits near its 15s budget no matter how many workers are running.</li>
-      <li><b>Wall clock bottoms out at 4 workers</b> (60.2s). 8 workers is no faster and carries 4.5× the failures.</li>
-      <li><b>CI is faster than the local box overall</b> (60–95s vs 81–169s) while being slower at canvas work — a reminder that "faster hardware" is not one number.</li>
-    </ul>
-    <h2 style="margin-top:12px">Raising the reveal budget: a two-sided result</h2>
-    <p>
-      The 15s→30s change was made because the CI failures landed <em>at</em> the old budget. Re-measured
-      at the two most informative worker counts, it did not do one clean thing:
-    </p>
-    <div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Workers</th><th class="num">Failures before → after</th>
-      <th class="num">Wall before → after</th>
-    </tr></thead>
-    <tbody><tr class="pick">
-      <td>4 (CI ships this)</td>
-      <td class="num"><b>2 → 0</b></td>
-      <td class="num">60.2s → 64.8s</td>
-    </tr><tr>
-      <td>1</td>
-      <td class="num">3 → 3</td>
-      <td class="num"><b>95.2s → 138.1s</b></td>
-    </tr></tbody>
-  </table></div>
-    <ul class="notes">
-      <li><b>At the shipped CI setting it worked</b> — 5/5 green where 3/5 had been, for ~4.6s of wall clock. Not enough to keep it: see the last bullet.</li>
-      <li><b>At one worker it did not.</b> Same three failures, but now costing far more: with <code>test.slow()</code> in play a non-converging reveal burns its full 90s budget instead of failing at 30s, which is what dragged the median run from 95.2s to 138.1s.</li>
-      <li><b>What that means:</b> those failures were never time-starved. <code>drawMagicReveal</code> churns draw→check→undo→redraw, and a bigger budget just lets a non-converging loop churn longer. The budget helped where the reveal was merely slow, and did nothing where the loop never converges.</li>
-      <li><b>Reverted.</b> At 4 workers the two failures it fixed were already invisible — <code>retries: 2</code> reaches red essentially never at a 2/1015 rate — so the win landed where retries had already paid, while the cost (a stuck reveal exceeding the suite's parallel floor and becoming its critical path) was real. The genuinely-slow cases are worth fixing by bounding the churn instead.</li>
-    </ul>
-  </section>
-
-  <section>
-    <h2>Re-measured, 2026-07-30 — and the retry decision</h2>
-    <p>
-      Every rate above was measured with one preview server shared across a configuration's reps.
-      That turned out to be most of what was being measured, so the retry question could not be
-      answered until the harness was fixed.
-    </p>
-    <div class="panel verdict">
-  <h3>First finding: the sweep was measuring itself</h3>
-  <p>Every rep ran against one shared preview server, and the suite deliberately fills 60-second per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the managed token’s. A rep takes about as long as those windows last, so the next rep inherited a spent budget and its guard tests took a 429 where they assert a 415.</p>
-  <ul class="notes"><li>On ubuntu-latest at 4 workers, “throttles a managed token hammered in a burst” failed in 12 of 12 reps — a deterministic failure counted as a flake rate.</li><li>Locally at 4 workers, the BYOK guard tests were 4 of 5 failures across 7 reps.</li><li>Both are specs the earlier per-worker-count failure columns are largely made of.</li></ul>
-  <p>Every rep gets a fresh preview server, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run. (The sweep driver booted that server itself at the time; Playwright’s own webServer boots it per rep now — issue 1044.)</p>
-</div>
-    <p>
-      Re-run on the same runner image with an independent server per rep. <b>Red runs</b> is the
-      column a retry count is chosen against: retries only pay for themselves against the rate at
-      which an unretried run goes red.
-    </p>
-    <div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
-      <th class="num">Failures</th><th class="num">Per-test rate</th>
-      <th class="num">Latency inflation</th><th class="num">CPU work</th>
-    </tr></thead>
-    <tbody><tr>
-      <td>1</td>
-      <td class="num">140.2s</td>
-      <td class="num">6/15</td>
-      <td class="num">6</td>
-      <td class="num">0.196%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr>
-      <td>2</td>
-      <td class="num">84.2s</td>
-      <td class="num">2/15</td>
-      <td class="num">3</td>
-      <td class="num">0.098%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr>
-      <td>3</td>
-      <td class="num">69.7s</td>
-      <td class="num">0/15</td>
-      <td class="num">0</td>
-      <td class="num">0.000%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr>
-      <td>4</td>
-      <td class="num">66.5s</td>
-      <td class="num">6/15</td>
-      <td class="num">6</td>
-      <td class="num">0.196%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr>
-      <td>6</td>
-      <td class="num">65.3s</td>
-      <td class="num">15/15</td>
-      <td class="num">15</td>
-      <td class="num">0.490%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr>
-      <td>8</td>
-      <td class="num">63.9s</td>
-      <td class="num">15/15</td>
-      <td class="num">23</td>
-      <td class="num">0.752%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr></tbody>
-  </table></div>
-    <ul class="notes"><li><b>Nearly all of this table is one spec.</b> Six workers failing in 15 of 15 reps is a deterministic failure, not a flake rate: “a burst of screenshot taps shares one save before allowing the next” waited for a save with a fixed 500ms sleep, so the more starved the worker the more reliably it missed. Read on its own the table says the rate rises steeply with workers, and a first pass of this study believed it.</li><li><b>One worker is still among the worst settings</b> (6/15), with no contention to blame — the GPU-less runner rasterizes canvas work in software, so those specs sit near their budgets however few workers run. That is why the curve is a U rather than a slope, and why worker tuning alone was never going to reach zero.</li></ul>
-
-    <h2 style="margin-top:12px">After fixing that spec — the numbers that decide both knobs</h2>
-    <p>
-      Same runner image, 35 reps at each of the two candidate worker counts, retries still off.
-    </p>
-    <div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
-      <th class="num">Failures</th><th class="num">Per-test rate</th>
-      <th class="num">Latency inflation</th><th class="num">CPU work</th>
-    </tr></thead>
-    <tbody><tr>
-      <td>3</td>
-      <td class="num">69.7s</td>
-      <td class="num">3/35</td>
-      <td class="num">3</td>
-      <td class="num">0.042%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr><tr class="pick">
-      <td>4</td>
-      <td class="num">66.5s</td>
-      <td class="num">1/35</td>
-      <td class="num">1</td>
-      <td class="num">0.014%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr></tbody>
-  </table></div>
-<div class="tbl-wrap"><table>
-  <thead><tr><th>Residual flake</th><th class="num">Reps it failed in</th></tr></thead>
-  <tbody><tr><td><code>closing the overlay resets the zoom for the next open</code></td><td class="num">2/35 (3 workers)</td></tr><tr><td><code>navigating to another section resets the zoom</code></td><td class="num">1/35 (4 workers)</td></tr><tr><td><code>a pinch swallows the trailing click, so it never toggles the control beneath it</code></td><td class="num">1/35 (3 workers)</td></tr></tbody>
-</table></div>
-    <ul class="notes">
-      <li><b>The gradient was the spec, not the worker count.</b> Three and four workers are indistinguishable (Fisher p = 0.61) and four is 3.2s faster, which puts the coefficient back at twice capacity — <code>cores</code>, as originally proposed. The 1.5× detour is kept in the record because the mistake generalises: a worker count tuned against a rate one bad spec dominates is tuning around the spec.</li>
-      <li><b>Retries stay at 2, and the interval is the argument.</b> At the shipped count the residual is <b>1 of 35</b> unretried runs going red — 2.9%, but with a 95% confidence interval reaching <b>12.9%</b>, because one failure in 35 does not establish a rate. (The 3-worker column is kept separate on purpose: pooling the two into “4 in 70” quotes a figure for a configuration measured 35 times.) <code>0</code> reddens a run whenever the residual does. <code>1</code> needs a spec to fail twice — ~0.1% <i>if the attempts are independent</i>, and they are not: a retry runs immediately afterwards on the same starved machine, so the squaring flatters exactly the failure mode being retried.</li>
-      <li><b>What changes is that the debt is visible.</b> Every retried pass becomes a GitHub Actions annotation plus a job-summary table, so “green, but only on attempt 2” shows on the run page instead of in a log nobody opens.</li>
-      <li><b>Reducing the count is downstream of those three specs</b>, not of another sweep — fixing one spec took 4 workers from 6/15 red to 1/35.</li>
-    </ul>
-
-    <h2 style="margin-top:12px">The three zoom/pinch specs were one bug — and the rate stayed put</h2>
-    <p>
-      Same runner image, 35 reps at the shipped worker count, retries still off.
-    </p>
-    <div class="tbl-wrap"><table>
-    <thead><tr>
-      <th>Workers</th><th class="num">Wall (median)</th><th class="num">Red runs</th>
-      <th class="num">Failures</th><th class="num">Per-test rate</th>
-      <th class="num">Latency inflation</th><th class="num">CPU work</th>
-    </tr></thead>
-    <tbody><tr class="pick">
-      <td>4</td>
-      <td class="num">74.7s</td>
-      <td class="num">1/35</td>
-      <td class="num">1</td>
-      <td class="num">0.014%</td>
-      <td class="num">—</td>
-      <td class="num">—</td>
-    </tr></tbody>
-  </table></div>
-<div class="tbl-wrap"><table>
-  <thead><tr><th>Residual flake</th><th class="num">Reps it failed in</th></tr></thead>
-  <tbody><tr><td><code>pointer exploration still snaps a hexagon gap and commits the highlighted color</code></td><td class="num">1/35</td></tr></tbody>
-</table></div>
-    <ul class="notes"><li><b>The cluster was one missing wait, shared by the helper all three specs called.</b> <code>dialogFlyFromOrigin</code> opens a modal at <code>scale(0.05)</code> translated onto the button that opened it, and <code>modalDialog</code> arms a launch dead zone at that same point (72px, 600ms) whose capture-phase <code>pointerdown</code> handler swallows everything inside it — dialog content included, deliberately. So for the opening frames the whole dialog sits in that dead zone: Settings’ pane centers <b>6px</b> from the launch origin at the first keyframe and only clears the radius ~13ms in. The specs read that pane’s live rect and dispatched synthetic pointer events at it, skipping the actionability checks a real click performs — so they aimed into the guard and the pinch did nothing.</li><li><b>A CSS animation advances with rendered frames</b>, which is the contention coupling: a starved worker parks the dialog on that first keyframe far longer than 13ms of wall clock. The tell was <code>a two-finger pinch enlarges the pane</code> — structurally identical, 0 failures in 70 reps — whose one extra round trip lets the fly-in advance first.</li><li><b>Fixing it did not move the retry count.</b> The three specs are 0/35, but the same sweep put 1 of 35 runs red on a colour-picker spec that had never failed before. The red-run rate at the shipped count is where it was, so <code>retries: 2</code> stays and the next attempt starts from that spec instead. A rate one spec dominates is still not a rate.</li></ul>
-  </section>
-
-  <section>
+  <section id="hypotheses">
     <h2>What was tried</h2>
     <p>
-      Three of these four hypotheses were wrong. They are recorded because they are cheap to think
-      of again and expensive to re-test.
+      Three of these four explanations for the magic-brush flakes were wrong. They are recorded
+      because they are cheap to think of again and expensive to re-test.
     </p>
-    <div class="hyp">
-      <div class="hyp-item falsified">
-        <p class="hyp-claim">CPU contention makes Chromium drop or coalesce pointer events, changing stroke geometry <span class="pill falsified">falsified</span></p>
-        <dl>
-          <dt>How</dt><dd>Instrumented the page to count pointermove events and getCoalescedEvents() samples, then repeated the stroke with 12 busy-loop processes saturating every core.</dd>
-          <dt>Result</dt><dd>Identical to idle — 2 pointermove events, 2 coalesced samples, every time. Input delivery is lossless under load.</dd>
-        </dl>
-      </div><div class="hyp-item falsified">
-        <p class="hyp-claim">The eraser test under-counts its baseline because `revealed` is captured with a bare, un-polled canvas read <span class="pill falsified">falsified</span></p>
-        <dl>
-          <dt>How</dt><dd>Replaced the bare read with a poll that settles on two equal readings, then re-ran 200 instances at 8 workers.</dd>
-          <dt>Result</dt><dd>Failure rate moved 16/200 → 15/200, i.e. not at all. (The bare read is still an anti-pattern per .claude/rules/testing.md — it just was not this bug.)</dd>
-        </dl>
-      </div><div class="hyp-item falsified">
-        <p class="hyp-claim">pickBrush() returns before the brush is active, so asserting aria-pressed will fix it <span class="pill falsified">falsified</span></p>
-        <dl>
-          <dt>How</dt><dd>Added `await expect(entry).toHaveAttribute(&quot;aria-pressed&quot;, &quot;true&quot;)` inside pickBrush() and re-ran 200 instances at 8 workers.</dd>
-          <dt>Result</dt><dd>16/200 before, 16/200 after. The spec file header already explains why: the mode reaches the engine through a Svelte $effect, so the BUTTON is correct while the engine is not. Reverted rather than left in as a wait that buys nothing.</dd>
-        </dl>
-      </div><div class="hyp-item overturned">
-        <p class="hyp-claim">The strokes commit in the wrong brush mode, and a canvas-fill count cannot detect it <span class="pill overturned">overturned</span></p>
-        <dl>
-          <dt>How</dt><dd>Read the actual assertion values out of the failing reports — then, once the engine could be asked directly (ADR-0080), read its committed mode and the painted colours at each failure.</dd>
-          <dt>Result</dt><dd>`revealed` came back as discrete values — 132, 874, 895, 2314 — where ~2314 is a real magic reveal. Redrawing all three sites did take the file from 16/200 to 4/200, so the FIX worked. The reading of 132 did not: those pixels are the coloring page&#39;s own colours, not ink, and the engine reported the right mode at every failure across ~700 recorded reveals. It is a magic stroke the engine TRUNCATED — a sample &gt;100ms and &gt;10% of the paper apart reads as a lifted finger (strokeMath.pointerWasResumed), which is exactly what a starved worker dispatching 180px hops produces. Redrawing rescued it by getting a second, luckier stroke. Pacing the samples fixes it at the source, and the retries are gone.</dd>
-        </dl>
-      </div>
-    </div>
+    <div class="hyp"><details class="hyp-item falsified">
+      <summary><span class="pill">Wrong</span><span class="claim">CPU contention makes Chromium drop or merge pointer events, so strokes change shape</span><span class="chev" aria-hidden="true">▾</span></summary>
+      <dl>
+        <dt>Tested by</dt><dd>Instrumented the page to count pointermove events and getCoalescedEvents() samples, then repeated the stroke with 12 busy-loop processes saturating every core.</dd>
+        <dt>Result</dt><dd>Identical to idle: 2 pointermove events and 2 coalesced samples, every time. Input delivery does not lose events under load.</dd>
+      </dl>
+    </details><details class="hyp-item falsified">
+      <summary><span class="pill">Wrong</span><span class="claim">The eraser test under-counts its baseline because it reads the canvas once instead of polling until the reading settles</span><span class="chev" aria-hidden="true">▾</span></summary>
+      <dl>
+        <dt>Tested by</dt><dd>Replaced the single read with a poll that waits for two equal readings, then re-ran the test 200 times at 8 workers.</dd>
+        <dt>Result</dt><dd>Failure rate went from 16 of 200 to 15 of 200, which is no change. (A single un-polled read is still an anti-pattern under .claude/rules/testing.md. It just was not this bug.)</dd>
+      </dl>
+    </details><details class="hyp-item falsified">
+      <summary><span class="pill">Wrong</span><span class="claim">pickBrush() returns before the brush is active, so waiting for aria-pressed=&quot;true&quot; will fix it</span><span class="chev" aria-hidden="true">▾</span></summary>
+      <dl>
+        <dt>Tested by</dt><dd>Added await expect(entry).toHaveAttribute(&quot;aria-pressed&quot;, &quot;true&quot;) inside pickBrush() and re-ran the test 200 times at 8 workers.</dd>
+        <dt>Result</dt><dd>16 of 200 before, 16 of 200 after. The spec file header already explains why: the mode reaches the engine through a Svelte $effect, so the button is correct while the engine is not. Reverted rather than kept as a wait that buys nothing.</dd>
+      </dl>
+    </details><details class="hyp-item overturned">
+      <summary><span class="pill">Half right</span><span class="claim">The strokes commit in the wrong brush mode, and counting filled pixels cannot detect it</span><span class="chev" aria-hidden="true">▾</span></summary>
+      <dl>
+        <dt>Tested by</dt><dd>Read the actual assertion values out of the failing reports. Then, once the engine could be queried directly (ADR-0080), read its committed mode and the painted colours at each failure.</dd>
+        <dt>Result</dt><dd>The `revealed` pixel count came back as a few distinct values (132, 874, 895, 2314) where about 2314 is a real magic reveal. Redrawing all three sites took the file from 16 of 200 failures to 4 of 200, so that fix worked. The explanation did not: the 132 pixels were the coloring page’s own colours, not ink, and the engine reported the correct mode at every failure across about 700 recorded reveals. The stroke was a magic stroke the engine had cut short. A sample more than 100 ms and more than 10% of the paper away from the last one reads as a lifted finger (strokeMath.pointerWasResumed), which is exactly what a starved worker dispatching 180 px hops produces. Redrawing helped only by giving it a second, luckier stroke. Pacing the samples fixed it at the source, and the redraws are gone.</dd>
+      </dl>
+    </details></div>
   </section>
 
-  <section>
+  <section id="retune">
     <h2>Re-tuning later</h2>
     <p>
-      The numbers above are specific to their hardware. The shape of the curve (saturation near
-      cores−1) should transfer; the optimum will not. To re-measure:
+      The numbers above belong to their hardware. The shape of the curve, with saturation near
+      cores ÷ 2, should carry over; the exact optimum will not. To measure again:
     </p>
-    <pre><code># 1. Build once. The sweep driver builds nothing, so this is the only build, and
+    <div class="codebox">
+      <button class="copy" type="button" data-copy="retune-cmd">Copy</button>
+      <pre><code id="retune-cmd"># 1. Build once. The sweep driver builds nothing, so this is the only build, and
 #    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
 #    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
@@ -745,10 +1100,11 @@ done
 # that long — so the next rep&#39;s guard tests take a 429 where they expect a 415
 # and the sweep measures a flake it manufactured. A fresh server per rep clears
 # the in-memory limiter and matches what CI does: one server, one suite run.</code></pre>
+    </div>
     <p>
       Then replace the datasets at the top of <code>tools/e2e-tuning/gen-tuning-report.mjs</code> and run
       <code>npm run gen:e2e-tuning-report</code>. The decision and its reasoning live in
-      <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0078-playwright-worker-count-and-flake-tuning.md">ADR-0078</a>.
+      <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0078-playwright-worker-count-and-flake-tuning.md" target="_blank" rel="noopener">ADR-0078</a>.
     </p>
   </section>
 </main>
@@ -759,5 +1115,78 @@ done
     <p>Committed run outputs from the Splotch generators — see <code>scrapbook/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="../index.html">All collections</a></p>
   </div>
 </footer>
+<script>
+(() => {
+  const nav = document.querySelector('.jump');
+  const links = [...nav.querySelectorAll('a[href^="#"]')];
+  const scroller = nav.querySelector('.jump-scroll');
+  const targets = links.map((a) => document.getElementById(a.getAttribute('href').slice(1)));
+  const root = document.documentElement;
+
+  const measureNav = () => {
+    root.style.setProperty('--jump-h', nav.offsetHeight + 'px');
+    scroller.classList.toggle('overflows', scroller.scrollWidth > scroller.clientWidth + 1);
+  };
+  measureNav();
+  addEventListener('resize', measureNav);
+
+  let current = null;
+  const setActive = () => {
+    const line = nav.offsetHeight + 24;
+    let active = targets[0];
+    for (const t of targets) if (t && t.getBoundingClientRect().top <= line) active = t;
+    if (innerHeight + scrollY >= root.scrollHeight - 2) active = targets[targets.length - 1];
+    if (active === current) return;
+    current = active;
+    links.forEach((a, i) => {
+      const on = targets[i] === active;
+      a.classList.toggle('is-active', on);
+      if (!on) return;
+      const chip = a.getBoundingClientRect();
+      const box = scroller.getBoundingClientRect();
+      if (chip.left < box.left || chip.right > box.right - 28) {
+        scroller.scrollTo({ left: a.offsetLeft - 12, behavior: 'smooth' });
+      }
+    });
+  };
+  let ticking = false;
+  addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { ticking = false; setActive(); });
+  }, { passive: true });
+  setActive();
+
+  for (const btn of document.querySelectorAll('[data-copy]')) {
+    btn.addEventListener('click', async () => {
+      const text = document.getElementById(btn.dataset.copy).textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copied';
+        btn.classList.add('done');
+      } catch {
+        btn.textContent = 'Copy failed';
+      }
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+    });
+  }
+
+  const cores = document.getElementById('cores');
+  if (cores) {
+    const out = (id) => document.getElementById(id);
+    const CORES_PER_WORKER = 2;
+    const CI_OVERSUBSCRIPTION = 2;
+    const update = () => {
+      const c = Number(cores.value);
+      const saturation = c / CORES_PER_WORKER;
+      out('cores-out').value = c;
+      out('local-out').value = Math.max(1, Math.floor(saturation));
+      out('ci-out').value = Math.max(2, Math.floor(saturation * CI_OVERSUBSCRIPTION));
+    };
+    cores.addEventListener('input', update);
+    update();
+  }
+})();
+</script>
 </body>
 </html>
