@@ -12,6 +12,7 @@ import {
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
+import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import { startTrace, stopTrace } from '../lib/chrome-trace-capture.mjs';
 import {
   profilingUrl,
@@ -439,6 +440,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       settingsShell,
       actionPlan,
       samples,
+      frameStampEpoch: frameStampEpochOf(samples),
       summaries,
       passed: failures.length === 0,
     };

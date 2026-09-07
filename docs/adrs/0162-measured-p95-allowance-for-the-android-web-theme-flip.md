@@ -104,7 +104,9 @@ repeats — not a reading that sometimes appears. The probe's stamp-slip behavio
 the red is the faithful reading and the green is the optimistic one; a recapture that reads green
 under this allowance is not evidence that the frame fit, and a recapture that reads 33.3–33.4 is not
 a regression. Neither reading changes what the allowance is for. The probe's stamping semantics are
-issue #1704's decision and are unchanged here.
+issue #1704's decision and are unchanged here; ADR-0163 later kept the scheduled stamp as the scored
+channel and added the actual callback clock beside it for attribution, so a capture of this cell
+from that record on also reports how many of its greens hid an overrun.
 
 **Reopen conditions.** The entry retires, and its cell returns to red for a product fix, when:
 
@@ -165,8 +167,8 @@ dark-mode toggles (issue #1694), and the drawing lost-frame budgets held for the
   conventions the tooling cannot enforce; the ratchet-down rule and the evidence-pinned test are
   what hold the line.
 * − The allowance does not repair the probe. A green on this cell remains a reading the main thread
-  may have overrun (issue #1704); the allowance stops the red from being counted as an unexplained
-  remainder, and stops the green from being counted as a fix.
+  may have overrun (issue #1704, decided in ADR-0163); the allowance stops the red from being
+  counted as an unexplained remainder, and stops the green from being counted as a fix.
 * − **The published matrix still cannot record this change on its own diff.** Its physical rows are
   built from `perf-profiles/epic-1567-final-9af487b3/`, the gitignored corpus ADR-0160 already found
   gone from every checkout; `npm run gen:performance-matrix` fails with `ENOENT` on its first

@@ -4,7 +4,17 @@
     width: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'width'),
     height: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'height'),
   };
+  // Two clocks per frame (ADR-0163). The rAF timestamp argument is the vsync
+  // the frame was SCHEDULED for and is the only channel the gates score; a
+  // callback that runs late keeps its on-time stamp. performance.now() at
+  // callback entry is when the main thread ACTUALLY ran it, recorded for
+  // attribution only: one extra clock read per frame, stored in the row the
+  // frame already allocates. The epoch is pinned to
+  // tools/perf/lib/frame-stamps.mjs by tools/perf/tests/action-probe.test.mjs,
+  // since this script cannot import it.
+  const FRAME_STAMP_EPOCH = 2;
   let previousFrameAt;
+  let previousFrameRanAt;
   let active = null;
   let actionSequence = 0;
 
@@ -50,10 +60,18 @@
   }
 
   function frame(at) {
+    const ranAt = performance.now();
     if (previousFrameAt !== undefined) {
-      frames.push([at, at - previousFrameAt, (active?.visualEffectCount ?? 0) > 0]);
+      frames.push([
+        at,
+        at - previousFrameAt,
+        (active?.visualEffectCount ?? 0) > 0,
+        ranAt,
+        ranAt - previousFrameRanAt,
+      ]);
     }
     previousFrameAt = at;
+    previousFrameRanAt = ranAt;
     requestAnimationFrame(frame);
   }
 
@@ -373,13 +391,16 @@
         .map(([, gap]) => gap),
       postActionFrames: actionFrames
         .filter(([at, gap]) => at - gap >= actionAt)
-        .map(([at, gap, visualEffectsActive]) => ({
+        .map(([at, gap, visualEffectsActive, ranAt, actualGap]) => ({
           gapMs: gap,
           startFromActionMs: at - gap - actionAt,
           endFromActionMs: at - actionAt,
           visualEffectsActive,
+          ranFromActionMs: ranAt - actionAt,
+          actualGapMs: actualGap,
         })),
       topFrameGaps,
+      frameStampEpoch: FRAME_STAMP_EPOCH,
       activities: action.activities.map(({ at, ...activity }) => ({
         ...activity,
         atFromActionMs: at - actionAt,
@@ -404,6 +425,7 @@
     beginExternal,
     markExternalAction,
     finish,
+    frameStampEpoch: FRAME_STAMP_EPOCH,
   };
   requestAnimationFrame(frame);
 })();

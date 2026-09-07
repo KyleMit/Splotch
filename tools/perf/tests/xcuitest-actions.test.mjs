@@ -645,6 +645,7 @@ describe('desktop action options', () => {
     expect(artifact.engine).toBe('webkit');
     expect(artifact.viewport).toEqual({ width: 1366, height: 915, deviceScaleFactor: 2 });
     expect(artifact.actionPlan.context.orientation).toBe('PORTRAIT');
+    expect(artifact.frameStampEpoch).toBeNull();
   });
 
   it('refuses action applicability that changes between repeats', () => {
@@ -1094,6 +1095,17 @@ describe('runActionSweep callers', () => {
       expect(source).toContain('sweep.actionPlan');
       expect(source).not.toMatch(/for \(const sample of sweep\)/);
       expect(source).not.toMatch(/\.\.\.sweep\.map\(/);
+    }
+  });
+
+  // ADR-0163: every action artifact names the frame clocks its samples carry,
+  // so a reader can tell a dual-channel capture from a legacy one without
+  // opening a sample. Derived from the samples in each runner rather than read
+  // from the page, so the marker can never disagree with the data beside it.
+  it('records the frame-stamp epoch of its samples in every artifact', () => {
+    for (const relative of CALLERS) {
+      const source = readFileSync(join(ROOT, relative), 'utf8');
+      expect(source, relative).toContain('frameStampEpoch: frameStampEpochOf(samples)');
     }
   });
 });

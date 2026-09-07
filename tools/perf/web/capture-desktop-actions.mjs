@@ -10,6 +10,7 @@ import {
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
+import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
   profilingUrl,
   runActionSweep,
@@ -117,6 +118,9 @@ export function desktopActionsArtifact({
     actions,
     repeats,
     samples,
+    // Which frame clocks every sample carries (ADR-0163): a reader tells a
+    // dual-channel capture from a legacy one here, without opening a sample.
+    frameStampEpoch: frameStampEpochOf(samples),
     summaries,
     passed,
   };
