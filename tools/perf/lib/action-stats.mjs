@@ -1,22 +1,18 @@
+import { compactSettingsActionLabel } from './action-applicability.mjs';
 import { percentile } from './real-screen-stats.mjs';
 
 export const ACTION_FRAME_P95_GATE_MS = 20;
-// The one matrix row whose action cells score under the allowance ledgers
-// below: the calibrated physical iPad running Safari. Keyed by matrix target
-// id exactly as ADR-0137's lost-frame exceptions are, so the generator applies
-// the shipped policy to that row and every other target stays on the base
-// gates whatever its artifact recorded.
-export const ACTION_GATE_ALLOWANCE_TARGET = 'ipad-device-web';
 // Documented per-action exceptions to the P95 gate for the calibrated
-// physical-iOS capture ONLY (ADR-0090's amendment, extended by ADR-0160) —
-// each a measured, accepted residual rather than a loosened default, and
-// never applied by default: the scorer takes allowances as an argument, the
-// iOS harness passes this ledger and records it into its capture as
-// `gateAllowances`, the matrix generator applies it to the target above, and
-// every other target (desktop, Android, the native shells) stays on the base
-// gates. Every entry is sized one rounding quantum above the worst committed
-// single capture of its cell (ADR-0137's worst-single-capture rule; the
-// scorer's percentile rounds to whole milliseconds), never above a median,
+// physical-iOS capture (ADR-0090's amendment, extended by ADR-0160) — each a
+// measured, accepted residual rather than a loosened default, and never
+// applied by default: the scorer takes allowances as an argument, the iOS
+// harness passes this ledger and records it into its capture as
+// `gateAllowances`, the matrix generator applies it by target id through
+// ACTION_GATE_ALLOWANCE_LEDGERS below, and every target without a ledger of
+// its own (desktop, the native shells, every simulator and emulator) stays on
+// the base gates. Every entry is sized one rounding quantum above the worst
+// committed single capture of its cell (ADR-0137's worst-single-capture rule;
+// Safari's rAF clock resolves to whole milliseconds), never above a median,
 // and only ratchets down — raising one needs the same evidence as adding it.
 // `basis` is rendered into the matrix beside the gates so a passing cell
 // never has to be read as a base-gate pass; the full measured tables, the
@@ -127,14 +123,75 @@ export const IOS_ACTION_GATE_ALLOWANCE_ENTRIES = {
   max: IOS_ACTION_FRAME_MAX_ALLOWANCES,
 };
 
-// The shipped release-gate policy for a matrix target: the calibrated iPad
-// web row scores under the ledgers, every other row on the base gates. The
-// generator applies this rather than an artifact's recorded `gateAllowances`
-// so a policy change re-scores every published cell on regeneration and the
-// regeneration diff is the record (ADR-0160); the recorded field stays the
-// capture-time verdict's provenance.
+// The physical Android phone's ledger (ADR-0162): one entry, the theme token
+// flip taken from the compact Settings shell, measured on the SM-G990U1 in
+// Chrome over direct CDP at a verified 60 Hz pin (ADR-0143). Sized by the same
+// worst-committed-single-capture rule as the iPad ledger, in this probe's own
+// quantum: Chrome's rAF clock resolves to 0.1 ms where Safari's is whole
+// milliseconds, so one step above the worst committed 33.4 ms reading is
+// 33.5 — the max gate itself, and the two coincide on purpose. Three scored
+// repeats pool about 52 gaps, so the P95 is the third-highest and a P95 past
+// 33.5 needs three over-gate gaps; spread one per repeat (every committed
+// two-beat reading) the max gate confirms the breach on its own (ADR-0156),
+// and concentrated in one repeat only this allowance fails the cell. It is at
+// least as strict as the max gate on every three-repeat capture and never
+// passes a cell the max gate would fail; 34 ms would pass the concentrated
+// case. The enable direction and every other Android action stay on the base
+// gate.
+const ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES = {
+  [`disable ${compactSettingsActionLabel('Night Mode')}`]: {
+    ms: 33.5,
+    basis:
+      'Worst committed P95 33.4 ms (perf-profiles/evidence/2026-09-06-issue-1696-android-night-toggle, ' +
+      'landscape/dark full-plan control at f42d0994, two beats in all three scored repeats), 33.3 ms in the ' +
+      'e5142fab row capture (perf-profiles/evidence/2026-09-06-epic-1567-android-device-web-e514, ' +
+      'landscape/dark) and once in landscape/light (perf-profiles/evidence/2026-09-05-epic-1567-night-mode-control-trace ' +
+      'at a9438fc7); 16.7-17.1 ms in ten other captures of the same cell. The paired Chrome trace (issue 1696) ' +
+      "puts the click's input task at 26-39 ms on CrRendererMain in every repeat — 9-12 ms of dispatch and a " +
+      '9.5-14.7 ms whole-document style recalc for the theme token flip that the bounded closed-dialog treatment ' +
+      '(PR 1702) did not move — with a DroppedFrame at the first BeginFrame after every click. One 0.1 ms clock ' +
+      'quantum above the worst reading and equal to the max gate, so a P95 past it needs three over-gate gaps: ' +
+      'spread across repeats the max gate confirms them, concentrated in one repeat this allowance alone fails them.',
+  },
+};
+const ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES_MS = Object.fromEntries(
+  Object.entries(ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES).map(([label, { ms }]) => [label, ms])
+);
+export const ANDROID_WEB_ACTION_GATE_ALLOWANCES = {
+  p95: ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES_MS,
+  max: {},
+};
+export const ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES = {
+  p95: ANDROID_WEB_ACTION_FRAME_P95_ALLOWANCES,
+  max: {},
+};
+
+// The shipped release-gate policy by matrix target id, keyed exactly as
+// ADR-0137's lost-frame exceptions are: the calibrated iPad web row and the
+// physical Android web row each score under their own ledger, every other row
+// on the base gates. The generator applies this rather than an artifact's
+// recorded `gateAllowances` so a policy change re-scores every published cell
+// on regeneration and the regeneration diff is the record (ADR-0160); the
+// recorded field stays the capture-time verdict's provenance. `adrs` names
+// the records that grant each ledger, rendered beside it and in each allowed
+// cell's verdict.
+export const ACTION_GATE_ALLOWANCE_LEDGERS = {
+  'ipad-device-web': {
+    adrs: ['ADR-0090', 'ADR-0160'],
+    allowances: IOS_ACTION_GATE_ALLOWANCES,
+    entries: IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
+  },
+  'android-device-web': {
+    adrs: ['ADR-0162'],
+    allowances: ANDROID_WEB_ACTION_GATE_ALLOWANCES,
+    entries: ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES,
+  },
+};
+
 export function actionGateAllowancesFor(targetId) {
-  return targetId === ACTION_GATE_ALLOWANCE_TARGET ? IOS_ACTION_GATE_ALLOWANCES : {};
+  return Object.hasOwn(ACTION_GATE_ALLOWANCE_LEDGERS, targetId)
+    ? ACTION_GATE_ALLOWANCE_LEDGERS[targetId].allowances
+    : {};
 }
 
 // Both allowance shapes reach the scorer: the structured {p95, max} ledgers

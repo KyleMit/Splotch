@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   ACTION_FRAME_MAX_GATE_MS,
-  ACTION_GATE_ALLOWANCE_TARGET,
+  ACTION_GATE_ALLOWANCE_LEDGERS,
+  ANDROID_WEB_ACTION_GATE_ALLOWANCES,
+  ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES,
   IOS_ACTION_GATE_ALLOWANCES,
   IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
   ACTION_FRAME_P95_GATE_MS,
@@ -13,6 +15,7 @@ import {
   inkRotationActionLabel,
   scoredActionFrameGaps,
   summarizeActionGroup,
+  summarizeActions,
 } from '../lib/action-stats.mjs';
 import {
   activationModeFor,
@@ -44,7 +47,7 @@ import {
 } from '../web/capture-desktop-actions.mjs';
 import { eraserFillFunctionSource } from '../lib/eraser-fill.mjs';
 import { loadedPageEntryProblem } from '../lib/profile-preview.mjs';
-import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
+import { FULL_ACTION_GROUPS, compactSettingsActionLabel } from '../lib/action-applicability.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
 const LIVE_SURFACE = readFileSync(
@@ -1121,28 +1124,13 @@ describe('the calibrated iPad web allowance ledger', () => {
     }
   });
 
-  it('carries a basis naming a committed evidence corpus for every entry', () => {
-    for (const statistic of ['p95', 'max']) {
-      for (const [label, entry] of Object.entries(IOS_ACTION_GATE_ALLOWANCE_ENTRIES[statistic])) {
-        expect(entry.ms, label).toBe(IOS_ACTION_GATE_ALLOWANCES[statistic][label]);
-        expect(entry.basis, label).toMatch(/\S/);
-        for (const corpus of entry.basis.match(/perf-profiles\/evidence\/[\w.-]+/g) ?? []) {
-          expect(existsSync(join(ROOT, corpus, 'index.json')), `${label}: ${corpus}`).toBe(true);
-        }
-      }
-    }
-    for (const [label, entry] of Object.entries(IOS_ACTION_GATE_ALLOWANCE_ENTRIES.p95)) {
-      expect(entry.basis, label).toMatch(/perf-profiles\/evidence\//);
-    }
-  });
-
-  it('applies to the calibrated iPad web target and to no other', () => {
-    expect(actionGateAllowancesFor(ACTION_GATE_ALLOWANCE_TARGET)).toBe(IOS_ACTION_GATE_ALLOWANCES);
-    expect(ACTION_GATE_ALLOWANCE_TARGET).toBe('ipad-device-web');
-    for (const target of ['ipad-device-native', 'android-device-web', 'ipad-simulator-web']) {
-      expect(actionGateAllowancesFor(target)).toEqual({});
-    }
-    expect(actionGateAllowancesFor(undefined)).toEqual({});
+  it('is the ipad-device-web row of the per-target registry', () => {
+    expect(ACTION_GATE_ALLOWANCE_LEDGERS['ipad-device-web']).toEqual({
+      adrs: ['ADR-0090', 'ADR-0160'],
+      allowances: IOS_ACTION_GATE_ALLOWANCES,
+      entries: IOS_ACTION_GATE_ALLOWANCE_ENTRIES,
+    });
+    expect(actionGateAllowancesFor('ipad-device-web')).toBe(IOS_ACTION_GATE_ALLOWANCES);
   });
 
   it('passes a covered action inside its allowance and fails it one quantum past', () => {
@@ -1159,5 +1147,131 @@ describe('the calibrated iPad web allowance ledger', () => {
       ).toBe(false);
       expect(summarizeActionGroup([action(inside)], label).passed, `${label} base`).toBe(false);
     }
+  });
+});
+
+// ADR-0162: the physical Android web row's one allowance, the compact-shell
+// theme flip. Its value is pinned to the committed evidence rather than typed:
+// one 0.1 ms clock quantum above the worst committed scored P95 of the cell,
+// which lands it exactly on the max gate. Pooled P95 counts gaps and max
+// confirmation counts repeats, so the allowance is at least as strict as the
+// max gate and never passes a cell the max gate would fail; the concentrated-
+// gap case below is where it is stricter.
+describe('the physical Android web allowance ledger', () => {
+  const label = `disable ${compactSettingsActionLabel('Night Mode')}`;
+  const ms = ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95[label];
+
+  function committedCellReadings() {
+    const evidenceRoot = join(ROOT, 'perf-profiles', 'evidence');
+    const readings = [];
+    for (const campaign of readdirSync(evidenceRoot)) {
+      const indexPath = join(evidenceRoot, campaign, 'index.json');
+      if (!existsSync(indexPath)) continue;
+      const { kept = [] } = JSON.parse(readFileSync(indexPath, 'utf8'));
+      for (const entry of kept) {
+        if (entry.target !== 'android-device-web' || entry.brush !== 'actions') continue;
+        const capture = JSON.parse(readFileSync(join(evidenceRoot, campaign, entry.file), 'utf8'));
+        const samples = (capture.samples ?? []).filter((sample) => sample.label === label);
+        if (samples.length === 0) continue;
+        readings.push({ campaign, file: entry.file, samples, ...summarizeActions(samples)[0] });
+      }
+    }
+    return readings;
+  }
+
+  it('names exactly the one action ADR-0162 covers, on the P95 gate only', () => {
+    expect(Object.keys(ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95)).toEqual([label]);
+    expect(ANDROID_WEB_ACTION_GATE_ALLOWANCES.max).toEqual({});
+    expect(ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES.p95[label].ms).toBe(ms);
+    expect(ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES.max).toEqual({});
+  });
+
+  it('sits one 0.1 ms quantum above the worst committed reading of the cell, at the max gate', () => {
+    const readings = committedCellReadings();
+    expect(readings.length).toBeGreaterThanOrEqual(3);
+    const worst = Math.max(...readings.map((reading) => reading.frames.p95));
+    expect(worst).toBe(33.4);
+    expect(ms).toBe(Number((worst + 0.1).toFixed(1)));
+    expect(ms).toBe(ACTION_FRAME_MAX_GATE_MS);
+    expect(ms).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
+    expect(Math.max(...readings.map((reading) => reading.frames.max))).toBeLessThanOrEqual(ms);
+  });
+
+  it('passes every committed reading under the ledger and fails the two-beat ones on the base gate', () => {
+    const readings = committedCellReadings();
+    const twoBeat = readings.filter((reading) => !reading.passed);
+    expect(twoBeat.length).toBeGreaterThanOrEqual(2);
+    for (const reading of readings) {
+      const under = summarizeActions(reading.samples, [], ANDROID_WEB_ACTION_GATE_ALLOWANCES)[0];
+      expect(under.passed, `${reading.campaign}/${reading.file}`).toBe(true);
+    }
+  });
+
+  it('fails one quantum past the allowance, where the max gate also confirms the breach', () => {
+    const past = ms + 0.1;
+    const repeat = (warmup) =>
+      action(
+        Array.from({ length: 18 }, (_, i) => frame(i * 16.7, i === 1 ? past : 16.7)),
+        { label, warmup }
+      );
+    const group = [true, false, false, false].map(repeat);
+    const summary = summarizeActionGroup(group, label, ANDROID_WEB_ACTION_GATE_ALLOWANCES);
+    expect(summary.frames.p95).toBe(past);
+    expect(summary.frames.maxBreachSamples).toBe(3);
+    expect(summary.passed).toBe(false);
+  });
+
+  // Pooled P95 counts gaps; max confirmation counts repeats (ADR-0156). Three
+  // over-gate gaps from one activation leave the max unconfirmed, and only the
+  // allowance fails the cell — a 34 ms allowance would pass it, which is why
+  // 33.5 is the stricter policy rather than an equivalent one (ADR-0162).
+  it('fails three over-gate gaps concentrated in one repeat, which the max gate leaves unconfirmed', () => {
+    const past = ms + 0.1;
+    const repeat = (slowFrames, warmup) =>
+      action(
+        Array.from({ length: 17 }, (_, i) => frame(i * 16.7, slowFrames.has(i) ? past : 16.7)),
+        { label, warmup }
+      );
+    const concentrated = [
+      repeat(new Set(), true),
+      repeat(new Set([1, 2, 3]), false),
+      repeat(new Set(), false),
+      repeat(new Set(), false),
+    ];
+    const summary = summarizeActionGroup(concentrated, label, ANDROID_WEB_ACTION_GATE_ALLOWANCES);
+    expect(summary.frames.p95).toBe(past);
+    expect(summary.frames.maxBreachSamples).toBe(1);
+    expect(summary.frames.maxUnconfirmed).toBe(true);
+    expect(summary.passed).toBe(false);
+    const wholeMillisecond = { p95: { [label]: Math.ceil(ms) }, max: {} };
+    expect(summarizeActionGroup(concentrated, label, wholeMillisecond).passed).toBe(true);
+  });
+
+  it('carries a basis naming committed evidence corpora that exist', () => {
+    const { basis } = ANDROID_WEB_ACTION_GATE_ALLOWANCE_ENTRIES.p95[label];
+    const corpora = basis.match(/perf-profiles\/evidence\/[\w.-]+/g) ?? [];
+    expect(corpora.length).toBeGreaterThanOrEqual(2);
+    for (const corpus of corpora) {
+      expect(existsSync(join(ROOT, corpus, 'index.json')), corpus).toBe(true);
+    }
+  });
+
+  it('applies to the physical Android web target and to no target without a ledger', () => {
+    expect(Object.keys(ACTION_GATE_ALLOWANCE_LEDGERS).sort()).toEqual([
+      'android-device-web',
+      'ipad-device-web',
+    ]);
+    expect(ACTION_GATE_ALLOWANCE_LEDGERS['android-device-web'].adrs).toEqual(['ADR-0162']);
+    expect(actionGateAllowancesFor('android-device-web')).toBe(ANDROID_WEB_ACTION_GATE_ALLOWANCES);
+    for (const target of [
+      'ipad-device-native',
+      'android-device-native',
+      'android-emulator-web',
+      'ipad-simulator-web',
+      'constructor',
+    ]) {
+      expect(actionGateAllowancesFor(target), target).toEqual({});
+    }
+    expect(actionGateAllowancesFor(undefined)).toEqual({});
   });
 });
