@@ -15,6 +15,7 @@
     type ResponsiveColoringImage,
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { createDialogTheme } from '$lib/state/dialogTheme.svelte';
   import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
   import { runSingleFlightActivation } from '$lib/actions/pressFeedback';
   import ScrollCue from './design/ScrollCue.svelte';
@@ -50,9 +51,13 @@
   // layout.orientation is only a fallback until the engine mounts.
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
   const activePage = $derived(coloringBookState.overlayPage);
+  // The picker's covers, page tiles, and active-page preview are themed art
+  // behind a closed dialog most of the time; they follow the theme only while
+  // the picker is open. Prefetches and the picked overlay keep the live theme.
+  const pickerTheme = createDialogTheme(coloringBookModal);
   const activePagePreview = $derived(
     activePage
-      ? pageSelectorImageSource(activePage, coloringBookState.orientation, resolvedTheme())
+      ? pageSelectorImageSource(activePage, coloringBookState.orientation, pickerTheme.current)
       : null
   );
   const bookGridLayout = $derived(coloringBookGridLayout(books.length));
@@ -215,7 +220,7 @@
           use:cutTrailingRow
         >
           {#each books as book (book.id)}
-            {@const coverImage = coverThumbImageSource(book, resolvedTheme())}
+            {@const coverImage = coverThumbImageSource(book, pickerTheme.current)}
             <button
               class="coloring-tile coloring-book-tile"
               type="button"
@@ -263,7 +268,7 @@
             use:cutTrailingRow
           >
             {#each activeBook.pages as page (page.id)}
-              {@const pageImage = pageSelectorImageSource(page, orientation, resolvedTheme())}
+              {@const pageImage = pageSelectorImageSource(page, orientation, pickerTheme.current)}
               <button
                 class="coloring-tile"
                 type="button"

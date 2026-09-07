@@ -6,6 +6,8 @@ import {
   ACTION_FIRST_FRAME_GATE_MS,
   ACTION_FRAME_MAX_GATE_MS,
   ACTION_FRAME_P95_GATE_MS,
+  ANDROID_WEB_ACTION_GATE_ALLOWANCES,
+  IOS_ACTION_GATE_ALLOWANCES,
 } from '../lib/action-stats.mjs';
 import {
   mergeActionResults,
@@ -14,7 +16,7 @@ import {
   renderReport,
 } from '../gen-performance-matrix.mjs';
 import { GESTURE_REPEATS, UNDO_COUNT } from '../lib/campaign-plan.mjs';
-import { FULL_ACTION_GROUPS } from '../lib/action-applicability.mjs';
+import { FULL_ACTION_GROUPS, compactSettingsActionLabel } from '../lib/action-applicability.mjs';
 
 const temporaryDirectories = [];
 const distribution = { p50: 1, p95: 1, p99: 1, max: 1 };
@@ -232,7 +234,17 @@ function normalizedMatrix(modes) {
 function writeActionCapture(
   directory,
   name,
-  { orientation, theme, summaries, samples, transport, captureRuntime, engine, actionPlan }
+  {
+    orientation,
+    theme,
+    summaries,
+    samples,
+    transport,
+    captureRuntime,
+    engine,
+    actionPlan,
+    gateAllowances,
+  }
 ) {
   const path = join(directory, name);
   writeFileSync(
@@ -247,6 +259,7 @@ function writeActionCapture(
       captureRuntime,
       engine,
       actionPlan,
+      gateAllowances,
     })
   );
   return name;
@@ -273,7 +286,7 @@ describe('deployment matrix report', () => {
     ]);
     const html = renderReport(matrix);
 
-    expect(html).toContain('<b>1</b> action columns charted');
+    expect(html).toContain('<b>1</b> action measured');
     expect(html).toContain('<b>0/1</b>');
     expect(html).toContain('Action 1: expand action drawer');
     expect(html).toContain('Portrait · Light');
@@ -291,9 +304,11 @@ describe('deployment matrix report', () => {
     const grids = [...html.matchAll(/<div class="heat-cells">(.*?)<\/div>/g)];
 
     expect(html).toContain('style="--action-columns:49"');
-    expect(html).toContain('grid-template-columns:repeat(var(--action-columns),15px)');
+    expect(html).toContain('grid-template-columns:repeat(var(--action-columns),var(--heat-cell))');
     expect(html).not.toContain('repeat(46,15px)');
-    expect(grids).toHaveLength(5);
+    // The header row plus the one captured mode; unavailable modes render a
+    // spanning reason note instead of a grid of placeholder cells.
+    expect(grids).toHaveLength(2);
     for (const [, cells] of grids) {
       expect(cells.match(/class="(?:action-number|heat-cell)/g)).toHaveLength(49);
     }
@@ -400,8 +415,9 @@ describe('deployment matrix report', () => {
     expect(html).toContain('<i class="heat-cell unscoreable"></i>no control');
     expect(html).toContain('<i class="heat-cell not-applicable"></i>N/A');
     expect(html).toContain('<i class="heat-cell missing"></i>missing/unavailable');
-    expect(html).toContain('<h2>5-action failure fingerprint</h2>');
-    expect(html).toContain('<b>5</b> action columns charted');
+    expect(html).toContain('<h2>Discrete actions</h2>');
+    expect(html).toContain('5 action columns');
+    expect(html).toContain('<b>5</b> actions measured');
   });
 
   it('applies an agreeing focused capture only to its measured labels', () => {
@@ -792,7 +808,7 @@ describe('deployment matrix report', () => {
       html.indexOf('<h2>Capture limitations</h2>')
     );
     expect(html.indexOf('<h2>Candidate actions</h2>')).toBeLessThan(
-      html.indexOf('<h2>Coverage</h2>')
+      html.indexOf('<h2>Commit provenance</h2>')
     );
   });
 
@@ -1935,5 +1951,212 @@ describe('trust publishes instrument silence as unrecorded', () => {
       state: 'unrecorded',
       detail: 'pressure(uncalibrated)+contactGeometry(uncalibrated)',
     });
+  });
+});
+
+// ADR-0160: the matrix scores a capture under the SHIPPED allowance policy for
+// its target, never under the ledger the artifact recorded, so a policy change
+// reaches every published cell on regeneration — and the allowance rides on
+// the result, is priced into the heat ratio, and is rendered beside the gates.
+describe('per-target action allowances', () => {
+  const label = 'select coloring page';
+  const allowedP95 = IOS_ACTION_GATE_ALLOWANCES.p95[label];
+  const allowedSample = (warmup) => ({
+    ...actionSample(label, warmup),
+    postActionFrameGapsMs: Array.from({ length: 20 }, () => allowedP95 - 1),
+  });
+
+  function matrixFor(targetOverrides, captureOverrides = {}) {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-allowance-'));
+    temporaryDirectories.push(manifestDirectory);
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [
+        ...[true, false, false, false].map((warmup) => actionSample('idle frame control', warmup)),
+        ...[true, false, false, false].map(allowedSample),
+      ],
+      ...captureOverrides,
+    });
+    const target = {
+      ...manifestTarget([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      ...targetOverrides,
+    };
+    return normalizeMatrix({ ...manifest([]), targets: [target] }, manifestDirectory);
+  }
+
+  it('scores the calibrated iPad web row under the shipped ledger, whatever the artifact recorded', () => {
+    expect(allowedP95).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
+    const matrix = matrixFor(
+      { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },
+      { captureRuntime: 'ios-safari', gateAllowances: {} }
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toEqual({ p95Ms: allowedP95 });
+    expect(result.postActionFrames.p95).toBe(allowedP95 - 1);
+  });
+
+  it('keeps every other target on the base gates, whatever the artifact recorded', () => {
+    const matrix = matrixFor(
+      { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
+      { captureRuntime: 'ios-capacitor-webview', gateAllowances: IOS_ACTION_GATE_ALLOWANCES }
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  // A summary-only artifact keeps the verdict it was written with, so the shipped
+  // policy cannot reach it: on the ledger's target the fold refuses rather than
+  // labelling a stored verdict with an allowance it never scored under, and on
+  // every other target it folds as before, carrying no allowance.
+  it('refuses a summary-only capture on the ledger target and folds it plainly elsewhere', () => {
+    const summaryOnly = {
+      samples: undefined,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: false,
+        },
+      ],
+    };
+    expect(() =>
+      matrixFor({ id: 'ipad-device-web', fidelity: 'physical-safari-gated' }, summaryOnly)
+    ).toThrow('allowance policy (ADR-0160) cannot be applied');
+    const matrix = matrixFor(
+      { id: 'ipad-device-native', fidelity: 'physical-native-advisory' },
+      summaryOnly
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === label
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  // The stored verdict of a summary-only artifact was scored under the ledger
+  // it recorded. A native artifact carrying the iPad ledger stores PASS at a
+  // P95 the native row's base gate fails, so the fold refuses it — in both the
+  // structured and the legacy flat recorded shapes — rather than publishing a
+  // verdict the target never scored.
+  it('refuses a summary-only capture whose recorded ledger is not the target policy', () => {
+    const storedPass = (gateAllowances) => ({
+      samples: undefined,
+      gateAllowances,
+      summaries: [
+        {
+          label,
+          count: 3,
+          totalCount: 4,
+          activation: { captured: 4, valid: 4, passed: true },
+          firstFrame: distribution,
+          ready: distribution,
+          frames: { ...distribution, p95: allowedP95 - 1, raw: distribution },
+          frameSamples: { scored: 3, raw: 3 },
+          passed: true,
+        },
+      ],
+    });
+    const native = { id: 'ipad-device-native', fidelity: 'physical-native-advisory' };
+    expect(() => matrixFor(native, storedPass(IOS_ACTION_GATE_ALLOWANCES))).toThrow(
+      'recorded gateAllowances that target ipad-device-native does not grant'
+    );
+    expect(() => matrixFor(native, storedPass({ [label]: allowedP95 }))).toThrow('does not grant');
+    const plain = matrixFor(native, storedPass({ p95: {}, max: {} }));
+    const result = plain.targets[0].modes[0].actions.results.find((entry) => entry.label === label);
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toBeUndefined();
+  });
+
+  it('renders every ledger beside the gates and names the allowance in the cell verdict', () => {
+    const matrix = matrixFor(
+      { id: 'ipad-device-web', fidelity: 'physical-safari-gated' },
+      { captureRuntime: 'ios-safari' }
+    );
+    const ledgers = matrix.gates.actions.postActionAllowances;
+    expect(ledgers.map((ledger) => ledger.target)).toEqual([
+      'ipad-device-web',
+      'android-device-web',
+    ]);
+    const ipad = ledgers.find((ledger) => ledger.target === 'ipad-device-web');
+    expect(ipad.adrs).toEqual(['ADR-0090', 'ADR-0160']);
+    expect(ipad.p95[label].ms).toBe(allowedP95);
+    const markdown = renderMarkdown(matrix);
+    expect(markdown).toContain(`**${label}** — post-action P95 ≤ ${allowedP95} ms.`);
+    expect(markdown).toContain('**open Settings** — post-action max ≤ 56 ms.');
+    expect(markdown).toContain(`**${nightModeLabel}** — post-action P95 ≤ ${nightModeP95} ms.`);
+    const html = renderReport(matrix);
+    expect(html).toContain(
+      'Action allowances on <code>ipad-device-web</code> (ADR-0090, ADR-0160)'
+    );
+    expect(html).toContain('Action allowances on <code>android-device-web</code> (ADR-0162)');
+    expect(html).toContain(
+      `PASS under a recorded allowance (post P95 ≤ ${allowedP95} ms; ADR-0090, ADR-0160)`
+    );
+  });
+
+  // ADR-0162: the physical Android web row scores under its own one-entry
+  // ledger, priced and named per that ADR, while the native Android row beside
+  // it stays on the base gates. The fixture has the committed capture's shape:
+  // one two-beat frame in each of ~17 scored gaps per repeat, so the pooled
+  // P95 over three repeats is the third-highest gap and reads the two beats.
+  const nightModeLabel = `disable ${compactSettingsActionLabel('Night Mode')}`;
+  const nightModeP95 = ANDROID_WEB_ACTION_GATE_ALLOWANCES.p95[nightModeLabel];
+  const twoBeatSample = (warmup) => ({
+    ...actionSample(nightModeLabel, warmup),
+    postActionFrameGapsMs: [33.4, ...Array.from({ length: 16 }, () => 16.7)],
+  });
+  const androidCapture = (captureRuntime) => ({
+    captureRuntime,
+    samples: [
+      ...[true, false, false, false].map((warmup) => actionSample('idle frame control', warmup)),
+      ...[true, false, false, false].map(twoBeatSample),
+    ],
+  });
+
+  it('scores the physical Android web row under the ADR-0162 ledger and names it', () => {
+    expect(nightModeP95).toBe(33.5);
+    const matrix = matrixFor(
+      { id: 'android-device-web', fidelity: 'physical-web-advisory' },
+      androidCapture('android-chrome')
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === nightModeLabel
+    );
+    expect(result.postActionFrames.p95).toBe(33.4);
+    expect(result.passed).toBe(true);
+    expect(result.gateAllowance).toEqual({ p95Ms: nightModeP95 });
+    expect(renderReport(matrix)).toContain(
+      `PASS under a recorded allowance (post P95 ≤ ${nightModeP95} ms; ADR-0162)`
+    );
+  });
+
+  it('keeps the physical Android native row on the base gates for the same capture', () => {
+    const matrix = matrixFor(
+      { id: 'android-device-native', fidelity: 'physical-native-advisory' },
+      androidCapture('android-capacitor-webview')
+    );
+    const result = matrix.targets[0].modes[0].actions.results.find(
+      (entry) => entry.label === nightModeLabel
+    );
+    expect(result.passed).toBe(false);
+    expect(result.gateAllowance).toBeUndefined();
   });
 });

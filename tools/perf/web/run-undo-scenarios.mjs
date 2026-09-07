@@ -74,9 +74,20 @@ const { flag, throttle, port, build } = parsePerfArgs({
   ],
   entry,
 });
+// Bounds the wait for tiled history to reach the idle steady state its fold
+// loop leaves behind (TILE_HISTORY_FOLD_IDLE_MS between folds, one command per
+// fold, until history.length <= undoableCommands). The deepest backlog a
+// scenario can leave is its stroke count less MIN_TILED_UNDO_COMMANDS, and the
+// 2026-09-06 runner traces (issue 1578) put a main-thread stall of 5–10 s
+// between the crayon burst and the first poll, before the first fold timer
+// could fire; this is that worst backlog plus the stall with margin. Expiry is
+// recorded on the result and reported, never treated as missing coverage — the
+// commit samples the gate scores are complete before this wait begins.
+// tools/perf/tests/history-settle-deadline.test.mjs holds it to that derivation.
+const DEFAULT_HISTORY_SETTLE_TIMEOUT_MS = 45_000;
 const HISTORY_SETTLE_TIMEOUT_MS = requireNumberFlag(
   'history-settle-timeout-ms',
-  flag('history-settle-timeout-ms', '10000'),
+  flag('history-settle-timeout-ms', String(DEFAULT_HISTORY_SETTLE_TIMEOUT_MS)),
   entry
 );
 const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
@@ -236,7 +247,14 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
 // stack AND exercises the depth-cap shift path.
 const MAX_UNDO_DEPTH = 20;
 const MAX_UNDO_STEPS = 60;
-const STROKES = requireNumberFlag('strokes', flag('strokes', String(MAX_UNDO_DEPTH + 2)), entry);
+// Named so the settle deadline's drift guard can read the scenario volume the
+// deadline was derived from (tools/perf/tests/history-settle-deadline.test.mjs).
+const DEFAULT_SCENARIO_STROKES = MAX_UNDO_DEPTH + 2;
+const STROKES = requireNumberFlag(
+  'strokes',
+  flag('strokes', String(DEFAULT_SCENARIO_STROKES)),
+  entry
+);
 
 function buildScenarios(width, height) {
   const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));
@@ -364,55 +382,127 @@ async function undoAll(page) {
   }, MAX_UNDO_STEPS);
 }
 
-const undoDebug = (page) =>
-  page.evaluate(() => (window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null));
+// One poll of the history debug contract, plus the engine.* measures that
+// landed since the previous poll and the page clock the next poll reads from.
+// The measures are what make a slow settle attributable: a poll that took
+// three seconds to return either queued behind an engine.fold or behind
+// nothing this build can name, and the trace tells the two apart.
+const readHistorySample = (page, sinceMs) =>
+  page.evaluate((since) => {
+    const debug = window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null;
+    const measures = {};
+    for (const m of performance.getEntriesByType('measure')) {
+      if (!m.name.startsWith('engine.') || m.startTime < since) continue;
+      (measures[m.name] ??= []).push(Math.round(m.duration));
+    }
+    // The injected rAF sampler's stamps since the previous poll: a poll that
+    // returned late with no frames in between waited on one uninterruptible
+    // task, while frames throughout mean many tasks ran ahead of it.
+    const stamps = (window.__perf?.frameStamps ?? []).filter((t) => t >= since);
+    let maxGapMs = 0;
+    for (let i = 1; i < stamps.length; i++)
+      maxGapMs = Math.max(maxGapMs, stamps[i] - stamps[i - 1]);
+    const frames = {
+      count: stamps.length,
+      firstMs: stamps.length ? Math.round(stamps[0] - since) : null,
+      lastMs: stamps.length ? Math.round(stamps[stamps.length - 1] - since) : null,
+      maxGapMs: Math.round(maxGapMs),
+    };
+    return { debug, now: performance.now(), measures, frames };
+  }, sinceMs);
 
-// Tiled history may finish progressive patch capture or fold old commands into
-// base tiles after the batched draw phase returns. The harness needs a quiescent
-// reading, not a policy-specific shape, so it polls the complete debug contract
-// until consecutive samples agree.
+// The steady state tiled history reaches after a batched draw: no command is
+// still open, and the idle fold loop has nothing left to fold
+// (scheduleTiledHistoryFold's own condition, read through the debug contract).
+// A reading taken earlier describes a history that is still compacting, and
+// which side of the folds it lands on depends only on how fast the host was —
+// the 2026-09-06 traces show a fast host reading twenty-two retained commands
+// and no base tiles where a shared runner read twenty and a full base.
+const historyIsQuiescent = (d) => d.pendingCommands === 0 && d.historyLength <= d.snapshots;
+
 const SETTLE_POLL_MS = 100;
-const SETTLE_STABLE_SAMPLES = 4;
-async function settleHistory(page, timeoutMs = 10_000) {
+// A quiescent reading is confirmed by one more identical poll, so a capture that
+// the debug contract does not announce as pending cannot slip between them.
+const SETTLE_STABLE_SAMPLES = 2;
+const SETTLE_FIELDS = [
+  'snapshots',
+  'liveRasters',
+  'rasterBytes',
+  'baseRasters',
+  'baseRasterBytes',
+  'historyLength',
+  'pendingCommands',
+];
+const sameHistory = (a, b) => a != null && SETTLE_FIELDS.every((field) => a[field] === b[field]);
+const settleReading = (d) => Object.fromEntries(SETTLE_FIELDS.map((field) => [field, d[field]]));
+
+const formatMeasures = (measures) =>
+  Object.entries(measures)
+    .map(([name, durations]) => `${name}=[${durations.join(',')}]`)
+    .join(' ') || 'none';
+
+function formatSettleSample(sample, index) {
+  return (
+    `#${index + 1} +${sample.atMs}ms read ${sample.readMs}ms ` +
+    `${sample.changed ? 'changed' : 'same'} ${formatMeasures(sample.measures)}` +
+    (sample.frames
+      ? ` frames=${sample.frames.count}@${sample.frames.firstMs}..${sample.frames.lastMs}ms gap=${sample.frames.maxGapMs}ms`
+      : '')
+  );
+}
+
+const formatSettleTrace = (trace) => trace.map(formatSettleSample).join('; ');
+
+// Waits for the steady state above and reports how the wait went. The deadline
+// bounds wall clock only: an expired wait returns the last reading with
+// `settled: false` and the whole trace, because on a saturated main thread the
+// polls themselves are what spend the budget — each read round trip queues
+// behind whatever the host is doing — and a scenario whose commit samples are
+// already complete has lost nothing the gate scores.
+async function settleHistory(page, sinceMs, timeoutMs = HISTORY_SETTLE_TIMEOUT_MS) {
   const t0 = Date.now();
-  const sameHistory = (a, b) =>
-    a != null &&
-    a.snapshots === b.snapshots &&
-    a.liveRasters === b.liveRasters &&
-    a.rasterBytes === b.rasterBytes &&
-    a.baseRasters === b.baseRasters &&
-    a.baseRasterBytes === b.baseRasterBytes &&
-    a.historyLength === b.historyLength &&
-    a.pendingCommands === b.pendingCommands;
+  const trace = [];
   let prev = null;
   let stable = 0;
   let samples = 0;
+  let since = sinceMs;
   for (;;) {
-    const d = await undoDebug(page);
-    if (d == null) return null;
+    const readStart = Date.now();
+    const sample = await readHistorySample(page, since);
+    const d = sample.debug;
+    if (d == null)
+      return { debug: null, settled: false, samples, elapsedMs: Date.now() - t0, trace };
+    since = sample.now;
     samples++;
-    stable = sameHistory(prev, d) ? stable + 1 : 0;
-    if (stable >= SETTLE_STABLE_SAMPLES - 1) return d;
+    const changed = prev != null && !sameHistory(prev, d);
+    stable = prev != null && !changed ? stable + 1 : 0;
+    trace.push({
+      atMs: Date.now() - t0,
+      readMs: Date.now() - readStart,
+      changed,
+      measures: sample.measures,
+      frames: sample.frames ?? null,
+      reading: settleReading(d),
+    });
+    const settled = historyIsQuiescent(d) && stable >= SETTLE_STABLE_SAMPLES - 1;
+    const expired = samples >= SETTLE_STABLE_SAMPLES && Date.now() - t0 > timeoutMs;
+    // A fold backlog is read one identical poll at a time for seconds, so the
+    // log keeps the polls that carry information — the first, every change, and
+    // the last — while the artifact keeps the whole trace.
+    if (samples === 1 || changed || settled || expired) {
+      console.log(`  settle ${formatSettleSample(trace.at(-1), samples - 1)}`);
+    }
+    if (settled) {
+      return { debug: d, settled: true, samples, elapsedMs: Date.now() - t0, trace };
+    }
     // The wall clock alone cannot expire this wait, because on a saturated main
-    // thread the polls themselves are what spend it: each getUndoDebug() round
-    // trip queues behind the work being waited on, so a slow host can burn the
-    // whole budget on two or three reads and time out on a history nothing was
-    // still changing. Observed on the 2026-09-02 main gate, where every counter
-    // the timeout text reported matched the settled reading a second runner
-    // took for the same commit — consistent with undersampling, though the text
-    // omitted pendingCommands and kept no earlier sample, which is why this
-    // message now reports both. Quiescence is only visible
-    // once SETTLE_STABLE_SAMPLES readings exist, so until that many have been
-    // taken there is nothing for a timeout to have been long enough for.
-    if (samples >= SETTLE_STABLE_SAMPLES && Date.now() - t0 > timeoutMs) {
-      throw new Error(
-        `history never settled within ${timeoutMs} ms: undoEntries=${d.snapshots} ` +
-          `livePatchEntries=${d.liveRasters} patchBytes=${d.rasterBytes} ` +
-          `baseTiles=${d.baseRasters} baseRasterBytes=${d.baseRasterBytes} ` +
-          `historyCommands=${d.historyLength} pendingCommands=${d.pendingCommands} ` +
-          `(want ${SETTLE_STABLE_SAMPLES} consecutive identical samples; ` +
-          `took ${samples} in ${Date.now() - t0} ms)`
-      );
+    // thread the polls themselves are what spend it: each read round trip
+    // queues behind the work being waited on, so a slow host can burn the whole
+    // budget on one read. The steady state is only confirmable once
+    // SETTLE_STABLE_SAMPLES readings exist, so until that many have been taken
+    // there is nothing for a deadline to have been long enough for (ADR-0158).
+    if (expired) {
+      return { debug: d, settled: false, samples, elapsedMs: Date.now() - t0, trace };
     }
     prev = d;
     await sleep(SETTLE_POLL_MS);
@@ -436,7 +526,17 @@ export async function runUndoScenario(
     drawStrokes(page, sc.strokes, !!sc.crayon)
   );
 
-  const debug = await settleHistory(page, historySettleTimeoutMs);
+  const settle = await settleHistory(page, drawEnd, historySettleTimeoutMs);
+  const { debug } = settle;
+  if (debug != null && !settle.settled) {
+    console.warn(
+      `  history did not reach its idle steady state within ${historySettleTimeoutMs} ms ` +
+        `(${settle.samples} samples; last reading undoEntries=${debug.snapshots} ` +
+        `historyCommands=${debug.historyLength} pendingCommands=${debug.pendingCommands}); ` +
+        'continuing — the commit samples were complete before the wait began. ' +
+        `Trace: ${formatSettleTrace(settle.trace)}`
+    );
+  }
   const heapAfterDraw = await heapBytes(page);
 
   const undoStart = await now(page);
@@ -469,6 +569,12 @@ export async function runUndoScenario(
     strokes: sc.strokes.length,
     crayon: !!sc.crayon,
     debug,
+    settle: {
+      settled: settle.settled,
+      samples: settle.samples,
+      elapsedMs: settle.elapsedMs,
+      trace: settle.trace,
+    },
     undoSteps: steps,
     draw: {
       ops: draw.count,
@@ -1049,6 +1155,14 @@ function reportCommitGate(
   return base;
 }
 
+// A completed scenario whose history never reached its idle steady state is
+// still a measured scenario — the status says so rather than the row vanishing.
+function historyStatus(scenario) {
+  const settle = scenario.settle;
+  if (!settle || settle.settled || scenario.debug == null) return 'Completed';
+  return `Completed; history unsettled after ${settle.elapsedMs} ms (${settle.samples} samples)`;
+}
+
 function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
   const out = [];
   out.push('# Undo scenario profile (tiled history, ADR-0085/ADR-0086)\n');
@@ -1084,7 +1198,7 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
       continue;
     }
     out.push(
-      `| ${s.label} | ${s.strokes} | Completed | ${s.debug?.snapshots ?? 'n/a'} | ` +
+      `| ${s.label} | ${s.strokes} | ${historyStatus(s)} | ${s.debug?.snapshots ?? 'n/a'} | ` +
         `${s.debug?.liveRasters ?? 'n/a'} | ${s.debug?.historyLength ?? 'n/a'} | ` +
         `${s.debug?.baseRasters ?? 'n/a'} | ${f1(toMiB(s.debug?.rasterBytes ?? 0))} | ` +
         `${f1(toMiB(s.debug?.baseRasterBytes ?? 0))} | ${s.debug?.pendingCommands ?? 'n/a'} |`

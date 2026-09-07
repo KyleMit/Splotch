@@ -2,8 +2,18 @@
 
 **Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
 [ADR-0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md); amended by
-[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md) and
-[ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md). **Date:** 2026-07
+[ADR-0092](0092-direct-cdp-android-browser-action-profiling.md),
+[ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md), and
+[ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md). **Date:** 2026-07
+
+> **Amended by [ADR-0160](0160-measured-p95-allowances-for-gpu-attributed-ipad-transitions.md):**
+> the P95 allowance ledger introduced in the 2026-08 amendment below now holds five entries
+> (`open Settings` raised from 26 to 29 ms; `close Settings`, `select coloring page`,
+> `switch light theme to dark`, and `with ink: PORTRAIT to LANDSCAPE rotation` added), each sized
+> from the worst committed single capture with its basis and reopen condition recorded there. The
+> matrix generator applies the ledger by matrix target id (`ipad-device-web`) rather than re-scoring
+> a capture under the `gateAllowances` it recorded, so a policy change reaches every published cell
+> on regeneration; the recorded field remains the capture-time verdict's provenance.
 
 > **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
 > regression tiers and gates remain in force. Their commands are now `perf:ios:xcuitest:screen`,

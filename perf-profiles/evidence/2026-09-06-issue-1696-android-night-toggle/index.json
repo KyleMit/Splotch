@@ -1,0 +1,52 @@
+{
+  "campaign": "2026-09-06-issue-1696-android-night-toggle",
+  "productCommit": "f42d0994b27979731c8acc215e6e1f2385b85955",
+  "capturedFrom": "perf-profiles/issue-1696",
+  "study": "Attribute the landscape-dark compact-shell Night Mode toggle red from a paired trace on current main: focused control, full-plan control, traced full-plan prefix, and a full-plan control repeated after the treatment; the same clean product reads red and green across runs because the probe's frame clock is the scheduled vsync",
+  "kept": [
+    {
+      "file": "actions--adaa37e7.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "control-full-repeat/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--40783bc1.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "control-full-untraced/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--5a6b4df3.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "control-untraced/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--171cb4ba.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "trace-prefix/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

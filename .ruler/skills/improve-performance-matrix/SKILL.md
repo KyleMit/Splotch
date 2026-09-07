@@ -1,16 +1,21 @@
 ---
 name: improve-performance-matrix
-description: Drive Splotch's deployment-target performance matrix from current evidence to zero scoreable red cells through product improvements and faithful recaptures, keeping harness work subordinate to and immediately useful for a named product experiment. Ships causal product clusters as reviewed, merge-ready stacked PRs with a green tip. Use for sustained performance improvement; use capture-performance-matrix for capture-only snapshots or validation.
+description: Drive Splotch's deployment-target performance matrix from current evidence to zero unexplained scoreable red cells on the release-gate rows through product improvements and faithful recaptures, keeping harness work subordinate to and immediately useful for a named product experiment. Ships causal product clusters as reviewed, merge-ready stacked PRs with a green tip. Use for sustained performance improvement; use capture-performance-matrix for capture-only snapshots or validation.
 ---
 
 # Improve performance matrix
 
 Run a fresh evidence-led campaign against the authoritative deployment-target matrix. The campaign
-ends only when every current, scoreable cell on a **release-gate row** is green, unless the user
-sends a control message that explicitly requests a merge-ready stopping point. ADR-0156 defines the
-rows: the physical iPad (web and native) and the physical Android phone (web and native) are the
-release gate; Mac rows are a regression tripwire; simulator and emulator rows are advisory and never
-count toward completion.
+ends only when every current, scoreable cell on a **release-gate row** is green or carries a
+recorded, evidence-backed disposition, unless the user sends a control message that explicitly
+requests a merge-ready stopping point. ADR-0156 defines the rows: the physical iPad (web and native)
+and the physical Android phone (web and native) are the release gate; Mac rows are a regression
+tripwire; simulator and emulator rows are advisory and never count toward completion. ADR-0160
+defines the disposition: an ADR-recorded measured allowance or documented floor that names the
+cell's measured basis, its trace attribution, and the condition that reopens it. A red cell with one
+is **explained** and counts toward completion; the campaign's remainder is the **unexplained** reds.
+A disposition is a release-gate policy change the owner records, never something a campaign grants
+itself to finish.
 
 This is the improvement sibling of `capture-performance-matrix`: that skill owns comparable capture
 mechanics and matrix refreshes; this skill owns inventory, causal attribution, product optimization,
@@ -375,23 +380,27 @@ The workflow must not depend on provider-specific goal tracking. The matrix, raw
 history, live PR stack, and campaign ledger remain the durable source of truth.
 
 When Goal mode is available, use it only if the user explicitly requests Goal mode for this
-campaign. Create one objective for zero current, scoreable red cells on the release-gate rows
-(ADR-0156) and omit a token budget unless the user supplies one. Goal mode is useful for automatic
-continuation and for keeping the terminal condition visible across long tool runs. It is a poor fit
-for an ordinary campaign that may receive `pause` or `wrap up`: it supports completion or genuine
-blocking, not a merge-ready pause, permits only one active goal, and does not replace external
-checkpoints. Never mark the goal complete for an improvement, a green cluster, or a wrap-up that
-leaves current scoreable reds on a release-gate row.
+campaign. Create one objective for zero current, scoreable, unexplained red cells on the
+release-gate rows (ADR-0156, ADR-0160) and omit a token budget unless the user supplies one. Goal
+mode is useful for automatic continuation and for keeping the terminal condition visible across long
+tool runs. It is a poor fit for an ordinary campaign that may receive `pause` or `wrap up`: it
+supports completion or genuine blocking, not a merge-ready pause, permits only one active goal, and
+does not replace external checkpoints. Never mark the goal complete for an improvement, a green
+cluster, or a wrap-up that leaves current, scoreable, unexplained reds on a release-gate row.
 
 ## Completion gate
 
 Complete the full campaign only when:
 
-* a freshly regenerated matrix has zero current, scoreable red cells on the release-gate rows
-  (ADR-0156), and no release-gate cell that is unscoreable because its instrument is uncalibrated —
-  such a cell counts as red until the runtime is calibrated or recorded as uncalibratable; simulator
-  and emulator red is rendered and reported, never counted as remainder, and a Mac cell counts only
-  when it turned red on a change that was green on the trunk;
+* a freshly regenerated matrix has zero current, scoreable, **unexplained** red cells on the
+  release-gate rows (ADR-0156) — a red cell counts as explained only when an ADR records its
+  disposition with the measured basis, the trace attribution, and the reopen condition (ADR-0160's
+  measured allowances are the shape; the matrix renders every allowance beside its gates), and a
+  disposition granted by the campaign itself rather than recorded by the owner does not count — and
+  no release-gate cell that is unscoreable because its instrument is uncalibrated — such a cell
+  counts as red until the runtime is calibrated or recorded as uncalibratable; simulator and
+  emulator red is rendered and reported, never counted as remainder, and a Mac cell counts only when
+  it turned red on a change that was green on the trunk;
 * every genuine product red on a release-gate row (or a Mac cell that turned red on a change that
   was green on the trunk) that existed during the campaign has a recorded product outcome — a
   verified improvement or an empirically rejected candidate followed by the next hypothesis; a

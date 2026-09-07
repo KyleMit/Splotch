@@ -2,6 +2,7 @@ import { crayonBufferIsDirty, crayonDepositsOnTiles } from './crayonPassBuffer';
 import { crayonOpShowsTile, resetCrayonStateForClear } from './crayonPassBuffer';
 import { createDrawingWorkCounters } from './drawingWorkDebug';
 import { scanCanvasIsEmpty } from './emptyScan';
+import { PERF_MARKS } from './perf';
 import type { MagicSheetSnapshot } from './magicBrush';
 import type { PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
@@ -110,9 +111,8 @@ function migrateHiddenBackingsAcrossFrames() {
     if (revision !== backingMigration.revision) return;
     const tile = liveTiles[index++];
     if (tile?.canvas.hidden) ensureNormalTileBacking(tile);
-    if (index < liveTiles.length) {
-      requestAnimationFrame(migrateNext);
-    } else backingMigration.pending = false;
+    if (index < liveTiles.length) requestAnimationFrame(migrateNext);
+    else backingMigration.pending = false;
   };
   requestAnimationFrame(migrateNext);
 }
@@ -328,11 +328,15 @@ function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = fal
   if (captureUndo) undoPatches.crop(command);
 }
 
+// Measured under PERF_MARKS like engine.draw and engine.commit, so a profiling
+// harness watching the history settle after a batched draw can attribute the
+// main-thread time it waited through to folds rather than infer it from gaps.
 function foldOldestCommand() {
   const paper = host?.paperSize();
   if (!paper || paper.width <= 0 || paper.height <= 0) return;
   const command = history.shift();
   if (!command) return;
+  if (PERF_MARKS) performance.mark('engine.fold:start');
   undoPatches.delete(command);
   ensureHistoryBase();
   magicRecode.beforeFold(command);
@@ -340,11 +344,11 @@ function foldOldestCommand() {
   for (const op of command.ops) renderHistoryBaseOp(historyBase, op);
   restoreTileContexts(historyBase);
   magicRecode.afterFold(command);
+  if (PERF_MARKS) performance.measure('engine.fold', 'engine.fold:start');
 }
 
 function cancelHistoryFold() {
-  if (historyFoldTimer === null) return;
-  clearTimeout(historyFoldTimer);
+  if (historyFoldTimer !== null) clearTimeout(historyFoldTimer);
   historyFoldTimer = null;
 }
 
