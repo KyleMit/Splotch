@@ -14,7 +14,9 @@ The one exception to the no-prompts rule is a single upfront question: whether t
 request. Some environments (Claude Code on the web / cloud sessions) can't silently open a PR — the
 harness only permits it when the user has explicitly asked, and `gh` may be unavailable — so resolve
 that **once, before any work**, then run the whole sweep without further prompts (see Setup). Review
-happens on the PR when there is one; otherwise in the final summary.
+happens on the PR when there is one — per-item comments as the sweep runs, then the repo's standard
+independent-review loop (`drive-pr-to-mergeable`) once the PR is readied; otherwise in the final
+summary.
 
 ## Two kinds of issue — adapt the loop to each
 
@@ -198,7 +200,12 @@ When every issue is either fixed or skipped:
    and what it's waiting on. **In Branch-only mode** there is no PR description — this content goes
    in the final response instead.
 5. **In Draft-PR mode**, mark the PR ready for review (`gh pr ready`, or the GitHub MCP
-   `update_pull_request` tool with `draft: false`). Branch-only mode has no PR to ready.
+   `update_pull_request` tool with `draft: false`), then run `drive-pr-to-mergeable` on it with no
+   overrides — the rival review, `address-pr-review`, at most two rounds, CI to green, and the
+   verdict. The sweep's per-item comments are context for that review, not a substitute for it. A
+   finding the review raises against one item is fixed as a further commit on the sweep branch; one
+   that needs a decision joins the "Needs your decision" section. Branch-only mode has no PR to
+   ready or review.
 6. In your final response: how many issues were fixed (with their numbers), how many were skipped
-   (and what each is waiting on), and — in Draft-PR mode — the PR URL, or in Branch-only mode the
-   branch name plus the per-item summaries accumulated above.
+   (and what each is waiting on), and — in Draft-PR mode — the PR URL with the review verdict, or in
+   Branch-only mode the branch name plus the per-item summaries accumulated above.

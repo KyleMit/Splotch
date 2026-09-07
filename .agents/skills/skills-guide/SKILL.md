@@ -95,6 +95,7 @@ These augment the built-in PR flows rather than replacing them.
 | `create-pr-review-prompt` | **Handing off** this session's PRs to an independent reviewer — builds the prompt                                                        |
 | `leave-pr-review`         | **Authoring** a review — local checkout, empirical verification, posts by default                                                        |
 | `address-pr-review`       | **Receiving** a review — triage every comment, fix or rebut, reply and resolve                                                           |
+| `drive-pr-to-mergeable`   | **Driving** one open PR to mergeable — rival review, address, two-round bound, CI to green, verdict; never merges                        |
 | `ship-issue`              | **Shipping** one issue or task end to end — implement, PR, rival review, address, drive to mergeable; merges too under `mode=autonomous` |
 | `implement-issue-stack`   | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-rival-agent`                                                  |
 | `triage-dependabot-prs`   | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest                                                       |
@@ -115,17 +116,27 @@ areas after. `leave-pr-review` posts its findings by default (invoking it is the
 `mode=chat` and `mode=issues` redirect them), and `address-pr-review` then works the comments on the
 author's side.
 
+`drive-pr-to-mergeable` is the shared core of this group: given one open PR, it builds the reviewer
+prompt with `create-pr-review-prompt`, gets the independent review from the rival agent
+(`run-rival-agent`), works every thread with `address-pr-review`, runs that as a **bounded** loop —
+two rounds at most, after which whatever is still open is reported as an action item rather than
+chased into a third round — then drives CI to green, reconciles conflicts, and returns a
+shippable-or-leftovers verdict. It never opens a PR, never merges, and never files an issue: it
+drafts the follow-ups for the user. Every skill that opens PRs reaches it by name and states only
+its own overrides — `create-stacked-prs` runs it on each layer while that layer is the tip,
+`burn-down-backlog` and `fix-audits` run it with no overrides, `improve-performance-matrix` makes
+round two unconditional — so reviewer independence and the CI-failure policy read the same
+everywhere: the rival is the reviewer (a same-runner subagent only as a named, weaker fallback), and
+a failure the PR did not introduce is named in the thread and drafted, never absorbed or filed.
+
 `ship-issue` is the single-unit pipeline through this whole group: it takes one issue number or a
-free-form task, implements it, opens the PR, then runs `create-pr-review-prompt` → `run-rival-agent`
-→ `address-pr-review` as a **bounded** loop — two review rounds at most, after which whatever is
-still open is reported as an action item rather than chased into a third round. Both modes take the
-PR all the way to **mergeable** — CI driven to green, conflicts reconciled, every thread answered —
-and it drafts, but never opens, the follow-up issues. Invoked as `mode=autonomous` it also
-**merges** the PR, but only behind a full gate — a real rival review that posted, every required
-check green on the merged head, every thread resolved, nothing unpushed — and a downgraded reviewer
-withdraws that authority rather than lowering the bar. Reach for `implement-issue-stack` instead
-when several ordered issues ship as a chain, and `burn-down-backlog` when the question is *which*
-issue to pick up rather than how to ship a chosen one.
+free-form task, implements it, opens the PR, and hands it to `drive-pr-to-mergeable`. Both modes
+take the PR all the way to **mergeable**. Invoked as `mode=autonomous` it also **merges** the PR,
+but only behind a full gate — a real rival review that posted, every required check green on the
+merged head, every thread resolved, nothing unpushed — and a downgraded reviewer withdraws that
+authority rather than lowering the bar. Reach for `implement-issue-stack` instead when several
+ordered issues ship as a chain, and `burn-down-backlog` when the question is *which* issue to pick
+up rather than how to ship a chosen one.
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
 (`.github/workflows/dependabot-review.yml`, `docs/DEPENDABOT.md`, and
@@ -186,14 +197,14 @@ its own decisions under `tools/asset-gen/docs/`.
 
 ## Repo hygiene & meta
 
-| Skill                         | Use for                                                                            |
-| ----------------------------- | ---------------------------------------------------------------------------------- |
-| `burn-down-backlog`           | Claim the newest unclaimed open issue (`in-progress` label) and drive it to a push |
-| `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them     |
-| `reconcile-with-main`         | Merge current `main` into a long-running branch and hunt the *semantic* conflicts  |
-| `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`     |
-| `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports        |
-| `skills-guide`                | This guide                                                                         |
+| Skill                         | Use for                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| `burn-down-backlog`           | Claim the newest unclaimed open issue (`in-progress` label) and ship it reviewed  |
+| `enumerate-sub-issues`        | Enumerate an epic's children from the sub-issues API, classify, and order them    |
+| `reconcile-with-main`         | Merge current `main` into a long-running branch and hunt the *semantic* conflicts |
+| `prune-git-workspace`         | Salvage and prune agent worktrees, delete dead local branches, triage `origin`    |
+| `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports       |
+| `skills-guide`                | This guide                                                                        |
 
 `analyze-session-transcripts` has independent registered Claude and Codex packages because their
 session stores and record envelopes differ. It is user-invoked only — a batch run spawns a subagent

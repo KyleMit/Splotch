@@ -287,10 +287,13 @@ For each cluster:
 
 ## Stack and review discipline
 
-Deliver causally distinct product clusters as sequential PRs and link the real chain with
-`gh stack`. Do not create a standalone harness-improvement cluster unless the user explicitly asks
-for one; an incidental repair stays subordinate to the product cluster it unblocks. Every PR body
-includes:
+Deliver causally distinct product clusters as sequential PRs under `create-stacked-prs`, and put
+each newly opened PR through `drive-pr-to-mergeable` while it is the stack tip, before another layer
+is started. Those two skills own the stack shape, the no-commits-below invariant, the feedback-PR
+fallback, the reviewer, the CI loop, and the verdict; this campaign adds only the following.
+
+Do not create a standalone harness-improvement cluster unless the user explicitly asks for one; an
+incidental repair stays subordinate to the product cluster it unblocks. Every PR body includes:
 
 * root cause and causal scope;
 * exact raw before/after metrics and artifact provenance;
@@ -299,42 +302,13 @@ includes:
 * correctness, visual, parity, persistence, rotation, and export checks that apply;
 * current matrix status and explicitly remaining clusters.
 
-Obey the `create-stacked-prs` invariant: once another PR sits above a branch, never add a fix to
-that lower PR. Put review fixes and newly discovered issues in the current stack-tip PR when they
-remain coherent, or create a feedback/findings PR stacked from the tip. Never rewrite lower history
-for an ordinary finding.
-
-Every newly opened PR gets **two** independent cross-runner review rounds before another stack layer
-is started:
-
-1. Use `run-rival-agent` with `--pr <that PR>`: serve the rival's broker requests as the native
-   handler, post its findings with the poster, then validate and address every posted finding.
-2. Start a second `run-rival-agent` round after round one's disposition, even when round one found
-   nothing. Resume the first review conversation as that skill specifies so the rival can verify its
-   own findings. Address the second round before moving the checkout or starting the next layer. If
-   its findings cause a material fix, run another verification round over that fix.
-
-Two rounds means two completed rival invocations; CI, same-session self-review, a skipped automation
-job, and rerunning tests do not count. Do not postpone the reviews until wrap-up. If the required
-reviewer runner is unavailable, stop adding stack layers and report the blocker.
-
-The resumed rival conversation has a three-round budget. If a material fix lands after the second
-round reports — whether prompted by that round, a human comment, or CI — use round three to verify
-it. If round three finds another material issue, address it and use `--fresh` for one final
-verification pass. If that fresh pass finds another material issue, stop adding layers and report
-the repeated-review blocker to the user rather than extending the loop without a bound.
-
-For each delivered cluster:
-
-1. invoke `address-pr-review` explicitly restricted to the newly opened current-tip PR with nothing
-   above it, and include every inline thread, review summary, and conversation comment on that PR;
-2. reproduce findings, fix or rebut them with evidence, reply, and resolve every thread;
-3. complete both rival rounds and follow the bounded verification policy above after any material
-   fix made once the second round has reported;
-4. follow `pr-screenshots` when a PR changes visible UI;
-5. keep the current stack tip green, verify the live PR head matches the tested SHA, and do not
-   start the next stack layer until its independent review is complete and the current tip's CI is
-   green.
+**Reviewer budget override.** Invoke `drive-pr-to-mergeable` with round two **unconditional**: run
+it even when round one found nothing, resumed so the rival can verify its own disposition —
+performance changes can preserve behavior and still encode a mistaken causal theory. A material fix
+landing after round two reports — whether prompted by that round, a human comment, or CI — earns one
+more resumed verification round inside the rival's three-round budget; if that round finds another
+material issue, address it and use `--fresh` for one final pass; if the fresh pass finds another,
+stop adding layers and report the repeated-review blocker rather than extending the loop.
 
 Do not merge unless the user separately authorizes merging. A campaign completion or wrap-up request
 authorizes making the stack merge-ready, not landing it.

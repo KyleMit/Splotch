@@ -114,3 +114,13 @@ without the precondition that made it true.
   signing requirement today, so it stays a "check whether it matters" rather than a prohibition.
 * No stack has yet been landed here with `main` ahead of the fork point. The skill routes that case
   to `reconcile-with-main` and stops short of describing what the linking and merge do afterwards.
+
+## The per-PR review step is delegated (issue #1539)
+
+The review gate above says *when* to review — while the PR is still the tip — and used to describe
+the loop itself in its own words, as did four other skills. Issue #1539 moved that loop into
+`drive-pr-to-mergeable`, so the gate and "Responding to review" now name it and keep only the
+stack-specific facts: the timing, the no-commits-below invariant, the feedback-PR fallback for late
+feedback, and the `address-pr-review` scoping that the core passes through. Which reviewer and how
+many rounds remain the invoking workflow's call, exactly as the gate always said; the core carries
+the default and the caller states its override.

@@ -64,3 +64,17 @@ changes prompted later by a human or CI. The skill now keys the extra verificati
 fix after round two and bounds the three-round ceiling: one fresh final pass is allowed after a
 material round-three finding, then another material finding stops new layers and returns the blocker
 to the user.
+
+## The review loop moved out (issue #1539)
+
+The "Stack and review discipline" section used to spell out the whole reviewer procedure — the rival
+launch, the resumed second round, the three-round budget, the `address-pr-review` scoping, the
+green-tip check — alongside four other skills' versions of the same loop. Issue #1539 extracted the
+PR-agnostic core into `drive-pr-to-mergeable`; this skill now names it and keeps only what is
+genuinely its own: the perf-PR evidence body, the harness-cluster prohibition, and the reviewer
+budget override (round two unconditional, one verification round after a material fix, then one
+`--fresh` pass, then stop). The override is a caller parameter of the core by design, not a
+divergence — the 2026-09-04 lesson above is why this campaign pays for the second round when nobody
+else does. The "stop adding layers and report the blocker" rule for an unavailable reviewer is now
+the core's own rule that a substituted review unlocks no next layer, so it is no longer restated
+here.
