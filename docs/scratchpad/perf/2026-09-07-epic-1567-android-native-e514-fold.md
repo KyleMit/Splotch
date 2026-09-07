@@ -187,3 +187,39 @@ sections fresh, strict regeneration current against the fold commit. What this d
 currency against main (three engine commits behind, stated above), a passed release gate (thirteen
 tracked reds remain on the other three rows, each its own decision), or anything about issue 1704's
 probe semantics, which are unchanged.
+
+## Ride-alongs (evidence only; nothing closed)
+
+Run after the primary row landed, one device at a time, on the same rig and the same e5142fab
+worktree — the iPad against the native app PR #1689's session installed from that worktree's clean
+`perf:build:cap` bundle, the phone and Safari against a freshly built and stamped e5142fab web
+bundle (`start.BO-nn7yb.js`; a web bundle's entry hash changes per build because the build time is
+part of its metadata, so entry names are not commit identity — the provenance stamp is).
+
+### Issue 1695 — Android web empty-after-clear rotation: did not reproduce
+
+One full canonical `android-device-web / landscape-light` CDP sweep, 4 repeats, 60 Hz pin observed
+and removed afterwards, activation valid 4/4. `empty after clear: LANDSCAPE to PORTRAIT rotation`
+read first-frame P95 **14.9 ms** (P50 8.3, max 14.9) against the row capture's 43.9; the whole
+35-action sweep passed, `disable Night Mode` at 16.8 ms P95 with one unconfirmed 33.4 ms repeat. One
+single-capture red and one single-capture green on the same product: neither confirms, and per issue
+1704 the green is not proof the frame fit. Preserved as
+`perf-profiles/evidence/2026-09-07-issue-1695-android-web-landscape-light-control/`. The CDP action
+artifact records no build-identity block (that runner predates the field), so its build is attested
+here: the served preview's `.perf-build-provenance.json` read e5142fab, `dirty: false`, and the
+runner's own served-build guard passed against that worktree's `web/build`.
+
+### Issue 1694 — iPad native dark-mode Settings toggles: did not reproduce
+
+Two full canonical `ipad-device-native` sweeps (portrait-dark, landscape-dark), native app at
+`capacitor://localhost`, sectioned shell, 4 repeats, base gates. `disable drawing sounds`
+(portrait-dark) read post-action P95 **17 ms**, max 30 in one repeat, unconfirmed;
+`disable auto-save
+on delete` (landscape-dark) read **17 ms**, max 21. The row capture read 25 ms
+P95 in both. Both sweeps passed every action (49 and 50 groups); the one unconfirmed max in either
+was a landscape-dark empty-after-clear rotation repeat. Three of four prior sibling reds on this row
+have now failed to reproduce. Preserved as
+`perf-profiles/evidence/2026-09-07-issue-1694-ipad-native-dark-settings-controls/`. The installed
+iPad app is the clean e5142fab `perf:build:cap` bundle PR #1689's session installed from this same
+worktree; it was not reinstalled, so its bytes are that session's build rather than this session's
+(same commit, same worktree, different build time).

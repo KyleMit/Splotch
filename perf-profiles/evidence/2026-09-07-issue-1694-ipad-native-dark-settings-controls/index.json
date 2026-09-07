@@ -1,0 +1,30 @@
+{
+  "campaign": "2026-09-07-issue-1694-ipad-native-dark-settings-controls",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+  "capturedFrom": "perf-profiles/ride-along-1694",
+  "study": "Issue 1694 reproduction controls: canonical ipad-device-native portrait-dark and landscape-dark action sweeps at e5142fab; neither dark-mode Settings-toggle red reproduced (17 ms P95 in both cells), retained as single-capture controls, not as fixes",
+  "kept": [
+    {
+      "file": "actions--f25cc136.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "LANDSCAPE-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/landscape-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    },
+    {
+      "file": "actions--952ec974.json",
+      "target": "ipad-device-native",
+      "brush": "actions",
+      "mode": "PORTRAIT-dark",
+      "fidelityPassed": null,
+      "source": "ipad-device-native/portrait-dark/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}

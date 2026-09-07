@@ -1,0 +1,19 @@
+{
+  "campaign": "2026-09-07-issue-1695-android-web-landscape-light-control",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+  "capturedFrom": "perf-profiles/ride-along-1695",
+  "study": "Issue 1695 reproduction control: one full canonical android-device-web landscape-light CDP action sweep at e5142fab; the empty-after-clear rotation first-frame red did not reproduce (14.9 ms P95 against 43.9 in the row capture), retained as a single-capture control rather than a fix",
+  "kept": [
+    {
+      "file": "actions--8ec8a1aa.json",
+      "target": "android-device-web",
+      "brush": "actions",
+      "mode": "LANDSCAPE-light",
+      "fidelityPassed": null,
+      "source": "android-device-web/landscape-light/actions/actions.json",
+      "candidateCount": 1,
+      "passingCandidateCount": 0,
+      "failedCandidateCount": 0
+    }
+  ]
+}
