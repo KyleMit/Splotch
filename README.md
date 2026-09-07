@@ -8,7 +8,7 @@ touch the screen and scribble. Grown-up stuff stays safely out of reach behind a
 **Try it right now at [splotch.art](https://splotch.art/)** — it's an offline-first PWA on the web,
 and the same codebase ships as native Android and iOS apps.
 
-![Splotch on a portrait Android phone showing a child's flower drawing, next to a landscape iPad showing a rainbow drawing](docs/assets/readme-hero.webp)
+![Splotch on a portrait phone showing a hot-air balloon drawing, beside an equal-height landscape tablet showing a dinosaur drawing](docs/assets/readme-hero.webp)
 
 ## What can it do?
 
