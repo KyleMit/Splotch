@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { iconTokenEntries } from '../design/iconTokens';
-import { themes, toCssVarName } from '../design/tokens';
+import { brand, themes, toCssVarName } from '../design/tokens';
 
 // The SVG side of the token wiring has no compile-time link to the token side:
 // an icon paints with `style="fill:var(--icon-camera-body,#3f68a8)"`, and both
@@ -32,7 +32,7 @@ const fallbacks = (src: string) =>
   [...src.matchAll(FALLBACK_RE)].map(([, cssVar, hex]) => ({ cssVar, hex }));
 
 const lightByCssVar = new Map<string, string>([
-  ...Object.entries(themes.light).map(
+  ...Object.entries({ ...brand, ...themes.light }).map(
     ([key, value]) => [toCssVarName(key), value] as [string, string]
   ),
   ...iconTokenEntries().map(({ cssVar, light }) => [cssVar, light] as [string, string]),
@@ -42,7 +42,7 @@ const lightByCssVar = new Map<string, string>([
 // a list rather than a count so deleting the last size-eraser fallback fails
 // loudly instead of leaving every case below passing vacuously — and so adding
 // a new one is a deliberate edit here.
-const SEMANTIC_TOKENS_IN_SVGS = ['--hole-stroke', '--paper'];
+const SEMANTIC_TOKENS_IN_SVGS = ['--brand', '--hole-stroke', '--paper'];
 
 const allFallbacks = Object.values(svgs).flatMap(fallbacks);
 

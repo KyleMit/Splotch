@@ -1,7 +1,13 @@
 <script lang="ts">
-  // Friendly, dependency-light crash fallback. Kept free of icon/state imports
-  // so it can render even when the rest of the app failed to. Shared by the
-  // SvelteKit error page (+error.svelte) and the layout's render boundary.
+  // Import only the SVG so the crash fallback does not depend on the icon registry
+  // or app state. Inline markup also avoids an asset request during recovery.
+  // Sharing this raw module with Icon's eager glob adds a small startup preload
+  // chunk; that cost keeps the artwork canonical without pulling Icon into recovery.
+  import dottieStumped from '$lib/icons/dottie-stumped.svg?raw';
+
+  // The padded SVG needs this frame to retain the crash illustration's visual size.
+  const DOTTIE_SIZE_PX = 128;
+
   interface Props {
     onRestart?: () => void;
   }
@@ -9,7 +15,17 @@
 </script>
 
 <div class="error-screen" role="alert">
-  <div class="error-blob" aria-hidden="true"></div>
+  <!-- eslint-disable svelte/no-at-html-tags markup is a first-party SVG imported at build time -->
+  <!-- Inline dimensions keep the SVG bounded if the component stylesheet fails. -->
+  <div
+    class="error-dottie"
+    aria-hidden="true"
+    style:width="{DOTTIE_SIZE_PX}px"
+    style:height="{DOTTIE_SIZE_PX}px"
+  >
+    {@html dottieStumped}
+  </div>
+  <!-- eslint-enable svelte/no-at-html-tags -->
   <h1>Oops!</h1>
   <p>Something went wrong. Let's start a fresh drawing.</p>
   <button type="button" class="error-restart" onclick={onRestart}>Start over</button>
@@ -31,13 +47,10 @@
     font-family: var(--font-family, 'Quicksand Variable', system-ui, sans-serif);
   }
 
-  .error-blob {
-    /* standalone crash screen, no sizing token exists for this yet */
-    width: 96px;
-    height: 96px;
-    background: var(--brand, #ab71e1);
-    border-radius: 42% 58% 63% 37% / 47% 42% 58% 53%;
-    opacity: 0.9;
+  .error-dottie :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   h1 {
