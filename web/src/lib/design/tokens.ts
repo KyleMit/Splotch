@@ -65,6 +65,8 @@ export const scale = {
   radiusPill: '999px',
 
   borderWidth: '1px',
+  focusRingWidth: '2px',
+  focusRingOffset: '2px',
 
   // Named --font-size-*, not --text-*, so the type ramp can't collide with
   // the themed text-color family (--text, --text-strong, --text-soft).
@@ -236,6 +238,7 @@ export interface ThemeTokens {
    * that the light value holds (~7 Lc on --surface) rather than to a ratio.
    */
   textSoft: string;
+  labelInk: string;
   /**
    * Monochrome icon fill — matches the SVGs' baked fill, guarded against
    * drift by web/src/lib/components/Icon.svelte.test.ts. Also the hover
@@ -273,6 +276,10 @@ export interface ThemeTokens {
   successText: string;
   dangerWash: string;
   dangerText: string;
+  warningWash: string;
+  warningBorder: string;
+  warningText: string;
+  warningChip: string;
   /**
    * The drawing paper. The handmade-paper texture webp is a LOW-ALPHA grain
    * layer, so one texture serves both themes — only the color beneath it
@@ -334,6 +341,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     textStrong: '#333',
     text: '#555',
     textSoft: '#666',
+    labelInk: '#666',
     iconInk: '#1f1f1f',
     iconMuted: '#737373',
     brandWash: '#ede7f6',
@@ -345,6 +353,10 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     successText: '#2e7d4f',
     dangerWash: '#fdecec',
     dangerText: '#b04a4a',
+    warningWash: '#fffaeb',
+    warningBorder: '#fce5a8',
+    warningText: '#93600b',
+    warningChip: '#fdefc7',
     paper: '#fcfbf8',
     paperMargin: '#f1efeb',
     holeStroke: '#8a8a93',
@@ -370,6 +382,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     textStrong: '#eceaf2',
     text: '#c9c7d3',
     textSoft: '#bdbbc8',
+    labelInk: '#c9c7d3',
     iconInk: '#dedce8',
     iconMuted: '#a8a6b3',
     brandWash: '#3b2f4f',
@@ -381,6 +394,10 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     successText: '#8bcfa4',
     dangerWash: '#422a2c',
     dangerText: '#e09393',
+    warningWash: '#2a2416',
+    warningBorder: '#544620',
+    warningText: '#f2d488',
+    warningChip: '#3d3419',
     paper: '#211f29',
     paperMargin: '#1a1922',
     holeStroke: '#b9b9c2',
@@ -413,6 +430,7 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   textStrong: true,
   text: true,
   textSoft: true,
+  labelInk: true,
   iconInk: true,
   iconMuted: true,
   brandWash: true,
@@ -424,6 +442,10 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   successText: true,
   dangerWash: true,
   dangerText: true,
+  warningWash: true,
+  warningBorder: true,
+  warningText: true,
+  warningChip: true,
   paper: true,
   paperMargin: true,
   holeStroke: true,

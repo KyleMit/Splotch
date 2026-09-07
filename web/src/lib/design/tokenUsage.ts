@@ -31,6 +31,10 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   radiusPill: 'Fully-round pills and toggle tracks.',
 
   borderWidth: 'The one hairline width; color comes from a themed border token.',
+  focusRingWidth:
+    'Every interactive element gets the ring from the global rule. Never outline: none without a replacement ring.',
+  focusRingOffset:
+    'A component overrides only outline-offset: negative for filled surfaces that cannot spill, such as a pill inside a track.',
 
   fontSizeXs: 'Fine print: token values, timestamps, badge counts.',
   fontSizeSm: 'UI chrome: buttons, labels, rows, nav — the workhorse.',
@@ -101,6 +105,8 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   sliderNotch: 'The snap-detent tick over a slider track.',
   textStrong: 'Headings and emphasized copy.',
   text: 'Body copy — the default ink.',
+  labelInk:
+    'Tracked small-caps labels at --font-size-xs use --label-ink, never --text-soft: tracking and uppercase cost apparent weight.',
   textSoft:
     'De-emphasized copy: help text, metadata, separators, input placeholders. Holds 4.5:1 even at small sizes.',
   iconInk:
@@ -117,6 +123,10 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   successText: 'The one success green: ink on --success-wash and confirmation checks/icons alike.',
   dangerWash: 'Destructive-action fills and error banners.',
   dangerText: 'Ink on --danger-wash.',
+  warningWash: 'Warning banners: degraded but working (persistence off, sampled data).',
+  warningText: 'Ink on --warning-wash.',
+  warningBorder: 'Hairline on --warning-wash — the only wash that carries one.',
+  warningChip: 'Inline <code> inside a warning banner.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
   paperMargin: 'The flat tone behind the rotation-locked sheet.',
   holeStroke: 'The dashed outline of the size-eraser hole previews.',

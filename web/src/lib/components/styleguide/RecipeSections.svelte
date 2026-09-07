@@ -1,4 +1,5 @@
 <script lang="ts">
+  import RuleLabel from '$lib/components/design/RuleLabel.svelte';
   import Button from '$lib/components/design/Button.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
 
@@ -123,6 +124,34 @@
         </p>
       </figcaption>
     </figure>
+    <figure class="recipe">
+      <div class="specimen form-row">
+        <Button variant="wash">Tab here to see focus</Button>
+      </div>
+      <figcaption>
+        <h4>Focus</h4>
+        <p class="recipe-tokens">
+          Every interactive element gets the global brand outline. Override only
+          <code>outline-offset</code>: use a negative offset for a filled pill inside a clipped
+          track. Never remove an outline without a replacement ring.
+        </p>
+      </figcaption>
+    </figure>
+
+    <figure class="recipe">
+      <div class="specimen card rule-section">
+        <RuleLabel count={12}>Access codes</RuleLabel>
+        <p>The section owns the space below its label.</p>
+      </div>
+      <figcaption>
+        <h4>Rule label</h4>
+        <p class="recipe-tokens">
+          Section marker on standalone pages. Never used inside dialogs; there the
+          <code>SettingsSection</code> heading applies. <code>--space-5</code> below the label;
+          <code>--space-8</code> between sections.
+        </p>
+      </figcaption>
+    </figure>
   </div>
 </section>
 
@@ -238,9 +267,13 @@
   }
 
   .form-row input:focus-visible {
-    border-color: var(--brand);
-    outline: 2px solid var(--brand-text);
-    outline-offset: 2px;
+    border-color: var(--brand-solid);
+  }
+
+  .rule-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
   }
 
   .form-help {

@@ -30,6 +30,8 @@
   --radius-lg: 16px;
   --radius-pill: 999px;
   --border-width: 1px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
   --font-size-xs: 12px;
   --font-size-sm: 14px;
   --font-size-md: 16px;
@@ -81,6 +83,7 @@
   --text-strong: #333;
   --text: #555;
   --text-soft: #666;
+  --label-ink: #666;
   --icon-ink: #1f1f1f;
   --icon-muted: #737373;
   --brand-wash: #ede7f6;
@@ -92,6 +95,10 @@
   --success-text: #2e7d4f;
   --danger-wash: #fdecec;
   --danger-text: #b04a4a;
+  --warning-wash: #fffaeb;
+  --warning-border: #fce5a8;
+  --warning-text: #93600b;
+  --warning-chip: #fdefc7;
   --paper: #fcfbf8;
   --paper-margin: #f1efeb;
   --hole-stroke: #8a8a93;
@@ -138,6 +145,7 @@
   --text-strong: #eceaf2;
   --text: #c9c7d3;
   --text-soft: #bdbbc8;
+  --label-ink: #c9c7d3;
   --icon-ink: #dedce8;
   --icon-muted: #a8a6b3;
   --brand-wash: #3b2f4f;
@@ -149,6 +157,10 @@
   --success-text: #8bcfa4;
   --danger-wash: #422a2c;
   --danger-text: #e09393;
+  --warning-wash: #2a2416;
+  --warning-border: #544620;
+  --warning-text: #f2d488;
+  --warning-chip: #3d3419;
   --paper: #211f29;
   --paper-margin: #1a1922;
   --hole-stroke: #b9b9c2;
@@ -196,6 +208,7 @@
     --text-strong: #eceaf2;
     --text: #c9c7d3;
     --text-soft: #bdbbc8;
+    --label-ink: #c9c7d3;
     --icon-ink: #dedce8;
     --icon-muted: #a8a6b3;
     --brand-wash: #3b2f4f;
@@ -207,6 +220,10 @@
     --success-text: #8bcfa4;
     --danger-wash: #422a2c;
     --danger-text: #e09393;
+    --warning-wash: #2a2416;
+    --warning-border: #544620;
+    --warning-text: #f2d488;
+    --warning-chip: #3d3419;
     --paper: #211f29;
     --paper-margin: #1a1922;
     --hole-stroke: #b9b9c2;

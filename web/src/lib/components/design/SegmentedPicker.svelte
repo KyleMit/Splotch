@@ -226,13 +226,6 @@
     margin: 0;
   }
 
-  /* Keyboard users move through the group with the arrow keys and see nothing
-     otherwise — the ring has to come from the hidden input's focus. */
-  .option:has(input:focus-visible) {
-    outline: 2px solid var(--brand-text);
-    outline-offset: 2px;
-  }
-
   /* The picker owns its icon ink (the modal shell's re-ink rule only reaches
      icons inside a modal, and pickers also render on plain surfaces). */
   .picker :global(.picker-option-icon svg) {

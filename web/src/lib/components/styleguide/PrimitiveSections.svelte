@@ -1,4 +1,6 @@
 <script lang="ts">
+  import FocusSpecimens from './FocusSpecimens.svelte';
+  import RuleLabel from '$lib/components/design/RuleLabel.svelte';
   import Button from '$lib/components/design/Button.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import ScrollCue from '$lib/components/design/ScrollCue.svelte';
@@ -93,6 +95,8 @@
     </div>
   {/each}
 
+  <FocusSpecimens />
+
   <h4>Segmented picker <code class="file-path">design/SegmentedPicker.svelte</code></h4>
   <p class="sub-intro">
     A control with a <strong>selected state</strong> is a picker, not a <code>Button</code>.
@@ -177,6 +181,27 @@
         >The {status} wash, as a form shows it after a submit resolves.</StatusMessage
       >
     {/each}
+    <StatusMessage status="warning">
+      <strong>Persistence is unavailable.</strong> The app still works, but changes to
+      <code>access-codes</code> will not be saved.
+    </StatusMessage>
+  </div>
+
+  <h4>Rule label <code class="file-path">design/RuleLabel.svelte</code></h4>
+  <div class="rule-demo">
+    <RuleLabel>Overview</RuleLabel>
+    <RuleLabel count={12}>Access codes</RuleLabel>
+    <RuleLabel as="h3">Details</RuleLabel>
+    <div class="rule-stack">
+      <div class="rule-section">
+        <RuleLabel>First section</RuleLabel>
+        <p>The section leaves --space-5 below its label.</p>
+      </div>
+      <div class="rule-section">
+        <RuleLabel count="24">Second section</RuleLabel>
+        <p>The stack leaves --space-8 between sections.</p>
+      </div>
+    </div>
   </div>
 
   <h4>Disclosure <code class="file-path">design/Disclosure.svelte</code></h4>
@@ -341,6 +366,31 @@
     flex-direction: column;
     gap: var(--space-2);
     max-width: 480px;
+  }
+
+  .rule-demo {
+    display: grid;
+    gap: var(--space-5);
+    max-width: 620px;
+    padding: var(--space-4);
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+  }
+
+  .rule-stack {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .rule-section {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .rule-section p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text);
   }
 
   .cue-demo {
