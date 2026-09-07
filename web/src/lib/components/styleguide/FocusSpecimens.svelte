@@ -24,7 +24,7 @@
     <button type="button" class="text-action">Copy link</button>
     <label class="input-demo">
       Access code
-      <input aria-label="Focus specimen access code" placeholder="splotch-1234" />
+      <input placeholder="splotch-1234" />
     </label>
     <SegmentedPicker
       label="Focus specimen choice"

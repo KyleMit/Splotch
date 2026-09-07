@@ -238,6 +238,7 @@ export interface ThemeTokens {
    * that the light value holds (~7 Lc on --surface) rather than to a ratio.
    */
   textSoft: string;
+  /** Tracked labels need stronger apparent weight on dark surfaces. */
   labelInk: string;
   /**
    * Monochrome icon fill — matches the SVGs' baked fill, guarded against

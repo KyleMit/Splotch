@@ -21,14 +21,7 @@ for (const theme of ['light', 'dark'] as const) {
     await brand.click();
     await expect(brand).not.toHaveCSS('outline-style', 'solid');
     await page.keyboard.press('Shift+Tab');
-    const names = [
-      'Brand action',
-      'Wash action',
-      'Copy link',
-      'Focus specimen access code',
-      'One',
-      'Folder pill',
-    ];
+    const names = ['Brand action', 'Wash action', 'Copy link', 'Access code', 'One', 'Folder pill'];
     for (const name of names) {
       await page.keyboard.press('Tab');
       const focused = page.locator(':focus');

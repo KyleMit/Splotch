@@ -210,7 +210,9 @@
     opacity: 0.55;
   }
 
-  /* In the native-radio skin the input is the accessible control and the option
+  /* app.css targets .picker .option for the visible keyboard ring;
+     design-foundations.spec.ts exercises focus through the hidden input.
+     In the native-radio skin the input is the accessible control and the option
      is its skin. Hidden without display:none / visibility:hidden, both of which
      would take it out of the a11y tree and off the focus path. */
   .option input {
