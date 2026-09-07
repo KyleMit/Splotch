@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { colorContrast } from '../src/lib/design/colorContrast';
 
@@ -111,3 +112,19 @@ for (const theme of ['light', 'dark'] as const) {
     );
   });
 }
+
+// An unknown pseudo-class reproduces selector-list parsing on browsers that
+// support :focus-visible but predate :has(), without requiring an old binary.
+test('an unsupported relational selector leaves basic keyboard focus intact', async ({ page }) => {
+  const css = readFileSync(new URL('../src/app.css', import.meta.url), 'utf8');
+  const tokens = readFileSync(new URL('../src/tokens.css', import.meta.url), 'utf8');
+  await page.setContent('<button type="button">Focus action</button>');
+  await page.addStyleTag({ content: tokens });
+  await page.addStyleTag({ content: css.replaceAll(':has(', ':unsupported-has(') });
+  await page.keyboard.press('Tab');
+  const button = page.getByRole('button', { name: 'Focus action' });
+  await expect(button).toBeFocused();
+  await expect(button).toHaveCSS('outline-style', 'solid');
+  await expect(button).toHaveCSS('outline-width', '2px');
+  await expect(button).toHaveCSS('outline-color', 'rgb(171, 113, 225)');
+});

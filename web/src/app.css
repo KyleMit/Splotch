@@ -18,9 +18,10 @@
 }
 
 /* Native-radio pickers focus a hidden input; its visible label carries the ring.
-   Outlines follow the element's own radius without changing its shape on focus. */
+   Outlines follow the element's own radius without changing its shape on focus.
+   :where() keeps an unsupported :has() from invalidating the basic focus rule. */
 :focus-visible,
-.picker .option:has(input:focus-visible) {
+:where(.picker .option:has(input:focus-visible)) {
   outline: var(--focus-ring-width) solid var(--brand);
   outline-offset: var(--focus-ring-offset);
 }
