@@ -404,11 +404,28 @@ function settingsSurfaces() {
               }
             );
           }
+          await SETTINGS_SECTION_PREMISES[section.id]?.(modal);
         }
       )
     ),
   ];
 }
+
+// A surface note in page-inventory-design-notes.mjs that describes a control's
+// state is prose carrying a cross-file fact, so the state it describes is
+// asserted here before the shot: a capture whose note has gone stale fails the
+// run instead of handing reviewers a description the picture contradicts.
+const SETTINGS_SECTION_PREMISES = {
+  feedback: async (modal) => {
+    const submit = modal.getByRole('button', { name: 'Send report' });
+    await submit.waitFor({ timeout: ACTION_MS });
+    if (!(await submit.isDisabled())) {
+      throw new Error(
+        'settings/settings-feedback premise failed: "Send report" is enabled on an untouched form'
+      );
+    }
+  },
+};
 
 // Both Settings shells render a section row as a button stamped with the section
 // id — the phone hub's list and the wide sidebar's table of contents — so the
