@@ -13,6 +13,7 @@ against a hot-reloading page and this tooling only captures and screenshots.
 | --------------------------- | ---------------------------------------- | ----------------------------------- |
 | `gen-promotional-image.mjs` | `npm run gen:promotional-image`          | `web/static/large-image.png`        |
 | `gen-store-assets.mjs`      | `npm run gen:store-assets` (+ `:frames`) | `store-assets/` screenshots/graphic |
+| `gen-readme-hero.mjs`       | `npm run gen:readme-hero`                | `docs/assets/readme-hero.webp`      |
 
 The output filename `large-image.png` remains unchanged because it is the social/link-preview image
 served from `web/static/` for Open Graph and Twitter cards. The generator replays
@@ -26,6 +27,33 @@ changing the shipped artifact. The separate Google Play feature graphic is
 the real app canvas, and captures the 1920×1080 PNG. The Open Graph and Twitter metadata in
 `web/src/app.html` depend on those dimensions, with `web/tests/page.spec.ts` guarding agreement. The
 command replaces the committed PNG only after the live-app replay succeeds.
+
+## README hero
+
+```sh
+npm run gen:readme-hero -- --port 5199
+# Preview without replacing the README asset:
+npm run gen:readme-hero -- --port 5199 --out screenshots/readme-hero.webp
+```
+
+The portrait phone replays `tools/store-drawings/samples/balloon-tall.svg`; the landscape tablet
+replays `dinosaur-wide.svg` from the same directory. Both use their named functions from
+`tools/store-drawings/generated/store-drawings.mjs` through the live drawing engine (ADR-0122).
+After editing either SVG, run `npm run gen:store-drawings` before recapturing.
+
+The generator starts its own dev server with the harness enabled and refuses an occupied port;
+choose an unused `--port` when another worktree is running. It needs installed project dependencies
+and Playwright Chromium. It verifies the server's checkout identity, captures each drawing at 2×
+resolution, checks for ink, and uses Sharp to compose a transparent WebP. The generic device frames
+share one outer-height constant and align at their top and bottom edges. The app's home icon sits
+below the phone screen and to the right of the tablet screen. Frame geometry and art insets live in
+`gen-readme-hero.mjs`; shared capture-mode and free-grant setup lives in
+`lib/capture-preparation.mjs` (ADR-0123).
+
+The browser and owned server are closed on success or failure. The output is replaced atomically
+only after both captures and composition succeed. Raw screenshots stay in memory. Review the final
+image at README display size after regenerating it; update the README alt text if the subjects
+change. This is an on-demand command, not a build hook.
 
 ## Store assets
 
@@ -48,13 +76,14 @@ shows and the publishing runbook.
 
 ## Prerequisites and failure behavior
 
-Both commands need installed project dependencies, Playwright Chromium, and the serving port
-(`--port`, default 4173) free or already serving **this checkout**. `gen-promotional-image.mjs`
-starts or reuses a dev server; `gen-store-assets.mjs` needs a **production preview** (the
-coloring-pack manifest and the dev-harness seam its scenes depend on), so with the port free it runs
-`PUBLIC_ENABLE_DEV_HARNESS=true npm run build` and serves the result with `vite preview` (the
-preview process also gets `PUBLIC_ENABLE_DEV_HARNESS=true`, opening the server-side gate on
-`/dev/store-frames`). Both halves matter to capture mode (`web/src/lib/storeCapture.ts`,
+The promotional and store commands need installed project dependencies, Playwright Chromium, and the
+serving port (`--port`, default 4173) free or already serving **this checkout**.
+`gen-promotional-image.mjs` starts or reuses a dev server; `gen-store-assets.mjs` needs a
+**production preview** (the coloring-pack manifest and the dev-harness seam its scenes depend on),
+so with the port free it runs `PUBLIC_ENABLE_DEV_HARNESS=true npm run build` and serves the result
+with `vite preview` (the preview process also gets `PUBLIC_ENABLE_DEV_HARNESS=true`, opening the
+server-side gate on `/dev/store-frames`). Both halves matter to capture mode
+(`web/src/lib/storeCapture.ts`,
 [ADR-0123](../../docs/adrs/0123-capture-mode-flag-for-store-screenshots.md)): its flag is a
 compile-time literal, so a preview served from a bundle built **without** it still renders every
 frame and still puts the wand button's free-generation count back into each capture — the one

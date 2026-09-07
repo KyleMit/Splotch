@@ -64,6 +64,7 @@ import {
   setStrokeSize,
   waitForColoringOverlay,
 } from '../app-driver/lib/app-driver.mjs';
+import { prepareCapture } from './lib/capture-preparation.mjs';
 import { BOOKS_TWO_COL_CSS, BOOKS_TWO_COL_MIN_ASPECT } from './lib/books-grid-override.mjs';
 
 const OUT = join(ROOT, 'store-assets');
@@ -87,33 +88,6 @@ const PAGE_PICK_CONFIRM_TIMEOUT_MS = 4000;
 const RENDER_STATE_TIMEOUT_MS = 30_000;
 
 // ── Scene setup mocks ───────────────────────────────────────────────────────
-
-// The preview server's real /api/free-generation-grant has no configuration and
-// fails, which hides the AI wand from the drawer — mock a fresh 10-of-10 grant
-// so the drawer shows the app as a configured install sees it.
-const mockFreeGrant = (page) =>
-  page.route('**/api/free-generation-grant', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true, limit: 10, remaining: 10, exhausted: false }),
-    })
-  );
-
-// Capture mode (web/src/lib/storeCapture.ts) drops the free-generation count
-// off the wand button: a per-install number that reads as noise in a marketing
-// shot. Set before navigation so it is true by the app's first paint.
-const enableCaptureMode = (page) =>
-  page.addInitScript(() => {
-    window.__storeCapture = true;
-  });
-
-// Every scene wants both: the app as a configured install shows it, without
-// the install-specific badge.
-const prepareCapture = async (page) => {
-  await mockFreeGrant(page);
-  await enableCaptureMode(page);
-};
 
 // The portrait v2 handoff enlarges the on-screen action buttons for store
 // legibility. This is the app's own Button Size setting (an integer percent of
