@@ -120,11 +120,12 @@ now honoured by the runner).
 | landscape-dark  | compact   |            36 |      0 |               0 |
 
 The compact-shell Night Mode toggles — the cell that is red on the sibling `android-device-web` row
-and holds ADR-0162's allowance there — read a post-action P95 of 16.7 ms in both directions and both
-landscape modes on this row (one 25.1 ms max on `disable Night Mode` in landscape-dark, single
-repeat, unconfirmed). Per issue 1704 a green on this probe is not proof the frame fit, so this is
-recorded as the row's reading, not as evidence against the web row's attribution. Rotation first
-frames read 3.5–6.9 ms P95 in landscape-light.
+and holds ADR-0162's allowance there — read a post-action P95 of 10.1 ms (enable) and 8.4 ms
+(disable) in landscape-light and 8.5 ms (enable) and 8.4 ms (disable) in landscape-dark, with maxima
+of 16.7 ms in three of the four cells and 25.1 ms on `disable Night Mode` in landscape-dark — under
+the 33.5 ms max gate, so no breach and nothing to confirm. Per issue 1704 a green on this probe is
+not proof the frame fit, so this is recorded as the row's reading, not as evidence against the web
+row's attribution. Rotation first frames read 3.5–6.9 ms P95 in landscape-light.
 
 The portrait-dark sweep spent one attempt on a deliberate interruption: the campaign was paused at
 the portrait-light/portrait-dark boundary so the iPad's expired automation grant could be re-armed
