@@ -1,6 +1,6 @@
 ---
 name: burn-down-backlog
-description: Pick up the newest open GitHub issue not already being worked, claim it with the in-progress label, implement it, open a PR with a rich summary, get an independent review from a fresh subagent and address it, then drive CI to green. Use when asked to burn down the backlog, grab the next issue, or work down open issues — especially across several back-to-back sessions that should each pick a different issue.
+description: Pick up the newest open GitHub issue not already being worked, claim it with the in-progress label, implement it, open a PR with a rich summary, get it reviewed by the rival agent and driven to mergeable through drive-pr-to-mergeable. Use when asked to burn down the backlog, grab the next issue, or work down open issues — especially across several back-to-back sessions that should each pick a different issue.
 ---
 
 # Burn down backlog
@@ -92,37 +92,13 @@ this skill is the user's standing approval to open the PR** — don't pause to a
    anything visible in the UI. The body must be a **rich summary** — as complete as a full session
    summary (see "PR body" below), never a one-liner.
 
-2. **Independent review — fresh subagent, PR number only.** Spawn a `general-purpose` subagent and
-   have it run the `leave-pr-review` skill. It must start with **no context from this conversation**
-   — pass it *only* the PR number and repo, not the issue, your diff, or your reasoning, so its
-   review is genuinely independent. Its whole instruction is essentially:
-
-   > Run the `leave-pr-review` skill on PR #`<N>` in `kylemit/splotch`. Finish by posting your
-   > findings as an inline review on the PR.
-
-   `leave-pr-review` posts by default — invoking it is the authorization to leave the comments on
-   the PR as a single pending review, submitted via `add_comment_to_pending_review` per finding.
-   Still spell out that the subagent must **always finish by posting** and must never end by asking
-   whether to post or by leaving the review only in chat — an orchestrated reviewer that stalls in
-   chat stalls the pipeline. Wait for the subagent to finish before continuing — its comments are
-   the input to the next step.
-
-3. **Address the review — back on the main thread.** Now run the `address-pr-review` skill against
-   the same PR: triage every comment the subagent left, fix the valid ones and reply with the fix,
-   and reply-then-resolve the ones that don't hold up with the rationale.
-
-4. **Push, then watch CI.** Push the review-fix commits. Subscribe to the PR's activity with
-   `subscribe_pr_activity` and let CI events arrive — **don't poll with `sleep`**. On a CI failure:
-   * **The PR introduced it** — the check passes on `main` but fails on this branch: diagnose and
-     push a fix, iterating until CI is green.
-   * **The PR didn't introduce it** — the failure reproduces on `main` / predates this branch: don't
-     try to fix it inside this PR. **Open a GitHub issue** capturing the observation — the failing
-     check, the evidence that it's pre-existing (e.g. it's red on `main` too), and a link to the run
-     — so it lands in the backlog, and note in the PR thread that the failure is pre-existing and
-     now tracked separately.
-
-   Keep the subscription until CI is green (or every failure is either fixed or filed as a
-   pre-existing issue), then hand back to the user.
+2. **Review, address, and drive it to mergeable.** Run `drive-pr-to-mergeable` on the PR with no
+   overrides. That skill owns the loop from here: the independent review by the rival agent
+   (`run-rival-agent` — the other vendor's CLI, given the PR number and the adapted focus areas,
+   never this session's reasoning), `address-pr-review` on every thread, at most two rounds, CI
+   driven to green, and the verdict. A CI failure the PR did not introduce is named in the PR thread
+   with its evidence and carried into the verdict as a drafted issue for the user to file — this
+   skill files nothing on its own. Hand back to the user when the verdict arrives.
 
 ### PR body
 
@@ -145,10 +121,10 @@ Report, in the final response:
 
 * The issue picked (number + title) and why it was next (newest unclaimed).
 * What changed, the check/test results, the branch name, and the **PR URL**.
-* The independent review outcome — how many findings the subagent posted, and how each was addressed
-  (fixed or rebutted).
-* CI status — green, or which failures were fixed here vs. filed as pre-existing issues (with
-  links).
+* The independent review outcome — what the rival posted in each round, and how each finding was
+  addressed (fixed or rebutted); name the substitute if the rival could not run.
+* CI status — green, or which failures were fixed here vs. named as pre-existing, with the drafted
+  issue for each of those.
 * That `in-progress` is applied and will retire when the issue closes on merge.
 
 Then note that running the skill again — in this session or a fresh back-to-back one — will skip

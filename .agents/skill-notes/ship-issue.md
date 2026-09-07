@@ -160,11 +160,14 @@ ones least likely to reach it.
   triage cost lands on the user either way. Drafting them is the useful part; filing them is one
   click they should get to make.
 * **Having `burn-down-backlog` delegate here.** Intended (it was named in the 2026-09-02 decision
-  alongside the skill name) but not done in the same change. The two overlap heavily from the branch
-  step onward; the difference is that `burn-down-backlog` owns *selecting* an unclaimed issue and
-  reviews with a same-vendor subagent rather than the rival. Folding it in means deciding whether
-  that subagent path survives as a fallback — see the health-check fallback below, which is the same
-  question in miniature.
+  alongside the skill name) but not done in the same change. Resolved on 2026-09-06 by issue #1539
+  the other way round: the review-and-CI loop (steps 4–8 of the original) moved out into
+  `drive-pr-to-mergeable`, and both this skill and `burn-down-backlog` delegate to that core.
+  `burn-down-backlog` keeps *selecting* the issue; the subagent reviewer it used survives only as
+  the core's named fallback for a failed rival preflight — the same answer the health-check fallback
+  below gave in miniature. What this skill keeps is what the core cannot know: the two modes, the
+  merge gate, and that a substituted reviewer withdraws merge authority. The design history of the
+  loop itself now lives in the core's notes.
 * **Failing hard when `rival:health` fails.** Rejected: a missing `codex login` is a five-second fix
   the user may not be present for, and silently downgrading to a same-vendor subagent would be worse
   than either. The skill names the trade-off and offers both, rather than choosing.
