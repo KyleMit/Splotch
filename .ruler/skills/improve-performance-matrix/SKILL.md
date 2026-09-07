@@ -288,9 +288,11 @@ For each cluster:
 ## Stack and review discipline
 
 Deliver causally distinct product clusters as sequential PRs under `create-stacked-prs`, and put
-each newly opened PR through `drive-pr-to-mergeable` while it is the stack tip, before another layer
-is started. Those two skills own the stack shape, the no-commits-below invariant, the feedback-PR
-fallback, the reviewer, the CI loop, and the verdict; this campaign adds only the following.
+each newly opened PR through `drive-pr-to-mergeable` while it is the stack tip; another layer starts
+only on a shippable (or shippable-once-readied) verdict, and a not-shippable one stops the stack and
+reports the blocker. Those two skills own the stack shape, the no-commits-below invariant, the
+feedback-PR fallback, the reviewer, the CI loop, and the verdict; this campaign adds only the
+following.
 
 Do not create a standalone harness-improvement cluster unless the user explicitly asks for one; an
 incidental repair stays subordinate to the product cluster it unblocks. Every PR body includes:
