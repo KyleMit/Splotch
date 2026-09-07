@@ -127,15 +127,21 @@ systematic** — hidden overruns recurring on the same cell across captures, the
 rather than appearing once in one capture — on a release-gate row. Isolated hidden overruns are the
 dispatch jitter the second bullet above describes and are not the condition.
 
-If that condition is met, the cutover is cheap because the dual corpus is its own calibration
-mapping. Every dual-channel capture already holds both readings of every scored frame, so the
-before/after of any new scoring rule is a computation — `summarizeActionGroup` re-run with each
-frame's `gapMs` read from `actualGapMs`, over the corpus, in the ledger shape
-`action-frame-stamps.test.mjs` already produces — plus a new epoch value in
-`tools/perf/lib/frame-stamps.mjs` marking which rule scored an artifact. Gates and allowances are
-re-derived from the actual distribution of the captures already committed, never from a recapture
-campaign. Until then, the actual channel is attribution: read it from a red cell's `frameStamps`
-before spending a trace, and never from a green as proof the frame fit.
+If that condition is met, a cutover **over the retained frame population** is cheap because the dual
+corpus is its own calibration mapping. Every dual-channel capture holds both readings of every frame
+`finish()` retains — the frames scheduled at or after the action — so the before/after of a scoring
+rule that re-reads those frames is a computation: `summarizeActionGroup` re-run with each frame's
+`gapMs` read from `actualGapMs`, over the corpus, in the ledger shape `action-frame-stamps.test.mjs`
+already produces, plus a new epoch value in `tools/perf/lib/frame-stamps.mjs` marking which rule
+scored an artifact. Gates and allowances for that rule are re-derived from the actual distribution
+of the captures already committed, not from a recapture campaign. The promise stops at the retained
+population: `finish()` filters frames by their scheduled stamp before either actual field is
+exposed, so a callback that was scheduled before the action and ran after it — the straddling frame
+in the Notes below — carries no actual clock in any artifact. A rule that wanted to re-select frames
+at the action's onset would first need the probe to retain those boundary rows, which changes
+nothing about current scoring but does need a capture made after that change. Until then, the actual
+channel is attribution: read it from a red cell's `frameStamps` before spending a trace, and never
+from a green as proof the frame fit.
 
 ### 6. What did not change
 
@@ -161,6 +167,10 @@ clock needs to live, and the scorer re-derives from it.
 * − The actual channel brackets the main thread only. A dropped compositor frame under a callback
   that ran on time is invisible to both channels; the paired trace remains the attribution
   instrument (`docs/PROFILING-CAMPAIGNS.md`).
+* − The actual channel starts one frame late at the action's onset. The straddling frame — scheduled
+  before the action, run after it — is filtered out by its scheduled stamp before either actual
+  field exists, so a late first callback shows in neither `frameStamps` nor the raw table. A
+  dual-channel green with zero hidden overruns has said nothing about that frame.
 * − Changing the probe changes the campaign instrument fingerprint, so a campaign resumed across
   this record refuses to mix banked cells with new ones until `--accept-instrument-change` says so
   deliberately. That is the guard working, not a regression.
@@ -176,9 +186,13 @@ Recorded here so the next reader does not rediscover them; none is changed by th
   frames by scheduled start (`at − gap ≥ actionAt`). Under Chrome's rAF-aligned input the click
   handler runs inside the `BeginMainFrame` task whose rAF stamp precedes the click's
   `performance.now()`, so the very frame that renders the click's result can carry a stamp before
-  `actionAt` and be excluded; `firstFrameMs` then reads the next vsync. With `ranFromActionMs`
-  recorded, a future reader can select frames by when they ran instead. Changing the selection would
-  re-baseline the first-frame gate, so it stays.
+  `actionAt` and be excluded; `firstFrameMs` then reads the next vsync. The exclusion happens before
+  the actual fields are exposed, so that frame's actual time is not in any artifact either — the
+  dual channel does not let a future reader re-select it. Retaining the boundary rows (the last
+  frame scheduled before the action, with both clocks) would cost nothing in scoring and would make
+  onset re-selection possible from a later capture; it is the one probe change this record would
+  take next, and it is not taken here because it widens the artifact for a question no capture has
+  yet asked. Changing the selection itself would re-baseline the first-frame gate.
 * **Activities and frames are on different clocks.** `activities`, `canvasMutations`, and
   `armedEvents` stamp `performance.now()` (actual); frames stamp the rAF timestamp (scheduled).
   `scoredActionFrames` compares the two when it decides which frame an activity belongs to, so an
