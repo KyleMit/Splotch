@@ -27,3 +27,6 @@ timestamp	device	outcome	detail
 2026-09-05T09:58:27.494Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-06T02:00:52.604Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly
 2026-09-06T21:36:00.197Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
+2026-09-07T00:38:16.127Z	device-003f826c172a	blocked	nothing answered on the Appium port — this check does not start a server. Run `appium --port <the port this preflight resolved>` and re-run.
+2026-09-07T00:42:12.789Z	device-003f826c172a	blocked	WebDriverAgent could not launch and the cause is not one this knows. Run the xcodebuild line from the Appium log by hand and read to the innermost "Underlying Error" — the build itself usually succeeds, so this is rarely a signing problem. (diagnostic: diagnostic server logged no cause this knows (88673 chars captured))
+2026-09-07T01:27:42.786Z	device-003f826c172a	ok	a WebDriverAgent session started, the page followed a rotation, and it closed cleanly

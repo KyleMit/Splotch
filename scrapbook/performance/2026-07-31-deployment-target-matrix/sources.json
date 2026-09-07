@@ -1,20 +1,20 @@
 {
   "schemaVersion": 3,
-  "recordedOn": "2026-09-05",
-  "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+  "recordedOn": "2026-09-07",
+  "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
   "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
   "sourceRoot": "../../../",
   "limitations": [
-    "The 2026-09-05 release-gate campaign measured product commit 9af487b3745c0c1237644c92d5a243b1825911d7. Its parent stack contains the reviewed performance work; this PR adds capture evidence, documentation, and delivery-only review tooling, with no product-surface change.",
+    "This fold measures product commit e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3, the commit at which all four physical release-gate rows were captured between 2026-09-05 and 2026-09-07 (physical iPad web via issue 1686, physical iPad native and Android web via PR 1689, physical Android native in this fold). The three engine commits main took after e5142fab are not measured here: the strict staleness check reports every captured row STALE against main and current against e5142fab, so this is a coherent single-commit snapshot, not a measurement of current main.",
     "All four orientation/theme modes were freshly captured for physical iPad web, physical iPad native, physical Android web, and physical Android native. Every drawing, undo, and action section on those four release-gate rows comes from the campaign product commit.",
-    "The first Android drawing pass was retained as rejected provenance evidence after its build identity recorded no product commit. Both Android drawing rows and their drift references were recaptured from a clean build that embedded 9af487b3745c0c1237644c92d5a243b1825911d7; the matrix folds only those replacements.",
-    "All physical drawing and undo cells passed their timing and input-fidelity gates. The scoreable red remainder is confined to discrete actions and is preserved exactly as captured for bounded product experiments.",
+    "The physical Android native row is two sequential builds of the same clean commit: a probe-host server.url build carries the ADR-0135 split drawing and undo transport, and a bundled https://localhost build carries the Appium action sweep. Both embed e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3; the split artifacts record pageIdentity unprovable by construction because the fixed server.url carries no per-cell nonce.",
+    "Every physical drawing and undo cell passed its input-fidelity gate. The ten iPad web pen, Magic, and eraser lost-frame-share reds (1.02-1.37% against the 1% budget) are the issue-1693 budget decision; the remaining scoreable reds are three discrete actions tracked by issues 1694 and 1695. The physical Android native row carries no red cell.",
     "The physical iPad web row is the calibrated Safari approval target. ADR-0156 also requires the physical iPad native and both physical Android rows to be current and scored before campaign completion; every one is current here.",
     "Simulator, emulator, and Mac rows were not recaptured in this physical release-gate campaign. Every section on those rows is explicitly preserved from the prior published report and makes no claim of currency at the final product commit.",
     "Action cells are scored under ADR-0156: a post-action max breach counts only when two of the three scored repeats show it; a single breaching repeat is recorded as unconfirmed rather than red. Read each artifact's scoredActionFrameGaps rather than treating the pooled P95/P99/max triple as three repeats.",
     "Android physical web and native drawing use the ADR-0135 split input/measurement transport. Fresh artifacts record driving cadence, input fidelity, refresh regime, and page identity. Split-native captures also attest that art.splotch.app was the foreground package.",
-    "Stale 60 Hz peak/min refresh-rate pins were removed from the physical Android phone before the accepted captures; both settings were verified absent after capture and its drawing artifacts matched the declared 120 Hz regime.",
+    "The ADR-0143 60 Hz refresh-rate override keys were verified absent on the physical Android phone before and after its captures; every Android drawing artifact matched the declared 120 Hz regime.",
     "The campaign accepted every faithful red drawing or action gate and did not rerun a valid result to turn it green. Retries were reserved for transport, readiness, input-fidelity, and unchanged-canvas failures.",
     "Physical iPad capture needs a root-owned RemoteXPC tunnel before iOS 26 XCUITest discovery sees the device. See docs/PROFILING-IPAD.md.",
     "A landscape phone renders the compact Settings shell, which offers quick toggles and a pointer to portrait instead of the section list. Compare action modes against the same recorded settingsShell; a different label set between portrait and landscape is a shell difference, not a regression.",
@@ -138,26 +138,26 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -167,26 +167,26 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/portrait-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/portrait-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -196,26 +196,26 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -225,26 +225,26 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-web/landscape-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-web/landscape-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -266,26 +266,26 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -295,26 +295,26 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/portrait-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/portrait-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -324,26 +324,26 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -353,26 +353,26 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/ipad-device-native/landscape-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/ipad-device-native/landscape-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -498,28 +498,28 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.D0fpksdF.js",
-          "buildDigest": "30cae7eb41dfc9c05ec6ecf044fce31916ee405f5458ab0e592cdef634574655",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.B5T1xKl6.js",
+          "buildDigest": "76c60b3e19d7a72bb5ae4116219c230ee733e18a135361eec17467db300b9433",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -529,28 +529,28 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.D0fpksdF.js",
-          "buildDigest": "30cae7eb41dfc9c05ec6ecf044fce31916ee405f5458ab0e592cdef634574655",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.B5T1xKl6.js",
+          "buildDigest": "76c60b3e19d7a72bb5ae4116219c230ee733e18a135361eec17467db300b9433",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-web/portrait-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-web/portrait-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -560,28 +560,28 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.D0fpksdF.js",
-          "buildDigest": "30cae7eb41dfc9c05ec6ecf044fce31916ee405f5458ab0e592cdef634574655",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.B5T1xKl6.js",
+          "buildDigest": "76c60b3e19d7a72bb5ae4116219c230ee733e18a135361eec17467db300b9433",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -591,28 +591,28 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.D0fpksdF.js",
-          "buildDigest": "30cae7eb41dfc9c05ec6ecf044fce31916ee405f5458ab0e592cdef634574655",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.B5T1xKl6.js",
+          "buildDigest": "76c60b3e19d7a72bb5ae4116219c230ee733e18a135361eec17467db300b9433",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-web/landscape-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-web/landscape-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -634,28 +634,28 @@
           "orientation": "PORTRAIT",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.CUAZ8sD9.js",
-          "buildDigest": "cc88091eae374c1bc0cea50d2113ea4da18e1cc83629752a877c3fd803418bd9",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.z2LDyNyT.js",
+          "buildDigest": "095752d61f5d3678de4193661d679ba6407ededc9e5f4dc6bc033d9556300094",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -665,28 +665,28 @@
           "orientation": "PORTRAIT",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.CUAZ8sD9.js",
-          "buildDigest": "cc88091eae374c1bc0cea50d2113ea4da18e1cc83629752a877c3fd803418bd9",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.z2LDyNyT.js",
+          "buildDigest": "095752d61f5d3678de4193661d679ba6407ededc9e5f4dc6bc033d9556300094",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-native/portrait-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-native/portrait-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -696,28 +696,28 @@
           "orientation": "LANDSCAPE",
           "theme": "light",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.CUAZ8sD9.js",
-          "buildDigest": "cc88091eae374c1bc0cea50d2113ea4da18e1cc83629752a877c3fd803418bd9",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.z2LDyNyT.js",
+          "buildDigest": "095752d61f5d3678de4193661d679ba6407ededc9e5f4dc6bc033d9556300094",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-light/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-light/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-light/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-light/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-light/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-light/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-light/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-light/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-light/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-light/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-light/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-light/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
@@ -727,28 +727,28 @@
           "orientation": "LANDSCAPE",
           "theme": "dark",
           "status": "captured",
-          "drawingProductCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
-          "buildEntry": "/_app/immutable/entry/start.CUAZ8sD9.js",
-          "buildDigest": "cc88091eae374c1bc0cea50d2113ea4da18e1cc83629752a877c3fd803418bd9",
+          "drawingProductCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
+          "buildEntry": "/_app/immutable/entry/start.z2LDyNyT.js",
+          "buildDigest": "095752d61f5d3678de4193661d679ba6407ededc9e5f4dc6bc033d9556300094",
           "drawing": {
             "pen": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-dark/pen-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-dark/pen-real-screen.json"
             ],
             "crayon": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-dark/crayon-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-dark/crayon-real-screen.json"
             ],
             "magic": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-dark/magic-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-dark/magic-real-screen.json"
             ],
             "eraser": [
-              "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-dark/eraser-real-screen.json"
+              "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-dark/eraser-real-screen.json"
             ]
           },
-          "undoSource": "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-dark/pen-real-screen.json",
+          "undoSource": "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-dark/pen-real-screen.json",
           "actionSources": [
             {
-              "source": "perf-profiles/epic-1567-final-9af487b3/android-device-native/landscape-dark/actions/actions.json",
-              "productCommit": "9af487b3745c0c1237644c92d5a243b1825911d7",
+              "source": "perf-profiles/epic-1567-final-e5142fab/android-device-native/landscape-dark/actions/actions.json",
+              "productCommit": "e5142fab8ff2d4b5c8ee767e244c495cec3ba8d3",
               "kind": "full"
             }
           ]
