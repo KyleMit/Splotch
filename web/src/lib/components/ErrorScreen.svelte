@@ -1,7 +1,12 @@
 <script lang="ts">
   // Import only the SVG so the crash fallback does not depend on the icon registry
   // or app state. Inline markup also avoids an asset request during recovery.
+  // Sharing this raw module with Icon's eager glob adds a small startup preload
+  // chunk; that cost keeps the artwork canonical without pulling Icon into recovery.
   import dottieStumped from '$lib/icons/dottie-stumped.svg?raw';
+
+  // The padded SVG needs this frame to retain the crash illustration's visual size.
+  const DOTTIE_SIZE_PX = 128;
 
   interface Props {
     onRestart?: () => void;
@@ -11,7 +16,15 @@
 
 <div class="error-screen" role="alert">
   <!-- eslint-disable svelte/no-at-html-tags markup is a first-party SVG imported at build time -->
-  <div class="error-dottie" aria-hidden="true">{@html dottieStumped}</div>
+  <!-- Inline dimensions keep the SVG bounded if the component stylesheet fails. -->
+  <div
+    class="error-dottie"
+    aria-hidden="true"
+    style:width="{DOTTIE_SIZE_PX}px"
+    style:height="{DOTTIE_SIZE_PX}px"
+  >
+    {@html dottieStumped}
+  </div>
   <!-- eslint-enable svelte/no-at-html-tags -->
   <h1>Oops!</h1>
   <p>Something went wrong. Let's start a fresh drawing.</p>
@@ -32,12 +45,6 @@
     background: var(--app-bg, #fcfbf8);
     color: var(--text-strong, #333);
     font-family: var(--font-family, 'Quicksand Variable', system-ui, sans-serif);
-  }
-
-  .error-dottie {
-    /* standalone crash screen, no sizing token exists for this yet */
-    width: 96px;
-    height: 96px;
   }
 
   .error-dottie :global(svg) {
