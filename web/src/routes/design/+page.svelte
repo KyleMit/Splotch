@@ -64,6 +64,7 @@
     { id: 'named', label: 'Named chrome', part: 'components' },
     { id: 'voice', label: 'Voice & copy', part: 'brand' },
     { id: 'mascot', label: 'Mascot & wordmark', part: 'brand' },
+    { id: 'dottie', label: 'Dottie', part: 'brand' },
   ] as const;
 
   type SectionId = (typeof sections)[number]['id'];

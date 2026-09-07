@@ -1,6 +1,34 @@
 <script lang="ts">
+  import Icon from '$lib/components/Icon.svelte';
+  import type { CommonIconName } from '$lib/components/iconTypes';
   import SplotchyIcon from '$lib/components/SplotchyIcon.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
+
+  const dottieGroups = [
+    {
+      label: 'Everyday expressions',
+      expressions: [
+        { icon: 'dottie-sunny', label: 'Sunny' },
+        { icon: 'dottie-kind-eyes', label: 'Kind eyes' },
+        { icon: 'dottie-lean', label: 'Little lean' },
+        { icon: 'dottie-giggle', label: 'Giggle' },
+        { icon: 'dottie-bright', label: 'Bright' },
+      ],
+    },
+    {
+      label: 'Error expressions',
+      expressions: [
+        { icon: 'dottie-stumped', label: 'A little stumped' },
+        { icon: 'dottie-hiccup', label: 'Oh, a hiccup' },
+        { icon: 'dottie-question', label: 'A small question' },
+        { icon: 'dottie-retry', label: 'One more go' },
+        { icon: 'dottie-another-idea', label: 'Another idea' },
+      ],
+    },
+  ] as const satisfies ReadonlyArray<{
+    label: string;
+    expressions: ReadonlyArray<{ icon: CommonIconName; label: string }>;
+  }>;
 </script>
 
 <section id="voice" data-sg-section>
@@ -64,6 +92,31 @@
       </figcaption>
     </figure>
   </div>
+</section>
+
+<section id="dottie" data-sg-section>
+  <h3>Dottie</h3>
+  <p>
+    Dottie is Splotch's little purple companion: joyful, friendly, and warm. Her soft, uneven
+    silhouette stays the same across expressions, with flat color and a few rounded lines giving her
+    personality. She keeps her purple body and dark features in both themes.
+  </p>
+  {#each dottieGroups as group (group.label)}
+    <div class="dottie-group">
+      <h4>{group.label}</h4>
+      <div class="dottie-expressions">
+        {#each group.expressions as expression (expression.icon)}
+          <figure>
+            <Icon name={expression.icon} class="dottie-demo" aria-hidden="true" />
+            <figcaption>
+              <span class="dottie-label">{expression.label}</span>
+              <code class="value">{expression.icon}</code>
+            </figcaption>
+          </figure>
+        {/each}
+      </div>
+    </div>
+  {/each}
 </section>
 
 <style>
@@ -168,5 +221,53 @@
   .brand-marks :global(.mascot-demo) {
     width: 96px;
     height: 96px;
+  }
+
+  .dottie-group {
+    margin-top: var(--space-6);
+  }
+
+  .dottie-group h4 {
+    margin: 0 0 var(--space-3);
+    color: var(--text-strong);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dottie-expressions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: var(--space-3);
+  }
+
+  .dottie-expressions figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0;
+    padding: var(--space-4);
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .dottie-expressions :global(.dottie-demo) {
+    width: 96px;
+    height: 96px;
+  }
+
+  .dottie-expressions figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .dottie-label {
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
   }
 </style>
