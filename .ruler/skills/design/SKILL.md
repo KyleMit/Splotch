@@ -234,6 +234,10 @@ Two consequences worth knowing before styling one:
   wordmark is plain Quicksand — no drawn logo. The crayon strip (`CrayonStrip.svelte`, seven pills
   in rainbow order, hues looked up from `lib/palette.ts`) is the wordmark's companion mark on parent
   pages.
+* **Dottie.** The little purple companion uses `dottie-*` spot icons for everyday and error
+  expressions, catalogued at `/design#dottie`; reach for those expressions for friendly error or
+  empty states. `ErrorScreen.svelte` imports the stumped SVG directly to keep recovery independent
+  of the icon registry. Her shared silhouette and brand fill are guarded by `dottie.test.ts`.
 * **Icons are first-party inline SVG** through `<Icon name="…">` — no icon font, no CDN set, no
   emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked with
   `fill: var(--icon-ink)` on themed surfaces; full-color "spot" icons carry their own palette and
