@@ -418,6 +418,7 @@ function settingsSurfaces() {
 const SETTINGS_SECTION_PREMISES = {
   feedback: async (modal) => {
     const submit = modal.getByRole('button', { name: 'Send report' });
+    await submit.waitFor({ timeout: ACTION_MS });
     if (!(await submit.isDisabled())) {
       throw new Error(
         'settings/settings-feedback premise failed: "Send report" is enabled on an untouched form'
