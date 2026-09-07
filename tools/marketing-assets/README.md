@@ -47,8 +47,8 @@ and Playwright Chromium. It verifies the server's checkout identity, captures ea
 resolution, checks for ink, and uses Sharp to compose a transparent WebP. The generic device frames
 share one outer-height constant and align at their top and bottom edges. The app's home icon sits
 below the phone screen and to the right of the tablet screen. Frame geometry and art insets live in
-`gen-readme-hero.mjs`; shared capture-mode and free-grant setup lives in
-`lib/capture-preparation.mjs` (ADR-0123).
+`gen-readme-hero.mjs`. Each capture uses a fresh context with the app's default settings: AI Art
+stays disabled until a parent opts in, so the hero has no AI wand or free-generation badge.
 
 The browser and owned server are closed on success or failure. The output is replaced atomically
 only after both captures and composition succeed. Raw screenshots stay in memory. Review the final

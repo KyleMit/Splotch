@@ -17,7 +17,6 @@ import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { isMain, ROOT, sleep } from '../lib/proc.mjs';
 import { portListenerPids, spawnViteServer } from '../lib/vite-server.mjs';
 import { drawBalloonTall, drawDinosaurWide } from '../store-drawings/generated/store-drawings.mjs';
-import { prepareCapture } from './lib/capture-preparation.mjs';
 
 const DEFAULT_PORT = 5199;
 const MAX_PORT = 65535;
@@ -46,6 +45,7 @@ const DEVICES = [
     width: 432,
     height: DEVICE_HEIGHT_PX - BEZEL_PX - HOME_BEZEL_PX,
     rightBezel: BEZEL_PX,
+    home: 'bottom',
     draw: drawBalloonTall,
     inset: { left: 0.12, top: 0.05, width: 0.84, height: 0.88 },
   },
@@ -54,6 +54,7 @@ const DEVICES = [
     width: 1248,
     height: DEVICE_HEIGHT_PX - BEZEL_PX * 2,
     rightBezel: HOME_BEZEL_PX,
+    home: 'right',
     draw: drawDinosaurWide,
     inset: { left: 0.08, top: 0.06, width: 0.88, height: 0.84 },
   },
@@ -74,9 +75,14 @@ async function waitForCaptureServer(server, base) {
       continue;
     }
     if (response.ok) {
-      const identity = await response.json();
+      const identity = await response.json().catch(() => null);
+      if (!identity || typeof identity.repoRoot !== 'string') {
+        throw new Error(`Invalid checkout identity from ${base}; choose an unused --port.`);
+      }
       if (identity.repoRoot !== realpathSync(ROOT)) {
-        throw new Error(`Port is serving another checkout: ${identity.repoRoot}`);
+        throw new Error(
+          `${base} is serving another checkout: ${identity.repoRoot}; choose an unused --port.`
+        );
       }
       return;
     }
@@ -86,12 +92,10 @@ async function waitForCaptureServer(server, base) {
 }
 
 async function captureDrawing(browser, base, device) {
-  const { ctx, page } = await openAppPage(
-    browser,
-    base,
-    { ...device, deviceScaleFactor: CAPTURE_SCALE },
-    { prepare: prepareCapture }
-  );
+  const { ctx, page } = await openAppPage(browser, base, {
+    ...device,
+    deviceScaleFactor: CAPTURE_SCALE,
+  });
   try {
     await page.waitForFunction(() => typeof window.__replayStroke === 'function');
     await expandDrawer(page);
@@ -123,9 +127,9 @@ async function captureDrawing(browser, base, device) {
 
 async function frameDevice(capture, device) {
   const width = BEZEL_PX + device.width + device.rightBezel;
-  const homeX = device.name === 'phone' ? width / 2 : width - HOME_BEZEL_PX / 2;
+  const homeX = device.home === 'bottom' ? width / 2 : width - HOME_BEZEL_PX / 2;
   const homeY =
-    device.name === 'phone' ? DEVICE_HEIGHT_PX - HOME_BEZEL_PX / 2 : DEVICE_HEIGHT_PX / 2;
+    device.home === 'bottom' ? DEVICE_HEIGHT_PX - HOME_BEZEL_PX / 2 : DEVICE_HEIGHT_PX / 2;
   const home = HOME_SVG.replace(/fill="[^"]+"/, `fill="${HOME_COLOR}"`).replace(
     '<svg ',
     `<svg x="${homeX - HOME_ICON_PX / 2}" y="${homeY - HOME_ICON_PX / 2}" width="${HOME_ICON_PX}" height="${HOME_ICON_PX}" `
@@ -218,7 +222,7 @@ export async function generateReadmeHero(args = process.argv.slice(2)) {
 
 if (isMain(import.meta.url)) {
   generateReadmeHero().catch((error) => {
-    console.error(error.message);
+    console.error(error);
     process.exitCode = 1;
   });
 }
