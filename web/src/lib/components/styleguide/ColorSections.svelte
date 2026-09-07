@@ -91,7 +91,7 @@
       ] satisfies ColorChip[],
     },
     themeFamily('Ground & surfaces', ['appBg', 'surface', 'surface2', 'surfaceHover']),
-    themeFamily('Text ink', ['textStrong', 'text', 'textSoft']),
+    themeFamily('Text ink', ['textStrong', 'text', 'textSoft', 'labelInk']),
     themeFamily('Icon ink', ['iconInk', 'iconMuted']),
     themeFamily('Hairlines', ['border', 'borderWarm', 'borderWarmStrong']),
     themeFamily('Control tracks', ['controlTrack', 'controlTrackHover', 'sliderNotch']),
@@ -102,7 +102,16 @@
       'brandSolid',
       'brandSolidHover',
     ]),
-    themeFamily('Feedback washes', ['successWash', 'successText', 'dangerWash', 'dangerText']),
+    themeFamily('Status', [
+      'successWash',
+      'successText',
+      'dangerWash',
+      'dangerText',
+      'warningWash',
+      'warningText',
+      'warningBorder',
+      'warningChip',
+    ]),
     themeFamily('Paper', ['paper', 'paperMargin', 'holeStroke']),
     themeFamily('Floating on paper', [
       'floatSurface',
@@ -250,6 +259,10 @@
 
   .color-chip.open {
     box-shadow: inset 3px 0 0 var(--brand);
+  }
+
+  .color-chip:focus-visible {
+    outline-offset: calc(-1 * var(--focus-ring-width));
   }
 
   .chip-name {

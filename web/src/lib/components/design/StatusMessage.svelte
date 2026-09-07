@@ -5,10 +5,10 @@
   // form shows after a submit resolves. Render it only when there is a message
   // — an empty one would still announce itself to a screen reader.
   //
-  // Errors take role="alert" (interrupt) while successes take role="status"
+  // Errors take role="alert" (interrupt) while successes and warnings take role="status"
   // (queue behind whatever is speaking).
   interface Props {
-    status: 'success' | 'error';
+    status: 'success' | 'error' | 'warning';
     children: Snippet;
   }
 
@@ -40,5 +40,25 @@
   .error {
     background: var(--danger-wash);
     color: var(--danger-text);
+  }
+  .warning {
+    background: var(--warning-wash);
+    color: var(--warning-text);
+    border: var(--border-width) solid var(--warning-border);
+    line-height: 1.45;
+    font-weight: var(--font-weight-medium);
+  }
+
+  .warning :global(strong) {
+    font-weight: var(--font-weight-bold);
+  }
+
+  .warning :global(code) {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    color: inherit;
+    background: var(--warning-chip);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
   }
 </style>
