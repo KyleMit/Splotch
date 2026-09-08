@@ -32,3 +32,25 @@ describe('failureReportRows', () => {
     expect(rows.at(-1)?.value).toBe('Default');
   });
 });
+
+it('normalizes multiline upstream errors into one previewed report row', () => {
+  const rows = failureReportRows(
+    {
+      status: 502,
+      endpoint: '/api/generate-image',
+      message: '  <html>\n<head>502 Bad Gateway</head>\r\n<body>\tnginx</body>\n</html>  ',
+    },
+    1,
+    'Crayon'
+  );
+  expect(rows[1]).toEqual({
+    label: 'Message',
+    value: '<html> <head>502 Bad Gateway</head> <body> nginx</body> </html>',
+  });
+  expect(
+    rows
+      .map(({ label, value }) => `${label}: ${value}`)
+      .join('\n')
+      .split('\n')
+  ).toHaveLength(rows.length);
+});

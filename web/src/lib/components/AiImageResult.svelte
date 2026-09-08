@@ -121,15 +121,14 @@
   })}
   onanimationend={handleAnimationEnd}
 >
+  <button
+    class="ai-result-close modal-close-btn"
+    aria-label={aiResult.generating ? 'Keep drawing while this is made' : 'Close'}
+    onclick={() => (aiResult.generating ? minimizeAiResult() : closeAiResult())}
+  >
+    <Icon name="close" class="modal-close-icon" />
+  </button>
   <div class="ai-result-content">
-    <button
-      class="ai-result-close modal-close-btn"
-      aria-label={aiResult.generating ? 'Keep drawing while this is made' : 'Close'}
-      onclick={() => (aiResult.generating ? minimizeAiResult() : closeAiResult())}
-    >
-      <Icon name="close" class="modal-close-icon" />
-    </button>
-
     {#if aiResult.error}
       {@const safety = aiResult.error.kind === 'safety'}
       <div class="ai-result-error" class:safety>
@@ -316,7 +315,8 @@
      the card doesn't move under the reveal, and it stays claimed while the
      confirmation dialog stands in front of this card, so the picture behind
      doesn't resize under it. */
-  .ai-result-modal {
+  .ai-result-modal:not(.errored),
+  .ai-result-modal.serverError {
     --result-bottom-bound: max(var(--report-strip-reserve), var(--result-gutter));
   }
 

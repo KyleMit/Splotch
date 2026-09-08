@@ -183,7 +183,9 @@
     <StatusMessage {status}>{message}</StatusMessage>
     {#if status === 'error'}
       <!-- No second gate: the one guarding this report was already solved. -->
-      <Button size="sm" onclick={() => (status = 'confirm')}>Try again</Button>
+      <Button size="sm" onclick={() => (status = 'confirm')}
+        >{problem ? 'Retry report' : 'Try again'}</Button
+      >
     {/if}
   </div>
 {/if}

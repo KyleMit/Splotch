@@ -115,8 +115,9 @@ test('a rejected report offers another confirmation without losing the generatio
   const confirm = await landedReportConfirm(page);
   await settleTapGuard(page);
   await confirm.getByRole('button', { name: 'Send report' }).click();
-  const reportRetry = page.locator('.ai-image-report').getByRole('button', { name: 'Try again' });
+  const reportRetry = page.getByRole('button', { name: 'Retry report' });
   await expect(reportRetry).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Try again', exact: true })).toHaveCount(1);
   await expect(page.getByText('Reporting unavailable')).toBeVisible();
   await reportRetry.click();
   await landedReportConfirm(page);
@@ -127,3 +128,50 @@ test('a rejected report offers another confirmation without losing the generatio
   await expect(page.locator('.stage-img.result.shown')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Report this picture' })).toBeVisible();
 });
+
+test('keeps the close control reachable after scrolling report feedback', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 812, height: 375 });
+  await page.route('**/api/report', (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: '{"ok":false,"error":"Reporting unavailable"}',
+    })
+  );
+  const endpoint = await openAiResult(page);
+  await endpoint.fail();
+  await page.getByRole('button', { name: 'Report a problem' }).click();
+  const confirm = await landedReportConfirm(page);
+  await settleTapGuard(page);
+  await confirm.getByRole('button', { name: 'Send report' }).click();
+  await expect(page.getByText('Reporting unavailable')).toBeVisible();
+  await page.locator('.ai-result-content').evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  const card = await page.locator('.ai-result-modal').boundingBox();
+  const close = page.getByRole('button', { name: 'Close', exact: true });
+  const closeBox = await close.boundingBox();
+  expect(closeBox?.y).toBeGreaterThanOrEqual(card?.y ?? 0);
+  await page.screenshot({ path: testInfo.outputPath('report-error.png') });
+  await close.click();
+  await expect(page.locator('.ai-result-modal')).not.toBeVisible();
+});
+
+for (const viewport of [
+  { width: 375, height: 812 },
+  { width: 812, height: 375 },
+]) {
+  test(`safety refusal stays centered without a report strip at ${viewport.width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    const endpoint = await openAiResult(page);
+    await endpoint.fail(422);
+    await expect(page.locator('.ai-result-error.safety')).toBeVisible();
+    const card = await page.locator('.ai-result-modal').boundingBox();
+    expect((card?.y ?? 0) + (card?.height ?? 0) / 2).toBeCloseTo(viewport.height / 2, 0);
+    await expect(page.locator('.ai-result-disclosure')).toHaveCount(0);
+  });
+}

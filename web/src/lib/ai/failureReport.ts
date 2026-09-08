@@ -20,7 +20,8 @@ export function failureReportRows(
     {
       label: 'Message',
       value:
-        failure?.message.trim().slice(0, MAX_ERROR_MESSAGE_LENGTH) || 'No error details available.',
+        failure?.message.replace(/\s+/g, ' ').trim().slice(0, MAX_ERROR_MESSAGE_LENGTH) ||
+        'No error details available.',
     },
     { label: 'Attempts', value: `${attempts} in a row` },
     { label: 'App version', value: `${APP_VERSION} (${getPlatform()})` },
