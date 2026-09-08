@@ -13,6 +13,8 @@
 //                  scroller — it is what ScrollCue is built on.
 //   coverScrollportPadding publishes the scrollport's bottom padding, the strip
 //                  a bottom-stuck fade cannot reach on its own. Also ScrollCue's.
+//   excludeScrollportGutter keeps a sibling overlay clear of scrollbar chrome
+//                  on either axis. ScrollCue's wrapper form only.
 //
 // The actions re-evaluate off a ResizeObserver rather than a reactive open flag: a
 // closed <dialog> is display:none, so every open resizes the elements involved
@@ -231,14 +233,15 @@ export function coverScrollportPadding(node: HTMLElement) {
   };
 }
 
-/** A sibling fade must leave classic scrollbar chrome outside its painted area. */
+/** Keeps scrollbar chrome outside a fade whose immediately preceding element
+ *  sibling is its scrollport. Without that sibling there is nothing to measure. */
 export function excludeScrollportGutter(node: HTMLElement) {
   const scrollport = node.previousElementSibling;
   if (!(scrollport instanceof HTMLElement)) return;
 
   const measure = () => {
-    node.style.right = `${scrollport.offsetWidth - scrollport.clientWidth}px`;
-    node.style.bottom = `${scrollport.offsetHeight - scrollport.clientHeight}px`;
+    node.style.right = `${scrollport.offsetWidth - scrollport.clientWidth - scrollport.clientLeft}px`;
+    node.style.bottom = `${scrollport.offsetHeight - scrollport.clientHeight - scrollport.clientTop}px`;
   };
   measure();
 

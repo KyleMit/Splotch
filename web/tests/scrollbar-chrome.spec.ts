@@ -106,7 +106,7 @@ for (const viewport of SETTINGS_VIEWPORTS) {
           const fade = node.parentElement!.querySelector('.scroll-cue')!;
           return (
             fade.getBoundingClientRect().right -
-            (node.getBoundingClientRect().left + node.clientWidth)
+            (node.getBoundingClientRect().left + node.clientLeft + node.clientWidth)
           );
         })
       )
@@ -133,7 +133,7 @@ for (const viewport of SETTINGS_VIEWPORTS) {
           const fade = node.parentElement!.querySelector('.scroll-cue')!;
           return Math.abs(
             fade.getBoundingClientRect().bottom -
-              (node.getBoundingClientRect().top + node.clientHeight)
+              (node.getBoundingClientRect().top + node.clientTop + node.clientHeight)
           );
         })
       )

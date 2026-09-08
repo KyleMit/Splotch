@@ -9,14 +9,14 @@
 
   interface Props {
     /** Wrap a bounded scroller and render its end marker inside it. The fade
-     *  then paints as a sibling overlay, independent of scrollport padding. */
+     *  then paints as a sibling overlay, independent of scrollport padding.
+     *  Set --scroll-cue-height above ScrollCue: the scroller is the fade's
+     *  sibling, so it cannot pass that inherited property to the fade. */
     children?: Snippet<[Snippet]>;
   }
 
   let { children }: Props = $props();
 
-  // Set --scroll-cue-height on an ancestor of the cue. In wrapper mode the
-  // scroller is its sibling, so the property belongs above the wrapper.
   let atEnd = $state(true);
 </script>
 

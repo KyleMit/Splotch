@@ -60,6 +60,17 @@ it('disconnects the observer and removes its inset on teardown', () => {
   expect(fixture.cue.style.bottom).toBe('');
 });
 
+it('subtracts the leading borders from the trailing insets', () => {
+  const fixture = setup();
+  Object.defineProperties(fixture.scrollport, {
+    clientLeft: { value: 2 },
+    clientTop: { value: 3 },
+  });
+  excludeScrollportGutter(fixture.cue);
+  expect(fixture.cue.style.right).toBe('13px');
+  expect(fixture.cue.style.bottom).toBe('12px');
+});
+
 it('leaves a fade without a scrolling sibling alone', () => {
   expect(excludeScrollportGutter(document.createElement('div'))).toBeUndefined();
 });
