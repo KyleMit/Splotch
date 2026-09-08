@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { chromiumLaunchOptions } from '../playwright.shared';
-import { settleFlyIn } from './helpers';
+import { gotoApp, openSettingsModal, settleFlyIn } from './helpers';
 import {
   gotoAppWithAllColoringBooksInstalled,
   openColoringBookGrid,
@@ -32,6 +32,9 @@ const OUTSIDE_CORNER_PX = 4;
 // backdrop, so their means agree to well under a level; a squared-off corner
 // runs ~160 levels brighter (measured 252 against 90 on the white card).
 const CORNER_LUMINANCE_TOLERANCE = 8;
+
+// clientHeight rounds to an integer while bounding rectangles retain fractions.
+const SCROLLPORT_EDGE_TOLERANCE_PX = 1;
 
 async function scrollbarGutterWidth(scroller: Locator) {
   return scroller.evaluate((node) => (node as HTMLElement).offsetWidth - node.clientWidth);
@@ -81,3 +84,59 @@ test('the picker keeps its rounded corners under a classic scrollbar', async ({ 
   const plainCorner = await cornerLuminance(box.x);
   expect(Math.abs(scrollbarCorner - plainCorner)).toBeLessThan(CORNER_LUMINANCE_TOLERANCE);
 });
+
+const SETTINGS_VIEWPORTS = [
+  { width: 375, height: 812 },
+  { width: 1024, height: 768 },
+];
+
+for (const viewport of SETTINGS_VIEWPORTS) {
+  test(`the Settings fade leaves the scrollbar visible at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    const scroller = modal.locator('.settings-scroll, .settings-pane');
+    await expect(modal.locator('.scroll-cue')).toHaveCSS('opacity', '1');
+    expect(await scrollbarGutterWidth(scroller)).toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        scroller.evaluate((node) => {
+          const fade = node.parentElement!.querySelector('.scroll-cue')!;
+          return (
+            fade.getBoundingClientRect().right -
+            (node.getBoundingClientRect().left + node.clientLeft + node.clientWidth)
+          );
+        })
+      )
+      .toBe(0);
+  });
+
+  test(`the Settings fade leaves a horizontal scrollbar visible at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    const scroller = modal.locator('.settings-scroll, .settings-pane');
+    await scroller.locator('.settings-zoom').evaluate((content) => {
+      content.style.width = '200%';
+    });
+    await expect(modal.locator('.scroll-cue')).toHaveCSS('opacity', '1');
+    await expect
+      .poll(() => scroller.evaluate((node: HTMLElement) => node.offsetHeight - node.clientHeight))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        scroller.evaluate((node) => {
+          const fade = node.parentElement!.querySelector('.scroll-cue')!;
+          return Math.abs(
+            fade.getBoundingClientRect().bottom -
+              (node.getBoundingClientRect().top + node.clientTop + node.clientHeight)
+          );
+        })
+      )
+      .toBeLessThan(SCROLLPORT_EDGE_TOLERANCE_PX);
+  });
+}

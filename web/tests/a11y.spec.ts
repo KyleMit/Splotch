@@ -242,3 +242,62 @@ test('the parental gate operand digits hold WCAG AA large-text contrast', async 
     expect(contrastRatio(parseRgb(color), parseRgb(backgroundColor))).toBeGreaterThanOrEqual(3);
   }
 });
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`Parent Center matrix rings hold non-text contrast in ${colorScheme} mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.setViewportSize({ width: 1032, height: 1376 });
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await modal.locator('button[data-section="parentCenter"]').click();
+    await expect(modal.locator('.policy-header')).toBeVisible();
+    const colors = await modal
+      .locator('.policy-picker')
+      .first()
+      .evaluate((track) => ({
+        ring: getComputedStyle(track.querySelector('.option:not(.active)')!, '::after').borderColor,
+        track: getComputedStyle(track).backgroundColor,
+      }));
+    expect(contrastRatio(parseRgb(colors.ring), parseRgb(colors.track))).toBeGreaterThanOrEqual(3);
+  });
+
+  test(`Parent Center segmented labels hold contrast in ${colorScheme} mode`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await modal.locator('button[data-section="parentCenter"]').click();
+    const track = modal.locator('.policy-picker').first();
+    await expect(track).toBeVisible();
+    await expect
+      .poll(() =>
+        track.locator('.active').evaluate((option) => {
+          const style = getComputedStyle(option);
+          const probe = document.createElement('span');
+          probe.style.backgroundColor = 'var(--brand-solid)';
+          option.append(probe);
+          const expected = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return style.backgroundColor === expected;
+        })
+      )
+      .toBe(true);
+    const colors = await track.evaluate((node) => {
+      const active = getComputedStyle(node.querySelector('.active')!);
+      return {
+        activeInk: active.color,
+        activeFill: active.backgroundColor,
+        idleInk: getComputedStyle(node.querySelector('.option:not(.active)')!).color,
+        track: getComputedStyle(node).backgroundColor,
+      };
+    });
+    expect(
+      contrastRatio(parseRgb(colors.activeInk), parseRgb(colors.activeFill))
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(parseRgb(colors.idleInk), parseRgb(colors.track))).toBeGreaterThanOrEqual(
+      4.5
+    );
+  });
+}

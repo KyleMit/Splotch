@@ -1,28 +1,47 @@
 <script lang="ts">
-  import { coverScrollportPadding, observeContentEnd } from '$lib/actions/scrollCue';
+  import {
+    coverScrollportPadding,
+    excludeScrollportGutter,
+    observeContentEnd,
+  } from '$lib/actions/scrollCue';
 
-  // The continuation cue for a scroller: a fade over its bottom strip saying the
-  // content carries on below. Render it as the *last child of the scrolling
-  // content* — it places its own sentinel there, and the fade sticks to the
-  // scrollport's bottom edge from inside that flow, so it costs no layout height
-  // and needs no positioned wrapper.
-  //
-  // It is a function of live scroll state, never decoration: absent while the
-  // content fits, absent once the end of it is on screen, present only in
-  // between. `observeContentEnd` supplies all three from one intersection.
-  //
-  // Height is a local custom property rather than a prop so a call site sets it
-  // in its own style block, beside the padding the fade has to sit over. The
-  // caller declares `--scroll-cue-height` on any ancestor.
+  import type { Snippet } from 'svelte';
+
+  interface Props {
+    /** Wrap a bounded scroller and render its end marker inside it. The fade
+     *  then paints as a sibling overlay, independent of scrollport padding.
+     *  Set --scroll-cue-height above ScrollCue: the scroller is the fade's
+     *  sibling, so it cannot pass that inherited property to the fade. */
+    children?: Snippet<[Snippet]>;
+  }
+
+  let { children }: Props = $props();
+
   let atEnd = $state(true);
 </script>
 
-<div
-  class="scroll-cue-sentinel"
-  aria-hidden="true"
-  use:observeContentEnd={(reached) => (atEnd = reached)}
-></div>
-<div class="scroll-cue" class:retired={atEnd} aria-hidden="true" use:coverScrollportPadding></div>
+{#snippet sentinel()}
+  <div
+    class="scroll-cue-sentinel"
+    aria-hidden="true"
+    use:observeContentEnd={(reached) => (atEnd = reached)}
+  ></div>
+{/snippet}
+
+{#if children}
+  <div class="scroll-cue-frame">
+    {@render children(sentinel)}
+    <div
+      class="scroll-cue overlay"
+      class:retired={atEnd}
+      aria-hidden="true"
+      use:excludeScrollportGutter
+    ></div>
+  </div>
+{:else}
+  {@render sentinel()}
+  <div class="scroll-cue" class:retired={atEnd} aria-hidden="true" use:coverScrollportPadding></div>
+{/if}
 
 <style>
   .scroll-cue-sentinel {
@@ -75,6 +94,23 @@
       color-mix(in srgb, var(--surface) 0%, transparent),
       var(--surface) var(--cue-opaque-from)
     );
+  }
+
+  .scroll-cue-frame {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .scroll-cue.overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-top: 0;
   }
 
   .scroll-cue.retired {

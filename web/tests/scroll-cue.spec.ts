@@ -53,7 +53,8 @@ function scrollToEnd(scroller: Locator) {
 // Zero on every surface, whatever each one pads by.
 function undimmedStripBelow(scroller: Locator) {
   return scroller.evaluate((node) => {
-    const cue = node.querySelector('.scroll-cue')!;
+    const cue =
+      node.querySelector('.scroll-cue') ?? node.parentElement!.querySelector('.scroll-cue')!;
     const clipEdge =
       node.getBoundingClientRect().bottom -
       Number.parseFloat(getComputedStyle(node).borderBottomWidth);
@@ -174,7 +175,7 @@ test.describe('the portrait-phone settings shell', () => {
     const scroller = modal.locator('.settings-scroll');
     await expect.poll(() => overflows(scroller)).toBe(true);
 
-    const cue = scroller.locator('.scroll-cue');
+    const cue = modal.locator('.scroll-cue');
     await expect.poll(() => cueOpacity(cue)).toBe(1);
 
     await scrollToEnd(scroller);
@@ -202,7 +203,7 @@ test.describe('the portrait-phone settings shell', () => {
 
     const scroller = modal.locator('.settings-scroll');
     await expect.poll(() => overflows(scroller)).toBe(false);
-    await expect.poll(() => cueOpacity(scroller.locator('.scroll-cue'))).toBe(0);
+    await expect.poll(() => cueOpacity(modal.locator('.scroll-cue'))).toBe(0);
   });
 });
 
@@ -215,7 +216,7 @@ test.describe('the two-column settings shell', () => {
     await expect(modal).toHaveClass(/wide/);
 
     const pane = modal.locator('.settings-pane');
-    const cue = pane.locator('.scroll-cue');
+    const cue = modal.locator('.scroll-cue');
     await expect.poll(() => cueOpacity(cue)).toBe(1);
 
     await scrollToEnd(pane);
@@ -355,3 +356,26 @@ test.describe('the feedback form on a large iPhone landscape', () => {
   test.use({ viewport: LARGE_IPHONE_LANDSCAPE });
   documentCueContract('the form', '/feedback', 'Send us feedback');
 });
+
+for (const viewport of [PHONE_PORTRAIT_SETTINGS, TABLET_LANDSCAPE]) {
+  test(`Settings fade covers changed padding immediately at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await modal.locator('button[data-section="parentCenter"]').click();
+    const scroller = modal.locator('.settings-scroll, .settings-pane');
+    const cue = modal.locator('.scroll-cue');
+    await expect.poll(() => cueOpacity(cue)).toBe(1);
+    const strip = await scroller.evaluate((node) => {
+      const fade = node.parentElement!.querySelector('.scroll-cue')!;
+      node.style.paddingBottom = '80px';
+      node.scrollTop += 80;
+      return node.getBoundingClientRect().bottom - fade.getBoundingClientRect().bottom;
+    });
+    expect(strip).toBe(0);
+    await scrollToEnd(scroller);
+    await expect.poll(() => cueOpacity(cue)).toBe(0);
+  });
+}

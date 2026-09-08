@@ -1,6 +1,6 @@
 // Scroll affordances for content that outgrows the box it scrolls in (issue
-// #907: the coloring picker's opening viewport read as the whole catalog). Two
-// independent cues, each attached as an action:
+// #907: the coloring picker's opening viewport read as the whole catalog). Independent
+// cues, each attached as an action:
 //
 //   cutTrailingRow budgets the dialog's height so the fold lands *inside* a row
 //                  instead of between two, making the clipped tile itself the
@@ -13,8 +13,10 @@
 //                  scroller — it is what ScrollCue is built on.
 //   coverScrollportPadding publishes the scrollport's bottom padding, the strip
 //                  a bottom-stuck fade cannot reach on its own. Also ScrollCue's.
+//   excludeScrollportGutter keeps a sibling overlay clear of scrollbar chrome
+//                  on either axis. ScrollCue's wrapper form only.
 //
-// Both re-evaluate off a ResizeObserver rather than a reactive open flag: a
+// The actions re-evaluate off a ResizeObserver rather than a reactive open flag: a
 // closed <dialog> is display:none, so every open resizes the elements involved
 // from zero, and so does a rotation — which matters here because paper
 // orientation is locked independently of the viewport (ADR-0050), so the tile
@@ -227,6 +229,30 @@ export function coverScrollportPadding(node: HTMLElement) {
     destroy() {
       observer.disconnect();
       node.style.removeProperty(SCROLLPORT_BOTTOM_PADDING_PROPERTY);
+    },
+  };
+}
+
+/** Keeps scrollbar chrome outside a fade whose immediately preceding element
+ *  sibling is its scrollport. Without that sibling there is nothing to measure. */
+export function excludeScrollportGutter(node: HTMLElement) {
+  const scrollport = node.previousElementSibling;
+  if (!(scrollport instanceof HTMLElement)) return;
+
+  const measure = () => {
+    node.style.right = `${scrollport.offsetWidth - scrollport.clientWidth - scrollport.clientLeft}px`;
+    node.style.bottom = `${scrollport.offsetHeight - scrollport.clientHeight - scrollport.clientTop}px`;
+  };
+  measure();
+
+  const observer = new ResizeObserver(measure);
+  observer.observe(scrollport);
+
+  return {
+    destroy() {
+      observer.disconnect();
+      node.style.removeProperty('right');
+      node.style.removeProperty('bottom');
     },
   };
 }

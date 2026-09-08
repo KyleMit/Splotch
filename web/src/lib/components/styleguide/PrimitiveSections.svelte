@@ -95,9 +95,9 @@
   <h4>Segmented picker <code class="file-path">design/SegmentedPicker.svelte</code></h4>
   <p class="sub-intro">
     A control with a <strong>selected state</strong> is a picker, not a <code>Button</code>.
-    <code>segment</code> is the raised-thumb track; <code>chip</code> is the borderless toggle grid;
-    radio vs toggle semantics stay with the caller. A form that must post without JavaScript renders
-    the same chrome over real native radios through <code>inputName</code>.
+    <code>segment</code> is the brand-filled thumb track; <code>chip</code> is the borderless toggle
+    grid; radio vs toggle semantics stay with the caller. A form that must post without JavaScript
+    renders the same chrome over real native radios through <code>inputName</code>.
     <code>labels="collapsible"</code> lets a call site drop the words at a width of its own choosing:
     each option keeps its accessible name and a 44px square target, so the collapse costs the visible
     label and nothing else. Use it where an icon already says what the option is.
@@ -212,18 +212,26 @@
 
   <h4>Scroll cue <code class="file-path">design/ScrollCue.svelte</code></h4>
   <p class="sub-intro">
-    The fade that says a scroller's content carries on below. It takes no props and answers for
-    itself: absent while the content fits, present while there is more of it under the fold, absent
-    again once the end is on screen. Its one contract is positional — render it as the
-    <strong>last child of the scrolling content</strong>, because it plants its end-of-content
-    sentinel wherever it stands, and a copy lifted out of the scroller measures the wrong end. Depth
-    is the inherited <code>--scroll-cue-height</code>, declared by the call site on any ancestor;
-    both specimens below take the default. How far down it reaches is not the call site's to set: a
-    scroller clips at its padding box, so it measures its own scroller's bottom padding and fades to
-    that edge however deeply the scroller pads. The sentinel's observer leaves its root implicit —
-    one component serving a dialog, a settings pane and a whole page without being told which —
-    which is also why a specimen still under this page's own fold reports more below until you bring
-    it up.
+    The fade that says a scroller's content carries on below: absent while content fits, present
+    while more remains under the fold, and absent again once the end is on screen.
+  </p>
+  <p class="sub-intro">
+    For a bounded pane, wrap its scroller in <code>ScrollCue</code>. The <code>children</code>
+    snippet receives an end-marker snippet to render as the scroller's last child. The fade paints beside
+    the scroller as an overlay, covering its content edge while leaving scrollbar gutters clear. Its position
+    is independent of content padding.
+  </p>
+  <p class="sub-intro">
+    For content that scrolls with the document, or an existing scrolling dialog, render
+    <code>ScrollCue</code> without children as the last child of the scrolling content. This form places
+    its own sentinel and sticky fade there, measuring bottom padding to reach the scrollport edge. Both
+    forms observe the sentinel through every scrolling ancestor, including this page. A specimen below
+    the page's fold can therefore report more content until you bring it into view.
+  </p>
+  <p class="sub-intro">
+    Depth is the inherited <code>--scroll-cue-height</code>. Set it on an ancestor of the fade; for
+    the wrapper form that means above <code>ScrollCue</code>, since the scroller is the fade's
+    sibling. These specimens use the default depth.
   </p>
   <div class="cue-demo">
     <figure class="cue-figure">
@@ -269,6 +277,31 @@
       <figcaption>
         The same box over content that fits. Same markup, no fade — the third state costs the call
         site nothing.
+      </figcaption>
+    </figure>
+    <figure class="cue-figure">
+      <div class="cue-overlay-demo">
+        <ScrollCue>
+          {#snippet children(end)}
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+            <div
+              class="cue-scroller cue-overlay-scroller"
+              tabindex="0"
+              role="group"
+              aria-label="Scroll cue specimen: bounded overlay"
+            >
+              <ul class="cue-lines">
+                {#each overflowingLines as line (line)}
+                  <li>{line}</li>
+                {/each}
+              </ul>
+              {@render end()}
+            </div>
+          {/snippet}
+        </ScrollCue>
+      </div>
+      <figcaption>
+        Bounded pane — the marker scrolls with the lines; the fade stays at the content edge.
       </figcaption>
     </figure>
   </div>
@@ -381,6 +414,8 @@
   }
 
   .cue-demo {
+    --cue-demo-height: 260px;
+
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--space-4);
@@ -398,12 +433,28 @@
      takes in the app, rather than as a curtain over a demo box. Nothing else
      here configures the cue — it reads whichever box it is dropped into. */
   .cue-scroller {
-    height: 260px;
+    height: var(--cue-demo-height);
     overflow-y: auto;
     padding: var(--space-4);
     border: var(--border-width) solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--surface);
+  }
+
+  .cue-overlay-demo {
+    display: flex;
+    height: var(--cue-demo-height);
+    overflow: hidden;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .cue-overlay-scroller {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    border: none;
+    border-radius: 0;
   }
 
   .cue-lines {
