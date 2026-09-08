@@ -147,9 +147,11 @@ test('keeps the close control reachable after scrolling report feedback', async 
   await settleTapGuard(page);
   await confirm.getByRole('button', { name: 'Send report' }).click();
   await expect(page.getByText('Reporting unavailable')).toBeVisible();
-  await page.locator('.ai-result-content').evaluate((el) => {
+  const scrolled = await page.locator('.ai-result-content').evaluate((el) => {
     el.scrollTop = el.scrollHeight;
+    return el.scrollTop;
   });
+  expect(scrolled).toBeGreaterThan(0);
   const card = await page.locator('.ai-result-modal').boundingBox();
   const close = page.getByRole('button', { name: 'Close', exact: true });
   const closeBox = await close.boundingBox();
