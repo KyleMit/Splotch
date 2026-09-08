@@ -472,9 +472,9 @@
     }
   }
 
-  @media (max-width: 360px) {
+  @media (max-width: 400px) {
     .coloring-book-content {
-      padding-inline: var(--space-3);
+      padding-inline: var(--space-2);
     }
 
     .coloring-book-header {

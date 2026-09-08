@@ -132,7 +132,7 @@ test('an unsupported relational selector leaves basic keyboard focus intact', as
 });
 
 for (const theme of ['light', 'dark'] as const) {
-  test(`dialog header controls match and fit a phone in ${theme}`, async ({ page }) => {
+  test(`dialog header keeps back flat and separates its title in ${theme}`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await showTheme(page, theme);
     const specimen = page.locator('.header-specimen');
@@ -149,19 +149,28 @@ for (const theme of ['light', 'dark'] as const) {
         return {
           fill: getComputedStyle(button.querySelector('svg')!).fill,
           background: style.backgroundColor,
-          border: style.border,
+          borderWidth: style.borderWidth,
+          shadow: style.boxShadow,
           top: box.top,
           right: box.right,
         };
       })
     );
     expect(controls[0].fill).toBe(controls[1].fill);
-    expect(controls[0].border).toBe(controls[1].border);
+    expect(controls[0].borderWidth).toBe('0px');
+    expect(controls[0].shadow).toBe('none');
+    expect(controls[1].borderWidth).toBe('2px');
+    expect(controls[1].shadow).not.toBe('none');
+    const title = await specimen.getByRole('heading', { name: 'Appearance' }).boundingBox();
+    expect(title!.x - controls[0].right).toBeGreaterThanOrEqual(16);
     expect(controls[0].top).toBe(controls[1].top);
     expect(controls[1].right).toBeLessThanOrEqual(375);
     expect(
       colorContrast(controls[0].fill, controls[0].background, controls[0].background)
     ).toBeGreaterThanOrEqual(3);
+    await back.hover();
+    await expect(back).toHaveCSS('border-width', '0px');
+    await expect(back).toHaveCSS('box-shadow', 'none');
     await back.click();
     await expect(specimen.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
     await close.click();

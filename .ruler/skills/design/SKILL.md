@@ -124,7 +124,7 @@ don't offer.
 
 | Primitive                | Use for                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------- |
-| `DialogHeader.svelte`    | Dialog back/title/actions/close row with matching outlined 44px controls.                   |
+| `DialogHeader.svelte`    | Dialog back/title/actions/close row with 44px targets: flat back, raised outlined close.    |
 |                          | Omit children for a floating close; `closeFeedback` preserves Settings press feedback.      |
 | `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `lg` / `md` / `sm`        |
 |                          | (`lg` takes a 16px label, for a pair that is a screen's primary decision rather             |
@@ -168,7 +168,7 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 | `.modal-shell`                                                      | The centered modal card — surface, radius, shadow, and re-inked                                                            |
 |                                                                     | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt,                                                 |
 |                                                                     | AiImageResult, ColoringBook, SettingsModal                                                                                 |
-| `.modal-close-btn` / `.dialog-header-control` / `.modal-close-icon` | Shared outlined discs and glyphs. `DialogHeader` keeps `.modal-close-btn` on close; it also supports standalone specimens. |
+| `.modal-close-btn` / `.dialog-header-control` / `.modal-close-icon` | Shared control sizing and glyphs. `DialogHeader` gives back a flat fill and keeps `.modal-close-btn` on raised close only. |
 | `.step-number`                                                      | Numbered steps in beta, Install settings, and Safari install instructions.                                                 |
 |                                                                     | Layouts own size and position; themed strengths own contrast.                                                              |
 | `.corner-button` / `.corner-button-icon`                            | Muted canvas-corner chrome: a 48px transparent button whose opacity and                                                    |

@@ -76,6 +76,14 @@
     flex: 0 0 var(--modal-close-size);
   }
 
+  .dialog-back {
+    margin-inline-end: var(--space-2);
+    padding: var(--space-3);
+    border: 0;
+    background: var(--surface-2);
+    box-shadow: none;
+  }
+
   .floating {
     display: contents;
   }

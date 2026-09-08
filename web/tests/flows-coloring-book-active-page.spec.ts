@@ -166,6 +166,11 @@ test.describe('active-page chip on a small viewport', () => {
     await expect
       .poll(() => pagesHeading.evaluate((heading) => heading.scrollWidth <= heading.clientWidth))
       .toBe(true);
+
+    await page.setViewportSize({ width: 375, height: SMALL_VIEWPORT.height });
+    await expect
+      .poll(() => pagesHeading.evaluate((heading) => heading.scrollWidth <= heading.clientWidth))
+      .toBe(true);
   });
 
   test('is a full-size right-aligned keyboard action before the close button', async ({ page }) => {
