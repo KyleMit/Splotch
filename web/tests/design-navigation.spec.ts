@@ -142,6 +142,10 @@ for (const width of [390, 1280]) {
     await selectTheme(page, 'Light');
     await page.evaluate(() => document.fonts.ready);
     await page.goto('/design#primitives');
+    const sectionClearance = await page
+      .locator('#motion')
+      .evaluate((el) => getComputedStyle(el).scrollMarginTop);
+    await expect(page.locator('#primitives')).toHaveCSS('scroll-margin-top', sectionClearance);
     await expect
       .poll(() =>
         page
