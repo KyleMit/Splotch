@@ -248,3 +248,10 @@ to a standalone page runs no boot script and would otherwise leave that page und
 still wearing the drawing color. The script's copies of the colors and of `resolveTheme`'s
 three-state rule are guarded the way the rest of that script is — `app.html.test.ts` now runs the
 shipped script against the shipped tag for every preference under both OS preferences.
+
+## Amendment (2026-09-08): the design reference edits shared appearance
+
+ADR-0096 records a narrow exception to the standalone-page import decision: `/design` imports
+reactive appearance and settings state because its Light/Dark control edits the persisted app
+preference. Other standalone pages continue relying on the pre-paint script. The measured bundle
+cost and the distinction from the quick Night Mode toggle are documented in that amendment.

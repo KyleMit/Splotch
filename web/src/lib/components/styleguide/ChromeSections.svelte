@@ -2,20 +2,11 @@
   import Icon from '$lib/components/Icon.svelte';
   import SliderRow from '$lib/components/settings/SliderRow.svelte';
   import ToggleRow from '$lib/components/settings/ToggleRow.svelte';
-  import {
-    AI_AUTO_SAVE_HELP,
-    AI_AUTO_SAVE_LABEL,
-    AI_CREATE_HELP,
-    AI_CREATE_LABEL,
-    AI_CUSTOMIZATION_HELP,
-    AI_CUSTOMIZATION_LABEL,
-  } from '$lib/components/settings/aiSettingsCopy';
   import { paletteHex } from '$lib/palette';
   import ChromeMiniMap, { type MiniMapZone } from './ChromeMiniMap.svelte';
 
-  let demoAiEnabled = $state(false);
-  let demoAiCustomization = $state(true);
-  let demoAutoSaveAi = $state(false);
+  let demoToggle = $state(false);
+  let demoColorToggle = $state(true);
   let demoSlider = $state(60);
 
   const demoBrushes = [
@@ -161,32 +152,23 @@
   </p>
   <div class="furniture-demo">
     <ToggleRow
-      icon="wand-stars"
-      label={AI_CREATE_LABEL}
-      id="styleguide-demo-ai-toggle"
-      checked={demoAiEnabled}
-      onToggle={(next) => (demoAiEnabled = next)}
-      help={demoAiEnabled ? AI_CREATE_HELP.on : AI_CREATE_HELP.off}
-    />
-    <ToggleRow
       icon="customize"
-      label={AI_CUSTOMIZATION_LABEL}
-      id="styleguide-demo-ai-customization-toggle"
-      checked={demoAiCustomization}
-      onToggle={(next) => (demoAiCustomization = next)}
-      help={AI_CUSTOMIZATION_HELP}
+      label="Toggle row"
+      id="styleguide-demo-toggle"
+      checked={demoToggle}
+      onToggle={(next) => (demoToggle = next)}
+      help="Optional help describes the setting."
     />
     <ToggleRow
-      icon="download"
-      label={AI_AUTO_SAVE_LABEL}
-      id="styleguide-demo-auto-save-ai-toggle"
-      checked={demoAutoSaveAi}
-      onToggle={(next) => (demoAutoSaveAi = next)}
-      help={AI_AUTO_SAVE_HELP}
+      icon="wand-stars"
+      label="Toggle row with a color icon"
+      id="styleguide-demo-color-toggle"
+      checked={demoColorToggle}
+      onToggle={(next) => (demoColorToggle = next)}
     />
     <SliderRow
       id="styleguide-demo-slider"
-      label="Button size"
+      label="Slider row"
       icon="photo-size-select-small"
       value={demoSlider}
       min={40}
@@ -397,6 +379,11 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+  }
+
+  /* Like modal-shell's tint in app.css, this yields to each component's own ink. */
+  :global(:where(.furniture-demo) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg) {
+    fill: var(--icon-ink);
   }
 
   /* Placement overrides only — the modal is normally a centered fixed <dialog>,

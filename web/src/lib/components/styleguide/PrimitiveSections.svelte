@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { primitiveSections } from './primitiveSections';
   import FocusSpecimens from './FocusSpecimens.svelte';
   import RuleLabel from '$lib/components/design/RuleLabel.svelte';
   import ButtonSpecimens from './ButtonSpecimens.svelte';
@@ -12,7 +13,10 @@
   import type { Orientation } from '$lib/platform';
 
   let { theme }: { theme: ResolvedTheme } = $props();
-  const statusMessageStatuses = ['success', 'error'] as const;
+  const statusMessages = [
+    { status: 'success', text: 'Success message: the action is complete.' },
+    { status: 'error', text: 'Error message: explain what went wrong.' },
+  ] as const;
 
   type DemoTheme = 'light' | 'dark' | 'system';
   const demoThemeOptions: SegmentedPickerOption<DemoTheme>[] = [
@@ -36,15 +40,15 @@
 
   type DemoKind = 'bug' | 'feature';
   const demoKindOptions: SegmentedPickerOption<DemoKind>[] = [
-    { value: 'bug', label: "Something's broken" },
-    { value: 'feature', label: 'I have an idea' },
+    { value: 'bug', label: 'First option' },
+    { value: 'feature', label: 'Second option' },
   ];
   let demoKind = $state<DemoKind>('bug');
 
   type DemoPlatform = 'android' | 'ios';
   const demoPlatformOptions: SegmentedPickerOption<DemoPlatform>[] = [
-    { value: 'android', label: 'Android', icon: 'android' },
-    { value: 'ios', label: 'iPhone / iPad', icon: 'phone-tablet' },
+    { value: 'android', label: 'First view', icon: 'android' },
+    { value: 'ios', label: 'Second view', icon: 'phone-tablet' },
   ];
   let demoPlatform = $state<DemoPlatform>('android');
 
@@ -82,9 +86,7 @@
   ];
 </script>
 
-<section id="primitives" data-sg-section>
-  <h3>Primitives</h3>
-
+<section class="primitive-specimens" aria-label="Primitive specimens">
   <!-- Each preview theme gets its own visibility-triggered busy demonstration. -->
   {#key theme}
     <ButtonSpecimens />
@@ -92,25 +94,18 @@
 
   <FocusSpecimens />
 
-  <h4>Segmented picker <code class="file-path">design/SegmentedPicker.svelte</code></h4>
+  <h3 id={primitiveSections.picker.id} data-sg-section>
+    Segmented picker <code class="file-path">design/SegmentedPicker.svelte</code>
+  </h3>
   <p class="sub-intro">
-    A control with a <strong>selected state</strong> is a picker, not a <code>Button</code>.
-    <code>segment</code> is the brand-filled thumb track; <code>chip</code> is the borderless toggle
-    grid; radio vs toggle semantics stay with the caller. A form that must post without JavaScript
-    renders the same chrome over real native radios through <code>inputName</code>.
-    <code>labels="collapsible"</code> lets a call site drop the words at a width of its own choosing:
-    each option keeps its accessible name and a 44px square target, so the collapse costs the visible
-    label and nothing else. Use it where an icon already says what the option is.
+    Choose <code>segment</code> for a single choice, <code>chip</code> for independent toggles, or
+    <code>underline</code> for switching views. Radio mode selects one option; toggle mode lets the caller
+    support deselection or multiple choices.
   </p>
   <p class="sub-intro">
-    <code>underline</code> is the third skin, for a
-    <strong>standalone page switching between two views of itself</strong>
-    rather than setting something: a rule under a row of labels, the live one replacing its stretch of
-    that rule with a brand segment and taking the brand ink with it. Icons follow that ink rather than
-    <code>--icon-ink</code>, so the live tab moves as one mark. It is also the one variant that owns
-    its own width — it hugs the left on a sheet, and at phone width the cells split the row evenly
-    so each segment is a whole cell. A caller whose sheet reaches the screen edges supplies the
-    bleed past its own gutter; the beta page does.
+    Variants below show labels, icon-only labels, a compact deselectable control, native form
+    radios, view tabs, and multiple selection. Use <code>inputName</code> for a form that must work without
+    JavaScript. Collapsible labels keep each icon’s accessible name and touch target.
   </p>
   <div class="picker-demo">
     <SegmentedPicker
@@ -142,7 +137,7 @@
   </div>
   <div class="picker-demo">
     <SegmentedPicker
-      label="Report type (specimen)"
+      label="Native radio group (specimen)"
       options={demoKindOptions}
       selected={demoKind}
       onSelect={(value) => (demoKind = value)}
@@ -152,7 +147,7 @@
   <div class="picker-demo">
     <SegmentedPicker
       variant="underline"
-      label="Platform (specimen)"
+      label="View tabs (specimen)"
       options={demoPlatformOptions}
       selected={demoPlatform}
       onSelect={(value) => (demoPlatform = value)}
@@ -169,48 +164,49 @@
     />
   </div>
 
-  <h4>Status message <code class="file-path">design/StatusMessage.svelte</code></h4>
+  <h3 id={primitiveSections.status.id} data-sg-section>
+    Status message <code class="file-path">design/StatusMessage.svelte</code>
+  </h3>
   <div class="status-demo">
-    {#each statusMessageStatuses as status (status)}
-      <StatusMessage {status}
-        >The {status} wash, as a form shows it after a submit resolves.</StatusMessage
-      >
+    {#each statusMessages as message (message.status)}
+      <StatusMessage status={message.status}>{message.text}</StatusMessage>
     {/each}
     <StatusMessage status="warning">
-      <strong>Persistence is unavailable.</strong> The app still works, but changes to
-      <code>access-codes</code> will not be saved.
+      <strong>Warning heading.</strong> Describe what needs attention, with an optional
+      <code>detail</code>.
     </StatusMessage>
   </div>
 
-  <h4>Rule label <code class="file-path">design/RuleLabel.svelte</code></h4>
+  <h3 id={primitiveSections.rule.id} data-sg-section>
+    Rule label <code class="file-path">design/RuleLabel.svelte</code>
+  </h3>
   <div class="rule-demo">
-    <RuleLabel>Overview</RuleLabel>
-    <RuleLabel count={12}>Access codes</RuleLabel>
-    <RuleLabel as="h3">Details</RuleLabel>
-    <div class="rule-stack">
-      <div class="rule-section">
-        <RuleLabel>First section</RuleLabel>
-        <p>The section leaves --space-5 below its label.</p>
-      </div>
-      <div class="rule-section">
-        <RuleLabel count="24">Second section</RuleLabel>
-        <p>The stack leaves --space-8 between sections.</p>
-      </div>
+    <div class="rule-section">
+      <RuleLabel>Heading</RuleLabel>
+      <p>Description or section content.</p>
+    </div>
+    <div class="rule-section">
+      <RuleLabel as="h3" count="Count">Heading with count</RuleLabel>
+      <p>The optional count follows the heading. Content sits below the rule.</p>
     </div>
   </div>
 
-  <h4>Disclosure <code class="file-path">design/Disclosure.svelte</code></h4>
+  <h3 id={primitiveSections.disclosure.id} data-sg-section>
+    Disclosure <code class="file-path">design/Disclosure.svelte</code>
+  </h3>
   <p class="sub-intro">
     The primitive owns the bordered shell, the hidden native marker, and the <code>›</code> chevron
     that rotates on open. Padding, type, color, and background stay with the call site, through the
     forwarded <code>class</code>.
   </p>
   <Disclosure class="disclosure-demo">
-    {#snippet summary()}Advanced controls{/snippet}
+    {#snippet summary()}Disclosure heading{/snippet}
     <p class="disclosure-demo-body">Help text is one calm sentence, styled by the call site.</p>
   </Disclosure>
 
-  <h4>Scroll cue <code class="file-path">design/ScrollCue.svelte</code></h4>
+  <h3 id={primitiveSections.scrollCue.id} data-sg-section>
+    Scroll cue <code class="file-path">design/ScrollCue.svelte</code>
+  </h3>
   <p class="sub-intro">
     The fade that says a scroller's content carries on below: absent while content fits, present
     while more remains under the fold, and absent again once the end is on screen.
@@ -313,16 +309,9 @@
   }
 
   h3 {
-    margin: 0 0 6px;
-    color: var(--text-strong);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-  }
-
-  h4 {
     margin: 22px 0 var(--space-1);
     color: var(--text-strong);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
   }
 
@@ -390,16 +379,11 @@
 
   .rule-demo {
     display: grid;
-    gap: var(--space-5);
+    gap: var(--space-8);
     max-width: 620px;
     padding: var(--space-4);
     background: var(--surface);
     border-radius: var(--radius-lg);
-  }
-
-  .rule-stack {
-    display: grid;
-    gap: var(--space-8);
   }
 
   .rule-section {

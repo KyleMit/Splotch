@@ -109,7 +109,6 @@
       'dangerText',
       'warningWash',
       'warningText',
-      'warningBorder',
       'warningChip',
     ]),
     themeFamily('Paper', ['paper', 'paperMargin', 'holeStroke']),

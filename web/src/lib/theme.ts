@@ -18,9 +18,9 @@
 // resolvedTheme() and the theme-color meta from one subscription. Keeping
 // matchMedia out of here also keeps module layering acyclic — appearance
 // imports these helpers, so they must not reach back for appearance's state.
-// Only the drawing route pulls appearance in, so on every other route the
-// pre-paint script in app.html resolves the theme and paints the theme-color
-// meta itself, following the OS preference from its own listener.
+// The drawing route and /design import appearance. The pre-paint script in
+// app.html also resolves the theme before hydration and follows the OS on
+// routes without reactive appearance state.
 
 import { themes } from './design/tokens.ts';
 

@@ -88,9 +88,9 @@ describe("app.html's prerendered head mirrors the theme module", () => {
   });
 });
 
-// Off the drawing route nothing imports state/appearance.svelte.ts, so the boot
-// script is the only thing that can put the browser chrome on the resolved
-// theme — with its own copy of THEME_COLORS and of resolveTheme's three-state
+// Routes other than the drawing page and /design rely on the boot script
+// to put browser chrome on the resolved theme, with its own copy of
+// THEME_COLORS and of resolveTheme's three-state
 // rule. Reading those back out of the source would only prove the hexes match,
 // so this runs the shipped script against the shipped tag instead: every
 // preference the app can resolve, under both OS preferences.

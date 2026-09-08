@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { colorContrast } from '../src/lib/design/colorContrast';
 
+const MIN_WARNING_CHIP_CONTRAST = { light: 1.1, dark: 1.25 } as const;
+
 async function showTheme(page: Page, theme: 'light' | 'dark') {
   await page.goto('/design');
   await expect(async () => {
@@ -37,7 +39,7 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(copy).toHaveCSS('border-radius', '8px');
     await expect(copy).toHaveCSS('padding', '0px');
 
-    const nativeRadio = page.getByRole('radiogroup', { name: 'Report type (specimen)' });
+    const nativeRadio = page.getByRole('radiogroup', { name: 'Native radio group (specimen)' });
     await nativeRadio.getByRole('radio').first().focus();
     await page.keyboard.press('ArrowRight');
     const nativeLabel = nativeRadio.locator('label:has(input:focus-visible)');
@@ -54,8 +56,7 @@ for (const theme of ['light', 'dark'] as const) {
     const warning = statuses.locator('.warning');
     await expect(warning).toHaveAttribute('role', 'status');
     await expect(warning).toHaveAttribute('aria-live', 'polite');
-    await expect(warning).toHaveCSS('border-top-width', '1px');
-    await expect(warning).toHaveCSS('border-top-style', 'solid');
+    await expect(warning).toHaveCSS('border-top-width', '0px');
     await expect(warning.locator('strong')).toHaveCSS('font-weight', '700');
     await expect(warning.locator('code')).toHaveCSS('font-size', '12px');
     const colors = await warning.evaluate((el) => {
@@ -66,12 +67,19 @@ for (const theme of ['light', 'dark'] as const) {
       return {
         ink: style.color,
         wash: style.backgroundColor,
+        surface: style.getPropertyValue('--surface').trim(),
+        successWash: style.getPropertyValue('--success-wash').trim(),
         chip: chip.backgroundColor,
         chipInk: chip.color,
       };
     });
+    expect(colorContrast(colors.wash, colors.surface, colors.surface)).toBeGreaterThanOrEqual(
+      colorContrast(colors.successWash, colors.surface, colors.surface)
+    );
     expect(colors.chipInk).toBe(colors.ink);
-    expect(colors.chip).not.toBe(colors.wash);
+    expect(colorContrast(colors.chip, colors.wash, colors.wash)).toBeGreaterThanOrEqual(
+      MIN_WARNING_CHIP_CONTRAST[theme]
+    );
     expect(colorContrast(colors.ink, colors.wash, colors.wash)).toBeGreaterThanOrEqual(4.5);
     expect(colorContrast(colors.chipInk, colors.chip, colors.wash)).toBeGreaterThanOrEqual(4.5);
   });
@@ -79,16 +87,17 @@ for (const theme of ['light', 'dark'] as const) {
   test(`rule labels keep heading semantics and section rhythm in ${theme}`, async ({ page }) => {
     await showTheme(page, theme);
     const demo = page.locator('.rule-demo');
-    await expect(demo.getByRole('heading', { name: 'Overview', level: 2 })).toBeVisible();
-    await expect(demo.getByRole('heading', { name: 'Access codes · 12', level: 2 })).toBeVisible();
-    await expect(demo.getByRole('heading', { name: 'Details', level: 3 })).toBeVisible();
     await expect(
-      demo.getByRole('heading', { name: 'Second section · 24', level: 2 })
+      demo.getByRole('heading', { name: 'Heading', level: 2, exact: true })
     ).toBeVisible();
-    const heading = demo.getByRole('heading', { name: 'Overview' });
+    await expect(
+      demo.getByRole('heading', { name: 'Heading with count · Count', level: 3 })
+    ).toBeVisible();
+    await expect(demo.getByRole('heading')).toHaveCount(2);
+    const heading = demo.getByRole('heading', { name: 'Heading', exact: true });
     await expect(heading).toHaveCSS('padding-bottom', '0px');
     await expect(heading).toHaveCSS('gap', '12px');
-    await expect(demo.locator('.rule-stack')).toHaveCSS('gap', '40px');
+    await expect(demo).toHaveCSS('gap', '40px');
     await expect(demo.locator('.rule-section').first()).toHaveCSS('gap', '20px');
     const colors = await heading.evaluate((el) => {
       const surface = el.closest('.rule-demo');

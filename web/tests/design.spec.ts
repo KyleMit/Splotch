@@ -245,7 +245,7 @@ test.describe('phone contents', () => {
     await page.goto('/design');
     const row = page.locator('.header-toc summary');
     // Derived from the sections the page actually renders, not a written count.
-    const sections = await page.locator('main.styleguide section[data-sg-section]').count();
+    const sections = await page.locator('main.styleguide [data-sg-section]').count();
     await expect(row).toContainText(`${sections} sections`);
 
     // The last section, at max scroll: a spy keyed on "the heading has crossed
@@ -270,7 +270,7 @@ test.describe('phone contents', () => {
   }) => {
     await page.goto('/design');
     const contents = page.locator('.header-toc');
-    await contents.locator('summary').click();
+    await openHydratedContents(contents);
 
     await expect
       .poll(() =>
@@ -293,7 +293,7 @@ test.describe('phone contents', () => {
     await page.setViewportSize({ width: 390, height: 667 });
     await page.goto('/design');
     const contents = page.locator('.header-toc');
-    await contents.locator('summary').click();
+    await openHydratedContents(contents);
 
     await expect
       .poll(
