@@ -1,8 +1,6 @@
 <script lang="ts">
   import DialogHeader from '$lib/components/design/DialogHeader.svelte';
   import Button from '$lib/components/design/Button.svelte';
-  let headerOpen = $state(true);
-  let headerDetail = $state(true);
   import { primitiveSections } from './primitiveSections';
   import FocusSpecimens from './FocusSpecimens.svelte';
   import RuleLabel from '$lib/components/design/RuleLabel.svelte';
@@ -28,6 +26,8 @@
     { value: 'dark', label: 'Dark', icon: 'theme-dark' },
     { value: 'system', label: 'System', icon: 'theme-auto', disabled: true },
   ];
+  let headerOpen = $state(true);
+  let headerDetail = $state(true);
   let demoTheme = $state<DemoTheme>('light');
   // The same options as the specimen above, so the pair reads as one control
   // with and without its words rather than as two unrelated pickers.
@@ -93,7 +93,9 @@
 <section class="primitive-specimens" aria-label="Primitive specimens">
   <!-- Each preview theme gets its own visibility-triggered busy demonstration. -->
   {#key theme}
-    <h3 id={primitiveSections.dialogHeader.id} data-sg-section>Dialog header</h3>
+    <h3 id={primitiveSections.dialogHeader.id} data-sg-section>
+      Dialog header <code class="file-path">design/DialogHeader.svelte</code>
+    </h3>
     <p class="sub-intro">
       Back and close share a 44px target, an outlined disc, and <code>--icon-ink</code> glyphs. The title
       can wrap between the controls; optional actions sit beside close.

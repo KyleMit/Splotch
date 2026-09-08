@@ -372,10 +372,6 @@ body {
     background: var(--surface-hover);
     border-color: var(--border-warm-strong);
   }
-
-  :is(.modal-close-btn, .dialog-header-control):not(:disabled):hover .modal-close-icon svg {
-    fill: var(--icon-ink);
-  }
 }
 
 /* Muted corner-button chrome shared by the drawer toggle, Fullscreen Toggle,

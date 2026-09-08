@@ -209,18 +209,15 @@
 
   /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page
      ground (the axe scan in a11y.spec.ts enforces it). */
-  .value,
-  .hint {
+  .value {
     font-size: var(--font-size-xs);
     color: var(--text-soft);
+    line-height: 1.45;
   }
 
   .hint {
+    font-size: var(--font-size-xs);
     color: var(--text);
-  }
-
-  .value {
-    line-height: 1.45;
   }
 
   .family-grid {

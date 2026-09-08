@@ -129,10 +129,6 @@
     align-items: center;
     gap: 12px;
     padding: 14px 24px 10px;
-    /* Reserve the close button's full vertical extent (--modal-close-clearance-y
-       in app.css) so the top-right toggle cell starts below it instead of
-       sliding up under the button. */
-    min-height: var(--modal-close-clearance-y);
   }
 
   .settings-header-compact h2 {
