@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { themes } from '../src/lib/design/tokens';
+import { scale } from '../src/lib/design/tokens';
+import { colorContrast } from '../src/lib/design/colorContrast';
 import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -463,7 +464,7 @@ test.describe('AI result modal', () => {
   });
 
   // The strip sits on the dimmed backdrop, which is dark under either theme, so
-  // its ink tokens use the canonical dark theme under either app theme.
+  // its on-scrim tokens stay unchanged under either app theme.
   for (const colorScheme of ['light', 'dark'] as const) {
     test(`paints the strip on backdrop colors in ${colorScheme} mode`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
@@ -473,9 +474,9 @@ test.describe('AI result modal', () => {
         .getByRole('button', { name: 'Report this picture' })
         .evaluate((button, inkTokens) => {
           const tokenStyle = document.createElement('span').style;
-          tokenStyle.color = inkTokens.textSoft;
+          tokenStyle.color = inkTokens.scrimInk;
           const expectedText = tokenStyle.color;
-          tokenStyle.color = inkTokens.dangerText;
+          tokenStyle.color = inkTokens.scrimInkDanger;
           const strip = button.closest('.ai-result-disclosure') as HTMLElement;
           const icon = button.querySelector('svg') as SVGElement;
           return {
@@ -487,8 +488,8 @@ test.describe('AI result modal', () => {
             report: getComputedStyle(button).color,
             iconFill: getComputedStyle(icon).fill,
           };
-        }, themes.dark);
-      expect(chrome.fill).toBe('rgba(23, 23, 29, 0.72)');
+        }, scale);
+      expect(chrome.fill).toBe(scale.scrimPill);
       // The fill alone leaves the drawing showing through under 12px text; the
       // brightness floor is what keeps the ink legible over light artwork.
       expect(chrome.ground).toContain('brightness');
@@ -659,6 +660,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
       el.disabled = true;
     });
     await expect(flag).toHaveCSS('opacity', '1');
-    await expect(flag).not.toHaveCSS('color', ink);
+    const softInk = await flag.evaluate((el) => getComputedStyle(el).color);
+    await expect(flag.locator('svg')).toHaveCSS('fill', softInk);
+    await expect(strip.locator('.ai-disclosure-separator')).toHaveCSS('color', softInk);
+    const captionInk = await strip.evaluate((el) => getComputedStyle(el).color);
+    const filter = await strip.evaluate((el) => getComputedStyle(el).backdropFilter);
+    const brightness = Number(filter.match(/brightness\(([\d.]+)\)/)?.[1]);
+    expect(brightness).toBeGreaterThan(0);
+    const brightestChannel = Math.ceil(255 * brightness);
+    const brightestBackdrop = `rgb(${brightestChannel}, ${brightestChannel}, ${brightestChannel})`;
+    const fill = await strip.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const contrast = colorContrast(softInk, fill, brightestBackdrop);
+    expect(contrast).toBeGreaterThanOrEqual(4.5);
+    expect(contrast).toBeLessThan(colorContrast(captionInk, fill, brightestBackdrop));
+    expect(contrast).toBeLessThan(colorContrast(ink, fill, brightestBackdrop));
   });
 }

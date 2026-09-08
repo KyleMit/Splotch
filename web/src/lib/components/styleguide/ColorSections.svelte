@@ -90,6 +90,18 @@
         },
       ] satisfies ColorChip[],
     },
+    {
+      label: 'On scrim · both themes',
+      chips: (['scrimInk', 'scrimInkDanger', 'scrimInkSoft', 'scrimPill'] as const).map(
+        (key): ColorChip => ({
+          varName: toCssVarName(key),
+          fill: cssVar(key),
+          light: scale[key],
+          dark: scale[key],
+          usage: scaleUsage[key],
+        })
+      ),
+    },
     themeFamily('Ground & surfaces', ['appBg', 'surface', 'surface2', 'surfaceHover']),
     themeFamily('Text ink', ['textStrong', 'text', 'textSoft', 'labelInk']),
     themeFamily('Icon ink', ['iconInk', 'iconMuted']),

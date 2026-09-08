@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { themes } from '$lib/design/tokens';
   import Icon from './Icon.svelte';
 
   interface Props {
@@ -12,12 +11,7 @@
   let { disabled = false, kind = 'picture', onclick }: Props = $props();
 </script>
 
-<div
-  class="ai-result-disclosure"
-  class:problem={kind === 'problem'}
-  style:--text-soft={themes.dark.textSoft}
-  style:--danger-text={themes.dark.dangerText}
->
+<div class="ai-result-disclosure" class:problem={kind === 'problem'}>
   {#if kind === 'picture'}
     <span>AI-generated picture</span>
     <span class="ai-disclosure-separator" aria-hidden="true">·</span>
@@ -51,10 +45,10 @@
     height: var(--report-strip-height);
     padding: 0 14px;
     border-radius: var(--radius-pill);
-    /* The backdrop is dark in both themes, so the strip uses the canonical
-       dark theme's ink tokens. Its own ground keeps artwork from muddying text. */
-    background: rgba(23, 23, 29, 0.72);
-    color: var(--text-soft);
+    /* The backdrop stays dark in both themes; on-scrim tokens keep the pill
+       and its ink independent of the modal card's theme. */
+    background: var(--scrim-pill);
+    color: var(--scrim-ink);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
     line-height: 1;
@@ -83,7 +77,7 @@
   }
 
   .ai-disclosure-separator {
-    color: var(--text-soft);
+    color: var(--scrim-ink-soft);
   }
 
   .ai-report-flag {
@@ -103,7 +97,7 @@
     gap: var(--space-1);
     border: none;
     background: none;
-    color: var(--danger-text);
+    color: var(--scrim-ink-danger);
     cursor: pointer;
     font: inherit;
     touch-action: manipulation;
@@ -121,7 +115,7 @@
 
   .ai-report-flag:disabled {
     cursor: default;
-    color: var(--text-soft);
+    color: var(--scrim-ink-soft);
   }
 
   :global(.ai-report-flag-icon) {

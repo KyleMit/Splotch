@@ -97,6 +97,8 @@ Foundations and only reach past a default when a rule says so.
 |           | root-context except                                                                                    |
 |           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under   |
 |           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                        |
+| Scrim     | `--scrim-ink`, `--scrim-ink-danger`, `--scrim-ink-soft`, `--scrim-pill` —                              |
+|           | fixed inks and glass for disclosure text on the dark backdrop in both themes.                          |
 | Steps     | `--step-wash-strength` / `--step-ink-strength` — numbered-step disc and digit mixes.                   |
 |           | Light sheets keep crayon tints; dark digits use full heading ink on lifted discs.                      |
 | Theme     | surfaces, borders, the three-step text ramp (`--text-strong` headings · `--text` body ·                |

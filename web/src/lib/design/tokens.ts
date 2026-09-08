@@ -138,6 +138,12 @@ export const scale = {
   // it sits on.
   polaroidPaper: '#fdfcf7',
   polaroidInk: '#7c50bb',
+
+  // Disclosure text sits on dark scrim glass under either app theme.
+  scrimInk: '#b3b1bf',
+  scrimInkDanger: '#e09393',
+  scrimInkSoft: '#a6a3b0',
+  scrimPill: 'rgba(23, 23, 29, 0.72)',
 } as const;
 
 // The cross-component stacking order, low to high. Scoped to "chrome" — the

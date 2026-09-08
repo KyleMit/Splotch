@@ -54,6 +54,10 @@
   --clear-gradient-rest: linear-gradient(135deg, #ff6b6b, #ee5a6f);
   --polaroid-paper: #fdfcf7;
   --polaroid-ink: #7c50bb;
+  --scrim-ink: #b3b1bf;
+  --scrim-ink-danger: #e09393;
+  --scrim-ink-soft: #a6a3b0;
+  --scrim-pill: rgba(23, 23, 29, 0.72);
 
   --z-canvas-chrome: 4;
   --z-clear-preview: 400;
