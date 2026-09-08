@@ -236,7 +236,7 @@
           of the deliberately bespoke chrome.
         </p>
       </div>
-      <PrimitiveSections />
+      <PrimitiveSections {theme} />
       <ChromeSections />
 
       <div class="part-divider" id="brand">

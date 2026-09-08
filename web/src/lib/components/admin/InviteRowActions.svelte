@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
+  import Button from '../design/Button.svelte';
   import { copyKey, type Invite } from './AdminConsole.svelte';
 
   // One ledger row's action surface, rendered as two sibling cells inside
@@ -46,14 +47,14 @@
 </script>
 
 {#snippet copyCodeButton()}
-  <button
-    type="button"
-    class="copy-btn"
-    class:copied={copied === copyKey(invite.token, 'code')}
+  <Button
+    variant="outline"
+    size="sm"
+    class={['copy-code', { copied: copied === copyKey(invite.token, 'code') }]}
     onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
   >
     {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
-  </button>
+  </Button>
 {/snippet}
 
 <div role="cell" class="cell-actions">
@@ -141,38 +142,12 @@
     gap: 14px;
   }
 
-  /* Copy — the row's one outlined button. */
-  .copy-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .cell-actions :global(.copy-code) {
     min-height: var(--ledger-target-min);
-    padding: 7px 14px;
-    color: var(--brand-text);
-    background: transparent;
-    border: 1px solid var(--brand-text);
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: var(--ledger-meta-size);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    white-space: nowrap;
     flex-shrink: 0;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      border-color var(--duration-fast) ease;
   }
 
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .copy-btn:hover {
-      background: var(--brand-wash);
-    }
-  }
-
-  .copy-btn.copied {
+  .cell-actions :global(.copy-code.copied) {
     color: var(--success-text);
     border-color: var(--success-text);
     background: var(--success-wash);

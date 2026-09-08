@@ -1,7 +1,8 @@
 <script lang="ts">
   import FocusSpecimens from './FocusSpecimens.svelte';
   import RuleLabel from '$lib/components/design/RuleLabel.svelte';
-  import Button from '$lib/components/design/Button.svelte';
+  import ButtonSpecimens from './ButtonSpecimens.svelte';
+  import type { ResolvedTheme } from '$lib/theme';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
   import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import SegmentedPicker, {
@@ -10,8 +11,7 @@
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import type { Orientation } from '$lib/platform';
 
-  const buttonVariants = ['brand', 'wash', 'danger'] as const;
-  const buttonSizes = ['lg', 'md', 'sm'] as const;
+  let { theme }: { theme: ResolvedTheme } = $props();
   const statusMessageStatuses = ['success', 'error'] as const;
 
   type DemoTheme = 'light' | 'dark' | 'system';
@@ -85,15 +85,9 @@
 <section id="primitives" data-sg-section>
   <h3>Primitives</h3>
 
-  <h4>Button <code class="file-path">design/Button.svelte</code></h4>
-  {#each buttonSizes as size (size)}
-    <div class="button-row">
-      {#each buttonVariants as variant (variant)}
-        <Button {variant} {size}>{variant} {size}</Button>
-      {/each}
-      <Button variant="brand" {size} disabled>disabled</Button>
-    </div>
-  {/each}
+  {#key theme}
+    <ButtonSpecimens />
+  {/key}
 
   <FocusSpecimens />
 
@@ -335,14 +329,6 @@
     font-size: var(--font-size-sm);
     line-height: 1.5;
     color: var(--text-soft);
-  }
-
-  .button-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-3);
-    margin: 10px 0;
   }
 
   /* Settings-column width, so the specimens read at their real proportions. */
