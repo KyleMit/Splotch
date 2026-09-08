@@ -500,3 +500,59 @@ describe('createDrawingDeduper', () => {
     expect(createDrawingDeduper().isDuplicate('sig-a')).toBe(false);
   });
 });
+
+describe('retryAiImage', () => {
+  it('reuses the original drawing and style and stops after a second failure', async () => {
+    const drawing = new Blob(['original drawing'], { type: 'image/png' });
+    mocks.exportCanvasBlob.mockResolvedValue(drawing);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{"error":"Server unavailable"}', { status: 503 }))
+    );
+    const { generateAiImage, retryAiImage } = await import('./aiImage');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
+    await generateAiImage({ style: 'Crayon' });
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['newer drawing']));
+    await retryAiImage();
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(fetch).mock.calls[1]).toEqual([
+      '/api/generate-image?style=Crayon',
+      expect.objectContaining({ body: drawing }),
+    ]);
+    expect(aiResult.consecutiveFailures).toBe(2);
+    expect(aiResult.failureDetails).toEqual({
+      status: 503,
+      endpoint: '/api/generate-image',
+      message: 'Server unavailable',
+    });
+    await retryAiImage();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('records the polling endpoint without its job identifier', async () => {
+    vi.useFakeTimers();
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing'], { type: 'image/png' }));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response('{"jobId":"private-job-id","pollAfterMs":0}', { status: 202 })
+        )
+        .mockResolvedValueOnce(new Response('{"error":"Provider failed"}', { status: 502 }))
+    );
+    const { generateAiImage } = await import('./aiImage');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
+    const running = generateAiImage();
+    await vi.runAllTimersAsync();
+    await running;
+    expect(aiResult.failureDetails).toEqual({
+      status: 502,
+      endpoint: '/api/generation-result',
+      message: 'Provider failed',
+    });
+  });
+});

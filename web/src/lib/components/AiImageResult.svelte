@@ -5,6 +5,7 @@
   import AiResultStage from './AiResultStage.svelte';
   import Button from './design/Button.svelte';
   import { aiResult, closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
+  import AiErrorCard from './AiErrorCard.svelte';
   import { aiProgress } from '$lib/state/aiProgress.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -28,6 +29,7 @@
   // The window in which leaving is a real offer: once the picture has landed
   // there is nothing to go back to the canvas for, and minimizing a finished
   // result would be a way to lose it (ADR-0116).
+  const serverError = $derived(!!aiResult.error && aiResult.error.kind !== 'safety');
   const waiting = $derived(loading && aiResult.generating);
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
@@ -63,7 +65,7 @@
   });
 
   $effect(() => {
-    if (!aiResult.open) {
+    if (!aiResult.open || aiResult.generating) {
       exiting = false;
       reportStatus = 'idle';
     }
@@ -101,6 +103,7 @@
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
   class:errored={!!aiResult.error}
+  class:serverError
   class:loading
   class:waiting
   style={cardStyle}
@@ -118,20 +121,19 @@
   })}
   onanimationend={handleAnimationEnd}
 >
+  <button
+    class="ai-result-close modal-close-btn"
+    aria-label={aiResult.generating ? 'Keep drawing while this is made' : 'Close'}
+    onclick={() => (aiResult.generating ? minimizeAiResult() : closeAiResult())}
+  >
+    <Icon name="close" class="modal-close-icon" />
+  </button>
   <div class="ai-result-content">
-    <button
-      class="ai-result-close modal-close-btn"
-      aria-label={aiResult.generating ? 'Keep drawing while this is made' : 'Close'}
-      onclick={() => (aiResult.generating ? minimizeAiResult() : closeAiResult())}
-    >
-      <Icon name="close" class="modal-close-icon" />
-    </button>
-
     {#if aiResult.error}
       {@const safety = aiResult.error.kind === 'safety'}
       <div class="ai-result-error" class:safety>
-        <p>{aiResult.error.message ?? "Hmm, that didn't work. Please try again!"}</p>
         {#if safety}
+          <p>{aiResult.error.message}</p>
           <p class="ai-result-error-sub">
             That picture didn't work — try drawing something different!
           </p>
@@ -155,6 +157,20 @@
               bind:status={reportStatus}
             />
           </div>
+        {:else}
+          <AiErrorCard>
+            <AiImageReport
+              kind="generation-error"
+              drawingUrl={null}
+              outputUrl={null}
+              style={aiResult.style}
+              reportToken={null}
+              failure={aiResult.failureDetails}
+              attempts={aiResult.consecutiveFailures}
+              origin={reportOrigin}
+              bind:status={reportStatus}
+            />
+          </AiErrorCard>
         {/if}
       </div>
     {:else}
@@ -201,7 +217,9 @@
 
   <!-- Stays mounted through the polaroid send-off so it fades out with the rest
        of the chrome (.polaroid-mode below) instead of vanishing on the first frame. -->
-  {#if revealed && aiResult.resultUrl && !reportSettled}
+  {#if serverError && !reportSettled}
+    <AiResultDisclosure kind="problem" onclick={requestReport} />
+  {:else if revealed && aiResult.resultUrl && !reportSettled}
     <AiResultDisclosure onclick={requestReport} disabled={!aiResult.previewUrl} />
   {/if}
 </dialog>
@@ -293,12 +311,12 @@
 
   /* The disclosure strip is what the bottom edge owes room to, so it deepens
      that bound — and the height budget and the shift follow from it above. The
-     reserve is unconditional (bar the error state, which has no picture to
-     disclose): the loading state claims it though its strip is still to come, so
+     loading state claims the reserve though its strip is still to come, so
      the card doesn't move under the reveal, and it stays claimed while the
      confirmation dialog stands in front of this card, so the picture behind
      doesn't resize under it. */
-  .ai-result-modal:not(.errored) {
+  .ai-result-modal:not(.errored),
+  .ai-result-modal.serverError {
     --result-bottom-bound: max(var(--report-strip-reserve), var(--result-gutter));
   }
 
@@ -388,6 +406,26 @@
     font-weight: var(--font-weight-medium);
     color: var(--text-soft);
     max-width: 280px;
+  }
+
+  .ai-result-modal.serverError {
+    max-width: var(--result-max-w);
+    width: min(var(--result-max-w), 400px);
+  }
+
+  .serverError .ai-result-content {
+    padding: var(--space-7) var(--space-6) var(--space-6);
+    max-height: var(--result-card-max-h);
+    overflow-y: auto;
+    border-radius: inherit;
+  }
+
+  .serverError .ai-result-error {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    flex-shrink: 0;
+    gap: 0;
   }
 
   .ai-refusal-report {

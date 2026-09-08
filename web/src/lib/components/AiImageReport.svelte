@@ -3,6 +3,11 @@
 </script>
 
 <script lang="ts">
+  import ReportFields from './report/ReportFields.svelte';
+  import { failureReportRows } from '$lib/ai/failureReport';
+  import type { AiFailureDetails } from '$lib/state/aiGeneration.svelte';
+  import type { DeviceInfo } from '$lib/platform/deviceReport';
+  import type { ReportResponse } from '../../routes/api/report/+server';
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
   import { modalDialog, waitForDialogRetirement } from '$lib/actions/modalDialog.svelte';
@@ -17,7 +22,9 @@
   import type { ImageReportResponse } from '../../routes/api/report-image/+server';
 
   interface Props {
-    kind?: AiReportKind;
+    kind?: AiReportKind | 'generation-error';
+    failure?: AiFailureDetails | null;
+    attempts?: number;
     drawingUrl: string | null;
     outputUrl: string | null;
     style: StyleName | null;
@@ -30,6 +37,8 @@
 
   let {
     kind = 'picture',
+    failure = null,
+    attempts = 0,
     drawingUrl,
     outputUrl,
     style,
@@ -39,6 +48,10 @@
   }: Props = $props();
 
   const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+  const problem = $derived(kind === 'generation-error');
+  const diagnosticRows = $derived(failureReportRows(failure, attempts, style));
+  let includeDevice = $state(false);
+  let ensureDevice = $state<() => Promise<DeviceInfo | undefined>>();
   const refusal = $derived(kind === 'false-positive-refusal');
 
   let message = $state('');
@@ -69,8 +82,43 @@
     };
   });
 
+  async function submit(signal: AbortSignal): Promise<Response> {
+    if (problem) {
+      const device = includeDevice ? await ensureDevice?.() : undefined;
+      return fetch(apiUrl('/api/report'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'bug',
+          message: diagnosticRows.map(({ label, value }) => `${label}: ${value}`).join('\n'),
+          ...(device ? { device } : {}),
+        }),
+        signal,
+      });
+    }
+    if (!drawingUrl) throw new Error('Missing drawing');
+    const [drawingResponse, outputResponse] = await Promise.all([
+      fetch(drawingUrl, { signal }),
+      outputUrl ? fetch(outputUrl, { signal }) : Promise.resolve(null),
+    ]);
+    const form = new FormData();
+    form.set('kind', kind);
+    form.set('drawing', await drawingResponse.blob(), 'drawing');
+    if (outputResponse) form.set('output', await outputResponse.blob(), 'output');
+    form.set('style', style ?? '');
+
+    const credentials = await aiCredentialHeaders();
+    return fetch(apiUrl('/api/report-image'), {
+      method: 'POST',
+      headers: reportToken ? { ...credentials, [REPORT_TOKEN_HEADER]: reportToken } : credentials,
+      body: form,
+      signal,
+    });
+  }
+
   async function send() {
-    if (!drawingUrl || (kind === 'picture' && !outputUrl) || status === 'busy') return;
+    if ((!problem && (!drawingUrl || (kind === 'picture' && !outputUrl))) || status === 'busy')
+      return;
     controller?.abort();
     const requestController = new AbortController();
     controller = requestController;
@@ -86,39 +134,30 @@
     }, CLIENT_REQUEST_TIMEOUT_MS);
 
     try {
-      const [drawingResponse, outputResponse] = await Promise.all([
-        fetch(drawingUrl, { signal: requestController.signal }),
-        outputUrl ? fetch(outputUrl, { signal: requestController.signal }) : Promise.resolve(null),
-      ]);
-      const form = new FormData();
-      form.set('kind', kind);
-      form.set('drawing', await drawingResponse.blob(), 'drawing');
-      if (outputResponse) form.set('output', await outputResponse.blob(), 'output');
-      form.set('style', style ?? '');
-
-      const credentials = await aiCredentialHeaders();
-      const response = await fetch(apiUrl('/api/report-image'), {
-        method: 'POST',
-        headers: reportToken ? { ...credentials, [REPORT_TOKEN_HEADER]: reportToken } : credentials,
-        body: form,
-        signal: requestController.signal,
-      });
-      const result: ImageReportResponse = await response.json().catch(() => ({
+      const response = await submit(requestController.signal);
+      const result: ImageReportResponse | ReportResponse = await response.json().catch(() => ({
         ok: false,
-        error: refusal
-          ? 'Could not send your refusal report.'
-          : 'Could not send your picture report.',
+        error: problem
+          ? 'Could not send your problem report.'
+          : refusal
+            ? 'Could not send your refusal report.'
+            : 'Could not send your picture report.',
       }));
       if (requestController.signal.aborted) return;
       if (response.ok && result.ok) {
         status = 'success';
-        message = `Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: ${result.reportId}`;
+        message =
+          'reportId' in result
+            ? `Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: ${result.reportId}`
+            : 'Thanks. Your problem report was sent to our private support tracker.';
       } else {
         status = 'error';
         message = result.ok
-          ? refusal
-            ? 'Could not send your refusal report.'
-            : 'Could not send your picture report.'
+          ? problem
+            ? 'Could not send your problem report.'
+            : refusal
+              ? 'Could not send your refusal report.'
+              : 'Could not send your picture report.'
           : result.error;
       }
     } catch {
@@ -144,7 +183,9 @@
     <StatusMessage {status}>{message}</StatusMessage>
     {#if status === 'error'}
       <!-- No second gate: the one guarding this report was already solved. -->
-      <Button size="sm" onclick={() => (status = 'confirm')}>Try again</Button>
+      <Button size="sm" onclick={() => (status = 'confirm')}
+        >{problem ? 'Retry report' : 'Try again'}</Button
+      >
     {/if}
   </div>
 {/if}
@@ -153,6 +194,7 @@
   bind:this={confirmDialog}
   class="ai-report-confirm modal-dialog modal-fly-in modal-shell"
   class:refusal
+  class:problem
   aria-labelledby="aiReportConfirmTitle"
   use:modalDialog={() => ({
     open: confirmOpen,
@@ -167,36 +209,56 @@
   <div class="ai-report-confirm-content">
     <div class="ai-report-confirm-heading">
       <h3 id="aiReportConfirmTitle">
-        {refusal ? 'Report this refusal' : 'Report this picture'}
+        {problem ? 'Report this problem' : refusal ? 'Report this refusal' : 'Report this picture'}
       </h3>
       <p>
-        {#if refusal}
+        {#if problem}
+          The error below and your app version go to a grown-up at Splotch in our private support
+          tracker.
+        {:else if refusal}
           The rejected drawing, selected art style, exact instruction sent to the AI, and the AI's
           refusal reason go to a grown-up at Splotch.
         {:else}
           The AI picture, drawing behind it, selected art style, and exact instruction sent to the
           AI go to a grown-up at Splotch.
         {/if}
-        We look within 24 hours, and the report is deleted after {IMAGE_REPORT_RETENTION_DAYS} days.
+        {#if !problem}We look within 24 hours, and the report is deleted after {IMAGE_REPORT_RETENTION_DAYS}
+          days.{/if}
       </p>
     </div>
 
     <!-- The captions carry what each picture is, so the images themselves are
          decorative — an alt describing them would only repeat the caption. -->
-    <div class="ai-report-thumbs" class:single={!outputUrl}>
-      {#if outputUrl}
-        <figure>
-          <img src={outputUrl} alt="" />
-          <figcaption>The AI picture</figcaption>
-        </figure>
-      {/if}
-      {#if drawingUrl}
-        <figure>
-          <img src={drawingUrl} alt="" />
-          <figcaption>{refusal ? 'The rejected drawing' : 'The drawing behind it'}</figcaption>
-        </figure>
-      {/if}
-    </div>
+    {#if problem}
+      <section class="ai-report-diagnostics" aria-label="What will be sent">
+        <h4>What will be sent</h4>
+        <dl>
+          {#each diagnosticRows as row (row.label)}<div>
+              <dt>{row.label}:</dt>
+              <dd>{row.value}</dd>
+            </div>{/each}
+        </dl>
+        <p>Not sent: the drawing, names, accounts, or location.</p>
+      </section>
+      <fieldset class="ai-report-device" disabled={status === 'busy'}>
+        <ReportFields mode="device-only" bind:includeDevice bind:ensureDevice />
+      </fieldset>
+    {:else}
+      <div class="ai-report-thumbs" class:single={!outputUrl}>
+        {#if outputUrl}
+          <figure>
+            <img src={outputUrl} alt="" />
+            <figcaption>The AI picture</figcaption>
+          </figure>
+        {/if}
+        {#if drawingUrl}
+          <figure>
+            <img src={drawingUrl} alt="" />
+            <figcaption>{refusal ? 'The rejected drawing' : 'The drawing behind it'}</figcaption>
+          </figure>
+        {/if}
+      </div>
+    {/if}
 
     <div class="ai-report-confirm-actions">
       <Button size="lg" onclick={cancel} disabled={status === 'busy'}>Cancel</Button>
@@ -294,6 +356,52 @@
     font-weight: var(--font-weight-semibold);
     color: var(--text-soft);
     text-align: center;
+  }
+
+  .ai-report-confirm.problem {
+    text-align: left;
+  }
+  .ai-report-device {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .ai-report-diagnostics {
+    border: var(--border-width) solid var(--border-warm);
+    border-radius: var(--radius-md);
+    text-align: left;
+  }
+  .ai-report-diagnostics h4 {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--brand-text);
+  }
+  .ai-report-diagnostics dl {
+    margin: 0;
+    padding: 0 var(--space-3) var(--space-1);
+    font-size: var(--font-size-xs);
+    color: var(--text-soft);
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+  .ai-report-diagnostics dt {
+    display: inline;
+    font-weight: var(--font-weight-semibold);
+  }
+  .ai-report-diagnostics dd {
+    display: inline;
+    margin: 0;
+  }
+  .ai-report-diagnostics p {
+    margin: 0;
+    padding: var(--space-1) var(--space-3) 10px;
+    font-size: var(--font-size-xs);
+    color: var(--text-soft);
+    line-height: 1.4;
   }
 
   .ai-report-confirm-actions {

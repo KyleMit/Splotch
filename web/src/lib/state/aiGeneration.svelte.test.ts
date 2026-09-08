@@ -3,6 +3,9 @@ import { createAiGenerationMachine, type AiResultState } from './aiGeneration.sv
 
 function createAiResultState(): AiResultState {
   return {
+    drawing: null,
+    consecutiveFailures: 0,
+    failureDetails: null,
     generating: false,
     open: false,
     minimized: false,
@@ -187,5 +190,51 @@ describe('minimizing a waiting generation', () => {
     machine.minimizeAiResult();
     machine.startAiGeneration(null);
     expect(state.minimized).toBe(false);
+  });
+});
+
+describe('consecutive generation failures', () => {
+  it('retains failures across retries and resets them on success and close', () => {
+    const state = createAiResultState();
+    const machine = createAiGenerationMachine(state);
+    const first = machine.startAiGeneration(null);
+    machine.failAiGeneration(first, undefined, 'retry');
+    expect(state.consecutiveFailures).toBe(1);
+    const second = machine.startAiGeneration(null);
+    machine.failAiGeneration(second, undefined, 'retry');
+    expect(state.consecutiveFailures).toBe(2);
+    const third = machine.startAiGeneration(null);
+    machine.finishAiGeneration(third, 'blob:result', 'image/png');
+    expect(state.consecutiveFailures).toBe(0);
+    machine.failAiGeneration(third, undefined, 'retry');
+    machine.closeAiResult();
+    expect(state.consecutiveFailures).toBe(0);
+  });
+
+  it('ignores stale failures and clears the streak on a safety refusal', () => {
+    const state = createAiResultState();
+    const machine = createAiGenerationMachine(state);
+    const first = machine.startAiGeneration(null);
+    machine.failAiGeneration(first, undefined, 'retry');
+    const second = machine.startAiGeneration(null);
+    machine.failAiGeneration(first, undefined, 'retry');
+    expect(state.consecutiveFailures).toBe(1);
+    machine.failAiGeneration(second, undefined, 'safety');
+    expect(state.consecutiveFailures).toBe(0);
+  });
+
+  it('retains only the owning drawing and releases it when closed', () => {
+    const state = createAiResultState();
+    const machine = createAiGenerationMachine(state);
+    const first = machine.startAiGeneration(null);
+    const second = machine.startAiGeneration(null);
+    const drawing = new Blob(['drawing']);
+    machine.setAiDrawing(first, new Blob(['stale']));
+    expect(state.drawing).toBeNull();
+    machine.setAiDrawing(second, drawing);
+    machine.failAiGeneration(second, undefined, 'retry');
+    expect(state.drawing).toBe(drawing);
+    machine.closeAiResult();
+    expect(state.drawing).toBeNull();
   });
 });
