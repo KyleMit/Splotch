@@ -25,7 +25,7 @@ Follow these steps:
    instead.
 
 3. **Draft the release notes.** Write Markdown grouped under the headings the project uses —
-   `## ✨ New`, `## 🚀 Improved`, `## 🛠 Fixed` (omit empty sections). Translate commit subjects into
+   `## New`, `## Improved`, `## Fixed` (omit empty sections). Translate commit subjects into
    concise, **user-facing** language — describe what changed for someone using the app, not the
    implementation. Drop purely internal commits (tooling, refactors, test-only, CI) unless they
    affect users. Keep it tight: the plain-text version feeds the Google Play "What's new" box, which

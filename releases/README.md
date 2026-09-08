@@ -22,15 +22,15 @@ date: 2026-06-10
 androidVersionCode: 3
 ---
 
-## ✨ New
+## New
 
 * A new thing
 
-## 🚀 Improved
+## Improved
 
 * A better thing
 
-## 🛠 Fixed
+## Fixed
 
 * A fixed thing
 ```
@@ -41,6 +41,11 @@ androidVersionCode: 3
 The body is free Markdown. Headings become section labels in the plain-text store changelogs; list
 items become `•` bullets. Keep the Android changelog under **500 characters** (the script warns if
 the latest release exceeds it).
+
+Use plain `## New`, `## Improved`, and `## Fixed` headings. The app generator decorates these
+sections with first-party SVG icons in Settings and the full changelog; store and GitHub notes keep
+the text labels. Other headings render as ordinary text. Keep emoji and icon markup out of the
+release Markdown.
 
 The same body also appears in the complete changelog bundled on web, Android, and iOS. Keep the full
 history intact and qualify platform-limited features with `(web)`, `(Android)`, or `(iOS)`. Do not

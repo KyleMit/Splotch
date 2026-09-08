@@ -120,9 +120,6 @@ const FONT_SIZE_BASELINE = new Map(
     // The wordmark lockup's 10px tagline — brand typography sized to the mark
     // it locks up with, not UI text on the ramp.
     'lib/components/page/BrandMark.svelte': 1,
-    // The reveal stage's 48px celebration emoji and the error state's 36px —
-    // pictorial glyphs scaled as art, not type.
-    'lib/components/AiImageResult.svelte': 2,
     // The Play feature graphic's display type (128px wordmark, 38px tagline,
     // 24px sub) — sized to a fixed 1024×500 store canvas, not the UI ramp.
     'routes/dev/store-frames/lib/FeatureGraphic.svelte': 3,

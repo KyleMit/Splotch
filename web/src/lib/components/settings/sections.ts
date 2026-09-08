@@ -42,7 +42,7 @@ export const SECTIONS = [
   label: string;
   // Heading shown once drilled in (phone) or as the pane title (tablet), when
   // it should differ from the nav label — e.g. "What's New" reads best in the
-  // menu, but "Updates" avoids stacking on the "✨ New" headings inside.
+  // menu, but "Updates" avoids stacking on the "New" headings inside.
   title?: string;
   icon: IconName;
   contentStamp: string;

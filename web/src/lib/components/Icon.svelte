@@ -10,7 +10,7 @@
   // Guarded by Icon.svelte.test.ts: every icon the chroma classifier deems
   // colorful must appear here, so a newly added full-color SVG can't slip in
   // un-tagged and render wrongly tinted. The set is an allowed superset — the
-  // stroke-size previews below are monochrome in their raw SVG but still opt
+  // release headings and stroke-size previews are monochrome in their raw SVG but still opt
   // out because they tint via currentColor / theme vars.
   export const COLOR_ICONS = new Set<CommonIconName>([
     'appearance',
@@ -36,6 +36,9 @@
     'line-weight-magic',
     'more-colors',
     'parent-center',
+    'release-fixed',
+    'release-improved',
+    'release-new',
     'save-picture',
     'setup',
     'shapes',
