@@ -1,10 +1,19 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { ANDROID_UA, IPAD_UA, draw, gotoApp, openSettingsModal } from './helpers';
+import {
+  ANDROID_UA,
+  IPAD_UA,
+  draw,
+  drawCommittedStroke,
+  gotoApp,
+  openSettingsModal,
+} from './helpers';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
 
 const BANNER_MOUNT_TIMEOUT_MS = 20_000;
 const SAFE_BOTTOM_PX = 34;
+const BANNER_LAYOUT_TIMEOUT_MS = 5000;
 
 async function earnBanner(page: Page) {
   await gotoApp(page);
@@ -24,6 +33,7 @@ for (const viewport of [
   { width: 440, height: 956 },
   { width: 744, height: 1133 },
   { width: 956, height: 440 },
+  { width: 667, height: 375 },
 ]) {
   for (const colorScheme of ['light', 'dark'] as const) {
     test.describe(`${viewport.width}x${viewport.height} ${colorScheme}`, () => {
@@ -42,27 +52,32 @@ for (const viewport of [
           await expect(
             banner.getByRole('button', { name: expanded ? 'Hide' : 'How?' })
           ).toHaveAttribute('aria-expanded', String(expanded));
-          await expect
-            .poll(() =>
-              banner.evaluate((node) => {
-                const r = node.getBoundingClientRect();
-                return (
-                  r.left >= 16 &&
-                  r.right <= innerWidth - 16 &&
-                  r.top >= 0 &&
-                  r.bottom <= innerHeight - 34 - 16 &&
-                  node.scrollWidth <= node.clientWidth
-                );
-              })
-            )
-            .toBe(true);
+          await expect(async () => {
+            const bounds = await banner.evaluate((node) => {
+              const r = node.getBoundingClientRect();
+              return {
+                leftInset: r.left,
+                rightInset: innerWidth - r.right,
+                top: r.top,
+                bottomInset: innerHeight - r.bottom,
+                horizontalOverflow: node.scrollWidth - node.clientWidth,
+              };
+            });
+            expect(bounds.leftInset, 'left viewport inset').toBeGreaterThanOrEqual(16);
+            expect(bounds.rightInset, 'right viewport inset').toBeGreaterThanOrEqual(16);
+            expect(bounds.top, 'top viewport clearance').toBeGreaterThanOrEqual(0);
+            expect(bounds.bottomInset, 'bottom safe-area clearance').toBeGreaterThanOrEqual(
+              SAFE_BOTTOM_PX + 16
+            );
+            expect(bounds.horizontalOverflow, 'horizontal content overflow').toBeLessThanOrEqual(0);
+          }).toPass({ timeout: BANNER_LAYOUT_TIMEOUT_MS });
           await page
             .getByRole('button', { name: 'Expand controls', exact: true })
             .click({ trial: true });
           await page.getByRole('button', { name: 'Settings', exact: true }).click({ trial: true });
         }
         const location =
-          viewport.width < 600 && viewport.height > viewport.width
+          viewport.width < TABLET_MIN_SIDE_PX && viewport.height > viewport.width
             ? 'at the bottom of the screen'
             : 'in the Safari toolbar';
         await expect(banner.locator('li')).toHaveText(
@@ -153,6 +168,23 @@ test.describe('banner interactions', () => {
       ).toBeVisible();
     });
   }
+
+  test('the empty dock band passes a stroke through to the drawing canvas', async ({ page }) => {
+    await earnBanner(page);
+    await page.getByRole('button', { name: 'How?' }).click();
+    const start = await page.locator('#drawingCanvas').evaluate((canvas) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = innerWidth / 2;
+      const y = innerHeight - 24;
+      return { target: document.elementFromPoint(x, y)?.id, x: x - rect.left, y: y - rect.top };
+    });
+    expect(start.target).toBe('drawingCanvas');
+    await drawCommittedStroke(page, [
+      { x: start.x, y: start.y },
+      { x: start.x + 20, y: start.y },
+    ]);
+    await expect(page.getByRole('button', { name: 'Hide' })).toBeVisible();
+  });
 
   test('dismissal persists after reopening the app', async ({ page }) => {
     await earnBanner(page);

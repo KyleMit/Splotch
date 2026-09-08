@@ -18,6 +18,7 @@
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { layout } from '$lib/state/layout.svelte';
   import { settings } from '$lib/state/settings.svelte';
+  import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 
   // Continued drawing hands the install guide off to Settings with a short parting message.
   const PARTING_MESSAGE_MS = 4000;
@@ -29,7 +30,6 @@
   const BANNER_SHRINK_EXIT_MS = 550;
   const PARTING_FADE_MS = 200;
   const HINT_FADE_MS = 160;
-  const PORTRAIT_PHONE_MAX_WIDTH_PX = 599;
 
   const INSTALL_PROMPT_COPY = {
     initial: {
@@ -64,7 +64,7 @@
   // and Settings carries the same action.
   const shareLocation = $derived(
     layout.viewportWidth > 0 &&
-      layout.viewportWidth <= PORTRAIT_PHONE_MAX_WIDTH_PX &&
+      layout.viewportWidth < TABLET_MIN_SIDE_PX &&
       layout.orientation === 'portrait'
       ? 'at the bottom of the screen'
       : 'in the Safari toolbar'
