@@ -381,7 +381,8 @@
     gap: var(--space-4);
   }
 
-  .furniture-demo :global([data-icon]:not(.icon-color):not(.icon-tinted) svg) {
+  /* Like modal-shell's tint in app.css, this yields to each component's own ink. */
+  :global(:where(.furniture-demo) :where([data-icon]:not(.icon-color):not(.icon-tinted)) svg) {
     fill: var(--icon-ink);
   }
 
