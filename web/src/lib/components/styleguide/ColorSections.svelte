@@ -203,7 +203,8 @@
   code {
     font-size: var(--font-size-xs);
     color: var(--brand-text);
-    overflow-wrap: anywhere;
+
+    white-space: nowrap;
   }
 
   /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page
@@ -212,6 +213,10 @@
   .hint {
     font-size: var(--font-size-xs);
     color: var(--text-soft);
+  }
+
+  .hint {
+    color: var(--text);
   }
 
   .value {
@@ -306,6 +311,11 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .non-color-row code {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .non-color-row {

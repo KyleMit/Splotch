@@ -130,3 +130,78 @@ test('an unsupported relational selector leaves basic keyboard focus intact', as
   await expect(button).toHaveCSS('outline-width', '2px');
   await expect(button).toHaveCSS('outline-color', 'rgb(171, 113, 225)');
 });
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`dialog header controls match and fit a phone in ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await showTheme(page, theme);
+    const specimen = page.locator('.header-specimen');
+    const back = specimen.getByRole('button', { name: 'Back', exact: true });
+    const close = specimen.getByRole('button', { name: 'Close', exact: true });
+    for (const button of [back, close]) {
+      await expect(button).toHaveCSS('width', '44px');
+      await expect(button).toHaveCSS('height', '44px');
+    }
+    const controls = await specimen.locator('button').evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const style = getComputedStyle(button);
+        const box = button.getBoundingClientRect();
+        return {
+          fill: getComputedStyle(button.querySelector('svg')!).fill,
+          background: style.backgroundColor,
+          border: style.border,
+          top: box.top,
+          right: box.right,
+        };
+      })
+    );
+    expect(controls[0].fill).toBe(controls[1].fill);
+    expect(controls[0].border).toBe(controls[1].border);
+    expect(controls[0].top).toBe(controls[1].top);
+    expect(controls[1].right).toBeLessThanOrEqual(375);
+    expect(
+      colorContrast(controls[0].fill, controls[0].background, controls[0].background)
+    ).toBeGreaterThanOrEqual(3);
+    await back.click();
+    await expect(specimen.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+    await close.click();
+    await expect(specimen.getByRole('button', { name: 'Show dialog header' })).toBeVisible();
+  });
+
+  test(`styleguide prose keeps tokens whole and uses body contrast in ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await showTheme(page, theme);
+    const tokens = page.locator('main p code');
+    expect(await tokens.count()).toBeGreaterThan(0);
+    const wrapping = await tokens.evaluateAll((elements) =>
+      elements
+        .filter((el) => getComputedStyle(el).whiteSpace !== 'nowrap')
+        .map((el) => el.textContent)
+    );
+    expect(wrapping).toEqual([]);
+    const bodyInk = await page.locator('.lede').evaluate((el) => getComputedStyle(el).color);
+    for (const selector of ['.sources', '.defaults p', '#color .hint']) {
+      await expect(page.locator(selector)).toHaveCSS('color', bodyInk);
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test(`swatch stacks clip their last row to rounded corners in ${theme}`, async ({ page }) => {
+    await showTheme(page, theme);
+    const stacks = page.locator('.family-stack');
+    expect(await stacks.count()).toBeGreaterThan(0);
+    const clips = await stacks.evaluateAll((elements) =>
+      elements.map((el) => ({
+        overflow: getComputedStyle(el).overflow,
+        radius: getComputedStyle(el).borderRadius,
+      }))
+    );
+    for (const clip of clips) {
+      expect(clip.overflow).toBe('hidden');
+      expect(clip.radius).toBe('12px');
+    }
+  });
+}

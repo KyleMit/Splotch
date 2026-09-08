@@ -239,7 +239,7 @@
     <Disclosure class="help-section">
       {#snippet summary()}
         <span class="summary-text">
-          <span class="section-number">1.</span> Install as App
+          <span class="section-number step-number">1</span> Install as App
           {#if install.installed}<span class="install-check">✓</span>{/if}
         </span>
       {/snippet}
@@ -249,7 +249,7 @@
     <Disclosure class="help-section">
       {#snippet summary()}
         <span class="summary-text">
-          <span class="section-number">2.</span>
+          <span class="section-number step-number">2</span>
           {LOCK_STEP_TITLE[deviceOs]}
         </span>
       {/snippet}
@@ -315,8 +315,8 @@
   }
 
   .section-number {
-    color: var(--brand);
-    margin-right: 8px;
+    --step-number-size: 26px;
+    margin-right: var(--space-2);
   }
 
   .install-check {

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { themes } from '../src/lib/design/tokens';
 import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -462,7 +463,7 @@ test.describe('AI result modal', () => {
   });
 
   // The strip sits on the dimmed backdrop, which is dark under either theme, so
-  // its colors are literal rather than theme tokens that flip in light mode.
+  // its ink tokens use the canonical dark theme under either app theme.
   for (const colorScheme of ['light', 'dark'] as const) {
     test(`paints the strip on backdrop colors in ${colorScheme} mode`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
@@ -470,23 +471,29 @@ test.describe('AI result modal', () => {
 
       const chrome = await page
         .getByRole('button', { name: 'Report this picture' })
-        .evaluate((button) => {
+        .evaluate((button, inkTokens) => {
+          const tokenStyle = document.createElement('span').style;
+          tokenStyle.color = inkTokens.textSoft;
+          const expectedText = tokenStyle.color;
+          tokenStyle.color = inkTokens.dangerText;
           const strip = button.closest('.ai-result-disclosure') as HTMLElement;
           const icon = button.querySelector('svg') as SVGElement;
           return {
+            expectedText,
+            expectedReport: tokenStyle.color,
             fill: getComputedStyle(strip).backgroundColor,
             ground: getComputedStyle(strip).backdropFilter,
             text: getComputedStyle(strip).color,
             report: getComputedStyle(button).color,
             iconFill: getComputedStyle(icon).fill,
           };
-        });
+        }, themes.dark);
       expect(chrome.fill).toBe('rgba(23, 23, 29, 0.72)');
       // The fill alone leaves the drawing showing through under 12px text; the
       // brightness floor is what keeps the ink legible over light artwork.
       expect(chrome.ground).toContain('brightness');
-      expect(chrome.text).toBe('rgb(179, 177, 191)');
-      expect(chrome.report).toBe('rgb(224, 147, 147)');
+      expect(chrome.text).toBe(chrome.expectedText);
+      expect(chrome.report).toBe(chrome.expectedReport);
       // Beats the modal shell's icon re-ink, which would repaint it dark on dark.
       expect(chrome.iconFill).toBe(chrome.report);
     });
@@ -636,3 +643,22 @@ test.describe('AI result modal', () => {
     });
   });
 });
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`disclosure text and glyphs keep full opacity in ${colorScheme}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await revealAiResult(page);
+    const strip = page.locator('.ai-result-disclosure');
+    await expect(strip).toBeVisible();
+    await expect(strip.locator('.ai-disclosure-separator')).toHaveCSS('opacity', '1');
+    const flag = strip.getByRole('button', { name: 'Report this picture' });
+    await expect(flag).toHaveCSS('opacity', '1');
+    const ink = await flag.evaluate((el) => getComputedStyle(el).color);
+    await expect(flag.locator('svg')).toHaveCSS('fill', ink);
+    await flag.evaluate((el: HTMLButtonElement) => {
+      el.disabled = true;
+    });
+    await expect(flag).toHaveCSS('opacity', '1');
+    await expect(flag).not.toHaveCSS('color', ink);
+  });
+}

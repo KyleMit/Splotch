@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DialogHeader from './design/DialogHeader.svelte';
   import Icon from './Icon.svelte';
   import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
   import AiResultDisclosure from './AiResultDisclosure.svelte';
@@ -121,13 +122,11 @@
   })}
   onanimationend={handleAnimationEnd}
 >
-  <button
-    class="ai-result-close modal-close-btn"
-    aria-label={aiResult.generating ? 'Keep drawing while this is made' : 'Close'}
-    onclick={() => (aiResult.generating ? minimizeAiResult() : closeAiResult())}
-  >
-    <Icon name="close" class="modal-close-icon" />
-  </button>
+  <DialogHeader
+    closeClass="ai-result-close"
+    closeLabel={aiResult.generating ? 'Keep drawing while this is made' : 'Close'}
+    onclose={() => (aiResult.generating ? minimizeAiResult() : closeAiResult())}
+  />
   <div class="ai-result-content">
     {#if aiResult.error}
       {@const safety = aiResult.error.kind === 'safety'}
@@ -344,7 +343,7 @@
     gap: var(--space-3);
   }
 
-  .ai-result-close {
+  :global(.ai-result-close) {
     z-index: 2;
   }
 
@@ -542,7 +541,7 @@
 
   /* Hide the controls so the card reads as a clean polaroid. The download
      button keeps its footprint, leaving the thick blank border at the bottom. */
-  .ai-result-modal.polaroid-mode .ai-result-close,
+  .ai-result-modal.polaroid-mode :global(.ai-result-close),
   .ai-result-modal.polaroid-mode .ai-result-footer,
   .ai-result-modal.polaroid-mode :global(.ai-result-disclosure) {
     opacity: 0;

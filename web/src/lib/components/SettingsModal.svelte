@@ -1,6 +1,5 @@
 <script lang="ts">
-  import Icon from './Icon.svelte';
-  import PressFeedbackCloseButton from './PressFeedbackCloseButton.svelte';
+  import DialogHeader from './design/DialogHeader.svelte';
   import type { CommonIconName } from './iconTypes';
   import SectionIcon from './SectionIcon.svelte';
   import { ui, settingsModal } from '$lib/state/ui.svelte';
@@ -160,20 +159,18 @@
   })}
 >
   <div class="settings-content">
-    <PressFeedbackCloseButton onClose={settingsModal.hide} />
-
     {#if shell.compact}
       <CompactShell />
     {:else if shell.wide}
-      <header class="settings-header">
-        <h2>Settings</h2>
-      </header>
+      <div class="settings-header">
+        <DialogHeader onclose={settingsModal.hide} closeFeedback><h2>Settings</h2></DialogHeader>
+      </div>
       <WideShell landingSection={activeSection} />
     {:else if view === 'hub'}
       <!-- Phone: top-level hub list. -->
-      <header class="settings-header">
-        <h2>Settings</h2>
-      </header>
+      <div class="settings-header">
+        <DialogHeader onclose={settingsModal.hide} closeFeedback><h2>Settings</h2></DialogHeader>
+      </div>
       <ScrollCue>
         {#snippet children(end)}
           <div class="settings-scroll" use:pinchTextZoom={textZoom}>
@@ -222,12 +219,11 @@
       </ScrollCue>
     {:else}
       <!-- Phone: drilled into a single section, with a back arrow. -->
-      <header class="settings-header settings-header-sub">
-        <button class="settings-back" onclick={backToHub} aria-label="Back">
-          <Icon name="chevron-left" class="settings-back-icon" />
-        </button>
-        <h2>{sectionHeading(activeSection)}</h2>
-      </header>
+      <div class="settings-header settings-header-sub">
+        <DialogHeader onback={backToHub} onclose={settingsModal.hide} closeFeedback>
+          <h2>{sectionHeading(activeSection)}</h2>
+        </DialogHeader>
+      </div>
       <ScrollCue>
         {#snippet children(end)}
           <div class="settings-scroll" use:pinchTextZoom={textZoom}>
@@ -350,7 +346,6 @@
     align-items: center;
     gap: 12px;
     padding: 28px 32px 18px;
-    padding-right: var(--modal-close-clearance-x);
   }
 
   .settings-header h2 {
@@ -362,41 +357,6 @@
 
   .settings-header-sub h2 {
     font-size: var(--font-size-lg);
-  }
-
-  .settings-back {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    margin-left: -8px;
-    border: none;
-    border-radius: 50%;
-    background: var(--surface-2);
-    color: var(--brand);
-    cursor: pointer;
-    flex-shrink: 0;
-    touch-action: manipulation;
-  }
-
-  @media (hover: hover) {
-    .settings-back:hover {
-      background: var(--surface-hover);
-    }
-  }
-
-  .settings-back:active {
-    transform: scale(0.92);
-  }
-
-  :global(.settings-back-icon) {
-    width: 22px;
-    height: 22px;
-  }
-
-  :global(.settings-back-icon svg) {
-    fill: var(--brand);
   }
 
   /* Phone: the single scroll region (hub list or a section body). overflow (not
@@ -581,7 +541,6 @@
   @media (max-width: 480px) {
     .settings-header {
       padding: 24px 20px 16px;
-      padding-right: var(--modal-close-clearance-x);
     }
 
     .settings-scroll {

@@ -90,6 +90,10 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
 };
 
 export const themeUsage: Record<keyof ThemeTokens, string> = {
+  stepWashStrength:
+    'Crayon contribution to a numbered-step disc: subtle on light sheets, lifted on dark grounds.',
+  stepInkStrength:
+    'Crayon contribution to a numbered-step digit: tinted in light mode, full --text-strong at night.',
   appBg: 'The ground behind parent-page content (never the drawing paper).',
   surface: 'Modal cards, the palette bar — the default card fill.',
   surface2: 'Inset panels and setting cards sitting on --surface.',

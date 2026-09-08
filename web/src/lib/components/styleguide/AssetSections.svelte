@@ -240,6 +240,7 @@
   code {
     font-size: var(--font-size-xs);
     color: var(--brand-text);
+    white-space: nowrap;
   }
 
   /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page

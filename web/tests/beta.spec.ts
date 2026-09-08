@@ -462,3 +462,35 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }
   });
 }
+
+for (const platform of ['android', 'ios'] as const) {
+  test(`night step digits match heading brightness on lifted discs for ${platform}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto(betaPathFor(platform));
+    const numbers = shownPanel(page).locator('.num');
+    await expect(numbers).toHaveCount(4);
+    const samples = await numbers.evaluateAll((elements) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext('2d')!;
+      const rgb = (color: string) => {
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = color;
+        context.fillRect(0, 0, 1, 1);
+        return Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3);
+      };
+      return elements.map((el) => ({
+        ink: rgb(getComputedStyle(el).color),
+        heading: rgb(getComputedStyle(el.parentElement!.querySelector('h3')!).color),
+        wash: rgb(getComputedStyle(el).backgroundColor),
+        sheet: rgb(getComputedStyle(el).getPropertyValue('--surface')),
+      }));
+    });
+    for (const sample of samples) {
+      expect(sample.ink).toEqual(sample.heading);
+      expect(Math.max(...sample.wash) - Math.max(...sample.sheet)).toBeGreaterThanOrEqual(25);
+    }
+  });
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DialogHeader from './design/DialogHeader.svelte';
   import Icon from './Icon.svelte';
   import ParentalGateManageFooter from './ParentalGateManageFooter.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
@@ -94,9 +95,7 @@
         <p class="gate-success-sub">You're all set.</p>
       </div>
     {:else}
-      <button class="modal-close-btn" aria-label="Close" onclick={dismissGate}>
-        <Icon name="close" class="modal-close-icon" />
-      </button>
+      <DialogHeader onclose={dismissGate} />
       <div class="gate-main">
         <header class="gate-header">
           <SplotchyIcon class="gate-mascot" />

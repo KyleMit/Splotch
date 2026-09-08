@@ -73,6 +73,8 @@
   --app-bg: #f5f5f5;
   --surface: #ffffff;
   --surface-2: #f8f8f8;
+  --step-wash-strength: 9%;
+  --step-ink-strength: 45%;
   --surface-hover: #f5f5f5;
   --border: #e0e0e0;
   --border-warm: #ddd6cc;
@@ -133,6 +135,8 @@
   color-scheme: dark;
   --app-bg: #17171d;
   --surface: #23232b;
+  --step-wash-strength: 24%;
+  --step-ink-strength: 0%;
   --surface-2: #2d2d37;
   --surface-hover: #33333e;
   --border: #3d3d49;
@@ -195,6 +199,8 @@
     color-scheme: dark;
     --app-bg: #17171d;
     --surface: #23232b;
+    --step-wash-strength: 24%;
+    --step-ink-strength: 0%;
     --surface-2: #2d2d37;
     --surface-hover: #33333e;
     --border: #3d3d49;

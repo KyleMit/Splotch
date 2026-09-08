@@ -40,7 +40,7 @@
 
 <li class="beta-step step-{number}" style="--step-hue:{STEP_HUES[number - 1]}">
   <div class="head">
-    <span class="num">{number}</span>
+    <span class="num step-number">{number}</span>
     <h3>{title}</h3>
     {#if optional}<span class="optional">Optional</span>{/if}
   </div>
@@ -63,8 +63,8 @@
 
 <style>
   .beta-step {
-    --step-wash: color-mix(in srgb, var(--step-hue) var(--step-wash-strength), var(--page-sheet));
-    --step-ink: color-mix(in srgb, var(--step-hue) var(--step-ink-strength), var(--page-ink));
+    --step-wash: color-mix(in srgb, var(--step-hue) var(--card-wash-strength), var(--page-sheet));
+    --step-ink: color-mix(in srgb, var(--step-hue) var(--card-ink-strength), var(--page-ink));
 
     position: relative;
     padding-left: var(--num-gutter);
@@ -95,18 +95,7 @@
     left: 0;
     top: 0;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 var(--num-size);
-    width: var(--num-size);
-    height: var(--num-size);
-    border-radius: 50%;
-    background: var(--step-wash);
-    color: var(--step-ink);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    font-variant-numeric: tabular-nums;
+    --step-number-size: var(--num-size);
   }
 
   h3 {

@@ -321,7 +321,7 @@ body {
    --modal-close-size, deliberately chunky so small fingers can spot and hit it;
    the padding below keeps the glyph itself visibly smaller than the disc, so
    the extra box reads as hit area and the ring that makes it pop. */
-.modal-close-btn {
+:is(.modal-close-btn, .dialog-header-control) {
   position: absolute;
   top: var(--modal-close-inset);
   right: var(--modal-close-inset);
@@ -343,11 +343,11 @@ body {
     transform var(--duration-fast) ease;
 }
 
-.modal-close-btn:active {
+:is(.modal-close-btn, .dialog-header-control):active {
   transform: scale(0.92);
 }
 
-.modal-close-btn.activation-pending {
+:is(.modal-close-btn, .dialog-header-control).activation-pending {
   transform: scale(0.92);
   transition:
     border-color var(--duration-base) ease,
@@ -363,17 +363,17 @@ body {
 }
 
 .modal-close-icon svg {
-  fill: var(--icon-muted);
+  fill: var(--icon-ink);
   transition: fill var(--duration-base) ease;
 }
 
 @media (hover: hover) {
-  .modal-close-btn:not(:disabled):hover {
+  :is(.modal-close-btn, .dialog-header-control):not(:disabled):hover {
     background: var(--surface-hover);
     border-color: var(--border-warm-strong);
   }
 
-  .modal-close-btn:not(:disabled):hover .modal-close-icon svg {
+  :is(.modal-close-btn, .dialog-header-control):not(:disabled):hover .modal-close-icon svg {
     fill: var(--icon-ink);
   }
 }
@@ -855,4 +855,31 @@ body {
     transform: rotate(-4deg);
     opacity: 1;
   }
+}
+
+/* Numbered steps share ink and disc contrast; each layout owns size and position. */
+.step-number {
+  --number-size: var(--step-number-size, 32px);
+  --number-wash: color-mix(
+    in srgb,
+    var(--step-hue, var(--brand)) var(--step-wash-strength),
+    var(--surface)
+  );
+  --number-ink: color-mix(
+    in srgb,
+    var(--step-hue, var(--brand)) var(--step-ink-strength),
+    var(--text-strong)
+  );
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--number-size);
+  width: var(--number-size);
+  height: var(--number-size);
+  border-radius: var(--radius-pill);
+  background: var(--number-wash);
+  color: var(--number-ink);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icon from './Icon.svelte';
+  import DialogHeader from './design/DialogHeader.svelte';
   import { aiPromptModal } from '$lib/state/ui.svelte';
   import { exportCanvasBlob } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
@@ -60,9 +60,7 @@
   })}
 >
   <div class="ai-prompt-content">
-    <button class="ai-prompt-close modal-close-btn" aria-label="Close" onclick={aiPromptModal.hide}>
-      <Icon name="close" class="modal-close-icon" />
-    </button>
+    <DialogHeader onclose={aiPromptModal.hide} closeClass="ai-prompt-close" />
 
     <fieldset class="ai-prompt-styles">
       <legend>Pick a style</legend>
@@ -107,7 +105,7 @@
     gap: 16px;
   }
 
-  .ai-prompt-close {
+  :global(.ai-prompt-close) {
     top: 12px;
     right: 12px;
     z-index: 1;
@@ -253,7 +251,7 @@
       gap: var(--space-5);
     }
 
-    .ai-prompt-close {
+    :global(.ai-prompt-close) {
       top: var(--space-4);
       right: var(--space-4);
     }

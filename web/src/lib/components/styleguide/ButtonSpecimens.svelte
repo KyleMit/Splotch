@@ -115,7 +115,8 @@
   code {
     font-size: var(--font-size-xs);
     color: var(--brand-text);
-    overflow-wrap: anywhere;
+
+    white-space: nowrap;
   }
 
   .file-path {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { themes } from '$lib/design/tokens';
   import Icon from './Icon.svelte';
 
   interface Props {
@@ -11,7 +12,12 @@
   let { disabled = false, kind = 'picture', onclick }: Props = $props();
 </script>
 
-<div class="ai-result-disclosure" class:problem={kind === 'problem'}>
+<div
+  class="ai-result-disclosure"
+  class:problem={kind === 'problem'}
+  style:--text-soft={themes.dark.textSoft}
+  style:--danger-text={themes.dark.dangerText}
+>
   {#if kind === 'picture'}
     <span>AI-generated picture</span>
     <span class="ai-disclosure-separator" aria-hidden="true">·</span>
@@ -45,20 +51,10 @@
     height: var(--report-strip-height);
     padding: 0 14px;
     border-radius: var(--radius-pill);
-    /* The strip sits on the dimmed backdrop, which is dark in both themes
-       (--modal-dialog::backdrop), so these colors are literal rather than theme
-       tokens that would flip to dark ink on dark glass in light mode.
-
-       Whatever is on the page is still showing through that backdrop, though,
-       and under 12px text its bleed reads as muddiness rather than depth. So
-       the pill lays down its own quiet ground: blur to erase the shape still
-       coming through, saturate to drop the color cast bright artwork throws
-       over the ink, and brightness to floor the ground dark however light that
-       artwork is — the fill alone leaves the ink riding whatever is behind it.
-       The ground itself is applied below; this fill is heavy enough to stay
-       legible on its own where the engine can't paint it. */
+    /* The backdrop is dark in both themes, so the strip uses the canonical
+       dark theme's ink tokens. Its own ground keeps artwork from muddying text. */
     background: rgba(23, 23, 29, 0.72);
-    color: #b3b1bf;
+    color: var(--text-soft);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
     line-height: 1;
@@ -87,7 +83,7 @@
   }
 
   .ai-disclosure-separator {
-    opacity: 0.5;
+    color: var(--text-soft);
   }
 
   .ai-report-flag {
@@ -107,7 +103,7 @@
     gap: var(--space-1);
     border: none;
     background: none;
-    color: #e09393;
+    color: var(--danger-text);
     cursor: pointer;
     font: inherit;
     touch-action: manipulation;
@@ -125,7 +121,7 @@
 
   .ai-report-flag:disabled {
     cursor: default;
-    opacity: 0.5;
+    color: var(--text-soft);
   }
 
   :global(.ai-report-flag-icon) {

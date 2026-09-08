@@ -1,4 +1,6 @@
 <script lang="ts">
+  import DialogHeader from '../design/DialogHeader.svelte';
+  import { settingsModal } from '$lib/state/ui.svelte';
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import ToggleRow from './ToggleRow.svelte';
@@ -52,9 +54,9 @@
 
 <!-- Landscape phone: too cramped for the full section list, so just the
      essential quick toggles plus a pointer to portrait for the rest. -->
-<header class="settings-header-compact">
-  <h2>Settings</h2>
-</header>
+<div class="settings-header-compact">
+  <DialogHeader onclose={settingsModal.hide} closeFeedback><h2>Settings</h2></DialogHeader>
+</div>
 <div class="quick-toggles-scroll">
   <div class="quick-toggles">
     <div class="setting">
@@ -127,7 +129,6 @@
     align-items: center;
     gap: 12px;
     padding: 14px 24px 10px;
-    padding-right: var(--modal-close-clearance-x);
     /* Reserve the close button's full vertical extent (--modal-close-clearance-y
        in app.css) so the top-right toggle cell starts below it instead of
        sliding up under the button. */

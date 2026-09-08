@@ -84,13 +84,6 @@ const BASELINE = new Map(
     // The ground behind the picture, the same photographic white for the same
     // reason: a picture is a print, and it hangs on paper under either theme.
     'lib/components/AiResultStage.svelte': 1,
-    // The AI disclosure strip's ink and its Report accent. The strip is the one
-    // surface in the app that sits on the dimmed modal backdrop rather than on
-    // either paper, and that backdrop is dark under both themes — so --text-soft
-    // and --danger-text would flip to dark ink on dark glass in light mode. The
-    // two values are those tokens' dark-theme readings, pinned to the ground
-    // they actually sit on.
-    'lib/components/AiResultDisclosure.svelte': 2,
     // Constant dim swatch ring + var(--color) usage documented in-file.
     'lib/components/ColorPicker.svelte': 1,
     // The delete-ready gradient's darker second stop — unthemed on purpose,

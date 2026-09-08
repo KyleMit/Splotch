@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icon from './Icon.svelte';
+  import DialogHeader from './design/DialogHeader.svelte';
   import ColoringBookHeaderActions from './ColoringBookHeaderActions.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import { coloringBookState, setOverlayOrientation } from '$lib/state/coloringBook.svelte';
@@ -206,13 +206,17 @@
     {#if !activeBook}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <h2>Coloring Books</h2>
-          <ColoringBookHeaderActions
-            {activePage}
-            {activePagePreview}
-            {hoverArmed}
-            onclear={clearAndClose}
-          />
+          <DialogHeader onclose={coloringBookModal.hide}>
+            <h2>Coloring Books</h2>
+            {#snippet actions()}
+              <ColoringBookHeaderActions
+                {activePage}
+                {activePagePreview}
+                {hoverArmed}
+                onclear={clearAndClose}
+              />
+            {/snippet}
+          </DialogHeader>
         </div>
         <div
           class="coloring-grid coloring-books-grid"
@@ -244,22 +248,20 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          {#if hasBookPicker}
-            <button
-              class="coloring-back-button"
-              aria-label="Back"
-              onclick={(e) => swapView(null, e)}
-            >
-              <Icon name="chevron-left" class="coloring-back-icon" />
-            </button>
-          {/if}
-          <h2>{activeBook.name}</h2>
-          <ColoringBookHeaderActions
-            {activePage}
-            {activePagePreview}
-            {hoverArmed}
-            onclear={clearAndClose}
-          />
+          <DialogHeader
+            onback={hasBookPicker ? (event) => swapView(null, event) : undefined}
+            onclose={coloringBookModal.hide}
+          >
+            <h2>{activeBook.name}</h2>
+            {#snippet actions()}
+              <ColoringBookHeaderActions
+                {activePage}
+                {activePagePreview}
+                {hoverArmed}
+                onclear={clearAndClose}
+              />
+            {/snippet}
+          </DialogHeader>
         </div>
         {#key pagesGridToken}
           <div
@@ -340,46 +342,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  /* 36px is control sizing, not spacing — the repo has no size ramp (the 44px
-     modal close disc and 48px corner buttons in app.css are raw for the same
-     reason). */
-  .coloring-back-button {
-    width: 36px;
-    height: 36px;
-    background: var(--surface-hover);
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-2);
-    transition: background var(--duration-base) ease;
-  }
-
-  /* Tinted via `fill` (not a filter chain) so the gray and the brand hover
-     both track the theme tokens. */
-  :global(.coloring-back-icon) {
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  :global(.coloring-back-icon svg) {
-    fill: var(--icon-muted);
-    transition: fill var(--duration-base) ease;
-  }
-
-  @media (hover: hover) {
-    .hover-armed .coloring-back-button:hover {
-      background: var(--brand-wash);
-    }
-
-    .hover-armed .coloring-back-button:hover :global(.coloring-back-icon svg) {
-      fill: var(--brand);
-    }
   }
 
   .coloring-grid {
