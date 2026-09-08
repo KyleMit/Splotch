@@ -85,3 +85,15 @@ the component on both the server and client. A client-only deferred render would
 incomplete without JavaScript and move the section after hydration; the universal load preserves the
 complete SSR layout. `button-states.spec.ts` verifies the state matrix and size ladder with
 JavaScript disabled, alongside the hydrated interaction coverage.
+
+## Amendment (2026-09-08): browse primitives by type
+
+Primitives is a top-level part alongside Foundations, Components & chrome, and Brand & voice. Each
+primitive has a direct contents link, with its heading and navigation sharing one registry.
+Specimens demonstrate reusable structures and meaningful variants rather than cataloging app
+instances. The sidebar reveals the active entry by scrolling only its own pane, leaving document
+position and keyboard focus alone.
+
+The Light/Dark picker writes an explicit preference through the app's shared settings setter and
+reads its resolved appearance after hydration. A design-page selection therefore persists across
+reloads and drawing-page visits rather than acting as an ephemeral preview override.

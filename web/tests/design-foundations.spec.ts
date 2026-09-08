@@ -37,7 +37,7 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(copy).toHaveCSS('border-radius', '8px');
     await expect(copy).toHaveCSS('padding', '0px');
 
-    const nativeRadio = page.getByRole('radiogroup', { name: 'Report type (specimen)' });
+    const nativeRadio = page.getByRole('radiogroup', { name: 'Native radio group (specimen)' });
     await nativeRadio.getByRole('radio').first().focus();
     await page.keyboard.press('ArrowRight');
     const nativeLabel = nativeRadio.locator('label:has(input:focus-visible)');
@@ -54,8 +54,7 @@ for (const theme of ['light', 'dark'] as const) {
     const warning = statuses.locator('.warning');
     await expect(warning).toHaveAttribute('role', 'status');
     await expect(warning).toHaveAttribute('aria-live', 'polite');
-    await expect(warning).toHaveCSS('border-top-width', '1px');
-    await expect(warning).toHaveCSS('border-top-style', 'solid');
+    await expect(warning).toHaveCSS('border-top-width', '0px');
     await expect(warning.locator('strong')).toHaveCSS('font-weight', '700');
     await expect(warning.locator('code')).toHaveCSS('font-size', '12px');
     const colors = await warning.evaluate((el) => {
@@ -79,16 +78,17 @@ for (const theme of ['light', 'dark'] as const) {
   test(`rule labels keep heading semantics and section rhythm in ${theme}`, async ({ page }) => {
     await showTheme(page, theme);
     const demo = page.locator('.rule-demo');
-    await expect(demo.getByRole('heading', { name: 'Overview', level: 2 })).toBeVisible();
-    await expect(demo.getByRole('heading', { name: 'Access codes · 12', level: 2 })).toBeVisible();
-    await expect(demo.getByRole('heading', { name: 'Details', level: 3 })).toBeVisible();
     await expect(
-      demo.getByRole('heading', { name: 'Second section · 24', level: 2 })
+      demo.getByRole('heading', { name: 'Heading', level: 2, exact: true })
     ).toBeVisible();
-    const heading = demo.getByRole('heading', { name: 'Overview' });
+    await expect(
+      demo.getByRole('heading', { name: 'Heading with count · Count', level: 3 })
+    ).toBeVisible();
+    await expect(demo.getByRole('heading')).toHaveCount(2);
+    const heading = demo.getByRole('heading', { name: 'Heading', exact: true });
     await expect(heading).toHaveCSS('padding-bottom', '0px');
     await expect(heading).toHaveCSS('gap', '12px');
-    await expect(demo.locator('.rule-stack')).toHaveCSS('gap', '40px');
+    await expect(demo).toHaveCSS('gap', '40px');
     await expect(demo.locator('.rule-section').first()).toHaveCSS('gap', '20px');
     const colors = await heading.evaluate((el) => {
       const surface = el.closest('.rule-demo');

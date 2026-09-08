@@ -13,36 +13,21 @@
   import SegmentedPicker, {
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
-  import { applyTheme, type ResolvedTheme } from '$lib/theme';
+  import type { ResolvedTheme } from '$lib/theme';
+  import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { setTheme } from '$lib/state/settings.svelte';
+  import { primitiveSections } from '$lib/components/styleguide/primitiveSections';
   import type { PageProps } from './$types';
 
   let { data }: PageProps = $props();
 
-  // The header toggle is binary Light/Dark — the 3-way choice (with System)
-  // stays with the app Settings, which owns the stored preference. This one
-  // restamps data-theme ephemerally for preview only; the drawing page
-  // re-applies the parent's real preference on mount.
-  function appliedTheme(): ResolvedTheme {
-    const stamped = document.documentElement.dataset.theme;
-    if (stamped === 'light' || stamped === 'dark') return stamped;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-
-  // Starts on the SSR value and adopts the applied theme (stamped data-theme,
-  // else the OS preference) only after mount: an init-time mismatch would be
-  // invisible where it matters — hydration doesn't repair attributes, so the
-  // server-rendered aria-checked would stick until the next state change
-  // (design.spec.ts covers the dark-scheme first load).
-  let theme = $state<ResolvedTheme>('light');
+  // Adopt browser state after hydration so the SSR radio attributes are updated.
+  let mounted = $state(false);
+  const theme = $derived(mounted ? resolvedTheme() : 'light');
 
   onMount(() => {
-    theme = appliedTheme();
+    mounted = true;
   });
-
-  function setTheme(next: ResolvedTheme) {
-    theme = next;
-    applyTheme(next);
-  }
 
   const themeOptions: SegmentedPickerOption<ResolvedTheme>[] = [
     { value: 'light', label: 'Light', icon: 'theme-light' },
@@ -60,7 +45,10 @@
     { id: 'stacking', label: 'Stacking', part: 'foundations' },
     { id: 'icons', label: 'Icons', part: 'foundations' },
     { id: 'recipes', label: 'Recipes', part: 'foundations' },
-    { id: 'primitives', label: 'Primitives', part: 'components' },
+    ...Object.values(primitiveSections).map((section) => ({
+      ...section,
+      part: 'primitives' as const,
+    })),
     { id: 'furniture', label: 'Settings furniture', part: 'components' },
     { id: 'chrome', label: 'Chrome classes', part: 'components' },
     { id: 'named', label: 'Named chrome', part: 'components' },
@@ -73,6 +61,7 @@
 
   const PART_LABELS = {
     foundations: 'Foundations',
+    primitives: 'Primitives',
     components: 'Components & chrome',
     brand: 'Brand & voice',
   } as const satisfies Record<(typeof sections)[number]['part'], string>;
@@ -93,6 +82,23 @@
   let entered = $state(false);
   // Plain element ref: only the scrollspy handler reads it, nothing reacts.
   let siteHeader: HTMLElement | undefined;
+  let sidebar: HTMLElement | undefined;
+
+  function revealSidebarEntry(id: SectionId) {
+    if (!sidebar?.clientHeight) return;
+    const row = sidebar.querySelector(`[data-section="${id}"]`);
+    if (!row) return;
+    const bounds = sidebar.getBoundingClientRect();
+    const entry = row.getBoundingClientRect();
+    const offset =
+      entry.top < bounds.top
+        ? entry.top - bounds.top
+        : entry.bottom > bounds.bottom
+          ? entry.bottom - bounds.bottom
+          : 0;
+    // Scroll only this pane: scrollIntoView can move the document and feed the scrollspy.
+    if (offset) sidebar.scrollBy({ top: offset, behavior: 'instant' });
+  }
 
   // How far under the sticky header a heading may sit and still count as the
   // one being read. Deeper than the clearance TocDisclosure parks a jumped-to
@@ -124,15 +130,18 @@
       }
       active = next;
       entered = crossed;
+      revealSidebarEntry(next);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(spy);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
     onScroll();
     return () => {
       root.style.scrollBehavior = '';
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   });
@@ -179,7 +188,7 @@
   </header>
 
   <div class="shell" id="top">
-    <div class="toc">
+    <div class="toc" bind:this={sidebar}>
       <a class="back" href="/">← Back to drawing</a>
       <SidebarToc items={tocItems} {active} label="Contents" />
     </div>
@@ -229,20 +238,22 @@
       <AssetSections group="icons" />
       <RecipeSections />
 
-      <div class="part-divider" id="components">
+      <div class="part-divider" id="primitives">
         <span class="eyebrow">Part 2</span>
-        <h2>Components &amp; chrome</h2>
-        <p>
-          The shared building blocks: the primitives in <code>lib/components/design/</code>, the
-          settings furniture, and the global chrome classes in <code>app.css</code> — plus a named index
-          of the deliberately bespoke chrome.
-        </p>
+        <h2>Primitives</h2>
+        <p>Reusable controls and content patterns, with their supported variants and states.</p>
       </div>
       <data.PrimitiveSections {theme} />
+
+      <div class="part-divider" id="components">
+        <span class="eyebrow">Part 3</span>
+        <h2>Components &amp; chrome</h2>
+        <p>Settings rows, shared chrome classes, and the app’s bespoke surfaces.</p>
+      </div>
       <ChromeSections />
 
       <div class="part-divider" id="brand">
-        <span class="eyebrow">Part 3</span>
+        <span class="eyebrow">Part 4</span>
         <h2>Brand &amp; voice</h2>
         <p>How Splotch sounds and signs its name — the copy rules and the brand marks.</p>
       </div>

@@ -44,7 +44,6 @@
   .warning {
     background: var(--warning-wash);
     color: var(--warning-text);
-    border: var(--border-width) solid var(--warning-border);
     line-height: 1.45;
     font-weight: var(--font-weight-medium);
   }

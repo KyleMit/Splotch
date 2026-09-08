@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { primitiveSections } from './primitiveSections';
   import Button from '$lib/components/design/Button.svelte';
   import SegmentedPicker, {
     type SegmentedPickerOption,
@@ -16,7 +17,7 @@
 </script>
 
 <div class="focus-demo">
-  <h4>Focus</h4>
+  <h3 id={primitiveSections.focus.id} data-sg-section>Focus</h3>
   <p>Tab through these controls to see the same brand ring follow each shape.</p>
   <div class="focus-controls">
     <Button variant="brand">Brand action</Button>
@@ -48,7 +49,7 @@
 </div>
 
 <style>
-  h4 {
+  h3 {
     margin: var(--space-6) 0 var(--space-1);
     color: var(--text-strong);
     font-size: var(--font-size-sm);

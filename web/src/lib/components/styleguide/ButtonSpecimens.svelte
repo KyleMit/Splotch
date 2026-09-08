@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { primitiveSections } from './primitiveSections';
   import { onMount } from 'svelte';
   import Button from '$lib/components/design/Button.svelte';
 
@@ -43,7 +44,9 @@
 </script>
 
 <div class="button-specimens">
-  <h4>Button <code class="file-path">design/Button.svelte</code></h4>
+  <h3 id={primitiveSections.button.id} data-sg-section>
+    Button <code class="file-path">design/Button.svelte</code>
+  </h3>
   <p class="intro">
     Four variants, one set of states. <code>brand</code> is the primary action;
     <code>wash</code> is secondary or selected; <code>outline</code> is the quiet secondary for
@@ -102,7 +105,7 @@
 </div>
 
 <style>
-  h4 {
+  h3 {
     margin: 22px 0 var(--space-1);
     color: var(--text-strong);
     font-size: var(--font-size-sm);
