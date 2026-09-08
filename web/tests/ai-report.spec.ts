@@ -144,6 +144,12 @@ test.describe('AI picture report', () => {
     const confirm = await landedReportConfirm(page);
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sending…' })).toHaveAttribute(
+      'aria-busy',
+      'true'
+    );
+    await expect(page.getByRole('button', { name: 'Sending…' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Sending…' }).locator('.ring')).toBeVisible();
 
     const retry = page.getByRole('button', { name: 'Try again' });
     await expect(retry).toBeVisible({ timeout: CLIENT_REQUEST_TIMEOUT_MS * 1.5 });

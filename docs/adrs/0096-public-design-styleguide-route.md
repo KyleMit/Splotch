@@ -75,3 +75,13 @@ of things the repo already owns.
   cost is accepted for a low-traffic reference page.
 * − The AI-authored static package's interactive drawing-screen mock was dropped rather than kept —
   the live app itself is the demo, so a parallel mock would only rot.
+
+## Amendment (2026-09-08): keep the primitives in a separate chunk
+
+The route's universal `load` dynamically imports `PrimitiveSections` and returns the component to
+the page. Expanding the button specimens pushed the combined styleguide chunk past the existing
+bundle budget. Loading the primitives as a separate module keeps that budget intact while awaiting
+the component on both the server and client. A client-only deferred render would leave the reference
+incomplete without JavaScript and move the section after hydration; the universal load preserves the
+complete SSR layout. `button-states.spec.ts` verifies the state matrix and size ladder with
+JavaScript disabled, alongside the hydrated interaction coverage.

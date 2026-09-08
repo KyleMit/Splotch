@@ -200,7 +200,7 @@
 
     <div class="ai-report-confirm-actions">
       <Button size="lg" onclick={cancel} disabled={status === 'busy'}>Cancel</Button>
-      <Button variant="brand" size="lg" onclick={() => void send()} disabled={status === 'busy'}>
+      <Button variant="brand" size="lg" onclick={() => void send()} busy={status === 'busy'}>
         {status === 'busy' ? 'Sending…' : 'Send report'}
       </Button>
     </div>

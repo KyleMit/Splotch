@@ -117,6 +117,8 @@ const BASELINE = new Map(
 // file (relative to web/src) → allowed raw font-size count, with the reason.
 const FONT_SIZE_BASELINE = new Map(
   Object.entries({
+    // The button handoff specifies compact matrix captions below the control label ramp.
+    'lib/components/styleguide/ButtonSpecimens.svelte': 1,
     // The wordmark lockup's 10px tagline — brand typography sized to the mark
     // it locks up with, not UI text on the ramp.
     'lib/components/page/BrandMark.svelte': 1,

@@ -120,7 +120,8 @@
       variant="brand"
       class="report-submit"
       onclick={submit}
-      disabled={!message.trim() || submitting}
+      disabled={!message.trim()}
+      busy={submitting}
     >
       {submitting ? 'Sending…' : 'Send report'}
     </Button>

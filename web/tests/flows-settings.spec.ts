@@ -654,6 +654,9 @@ test('reopening Settings mid-submit leaves the sent report to land', async ({ pa
   await page.locator('#reportMessage').fill('The paint brush disappeared.');
   await page.getByRole('button', { name: 'Send report' }).click();
   await expect.poll(() => requestCount).toBe(1);
+  await expect(page.getByRole('button', { name: 'Sending…' })).toHaveAttribute('aria-busy', 'true');
+  await expect(page.getByRole('button', { name: 'Sending…' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Sending…' }).locator('.ring')).toBeVisible();
 
   await page.getByRole('button', { name: 'Close' }).click();
   await expect(page.locator('#settingsModal')).toBeHidden();
