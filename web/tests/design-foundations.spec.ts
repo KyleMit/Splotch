@@ -65,10 +65,15 @@ for (const theme of ['light', 'dark'] as const) {
       return {
         ink: style.color,
         wash: style.backgroundColor,
+        surface: style.getPropertyValue('--surface').trim(),
+        successWash: style.getPropertyValue('--success-wash').trim(),
         chip: chip.backgroundColor,
         chipInk: chip.color,
       };
     });
+    expect(colorContrast(colors.wash, colors.surface, colors.surface)).toBeGreaterThanOrEqual(
+      colorContrast(colors.successWash, colors.surface, colors.surface)
+    );
     expect(colors.chipInk).toBe(colors.ink);
     expect(colors.chip).not.toBe(colors.wash);
     expect(colorContrast(colors.ink, colors.wash, colors.wash)).toBeGreaterThanOrEqual(4.5);

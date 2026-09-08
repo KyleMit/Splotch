@@ -278,7 +278,6 @@ export interface ThemeTokens {
   dangerWash: string;
   dangerText: string;
   warningWash: string;
-  warningBorder: string;
   warningText: string;
   warningChip: string;
   /**
@@ -354,8 +353,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     successText: '#2e7d4f',
     dangerWash: '#fdecec',
     dangerText: '#b04a4a',
-    warningWash: '#fffaeb',
-    warningBorder: '#fce5a8',
+    warningWash: '#fff2d3',
     warningText: '#93600b',
     warningChip: '#fdefc7',
     paper: '#fcfbf8',
@@ -395,8 +393,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     successText: '#8bcfa4',
     dangerWash: '#422a2c',
     dangerText: '#e09393',
-    warningWash: '#2a2416',
-    warningBorder: '#544620',
+    warningWash: '#3e331c',
     warningText: '#f2d488',
     warningChip: '#3d3419',
     paper: '#211f29',
@@ -444,7 +441,6 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   dangerWash: true,
   dangerText: true,
   warningWash: true,
-  warningBorder: true,
   warningText: true,
   warningChip: true,
   paper: true,

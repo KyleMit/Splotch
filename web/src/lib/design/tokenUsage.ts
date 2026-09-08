@@ -124,7 +124,6 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   dangerText: 'Ink on --danger-wash.',
   warningWash: 'Warning banners: degraded but working (persistence off, sampled data).',
   warningText: 'Ink on --warning-wash.',
-  warningBorder: 'Hairline on --warning-wash — the only wash that carries one.',
   warningChip: 'Inline <code> inside a warning banner.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
   paperMargin: 'The flat tone behind the rotation-locked sheet.',
