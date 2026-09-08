@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-  import ReleaseSectionHeading from '../ReleaseSectionHeading.svelte';
+  import ReleaseSectionHeading from '$lib/components/ReleaseSectionHeading.svelte';
 
   let { visibleSections = RELEASE_NOTE_SECTION_COUNT }: { visibleSections?: number } = $props();
 </script>
