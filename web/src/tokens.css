@@ -96,8 +96,8 @@
   --danger-wash: #fdecec;
   --danger-text: #b04a4a;
   --warning-wash: #fff2d3;
-  --warning-text: #93600b;
-  --warning-chip: #fdefc7;
+  --warning-text: #895a0a;
+  --warning-chip: #ffe5a8;
   --paper: #fcfbf8;
   --paper-margin: #f1efeb;
   --hole-stroke: #8a8a93;
@@ -158,7 +158,7 @@
   --danger-text: #e09393;
   --warning-wash: #3e331c;
   --warning-text: #f2d488;
-  --warning-chip: #3d3419;
+  --warning-chip: #544620;
   --paper: #211f29;
   --paper-margin: #1a1922;
   --hole-stroke: #b9b9c2;
@@ -220,7 +220,7 @@
     --danger-text: #e09393;
     --warning-wash: #3e331c;
     --warning-text: #f2d488;
-    --warning-chip: #3d3419;
+    --warning-chip: #544620;
     --paper: #211f29;
     --paper-margin: #1a1922;
     --hole-stroke: #b9b9c2;

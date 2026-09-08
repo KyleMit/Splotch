@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { colorContrast } from '../src/lib/design/colorContrast';
 
+const MIN_WARNING_CHIP_CONTRAST = { light: 1.1, dark: 1.25 } as const;
+
 async function showTheme(page: Page, theme: 'light' | 'dark') {
   await page.goto('/design');
   await expect(async () => {
@@ -75,7 +77,9 @@ for (const theme of ['light', 'dark'] as const) {
       colorContrast(colors.successWash, colors.surface, colors.surface)
     );
     expect(colors.chipInk).toBe(colors.ink);
-    expect(colors.chip).not.toBe(colors.wash);
+    expect(colorContrast(colors.chip, colors.wash, colors.wash)).toBeGreaterThanOrEqual(
+      MIN_WARNING_CHIP_CONTRAST[theme]
+    );
     expect(colorContrast(colors.ink, colors.wash, colors.wash)).toBeGreaterThanOrEqual(4.5);
     expect(colorContrast(colors.chipInk, colors.chip, colors.wash)).toBeGreaterThanOrEqual(4.5);
   });
