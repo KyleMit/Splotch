@@ -54,7 +54,8 @@ import { isMain } from '../lib/proc.mjs';
 // file (relative to web/src) → allowed raw-hex count, with the reason.
 const BASELINE = new Map(
   Object.entries({
-    // Notch harness confidence badges and verdicts retain their diagnostic amber.
+    // The notch harness's warning palette is migration debt, capped here to
+    // prevent growth. Themed product warnings use the --warning-* tokens.
     'routes/dev/notch/+page.svelte': 2,
     // Notch harness hardware illustration: a camera cutout is black and the
     // system glyphs over it are white on every device in the matrix, whatever

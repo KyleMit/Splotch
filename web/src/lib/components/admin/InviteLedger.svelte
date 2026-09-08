@@ -142,7 +142,7 @@
     grid-template-columns: var(--ledger-columns);
     gap: var(--space-2);
     align-items: center;
-    padding: 10px 20px;
+    padding: 10px var(--space-2) 10px var(--space-5);
     background: var(--surface-2);
     border-bottom: 1px solid var(--border);
   }

@@ -128,6 +128,16 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   ]) {
     await page.setViewportSize(viewport);
     await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
+    const header = page.getByRole('columnheader', { name: 'Actions', exact: true });
+    const copy = row.locator('.wide-actions button').first();
+    await expect(header).toBeVisible();
+    await expect
+      .poll(async () => {
+        const headerBox = await header.boundingBox();
+        const copyBox = await copy.boundingBox();
+        return Math.abs(headerBox!.x - copyBox!.x);
+      })
+      .toBeCloseTo(0);
     const remove = await row.getByRole('button', { name: `Remove ${token}` }).boundingBox();
     const ledger = await page.getByRole('table').boundingBox();
     expect(remove).not.toBeNull();

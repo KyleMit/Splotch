@@ -343,7 +343,6 @@
 
   .grant-table-wrap {
     overflow-x: auto;
-    margin-bottom: var(--space-6);
   }
 
   .grant-table {
