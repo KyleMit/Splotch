@@ -249,6 +249,7 @@
       <div class="coloring-book-view">
         <div class="coloring-book-header">
           <DialogHeader
+            backClass="coloring-back-button"
             onback={hasBookPicker ? (event) => swapView(null, event) : undefined}
             onclose={coloringBookModal.hide}
           >
@@ -472,8 +473,12 @@
   }
 
   @media (max-width: 360px) {
+    .coloring-book-content {
+      padding-inline: var(--space-3);
+    }
+
     .coloring-book-header {
-      gap: var(--space-1);
+      --dialog-header-gap: var(--space-1);
     }
 
     .coloring-book-header h2 {

@@ -220,7 +220,12 @@
     {:else}
       <!-- Phone: drilled into a single section, with a back arrow. -->
       <div class="settings-header settings-header-sub">
-        <DialogHeader onback={backToHub} onclose={settingsModal.hide} closeFeedback>
+        <DialogHeader
+          backClass="settings-back"
+          onback={backToHub}
+          onclose={settingsModal.hide}
+          closeFeedback
+        >
           <h2>{sectionHeading(activeSection)}</h2>
         </DialogHeader>
       </div>

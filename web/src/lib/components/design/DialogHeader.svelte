@@ -10,6 +10,7 @@
     onclose: () => void;
     closeLabel?: string;
     closeClass?: string;
+    backClass?: string;
     closeFeedback?: boolean;
   }
 
@@ -20,6 +21,7 @@
     onclose,
     closeLabel = 'Close',
     closeClass = '',
+    backClass = '',
     closeFeedback = false,
   }: Props = $props();
 
@@ -38,7 +40,7 @@
     type="button"
     class="dialog-header-control {icon === 'close'
       ? `modal-close-btn ${closeClass}`
-      : 'dialog-back'}"
+      : `dialog-back ${backClass}`}"
     aria-label={label}
     {onclick}
   >
@@ -57,7 +59,7 @@
   .dialog-header {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--dialog-header-gap, var(--space-2));
     width: 100%;
     min-width: 0;
     flex-shrink: 0;
