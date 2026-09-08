@@ -448,3 +448,23 @@ describe('install auto-clear', () => {
     expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBe('true');
   });
 });
+
+describe('hidden install auto-clear', () => {
+  it('starts a fresh countdown after the banner is disarmed and shown again', async () => {
+    const { install, armInstallAutoClear, disarmInstallAutoClear, autoDismissInstallIfDue } =
+      await freshModule();
+    const { canvasState } = await import('./canvas.svelte');
+    canvasState.strokeCount = 3;
+    armInstallAutoClear();
+    canvasState.strokeCount = 5;
+    disarmInstallAutoClear();
+    canvasState.strokeCount = 20;
+    expect(autoDismissInstallIfDue()).toBe(false);
+    expect(install.dismissed).toBe(false);
+    armInstallAutoClear();
+    canvasState.strokeCount = 24;
+    expect(autoDismissInstallIfDue()).toBe(false);
+    canvasState.strokeCount = 25;
+    expect(autoDismissInstallIfDue()).toBe(true);
+  });
+});

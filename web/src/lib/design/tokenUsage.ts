@@ -76,10 +76,9 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
   zClearPreview: 'The full-viewport paper wash previewing a drag-to-clear.',
   zRipple: 'The clear-confirmation ripple, over the preview wash.',
   zCornerButton: 'The muted corner buttons (Settings Button).',
-  zPanel: 'The Actions Panel drawer — caps its own subtree, including the flyouts.',
-  zFlyout:
-    'Orders the flyout inside .actions-panel only; the root-context tie with --z-panel is inert.',
-  zBanner: 'The Install Banner, taking over the corner controls while shown.',
+  zPanel: 'The bottom dock and its Actions Panel drawer; each caps its own subtree.',
+  zFlyout: 'Orders the flyout inside .actions-panel only; its tie with --z-panel is inert.',
+  zBanner: 'The Install Banner inside the bottom dock, clear of the corner controls.',
   zClearAcceptZone: 'The drag-accept ring, below the button it rings.',
   zClearButton: 'The Clear Button itself.',
   zNotch: 'The safe-area Notch Band; its tie with --z-clear-button resolves by DOM order.',

@@ -59,16 +59,24 @@ Two surfaces consume the state:
    On `oneTap` its button fires the native dialog; on `ios`/`android` it expands an inline how-to.
    It is dismissible, and the dismissal is remembered.
 
-   On phones the banner is wider than the gap between the bottom-corner controls (actions toggle,
-   the Settings Button), and shrinking it to fit would cram the parent-facing copy into ~260px.
-   Instead it stacks **above** those controls (`z-index` over their 900/901), and the takeover is
-   kept short: five strokes after it appears — proof the child kept drawing and no parent is
-   engaging (the countdown pauses while the how-to is expanded or the native dialog is up) — it
+   The drawing route groups the banner and corner controls in a safe-area-aware bottom dock. On
+   narrow portrait screens the card sits above the collapsed control band, with a full-width
+   How?/Hide toggle below its heading. On tablets and landscape screens it centers in the space
+   between the controls, to the right of the landscape palette. The dock reserves the shared
+   corner-button size and leaves empty space transparent to drawing input. The controls retain their
+   fixed geometry so opening the Actions Panel does not move Settings or resize its drawer. Opening
+   that panel temporarily hides the banner, preserving its expanded instructions for when the panel
+   closes. Hidden banners disarm their auto-clear countdown, so drawing behind the drawer cannot
+   consume an unseen prompt; showing the banner starts a fresh countdown. This replaces the original
+   short-lived overlap of the corner controls.
+
+   Five strokes after the banner appears — proof the child kept drawing and no parent is engaging
+   (the countdown pauses while the how-to is expanded or the native dialog is up) — it
    auto-dismisses. The auto-clear routes through the same dismissal as the × button and a declined
-   native dialog, briefly swaps the pill to a parting message ("these steps are always in
-   Settings"), then animates the pill into the Settings Button so the message lands spatially too.
-   Lifting the banner above the corner controls instead was rejected: with the actions panel
-   expanded the required lift would push the banner toward mid-canvas.
+   native dialog, briefly swaps the card to a parting message ("these steps are always in
+   Settings"), then animates it into the Settings Button. Safari instructions use numbered steps
+   with nonbreaking icon/label pairs; the Share location follows viewport orientation and width,
+   falling back to "in the Safari toolbar" when the viewport is unknown.
 
    A dismissal starts a bounded re-prompt cycle. A fresh page load qualifies after the child reaches
    the same three-committed-stroke settled-in threshold; refocusing an existing tab does not create

@@ -576,6 +576,7 @@
 
 <style>
   .actions-panel {
+    pointer-events: auto;
     position: fixed;
     bottom: calc(8px + var(--safe-area-bottom));
     left: calc(var(--palette-landscape-width) + 8px + var(--safe-area-left));

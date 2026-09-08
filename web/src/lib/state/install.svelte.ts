@@ -244,6 +244,10 @@ export function dismissInstall() {
   writeBool(STORAGE_KEYS.installDismissed, true);
 }
 
+export function disarmInstallAutoClear() {
+  installAutoClearArmedAt = null;
+}
+
 export function armInstallAutoClear() {
   installAutoClearArmedAt ??= canvasState.strokeCount;
 }
