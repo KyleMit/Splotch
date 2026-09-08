@@ -133,9 +133,8 @@
 </div>
 
 <style>
-  /* Sizing and type read the ledger's custom properties (--ledger-target-min,
-     --ledger-meta-size), inherited from the ancestor .ledger block, and the
-     compact media query below matches InviteLedger's compact-row query. */
+  /* Link actions inherit the ledger's target and type scale. Copy uses the
+     Button primitive's chrome and shares only the ledger's target floor. */
   .wide-actions {
     display: flex;
     align-items: center;

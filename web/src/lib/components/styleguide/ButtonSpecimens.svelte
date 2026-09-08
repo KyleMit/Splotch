@@ -3,6 +3,7 @@
   import Button from '$lib/components/design/Button.svelte';
 
   const BUTTON_VARIANTS = ['brand', 'wash', 'outline', 'danger'] as const;
+  const BUTTON_STATES = ['Default', 'Hover', 'Pressed', 'Disabled'] as const;
   const BUSY_DURATION_MS = 10_000;
   const BUSY_VISIBILITY_FRACTION = 0.6;
   const sizes = [
@@ -60,19 +61,22 @@
   <div class="cards">
     <div class="card states" role="group" aria-label="Button states">
       <span class="card-label">States</span>
-      {#each ['Default', 'Hover', 'Pressed', 'Disabled'] as state (state)}
+      {#each BUTTON_STATES as state (state)}
         <span class="caption">{state}</span>
       {/each}
       {#each BUTTON_VARIANTS as variant (variant)}
         <span class="variant-label">{variant}</span>
-        <Button {variant}>{variant}</Button>
-        <Button {variant} class="preview-hover" tabindex={-1} aria-hidden="true" inert>
-          {variant}
-        </Button>
-        <Button {variant} class="preview-pressed" tabindex={-1} aria-hidden="true" inert>
-          {variant}
-        </Button>
-        <Button {variant} disabled>{variant}</Button>
+        {#each BUTTON_STATES as state (state)}
+          {@const preview = state === 'Hover' || state === 'Pressed'}
+          <Button
+            {variant}
+            class={{ 'preview-hover': state === 'Hover', 'preview-pressed': state === 'Pressed' }}
+            tabindex={preview ? -1 : undefined}
+            aria-hidden={preview || undefined}
+            inert={preview}
+            disabled={state === 'Disabled'}>{variant}</Button
+          >
+        {/each}
       {/each}
     </div>
 
@@ -177,6 +181,10 @@
   }
   .states :global(.preview-pressed) {
     transform: scale(0.96);
+  }
+
+  .states :global(.btn) {
+    white-space: nowrap;
   }
 
   .sizes {

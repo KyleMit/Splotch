@@ -85,6 +85,7 @@
 <section id="primitives" data-sg-section>
   <h3>Primitives</h3>
 
+  <!-- Each preview theme gets its own visibility-triggered busy demonstration. -->
   {#key theme}
     <ButtonSpecimens />
   {/key}

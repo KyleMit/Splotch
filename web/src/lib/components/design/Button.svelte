@@ -50,7 +50,6 @@
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     touch-action: manipulation;
-    white-space: nowrap;
     transition:
       background var(--duration-base) ease,
       border-color var(--duration-base) ease,

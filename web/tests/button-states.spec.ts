@@ -1,5 +1,21 @@
 import { expect, test } from '@playwright/test';
 
+test.describe('server-rendered buttons', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('the complete state matrix and sizes render without hydration', async ({ page }) => {
+    await page.goto('/design#primitives');
+    const states = page.getByRole('group', { name: 'Button states', exact: true });
+    await expect(states).toBeVisible();
+    await expect(states).toHaveCSS('display', 'grid');
+    await expect(states.getByRole('button')).toHaveCount(8);
+    await expect(states.locator('button:disabled')).toHaveCount(4);
+    await expect(
+      page.getByRole('group', { name: 'Button sizes', exact: true }).getByRole('button')
+    ).toHaveCount(3);
+  });
+});
+
 for (const theme of ['light', 'dark'] as const) {
   test.describe(`${theme} buttons`, () => {
     test.use({ colorScheme: theme });

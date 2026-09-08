@@ -3,7 +3,6 @@
   import AssetSections from '$lib/components/styleguide/AssetSections.svelte';
   import ChromeSections from '$lib/components/styleguide/ChromeSections.svelte';
   import ColorSections from '$lib/components/styleguide/ColorSections.svelte';
-  import PrimitiveSections from '$lib/components/styleguide/PrimitiveSections.svelte';
   import RecipeSections from '$lib/components/styleguide/RecipeSections.svelte';
   import ScaleSections from '$lib/components/styleguide/ScaleSections.svelte';
   import TypeSections from '$lib/components/styleguide/TypeSections.svelte';
@@ -15,6 +14,9 @@
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
   import { applyTheme, type ResolvedTheme } from '$lib/theme';
+  import type { PageProps } from './$types';
+
+  let { data }: PageProps = $props();
 
   // The header toggle is binary Light/Dark — the 3-way choice (with System)
   // stays with the app Settings, which owns the stored preference. This one
@@ -236,7 +238,7 @@
           of the deliberately bespoke chrome.
         </p>
       </div>
-      <PrimitiveSections {theme} />
+      <data.PrimitiveSections {theme} />
       <ChromeSections />
 
       <div class="part-divider" id="brand">
