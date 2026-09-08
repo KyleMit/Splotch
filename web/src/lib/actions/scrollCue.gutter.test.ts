@@ -25,6 +25,8 @@ function setup() {
   Object.defineProperties(scrollport, {
     offsetWidth: { get: () => 300 },
     clientWidth: { get: () => 300 - gutter },
+    offsetHeight: { get: () => 400 },
+    clientHeight: { get: () => 400 - gutter },
   });
   return {
     cue,
@@ -42,9 +44,11 @@ it('insets the fade when a classic scrollbar takes space and releases it when th
   const fixture = setup();
   excludeScrollportGutter(fixture.cue);
   expect(fixture.cue.style.right).toBe('15px');
+  expect(fixture.cue.style.bottom).toBe('15px');
   expect(fixture.observe).toHaveBeenCalledWith(fixture.scrollport);
   fixture.resizeGutter(0);
   expect(fixture.cue.style.right).toBe('0px');
+  expect(fixture.cue.style.bottom).toBe('0px');
 });
 
 it('disconnects the observer and removes its inset on teardown', () => {
@@ -53,6 +57,7 @@ it('disconnects the observer and removes its inset on teardown', () => {
   handle?.destroy();
   expect(fixture.disconnect).toHaveBeenCalledOnce();
   expect(fixture.cue.style.right).toBe('');
+  expect(fixture.cue.style.bottom).toBe('');
 });
 
 it('leaves a fade without a scrolling sibling alone', () => {

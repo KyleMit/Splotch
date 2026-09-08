@@ -16,8 +16,8 @@
 
   // Design-system picker primitive: the one owner of the selected-state
   // control pattern Button deliberately excludes — those are pickers, not
-  // actions. Two skins share the option machinery: the iOS-style segmented
-  // track whose active option reads as a raised card, and the borderless
+  // actions. Two skins share the option machinery: the segmented
+  // track with a raised brand-filled thumb, and the borderless
   // toggle chips. Selection *semantics* stay with the caller: onSelect always fires
   // with the clicked value, so a radio caller sets it, while a toggle caller
   // may release it (the orientation segment) or flip it in a set (the chips).
@@ -45,7 +45,7 @@
      */
     inputName?: string;
     /**
-     * segment = raised-thumb track; chip = borderless toggle grid; underline =
+     * segment = brand-filled thumb track; chip = borderless toggle grid; underline =
      * tab row on a hairline, for a standalone page that switches between two
      * views of itself rather than setting something. `underline` manages its own
      * width: it hugs the left on a sheet and splits the row evenly on a phone,
@@ -234,7 +234,7 @@
     fill: var(--icon-ink);
   }
 
-  /* iOS-style segmented track: the active option reads as a raised card. */
+  /* Segmented track with a raised brand-filled thumb. */
   .segment {
     display: inline-flex;
     gap: var(--space-1);

@@ -33,6 +33,9 @@ const OUTSIDE_CORNER_PX = 4;
 // runs ~160 levels brighter (measured 252 against 90 on the white card).
 const CORNER_LUMINANCE_TOLERANCE = 8;
 
+// clientHeight rounds to an integer while bounding rectangles retain fractions.
+const SCROLLPORT_EDGE_TOLERANCE_PX = 1;
+
 async function scrollbarGutterWidth(scroller: Locator) {
   return scroller.evaluate((node) => (node as HTMLElement).offsetWidth - node.clientWidth);
 }
@@ -108,5 +111,32 @@ for (const viewport of SETTINGS_VIEWPORTS) {
         })
       )
       .toBe(0);
+  });
+
+  test(`the Settings fade leaves a horizontal scrollbar visible at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    const scroller = modal.locator('.settings-scroll, .settings-pane');
+    await scroller.locator('.settings-zoom').evaluate((content) => {
+      content.style.width = '200%';
+    });
+    await expect(modal.locator('.scroll-cue')).toHaveCSS('opacity', '1');
+    await expect
+      .poll(() => scroller.evaluate((node: HTMLElement) => node.offsetHeight - node.clientHeight))
+      .toBeGreaterThan(0);
+    await expect
+      .poll(() =>
+        scroller.evaluate((node) => {
+          const fade = node.parentElement!.querySelector('.scroll-cue')!;
+          return Math.abs(
+            fade.getBoundingClientRect().bottom -
+            (node.getBoundingClientRect().top + node.clientHeight)
+          );
+        })
+      )
+      .toBeLessThan(SCROLLPORT_EDGE_TOLERANCE_PX);
   });
 }

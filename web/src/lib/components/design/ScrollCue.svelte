@@ -15,6 +15,8 @@
 
   let { children }: Props = $props();
 
+  // Set --scroll-cue-height on an ancestor of the cue. In wrapper mode the
+  // scroller is its sibling, so the property belongs above the wrapper.
   let atEnd = $state(true);
 </script>
 

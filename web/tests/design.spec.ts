@@ -171,14 +171,14 @@ test('the disclosure chevron rotates open', async ({ page }) => {
 // reads, so the caption and the specimen part company in silence.
 test('the scroll cue specimens show the state each one is captioned with', async ({ page }) => {
   await page.goto('/design');
-  const scrollers = page.locator('.cue-scroller');
+  const scrollers = page.locator('.cue-figure > .cue-scroller');
   await expect(scrollers).toHaveCount(2);
   // Read them where a reader reads them. The primitive leaves its observer root
   // implicit, so an intersection is clipped by every scrollable ancestor — the
   // document included. A specimen still below the page's own fold therefore has
   // its end off screen for that reason, and reports the same "more below" the
   // app's dialogs only ever get from their own scrollport.
-  await page.locator('.cue-demo').scrollIntoViewIfNeeded();
+  await scrollers.first().scrollIntoViewIfNeeded();
 
   const cueOpacity = (index: number) =>
     scrollers
@@ -403,3 +403,15 @@ for (const width of [320, 390]) {
       .toBeLessThanOrEqual(0);
   });
 }
+
+test('the wrapped scroll cue specimen retires at its own content end', async ({ page }) => {
+  await page.goto('/design');
+  const specimen = page.locator('.cue-overlay-demo');
+  await specimen.scrollIntoViewIfNeeded();
+  const cue = specimen.locator('.scroll-cue');
+  await expect(cue).toHaveCSS('opacity', '1');
+  await specimen
+    .locator('.cue-scroller')
+    .evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
+  await expect(cue).toHaveCSS('opacity', '0');
+});

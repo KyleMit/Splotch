@@ -100,7 +100,7 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   borderWarm: 'Hairline on paper-toned chrome.',
   borderWarmStrong: 'The hovered/emphasized step of --border-warm.',
   controlTrack:
-    "Every inactive picker/track ground: toggle-off state, slider rails, the segment track and a borderless chip's unselected fill. Pinned to hold 4.5:1 under --text-soft labels.",
+    "Every inactive picker/track ground: toggle-off state, slider rails, the segment track and a borderless chip's unselected fill. Pinned to hold 4.5:1 under --text and --text-soft labels.",
   controlTrackHover: 'The hovered step of --control-track.',
   sliderNotch: 'The snap-detent tick over a slider track.',
   textStrong: 'Headings and emphasized copy.',
@@ -112,12 +112,12 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   iconInk:
     'Monochrome icon fill on themed surfaces — and the hover state of --icon-muted: quiet icons hover to full ink.',
   iconMuted:
-    'Quiet chrome icons at rest, and the scrollbar thumb over its transparent track. Holds the 3:1 non-text minimum on every scroller ground.',
+    'Quiet chrome icons and radio outlines at rest, and the scrollbar thumb over its transparent track. Holds the 3:1 non-text minimum on every scroller ground.',
   brandWash: 'Brand-tinted selected/active fills that keep dark ink.',
   brandWashHover: 'The hovered step of --brand-wash.',
   brandText: 'Brand-colored ink on plain surfaces: links, active labels.',
   brandSolid:
-    'The brand fill that carries text (4.5:1 against --on-brand) — primary actions, selected chips.',
+    'The brand fill that carries text (4.5:1 against --on-brand) — primary actions, selected segments and chips.',
   brandSolidHover: 'The hovered step of --brand-solid; also the hover of a textless --brand fill.',
   successWash: 'Success banner and confirmation fills.',
   successText: 'The one success green: ink on --success-wash and confirmation checks/icons alike.',

@@ -328,6 +328,7 @@
     .policy-header {
       align-items: center;
       padding: 0 var(--space-5);
+      /* Match the phone picker's label tone in both themes. */
       color: var(--text);
       font-size: var(--font-size-xs);
       font-weight: var(--font-weight-bold);
@@ -374,6 +375,7 @@
 
     .policy-card :global(.policy-picker .option.active) {
       background: var(--surface);
+      color: var(--text-strong);
     }
 
     .policy-card :global(.policy-picker .option::after) {
