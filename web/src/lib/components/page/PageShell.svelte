@@ -96,10 +96,8 @@
     text-wrap: pretty;
   }
 
-  /* Wide enough that a hero's side column can sit beside a 46px H1 without
-     squeezing it onto three lines. */
   .sheet {
-    max-width: 880px;
+    max-width: 760px;
     margin: 0 auto;
     padding: 0 var(--page-gutter) 40px;
     background: var(--page-sheet);
@@ -107,17 +105,12 @@
     box-shadow: var(--page-shadow);
   }
 
-  /* Tablet: the sheet stops being a fixed 880 and fills the ground instead,
-     keeping its frame — a card with an even band of ground either side still
-     reads as a card, and it is what stops a capped content column from sitting
-     left-aligned in a much wider sheet. */
   @media (max-width: 920px) {
     .page {
       padding: var(--space-6);
     }
 
     .sheet {
-      max-width: none;
       /* The topbar brings its own 18px, so this lands the mark 30px down. */
       padding: 12px 32px 36px;
     }
@@ -173,7 +166,7 @@
     justify-content: space-between;
     gap: var(--space-4);
     flex-wrap: wrap;
-    padding: 8px 0 34px;
+    padding: var(--space-2) 0 var(--space-7);
   }
 
   .hero-text {

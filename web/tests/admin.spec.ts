@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Request } from '@playwright/test';
 import { HARNESS_PROBE_CODE, MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { APP_TEMPLATE_SCRIPT_HASH } from '../securityPolicy';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
@@ -28,6 +28,40 @@ function tokenRow(page: Page, token: string) {
   });
 }
 
+async function expectRemovalRequiresConfirmation(page: Page, token: string) {
+  const row = tokenRow(page, token);
+  const remove = row.getByRole('button', { name: `Remove ${token}`, exact: true });
+  const requests: string[] = [];
+  const recordRemoval = (request: Request) => {
+    if (new URL(request.url()).search === '?/remove') requests.push(request.url());
+  };
+  page.on('request', recordRemoval);
+  try {
+    const canceledDialog = page.waitForEvent('dialog');
+    const canceledClick = remove.click();
+    const cancel = await canceledDialog;
+    expect(cancel.type()).toBe('confirm');
+    expect(cancel.message()).toBe(`Remove ${token}? Anyone using this code loses AI access.`);
+    await cancel.dismiss();
+    await canceledClick;
+    await expect(row).toBeVisible();
+    expect(requests).toHaveLength(0);
+
+    const acceptedDialog = page.waitForEvent('dialog');
+    const acceptedClick = remove.click();
+    const accept = await acceptedDialog;
+    await accept.accept();
+    await acceptedClick;
+    await expect.poll(() => requests.length).toBe(1);
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
+    ).toBeVisible();
+    await expect(row).toBeVisible();
+  } finally {
+    page.off('request', recordRemoval);
+  }
+}
+
 async function expectVisibleActionsMeetTargetFloor(row: ReturnType<typeof tokenRow>) {
   const compactActions = row.locator('.compact-actions');
   const actions = (await compactActions.isVisible())
@@ -54,9 +88,13 @@ test('web /admin signs in, fails closed without durable tokens, and signs out', 
   await signInToAdmin(page);
   // Production preview has no Netlify Blobs: reads retain the env seed, but
   // mutations must not claim an in-memory success that disappears on restart.
-  await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Netlify Blobs is unavailable' })
+  ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Free generation grants' })).toBeVisible();
-  await expect(page.getByText('Free grant monitoring is using local memory')).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Free grant monitoring is using local memory' })
+  ).toBeVisible();
   await expect(page.getByText('Sampled successes').locator('..')).toContainText('0');
   await expectTokenAddUnavailable(page, `e2e-web-${Date.now()}`);
 
@@ -95,7 +133,7 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
     expect(remove).not.toBeNull();
     expect(ledger).not.toBeNull();
     expect(remove!.x + remove!.width).toBeLessThanOrEqual(ledger!.x + ledger!.width);
-    // The slim link treatment still has to meet the 44px interaction floor.
+    // All three row actions meet the 44px interaction floor.
     expect(remove!.height).toBeGreaterThanOrEqual(44);
   }
 
@@ -149,6 +187,8 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
     await expectVisibleActionsMeetTargetFloor(row);
   }
 
+  await expectRemovalRequiresConfirmation(page, token);
+
   // The remaining actions expand in place inside the row — no centered modal
   // covering the list.
   await page.setViewportSize({ width: 812, height: 375 });
@@ -156,11 +196,8 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   await more.click();
   await expect(more).toHaveAttribute('aria-expanded', 'true');
   await expectVisibleActionsMeetTargetFloor(row);
-  await row.getByRole('button', { name: `Remove ${token}` }).click();
-  await expect(
-    page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
-  ).toBeVisible();
-  await expect(row).toBeVisible();
+  await expectRemovalRequiresConfirmation(page, token);
+  await expect(more).toHaveAttribute('aria-expanded', 'false');
 });
 
 // Resolve a design token to the same rgb() form getComputedStyle reports, by
@@ -285,8 +322,6 @@ test('web /admin surfaces a network failure instead of failing silently', async 
   );
   await adminConsole(page).fill(`e2e-offline-${Date.now()}`);
   await page.getByRole('button', { name: 'Add code' }).click();
-  // The preview server's Blobs-fallback warning is also role="alert", so pick
-  // out the error flash by its text.
   await expect(page.getByRole('alert').filter({ hasText: 'Something went wrong' })).toBeVisible();
 });
 

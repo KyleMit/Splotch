@@ -39,6 +39,13 @@
   // chevron when Escape collapses the reveal from one of its buttons.
   let toggleEl: HTMLButtonElement | undefined;
 
+  function removeInvite() {
+    if (busy || !window.confirm(`Remove ${invite.token}? Anyone using this code loses AI access.`))
+      return;
+    onclose();
+    onremove(invite.token);
+  }
+
   function onEscapeCollapse(event: KeyboardEvent) {
     if (event.key !== 'Escape' || !open) return;
     toggleEl?.focus();
@@ -59,10 +66,17 @@
 
 <div role="cell" class="cell-actions">
   <div class="wide-actions">
-    {@render copyCodeButton()}
     <button
       type="button"
-      class="link-action"
+      class="row-action"
+      class:copied={copied === copyKey(invite.token, 'code')}
+      onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
+    >
+      {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
+    </button>
+    <button
+      type="button"
+      class="row-action"
       class:copied={copied === copyKey(invite.token, 'url')}
       onclick={() => oncopy(copyKey(invite.token, 'url'), invite.url)}
     >
@@ -70,10 +84,10 @@
     </button>
     <button
       type="button"
-      class="link-action link-action-danger"
+      class="row-action row-action-danger"
       disabled={busy}
       aria-label={`Remove ${invite.token}`}
-      onclick={() => onremove(invite.token)}
+      onclick={removeInvite}
     >
       Remove
     </button>
@@ -121,10 +135,7 @@
       class="row-action row-action-danger"
       disabled={busy}
       aria-label={`Remove ${invite.token}`}
-      onclick={() => {
-        onclose();
-        onremove(invite.token);
-      }}
+      onclick={removeInvite}
       onkeydown={onEscapeCollapse}
     >
       Remove
@@ -133,12 +144,10 @@
 </div>
 
 <style>
-  /* Link actions inherit the ledger's target and type scale. Copy uses the
-     Button primitive's chrome and shares only the ledger's target floor. */
   .wide-actions {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--space-2);
   }
 
   .cell-actions :global(.copy-code) {
@@ -150,42 +159,6 @@
     color: var(--success-text);
     border-color: var(--success-text);
     background: var(--success-wash);
-  }
-
-  /* Copy link / Remove — quiet link-shaped buttons. The box is invisible, so
-     the 44px floor costs nothing visually. */
-  .link-action {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--ledger-target-min);
-    padding: 0;
-    color: var(--brand-text);
-    background: transparent;
-    border: none;
-    font-family: inherit;
-    font-size: var(--ledger-meta-size);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  @media (hover: hover) {
-    .link-action:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .link-action.copied {
-    color: var(--success-text);
-  }
-
-  .link-action-danger {
-    color: var(--danger-text);
-  }
-
-  .link-action:disabled {
-    opacity: 0.6;
-    cursor: default;
   }
 
   /* Compact Copy + chevron pair — phone layout only. */
@@ -228,11 +201,6 @@
     background: var(--brand-wash);
   }
 
-  .expand-btn:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 2px;
-  }
-
   :global(.expand-btn .expand-icon) {
     width: 20px;
     height: 20px;
@@ -268,13 +236,13 @@
     align-items: center;
     justify-content: center;
     min-height: var(--ledger-target-min);
-    padding: 7px 14px;
+    padding: 0 14px;
     color: var(--brand-text);
     background: var(--surface);
     border: var(--border-width) solid var(--border);
     border-radius: var(--radius-sm);
     font-family: inherit;
-    font-size: var(--ledger-meta-size);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     white-space: nowrap;
@@ -315,6 +283,11 @@
      nothing needs dismissing. */
   @media (max-width: 560px),
     (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
+    .row-action {
+      padding: 7px 14px;
+      font-size: var(--ledger-meta-size);
+    }
+
     .wide-actions {
       display: none;
     }
