@@ -10,7 +10,9 @@
 </script>
 
 <div class="ai-error-card">
-  <div class="ai-error-glyph" aria-hidden="true"><Icon name="face-stumped" /></div>
+  <div class="ai-error-glyph" aria-hidden="true">
+    <Icon name={repeatedFailure ? 'dottie-stumped' : 'dottie-another-idea'} />
+  </div>
   <h2>{repeatedFailure ? 'Still not working' : "Hmm, that didn't work"}</h2>
   <p class="ai-error-body">
     {repeatedFailure
@@ -50,21 +52,14 @@
   .ai-error-glyph {
     width: 72px;
     height: 72px;
-    border-radius: var(--radius-pill);
-    background: var(--brand-wash);
-    color: var(--brand-text);
     display: grid;
     place-items: center;
     margin-bottom: var(--space-4);
   }
 
   .ai-error-glyph :global([data-icon]) {
-    width: 40px;
-    height: 40px;
-  }
-  .ai-error-glyph :global(svg) {
-    color: var(--brand-text);
-    fill: none;
+    width: 100%;
+    height: 100%;
   }
 
   .ai-error-card h2 {

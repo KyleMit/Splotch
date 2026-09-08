@@ -31,7 +31,6 @@ export type IconName =
   | 'dottie-stumped'
   | 'dottie-sunny'
   | 'download'
-  | 'face-stumped'
   | 'feedback'
   | 'flag'
   | 'folder'
