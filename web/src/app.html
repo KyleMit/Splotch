@@ -84,10 +84,9 @@
          The theme-color meta above is the one value this script REPAINTS rather
          than stamps: the tag ships as THEME_COLORS.light, and every route needs
          it on the RESOLVED theme so the browser address bar and PWA status bar
-         match the page under them. Only the drawing route imports
-         state/appearance.svelte.ts, which owns that subscription for the app, so
-         off that route this script is the only thing that can follow the OS
-         preference — hence the change listener, which stands down whenever the
+         match the page under them. The drawing route and /design import
+         state/appearance.svelte.ts; other routes rely on this script to follow
+         the OS preference. The change listener stands down whenever the
          drawing surface is on screen (data-app-surface) because NotchBand tints
          the same tag with the active drawing color there. The colors mirror
          THEME_COLORS and the resolution mirrors resolveTheme(), both in

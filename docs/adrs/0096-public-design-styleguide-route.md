@@ -97,3 +97,15 @@ position and keyboard focus alone.
 The Light/Dark picker writes an explicit preference through the app's shared settings setter and
 reads its resolved appearance after hydration. A design-page selection therefore persists across
 reloads and drawing-page visits rather than acting as an ephemeral preview override.
+
+The explicit Light/Dark choices pin the inspected theme across OS appearance changes. The drawing
+app's quick Night Mode toggle instead uses `setResolvedTheme`, which can return to System when the
+requested appearance matches the OS. Keeping an inspected specimen stable is the reason this picker
+uses `setTheme`; the app's three-way appearance control can still restore System.
+
+This is a scoped exception to ADR-0071's decision to keep reactive appearance state out of
+standalone pages that only need themed browser chrome. `/design` needs a live, persistent theme
+editor. Independent A/B builds measured 243 additional startup bytes and two additional preloaded
+chunks, within the existing budget. The primitive specimens remain dynamically imported. The
+pre-paint script still handles first paint and other standalone routes; on `/design` the reactive
+appearance effect also keeps the theme-color meta aligned after changes.
