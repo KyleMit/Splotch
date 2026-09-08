@@ -40,7 +40,8 @@
   import { onMount } from 'svelte';
   import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
   import PageShell from '../page/PageShell.svelte';
-  import RuleLabel from '../page/RuleLabel.svelte';
+  import RuleLabel from '../design/RuleLabel.svelte';
+  import StatusMessage from '../design/StatusMessage.svelte';
   import InviteLedger from './InviteLedger.svelte';
 
   let {
@@ -161,146 +162,163 @@
   {/snippet}
 
   {#if !authed}
-    <RuleLabel>Sign in</RuleLabel>
-    {#if shownLoginError}
-      <div class="flash flash-error" role="alert">{shownLoginError}</div>
-    {/if}
-    <form onsubmit={handleLogin} class="add-form">
-      <input
-        type="password"
-        name="access-key"
-        placeholder="Admin access key"
-        autocomplete="current-password"
-        autocapitalize="off"
-        spellcheck="false"
-        required
-        bind:value={loginKey}
-      />
-      <button type="submit" class="cta" disabled={submitDisabled}>Sign in</button>
-    </form>
+    <section class="block">
+      <RuleLabel>Sign in</RuleLabel>
+      {#if shownLoginError}
+        <StatusMessage status="error">{shownLoginError}</StatusMessage>
+      {/if}
+      <form onsubmit={handleLogin} class="add-form sign-in-form">
+        <input
+          type="password"
+          name="access-key"
+          placeholder="Admin access key"
+          autocomplete="current-password"
+          autocapitalize="off"
+          spellcheck="false"
+          required
+          bind:value={loginKey}
+        />
+        <button type="submit" class="cta" disabled={submitDisabled}>Sign in</button>
+      </form>
+    </section>
   {:else}
-    {#if !persistent}
-      <div class="flash flash-warning" role="alert">
-        <strong>Netlify Blobs is unavailable.</strong> You're viewing a local-only copy seeded from
-        the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't be saved
-        — the change is either refused outright or lost on the next restart.
-      </div>
-    {/if}
+    <div class="admin-sections">
+      <section class="block">
+        <RuleLabel count={invites.length}>Access codes</RuleLabel>
+        {#if !persistent}
+          <StatusMessage status="warning">
+            <strong>Netlify Blobs is unavailable.</strong> You're viewing a local-only copy seeded
+            from the <code>ALLOWED_TOKENS_LIST</code> env var. Any codes you add or remove here won't
+            be saved — the change is either refused outright or lost on the next restart.
+          </StatusMessage>
+        {/if}
 
-    {#if shownFlash}
-      <div
-        class="flash"
-        class:flash-error={shownFlash.kind === 'error'}
-        class:flash-success={shownFlash.kind === 'success'}
-        role={shownFlash.kind === 'error' ? 'alert' : 'status'}
-      >
-        {shownFlash.text}
-      </div>
-    {/if}
+        {#if shownFlash}
+          <StatusMessage status={shownFlash.kind}>{shownFlash.text}</StatusMessage>
+        {/if}
 
-    <RuleLabel>Access codes · {invites.length}</RuleLabel>
+        <form onsubmit={handleAdd} class="add-form">
+          <input
+            type="text"
+            name="token"
+            placeholder="Add a code…"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            required
+            bind:value={newToken}
+          />
+          <button type="submit" class="cta" disabled={submitDisabled} aria-label="Add code">
+            <span class="add-label-full">Add code</span><span class="add-label-short">Add</span>
+          </button>
+        </form>
 
-    <form onsubmit={handleAdd} class="add-form">
-      <input
-        type="text"
-        name="token"
-        placeholder="Add a code…"
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-        required
-        bind:value={newToken}
-      />
-      <button type="submit" class="cta" disabled={submitDisabled} aria-label="Add code">
-        <span class="add-label-full">Add code</span><span class="add-label-short">Add</span>
-      </button>
-    </form>
-
-    <InviteLedger
-      {invites}
-      {busy}
-      {copied}
-      oncopy={copy}
-      onremove={(token) => run(() => onremove(token))}
-    />
-
-    {#if freeGrantStats}
-      <RuleLabel>Free generation grants · sample {freeGrantStats.sampledGrantCount}</RuleLabel>
-      {#if !freeGrantStats.persistent}
-        <div class="flash flash-warning" role="alert">
-          Free grant monitoring is using local memory and will reset with this server instance.
-        </div>
+        <InviteLedger
+          {invites}
+          {busy}
+          {copied}
+          oncopy={copy}
+          onremove={(token) => run(() => onremove(token))}
+        />
+      </section>
+      {#if freeGrantStats}
+        <section class="block">
+          <RuleLabel count={`sample ${freeGrantStats.sampledGrantCount}`}
+            >Free generation grants</RuleLabel
+          >
+          {#if !freeGrantStats.persistent}
+            <StatusMessage status="warning">
+              Free grant monitoring is using local memory and will reset with this server instance.
+            </StatusMessage>
+          {/if}
+          {#if freeGrantStats.grantSamplePartial}
+            <StatusMessage status="warning">
+              Grant metrics and activity are sampled from the first {freeGrantStats.grantSampleLimit}
+              records. Today's provider-start count is complete.
+            </StatusMessage>
+          {/if}
+          <dl class="grant-metrics">
+            <div>
+              <dt>Provider starts today</dt>
+              <dd>{freeGrantStats.dailyProviderStarts}/{freeGrantStats.dailyProviderStartLimit}</dd>
+            </div>
+            <div>
+              <dt>Sampled successes</dt>
+              <dd>{freeGrantStats.sampledSuccessful}</dd>
+            </div>
+            <div>
+              <dt>Sampled attempts</dt>
+              <dd>{freeGrantStats.sampledAttempts}</dd>
+            </div>
+            <div>
+              <dt>Sampled failures</dt>
+              <dd>{freeGrantStats.sampledFailures}</dd>
+            </div>
+            <div>
+              <dt>Sampled active</dt>
+              <dd>{freeGrantStats.sampledActiveGrants}</dd>
+            </div>
+            <div>
+              <dt>Sampled exhausted</dt>
+              <dd>{freeGrantStats.sampledExhaustedGrants}</dd>
+            </div>
+            <div>
+              <dt>Sampled in flight</dt>
+              <dd>{freeGrantStats.sampledActiveReservations}</dd>
+            </div>
+          </dl>
+          {#if freeGrantStats.recent.length > 0}
+            <div class="grant-table-wrap">
+              <table class="grant-table">
+                <thead>
+                  <tr>
+                    <th>Installation</th><th>Used</th><th>Attempts</th><th>Failures</th><th
+                      >Last failure</th
+                    >
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each freeGrantStats.recent as grant (grant.installation)}
+                    <tr>
+                      <td><code>{grant.installation}…</code></td>
+                      <td>{grant.successful}/{FREE_GENERATION_LIMIT}</td>
+                      <td>{grant.attempts}</td>
+                      <td>{grant.failures}</td>
+                      <td>{grant.lastFailureKind ?? '—'}</td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {/if}
+        </section>
       {/if}
-      {#if freeGrantStats.grantSamplePartial}
-        <div class="flash flash-warning" role="status">
-          Grant metrics and activity are sampled from the first {freeGrantStats.grantSampleLimit}
-          records. Today's provider-start count is complete.
-        </div>
-      {/if}
-      <dl class="grant-metrics">
-        <div>
-          <dt>Provider starts today</dt>
-          <dd>{freeGrantStats.dailyProviderStarts}/{freeGrantStats.dailyProviderStartLimit}</dd>
-        </div>
-        <div>
-          <dt>Sampled successes</dt>
-          <dd>{freeGrantStats.sampledSuccessful}</dd>
-        </div>
-        <div>
-          <dt>Sampled attempts</dt>
-          <dd>{freeGrantStats.sampledAttempts}</dd>
-        </div>
-        <div>
-          <dt>Sampled failures</dt>
-          <dd>{freeGrantStats.sampledFailures}</dd>
-        </div>
-        <div>
-          <dt>Sampled active</dt>
-          <dd>{freeGrantStats.sampledActiveGrants}</dd>
-        </div>
-        <div>
-          <dt>Sampled exhausted</dt>
-          <dd>{freeGrantStats.sampledExhaustedGrants}</dd>
-        </div>
-        <div>
-          <dt>Sampled in flight</dt>
-          <dd>{freeGrantStats.sampledActiveReservations}</dd>
-        </div>
-      </dl>
-      {#if freeGrantStats.recent.length > 0}
-        <div class="grant-table-wrap">
-          <table class="grant-table">
-            <thead>
-              <tr>
-                <th>Installation</th><th>Used</th><th>Attempts</th><th>Failures</th><th
-                  >Last failure</th
-                >
-              </tr>
-            </thead>
-            <tbody>
-              {#each freeGrantStats.recent as grant (grant.installation)}
-                <tr>
-                  <td><code>{grant.installation}…</code></td>
-                  <td>{grant.successful}/{FREE_GENERATION_LIMIT}</td>
-                  <td>{grant.attempts}</td>
-                  <td>{grant.failures}</td>
-                  <td>{grant.lastFailureKind ?? '—'}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {/if}
-    {/if}
+    </div>
   {/if}
 </PageShell>
 
 <style>
+  .admin-sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+
+  .block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .block :global(.status-message) {
+    margin: 0;
+  }
+
   .grant-metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: var(--space-3);
-    margin: 0 0 var(--space-5);
+    margin: 0;
   }
 
   .grant-metrics div {
@@ -325,7 +343,6 @@
 
   .grant-table-wrap {
     overflow-x: auto;
-    margin-bottom: var(--space-6);
   }
 
   .grant-table {
@@ -350,49 +367,6 @@
   .grant-table code {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
-  }
-
-  /* Flash messages */
-  .flash {
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--space-5);
-  }
-
-  .flash-success {
-    background: var(--success-wash);
-    color: var(--success-text);
-  }
-
-  .flash-error {
-    background: var(--danger-wash);
-    color: var(--danger-text);
-  }
-
-  /* Warning amber has no token pair yet — the persistence banner is the
-     product's only warning surface. The light values stay pinned on both
-     themes: the banner is its own surface, so its ink/wash contrast holds
-     regardless of the sheet behind it. */
-  .flash-warning {
-    background: #fffaeb;
-    color: #93600b;
-    border: 1px solid #fce5a8;
-    font-weight: var(--font-weight-medium);
-    line-height: 1.45;
-  }
-
-  .flash-warning strong {
-    font-weight: var(--font-weight-bold);
-  }
-
-  .flash-warning code {
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    background: #fdefc7;
-    padding: 1px 5px;
-    border-radius: var(--radius-sm);
   }
 
   /* Hero Sign out — the brand-wash ghost beside the H1. */
@@ -427,7 +401,17 @@
   .add-form {
     display: flex;
     gap: 10px;
-    margin-bottom: var(--space-5);
+  }
+
+  .sign-in-form {
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .sign-in-form .cta {
+    padding: 0 var(--space-6);
+    min-height: 44px;
   }
 
   .add-form input {
@@ -441,17 +425,11 @@
     border-radius: var(--radius-md);
     background: var(--surface);
     color: var(--text-strong);
-    transition:
-      border-color var(--duration-fast) ease,
-      box-shadow var(--duration-fast) ease;
+    transition: border-color var(--duration-fast) var(--ease-glide);
   }
 
   .add-form input:focus {
-    outline: none;
     border-color: var(--brand-solid);
-    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md). */
-    box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.18);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-solid) 18%, transparent);
   }
 
   /* The standalone pages' solid call to action — the same shape as /feedback's

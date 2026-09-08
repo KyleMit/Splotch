@@ -117,12 +117,9 @@
 {/if}
 
 <style>
-  /* The ledger — one bordered block of columned rows. Its type runs a step
-     finer than the app ramp (11/13/15px sit between the xs and sm steps) so
-     four columns fit the sheet; sizes from the approved redesign. */
   .ledger {
-    --ledger-columns: 1fr 100px 120px 240px;
-    --ledger-label-size: 11px;
+    --ledger-columns: minmax(0, 1fr) 100px 120px 272px;
+    --ledger-label-size: var(--font-size-xs);
     --ledger-meta-size: 13px;
     --ledger-count-size: 15px;
     /* The design system's interaction-target floor: every row action meets
@@ -137,7 +134,7 @@
   /* Without usage tracking (the native front door) the grid is just
      Code / Actions. */
   .ledger.no-usage {
-    --ledger-columns: 1fr 240px;
+    --ledger-columns: minmax(0, 1fr) 272px;
   }
 
   .ledger-head-row {
@@ -145,7 +142,7 @@
     grid-template-columns: var(--ledger-columns);
     gap: var(--space-2);
     align-items: center;
-    padding: 10px 20px;
+    padding: 10px var(--space-2) 10px var(--space-5);
     background: var(--surface-2);
     border-bottom: 1px solid var(--border);
   }
@@ -158,14 +155,12 @@
     color: var(--text-soft);
   }
 
-  /* 6px block padding, not the mock's 12px: the 44px action targets already
-     carry the row to the mock's ~56px height. */
   .invite {
     display: grid;
     grid-template-columns: var(--ledger-columns);
     gap: var(--space-2);
     align-items: center;
-    padding: 6px 20px;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
     border-bottom: 1px solid var(--border);
   }
 
@@ -254,14 +249,8 @@
     margin-inline: auto;
   }
 
-  /* Where the column grid stops fitting, the header row drops and each row
-     collapses to code-over-usage beside the action set. 800px is where the
-     sheet's content width (viewport minus PageShell's page padding and
-     gutters, ~684px here) still clears the fixed usage/action tracks, gaps,
-     and row padding (~524px) with a useful code column left over; below it
-     the code track gets squeezed toward zero. The short-landscape clause
-     carries that collapse through the largest supported phone without also
-     treating tablet or desktop windows as a phone layout. */
+  /* Stack usage beneath the code where four columns would squeeze it.
+     Short phone landscapes use the same layout before hiding extra actions. */
   @media (max-width: 800px),
     (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
     .ledger-head,
@@ -274,7 +263,6 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 16px;
     }
 
     .invite-info {
@@ -295,6 +283,7 @@
     /* Row-gap stays 0: the collapsed reveal line is a zero-height flex item
        on its own wrap line and must not open a gap under the first line. */
     .invite {
+      padding: 14px 16px;
       flex-wrap: wrap;
       gap: 0 10px;
     }
