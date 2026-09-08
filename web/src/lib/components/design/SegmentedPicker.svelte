@@ -251,6 +251,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    color: var(--text);
     gap: 6px;
     /* Concentric with the track: --radius-md outer minus the --space-1 inset. */
     border-radius: var(--radius-sm);
@@ -304,8 +305,8 @@
   }
 
   .segment .option.active {
-    background: var(--surface);
-    color: var(--text-strong);
+    background: var(--brand-solid);
+    color: var(--on-brand);
     box-shadow: var(--shadow-control);
   }
 
@@ -462,6 +463,7 @@
   }
 
   /* The chip's icon follows the chip ink so it flips to white when on. */
+  .segment .option.active :global(.picker-option-icon svg),
   .chip .option.active :global(.picker-option-icon svg) {
     fill: var(--on-brand);
   }

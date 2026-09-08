@@ -174,51 +174,52 @@
       <header class="settings-header">
         <h2>Settings</h2>
       </header>
-      <div class="settings-scroll" use:pinchTextZoom={textZoom}>
-        <div class="settings-zoom" bind:this={zoomTarget}>
-          <ul class="hub-list">
-            {#each SECTIONS as section, index (section.id)}
-              {@const toggle = HUB_TOGGLES[section.id]}
-              {@const unseen = hasSectionActivity(section.id)}
-              <li class:group-break={index === groupBreakIndex}>
-                <div class="hub-tile">
-                  <button
-                    class="hub-row"
-                    data-section={section.id}
-                    onclick={(event) => openSection(section.id, event.currentTarget)}
-                  >
-                    <span class="hub-icon">
-                      <SectionIcon icon={section.icon} class="hub-icon-svg" />
-                      <span class="section-activity-dot" class:unseen></span>
-                    </span>
-                    <span class="hub-text">
-                      <span class="hub-title">{section.label}</span>
-                      <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
-                    </span>
-                    {#if unseen}<span class="visually-hidden">new</span>{/if}
-                  </button>
-                  {#if toggle}
-                    <span class="hub-action">
-                      <span class="hub-split"></span>
-                      <ToggleSwitch
-                        id={toggle.id}
-                        label={toggle.label}
-                        checked={toggle.checked()}
-                        onToggle={toggle.onToggle}
-                        thumbIcon={toggle.thumbIcon?.()}
-                      />
-                    </span>
-                  {/if}
-                </div>
-              </li>
-            {/each}
-          </ul>
-        </div>
-        <!-- Last child of the scroller, and outside the zoom target: the cue
-             plants its sentinel at the end of the scrolling content, and keeps
-             its own size while a pinch rescales the reading content under it. -->
-        <ScrollCue />
-      </div>
+      <ScrollCue>
+        {#snippet children(end)}
+          <div class="settings-scroll" use:pinchTextZoom={textZoom}>
+            <div class="settings-zoom" bind:this={zoomTarget}>
+              <ul class="hub-list">
+                {#each SECTIONS as section, index (section.id)}
+                  {@const toggle = HUB_TOGGLES[section.id]}
+                  {@const unseen = hasSectionActivity(section.id)}
+                  <li class:group-break={index === groupBreakIndex}>
+                    <div class="hub-tile">
+                      <button
+                        class="hub-row"
+                        data-section={section.id}
+                        onclick={(event) => openSection(section.id, event.currentTarget)}
+                      >
+                        <span class="hub-icon">
+                          <SectionIcon icon={section.icon} class="hub-icon-svg" />
+                          <span class="section-activity-dot" class:unseen></span>
+                        </span>
+                        <span class="hub-text">
+                          <span class="hub-title">{section.label}</span>
+                          <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
+                        </span>
+                        {#if unseen}<span class="visually-hidden">new</span>{/if}
+                      </button>
+                      {#if toggle}
+                        <span class="hub-action">
+                          <span class="hub-split"></span>
+                          <ToggleSwitch
+                            id={toggle.id}
+                            label={toggle.label}
+                            checked={toggle.checked()}
+                            onToggle={toggle.onToggle}
+                            thumbIcon={toggle.thumbIcon?.()}
+                          />
+                        </span>
+                      {/if}
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+            {@render end()}
+          </div>
+        {/snippet}
+      </ScrollCue>
     {:else}
       <!-- Phone: drilled into a single section, with a back arrow. -->
       <header class="settings-header settings-header-sub">
@@ -227,12 +228,16 @@
         </button>
         <h2>{sectionHeading(activeSection)}</h2>
       </header>
-      <div class="settings-scroll" use:pinchTextZoom={textZoom}>
-        <div class="settings-zoom" bind:this={zoomTarget}>
-          <SectionBody id={activeSection} open={settingsModal.open} />
-        </div>
-        <ScrollCue />
-      </div>
+      <ScrollCue>
+        {#snippet children(end)}
+          <div class="settings-scroll" use:pinchTextZoom={textZoom}>
+            <div class="settings-zoom" bind:this={zoomTarget}>
+              <SectionBody id={activeSection} open={settingsModal.open} />
+            </div>
+            {@render end()}
+          </div>
+        {/snippet}
+      </ScrollCue>
     {/if}
   </div>
 </dialog>

@@ -328,7 +328,7 @@
     .policy-header {
       align-items: center;
       padding: 0 var(--space-5);
-      color: var(--text-soft);
+      color: var(--text);
       font-size: var(--font-size-xs);
       font-weight: var(--font-weight-bold);
       letter-spacing: 0.03em;
@@ -372,12 +372,16 @@
       position: relative;
     }
 
+    .policy-card :global(.policy-picker .option.active) {
+      background: var(--surface);
+    }
+
     .policy-card :global(.policy-picker .option::after) {
       content: '';
       width: 22px;
       height: 22px;
       box-sizing: border-box;
-      border: 3px solid var(--border-warm-strong);
+      border: 3px solid var(--icon-muted);
       border-radius: var(--radius-pill);
     }
 

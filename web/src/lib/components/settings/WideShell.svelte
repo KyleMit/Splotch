@@ -517,41 +517,42 @@
       onSelect={jumpToSection}
     />
   </div>
-  <div
-    class="settings-pane"
-    aria-busy={!fullyMounted}
-    use:pinchTextZoom={textZoom}
-    bind:this={paneEl}
-  >
-    <div class="settings-zoom" bind:this={zoomTarget}>
-      {#each mountedSections as section, index (section.id)}
-        <section
-          class="settings-section"
-          class:staged={index >= presentedCount}
-          data-section={section.id}
-          aria-labelledby={sectionHeadingId(section.id)}
-          use:registerElement={registerIn(sectionEls, section.id)}
-        >
-          <h3 class="settings-pane-title" id={sectionHeadingId(section.id)}>
-            {sectionHeading(section.id)}
-          </h3>
-          {#if section.id === 'parentCenter' && !parentCenterRevealed}
-            <ParentCenterLock onUnlock={unlockParentCenter} />
-          {:else}
-            <SectionBody
-              id={section.id}
-              open={settingsModal.open}
-              onSettled={() => (stagedContentSettled = true)}
-            />
-          {/if}
-        </section>
-      {/each}
-    </div>
-    <!-- Outside the zoom target: the cue is pane chrome, so it keeps its own
-         size while the reading content scales under it, and its sentinel still
-         marks the end of however tall that content has become. -->
-    <ScrollCue />
-  </div>
+  <ScrollCue>
+    {#snippet children(end)}
+      <div
+        class="settings-pane"
+        aria-busy={!fullyMounted}
+        use:pinchTextZoom={textZoom}
+        bind:this={paneEl}
+      >
+        <div class="settings-zoom" bind:this={zoomTarget}>
+          {#each mountedSections as section, index (section.id)}
+            <section
+              class="settings-section"
+              class:staged={index >= presentedCount}
+              data-section={section.id}
+              aria-labelledby={sectionHeadingId(section.id)}
+              use:registerElement={registerIn(sectionEls, section.id)}
+            >
+              <h3 class="settings-pane-title" id={sectionHeadingId(section.id)}>
+                {sectionHeading(section.id)}
+              </h3>
+              {#if section.id === 'parentCenter' && !parentCenterRevealed}
+                <ParentCenterLock onUnlock={unlockParentCenter} />
+              {:else}
+                <SectionBody
+                  id={section.id}
+                  open={settingsModal.open}
+                  onSettled={() => (stagedContentSettled = true)}
+                />
+              {/if}
+            </section>
+          {/each}
+        </div>
+        {@render end()}
+      </div>
+    {/snippet}
+  </ScrollCue>
 </div>
 
 <style>
