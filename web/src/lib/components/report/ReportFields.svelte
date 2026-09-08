@@ -32,8 +32,9 @@
   // the whole field set submits correctly with JavaScript unavailable. Inside
   // Settings there is no <form> around them and the names are inert.
   interface Props {
-    kind: ReportKind;
-    message: string;
+    mode?: 'feedback' | 'device-only';
+    kind?: ReportKind;
+    message?: string;
     includeDevice: boolean;
     /**
      * The collected snapshot. Bindable for ReportForm, which sends it as JSON
@@ -53,8 +54,9 @@
   }
 
   let {
-    kind = $bindable(),
-    message = $bindable(),
+    mode = 'feedback',
+    kind = $bindable('bug'),
+    message = $bindable(''),
     includeDevice = $bindable(),
     device = $bindable(null),
     honeypot = $bindable(''),
@@ -102,29 +104,31 @@
 </script>
 
 <div class="report-fields">
-  <SegmentedPicker
-    class="report-kind"
-    label="Report type"
-    options={REPORT_KINDS}
-    selected={kind}
-    onSelect={(value) => (kind = value)}
-    inputName="kind"
-  />
+  {#if mode === 'feedback'}
+    <SegmentedPicker
+      class="report-kind"
+      label="Report type"
+      options={REPORT_KINDS}
+      selected={kind}
+      onSelect={(value) => (kind = value)}
+      inputName="kind"
+    />
 
-  <label class="report-label" for="reportMessage">
-    {kind === 'bug' ? 'What went wrong?' : "What's your idea?"}
-  </label>
-  <textarea
-    id="reportMessage"
-    name="message"
-    class="report-textarea"
-    rows="4"
-    required
-    maxlength={MAX_REPORT_MESSAGE_LENGTH}
-    placeholder={kind === 'bug'
-      ? 'Describe what happened, and what you expected instead…'
-      : "Describe the feature or change you'd love to see…"}
-    bind:value={message}></textarea>
+    <label class="report-label" for="reportMessage">
+      {kind === 'bug' ? 'What went wrong?' : "What's your idea?"}
+    </label>
+    <textarea
+      id="reportMessage"
+      name="message"
+      class="report-textarea"
+      rows="4"
+      required
+      maxlength={MAX_REPORT_MESSAGE_LENGTH}
+      placeholder={kind === 'bug'
+        ? 'Describe what happened, and what you expected instead…'
+        : "Describe the feature or change you'd love to see…"}
+      bind:value={message}></textarea>
+  {/if}
 
   {#if kind === 'bug'}
     <div class="report-device" transition:slide={{ duration: DEVICE_REVEAL_SLIDE_MS }}>
@@ -161,22 +165,24 @@
   <!-- Last, so it sits directly above whichever submit button the host renders:
        it is the one line a reporter must not miss, and mid-form it read as
        fine print between two controls. -->
-  <p class="report-privacy-note">
-    Your report goes to our private support tracker. Please don't include personal details like
-    names or email addresses.
-  </p>
+  {#if mode === 'feedback'}
+    <p class="report-privacy-note">
+      Your report goes to our private support tracker. Please don't include personal details like
+      names or email addresses.
+    </p>
 
-  <!-- Honeypot: off-screen and aria-hidden, so a person never sees it but a
+    <!-- Honeypot: off-screen and aria-hidden, so a person never sees it but a
        form-filling bot does. A filled value is quietly dropped server-side. -->
-  <input
-    class="report-hp"
-    type="text"
-    name={REPORT_HONEYPOT_FIELD}
-    tabindex="-1"
-    autocomplete="off"
-    aria-hidden="true"
-    bind:value={honeypot}
-  />
+    <input
+      class="report-hp"
+      type="text"
+      name={REPORT_HONEYPOT_FIELD}
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+      bind:value={honeypot}
+    />
+  {/if}
 </div>
 
 <style>

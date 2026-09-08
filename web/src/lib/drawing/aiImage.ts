@@ -1,5 +1,8 @@
 import {
   aiResult,
+  AI_FAILURE_RETRY_LIMIT,
+  type AiFailureDetails,
+  setAiDrawing,
   restoreAiResult,
   startAiGeneration,
   setAiPreview,
@@ -161,6 +164,7 @@ async function exportUploadImage(
     closeAiResult();
     return null;
   }
+  setAiDrawing(runId, imageBlob);
   if (!drawing) setAiPreview(runId, URL.createObjectURL(imageBlob));
 
   // Upload a high-quality WebP rather than the PNG: a flat-color toddler drawing
@@ -205,7 +209,8 @@ function buildRequest(
 function applyResponse(
   runId: number,
   response: AiImageResponse,
-  reportToken: string | null
+  reportToken: string | null,
+  endpoint: AiFailureDetails['endpoint']
 ): { committedBlob: Blob } | null {
   switch (response.kind) {
     case 'started':
@@ -213,13 +218,21 @@ function applyResponse(
       // Unreachable: generateAiImage resolves both into a settled outcome before
       // it gets here, and the compiler holds that true if a third waiting state
       // is ever added.
-      failAiGeneration(runId, undefined, 'retry');
+      failAiGeneration(runId, undefined, 'retry', null, {
+        status: null,
+        endpoint,
+        message: 'The server did not finish the picture.',
+      });
       return null;
     case 'safety':
       failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety', reportToken);
       return null;
     case 'throttled':
-      failAiGeneration(runId, undefined, 'retry');
+      failAiGeneration(runId, undefined, 'retry', null, {
+        status: 429,
+        endpoint,
+        message: response.detail,
+      });
       console.error(
         `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
       );
@@ -244,7 +257,9 @@ function applyResponse(
       failAiGeneration(
         runId,
         undefined,
-        response.status >= FIRST_SERVER_ERROR_STATUS ? 'retry' : 'generic'
+        response.status >= FIRST_SERVER_ERROR_STATUS ? 'retry' : 'generic',
+        null,
+        { status: response.status, endpoint, message: response.detail }
       );
       return null;
   }
@@ -314,6 +329,7 @@ export async function generateAiImage({
     controller,
     style || null
   );
+  let failureEndpoint: AiFailureDetails['endpoint'] = '/api/generate-image';
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
@@ -339,6 +355,7 @@ export async function generateAiImage({
     // A started job is collected from a second endpoint, so the run's remaining
     // count and report token come from whichever response actually carries the
     // picture — not from the one that only accepted the work.
+    if (started.kind === 'started') failureEndpoint = '/api/generation-result';
     if (started.kind === 'started' && timeoutId !== undefined) {
       clearTimeout(timeoutId);
       timeoutId = undefined;
@@ -353,7 +370,12 @@ export async function generateAiImage({
           )
         : { response: started, headers: res.headers };
     applyFreeRemaining(settledHeaders);
-    const committed = applyResponse(runId, response, settledHeaders.get(REPORT_TOKEN_HEADER));
+    const committed = applyResponse(
+      runId,
+      response,
+      settledHeaders.get(REPORT_TOKEN_HEADER),
+      failureEndpoint
+    );
     if (committed && settings.autoSaveAiEnabled) {
       await autoSaveImages(committed.committedBlob, exported.preview, runId);
     }
@@ -363,11 +385,27 @@ export async function generateAiImage({
     failAiGeneration(
       runId,
       timedOut ? AI_TIMEOUT_MESSAGE : undefined,
-      timedOut ? 'retry' : 'generic'
+      timedOut ? 'retry' : 'generic',
+      null,
+      {
+        status: null,
+        endpoint: failureEndpoint,
+        message: timedOut ? AI_TIMEOUT_MESSAGE : 'The picture request could not complete.',
+      }
     );
     console.error(err);
   } finally {
     if (timeoutId !== undefined) clearTimeout(timeoutId);
     endAiGeneration(runId);
   }
+}
+
+export function retryAiImage() {
+  if (
+    !aiResult.error ||
+    aiResult.error.kind === 'safety' ||
+    aiResult.consecutiveFailures >= AI_FAILURE_RETRY_LIMIT
+  )
+    return;
+  return generateAiImage({ drawing: aiResult.drawing, style: aiResult.style ?? '' });
 }

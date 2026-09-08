@@ -1,8 +1,19 @@
 import type { StyleName } from '$lib/ai/styles';
 
+export const AI_FAILURE_RETRY_LIMIT = 2;
+
+export interface AiFailureDetails {
+  status: number | null;
+  endpoint: '/api/generate-image' | '/api/generation-result';
+  message: string;
+}
+
 export type AiErrorKind = 'generic' | 'safety' | 'retry';
 
 export interface AiResultState {
+  drawing: Blob | null;
+  consecutiveFailures: number;
+  failureDetails: AiFailureDetails | null;
   generating: boolean;
   open: boolean;
   // Tucked into the corner so the child can keep drawing while the picture is
@@ -24,6 +35,9 @@ export interface AiResultState {
 }
 
 export const aiResult: AiResultState = $state({
+  drawing: null,
+  consecutiveFailures: 0,
+  failureDetails: null,
   generating: false,
   open: false,
   minimized: false,
@@ -58,6 +72,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     resultState.resultType = null;
     resultState.reportToken = null;
     resultState.error = null;
+    resultState.failureDetails = null;
   }
 
   // Open the result modal in its loading state. `previewUrl` is an object URL of
@@ -72,11 +87,16 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     const id = ++nextAiGenerationId;
     activeAiGeneration = { id, controller };
     resetAiRunUi(previewUrl);
+    resultState.drawing = null;
     resultState.minimized = false;
     resultState.style = style;
     resultState.generating = true;
     resultState.open = true;
     return id;
+  }
+
+  function setAiDrawing(id: number, drawing: Blob) {
+    if (isAiGenerationActive(id) && resultState.open) resultState.drawing = drawing;
   }
 
   function isAiGenerationActive(id: number): boolean {
@@ -110,6 +130,8 @@ export function createAiGenerationMachine(resultState: AiResultState) {
       URL.revokeObjectURL(url);
       return false;
     }
+    resultState.consecutiveFailures = 0;
+    resultState.drawing = null;
     resultState.resultUrl = swapObjectUrl(resultState.resultUrl, url);
     resultState.resultType = imageType;
     resultState.reportToken = reportToken;
@@ -121,12 +143,15 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     id: number,
     message?: string,
     kind: AiErrorKind = 'generic',
-    reportToken: string | null = null
+    reportToken: string | null = null,
+    details: AiFailureDetails | null = null
   ) {
     if (!isAiGenerationActive(id) || !resultState.open) return;
     resultState.generating = false;
     resultState.reportToken = reportToken;
     resultState.error = { kind, message: message ?? null };
+    resultState.consecutiveFailures = kind === 'safety' ? 0 : resultState.consecutiveFailures + 1;
+    resultState.failureDetails = details;
   }
 
   function closeAiResult() {
@@ -136,6 +161,8 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     resultState.generating = false;
     resultState.minimized = false;
     resultState.style = null;
+    resultState.drawing = null;
+    resultState.consecutiveFailures = 0;
     resetAiRunUi(null);
   }
 
@@ -158,6 +185,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     isAiGenerationActive,
     endAiGeneration,
     setAiPreview,
+    setAiDrawing,
     finishAiGeneration,
     failAiGeneration,
     closeAiResult,
@@ -173,6 +201,7 @@ export const {
   isAiGenerationActive,
   endAiGeneration,
   setAiPreview,
+  setAiDrawing,
   finishAiGeneration,
   failAiGeneration,
   closeAiResult,

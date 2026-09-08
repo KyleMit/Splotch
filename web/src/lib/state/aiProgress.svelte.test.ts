@@ -29,6 +29,9 @@ function pendingFrames() {
 
 function createHarness() {
   const state: AiResultState = $state({
+    drawing: null,
+    consecutiveFailures: 0,
+    failureDetails: null,
     generating: false,
     open: false,
     minimized: false,

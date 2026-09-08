@@ -31,6 +31,9 @@
     'dottie-stumped',
     'dottie-sunny',
     'feedback',
+    // Stroke glyphs inherit their caller's ink instead of the modal fill override.
+    'face-stumped',
+    'refresh',
     'line-weight-brush',
     'line-weight-eraser',
     'line-weight-magic',

@@ -3,19 +3,27 @@
 
   interface Props {
     disabled?: boolean;
+    kind?: 'picture' | 'problem';
     /** Handed the tap so the caller can fly the parental gate in from the flag. */
     onclick: (event: MouseEvent & { currentTarget: HTMLElement }) => void;
   }
 
-  let { disabled = false, onclick }: Props = $props();
+  let { disabled = false, kind = 'picture', onclick }: Props = $props();
 </script>
 
-<div class="ai-result-disclosure">
-  <span>AI-generated picture</span>
-  <span class="ai-disclosure-separator" aria-hidden="true">·</span>
-  <button class="ai-report-flag" aria-label="Report this picture" {onclick} {disabled}>
+<div class="ai-result-disclosure" class:problem={kind === 'problem'}>
+  {#if kind === 'picture'}
+    <span>AI-generated picture</span>
+    <span class="ai-disclosure-separator" aria-hidden="true">·</span>
+  {/if}
+  <button
+    class="ai-report-flag"
+    aria-label={kind === 'problem' ? 'Report a problem' : 'Report this picture'}
+    {onclick}
+    {disabled}
+  >
     <Icon name="flag" class="ai-report-flag-icon" />
-    <span>Report</span>
+    <span>{kind === 'problem' ? 'Report a problem' : 'Report'}</span>
   </button>
 </div>
 
@@ -70,6 +78,12 @@
     .ai-result-disclosure {
       backdrop-filter: blur(12px) saturate(0.6) brightness(0.55);
     }
+  }
+
+  .ai-result-disclosure.problem {
+    left: auto;
+    right: 0;
+    transform: none;
   }
 
   .ai-disclosure-separator {

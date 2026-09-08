@@ -235,6 +235,12 @@ Opens a private GitHub support issue from the in-app "report a bug / suggest a f
 a deliberately tight budget (5/min, vs the oracles' 10). Every issue is labelled `user-report` plus
 `type:bug` / `type:feature`.
 
+The AI generation error card also uses this endpoint after its configured parental gate and a
+confirmation preview. It sends `kind: "bug"` with a message containing the error status, endpoint
+path (without query parameters or job IDs), bounded error message, consecutive failure count, app
+version/platform, and selected art style. Device details are opt-in; no drawing or AI credentials
+are attached. This is ordinary private feedback, not the image-evidence flow's 30-day retention.
+
 This endpoint is one of **two** front doors onto the same core. Validation, the honeypot, the issue
 Markdown, and the error wording all live in `$lib/server/report.ts`; the `/feedback` page's form
 action calls it too, and throttles into the same `reportBucket` so the pair shares one budget rather
