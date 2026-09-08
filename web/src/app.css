@@ -110,6 +110,7 @@ body {
    palette geometry source. */
 :root {
   --palette-landscape-width: 156px;
+  --corner-button-size: 48px;
   --action-btn-first-paint-count: 5;
   --action-btn-first-paint-gap-total: 48px;
   /* The portrait bar's counterpart, for chrome that has to start below it —
@@ -386,8 +387,8 @@ body {
   border: none;
   cursor: pointer;
   padding: var(--space-2);
-  width: 48px;
-  height: 48px;
+  width: var(--corner-button-size);
+  height: var(--corner-button-size);
   opacity: 0.4;
   transition: opacity var(--duration-base) ease;
   touch-action: manipulation;

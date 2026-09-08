@@ -83,10 +83,15 @@
   // Filled once by foreground demand or one at a time by the interaction-quiet
   // background pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
+  let InstallBanner = $state<Component | null>(null);
   let SettingsModal = $state<Component | null>(null);
   let hiddenOverlays = $state<BootHiddenOverlays | null>(null);
 
   function mountHiddenOverlay(key: BootHiddenOverlayKey, overlay: Component) {
+    if (key === 'installBanner') {
+      InstallBanner = overlay;
+      return;
+    }
     if (key === 'settings') {
       SettingsModal = overlay;
       return;
@@ -150,11 +155,46 @@
 </main>
 
 <ClearButton />
-<ActionsPanel />
-<SettingsButton />
+<div class="bottom-dock">
+  <ActionsPanel />
+  {#if InstallBanner}
+    <InstallBanner />
+  {/if}
+  <SettingsButton />
+</div>
 {#each overlays as Overlay (Overlay)}
   <Overlay />
 {/each}
 {#if SettingsModal}
   <SettingsModal />
 {/if}
+
+<style>
+  /* Fixed corner controls retain their drawer geometry; the dock reserves their
+     collapsed footprints while sharing the canvas-chrome stacking layer. */
+  .bottom-dock {
+    position: fixed;
+    z-index: var(--z-panel);
+    left: calc(var(--palette-landscape-width) + var(--safe-area-left));
+    right: var(--safe-area-right);
+    bottom: var(--safe-area-bottom);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: var(--space-2);
+    padding-inline: calc(var(--space-2) + var(--corner-button-size) + var(--space-4));
+    padding-bottom: var(--space-4);
+    pointer-events: none;
+  }
+  @media (orientation: portrait) {
+    .bottom-dock {
+      left: var(--safe-area-left);
+    }
+  }
+  @media (max-width: 599px) and (orientation: portrait) {
+    .bottom-dock {
+      padding-inline: var(--space-4);
+      padding-bottom: calc(var(--space-2) + var(--corner-button-size) + var(--space-2));
+    }
+  }
+</style>

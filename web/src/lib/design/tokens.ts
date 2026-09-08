@@ -149,11 +149,11 @@ export const scale = {
 // don't have.
 //
 // These are ONE ordered list but not one stacking context, so a bigger number
-// does not always win. Every value except zFlyout resolves in the root context
-// — notably .canvas-container is position: relative with no z-index, so it
+// does not always win. The bottom dock contains the Settings Button, Actions
+// Panel, and Install Banner; the panel in turn contains zFlyout. Other values
+// resolve in the root context — notably .canvas-container is position: relative with no z-index, so it
 // establishes nothing and its children compete directly with the fixed chrome.
-// zFlyout is the exception (see its note). The tiers are a convention, not a
-// containment guarantee.
+// The tiers are a convention, not a containment guarantee.
 export const zIndex = {
   // FullscreenToggle — the floor of that shared root context, not a separate
   // local scale. It clears DrawingCanvas's other root-level layers
@@ -168,15 +168,15 @@ export const zIndex = {
   zRipple: 500,
 
   zCornerButton: 900, // SettingsButton
-  zPanel: 901, // ActionsPanel
+  zPanel: 901, // Bottom dock and its ActionsPanel
   // app.css .flyout-menu (Brush Menu + Stroke Width Menu) — the one value here
-  // that is NOT in the root context. .actions-panel is position: fixed with a
+  // that is local to the Actions Panel. .actions-panel is position: fixed with a
   // z-index, so it establishes its own, and this only orders the flyout inside
   // that subtree. Hence the tie with zPanel is inert; hence also raising this
   // past zBanner would change nothing, because zPanel caps the whole subtree.
-  // Lifting a flyout over the banner means raising zPanel, not this.
+  // The banner hides while the drawer is open so the flyout remains reachable.
   zFlyout: 901,
-  zBanner: 950, // InstallBanner — takes over the corner controls while shown
+  zBanner: 950, // InstallBanner, inside the bottom dock
   zClearAcceptZone: 999, // below the button it rings, so the button stays on top
   zClearButton: 1000,
   // Pre-existing tie with zClearButton: both are fixed, and which one paints on

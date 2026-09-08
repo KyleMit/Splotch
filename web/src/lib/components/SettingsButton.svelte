@@ -26,6 +26,7 @@
 
 <style>
   .settings-button {
+    pointer-events: auto;
     position: fixed;
     bottom: calc(var(--space-2) + var(--safe-area-bottom));
     right: calc(var(--space-2) + var(--safe-area-right));

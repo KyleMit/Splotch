@@ -15,10 +15,10 @@
   } from '$lib/state/install.svelte';
   import { SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
+  import { layout } from '$lib/state/layout.svelte';
+  import { settings } from '$lib/state/settings.svelte';
 
-  // The banner sits above the corner controls (the actions toggle and the Settings Button), so
-  // it must not linger: once the child has kept drawing past it, clear it and
-  // hand off to the Install section in Settings with a short parting message.
+  // Continued drawing hands the install guide off to Settings with a short parting message.
   const PARTING_MESSAGE_MS = 4000;
 
   // Shared motion vocabulary for the banner's enter/exit transitions.
@@ -28,6 +28,7 @@
   const BANNER_SHRINK_EXIT_MS = 550;
   const PARTING_FADE_MS = 200;
   const HINT_FADE_MS = 160;
+  const PORTRAIT_PHONE_MAX_WIDTH_PX = 599;
 
   const INSTALL_PROMPT_COPY = {
     initial: {
@@ -60,6 +61,14 @@
   // place, and of the two only the chip is the way back to a picture already
   // paid for (ADR-0116). An install prompt is re-offerable after sustained use,
   // and Settings carries the same action.
+  const shareLocation = $derived(
+    layout.viewportWidth > 0 &&
+      layout.viewportWidth <= PORTRAIT_PHONE_MAX_WIDTH_PX &&
+      layout.orientation === 'portrait'
+      ? 'at the bottom of the screen'
+      : 'in the Safari toolbar'
+  );
+  const controlsOpen = $derived(settings.advancedControlsEnabled && settings.drawerOpen);
   const promptStage = $derived(installPromptStage());
   const promptCopy = $derived(INSTALL_PROMPT_COPY[promptStage ?? 'initial']);
   const visible = $derived(
@@ -103,9 +112,7 @@
       duration: BANNER_SHRINK_EXIT_MS,
       easing: cubicIn,
       css: (t: number, u: number) =>
-        // The resting position already carries translateX(-50%) — restate it so
-        // the transition's transform doesn't clobber the centering.
-        `transform: translateX(calc(-50% + ${u * dx}px)) translateY(${u * dy}px) scale(${t}); opacity: ${t}`,
+        `transform: translate(${u * dx}px, ${u * dy}px) scale(${t}); opacity: ${t}`,
     };
   }
 
@@ -128,6 +135,7 @@
 {#if visible || parting}
   <div
     class="install-banner"
+    hidden={controlsOpen}
     in:fly={{ y: BANNER_FLY_Y, duration: BANNER_ENTER_MS, easing: backOut }}
     out:bannerExit
   >
@@ -151,12 +159,21 @@
           <strong>{promptCopy.heading}</strong>
           <span class="install-sub">{promptCopy.detail}</span>
         </div>
-        <button class="install-cta" onclick={onPrimary} disabled={busy} type="button">
+        <button
+          class="install-cta"
+          class:expanded={showHint}
+          aria-expanded={install.mode === 'oneTap' ? undefined : showHint}
+          aria-controls={install.mode === 'oneTap' ? undefined : 'install-hint'}
+          onclick={onPrimary}
+          disabled={busy}
+          type="button"
+        >
           {#if install.mode === 'oneTap'}
             <Icon name="install-homescreen" class="install-cta-icon" />
             Install
           {:else}
-            How?
+            {showHint ? 'Hide' : 'How?'}
+            <Icon name="chevron-down" class="install-cta-icon install-chevron" aria-hidden="true" />
           {/if}
         </button>
         <button
@@ -168,16 +185,37 @@
       </div>
 
       {#if showHint && install.mode !== 'oneTap'}
-        <div class="install-hint" transition:fade={{ duration: HINT_FADE_MS }}>
+        <div id="install-hint" class="install-hint" transition:fade={{ duration: HINT_FADE_MS }}>
           {#if install.mode === 'ios'}
-            <p>
-              Tap <Icon name="share-ios" class="install-inline-icon" aria-label="Share" /> Share at the
-              bottom of the screen, then choose
-              <Icon name="add-homescreen" class="install-inline-icon" aria-hidden="true" />
-              <strong>"Add to Home Screen"</strong>. If you don't see it, tap
-              <Icon name="chevron-down" class="install-inline-icon" aria-hidden="true" />
-              <strong>"View More"</strong> first.
-            </p>
+            <ol role="list">
+              <li>
+                <span class="step-number" aria-hidden="true">1</span>
+                <span
+                  >Tap <span class="hint-term"
+                    ><Icon name="share-ios" class="install-inline-icon" aria-hidden="true" /> Share</span
+                  >
+                  {shareLocation}.</span
+                >
+              </li>
+              <li>
+                <span class="step-number" aria-hidden="true">2</span>
+                <span
+                  >Choose <span class="hint-term"
+                    ><Icon name="add-homescreen" class="install-inline-icon" aria-hidden="true" /> Add
+                    to Home Screen</span
+                  >.</span
+                >
+              </li>
+              <li>
+                <span class="step-number" aria-hidden="true">3</span>
+                <span
+                  >Don't see it? Tap <span class="hint-term"
+                    ><Icon name="chevron-down" class="install-inline-icon" aria-hidden="true" /> View
+                    More</span
+                  > first.</span
+                >
+              </li>
+            </ol>
           {:else}
             <p>
               Open the <strong>⋮</strong> menu, then tap
@@ -192,20 +230,18 @@
 
 <style>
   .install-banner {
-    position: fixed;
-    left: 50%;
-    bottom: calc(16px + var(--safe-area-bottom));
-    transform: translateX(-50%);
-    /* Above the corner controls (--z-panel, --z-corner-button): on phones
-       the banner overlaps them, and the auto-clear keeps that takeover short. */
+    position: relative;
     z-index: var(--z-banner);
-    width: min(92vw, 420px);
+    pointer-events: auto;
+    width: 100%;
+    max-width: 420px;
+    min-width: 0;
     box-sizing: border-box;
-    padding: 14px 16px;
+    padding: var(--space-4);
     background: var(--surface);
-    border: 2px solid var(--brand, #ab71e1);
+    border: var(--border-width) solid var(--brand);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-pop);
+    box-shadow: var(--float-shadow);
     font-family: inherit;
   }
 
@@ -214,10 +250,10 @@
     width: 40px;
     height: 40px;
     padding: 0;
-    border: 2px solid var(--border-warm);
+    border: var(--border-width) solid var(--border-warm-strong);
     border-radius: 50%;
-    background: var(--surface);
-    color: var(--text-soft);
+    background: var(--surface-2);
+    color: var(--text);
     font-size: var(--font-size-xl);
     line-height: 1;
     display: flex;
@@ -246,13 +282,13 @@
   .install-main {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .install-parting {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .install-parting p {
@@ -281,6 +317,8 @@
     flex-direction: column;
     text-align: left;
     line-height: 1.25;
+    gap: var(--space-1);
+    text-wrap: pretty;
   }
 
   .install-copy strong {
@@ -291,34 +329,34 @@
 
   .install-sub {
     color: var(--text-soft);
-    font-size: var(--font-size-xs);
-    margin-top: 2px;
+    font-size: var(--font-size-sm);
   }
 
   .install-cta {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
+    gap: var(--space-1);
+    height: 40px;
+    padding: 0 var(--space-3) 0 var(--space-4);
     border: none;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-pill);
     /* --brand-solid, not --brand: this fill carries a bold 16px label, below
        WCAG's large-text threshold, and --brand is only 3.4:1 under white. */
-    background: var(--brand-solid, #7c50bb);
-    color: var(--on-brand, #fff);
+    background: var(--brand-solid);
+    color: var(--on-brand);
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
     cursor: pointer;
     touch-action: manipulation;
     transition:
-      transform 0.12s ease,
-      filter 0.12s ease;
+      transform var(--duration-fast) var(--ease-glide),
+      background var(--duration-fast) var(--ease-glide);
   }
 
   @media (hover: hover) {
     .install-cta:hover {
-      filter: brightness(1.05);
+      background: var(--brand-solid-hover);
     }
   }
 
@@ -338,29 +376,75 @@
   }
 
   .install-hint {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-warm);
-  }
-
-  .install-hint p {
-    margin: 0;
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--border-warm);
     color: var(--text-soft);
     font-size: var(--font-size-sm);
-    line-height: 1.6;
+    line-height: 1.5;
   }
 
   :global(.install-inline-icon) {
     display: inline-flex;
-    width: 18px;
-    height: 18px;
-    vertical-align: -4px;
-    margin: 0 1px;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
   }
 
   /* The banner sits outside any .modal-shell, so re-ink its monochrome inline
      icons for the themed surface here (same rule as app.css's modal version). */
   .install-banner :global(:where([data-icon]:not(.icon-color):not(.icon-tinted)) svg) {
     fill: var(--icon-ink);
+  }
+  .install-hint p {
+    margin: 0;
+  }
+  .install-hint ol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--text);
+  }
+  .install-hint li {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+  }
+  .step-number {
+    flex: 0 0 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--brand-wash);
+    color: var(--brand-text);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+  }
+  .hint-term {
+    white-space: nowrap;
+    font-weight: var(--font-weight-bold);
+    color: var(--text-strong);
+  }
+  :global(.install-chevron) {
+    transition: transform var(--duration-base) var(--ease-glide);
+  }
+  .install-cta.expanded :global(.install-chevron) {
+    transform: rotate(180deg);
+  }
+  @media (max-width: 599px) and (orientation: portrait) {
+    .install-main {
+      flex-wrap: wrap;
+    }
+    .install-cta {
+      order: 1;
+      flex-basis: 100%;
+      height: 44px;
+      justify-content: center;
+      margin-top: var(--space-1);
+    }
   }
 </style>
