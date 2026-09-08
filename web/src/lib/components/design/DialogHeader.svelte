@@ -10,6 +10,7 @@
     onclose: () => void;
     closeLabel?: string;
     closeClass?: string;
+    /** Keeps iPad XCUITest capture selectors stable across header styling changes. */
     backClass?: string;
     closeFeedback?: boolean;
   }

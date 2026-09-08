@@ -155,29 +155,29 @@ don't offer.
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 
-| Global class (`app.css`)                       | Use for                                                                    |
-| ---------------------------------------------- | -------------------------------------------------------------------------- |
-| `.modal-dialog` / `.modal-fly-in`              | The dimmed, blurred `<dialog>` backdrop and the fly-in from the opening    |
-|                                                | button. Two exceptions take a plain deeper dim instead: every modal under  |
-|                                                | `prefers-reduced-transparency`, and the coloring picker alone under        |
-|                                                | `pointer: coarse` (its backdrop blurs the canvas stack while it retires;   |
-|                                                | ADR-0157). AiImageResult has its own open choreography, so it takes        |
-|                                                | `.modal-dialog` alone                                                      |
-| `.modal-shell`                                 | The centered modal card — surface, radius, shadow, and re-inked            |
-|                                                | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt, |
-|                                                | AiImageResult, ColoringBook, SettingsModal                                 |
-| `.dialog-header-control` / `.modal-close-icon` | The outlined disc and glyph used by `DialogHeader` for back and close.     |
-| `.step-number`                                 | Numbered steps in beta, Install settings, and Safari install instructions. |
-|                                                | Layouts own size and position; themed strengths own contrast.              |
-| `.corner-button` / `.corner-button-icon`       | Muted canvas-corner chrome: a 48px transparent button whose opacity and    |
-|                                                | icon tint step idle → hover → pressed. Drawer toggle (ActionsPanel),       |
-|                                                | Fullscreen Toggle, Settings Button; positioning and z-index stay           |
-|                                                | per-component                                                              |
-| `.flyout-menu` / `.flyout-option`              | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
-| `.white-stroke` / `.dark-stroke`               | Ink keylines ringing an icon's ink-colored parts so white ink reads on the |
-|                                                | white cards (black ring) and near-black ink reads on the dark ones         |
-|                                                | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger      |
-|                                                | buttons (BrushControl, ActionsPanel), BrushMenu, StrokeWidthMenu           |
+| Global class (`app.css`)                                            | Use for                                                                                                                    |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `.modal-dialog` / `.modal-fly-in`                                   | The dimmed, blurred `<dialog>` backdrop and the fly-in from the opening                                                    |
+|                                                                     | button. Two exceptions take a plain deeper dim instead: every modal under                                                  |
+|                                                                     | `prefers-reduced-transparency`, and the coloring picker alone under                                                        |
+|                                                                     | `pointer: coarse` (its backdrop blurs the canvas stack while it retires;                                                   |
+|                                                                     | ADR-0157). AiImageResult has its own open choreography, so it takes                                                        |
+|                                                                     | `.modal-dialog` alone                                                                                                      |
+| `.modal-shell`                                                      | The centered modal card — surface, radius, shadow, and re-inked                                                            |
+|                                                                     | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt,                                                 |
+|                                                                     | AiImageResult, ColoringBook, SettingsModal                                                                                 |
+| `.modal-close-btn` / `.dialog-header-control` / `.modal-close-icon` | Shared outlined discs and glyphs. `DialogHeader` keeps `.modal-close-btn` on close; it also supports standalone specimens. |
+| `.step-number`                                                      | Numbered steps in beta, Install settings, and Safari install instructions.                                                 |
+|                                                                     | Layouts own size and position; themed strengths own contrast.                                                              |
+| `.corner-button` / `.corner-button-icon`                            | Muted canvas-corner chrome: a 48px transparent button whose opacity and                                                    |
+|                                                                     | icon tint step idle → hover → pressed. Drawer toggle (ActionsPanel),                                                       |
+|                                                                     | Fullscreen Toggle, Settings Button; positioning and z-index stay                                                           |
+|                                                                     | per-component                                                                                                              |
+| `.flyout-menu` / `.flyout-option`                                   | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu                                                      |
+| `.white-stroke` / `.dark-stroke`                                    | Ink keylines ringing an icon's ink-colored parts so white ink reads on the                                                 |
+|                                                                     | white cards (black ring) and near-black ink reads on the dark ones                                                         |
+|                                                                     | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger                                                      |
+|                                                                     | buttons (BrushControl, ActionsPanel), BrushMenu, StrokeWidthMenu                                                           |
 
 They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
 pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.

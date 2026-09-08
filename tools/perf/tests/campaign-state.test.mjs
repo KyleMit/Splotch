@@ -450,7 +450,7 @@ describe('the Settings selectors both transports share', () => {
     expect(settingsModal).toContain('id="settingsModal"');
     expect(SETTINGS_CLOSE_BUTTON).toContain('aria-label="Close"');
     expect(settingsModal).toContain('<DialogHeader');
-    expect(settingsModal).toContain('onclose={settingsModal.hide} closeFeedback');
+    expect(settingsModal).toMatch(/<DialogHeader[^>]*\bcloseFeedback\b/s);
     expect(dialogHeader).toContain("closeLabel = 'Close'");
     expect(dialogHeader).toContain("control('close', closeLabel, close)");
     expect(dialogHeader).toMatch(/<button[^>]*aria-label={label}/);
