@@ -363,8 +363,6 @@
   }
 
   .file-path {
-    white-space: normal;
-    overflow-wrap: anywhere;
     font-weight: 400;
   }
 
