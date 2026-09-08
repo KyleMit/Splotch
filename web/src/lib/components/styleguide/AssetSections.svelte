@@ -41,7 +41,7 @@
   const spotFamilies: (IconFamily & { note: string })[] = [
     {
       label: 'release-*',
-      note: 'New, Improved, and Fixed headings in release notes and the changelog',
+      note: 'release-note headings, inked by currentColor',
       members: Object.values(RELEASE_SECTION_ICONS),
     },
     {
