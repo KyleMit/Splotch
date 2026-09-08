@@ -76,7 +76,7 @@ of things the repo already owns.
 * − The AI-authored static package's interactive drawing-screen mock was dropped rather than kept —
   the live app itself is the demo, so a parallel mock would only rot.
 
-## Amendment: keep the primitives in a separate chunk
+## Amendment (2026-09-08): keep the primitives in a separate chunk
 
 The route's universal `load` dynamically imports `PrimitiveSections` and returns the component to
 the page. Expanding the button specimens pushed the combined styleguide chunk past the existing
