@@ -111,6 +111,49 @@ test.describe('banner interactions', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
   });
 
+  for (const initiallyOpen of [true, false]) {
+    test(`drawing while the drawer is ${initiallyOpen ? 'persisted open' : 'opened over the banner'} preserves the install prompt`, async ({
+      page,
+    }) => {
+      await page.addInitScript(({ key, open }) => localStorage.setItem(key, String(open)), {
+        key: STORAGE_KEYS.drawerOpen,
+        open: initiallyOpen,
+      });
+      await gotoApp(page);
+      if (!initiallyOpen) {
+        for (let stroke = 0; stroke < 3; stroke += 1) {
+          await draw(page, [
+            { x: 230, y: 180 },
+            { x: 300, y: 195 },
+          ]);
+        }
+        await page.locator('.install-banner').waitFor({ timeout: BANNER_MOUNT_TIMEOUT_MS });
+        await page.getByRole('button', { name: 'Expand controls', exact: true }).click();
+      }
+      for (let stroke = 0; stroke < 8; stroke += 1) {
+        await draw(page, [
+          { x: 230, y: 180 },
+          { x: 300, y: 195 },
+        ]);
+      }
+      await expect(page.locator('.install-banner')).toBeHidden();
+      expect(
+        await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installDismissed)
+      ).not.toBe('true');
+      await page.getByRole('button', { name: 'Collapse controls', exact: true }).click();
+      await expect(
+        page.locator('.install-banner').getByRole('button', { name: 'How?' })
+      ).toBeVisible();
+      await draw(page, [
+        { x: 230, y: 180 },
+        { x: 300, y: 195 },
+      ]);
+      await expect(
+        page.locator('.install-banner').getByRole('button', { name: 'How?' })
+      ).toBeVisible();
+    });
+  }
+
   test('dismissal persists after reopening the app', async ({ page }) => {
     await earnBanner(page);
     await page.getByRole('button', { name: 'Not now' }).click();

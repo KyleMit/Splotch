@@ -10,6 +10,7 @@
     promptInstall,
     dismissInstall,
     armInstallAutoClear,
+    disarmInstallAutoClear,
     autoDismissInstallIfDue,
     installPromptStage,
   } from '$lib/state/install.svelte';
@@ -80,7 +81,11 @@
   );
 
   $effect(() => {
-    if (!visible || parting) return;
+    if (!visible || controlsOpen) {
+      disarmInstallAutoClear();
+      return;
+    }
+    if (parting) return;
     armInstallAutoClear();
     // A parent mid-interaction (reading the expanded hint, native dialog up)
     // outranks the countdown — only auto-clear an ignored banner.

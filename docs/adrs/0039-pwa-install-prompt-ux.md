@@ -66,7 +66,9 @@ Two surfaces consume the state:
    corner-button size and leaves empty space transparent to drawing input. The controls retain their
    fixed geometry so opening the Actions Panel does not move Settings or resize its drawer. Opening
    that panel temporarily hides the banner, preserving its expanded instructions for when the panel
-   closes. This replaces the original short-lived overlap of the corner controls.
+   closes. Hidden banners disarm their auto-clear countdown, so drawing behind the drawer cannot
+   consume an unseen prompt; showing the banner starts a fresh countdown. This replaces the original
+   short-lived overlap of the corner controls.
 
    Five strokes after the banner appears — proof the child kept drawing and no parent is engaging
    (the countdown pauses while the how-to is expanded or the native dialog is up) — it
