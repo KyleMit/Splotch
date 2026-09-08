@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { coverScrollportPadding, observeContentEnd } from '$lib/actions/scrollCue';
+  import {
+    coverScrollportPadding,
+    excludeScrollportGutter,
+    observeContentEnd,
+  } from '$lib/actions/scrollCue';
 
   import type { Snippet } from 'svelte';
 
@@ -25,7 +29,12 @@
 {#if children}
   <div class="scroll-cue-frame">
     {@render children(sentinel)}
-    <div class="scroll-cue overlay" class:retired={atEnd} aria-hidden="true"></div>
+    <div
+      class="scroll-cue overlay"
+      class:retired={atEnd}
+      aria-hidden="true"
+      use:excludeScrollportGutter
+    ></div>
   </div>
 {:else}
   {@render sentinel()}

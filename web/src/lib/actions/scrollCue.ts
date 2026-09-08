@@ -230,3 +230,24 @@ export function coverScrollportPadding(node: HTMLElement) {
     },
   };
 }
+
+/** A sibling fade must leave classic scrollbar chrome outside its painted area. */
+export function excludeScrollportGutter(node: HTMLElement) {
+  const scrollport = node.previousElementSibling;
+  if (!(scrollport instanceof HTMLElement)) return;
+
+  const measure = () => {
+    node.style.right = `${scrollport.offsetWidth - scrollport.clientWidth}px`;
+  };
+  measure();
+
+  const observer = new ResizeObserver(measure);
+  observer.observe(scrollport);
+
+  return {
+    destroy() {
+      observer.disconnect();
+      node.style.removeProperty('right');
+    },
+  };
+}
