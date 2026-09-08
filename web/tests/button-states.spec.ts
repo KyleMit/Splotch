@@ -6,6 +6,12 @@ for (const theme of ['light', 'dark'] as const) {
 
     test('disabled variants use neutral colors and ignore hover and press', async ({ page }) => {
       await page.goto('/design');
+      await expect(
+        page.locator('header').getByRole('radio', {
+          name: theme === 'light' ? 'Light' : 'Dark',
+          exact: true,
+        })
+      ).toHaveAttribute('aria-checked', 'true');
       const states = page.getByRole('group', { name: 'Button states', exact: true });
       await states.scrollIntoViewIfNeeded();
       const disabled = states.locator('button:disabled');
@@ -50,6 +56,12 @@ for (const theme of ['light', 'dark'] as const) {
     test('busy auto-plays on visibility, hands back control, and can replay', async ({ page }) => {
       await page.clock.install();
       await page.goto('/design');
+      await expect(
+        page.locator('header').getByRole('radio', {
+          name: theme === 'light' ? 'Light' : 'Dark',
+          exact: true,
+        })
+      ).toHaveAttribute('aria-checked', 'true');
       const card = page.getByRole('group', { name: 'Busy button', exact: true });
       const button = card.getByRole('button');
       await expect(button).toBeEnabled();
