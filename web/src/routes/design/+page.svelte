@@ -90,12 +90,11 @@
     if (!row) return;
     const bounds = sidebar.getBoundingClientRect();
     const entry = row.getBoundingClientRect();
+    const style = getComputedStyle(sidebar);
+    const top = bounds.top + parseFloat(style.paddingTop);
+    const bottom = bounds.bottom - parseFloat(style.paddingBottom);
     const offset =
-      entry.top < bounds.top
-        ? entry.top - bounds.top
-        : entry.bottom > bounds.bottom
-          ? entry.bottom - bounds.bottom
-          : 0;
+      entry.top < top ? entry.top - top : entry.bottom > bottom ? entry.bottom - bottom : 0;
     // Scroll only this pane: scrollIntoView can move the document and feed the scrollspy.
     if (offset) sidebar.scrollBy({ top: offset, behavior: 'instant' });
   }
@@ -128,20 +127,25 @@
           crossed = true;
         }
       }
+      const changed = active !== next;
       active = next;
       entered = crossed;
-      revealSidebarEntry(next);
+      if (changed) revealSidebarEntry(next);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(spy);
     };
+    const onResize = () => {
+      revealSidebarEntry(active);
+      onScroll();
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', onResize);
     onScroll();
     return () => {
       root.style.scrollBehavior = '';
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
       if (raf) cancelAnimationFrame(raf);
     };
   });
@@ -473,6 +477,7 @@
   }
 
   .part-divider {
+    scroll-margin-top: var(--heading-park);
     margin-top: 56px;
     padding-bottom: var(--space-2);
     border-bottom: var(--border-width) solid var(--border);

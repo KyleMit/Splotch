@@ -52,7 +52,7 @@
   h3 {
     margin: var(--space-6) 0 var(--space-1);
     color: var(--text-strong);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
   }
 

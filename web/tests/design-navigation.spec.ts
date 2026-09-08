@@ -134,3 +134,54 @@ test('page scrolling keeps the sidebar entry visible without moving focus or fee
     expect(new Set(positions).size).toBe(1);
   }
 });
+
+for (const width of [390, 1280]) {
+  test(`the retained primitives link clears the sticky header at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/design');
+    await selectTheme(page, 'Light');
+    await page.evaluate(() => document.fonts.ready);
+    await page.goto('/design#primitives');
+    await expect
+      .poll(() =>
+        page
+          .locator('#primitives')
+          .evaluate(
+            (el) =>
+              el.getBoundingClientRect().top -
+              document.querySelector('.site-header')!.getBoundingClientRect().bottom
+          )
+      )
+      .toBeGreaterThanOrEqual(0);
+  });
+}
+
+test('manual sidebar browsing lasts until the active section changes or the viewport resizes', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.goto('/design');
+  await selectTheme(page, 'Light');
+  await page.evaluate(() =>
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })
+  );
+  const sidebar = page.locator('.toc');
+  await expect(sidebar.locator('[data-section="dottie"]')).toHaveAttribute(
+    'aria-current',
+    'location'
+  );
+  await sidebar.evaluate((el) => el.scrollTo({ top: 0, behavior: 'instant' }));
+  const positions = await page.evaluate(async () => {
+    window.scrollBy({ top: -1, behavior: 'instant' });
+    const samples = [];
+    const observationFrames = 12;
+    for (let frame = 0; frame < observationFrames; frame++) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      samples.push(document.querySelector('.toc')!.scrollTop);
+    }
+    return samples;
+  });
+  expect([...new Set(positions)]).toEqual([0]);
+  await page.setViewportSize({ width: 1280, height: 650 });
+  await expect.poll(() => sidebar.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+});
