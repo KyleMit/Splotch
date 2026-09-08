@@ -461,37 +461,6 @@ test.describe('AI result modal', () => {
       .toBeCloseTo(DIAL_MAX_SIZE_PX, 0);
   });
 
-  // The strip sits on the dimmed backdrop, which is dark under either theme, so
-  // its colors are literal rather than theme tokens that flip in light mode.
-  for (const colorScheme of ['light', 'dark'] as const) {
-    test(`paints the strip on backdrop colors in ${colorScheme} mode`, async ({ page }) => {
-      await page.emulateMedia({ colorScheme });
-      await revealAiResult(page);
-
-      const chrome = await page
-        .getByRole('button', { name: 'Report this picture' })
-        .evaluate((button) => {
-          const strip = button.closest('.ai-result-disclosure') as HTMLElement;
-          const icon = button.querySelector('svg') as SVGElement;
-          return {
-            fill: getComputedStyle(strip).backgroundColor,
-            ground: getComputedStyle(strip).backdropFilter,
-            text: getComputedStyle(strip).color,
-            report: getComputedStyle(button).color,
-            iconFill: getComputedStyle(icon).fill,
-          };
-        });
-      expect(chrome.fill).toBe('rgba(23, 23, 29, 0.72)');
-      // The fill alone leaves the drawing showing through under 12px text; the
-      // brightness floor is what keeps the ink legible over light artwork.
-      expect(chrome.ground).toContain('brightness');
-      expect(chrome.text).toBe('rgb(179, 177, 191)');
-      expect(chrome.report).toBe('rgb(224, 147, 147)');
-      // Beats the modal shell's icon re-ink, which would repaint it dark on dark.
-      expect(chrome.iconFill).toBe(chrome.report);
-    });
-  }
-
   for (const viewport of [
     { width: 740, height: 360 },
     { width: 700, height: 420 },

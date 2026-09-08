@@ -69,6 +69,12 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
   polaroidPaper:
     'The print white every polaroid in the app is made of — pinned on both themes, because a photograph does not repaint at night.',
   polaroidInk: 'Brand ink written on --polaroid-paper, pinned to the paper it sits on.',
+  scrimInk: 'Disclosure captions on dark backdrop glass, unchanged by the app theme.',
+  scrimInkDanger: 'Report text and glyphs on dark backdrop glass, unchanged by the app theme.',
+  scrimInkSoft:
+    'Quieter separators and disabled report ink on --scrim-pill, without opacity dimming.',
+  scrimPill:
+    'Dark disclosure glass outside the modal card, paired with on-scrim inks in both themes.',
 };
 
 export const zIndexUsage: Record<keyof typeof zIndex, string> = {
@@ -90,6 +96,10 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
 };
 
 export const themeUsage: Record<keyof ThemeTokens, string> = {
+  stepWashStrength:
+    'Crayon contribution to a numbered-step disc: subtle on light sheets, lifted on dark grounds.',
+  stepInkStrength:
+    'Crayon contribution to a numbered-step digit: tinted in light mode, full --text-strong at night.',
   appBg: 'The ground behind parent-page content (never the drawing paper).',
   surface: 'Modal cards, the palette bar — the default card fill.',
   surface2: 'Inset panels and setting cards sitting on --surface.',

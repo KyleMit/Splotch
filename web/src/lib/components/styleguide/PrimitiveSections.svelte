@@ -1,4 +1,6 @@
 <script lang="ts">
+  import DialogHeader from '$lib/components/design/DialogHeader.svelte';
+  import Button from '$lib/components/design/Button.svelte';
   import { primitiveSections } from './primitiveSections';
   import FocusSpecimens from './FocusSpecimens.svelte';
   import RuleLabel from '$lib/components/design/RuleLabel.svelte';
@@ -24,6 +26,8 @@
     { value: 'dark', label: 'Dark', icon: 'theme-dark' },
     { value: 'system', label: 'System', icon: 'theme-auto', disabled: true },
   ];
+  let headerOpen = $state(true);
+  let headerDetail = $state(true);
   let demoTheme = $state<DemoTheme>('light');
   // The same options as the specimen above, so the pair reads as one control
   // with and without its words rather than as two unrelated pickers.
@@ -89,6 +93,32 @@
 <section class="primitive-specimens" aria-label="Primitive specimens">
   <!-- Each preview theme gets its own visibility-triggered busy demonstration. -->
   {#key theme}
+    <h3 id={primitiveSections.dialogHeader.id} data-sg-section>
+      Dialog header <code class="file-path">design/DialogHeader.svelte</code>
+    </h3>
+    <p class="sub-intro">
+      Back and close share a 44px target and <code>--icon-ink</code> glyphs. Back has a flat fill with
+      extra space before the title; close has a raised, outlined disc. The title can wrap; optional actions
+      sit beside close.
+    </p>
+    <div class="header-specimen">
+      {#if headerOpen}
+        <DialogHeader
+          onback={headerDetail ? () => (headerDetail = false) : undefined}
+          onclose={() => (headerOpen = false)}
+        >
+          <h4>{headerDetail ? 'Appearance' : 'Settings'}</h4>
+        </DialogHeader>
+      {:else}
+        <Button
+          onclick={() => {
+            headerOpen = true;
+            headerDetail = true;
+          }}>Show dialog header</Button
+        >
+      {/if}
+    </div>
+
     <ButtonSpecimens />
   {/key}
 
@@ -304,6 +334,20 @@
 </section>
 
 <style>
+  .header-specimen {
+    max-width: 375px;
+    padding: var(--space-4);
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .header-specimen h4 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-lg);
+  }
+
   section {
     margin-top: 48px;
   }
@@ -318,9 +362,7 @@
   code {
     font-size: var(--font-size-xs);
     color: var(--brand-text);
-    /* The full component paths have no break opportunities and outgrow the
-       narrowest phone viewports without this. */
-    overflow-wrap: anywhere;
+    white-space: nowrap;
   }
 
   .file-path {

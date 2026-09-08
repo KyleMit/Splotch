@@ -223,7 +223,8 @@
           <code>--font-size-xl</code> unless it heads a whole page. The primary action is the
           <code>Button</code> primitive's <code>brand</code> variant. Transitions run
           <code>--duration-base</code>; anything that pops in takes <code>--ease-pop</code>. Reach
-          past a default only when its rule below says so.
+          past a default only when its rule below says so. Text and glyphs are never dimmed with
+          opacity; change their color token instead.
         </p>
       </aside>
 
@@ -302,7 +303,12 @@
     text-wrap: pretty;
   }
 
+  .page :global(p code) {
+    white-space: nowrap;
+  }
+
   code {
+    white-space: nowrap;
     font-size: var(--font-size-xs);
     color: var(--brand-text);
   }
@@ -452,7 +458,7 @@
   .sources {
     margin: 10px 0 0;
     font-size: var(--font-size-xs);
-    color: var(--text-soft);
+    color: var(--text);
   }
 
   .defaults {

@@ -29,6 +29,21 @@
   </p>
 
   <div class="recipe-grid">
+    <figure class="recipe" id="numbered-steps">
+      <ol class="specimen numbered-steps">
+        <li><span class="step-number">1</span><span>Install as App</span></li>
+        <li><span class="step-number">2</span><span>Set up playtime</span></li>
+        <li><span class="step-number">3</span><span>Start drawing</span></li>
+      </ol>
+      <figcaption>
+        <h4>Numbered steps</h4>
+        <p class="recipe-tokens">
+          Shared <code>step-number</code> discs use <code>--step-wash-strength</code> and
+          <code>--step-ink-strength</code>. Light sheets keep a crayon tint; night digits use
+          <code>--text-strong</code> over a lifted disc. Layouts supply size and an optional crayon hue.
+        </p>
+      </figcaption>
+    </figure>
     <figure class="recipe">
       <div class="specimen card">
         <h5>Coloring Book</h5>
@@ -156,6 +171,21 @@
 </section>
 
 <style>
+  .numbered-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0;
+    color: var(--text-strong);
+  }
+
+  .numbered-steps li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
   section {
     margin-top: 48px;
   }

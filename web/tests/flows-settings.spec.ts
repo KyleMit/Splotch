@@ -666,3 +666,34 @@ test('reopening Settings mid-submit leaves the sent report to land', async ({ pa
   releaseReport();
   await expect.poll(() => reportOutcomes).toEqual(['finished']);
 });
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`phone drill-in header gives the title room beside back in ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.emulateMedia({ colorScheme });
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await modal.locator('.hub-row[data-section="appearance"]').click();
+    const back = modal.getByRole('button', { name: 'Back', exact: true });
+    const close = modal.getByRole('button', { name: 'Close', exact: true });
+    await expect(back).toBeVisible();
+    await expect(modal.locator('.modal-close-btn')).toHaveCount(1);
+    const buttons = await Promise.all([back.boundingBox(), close.boundingBox()]);
+    const card = await modal.boundingBox();
+    for (const button of buttons) {
+      expect(button!.width).toBe(44);
+      expect(button!.height).toBe(44);
+      expect(button!.x).toBeGreaterThanOrEqual(card!.x);
+      expect(button!.x + button!.width).toBeLessThanOrEqual(card!.x + card!.width);
+    }
+    expect(buttons[0]!.y).toBe(buttons[1]!.y);
+    const title = await modal
+      .getByRole('heading', { name: 'Appearance', exact: true })
+      .boundingBox();
+    expect(title!.x - buttons[0]!.x - buttons[0]!.width).toBeGreaterThanOrEqual(16);
+    await close.click();
+    await expect(modal).toBeHidden();
+  });
+}

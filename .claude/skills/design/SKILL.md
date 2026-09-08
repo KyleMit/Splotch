@@ -31,6 +31,9 @@ pierce Svelte's style scoping, so every component references them directly via `
    Notch Band, theme-color meta) import from `$lib/design/tokens` — see `lib/theme.ts`
    (`PAPER_COLORS`). Don't paste a hex into TypeScript.
 
+5. **Text and glyphs change token, never opacity**, when de-emphasized. Whole disabled controls
+   retain their component treatment.
+
 ## Voice & copy
 
 Two voices, one maker. Kid-adjacent copy is playful and warm ("Open it up, hand over the device, and
@@ -94,6 +97,10 @@ Foundations and only reach past a default when a rule says so.
 |           | root-context except                                                                                    |
 |           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under   |
 |           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                        |
+| Scrim     | `--scrim-ink`, `--scrim-ink-danger`, `--scrim-ink-soft`, `--scrim-pill` —                              |
+|           | fixed inks and glass for disclosure text on the dark backdrop in both themes.                          |
+| Steps     | `--step-wash-strength` / `--step-ink-strength` — numbered-step disc and digit mixes.                   |
+|           | Light sheets keep crayon tints; dark digits use full heading ink on lifted discs.                      |
 | Theme     | surfaces, borders, the three-step text ramp (`--text-strong` headings · `--text` body ·                |
 |           | `--text-soft` de-emphasized, pinned to hold 4.5:1 at small sizes), icon inks, brand/success/danger     |
 |           | washes, paper, float-card chrome — the full list with per-token docs is in `tokens.ts` (`ThemeTokens`) |
@@ -117,6 +124,8 @@ don't offer.
 
 | Primitive                | Use for                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------- |
+| `DialogHeader.svelte`    | Dialog back/title/actions/close row with 44px targets: flat back, raised outlined close.    |
+|                          | Omit children for a floating close; `closeFeedback` preserves Settings press feedback.      |
 | `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `lg` / `md` / `sm`        |
 |                          | (`lg` takes a 16px label, for a pair that is a screen's primary decision rather             |
 |                          | than chrome). Not for controls with a **selected state** — those are pickers, not           |
@@ -148,28 +157,29 @@ don't offer.
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 
-| Global class (`app.css`)                 | Use for                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------- |
-| `.modal-dialog` / `.modal-fly-in`        | The dimmed, blurred `<dialog>` backdrop and the fly-in from the opening    |
-|                                          | button. Two exceptions take a plain deeper dim instead: every modal under  |
-|                                          | `prefers-reduced-transparency`, and the coloring picker alone under        |
-|                                          | `pointer: coarse` (its backdrop blurs the canvas stack while it retires;   |
-|                                          | ADR-0157). AiImageResult has its own open choreography, so it takes        |
-|                                          | `.modal-dialog` alone                                                      |
-| `.modal-shell`                           | The centered modal card — surface, radius, shadow, and re-inked            |
-|                                          | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt, |
-|                                          | AiImageResult, ColoringBook, SettingsModal                                 |
-| `.modal-close-btn` / `.modal-close-icon` | The outlined 44px close disc in a modal's top-right corner — the same four |
-|                                          | modals                                                                     |
-| `.corner-button` / `.corner-button-icon` | Muted canvas-corner chrome: a 48px transparent button whose opacity and    |
-|                                          | icon tint step idle → hover → pressed. Drawer toggle (ActionsPanel),       |
-|                                          | Fullscreen Toggle, Settings Button; positioning and z-index stay           |
-|                                          | per-component                                                              |
-| `.flyout-menu` / `.flyout-option`        | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
-| `.white-stroke` / `.dark-stroke`         | Ink keylines ringing an icon's ink-colored parts so white ink reads on the |
-|                                          | white cards (black ring) and near-black ink reads on the dark ones         |
-|                                          | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger      |
-|                                          | buttons (BrushControl, ActionsPanel), BrushMenu, StrokeWidthMenu           |
+| Global class (`app.css`)                                            | Use for                                                                                                                    |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `.modal-dialog` / `.modal-fly-in`                                   | The dimmed, blurred `<dialog>` backdrop and the fly-in from the opening                                                    |
+|                                                                     | button. Two exceptions take a plain deeper dim instead: every modal under                                                  |
+|                                                                     | `prefers-reduced-transparency`, and the coloring picker alone under                                                        |
+|                                                                     | `pointer: coarse` (its backdrop blurs the canvas stack while it retires;                                                   |
+|                                                                     | ADR-0157). AiImageResult has its own open choreography, so it takes                                                        |
+|                                                                     | `.modal-dialog` alone                                                                                                      |
+| `.modal-shell`                                                      | The centered modal card — surface, radius, shadow, and re-inked                                                            |
+|                                                                     | monochrome icons. Width/max-height/overflow stay per-modal. AiImagePrompt,                                                 |
+|                                                                     | AiImageResult, ColoringBook, SettingsModal                                                                                 |
+| `.modal-close-btn` / `.dialog-header-control` / `.modal-close-icon` | Shared control sizing and glyphs. `DialogHeader` gives back a flat fill and keeps `.modal-close-btn` on raised close only. |
+| `.step-number`                                                      | Numbered steps in beta, Install settings, and Safari install instructions.                                                 |
+|                                                                     | Layouts own size and position; themed strengths own contrast.                                                              |
+| `.corner-button` / `.corner-button-icon`                            | Muted canvas-corner chrome: a 48px transparent button whose opacity and                                                    |
+|                                                                     | icon tint step idle → hover → pressed. Drawer toggle (ActionsPanel),                                                       |
+|                                                                     | Fullscreen Toggle, Settings Button; positioning and z-index stay                                                           |
+|                                                                     | per-component                                                                                                              |
+| `.flyout-menu` / `.flyout-option`                                   | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu                                                      |
+| `.white-stroke` / `.dark-stroke`                                    | Ink keylines ringing an icon's ink-colored parts so white ink reads on the                                                 |
+|                                                                     | white cards (black ring) and near-black ink reads on the dark ones                                                         |
+|                                                                     | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger                                                      |
+|                                                                     | buttons (BrushControl, ActionsPanel), BrushMenu, StrokeWidthMenu                                                           |
 
 They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
 pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.

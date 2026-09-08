@@ -138,6 +138,12 @@ export const scale = {
   // it sits on.
   polaroidPaper: '#fdfcf7',
   polaroidInk: '#7c50bb',
+
+  // Disclosure text sits on dark scrim glass under either app theme.
+  scrimInk: '#b3b1bf',
+  scrimInkDanger: '#e09393',
+  scrimInkSoft: '#a6a3b0',
+  scrimPill: 'rgba(23, 23, 29, 0.72)',
 } as const;
 
 // The cross-component stacking order, low to high. Scoped to "chrome" — the
@@ -206,6 +212,9 @@ export interface ThemeTokens {
   surface: string;
   /** setting cards, inset panels */
   surface2: string;
+  /** Crayon contribution to numbered-step discs and digits. */
+  stepWashStrength: string;
+  stepInkStrength: string;
   /** hover fill for quiet controls on any surface, paper-toned chrome included */
   surfaceHover: string;
   border: string;
@@ -331,6 +340,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     appBg: '#f5f5f5',
     surface: '#ffffff',
     surface2: '#f8f8f8',
+    stepWashStrength: '9%',
+    stepInkStrength: '45%',
     surfaceHover: '#f5f5f5',
     border: '#e0e0e0',
     borderWarm: '#ddd6cc',
@@ -370,6 +381,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
   dark: {
     appBg: '#17171d',
     surface: '#23232b',
+    stepWashStrength: '24%',
+    stepInkStrength: '0%',
     surface2: '#2d2d37',
     surfaceHover: '#33333e',
     border: '#3d3d49',
@@ -418,6 +431,8 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   appBg: true,
   surface: true,
   surface2: true,
+  stepWashStrength: false,
+  stepInkStrength: false,
   surfaceHover: true,
   border: true,
   borderWarm: true,

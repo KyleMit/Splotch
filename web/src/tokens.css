@@ -54,6 +54,10 @@
   --clear-gradient-rest: linear-gradient(135deg, #ff6b6b, #ee5a6f);
   --polaroid-paper: #fdfcf7;
   --polaroid-ink: #7c50bb;
+  --scrim-ink: #b3b1bf;
+  --scrim-ink-danger: #e09393;
+  --scrim-ink-soft: #a6a3b0;
+  --scrim-pill: rgba(23, 23, 29, 0.72);
 
   --z-canvas-chrome: 4;
   --z-clear-preview: 400;
@@ -73,6 +77,8 @@
   --app-bg: #f5f5f5;
   --surface: #ffffff;
   --surface-2: #f8f8f8;
+  --step-wash-strength: 9%;
+  --step-ink-strength: 45%;
   --surface-hover: #f5f5f5;
   --border: #e0e0e0;
   --border-warm: #ddd6cc;
@@ -133,6 +139,8 @@
   color-scheme: dark;
   --app-bg: #17171d;
   --surface: #23232b;
+  --step-wash-strength: 24%;
+  --step-ink-strength: 0%;
   --surface-2: #2d2d37;
   --surface-hover: #33333e;
   --border: #3d3d49;
@@ -195,6 +203,8 @@
     color-scheme: dark;
     --app-bg: #17171d;
     --surface: #23232b;
+    --step-wash-strength: 24%;
+    --step-ink-strength: 0%;
     --surface-2: #2d2d37;
     --surface-hover: #33333e;
     --border: #3d3d49;

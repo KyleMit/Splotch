@@ -45,20 +45,10 @@
     height: var(--report-strip-height);
     padding: 0 14px;
     border-radius: var(--radius-pill);
-    /* The strip sits on the dimmed backdrop, which is dark in both themes
-       (--modal-dialog::backdrop), so these colors are literal rather than theme
-       tokens that would flip to dark ink on dark glass in light mode.
-
-       Whatever is on the page is still showing through that backdrop, though,
-       and under 12px text its bleed reads as muddiness rather than depth. So
-       the pill lays down its own quiet ground: blur to erase the shape still
-       coming through, saturate to drop the color cast bright artwork throws
-       over the ink, and brightness to floor the ground dark however light that
-       artwork is — the fill alone leaves the ink riding whatever is behind it.
-       The ground itself is applied below; this fill is heavy enough to stay
-       legible on its own where the engine can't paint it. */
-    background: rgba(23, 23, 29, 0.72);
-    color: #b3b1bf;
+    /* The backdrop stays dark in both themes; on-scrim tokens keep the pill
+       and its ink independent of the modal card's theme. */
+    background: var(--scrim-pill);
+    color: var(--scrim-ink);
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
     line-height: 1;
@@ -87,7 +77,7 @@
   }
 
   .ai-disclosure-separator {
-    opacity: 0.5;
+    color: var(--scrim-ink-soft);
   }
 
   .ai-report-flag {
@@ -107,7 +97,7 @@
     gap: var(--space-1);
     border: none;
     background: none;
-    color: #e09393;
+    color: var(--scrim-ink-danger);
     cursor: pointer;
     font: inherit;
     touch-action: manipulation;
@@ -125,7 +115,7 @@
 
   .ai-report-flag:disabled {
     cursor: default;
-    opacity: 0.5;
+    color: var(--scrim-ink-soft);
   }
 
   :global(.ai-report-flag-icon) {

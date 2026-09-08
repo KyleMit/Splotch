@@ -90,6 +90,18 @@
         },
       ] satisfies ColorChip[],
     },
+    {
+      label: 'On scrim · both themes',
+      chips: (['scrimInk', 'scrimInkDanger', 'scrimInkSoft', 'scrimPill'] as const).map(
+        (key): ColorChip => ({
+          varName: toCssVarName(key),
+          fill: cssVar(key),
+          light: scale[key],
+          dark: scale[key],
+          usage: scaleUsage[key],
+        })
+      ),
+    },
     themeFamily('Ground & surfaces', ['appBg', 'surface', 'surface2', 'surfaceHover']),
     themeFamily('Text ink', ['textStrong', 'text', 'textSoft', 'labelInk']),
     themeFamily('Icon ink', ['iconInk', 'iconMuted']),
@@ -203,19 +215,21 @@
   code {
     font-size: var(--font-size-xs);
     color: var(--brand-text);
-    overflow-wrap: anywhere;
+
+    white-space: nowrap;
   }
 
   /* --text-soft is pinned to hold 4.5:1 at these 12px sizes on the page
      ground (the axe scan in a11y.spec.ts enforces it). */
-  .value,
-  .hint {
+  .value {
     font-size: var(--font-size-xs);
     color: var(--text-soft);
+    line-height: 1.45;
   }
 
-  .value {
-    line-height: 1.45;
+  .hint {
+    font-size: var(--font-size-xs);
+    color: var(--text);
   }
 
   .family-grid {
@@ -306,6 +320,11 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .non-color-row code {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .non-color-row {

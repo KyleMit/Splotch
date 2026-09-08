@@ -419,15 +419,8 @@
     align-items: flex-start;
   }
   .step-number {
-    flex: 0 0 20px;
-    height: 20px;
-    display: grid;
-    place-items: center;
-    border-radius: var(--radius-pill);
-    background: var(--brand-wash);
-    color: var(--brand-text);
+    --step-number-size: 20px;
     font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-bold);
   }
   .hint-term {
     white-space: nowrap;

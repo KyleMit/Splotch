@@ -16,8 +16,8 @@
   .steps {
     /* The wash reproduces the light sheet's hand-tuned tints. The ink keeps every
        crayon comfortably above WCAG AA on that wash in both themes. */
-    --step-wash-strength: 9%;
-    --step-ink-strength: 45%;
+    --card-wash-strength: 9%;
+    --card-ink-strength: 45%;
 
     /* Each rail segment bridges its step to the next numeral, so the gap and
        numeral geometry are named together rather than tuned independently. */

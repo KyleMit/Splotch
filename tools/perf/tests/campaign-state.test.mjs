@@ -438,7 +438,8 @@ describe('resolved theme expression', () => {
 describe('the Settings selectors both transports share', () => {
   const source = (path) => readFileSync(join(ROOT, 'web', 'src', 'lib', path), 'utf8');
   const settingsModal = source('components/SettingsModal.svelte');
-  const pressFeedbackCloseButton = source('components/PressFeedbackCloseButton.svelte');
+  const dialogHeader = source('components/design/DialogHeader.svelte');
+  const coloringBook = source('components/ColoringBook.svelte');
   const settingsButton = source('components/SettingsButton.svelte');
   const compactShell = source('components/settings/CompactShell.svelte');
   const appearanceSection = source('components/settings/AppearanceSection.svelte');
@@ -448,8 +449,17 @@ describe('the Settings selectors both transports share', () => {
     expect(SETTINGS_MODAL).toBe('#settingsModal');
     expect(settingsModal).toContain('id="settingsModal"');
     expect(SETTINGS_CLOSE_BUTTON).toContain('aria-label="Close"');
-    expect(settingsModal).toContain('<PressFeedbackCloseButton');
-    expect(pressFeedbackCloseButton).toMatch(/<button[^>]*aria-label="Close"/);
+    expect(settingsModal).toContain('<DialogHeader');
+    expect(settingsModal).toMatch(/<DialogHeader[^>]*\bcloseFeedback\b/s);
+    expect(dialogHeader).toContain("closeLabel = 'Close'");
+    expect(dialogHeader).toContain("control('close', closeLabel, close)");
+    expect(dialogHeader).toMatch(/<button[^>]*aria-label={label}/);
+  });
+
+  it('keeps the back selectors used by the iPad capture transport', () => {
+    expect(settingsModal).toContain('backClass="settings-back"');
+    expect(coloringBook).toContain('backClass="coloring-back-button"');
+    expect(dialogHeader).toContain('dialog-back ${backClass}');
   });
 
   it('finds the button that opens it', () => {

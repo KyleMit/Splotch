@@ -23,7 +23,7 @@ for (const theme of ['light', 'dark'] as const) {
     test('disabled variants use neutral colors and ignore hover and press', async ({ page }) => {
       await page.goto('/design');
       await expect(
-        page.locator('header').getByRole('radio', {
+        page.locator('.site-header').getByRole('radio', {
           name: theme === 'light' ? 'Light' : 'Dark',
           exact: true,
         })
@@ -73,7 +73,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.clock.install();
       await page.goto('/design');
       await expect(
-        page.locator('header').getByRole('radio', {
+        page.locator('.site-header').getByRole('radio', {
           name: theme === 'light' ? 'Light' : 'Dark',
           exact: true,
         })
@@ -100,7 +100,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(button).toBeEnabled();
       await expect(button).toHaveText('Send report');
       await expect(button.locator('.ring')).toHaveCount(0);
-      await page.locator('header').scrollIntoViewIfNeeded();
+      await page.locator('.site-header').scrollIntoViewIfNeeded();
       await card.scrollIntoViewIfNeeded();
       await expect(button).toBeEnabled();
       await button.click();
@@ -126,7 +126,7 @@ test('changing the preview theme gives its busy specimen one auto-play', async (
   await expect(card.getByRole('button')).toBeDisabled();
   await page.clock.fastForward(10_000);
   await expect(card.getByRole('button')).toBeEnabled();
-  await page.locator('header').getByRole('radio', { name: 'Dark', exact: true }).click();
+  await page.locator('.site-header').getByRole('radio', { name: 'Dark', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await card.scrollIntoViewIfNeeded();
   await expect(card.getByRole('button')).toHaveAttribute('aria-busy', 'true');
