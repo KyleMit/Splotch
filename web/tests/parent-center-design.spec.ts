@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { gotoApp, openSettingsModal } from './helpers';
-import { PARENTAL_GATE_FEATURES } from '../src/lib/state/parentalGate.svelte';
+
+const POLICY_COUNT = 5;
 
 test('every matrix selection nests inside its track on a portrait tablet', async ({ page }) => {
   await page.setViewportSize({ width: 1032, height: 1376 });
@@ -10,7 +11,7 @@ test('every matrix selection nests inside its track on a portrait tablet', async
   await settings.locator('button[data-section="parentCenter"]').click();
   await expect(settings.locator('.policy-header')).toBeVisible();
   const tracks = settings.locator('.policy-picker');
-  await expect(tracks).toHaveCount(PARENTAL_GATE_FEATURES.length);
+  await expect(tracks).toHaveCount(POLICY_COUNT);
   const insets = await tracks.evaluateAll((nodes) =>
     nodes.map((track) => {
       const outer = track.getBoundingClientRect();
@@ -27,6 +28,12 @@ test('every matrix selection nests inside its track on a portrait tablet', async
     })
   );
   expect(insets).toEqual(
-    PARENTAL_GATE_FEATURES.map(() => ({ width: 180, left: 4, right: 4, top: 4, bottom: 4 }))
+    Array.from({ length: POLICY_COUNT }, () => ({
+      width: 180,
+      left: 4,
+      right: 4,
+      top: 4,
+      bottom: 4,
+    }))
   );
 });
