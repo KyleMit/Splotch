@@ -1,4 +1,5 @@
 import { compactSettingsActionLabel } from './action-applicability.mjs';
+import { frameStampDivergence } from './frame-stamps.mjs';
 import { percentile } from './real-screen-stats.mjs';
 
 export const ACTION_FRAME_P95_GATE_MS = 20;
@@ -314,10 +315,13 @@ function activityTimes(action) {
   return times.filter((time) => time >= 0).sort((left, right) => left - right);
 }
 
-export function scoredActionFrameGaps(action) {
-  if (!action.postActionFrames) {
-    return action.postActionFrameGapsMs ?? action.frameGapsMs ?? [];
-  }
+// The action-owned frames of one sample — every frame inside a window opened
+// by action-owned activity, a visual effect, or an over-gate gap, and the
+// settle tail after it. Selection reads only the scheduled channel (`gapMs`),
+// so which frames are scored is the same whether or not a frame carries the
+// actual clock (ADR-0163).
+function scoredActionFrames(action) {
+  if (!action.postActionFrames) return [];
 
   const activities = activityTimes(action);
   const scored = [];
@@ -337,7 +341,7 @@ export function scoredActionFrameGaps(action) {
     }
     if (settleFramesRemaining === 0) continue;
 
-    scored.push(frame.gapMs);
+    scored.push(frame);
     if (frame.visualEffectsActive || frame.gapMs > ACTION_FRAME_MAX_GATE_MS) {
       settleFramesRemaining = ACTION_SETTLE_TAIL_FRAMES;
     } else {
@@ -345,6 +349,13 @@ export function scoredActionFrameGaps(action) {
     }
   }
   return scored;
+}
+
+export function scoredActionFrameGaps(action) {
+  if (!action.postActionFrames) {
+    return action.postActionFrameGapsMs ?? action.frameGapsMs ?? [];
+  }
+  return scoredActionFrames(action).map((frame) => frame.gapMs);
 }
 
 export function summarizeActionGroup(actions, label, allowances = {}, firstFrameNaFor = null) {
@@ -387,6 +398,10 @@ export function summarizeActionGroup(actions, label, allowances = {}, firstFrame
     (firstFrameNa || firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS) &&
     frames.p95 <= (gate.p95[label] ?? ACTION_FRAME_P95_GATE_MS) &&
     !maxBreachConfirmed;
+  // Informational only, and absent from a legacy group so its summary keeps
+  // the exact shape it always had (tools/perf/tests/action-frame-stamps.test.mjs
+  // holds the committed corpus to that byte for byte).
+  const frameStamps = frameStampDivergence(scoredActions.flatMap(scoredActionFrames), maxGate);
   return {
     count: scoredActions.length,
     totalCount: actions.length,
@@ -398,6 +413,7 @@ export function summarizeActionGroup(actions, label, allowances = {}, firstFrame
       scored: frameGaps.length,
       raw: rawFrameGaps.length,
     },
+    ...(frameStamps ? { frameStamps } : {}),
     passed,
   };
 }
@@ -435,6 +451,10 @@ export function actionRows(summaries) {
     'post max': summary.frames.max,
     'raw max': summary.frames.raw.max,
     'scored/raw frames': `${summary.frameSamples.scored}/${summary.frameSamples.raw}`,
+    // The actual-clock channel beside the scored one (ADR-0163): attribution,
+    // never part of the verdict.
+    'actual p95': summary.frameStamps?.actual.p95 ?? 'n/a',
+    'hidden overruns': summary.frameStamps?.hiddenOverruns ?? 'n/a',
     verdict: summary.passed ? 'PASS' : 'FAIL',
   }));
 }

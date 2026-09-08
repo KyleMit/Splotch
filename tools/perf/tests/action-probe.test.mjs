@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
+import { DUAL_FRAME_STAMP_EPOCH } from '../lib/frame-stamps.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js'), 'utf8');
 
@@ -82,6 +83,79 @@ describe('action probe visual-effect attribution', () => {
       false,
       false,
     ]);
+  });
+});
+
+// A vsync grid the test owns on both clocks: each tick hands the pending rAF
+// callbacks the next scheduled stamp, and `performance.now()` inside them
+// answers that stamp plus however late the callback is said to have run.
+function installVsyncClock({ intervalMs = 16.7 } = {}) {
+  let callbacks = [];
+  let vsync = 0;
+  let now = 0;
+  const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => now);
+  vi.stubGlobal('requestAnimationFrame', (callback) => callbacks.push(callback));
+  return {
+    nowSpy,
+    tick(lateMs = 0) {
+      vsync += intervalMs;
+      now = vsync + lateMs;
+      const pending = callbacks;
+      callbacks = [];
+      nowSpy.mockClear();
+      for (const callback of pending) callback(vsync);
+      return nowSpy.mock.calls.length;
+    },
+    at(ms) {
+      now = ms;
+    },
+  };
+}
+
+describe('action probe frame stamps (ADR-0163)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('declares the dual-channel epoch the scorer’s constant names', () => {
+    vi.stubGlobal('requestAnimationFrame', vi.fn());
+    Function(ACTION_PROBE)();
+    expect(window.__actionProbe.frameStampEpoch).toBe(DUAL_FRAME_STAMP_EPOCH);
+  });
+
+  it('records the scheduled stamp and the actual callback time for every frame, at one clock read each', () => {
+    const clock = installVsyncClock();
+    Function(ACTION_PROBE)();
+    clock.tick();
+    clock.tick();
+
+    const button = document.createElement('button');
+    button.id = 'night-mode';
+    document.body.append(button);
+    window.__actionProbe.begin('toggle', '#night-mode', ['click']);
+    clock.at(33.4 + 2);
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // The issue-1696 shape: one callback runs 20 ms after its vsync, the next
+    // right behind it. The scheduled channel stays a clean grid throughout.
+    const clockReadsPerFrame = [clock.tick(0), clock.tick(20), clock.tick(4), clock.tick(0)];
+    expect(clockReadsPerFrame).toEqual([1, 1, 1, 1]);
+
+    clock.at(150);
+    const sample = window.__actionProbe.finish();
+    expect(sample.frameStampEpoch).toBe(DUAL_FRAME_STAMP_EPOCH);
+    // The first frame after the click (scheduled 50.1) is the first-frame
+    // reading, and stays a scheduled-clock figure; it straddles the action, so
+    // the post-action frames are the three that start after it.
+    expect(sample.firstFrameMs).toBeCloseTo(50.1 - 35.4, 5);
+    const frames = sample.postActionFrames;
+    const closeTo = (values) => values.map((ms) => expect.closeTo(ms, 5));
+    expect(frames.map((frame) => frame.gapMs)).toEqual(closeTo([16.7, 16.7, 16.7]));
+    expect(frames.map((frame) => frame.endFromActionMs)).toEqual(
+      closeTo([66.8 - 35.4, 83.5 - 35.4, 100.2 - 35.4])
+    );
+    expect(frames.map((frame) => frame.ranFromActionMs)).toEqual(
+      closeTo([86.8 - 35.4, 87.5 - 35.4, 100.2 - 35.4])
+    );
+    expect(frames.map((frame) => frame.actualGapMs)).toEqual(closeTo([36.7, 0.7, 12.7]));
   });
 });
 

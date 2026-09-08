@@ -15,6 +15,7 @@ import {
 import { captureRuntime } from '../lib/input-fidelity.mjs';
 import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
+import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
   BORROWED_SESSION_CAPABILITIES_ERROR,
   appiumCapabilities,
@@ -1983,6 +1984,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       settingsShell,
       actionPlan,
       samples,
+      frameStampEpoch: frameStampEpochOf(samples),
       summaries,
       // The gate exceptions this capture was scored under (ADR-0090 amendment):
       // re-summarizers read them from here, so a capture carries its own

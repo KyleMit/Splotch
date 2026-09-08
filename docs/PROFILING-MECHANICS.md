@@ -99,6 +99,24 @@ same gesture untraced, lightly traced, and fully traced, then score all three wi
 probe. Instruments sampling was measured to have no effect on iPad scores; that result explicitly
 does **not** transfer to Perfetto's `sched`, which is closer to instrumenting than sampling.
 
+## The action probe's two frame clocks
+
+`tools/perf/probes/action-probe.js` records one row per `requestAnimationFrame` callback, and since
+ADR-0163 each row carries two clocks. They answer different questions, and only one of them gates.
+
+| Channel   | Stamp                                                        | Answers                                                                                                          | Blind to                                                                                                                                             |
+| --------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scheduled | The rAF timestamp argument — the vsync the frame was for     | Did the page keep its place on the vsync grid? **Scored** by every action gate; a two-beat red is faithful       | A callback that ran late but kept its on-time stamp — a green is not proof the frame fit                                                             |
+| Actual    | `performance.now()` at callback entry — when it actually ran | Did the main thread get to the frame on time? Attribution for a red, and the count of greens that hid an overrun | Presentation — a dropped compositor frame under an on-time callback shows in neither channel; dispatch jitter reads as a late frame that was not one |
+
+The artifact's `frameStampEpoch` says which channels a capture carries (1: scheduled only, every
+capture before the record; 2: both), each `postActionFrames` entry carries `ranFromActionMs` and
+`actualGapMs` beside its scheduled fields, and each action summary carries a non-gating
+`frameStamps` figure — the actual-gap distribution over the scored frames, actual-minus-scheduled
+deltas, callback delay, and `hiddenOverruns`. The scorer never reads the actual channel; the
+committed corpus is held to a byte-identical re-derivation across the change. Why the scheduled
+channel keeps the gate, and what would justify moving it, is ADR-0163's.
+
 ## Ruled-out drivers, and why
 
 Each of these was tried or evaluated and rejected on evidence. They are recorded because the
@@ -264,6 +282,13 @@ the cost an unattended run cannot pay.
 **rAF.** `requestAnimationFrame`, the harness's frame clock: the probe records one row per callback.
 Safari gives web content a 60 Hz rAF beat on a 120 Hz iPad, so page-observed frames and panel frames
 are not the same population.
+
+**Scheduled versus actual frame stamp.** The action probe's two clocks per frame (ADR-0163): the rAF
+timestamp argument is the vsync the frame was scheduled for and is what the gates score;
+`performance.now()` at callback entry is when the main thread actually ran it and is recorded for
+attribution. A **hidden overrun** is a scored frame the scheduled stamp keeps under the max gate
+while the actual gap crossed it — the count each action summary reports as
+`frameStamps.hiddenOverruns`.
 
 **Beat.** The capture's frame interval, derived as the dominant interval rather than a percentile
 (ADR-0134), because a percentile drags toward doubled intervals.
