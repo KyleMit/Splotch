@@ -130,7 +130,6 @@
     {#if aiResult.error}
       {@const safety = aiResult.error.kind === 'safety'}
       <div class="ai-result-error" class:safety>
-        <span class="ai-result-error-emoji">{safety ? '🎨' : '😕'}</span>
         <p>{aiResult.error.message ?? "Hmm, that didn't work. Please try again!"}</p>
         {#if safety}
           <p class="ai-result-error-sub">
@@ -379,10 +378,6 @@
     text-align: center;
     color: var(--text);
   }
-  /* Emoji at illustration size — glyph art, not ramp type. */
-  .ai-result-error-emoji {
-    font-size: 48px;
-  }
   .ai-result-error p {
     margin: 0;
     font-size: var(--font-size-md);
@@ -540,9 +535,6 @@
     .ai-result-error {
       min-height: 0;
       height: calc(94vh - 96px);
-    }
-    .ai-result-error-emoji {
-      font-size: 36px;
     }
   }
 </style>

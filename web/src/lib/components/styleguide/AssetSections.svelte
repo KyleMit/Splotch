@@ -3,6 +3,7 @@
   import type { CommonIconName } from '$lib/components/iconTypes';
   import { themes } from '$lib/design/tokens';
   import { PALETTE_COLORS } from '$lib/palette';
+  import { RELEASE_SECTION_ICONS } from '$lib/releaseSections';
 
   interface Props {
     /** Which run of sections to render: the palette + paper materials, or the icon set. */
@@ -38,6 +39,11 @@
   ];
 
   const spotFamilies: (IconFamily & { note: string })[] = [
+    {
+      label: 'release-*',
+      note: 'New, Improved, and Fixed headings in release notes and the changelog',
+      members: Object.values(RELEASE_SECTION_ICONS),
+    },
     {
       label: 'brush-*',
       note: 'the Brush Menu entries, in menu order',

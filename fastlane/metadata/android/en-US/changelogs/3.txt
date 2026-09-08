@@ -1,15 +1,15 @@
-✨ New
+New
 
 • Lock screen rotation so your drawing stays put — on by default.
 • Tap the speaker icon to mute or unmute sounds.
 
-🚀 Improved
+Improved
 
 • Coloring pages now adapt to both portrait and landscape.
 • Sounds start sooner for snappier feedback.
 • Better screen-reader support for in-app messages.
 
-🛠 Fixed
+Fixed
 
 • Your coloring page no longer resets when you rotate the device.
 • Fixed the layout on wide screens.

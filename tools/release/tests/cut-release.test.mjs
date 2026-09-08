@@ -48,16 +48,14 @@ describe('renderReleaseFile', () => {
   it('keeps a blank line between the frontmatter fence and the body', () => {
     const rendered = renderReleaseFile(
       'version: 1.4.0\nandroidVersionCode: 6',
-      '## ✨ New\n\n* Thing'
+      '## New\n\n* Thing'
     );
 
-    expect(rendered).toBe(
-      '---\nversion: 1.4.0\nandroidVersionCode: 6\n---\n\n## ✨ New\n\n* Thing\n'
-    );
+    expect(rendered).toBe('---\nversion: 1.4.0\nandroidVersionCode: 6\n---\n\n## New\n\n* Thing\n');
   });
 
   it('round-trips through parseFrontmatter without drifting', () => {
-    const once = renderReleaseFile('version: 1.4.0', '## ✨ New\n\n* Thing');
+    const once = renderReleaseFile('version: 1.4.0', '## New\n\n* Thing');
     const parsed = parseFrontmatter(once);
 
     expect(renderReleaseFile(parsed.frontmatter, parsed.body)).toBe(once);

@@ -1,16 +1,16 @@
-✨ New
+New
 
 • Create 10 free AI pictures—no key needed.
 • A new page chip shows and clears the current coloring page.
 • Parents choose checks, kids' tools, and report AI pictures.
 
-🚀 Improved
+Improved
 
 • Smaller first download; coloring art arrives in the background.
 • Faster Settings navigation on every screen.
 • Smoother iPad drawing, coloring, undo, and saving.
 
-🛠 Fixed
+Fixed
 
 • Settings stays open when choosing a feedback type.
 • Magic brush and picture saves recover from rare canvas failures.
