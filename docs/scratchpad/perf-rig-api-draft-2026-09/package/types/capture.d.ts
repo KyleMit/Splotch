@@ -9,7 +9,7 @@
  * artifact lands first and the process exits 1 after.
  */
 
-import type { AppContract, DimensionSelection } from './app.js';
+import type { AppContract, DimensionSelection, ToolOf } from './app.js';
 import type {
   CaptureArtifactOf,
   GuardId,
@@ -19,6 +19,7 @@ import type {
 } from './artifact.js';
 import type { GatePolicy, GateVerdict } from './gates.js';
 import type { Scenario, ScenarioKind } from './scenario.js';
+import type { FidelityExpectations } from './scoring.js';
 import type { RefreshRegimeId, TargetDefinition, Viewport } from './target.js';
 import type { InputTransportId, MeasurementChannelId } from './transport.js';
 
@@ -68,7 +69,14 @@ export interface CaptureRequest<
   readonly app: A;
   readonly target: TargetDefinition;
   readonly scenario: S;
+  /** The app's thresholds, exceptions and allowances; without them a capture is banked unscored. */
   readonly gates?: GatePolicy;
+  /**
+   * The app's per-runtime fidelity table. Required for a `frames` capture on a transport whose
+   * `reports.fidelity` is true; `planCapture` refuses such a request without it, because the
+   * package ships no default and silence would read as a pass.
+   */
+  readonly fidelity?: FidelityExpectations;
   readonly options?: CaptureOptions<A>;
   readonly host?: HostOptions;
   readonly signal?: AbortSignal;
@@ -154,7 +162,7 @@ export interface CaptureOptions<A extends AppContract = AppContract> {
   readonly refreshRegime?: RefreshRegimeId | null;
   readonly device?: DeviceSelection;
   /** Fields of the scenario a script may vary per run without defining a new scenario. */
-  readonly scenarioOverrides?: ScenarioOverrides;
+  readonly scenarioOverrides?: ScenarioOverrides<A>;
   readonly human?: {
     readonly seconds?: number;
     readonly open?: 'adb' | 'devicectl' | 'manual';
@@ -168,12 +176,12 @@ export interface CaptureOptions<A extends AppContract = AppContract> {
   readonly forensics?: boolean;
 }
 
-export interface ScenarioOverrides {
+export interface ScenarioOverrides<A extends AppContract = AppContract> {
   readonly gestureRepeats?: number;
   readonly gesturePauseMs?: number;
   readonly contactCapMs?: number;
   readonly phases?: readonly string[];
-  readonly tool?: string;
+  readonly tool?: ToolOf<A>;
   readonly hud?: boolean;
   readonly input?:
     | { readonly kind: 'transport' }
@@ -277,16 +285,23 @@ export interface DoctorReport {
     readonly ok: boolean;
     readonly detail: string;
   }[];
+  /** From the app's fidelity table, per runtime: which checks are uncalibrated and which not applicable. */
   readonly calibration: readonly {
     readonly runtime: string;
     readonly uncalibrated: readonly string[];
+    readonly notApplicable: readonly string[];
   }[];
 }
 
 /** Inventory the host and evaluate the contract against a served page (`serve: true` starts one). */
 export declare function doctor(
   app: AppContract,
-  options?: { readonly url?: string; readonly serve?: boolean; readonly host?: HostOptions }
+  options?: {
+    readonly url?: string;
+    readonly serve?: boolean;
+    readonly host?: HostOptions;
+    readonly fidelity?: FidelityExpectations;
+  }
 ): Promise<DoctorReport>;
 
 export declare function serve(

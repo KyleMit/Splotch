@@ -9,6 +9,12 @@ import {
   planCapture,
   renderProbe,
   configureProbe,
+  verifyInput,
+  verifyRotation,
+  probeOverhead,
+  analyzeFrames,
+  analyzeChromeTrace,
+  analyzeWebInspector,
   type CaptureRequest,
   type CaptureOptions,
   type Scenario,
@@ -30,14 +36,20 @@ import {
   serveFloorControl,
   scanForDeviceIdentifiers,
 } from 'perf-rig/rig';
-import { splotch, type Brush, type Splotch } from './app.js';
+import { BRUSHES, splotch, type Brush, type Splotch } from './app.js';
 import { targets } from './targets.js';
-import { gates } from './gates.js';
+import { fidelity, gates } from './gates.js';
 import { rig } from './rig.js';
 import { deploymentCampaign } from './campaign.js';
 import { operatorSteps } from './operator.js';
 import { upgradeLegacyArtifact } from './legacy-artifacts.js';
-import { drawingCell, localFrames, realScreenSweep, paperControls } from './scenarios/drawing.js';
+import {
+  drawingCell,
+  localFrames,
+  realScreenSweep,
+  paperControls,
+  trustedGesturePlan,
+} from './scenarios/drawing.js';
 import { actionSweep, focusedActions } from './scenarios/actions.js';
 import { toddlerSession, mount } from './scenarios/session.js';
 import { settingsFirstShow } from './scenarios/pageload.js';
@@ -55,7 +67,14 @@ const str = (flags: Flags, key: string) =>
 const num = (flags: Flags, key: string) =>
   typeof flags[key] === 'string' ? Number(flags[key]) : undefined;
 const list = (flags: Flags, key: string) => str(flags, key)?.split(',');
-const brushOf = (flags: Flags): Brush => (str(flags, 'brush') as Brush | undefined) ?? 'pen';
+// Validated at the flag boundary, so an unknown brush is a refusal here rather than a cast past the contract.
+const brushFlag = (flags: Flags): Brush | undefined => {
+  const value = str(flags, 'brush');
+  if (value === undefined) return undefined;
+  if (!(BRUSHES as readonly string[]).includes(value)) throw new Error(`unknown brush ${value}`);
+  return value as Brush;
+};
+const brushOf = (flags: Flags): Brush => brushFlag(flags) ?? 'pen';
 const engineOf = (flags: Flags, fallback: 'chromium' | 'webkit' | 'firefox') =>
   (str(flags, 'engine') as 'chromium' | 'webkit' | 'firefox' | undefined) ?? fallback;
 const viewportOf = (
@@ -76,6 +95,8 @@ const throttle = (flags: Flags, fallback: number) =>
     ? []
     : [{ id: 'cdp-cpu-throttle' as const, rate: num(flags, 'throttle') ?? fallback }];
 
+const PREFLIGHT_GESTURE_REPEATS = 4;
+const PROBE_OVERHEAD_SAMPLES_PER_ARM = 3;
 const PHONE = { width: 412, height: 915, deviceScaleFactor: 2.6 };
 const IPAD_PRO = { width: 1366, height: 915, deviceScaleFactor: 2 };
 const DESKTOP_ACTIONS = { width: 1512, height: 982, deviceScaleFactor: 2 };
@@ -148,7 +169,7 @@ const common = (flags: Flags): CaptureOptions<Splotch> => ({
     gesturePauseMs: num(flags, 'repeat-pause-ms'),
     contactCapMs: num(flags, 'contact-seconds') ? num(flags, 'contact-seconds')! * 1000 : undefined,
     phases: list(flags, 'phases'),
-    tool: str(flags, 'brush'),
+    tool: brushFlag(flags),
     hud: flags['no-hud'] ? false : flags['hud'] ? true : undefined,
     input: flags['drive']
       ? {
@@ -191,6 +212,7 @@ const request = <S extends Scenario<Splotch>>(
   target,
   scenario,
   gates,
+  fidelity,
   host: rig,
   options: { ...common(flags), ...extra },
 });
@@ -387,7 +409,8 @@ export const scripts = {
       reportDir: 'perf-profiles/split-capture/reports',
     }),
   // ---- rig lifecycle
-  'perf:doctor': (f: Flags) => doctor(splotch, { url: str(f, 'url'), serve: !f['url'], host: rig }),
+  'perf:doctor': (f: Flags) =>
+    doctor(splotch, { url: str(f, 'url'), serve: !f['url'], host: rig, fidelity }),
   'perf:preflight': (f: Flags) =>
     preflight(rig, {
       androidSerial: str(f, 'android-serial'),
@@ -480,19 +503,47 @@ export const scripts = {
       rig.evidenceRoot!
     ),
   'check:device-identifiers': (_f: Flags) => scanForDeviceIdentifiers('<tracked tree text>', rig),
-  // ---- diagnostics and analysis (CLI at the published rung; library calls at the nested one)
-  'perf:device:verify-android': (_f: Flags) =>
-    Promise.resolve('perf-rig verify input --platform android'),
-  'perf:device:verify-android-rotation': (_f: Flags) =>
-    Promise.resolve('perf-rig verify rotation --platform android'),
-  'perf:device:probe-overhead': (_f: Flags) => Promise.resolve('perf-rig probe-overhead'),
-  'perf:analyze:frames': (_f: Flags) =>
-    Promise.resolve(
-      'perf-rig analyze frames <capture.json> [--no-forensics] [--include-unattributable]'
-    ),
-  'perf:analyze:chrome': (_f: Flags) => Promise.resolve('perf-rig analyze chrome <dir|trace.json>'),
-  'perf:analyze:web-inspector': (_f: Flags) =>
-    Promise.resolve('perf-rig analyze web-inspector <export.json>'),
+  // ---- diagnostics and analysis: library calls; the published CLI wraps the same functions
+  'perf:device:verify-android': (f: Flags) =>
+    verifyInput({
+      app: splotch,
+      target: targets['android-device-web'],
+      gesture: trustedGesturePlan(false),
+      repeats: num(f, 'gesture-repeats') ?? PREFLIGHT_GESTURE_REPEATS,
+      device: { ...common(f).device, cdpPort: num(f, 'cdp-port') },
+      fidelity,
+      host: rig,
+      probeHostAddress: str(f, 'host-address'),
+    }),
+  'perf:device:verify-android-rotation': (f: Flags) =>
+    verifyRotation({
+      app: splotch,
+      target: targets['android-device-web'],
+      device: common(f).device!,
+      host: rig,
+      probeHostAddress: str(f, 'host-address'),
+    }),
+  'perf:device:probe-overhead': (f: Flags) =>
+    probeOverhead({
+      app: splotch,
+      target: targets['android-device-web'],
+      tool: brushOf(f),
+      samples: num(f, 'samples') ?? PROBE_OVERHEAD_SAMPLES_PER_ARM,
+      device: common(f).device!,
+      host: rig,
+      upstream: str(f, 'upstream'),
+      probeHostAddress: str(f, 'host-address'),
+    }),
+  'perf:analyze:frames': (f: Flags) =>
+    analyzeFrames(str(f, 'path')!, {
+      marks: splotch.marks,
+      forensics: f['no-forensics'] !== true,
+      includeUnattributable: f['include-unattributable'] === true,
+    }),
+  'perf:analyze:chrome': (f: Flags) =>
+    analyzeChromeTrace(str(f, 'path')!, { marks: splotch.marks }),
+  'perf:analyze:web-inspector': (f: Flags) =>
+    analyzeWebInspector(str(f, 'path')!, { marks: splotch.marks }),
   'perf:build': (_f: Flags) =>
     Promise.resolve('unchanged npm script; postperf:build stamps provenance through the package'),
   'perf:build:cap': (_f: Flags) => Promise.resolve('unchanged npm script'),

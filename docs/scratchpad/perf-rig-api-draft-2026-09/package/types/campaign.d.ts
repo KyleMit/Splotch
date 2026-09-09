@@ -11,6 +11,7 @@
 import type { AppContract, DimensionSelection } from './app.js';
 import type { CaptureArtifact, CaptureArtifactOf } from './artifact.js';
 import type { CaptureOptions, RefusalCode } from './capture.js';
+import type { GatePolicy } from './gates.js';
 import type { Scenario, ScenarioKind } from './scenario.js';
 import type { FidelityExpectations } from './scoring.js';
 import type { TargetDefinition, Viewport } from './target.js';
@@ -32,8 +33,34 @@ export type StandardLedgerStatus =
   | 'blank-output'
   | 'instrument-change-accepted';
 
-/** Statuses a pre-package ledger may carry, and what `parseLedger` reads them as. */
-export declare const LEGACY_LEDGER_STATUS: Readonly<Record<string, StandardLedgerStatus>>;
+/**
+ * Statuses a pre-package ledger may carry under another name, and what `parseLedger` reads them
+ * as. Every other base status the shipped ledger module exports is a member of
+ * `StandardLedgerStatus` verbatim; this table is the whole difference, declared so the resume
+ * proof in migration phase 4 is reviewable here rather than in a loop.
+ */
+export declare const LEGACY_LEDGER_STATUS: {
+  readonly 'eraser-fill-failed': 'prime-failed';
+};
+
+/**
+ * A pre-package row records a child's exit code as a suffix on the status
+ * (`run-campaign.mjs`: `${status}-exit-${code}`); `parseLedger` splits it into `exitCode` and maps
+ * the base through `LEGACY_LEDGER_STATUS`. The parser test pins these cases:
+ *
+ *   `missing-or-invalid-json-exit-2`  → status `missing-or-invalid-json`, exitCode 2
+ *   `failed-input-fidelity-exit-1`    → status `failed-input-fidelity`, exitCode 1
+ *   `eraser-fill-failed-exit-1`       → status `prime-failed`, exitCode 1
+ *   `eraser-fill-failed`              → status `prime-failed`, exitCode null
+ *   `valid-json`                      → status `valid-json`, exitCode null
+ *   `attempts-exhausted`              → status `attempts-exhausted`, exitCode null
+ *
+ * An unknown base status is kept as the app's own (`AppStatus`), never coerced.
+ */
+export declare function normaliseLegacyStatus(raw: string): {
+  readonly status: StandardLedgerStatus | string;
+  readonly exitCode: number | null;
+};
 
 export interface LedgerRow<AppStatus extends string = never> {
   readonly timestamp: string;
@@ -112,6 +139,8 @@ export interface CampaignDefinition<
   readonly variants: readonly CampaignVariant<A>[];
   readonly items: readonly string[];
   cellFor(variant: CampaignVariant<A>, item: string): CellDefinition<A>;
+  /** Threaded into every cell's capture; the fold re-evaluates the same policy. */
+  readonly gates: GatePolicy;
   readonly fidelity: FidelityExpectations;
   /** A cell repeated at start, middle and end of a physical-device queue; rides the first planned variant. */
   readonly reference?: {

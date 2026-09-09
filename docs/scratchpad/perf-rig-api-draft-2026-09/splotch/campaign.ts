@@ -8,9 +8,9 @@ import {
   type CampaignVariant,
 } from 'perf-rig/campaign';
 import { splotch, type Brush, type Splotch } from './app.js';
-import { fidelity } from './gates.js';
+import { fidelity, gates } from './gates.js';
 import { actionSweep } from './scenarios/actions.js';
-import { drawingCell, GESTURE_REPEATS, UNDO_COUNT } from './scenarios/drawing.js';
+import { drawingCell, GESTURE_REPEATS } from './scenarios/drawing.js';
 
 const LANDSCAPE = { width: 1366, height: 915, deviceScaleFactor: 2 } as const;
 const PORTRAIT = { width: 915, height: 1366, deviceScaleFactor: 2 } as const;
@@ -48,18 +48,38 @@ const BRUSH_BY_ITEM = {
 
 type SplotchStatus = 'undo-evidence-incomplete';
 
+// splitUndoEvidenceProblem: a cell whose scenario repeats undo must carry complete undo evidence;
+// absence is a rejection there, and only a cell without a repeated action may lack it.
 const undoEvidence = ruleFor('frames', {
   status: 'undo-evidence-incomplete' as SplotchStatus,
   retry: 'always',
-  check: (artifact) => {
+  check: (artifact, cell) => {
+    const required = cell.scenario.repeatedAction;
     const proof = artifact.evidence.repeatedAction;
-    if (!proof) return { ok: true };
+    if (!required) return { ok: true };
+    if (!proof)
+      return {
+        ok: false,
+        detail: 'the cell repeats undo and the artifact carries no undo evidence',
+      };
     const depthDelta = proof.depthBefore - proof.depthAfter;
-    return proof.count === UNDO_COUNT && depthDelta === UNDO_COUNT && proof.changedEveryStep
+    const incomplete = proof.samples.findIndex(
+      (sample, index) =>
+        sample.index !== index ||
+        !Number.isFinite(sample.engineMs) ||
+        !Number.isFinite(sample.nextFrameMs)
+    );
+    if (proof.samples.length !== required.count || incomplete !== -1) {
+      return {
+        ok: false,
+        detail: `undo proof: ${proof.samples.length}/${required.count} timed actions${incomplete === -1 ? '' : `, action ${incomplete + 1} incomplete`}`,
+      };
+    }
+    return proof.count === required.count && depthDelta === required.count && proof.changedEveryStep
       ? { ok: true }
       : {
           ok: false,
-          detail: `undo proof: ${proof.count}/${UNDO_COUNT} actions, depth fell ${depthDelta}, pixels changed every step: ${proof.changedEveryStep}`,
+          detail: `undo proof: ${proof.count}/${required.count} actions, depth fell ${depthDelta}, pixels changed every step: ${proof.changedEveryStep}`,
         };
   },
 });
@@ -74,6 +94,7 @@ export const deploymentCampaign = (
   items: [...ITEMS],
   outputRoot,
   maxAttempts: 3,
+  gates,
   fidelity,
   cellFor: (variant, item) => {
     const isActions = item === 'actions';

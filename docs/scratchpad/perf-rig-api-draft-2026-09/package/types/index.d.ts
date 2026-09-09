@@ -11,6 +11,8 @@
  *   capture   capture, serve, serveProbeHost, openChannel, renderProbe, configureProbe
  *   score     summariseFrames, summariseActions, summariseRepeatedAction, inputFidelity,
  *             refreshRegimeVerdict, evaluateDrawing, evaluateActions, evaluateCommit
+ *   diagnose  verifyInput, verifyRotation, probeOverhead, analyzeFrames, analyzeChromeTrace,
+ *             analyzeWebInspector
  *   keep      readArtifact, writeArtifact, COMPAT
  */
 
@@ -24,3 +26,4 @@ export * from './artifact.js';
 export * from './capture.js';
 export * from './scoring.js';
 export * from './gates.js';
+export * from './diagnostics.js';
