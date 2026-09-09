@@ -4,8 +4,10 @@
  * Pure functions from raw rows to numbers. Nothing here reads a file or a device, so a whole
  * corpus can be re-derived offline when a definition turns out to be wrong. The summary shapes are
  * transcribed from the shipped scorers with their field names, because every tracked capture
- * already carries them and renaming them is what breaks a corpus. Every function that needs app
- * knowledge takes it as an argument, and the package ships no calibration constant.
+ * already carries them and renaming them is what breaks a corpus; a Splotch corpus-to-type test
+ * (migration phase 3) re-runs the scorers over the tracked evidence and fails on any key these
+ * declarations do not name. Every function that needs app knowledge takes it as an argument, and
+ * the package ships no calibration constant.
  */
 
 import type { FramesReport } from './artifact.js';
@@ -71,6 +73,13 @@ export declare function refreshRegimeVerdict(
   regimes: readonly RefreshRegimeBand[]
 ): RefreshRegimeVerdict;
 
+/** `undefined` on an empty population, as the shipped `percentile` reports it. */
+export interface SampleStats {
+  readonly p50: number | undefined;
+  readonly p95: number | undefined;
+  readonly max: number | undefined;
+}
+
 /** The input block every phase summary carries. `kinds` is the pointer kinds seen joined with `+`. */
 export interface InputSummary {
   readonly moves: number;
@@ -78,11 +87,17 @@ export interface InputSummary {
   readonly movesPerSecond: number;
   readonly kinds: string;
   readonly coalescedPerMove: number;
-  readonly coalescedSpanMs: { readonly p50: number | undefined; readonly p95: number | undefined };
-  readonly trust: { readonly share: number; readonly untrusted: number };
-  readonly pressure: { readonly p50: number | undefined; readonly nonZero: number };
-  readonly contactWidth: { readonly p50: number | undefined };
-  readonly contactHeight: { readonly p50: number | undefined };
+  readonly coalescedSpanMs: SampleStats;
+  readonly trust: {
+    readonly trusted: number;
+    readonly untrusted: number;
+    readonly unknown: number;
+    /** `undefined` when no move carried a trust flag. */
+    readonly share: number | undefined;
+  };
+  readonly pressure: SampleStats;
+  readonly contactWidth: SampleStats;
+  readonly contactHeight: SampleStats;
   readonly moveGapP95Ms: number | undefined;
   readonly moveGapMaxMs: number | undefined;
 }
@@ -159,9 +174,46 @@ export type PhaseFinding =
 
 export interface StarvationPopulation {
   readonly episodes: number;
-  readonly lostMs: number;
+  readonly episodesPerCommit: number | undefined;
+  readonly starvationMs: number;
+  readonly lostFrameTimeMs: number;
   readonly lostFrameTimeShare: number | undefined;
-  readonly commitsAttributed: number;
+  readonly worstFrameGapMs: number | undefined;
+  readonly commitsFollowedByStarvation: number;
+  readonly commits: number;
+}
+
+export interface StarvationEpisode {
+  readonly frameIndex: number;
+  readonly startMs: number;
+  readonly endMs: number;
+  readonly gapMs: number;
+  readonly starvationMs: number;
+  readonly population: 'inContact' | 'betweenStrokes';
+  readonly trustedMoves: number;
+  readonly trustedPointerKinds: readonly string[];
+  readonly engineMs: number;
+  readonly engineShare: number;
+  readonly nearestLift: { readonly index: number; readonly distanceMs: number } | null;
+  readonly nearestCommit: { readonly index: number; readonly distanceMs: number } | null;
+}
+
+/** Frame pacing across the long strokes' first and last thirds; `ratio` is undefined without both. */
+export interface LongStrokeTrend {
+  readonly strokes: number;
+  readonly firstThirdP50: number | undefined;
+  readonly lastThirdP50: number | undefined;
+  readonly ratio: number | undefined;
+}
+
+/** The forensic row as the shipped scorer prints it: display keys, and `marks` joined into one string. */
+export interface WorstFrameRow {
+  readonly 'dt ms': number;
+  readonly 'at s': number;
+  readonly after: string;
+  readonly moves: number;
+  readonly 'engine ms': number;
+  readonly marks: string;
 }
 
 /** Transcribed from the shipped phase summariser; the app's passthrough fields ride alongside. */
@@ -179,12 +231,7 @@ export interface PhaseSummary {
     readonly all: StarvationPopulation;
     readonly inContact: StarvationPopulation;
     readonly betweenStrokes: StarvationPopulation;
-    readonly episodes: readonly {
-      readonly startMs: number;
-      readonly durationMs: number;
-      readonly trustedMoves: number;
-      readonly engineShare: number;
-    }[];
+    readonly episodes: readonly StarvationEpisode[];
   };
   readonly paintLatencyMs: {
     readonly p50: number | undefined;
@@ -212,21 +259,18 @@ export interface PhaseSummary {
     readonly short: number;
     readonly adopted: number;
     readonly movesPerLongStroke: number;
+    readonly endHitchP95Ms: number | undefined;
     readonly endHitchMaxMs: number | undefined;
     readonly stalledLifts: number;
     readonly measuredLifts: number;
     readonly notableLifts: number;
-    readonly liftMs: { readonly p50: number | undefined; readonly p95: number | undefined };
-    readonly longStrokeTrend: number | null;
+    readonly liftMs: SampleStats;
+    readonly longStrokeTrend: LongStrokeTrend;
   };
-  readonly worstFrames: readonly {
-    readonly atMs: number;
-    readonly gapMs: number;
-    readonly marks: readonly string[];
-  }[];
-  /** The findings joined with ` + `, or `clean`, or `no drawing recorded`. */
+  readonly worstFrames: readonly WorstFrameRow[];
+  /** The `PhaseFinding`s joined with ` + `, or `clean`, or the skipped reason; the only verdict field. */
   readonly verdict: string;
-  readonly findings: readonly PhaseFinding[];
+  /** The app's passthrough phase fields (`paperActive`, `halos`) ride here. */
   readonly [passthrough: string]: unknown;
 }
 
@@ -283,10 +327,11 @@ export interface ActionSample {
   readonly frameStampEpoch: FrameStampEpoch;
 }
 
+/** As the shipped action summariser emits it: four quantiles, no count; an empty population leaves every field undefined. */
 export interface Distribution {
-  readonly count: number;
   readonly p50: number | undefined;
   readonly p95: number | undefined;
+  readonly p99: number | undefined;
   readonly max: number | undefined;
 }
 
@@ -348,13 +393,8 @@ export declare function frameStampDivergence(
 
 export interface RepeatedActionSummary {
   readonly count: number;
-  readonly engine: {
-    readonly p50: number;
-    readonly p95: number;
-    readonly p99: number;
-    readonly max: number;
-  };
-  readonly nextFrame: { readonly p95: number; readonly max: number };
+  readonly engine: Distribution;
+  readonly nextFrame: Distribution;
   readonly passed: boolean;
 }
 

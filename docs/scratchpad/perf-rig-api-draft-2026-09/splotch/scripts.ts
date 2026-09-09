@@ -461,7 +461,7 @@ export const scripts = {
       score: (artifact) => ({
         label: artifact.label,
         target: artifact.target,
-        tool: artifact.kind === 'frames' ? (artifact.report.meta.tool ?? 'unknown') : 'n/a',
+        tool: artifact.kind === 'frames' ? (artifact.report.meta.brush ?? 'unknown') : 'n/a',
       }),
     }),
   'perf:evidence:keep': (f: Flags) =>

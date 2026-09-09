@@ -239,6 +239,7 @@ export interface CaptureArtifactOf<K extends ScenarioKind> {
 
 export type CaptureArtifact = { [K in ScenarioKind]: CaptureArtifactOf<K> }[ScenarioKind];
 
+/** Schema 2, keyed as the shipped probe writes it; a renamed key is schema 3 with an upgrade, never a silent change. */
 export interface FramesReport {
   readonly meta: {
     readonly schema: 2;
@@ -246,12 +247,22 @@ export interface FramesReport {
     readonly ua: string;
     readonly dpr: number;
     readonly timeOriginUnixMs: number;
-    readonly viewport: { readonly width: number; readonly height: number };
-    readonly canvasCss: { readonly width: number; readonly height: number };
-    readonly canvasBacking: { readonly width: number; readonly height: number };
+    readonly viewport: { readonly w: number; readonly h: number };
+    readonly canvasCss: { readonly w: number; readonly h: number };
+    readonly canvasBacking: { readonly w: number; readonly h: number };
+    readonly contactTargetMs: number;
+    readonly freeDrawMs: number;
+    readonly hud: boolean;
+    readonly drive: 'mixed' | 'long' | 'short' | null;
+    readonly driveHz: number;
+    readonly drivePointerType: 'touch' | 'pen' | 'mouse' | null;
+    /** The tool label under the key the schema-2 probe writes. */
+    readonly brush: string | null;
+    readonly historySeam: boolean;
     readonly measureNames: readonly string[];
     readonly counts: Readonly<Record<string, number>>;
-    readonly tool?: string;
+    /** App-declared state the rendered probe records beside its own (`theme`, `lineartBlend`). */
+    readonly [passthrough: string]: unknown;
   };
   readonly frames: readonly (readonly number[])[];
   readonly events: readonly (readonly number[])[];
