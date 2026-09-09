@@ -11,20 +11,26 @@ import {
 } from 'perf-rig';
 import { splotch, type Brush } from '../app.js';
 
+// Transcribed constant for constant from capture-xcuitest-screen.mjs; a Splotch drift test compares
+// every generated coordinate and duration against trustedGestureActions on the same bounds.
 const LONG_STROKE_SEEDS = [0.2, 0.7] as const;
 const LONG_STROKE_WAVES = 3;
 const LONG_STROKE_MS = 2000;
 const LONG_STROKE_SEGMENTS = 4;
 const LONG_STROKE_PAUSE_MS = 120;
+const LONG_STROKE_START_X = 0.12;
+const LONG_STROKE_SPAN_X = 0.76;
+const LONG_STROKE_START_Y = { base: 0.28, perSeed: 0.18 } as const;
+const LONG_STROKE_WAVE_Y = { base: 0.35, perSeed: 0.15, amplitude: 0.18 } as const;
 const SHORT_STROKE_ORIGINS = [
-  [0.2, 0.2],
-  [0.5, 0.2],
-  [0.8, 0.2],
-  [0.2, 0.5],
-  [0.8, 0.5],
-  [0.2, 0.8],
-  [0.5, 0.8],
-  [0.8, 0.8],
+  [0.18, 0.2],
+  [0.35, 0.32],
+  [0.53, 0.43],
+  [0.7, 0.55],
+  [0.24, 0.67],
+  [0.42, 0.26],
+  [0.59, 0.38],
+  [0.76, 0.5],
 ] as const;
 const SHORT_STROKE_MS = 240;
 const SHORT_STROKE_DELTA_PX = { x: 45, y: 70 } as const;
@@ -39,20 +45,30 @@ const move = (x: number, y: number, duration: number): PointerAction => ({
 });
 
 function longStroke(bounds: Bounds, seed: number): PointerAction[] {
-  const startX = bounds.x + bounds.width * 0.12;
-  const y = bounds.y + bounds.height * (0.28 + seed * 0.18);
-  const actions: PointerAction[] = [move(startX, y, 0), { type: 'pointerDown', button: 0 }];
+  const actions: PointerAction[] = [
+    move(
+      bounds.x + bounds.width * LONG_STROKE_START_X,
+      bounds.y + bounds.height * (LONG_STROKE_START_Y.base + seed * LONG_STROKE_START_Y.perSeed),
+      0
+    ),
+    { type: 'pointerDown', button: 0 },
+  ];
   for (let segment = 1; segment <= LONG_STROKE_SEGMENTS; segment += 1) {
-    const t = segment / LONG_STROKE_SEGMENTS;
+    const progress = segment / LONG_STROKE_SEGMENTS;
     actions.push(
       move(
-        startX + bounds.width * 0.76 * t,
-        y + Math.sin(t * Math.PI * 2 * LONG_STROKE_WAVES) * bounds.height * 0.08,
+        bounds.x + bounds.width * (LONG_STROKE_START_X + progress * LONG_STROKE_SPAN_X),
+        bounds.y +
+          bounds.height *
+            (LONG_STROKE_WAVE_Y.base +
+              seed * LONG_STROKE_WAVE_Y.perSeed +
+              Math.sin(progress * Math.PI * 2 * LONG_STROKE_WAVES + seed) *
+                LONG_STROKE_WAVE_Y.amplitude),
         LONG_STROKE_MS / LONG_STROKE_SEGMENTS
       )
     );
   }
-  actions.push({ type: 'pointerUp' }, { type: 'pause', duration: LONG_STROKE_PAUSE_MS });
+  actions.push({ type: 'pointerUp', button: 0 }, { type: 'pause', duration: LONG_STROKE_PAUSE_MS });
   return actions;
 }
 
@@ -63,7 +79,7 @@ function shortStroke(bounds: Bounds, [fx, fy]: readonly [number, number]): Point
     move(x, y, 0),
     { type: 'pointerDown', button: 0 },
     move(x + SHORT_STROKE_DELTA_PX.x, y + SHORT_STROKE_DELTA_PX.y, SHORT_STROKE_MS),
-    { type: 'pointerUp' },
+    { type: 'pointerUp', button: 0 },
     { type: 'pause', duration: SHORT_STROKE_PAUSE_MS },
   ];
 }
