@@ -70,6 +70,8 @@ const DOCKED_DISABLED_CONTROLS_NOTE =
   'Before the first stroke, while undo, AI, and screenshot are disabled, the docked Actions Panel may sit partly past the screen edge. In portrait it is the column of drawing controls near the lower left; in landscape it is the row along the bottom. The existing general note about reduced-contrast disabled buttons applies to those three controls. Each disabled control retains a visible portion of its glyph inside the viewport.';
 
 export const SURFACE_DESIGN_NOTES = {
+  'ai/ai-result-loading':
+    'While the AI picture is loading, the tall result card reserves the finished picture’s height so the layout stays in place when the image arrives. The loading content sits near the bottom of that reserved space. The visibility floor is a fully readable loading message contained inside the card without cut-off text.',
   'controls/clear-coachmark':
     'The clear-gesture coachmark drawn over the canvas is the intended design, and it is carried by an animation that a single frame cannot convey. Judge the coachmark itself on whether what is drawn here is legible, rather than on whether it explains the gesture. Everything else in the frame stays in normal scope.',
   'controls/clear-drag-preview':
