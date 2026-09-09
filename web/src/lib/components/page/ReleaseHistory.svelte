@@ -12,20 +12,20 @@
     <div class="release-notes">
       <ReleaseSectionHeading title="New" level={3} />
       <ul>
-        <li>Pick sounds for each part of the app—plus a page-turn clear sound.</li>
+        <li>Pick sounds for each part of the app—plus a clear sound.</li>
         <li>Dottie the mascot now reacts on error screens.</li>
       </ul>
       <ReleaseSectionHeading title="Improved" level={3} />
       <ul>
         <li>AI pictures are opt-in, with clearer errors and retries.</li>
-        <li>Playful motion: menus pop from their buttons, undo spins, clearing sweeps to the trash.</li>
+        <li>Playful motion: menus pop from buttons, undo spins, clearing sweeps to the trash.</li>
         <li>Crisper coloring pages that load faster.</li>
         <li>Smoother drawing on iPad and Android.</li>
         <li>App updates apply without interrupting drawing.</li>
       </ul>
       <ReleaseSectionHeading title="Fixed" level={3} />
       <ul>
-        <li>The clear ring no longer reappears after release.</li>
+        <li>Clear ring no longer reappears after release.</li>
         <li>Drawings recover when the app resumes.</li>
       </ul>
     </div>

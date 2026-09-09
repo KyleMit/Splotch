@@ -1,17 +1,17 @@
 New
 
-• Pick sounds for each part of the app—plus a page-turn clear sound.
+• Pick sounds for each part of the app—plus a clear sound.
 • Dottie the mascot now reacts on error screens.
 
 Improved
 
 • AI pictures are opt-in, with clearer errors and retries.
-• Playful motion: menus pop from their buttons, undo spins, clearing sweeps to the trash.
+• Playful motion: menus pop from buttons, undo spins, clearing sweeps to the trash.
 • Crisper coloring pages that load faster.
 • Smoother drawing on iPad and Android.
 • App updates apply without interrupting drawing.
 
 Fixed
 
-• The clear ring no longer reappears after release.
+• Clear ring no longer reappears after release.
 • Drawings recover when the app resumes.
