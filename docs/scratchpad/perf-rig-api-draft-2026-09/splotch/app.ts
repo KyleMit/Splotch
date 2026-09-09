@@ -158,6 +158,20 @@ const quickLock = (orientation: Orientation) =>
   orientation === 'LANDSCAPE' ? '#quickLockLandscape' : '#quickLockPortrait';
 const holdsLock = (state: RotationLock): state is { readonly locked: Orientation } =>
   state !== 'platform-owned' && state.locked !== null;
+// waitForRotationLockState: changing the lock can change the Settings shell (a landscape lock
+// released on a physically portrait handset turns the compact shell into the hub, and the reverse),
+// and the lock controls disappear until the Appearance row is opened again. The proof therefore
+// reopens the controls whenever the expression cannot yet be answered, and tests before it clicks.
+const proveLock = (expression: string): readonly Step[] => [
+  {
+    kind: 'retryUntil',
+    expression,
+    equals: true,
+    settleMs: 400,
+    timeoutMs: 10_000,
+    body: openLockControls,
+  },
+];
 const releaseLock: readonly Step[] = [
   ...openSettings,
   ...openLockControls,
@@ -167,7 +181,7 @@ const releaseLock: readonly Step[] = [
     then: [{ kind: 'click', target: '[id^=quickLock][aria-pressed=true]' }],
     else: [{ kind: 'click', target: '#lockRotationToggle' }],
   },
-  { kind: 'until', expression: LOCK_RELEASED, equals: true, timeoutMs: 10_000 },
+  ...proveLock(LOCK_RELEASED),
   ...closeSettings,
 ];
 const restoreLock = (orientation: Orientation): readonly Step[] => [
@@ -194,7 +208,7 @@ const restoreLock = (orientation: Orientation): readonly Step[] => [
         : []),
     ],
   },
-  { kind: 'until', expression: lockHolds(orientation), equals: true, timeoutMs: 10_000 },
+  ...proveLock(lockHolds(orientation)),
   ...closeSettings,
 ];
 // The lock is verified by the `until` inside each procedure while its controls are on the page; the
@@ -418,7 +432,6 @@ export const splotch = defineApp({
       selector: '#undoButton',
       enabled: '!document.querySelector("#undoButton").disabled',
       measure: 'engine.undo',
-      activation: 'dom',
       drive: UNDO_DRIVE,
     },
     // Clear activates by a drag from the button across the screen, never a click.
@@ -464,7 +477,14 @@ export const splotch = defineApp({
     },
     strokeWidthLarge: { selector: 'button[aria-label="Size 5"]' },
     settings: { selector: SETTINGS_BUTTON, ready: SETTINGS_OPEN },
-    closeSettings: { selector: SETTINGS_CLOSE, ready: SETTINGS_CLOSED, activation: 'dom' },
+    // The rows measured inside Settings and its close take the WebDriver element click, as the
+    // shipped sweep requests (`activation: 'webdriver'`); open Settings and the theme switches keep
+    // the native tap so the activation stays out of the scored frame.
+    closeSettings: {
+      selector: SETTINGS_CLOSE,
+      ready: SETTINGS_CLOSED,
+      activation: 'webdriver-element',
+    },
     settingsBack: { selector: '#settingsModal .settings-back' },
     // Transcribed from settingsSectionMeasurement in capture-xcuitest-actions.mjs: the wide pane is
     // a table of contents over one scrolling pane, so a click scrolls and the row reports a reading
@@ -481,7 +501,7 @@ export const splotch = defineApp({
           ? `document.querySelector("#parentalGate")?.open === true || (${opened})`
           : opened;
       },
-      activation: 'dom',
+      activation: 'webdriver-element',
     },
     closeParentalGate: {
       selector: '#parentalGate button[aria-label="Close"]',
@@ -511,13 +531,13 @@ export const splotch = defineApp({
       selector: '#coloring-book-dialog button[aria-label$="coloring book"]',
       ready:
         'document.querySelector("#coloring-book-dialog button[aria-label$=\\"coloring page\\"]") !== null',
-      activation: 'dom',
+      activation: 'webdriver-element',
     },
     coloringPage: {
       selector: '#coloring-book-dialog button[aria-label$="coloring page"]',
       ready:
         'document.querySelector("#coloring-book-dialog")?.open !== true && document.querySelector("#coloringOverlay")?.classList.contains("overlay-ready") && document.querySelector("#coloringOverlay")?.naturalWidth > 0',
-      activation: 'dom',
+      activation: 'webdriver-element',
     },
     coloringPages: { selector: '#coloring-book-dialog' },
     clearColoringPage: {

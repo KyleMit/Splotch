@@ -162,7 +162,8 @@ const closeOpenDialogs: Steps = [
   },
   settle(PLAIN_SETTLE_MS, 'dialog close'),
 ];
-const themeIs = (theme: 'light' | 'dark') => `${RESOLVED_THEME} === ${JSON.stringify(theme)}`;
+// Parenthesised: `??` binds looser than `===`, so the bare expression would compare only the fallback.
+const themeIs = (theme: 'light' | 'dark') => `(${RESOLVED_THEME}) === ${JSON.stringify(theme)}`;
 const rotation = (
   id: string,
   label: string,
@@ -548,7 +549,7 @@ const sequence: readonly SweepBlock<Splotch>[] = [
           until('document.querySelector("#coloring-book-dialog")?.open === true'),
           settle(ANIMATED_SETTLE_MS, 'coloring books reopened'),
         ],
-        activation: 'trusted',
+        activation: 'native-accessibility',
         settleMs: ANIMATED_SETTLE_MS,
       },
     ],
@@ -560,7 +561,8 @@ const sequence: readonly SweepBlock<Splotch>[] = [
   },
   {
     group: 'screenshot',
-    actions: [
+    // screenshotActivation: the packaged shell's button is reached through its accessibility element.
+    actions: (c) => [
       {
         id: 'screenshot.save',
         label: 'save screenshot',
@@ -569,7 +571,7 @@ const sequence: readonly SweepBlock<Splotch>[] = [
           { kind: 'evaluate', fn: ARM_DOWNLOAD_SINK, awaits: false, recordAs: 'downloadSinkArmed' },
         ],
         ready: DOWNLOAD_READY,
-        activation: 'trusted',
+        activation: c.packaged ? 'native-accessibility' : 'trusted',
         settleMs: SCREENSHOT_SETTLE_MS,
         teardown: [
           {

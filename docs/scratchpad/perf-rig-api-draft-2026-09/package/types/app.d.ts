@@ -268,12 +268,25 @@ export interface ToolsContract<Tool extends string> {
 export type Activation =
   | 'trusted-touch'
   | 'trusted-cdp-touch'
+  | 'trusted-wheel'
+  | 'native-system'
   | 'native-accessibility-click'
   | 'webdriver-element-click'
+  | 'webdriver-script-click'
   | 'dom-click';
 
-/** Requested delivery of an activation; the artifact records the `Activation` that happened. */
-export type ActivationRequest = 'trusted' | 'dom';
+/**
+ * Requested delivery of an activation; the artifact records the `Activation` that happened.
+ * `trusted`: the transport's native tap at the element's native bounds, falling back to the
+ * WebDriver element click when no native target resolves. `native-accessibility`: the native
+ * accessibility element found by the control's label, falling back the same way with a warning.
+ * `webdriver-element`: the WebDriver element-click endpoint (an Inspector-evaluate atom on Appium,
+ * a page click on Playwright), never a native target lookup; the input path a measured row takes
+ * when its scored frame must not carry a native tap's dispatch. `dom`: an in-page `click()`, for
+ * setup steps only; a measured sample never requests it. `CaptureOptions.transport.activation`
+ * overrides every request for the run (`--webdriver-clicks`).
+ */
+export type ActivationRequest = 'trusted' | 'native-accessibility' | 'webdriver-element' | 'dom';
 
 export interface Control {
   readonly selector: Selector;

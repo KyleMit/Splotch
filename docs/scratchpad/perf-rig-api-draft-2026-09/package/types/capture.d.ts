@@ -157,7 +157,8 @@ export interface CaptureOptions<A extends AppContract = AppContract> {
   readonly transport?: {
     readonly input?: InputTransportId;
     readonly channel?: MeasurementChannelId;
-    readonly activation?: 'trusted' | 'webdriver-element-click';
+    /** Overrides every control's and action's `ActivationRequest` for the run; recorded as `webdriver-script-click`. */
+    readonly activation?: 'trusted' | 'webdriver-script-click';
   };
   readonly refreshRegime?: RefreshRegimeId | null;
   readonly device?: DeviceSelection;

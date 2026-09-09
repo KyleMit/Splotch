@@ -349,7 +349,7 @@ export const scripts = {
         iosSplitTarget(f),
         f['actions'] ? focusedActions(list(f, 'actions')!) : actionSweep,
         f,
-        { transport: { activation: f['webdriver-clicks'] ? 'webdriver-element-click' : 'trusted' } }
+        { transport: { activation: f['webdriver-clicks'] ? 'webdriver-script-click' : 'trusted' } }
       )
     ),
   'perf:android:browser:actions': (f: Flags) =>

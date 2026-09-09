@@ -196,7 +196,8 @@ export interface ControlAction<A extends AppContract> {
   readonly control: ControlRef<A>;
   /** Overrides the control's own readiness for this measurement (a section row that also closes a gate). */
   readonly ready?: PageExpression;
-  readonly activation?: ActivationRequest;
+  /** Overrides the control's request; `dom` is refused on a measured sample. */
+  readonly activation?: Exclude<ActivationRequest, 'dom'>;
   /** Runs before the activation; the page state the measurement assumes (a menu reopened, ink on the canvas). */
   readonly setup?: readonly ScenarioStep<A>[];
   /** Runs after the sample is taken, before the next action. */
