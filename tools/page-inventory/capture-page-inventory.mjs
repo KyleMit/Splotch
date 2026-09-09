@@ -240,6 +240,40 @@ async function draw(page, yFraction = 0.5) {
   await page.mouse.up();
 }
 
+const HEART_SIZE_FRACTION = 0.24;
+const HEART_SEGMENT_STEPS = 4;
+const HEART_OUTLINE = [
+  [0, -0.25],
+  [-0.15, -0.45],
+  [-0.35, -0.5],
+  [-0.5, -0.35],
+  [-0.5, -0.1],
+  [-0.35, 0.15],
+  [0, 0.5],
+  [0.35, 0.15],
+  [0.5, -0.1],
+  [0.5, -0.35],
+  [0.35, -0.5],
+  [0.15, -0.45],
+  [0, -0.25],
+];
+
+async function drawHeart(page) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('Drawing canvas has no bounds');
+  const size = Math.min(box.width, box.height) * HEART_SIZE_FRACTION;
+  const points = HEART_OUTLINE.map(([x, y]) => ({
+    x: box.x + box.width / 2 + x * size,
+    y: box.y + box.height / 2 + y * size,
+  }));
+  await page.mouse.move(points[0].x, points[0].y);
+  await page.mouse.down();
+  for (const point of points.slice(1)) {
+    await page.mouse.move(point.x, point.y, { steps: HEART_SEGMENT_STEPS });
+  }
+  await page.mouse.up();
+}
+
 async function aiResult(page, outcome = 'pending') {
   await freshHome(page);
   await draw(page, 0.25);
@@ -583,7 +617,7 @@ function controlSurfaces() {
       'ClearButton/drag',
       async (page) => {
         await freshHome(page);
-        await draw(page);
+        await drawHeart(page);
         const box = await page.locator('#clearButton').boundingBox();
         if (!box) throw new Error('Clear button has no bounds');
         const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
