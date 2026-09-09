@@ -55,6 +55,8 @@ test('the brush flyout contains Pen and only enabled optional brushes', async ({
   await expect(page.locator('#magicBrushButton')).toBeVisible();
   await expect(page.locator('#eraserButton')).toBeVisible();
   await expect(page.locator('#crayonBrushButton')).toHaveCount(0);
+  await expect(page.locator('#magicBrushButton')).toHaveCSS('animation-delay', '0.065s');
+  await expect(page.locator('#eraserButton')).toHaveCSS('animation-delay', '0.09s');
 });
 
 test('no optional brushes removes the brush control', async ({ page }) => {

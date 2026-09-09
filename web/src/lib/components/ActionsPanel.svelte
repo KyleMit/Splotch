@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { drawerCascade } from '$lib/actions/drawerCascade';
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import BrushControl from './BrushControl.svelte';
@@ -37,7 +38,7 @@
     resolvedPortraitPaletteHeight,
     publishActionPanelState,
   } from '$lib/actionButtonLayout';
-  import { prepareCanvasExport, undo } from '$lib/drawing/engine';
+  import { prepareCanvasExport, undo, isStrokeActive } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
@@ -61,6 +62,7 @@
   let undoBtnEl: HTMLButtonElement | undefined;
   let strokeTriggerEl: HTMLButtonElement | undefined;
   let drawerMotion = $state(false);
+  let drawerOpening = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
   // Intentionally untracked: this frame only verifies the imperative animation state.
@@ -239,6 +241,7 @@
 
   function toggleDrawer() {
     const next = !settings.drawerOpen;
+    drawerOpening = next && !isStrokeActive();
     setDrawerOpen(next);
     // Tidy up any open flyout as the controls tuck away. No focus restore: the
     // trigger is on its way to visibility:hidden with the rest of the drawer.
@@ -447,7 +450,12 @@
   <!-- Always rendered; the drawer's open/closed state and each control's toggle
        in Settings are driven purely by CSS. app.html's <html> seed owns
        first paint; the panel-local publish effect owns hydrated changes. -->
-  <div class="actions-drawer" bind:this={drawerEl} ontransitionend={finishDrawerMotion}>
+  <div
+    class="actions-drawer"
+    use:drawerCascade={drawerOpening}
+    bind:this={drawerEl}
+    ontransitionend={finishDrawerMotion}
+  >
     <div class="actions-drawer-inner">
       <BrushControl
         bind:wrapperEl={brushWrapperEl}
@@ -466,6 +474,7 @@
           class:white-stroke={whiteStroke}
           class:dark-stroke={darkStroke}
           id="strokeWidthButton"
+          style:--i="1"
           aria-label="Stroke width"
           aria-expanded={openFlyout === 'stroke'}
           use:scribbleTap={handleStrokeBtnClick}
@@ -493,6 +502,7 @@
       <button
         class="action-button"
         id="coloringBookButton"
+        style:--i="2"
         aria-label="Coloring books"
         use:scribbleTap={handleColoringBookClick}
         bind:this={coloringBtnEl}
@@ -504,6 +514,7 @@
         class="action-button screenshot-button"
         class:disabled={canvasState.canvasEmpty}
         id={SCREENSHOT_BUTTON_ID}
+        style:--i="3"
         aria-label="Save screenshot"
         disabled={canvasState.canvasEmpty}
         use:scribbleTap={screenshotTap}
@@ -519,6 +530,7 @@
         class:disabled={aiImageButtonBlocked}
         class:loading={aiResult.generating && !aiResult.minimized}
         id="aiImageButton"
+        style:--i="4"
         aria-label={aiResult.minimized
           ? aiResult.generating
             ? 'Show the picture being made'
@@ -554,12 +566,18 @@
         class="action-button"
         class:disabled={!canvasState.canUndo}
         id="undoButton"
+        style:--i="5"
         aria-label="Undo"
         aria-disabled={!canvasState.canUndo}
         use:scribbleTap={handleUndoClick}
         bind:this={undoBtnEl}
       >
-        <Icon name="undo" class="action-icon" />
+        {#key canvasState.undoCount}
+          <Icon
+            name="undo"
+            class={canvasState.undoCount > 0 ? 'action-icon undo-firing' : 'action-icon'}
+          />
+        {/key}
       </button>
     </div>
   </div>
@@ -626,6 +644,7 @@
      the old slide axis — while the inner clips its overflowing content. The margin
      toward the toggle collapses too, so the toggle glides to the corner. */
   .actions-drawer {
+    --cascade: 45ms;
     display: grid;
     grid-template-columns: 1fr;
     align-items: center;

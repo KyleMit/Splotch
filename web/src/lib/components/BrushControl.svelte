@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isStrokeActive } from '$lib/drawing/engine';
   import BrushButtonFaces from './BrushButtonFaces.svelte';
   import BrushMenu from './BrushMenu.svelte';
   import { scribbleTap } from '$lib/actions/scribbleGuard';
@@ -44,7 +45,14 @@
     onOpenChange(!open);
   }
 
+  let faceRoll = $state.raw<{ brush: BrushType } | null>(null);
+
+  $effect(() => {
+    if (faceRoll && faceRoll.brush !== toolState.brush) faceRoll = null;
+  });
+
   function handlePick(brush: BrushType) {
+    if (brush !== toolState.brush && !isStrokeActive()) faceRoll = { brush };
     selectBrush(brush);
     onOpenChange(false);
   }
@@ -57,6 +65,7 @@
     class:white-stroke={inkWhite}
     class:dark-stroke={inkDark}
     id="brushButton"
+    style:--i={0}
     aria-label={singleOptionalBrushLabel ?? 'Brushes'}
     aria-expanded={optionalBrushes.length > 1 ? open : undefined}
     aria-pressed={singleOptionalBrush ? toolState.brush === singleOptionalBrush : undefined}
@@ -65,7 +74,7 @@
     bind:this={triggerEl}
     style:color={activeColor}
   >
-    <BrushButtonFaces />
+    <BrushButtonFaces {faceRoll} />
   </button>
   <BrushMenu
     {open}

@@ -35,11 +35,7 @@ import {
   type LiveTile,
   type TiledCanvasSnapshot,
 } from './tiledSurfaces';
-import {
-  buildTiledHistoryDebug,
-  captureTiledCanvasReadback,
-  renderTiledReadback,
-} from './tiledRendererReadback';
+import * as readback from './tiledRendererReadback';
 
 interface TiledRendererHost {
   paperSize: () => { width: number; height: number } | null;
@@ -427,9 +423,10 @@ export function commitTiledCommand() {
   return true;
 }
 
-export function peekTiledUndoPaper(): RecordedPaperState | undefined {
-  return history.at(-1)?.wasEmpty === false ? history.at(-1)?.recordedPaper : undefined;
-}
+export const peekTiledUndoCommand = () => history.at(-1);
+
+export const peekTiledUndoPaper = (): RecordedPaperState | undefined =>
+  history.at(-1)?.wasEmpty === false ? history.at(-1)?.recordedPaper : undefined;
 
 export function undoTiledCommand(renderScale: number) {
   const undone = history.pop();
@@ -516,7 +513,7 @@ export function scanTiledRendererIsEmpty(renderScale: number) {
 
 export function tiledHistoryDebug() {
   const undoSnapshots = history.map((command) => undoPatches.get(command));
-  return buildTiledHistoryDebug({
+  return readback.buildTiledHistoryDebug({
     history,
     undoableCommands,
     undoSnapshots,
@@ -530,7 +527,7 @@ export const tiledWorkDebug = () =>
   workCounters?.debug(liveTiles, backingMigration.pending) ?? null;
 
 export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
-  return captureTiledCanvasReadback({
+  return readback.captureTiledCanvasReadback({
     canvas,
     liveTiles,
     hasActivePointers: host?.hasActivePointers() ?? false,
@@ -539,8 +536,12 @@ export function captureTiledCanvasSnapshot(): TiledCanvasSnapshot | null {
   });
 }
 
+export const paintVisibleTiledInk = (target: CanvasRenderingContext2D) =>
+  readback.paintTiledInk(target, liveTiles);
+
 export function renderTiledSnapshot(target: CanvasRenderingContext2D) {
-  renderTiledReadback(target, historyBase, history, activeCommand, host?.paperSize() ?? null);
+  const paper = host?.paperSize() ?? null;
+  readback.renderTiledReadback(target, historyBase, history, activeCommand, paper);
 }
 
 export function detachTiledRenderer() {

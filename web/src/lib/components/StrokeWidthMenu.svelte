@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isStrokeActive } from '$lib/drawing/engine';
   import Icon from './Icon.svelte';
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
   import {
@@ -33,36 +34,39 @@
   } = $props();
 </script>
 
-<div
-  class="flyout-menu stroke-width-menu"
-  class:white-stroke={whiteStroke}
-  class:dark-stroke={darkStroke}
-  class:eraser-mode={erasing}
-  hidden={!open}
-  style:color={menuColor}
->
-  <!-- The previews change shape with the tool, not just color (a pink pen would
+{#if open}
+  <div
+    class="flyout-menu stroke-width-menu"
+    class:white-stroke={whiteStroke}
+    class:dark-stroke={darkStroke}
+    class:eraser-mode={erasing}
+    class:motionless={isStrokeActive()}
+    style:color={menuColor}
+  >
+    <!-- The previews change shape with the tool, not just color (a pink pen would
        otherwise look identical to the eraser): the pen shows ink strokes; the
        eraser shows dashed "holes in the paper" at its true effective size
        (ERASER_SIZE_MULTIPLIER × the pen's width), filled with --paper so the
        hole shows the canvas through the flyout. The magic previews carry the
        brush's rainbow rather than the ink color, which that brush ignores. -->
-  {#each STROKE_SIZES as size (size)}
-    <button
-      class="flyout-option"
-      class:active={activeSize === size}
-      aria-label={erasing ? `Eraser size ${size}` : `Size ${size}`}
-      aria-pressed={activeSize === size}
-      use:scribbleTap={() => onpick(size)}
-    >
-      {#if erasing}
-        <Icon name={ERASER_SIZE_ICON[size]} class="action-icon" />
-      {:else}
-        <InkOrMagicIcon ink={SIZE_ICON[size]} magic={MAGIC_SIZE_ICON[size]} class="action-icon" />
-      {/if}
-    </button>
-  {/each}
-</div>
+    {#each STROKE_SIZES as size, index (size)}
+      <button
+        class="flyout-option"
+        style:--i={index}
+        class:active={activeSize === size}
+        aria-label={erasing ? `Eraser size ${size}` : `Size ${size}`}
+        aria-pressed={activeSize === size}
+        use:scribbleTap={() => onpick(size)}
+      >
+        {#if erasing}
+          <Icon name={ERASER_SIZE_ICON[size]} class="action-icon" />
+        {:else}
+          <InkOrMagicIcon ink={SIZE_ICON[size]} magic={MAGIC_SIZE_ICON[size]} class="action-icon" />
+        {/if}
+      </button>
+    {/each}
+  </div>
+{/if}
 
 <style>
   /* The .flyout-menu / .flyout-option chrome is shared with BrushMenu and lives

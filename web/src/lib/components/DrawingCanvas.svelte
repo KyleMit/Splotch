@@ -92,6 +92,9 @@
     // back to a full init.
     const engine = adoptDrawingCanvas(canvasEl, {
       initialColor: colors.activeColor,
+      onUndo: () => {
+        canvasState.undoCount++;
+      },
       onDrawSound: playDrawSound,
       onDrawStop: stopDrawSound,
       onUndoStateChange: (canUndo) => {

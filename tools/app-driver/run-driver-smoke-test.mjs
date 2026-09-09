@@ -131,11 +131,13 @@ async function run(browser, base) {
   );
 
   await setStrokeSize(page, 5);
+  await page.getByRole('button', { name: 'Stroke width', exact: true }).click();
   check(
     'setStrokeSize marks Size 5 active',
     (await page.locator('button[aria-label="Size 5"]').getAttribute('aria-pressed')) === 'true'
   );
 
+  await page.keyboard.press('Escape');
   const box = await canvasBox(page);
   await drawStroke(page, box, [
     { x: box.width * 0.3, y: box.height * 0.4 },

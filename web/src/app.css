@@ -568,6 +568,11 @@ body {
    position:relative .flyout-wrapper (a Svelte component adds no wrapper DOM,
    so this menu is a direct child of it). */
 .flyout-menu {
+  --stagger: 25ms;
+  --flyout-from-x: 0px;
+  --flyout-from-y: 6px;
+  transform-origin: calc(var(--action-btn-size) / 2) 100%;
+  animation: flyout-shell var(--duration-base) var(--ease-pop) both;
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
@@ -584,6 +589,9 @@ body {
 
 @media (orientation: portrait) {
   .flyout-menu {
+    --flyout-from-x: -6px;
+    --flyout-from-y: 0px;
+    transform-origin: 0 100%;
     left: calc(100% + 8px);
     bottom: 0;
   }
@@ -598,10 +606,6 @@ body {
   .flyout-menu {
     flex-direction: column;
   }
-}
-
-.flyout-menu[hidden] {
-  display: none;
 }
 
 .flyout-option {
@@ -878,4 +882,111 @@ body {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
+}
+
+@keyframes flyout-shell {
+  from {
+    opacity: 0;
+    transform: translate(var(--flyout-from-x), var(--flyout-from-y)) scale(0.96);
+  }
+}
+@keyframes flyout-option {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.flyout-menu > button {
+  animation: flyout-option var(--duration-base) var(--ease-pop) backwards;
+  animation-delay: calc(40ms + var(--i) * var(--stagger));
+}
+.flyout-menu.motionless,
+.flyout-menu.motionless > button {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flyout-menu,
+  .flyout-menu > button {
+    animation: none;
+  }
+}
+
+.ink-motion {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.undo-ink-motion {
+  position: absolute;
+  transform-origin: center;
+  animation: undo-ink 300ms var(--ease-glide) forwards;
+}
+@keyframes undo-ink {
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+.undo-firing {
+  animation: undo-spin var(--duration-slow) var(--ease-pop);
+}
+@keyframes undo-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .undo-ink-motion {
+    display: none;
+    animation: none;
+  }
+  .undo-firing {
+    animation: none;
+  }
+}
+
+.clear-ink-layer {
+  position: fixed;
+  inset: auto;
+  z-index: var(--z-clear-ink);
+}
+.clear-ink-motion {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 100% 0;
+  animation: clear-ink var(--duration-slow) var(--ease-glide) forwards;
+}
+@keyframes clear-ink {
+  to {
+    opacity: 0;
+    transform: translate(60%, -60%) scale(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clear-ink-motion {
+    display: none;
+    animation: none;
+  }
+}
+
+.actions-drawer.opening .action-button:not(.action-unavailable) {
+  animation: btn-cascade var(--duration-slow) var(--ease-pop) backwards;
+  animation-delay: calc(var(--i) * var(--cascade));
+}
+
+@keyframes btn-cascade {
+  from {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions-drawer.opening .action-button:not(.action-unavailable) {
+    animation: none;
+  }
 }
