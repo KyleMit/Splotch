@@ -70,6 +70,8 @@ const DOCKED_DISABLED_CONTROLS_NOTE =
   'Before the first stroke, while undo, AI, and screenshot are disabled, the docked Actions Panel may sit partly past the screen edge. In portrait it is the column of drawing controls near the lower left; in landscape it is the row along the bottom. The existing general note about reduced-contrast disabled buttons applies to those three controls. Each disabled control retains a visible portion of its glyph inside the viewport.';
 
 export const SURFACE_DESIGN_NOTES = {
+  'ai/ai-result-success':
+    'Below the finished AI picture, the small rounded translucent pill on the dark backdrop carries “AI-generated picture · Report” and a flag glyph. This disclosure is parent-facing fine print outside the picture card, kept visually small so a child is less likely to target it. Report has transparent tap padding beyond its visible label; it does not need a separate filled button. The visibility floor is readable disclosure and Report text, with a distinguishable flag against the pill.',
   'ai/ai-result-loading':
     'While the AI picture is loading, the tall result card reserves the finished picture’s height so the layout stays in place when the image arrives. The loading content sits near the bottom of that reserved space. The visibility floor is a fully readable loading message contained inside the card without cut-off text.',
   'controls/clear-coachmark':
