@@ -198,9 +198,9 @@ const request = <S extends Scenario<Splotch>>(
 const deviceOf = (flags: Flags, fallback: keyof typeof DEVICES = 'phone') =>
   DEVICES[(str(flags, 'device') as keyof typeof DEVICES | undefined) ?? fallback];
 const iosSplitTarget = (flags: Flags) =>
-  targets[flags['native-app'] ? 'ipad-device-packaged' : 'ipad-device-browser'];
+  targets[flags['native-app'] ? 'ipad-device-native' : 'ipad-device-web'];
 const androidSplitTarget = (flags: Flags) =>
-  targets[flags['native-app'] ? 'android-device-packaged' : 'android-device-browser'];
+  targets[flags['native-app'] ? 'android-device-native' : 'android-device-web'];
 
 export const scripts = {
   // ---- local web, session shape
@@ -220,7 +220,7 @@ export const scripts = {
     capture(request(local('webkit', deviceOf(f)), toddlerSession, f)),
   'perf:android': (f: Flags) =>
     capture(
-      request(targets['android-emulator-packaged'], toddlerSession, f, {
+      request(targets['android-emulator-native'], toddlerSession, f, {
         transport: { input: 'desktop-playwright', channel: 'cdp-evaluate' },
         instruments: [{ id: 'cdp-tracing' }],
       })
@@ -251,7 +251,7 @@ export const scripts = {
     ),
   'perf:ios:webkit:frames': (f: Flags) =>
     capture(
-      request(targets['ipad-device-browser'], realScreenSweep, f, {
+      request(targets['ipad-device-web'], realScreenSweep, f, {
         transport: {
           input: f['drive'] ? 'desktop-playwright' : 'human',
           channel: 'webkit-inspector',
@@ -276,7 +276,7 @@ export const scripts = {
     ),
   'perf:ios:bundled:frames': (f: Flags) =>
     capture(
-      request(targets['ipad-device-packaged'], drawingCell(brushOf(f)), f, {
+      request(targets['ipad-device-native'], drawingCell(brushOf(f)), f, {
         transport: { input: f['hand-input'] ? 'human' : 'appium', channel: 'preferences-mailbox' },
       })
     ),
@@ -305,7 +305,7 @@ export const scripts = {
     ),
   'perf:android:bundled:frames': (f: Flags) =>
     capture(
-      request(targets['android-device-packaged'], drawingCell(brushOf(f)), f, {
+      request(targets['android-device-native'], drawingCell(brushOf(f)), f, {
         transport: {
           input: f['input'] === 'hand' ? 'human' : 'adb-input',
           channel: 'cdp-evaluate',
@@ -333,7 +333,7 @@ export const scripts = {
   'perf:android:browser:actions': (f: Flags) =>
     capture(
       request(
-        targets['android-device-browser'],
+        targets['android-device-web'],
         f['actions'] ? focusedActions(list(f, 'actions')!) : actionSweep,
         f,
         {
@@ -368,7 +368,7 @@ export const scripts = {
       reuseBuild: f['no-build'] === true,
     }),
   'perf:ios:webkit:gates': (f: Flags) =>
-    ipadEngineGates(targets['ipad-device-browser'], str(f, 'device-id')!),
+    ipadEngineGates(targets['ipad-device-web'], str(f, 'device-id')!),
   // ---- serving and hosts
   'perf:serve': (f: Flags) =>
     serve(splotch, {
@@ -510,5 +510,5 @@ export const scripts = {
       hud: true,
     }),
   'capture --dry-run': (f: Flags) =>
-    planCapture(request(targets['ipad-device-browser'], drawingCell('pen'), f)),
+    planCapture(request(targets['ipad-device-web'], drawingCell('pen'), f)),
 } satisfies Record<string, (flags: Flags) => unknown>;

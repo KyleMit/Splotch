@@ -19,7 +19,7 @@ const handCapture = (platform: 'ios' | 'android', brush: Brush): OperatorStep =>
   run: async ({ capture: options }) => {
     const result = await capture({
       app: splotch,
-      target: targets[platform === 'ios' ? 'ipad-device-packaged' : 'android-device-packaged'],
+      target: targets[platform === 'ios' ? 'ipad-device-native' : 'android-device-native'],
       scenario: drawingCell(brush),
       gates,
       options: {

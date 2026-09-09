@@ -14,7 +14,7 @@
 import type { Activation } from './app.js';
 import type { ACTIONS_PROBE_SCHEMA, FrameStampEpoch } from './probe.js';
 import type { ResolvedActionPlan, ScenarioKind } from './scenario.js';
-import type { Platform, Shell } from './target.js';
+import type { PageDelivery, Platform, Shell } from './target.js';
 import type {
   ActionSample,
   ActionSummary,
@@ -107,7 +107,7 @@ export interface Provenance {
   readonly nonce: string | null;
   readonly pageIdentity:
     'proven-by-url' | 'proven-by-attached-target' | 'proven-by-container-nonce' | 'unprovable';
-  readonly pageDelivery: 'browser' | 'remote-preview' | 'packaged';
+  readonly pageDelivery: PageDelivery;
   /** The gate policy the capture-time verdicts were scored under; a fold re-evaluates under the current one. */
   readonly gatePolicyDigest: string | null;
 }

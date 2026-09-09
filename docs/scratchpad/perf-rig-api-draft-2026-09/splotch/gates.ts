@@ -11,14 +11,14 @@ export const gates = defineGates({
     lostFrameTimeShare: 0.01,
     exceptions: [
       {
-        target: 'ipad-device-browser',
+        target: 'ipad-device-web',
         tool: 'crayon',
         lostFrameTimeShare: 0.015,
         basis:
           'ADR-0137: thirteen measured implementations; worst single capture; ratchets down only',
       },
       {
-        target: 'ipad-device-packaged',
+        target: 'ipad-device-native',
         tool: 'crayon',
         lostFrameTimeShare: 0.015,
         basis: 'ADR-0137',
@@ -33,7 +33,7 @@ export const gates = defineGates({
     minGatedSamples: 3,
     allowances: [
       {
-        target: 'ipad-device-browser',
+        target: 'ipad-device-web',
         references: ['ADR-0090', 'ADR-0160'],
         entries: [
           {
@@ -57,7 +57,7 @@ export const gates = defineGates({
         ],
       },
       {
-        target: 'android-device-browser',
+        target: 'android-device-web',
         references: ['ADR-0162'],
         entries: [
           {

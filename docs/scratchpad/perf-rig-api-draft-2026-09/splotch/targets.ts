@@ -1,4 +1,6 @@
-// The eleven deployment targets, as data. docs/PROFILING-MECHANICS.md restates this table and a
+// The eleven deployment targets, as data, under the ids the shipped registry, the campaign artifact
+// paths and the tracked evidence already use (`web` and `native` name the shell in the id; `shell`
+// and `pageDelivery` carry the vocabulary). docs/PROFILING-MECHANICS.md restates this table and a
 // Splotch-owned test holds the two together through the package's resolveTransports.
 import {
   DEFAULT_REFRESH_REGIMES,
@@ -19,39 +21,48 @@ type Target<Id extends string> = TargetDefinition<SplotchRuntime, SplotchRegime>
   readonly id: Id;
 };
 
-const ipad = <const H extends 'device' | 'simulator', const S extends 'browser' | 'packaged'>(
+type ShellId = 'web' | 'native';
+const SHELL = { web: 'browser', native: 'packaged' } as const;
+
+const ipad = <const H extends 'device' | 'simulator', const S extends ShellId>(
   host: H,
-  shell: S
+  shellId: S
 ): Target<`ipad-${H}-${S}`> => ({
-  id: `ipad-${host}-${shell}`,
-  label: `iPad ${host} · ${shell === 'browser' ? 'web' : 'native'}`,
+  id: `ipad-${host}-${shellId}`,
+  label: `iPad ${host} · ${shellId}`,
   platform: 'ios',
   host,
-  shell,
+  shell: SHELL[shellId],
   deviceClass: 'tablet',
-  captureRuntime: shell === 'browser' ? 'ios-safari' : 'ios-capacitor-webview',
+  captureRuntime: shellId === 'web' ? 'ios-safari' : 'ios-capacitor-webview',
   refreshRegime: '60hz',
   transports: { drawing: 'appium', actions: 'appium', measurement: 'appium-execute' },
   instruments: ['host-quiet'],
-  evidenceRole: host === 'device' && shell === 'browser' ? 'gated' : 'advisory',
+  evidenceRole: host === 'device' && shellId === 'web' ? 'gated' : 'advisory',
   physicalDevice: host === 'device',
 });
 
-const android = <const H extends 'device' | 'emulator', const S extends 'browser' | 'packaged'>(
+// ADR-0135: the native shell draws over the split transport with the instrumented export loaded
+// from the served preview (remote delivery, `pageIdentity: unprovable`), and measures its discrete
+// actions over Appium against the packaged origin.
+const android = <const H extends 'device' | 'emulator', const S extends ShellId>(
   host: H,
-  shell: S
+  shellId: S
 ): Target<`android-${H}-${S}`> => ({
-  id: `android-${host}-${shell}`,
-  label: `Android ${host} · ${shell === 'browser' ? 'web' : 'native'}`,
+  id: `android-${host}-${shellId}`,
+  label: `Android ${host} · ${shellId}`,
   platform: 'android',
   host,
-  shell,
+  shell: SHELL[shellId],
+  ...(shellId === 'native'
+    ? { pageDelivery: { frames: 'remote-preview' as const, actions: 'packaged' as const } }
+    : {}),
   deviceClass: 'handset',
-  captureRuntime: shell === 'browser' ? 'android-chrome' : 'android-capacitor-webview',
+  captureRuntime: shellId === 'web' ? 'android-chrome' : 'android-capacitor-webview',
   refreshRegime: host === 'device' ? '120hz' : '60hz',
   transports: {
     drawing: 'adb-input',
-    actions: shell === 'browser' ? 'cdp-touch' : 'appium',
+    actions: shellId === 'web' ? 'cdp-touch' : 'appium',
     measurement: 'http-upload',
   },
   instruments: ['host-quiet', 'android-refresh-pin'],
@@ -86,14 +97,14 @@ const mac = <const L extends 'chrome' | 'safari' | 'firefox'>(
 
 export const targets = defineTargets(
   [
-    ipad('device', 'browser'),
-    ipad('device', 'packaged'),
-    ipad('simulator', 'browser'),
-    ipad('simulator', 'packaged'),
-    android('device', 'browser'),
-    android('device', 'packaged'),
-    android('emulator', 'browser'),
-    android('emulator', 'packaged'),
+    ipad('device', 'web'),
+    ipad('device', 'native'),
+    ipad('simulator', 'web'),
+    ipad('simulator', 'native'),
+    android('device', 'web'),
+    android('device', 'native'),
+    android('emulator', 'web'),
+    android('emulator', 'native'),
     mac('chromium', 'chrome', '120hz'),
     mac('webkit', 'safari', '60hz'),
     mac('firefox', 'firefox', '120hz'),
@@ -103,14 +114,14 @@ export const targets = defineTargets(
 
 /** The app-facing fidelity label the matrix renders; the package only knows gated versus advisory. */
 export const FIDELITY_LABEL: Record<keyof typeof targets, string> = {
-  'ipad-device-browser': 'physical-safari-gated',
-  'ipad-device-packaged': 'physical-native-advisory',
-  'ipad-simulator-browser': 'simulator-advisory',
-  'ipad-simulator-packaged': 'simulator-advisory',
-  'android-device-browser': 'physical-web-advisory',
-  'android-device-packaged': 'physical-native-advisory',
-  'android-emulator-browser': 'simulator-advisory',
-  'android-emulator-packaged': 'simulator-advisory',
+  'ipad-device-web': 'physical-safari-gated',
+  'ipad-device-native': 'physical-native-advisory',
+  'ipad-simulator-web': 'simulator-advisory',
+  'ipad-simulator-native': 'simulator-advisory',
+  'android-device-web': 'physical-web-advisory',
+  'android-device-native': 'physical-native-advisory',
+  'android-emulator-web': 'simulator-advisory',
+  'android-emulator-native': 'simulator-advisory',
   'mac-chrome': 'desktop-advisory',
   'mac-safari': 'desktop-advisory',
   'mac-firefox': 'desktop-advisory',

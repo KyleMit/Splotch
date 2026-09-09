@@ -54,8 +54,8 @@ Round one found these gaps; rounds two and three closed them and cut what the re
 Splotch code wearing a generic name:
 
 * `options.transport` overrides, because one target captures over different channels
-  (`ipad-device-packaged` over Appium and over the preferences mailbox; `android-device-browser`
-  over `adb-input` and, for a hand capture, `human`).
+  (`ipad-device-native` over Appium and over the preferences mailbox; `android-device-web` over
+  `adb-input` and, for a hand capture, `human`).
 * A `human` input transport as a first-class member, so the artifact records it.
 * A `first-show` shape; the page-load window folded into `session` with no beats.
 * `scenarioOverrides`, `server`, `viewport`, `headed`, `human`, `refreshRegime` and

@@ -81,8 +81,12 @@ is not a loopback name (`localhost`, `localtest.me`, `*.nip.io` to `127.0.0.1` a
 time); `adb`.
 
 **Guards added.** `page-identity-nonce` is mandatory; `dimension-observed` reads orientation from
-the page after the stop, rotate, launch sequence; `runtime-user-agent`; for packaged WebViews
-`packaged-origin`.
+the page after the stop, rotate, launch sequence; `runtime-user-agent`. A packaged WebView on this
+endpoint is `remote-preview` delivery (ADR-0135): the shell loads the instrumented native export
+from the served preview through its capture-only server URL, so `refused-build-variant` requires the
+export rather than the web build, `packaged-origin` is not applicable, and the artifact records
+`pageIdentity: unprovable`; the served build is proved by `served-build-identity` and
+`entry-module-match`.
 
 **How it runs.** The page fetches a plan carrying the nonce, runs the compiled bootstrap (identity,
 hydration, tool selection, dimensions, prime, probe), posts readiness, polls the plan, and uploads
