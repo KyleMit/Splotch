@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": false,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": true,
+    "types": ["node"],
+    "lib": ["ES2022"],
+    "paths": { "perf-rig": ["./package/types/index.d.ts"] }
+  },
+  "include": ["package/types/**/*.d.ts", "splotch/**/*.ts"]
+}
