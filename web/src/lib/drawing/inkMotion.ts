@@ -10,6 +10,25 @@ export function createInkMotion() {
     overlay = null;
   }
 
+  function present(host: HTMLElement | null, image: HTMLCanvasElement, transform: string) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ink-motion';
+    wrapper.setAttribute('aria-hidden', 'true');
+    wrapper.style.transform = transform;
+    wrapper.append(image);
+    const dispose = () => {
+      wrapper.remove();
+      image.width = 0;
+      image.height = 0;
+      if (overlay === wrapper) overlay = null;
+    };
+    image.addEventListener('animationend', dispose, { once: true });
+    image.addEventListener('animationcancel', dispose, { once: true });
+    host?.append(wrapper);
+    overlay = wrapper;
+    return wrapper;
+  }
+
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
@@ -34,22 +53,37 @@ export function createInkMotion() {
     renderOp(target, { kind: 'crayonFlush' });
     image.className = 'undo-ink-motion';
     image.style.cssText = `left:${bounds.left / scale}px;top:${bounds.top / scale}px;width:${bounds.width / scale}px;height:${bounds.height / scale}px`;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'ink-motion';
-    wrapper.setAttribute('aria-hidden', 'true');
-    wrapper.style.transform = `matrix(${viewMatrix(view).join(',')})`;
-    wrapper.append(image);
-    image.addEventListener(
-      'animationend',
-      () => {
-        wrapper.remove();
-        if (overlay === wrapper) overlay = null;
-      },
-      { once: true }
-    );
-    canvas.parentElement?.append(wrapper);
-    overlay = wrapper;
+    present(canvas.parentElement, image, `matrix(${viewMatrix(view).join(',')})`);
   }
 
-  return { cancel, undo };
+  function clear(
+    canvas: HTMLCanvasElement,
+    view: EngineViewState,
+    scale: number,
+    viewport: { width: number; height: number },
+    paint: (target: CanvasRenderingContext2D) => void
+  ) {
+    cancel();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const rect = canvas.parentElement?.getBoundingClientRect();
+    if (!rect) return;
+    const image = document.createElement('canvas');
+    image.width = viewport.width;
+    image.height = viewport.height;
+    const target = image.getContext('2d');
+    if (!target) return;
+    target.setTransform(...viewMatrix({ ...view, tx: view.tx * scale, ty: view.ty * scale }));
+    paint(target);
+    image.className = 'clear-ink-motion';
+    const wrapper = present(document.body, image, 'none');
+    wrapper.classList.add('clear-ink-layer');
+    Object.assign(wrapper.style, {
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+    });
+  }
+
+  return { cancel, undo, clear };
 }

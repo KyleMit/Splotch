@@ -62,7 +62,7 @@
         // pipeline's on-demand chunk failing to load on a dead connection —
         // the clear itself must never be blocked by that.
         saveDrawingIfEnabled().catch((err) => console.error('Save on delete failed:', err));
-        clearCanvas();
+        clearCanvas({ animate: true });
         resetToolAfterClear();
       },
       onTutorialShow: () => coachmark?.show(buttonEl),

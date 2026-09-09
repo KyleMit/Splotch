@@ -95,3 +95,9 @@ export function renderTiledReadback(
     for (const op of activeCommand.ops) renderOp(target, op);
   }
 }
+
+export function paintTiledInk(target: CanvasRenderingContext2D, tiles: LiveTile[]) {
+  for (const tile of tiles) {
+    if (!tile.canvas.hidden) target.drawImage(tile.canvas, tile.x, tile.y);
+  }
+}

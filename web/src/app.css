@@ -946,3 +946,29 @@ body {
     animation: none;
   }
 }
+
+.clear-ink-layer {
+  position: fixed;
+  inset: auto;
+  z-index: var(--z-clear-ink);
+}
+.clear-ink-motion {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 100% 0;
+  animation: clear-ink var(--duration-slow) var(--ease-glide) forwards;
+}
+@keyframes clear-ink {
+  to {
+    opacity: 0;
+    transform: translate(60%, -60%) scale(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clear-ink-motion {
+    display: none;
+    animation: none;
+  }
+}

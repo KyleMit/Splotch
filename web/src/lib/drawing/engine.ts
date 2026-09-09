@@ -125,6 +125,7 @@ import {
   tiledWorkDebug,
   undoTiledCommand,
   peekTiledUndoCommand,
+  paintVisibleTiledInk,
 } from './tiledRenderer';
 import { createInkMotion } from './inkMotion';
 import type { DrawingWorkDebug } from './drawingWorkDebug';
@@ -1103,9 +1104,12 @@ export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppeara
   return prepared;
 }
 
-export function clearCanvas() {
+export function clearCanvas({ animate = false }: { animate?: boolean } = {}) {
   inkMotion.cancel();
   if (!canvas || !ctx) return;
+  if (animate && !isStrokeActive() && !canvasEmpty) {
+    inkMotion.clear(canvas, getViewState(), renderScale, viewport, paintVisibleTiledInk);
+  }
   const state = clearTiledRenderer(canvasEmpty);
   crayonPasses.reset();
   setCanvasEmptyState(state.empty);

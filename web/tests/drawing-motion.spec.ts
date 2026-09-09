@@ -52,7 +52,7 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
     { x: 440, y: 240 },
   ]);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
-  await page.locator('#undoButton').evaluate((button) => {
+  await page.locator('#undoButton').evaluate((button: HTMLButtonElement) => {
     button.click();
     for (const animation of document
       .querySelector('.ink-motion')
@@ -78,4 +78,36 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
   ]);
   await expect(overlay).toHaveCount(0);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+});
+
+test('clear snapshots ink while clearing history and still permits undo', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await drawCommittedStroke(page, [
+    { x: 250, y: 200 },
+    { x: 440, y: 240 },
+  ]);
+  const inkBefore = await opaqueCanvasPixelCount(page);
+  await page.locator('#clearButton').evaluate((button: HTMLButtonElement) => {
+    button.click();
+    for (const animation of document
+      .querySelector('.ink-motion')
+      ?.getAnimations({ subtree: true }) ?? [])
+      animation.pause();
+  });
+  const snapshot = page.locator('.clear-ink-motion');
+  await expect(snapshot).toBeVisible();
+  await expect(snapshot).toHaveCSS('animation-name', 'clear-ink');
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(0);
+  expect(
+    await snapshot.evaluate((canvas: HTMLCanvasElement) =>
+      canvas
+        .getContext('2d')!
+        .getImageData(0, 0, canvas.width, canvas.height)
+        .data.some((value, index) => index % 4 === 3 && value > 0)
+    )
+  ).toBe(true);
+  await page.locator('#undoButton').click();
+  await expect(snapshot).toHaveCount(0);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(inkBefore);
 });
