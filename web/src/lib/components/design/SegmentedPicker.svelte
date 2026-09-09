@@ -247,13 +247,6 @@
     display: flex;
   }
 
-  /* SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
-  @media (max-height: 500px) {
-    .segment .option {
-      color: var(--text);
-    }
-  }
-
   .segment .option {
     display: inline-flex;
     align-items: center;
