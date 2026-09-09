@@ -67,7 +67,7 @@ export const SURFACE_DESIGN_NOTES = {
   'controls/clear-coachmark':
     'The clear-gesture coachmark drawn over the canvas is the intended design, and it is carried by an animation that a single frame cannot convey. Judge the coachmark itself on whether what is drawn here is legible, rather than on whether it explains the gesture. Everything else in the frame stays in normal scope.',
   'controls/clear-drag-preview':
-    'The faint icons washed over the canvas are the intended effect: they signal that clearing the drawing is underway.',
+    'The faint icons washed over the canvas are the intended effect: they signal that clearing the drawing is underway. While the round trash button is being dragged, the accept ring stays centered on the button’s docked position at the screen edge. The ring may extend beyond the viewport; at least one arc of the ring remains visible.',
   'settings/settings-feedback':
     'When this image shows the Feedback form, the "Send report" button stays disabled until the message box has text, and the form is captured before anything has been typed, so that button is in its disabled state here. A disabled button is drawn at half opacity, fill and label together, which is how this app marks the action unavailable; that half-strength appearance is the disabled styling arriving and is not a claim about the button’s contrast once a message is typed and it is enabled. The floor it still owes is that its label remains readable: report it only when you cannot read the words "Send report" on it.',
   'settings/settings-whatsnew':
