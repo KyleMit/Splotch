@@ -27,7 +27,7 @@
   </div>
   <!-- eslint-enable svelte/no-at-html-tags -->
   <h1>Oops!</h1>
-  <p>Something went wrong. Let's start a fresh drawing.</p>
+  <p>Something went wrong.<br />Let's start a fresh drawing.</p>
   <button type="button" class="error-restart" onclick={onRestart}>Start over</button>
 </div>
 
