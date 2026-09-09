@@ -63,11 +63,24 @@ export const GROUP_DESIGN_NOTES = {
     'When this image shows the compact phone-landscape Settings shell, its Portrait and Landscape orientation segments are both inactive while screen rotation is unlocked. A segment becomes active only after the parent locks rotation to that orientation.',
 };
 
+const FLYOUT_ANCHOR_NOTE =
+  'The flyout’s edge is anchored to its trigger button in the Actions Panel, the bottom-corner group of drawing controls; it is not centered on that button. The flyout and its trigger remain visible in the frame.';
+
+const DOCKED_DISABLED_CONTROLS_NOTE =
+  'Before the first stroke, while undo, AI, and screenshot are disabled, the docked Actions Panel may sit partly past the screen edge. In portrait it is the column of drawing controls near the lower left; in landscape it is the row along the bottom. The existing general note about reduced-contrast disabled buttons applies to those three controls. Each disabled control retains a visible portion of its glyph inside the viewport.';
+
 export const SURFACE_DESIGN_NOTES = {
+  'ai/ai-result-success':
+    'Below the finished AI picture, the small rounded translucent pill on the dark backdrop carries “AI-generated picture · Report” and a flag glyph. This disclosure is parent-facing fine print outside the picture card, kept visually small so a child is less likely to target it. Report has transparent tap padding beyond its visible label; it does not need a separate filled button. The visibility floor is readable disclosure and Report text, with a distinguishable flag against the pill.',
+  'ai/ai-result-loading':
+    'While the AI picture is loading, the tall result card reserves the finished picture’s height so the layout stays in place when the image arrives. The loading content sits near the bottom of that reserved space. The visibility floor is a fully readable loading message contained inside the card without cut-off text.',
   'controls/clear-coachmark':
     'The clear-gesture coachmark drawn over the canvas is the intended design, and it is carried by an animation that a single frame cannot convey. Judge the coachmark itself on whether what is drawn here is legible, rather than on whether it explains the gesture. Everything else in the frame stays in normal scope.',
   'controls/clear-drag-preview':
-    'The faint icons washed over the canvas are the intended effect: they signal that clearing the drawing is underway.',
+    'The faint icons washed over the canvas are the intended effect: they signal that clearing the drawing is underway. While the round trash button is being dragged, the accept ring stays centered on the button’s docked position at the screen edge. The ring may extend beyond the viewport; at least one arc of the ring remains visible.',
+  'controls/brush-menu': `In the Brush Menu, the floating row of drawing-tool glyphs, only the selected tool has a highlighted tile. The unselected glyphs share the flyout’s continuous surface, so the menu reads as one piece. Each option’s glyph remains visible and separate from its neighbors. ${FLYOUT_ANCHOR_NOTE} ${DOCKED_DISABLED_CONTROLS_NOTE}`,
+  'controls/stroke-width-menu': `In the Stroke Width Menu, the floating row of stroke previews, only the selected width has a highlighted tile. The unselected previews share the flyout’s continuous surface, so the menu reads as one piece. Each option’s preview remains visible and separate from its neighbors. ${FLYOUT_ANCHOR_NOTE} ${DOCKED_DISABLED_CONTROLS_NOTE}`,
+  'controls/coloring-page-applied': DOCKED_DISABLED_CONTROLS_NOTE,
   'settings/settings-feedback':
     'When this image shows the Feedback form, the "Send report" button stays disabled until the message box has text, and the form is captured before anything has been typed, so that button is in its disabled state here. A disabled button is drawn at half opacity, fill and label together, which is how this app marks the action unavailable; that half-strength appearance is the disabled styling arriving and is not a claim about the button’s contrast once a message is typed and it is enabled. The floor it still owes is that its label remains readable: report it only when you cannot read the words "Send report" on it.',
   'settings/settings-whatsnew':

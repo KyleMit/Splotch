@@ -216,4 +216,15 @@
       font-size: var(--font-size-md);
     }
   }
+
+  /* SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
+  @media (max-height: 500px) {
+    .hero {
+      padding: var(--space-1) 0 var(--space-4);
+    }
+
+    h1 {
+      font-size: var(--font-size-xl);
+    }
+  }
 </style>

@@ -100,23 +100,24 @@
   {@html `<script>${BETA_PLATFORM_BOOT_SCRIPT}${'<'}/script>`}
 </svelte:head>
 
-<PageShell title="Join the Splotch beta" wordmark="Splotch beta">
-  {#snippet lede()}
-    Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
-    feedback. Thank you for helping!
-  {/snippet}
+<div class="beta">
+  <PageShell title="Join the Splotch beta" wordmark="Splotch beta">
+    {#snippet lede()}
+      Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
+      feedback. Thank you for helping!
+    {/snippet}
 
-  <div class="beta-platform-picker">
-    <SegmentedPicker
-      variant="underline"
-      label="Which device are you installing on?"
-      {options}
-      selected={platform}
-      onSelect={selectPlatform}
-    />
-  </div>
+    <div class="beta-platform-picker">
+      <SegmentedPicker
+        variant="underline"
+        label="Which device are you installing on?"
+        {options}
+        selected={platform}
+        onSelect={selectPlatform}
+      />
+    </div>
 
-  <!-- The whole no-JavaScript story, in one block that only exists when there is
+    <!-- The whole no-JavaScript story, in one block that only exists when there is
        no JavaScript: the picker cannot filter without it, so it stands down and
        two real links take its place. They are the same choice as a table of
        contents — an anchor into the panel below — and `:target` turns that jump
@@ -129,86 +130,113 @@
        `html:not([data-beta-os])` guard the block below uses: scripting-off is
        the only state in which a browser renders <noscript> content at all, and
        it is exactly the state in which nothing stamps that attribute. -->
-  <noscript>
-    <style>
-      .beta-platform-picker {
-        display: none;
-      }
+    <noscript>
+      <style>
+        .beta-platform-picker {
+          display: none;
+        }
 
-      .beta-jump {
-        display: flex;
-        gap: 28px;
-        margin-bottom: 34px;
-        border-bottom: var(--border-width) solid var(--border);
-      }
+        .beta-jump {
+          display: flex;
+          gap: 28px;
+          margin-bottom: 34px;
+          border-bottom: var(--border-width) solid var(--border);
+        }
 
-      .beta-jump a {
-        display: inline-flex;
-        align-items: center;
-        min-height: 44px;
-        padding: 9px 2px 11px;
-        margin-bottom: calc(-1 * var(--border-width));
-        border-bottom: 3px solid transparent;
-        color: var(--page-muted);
-        font-size: var(--font-size-md);
-        font-weight: var(--font-weight-semibold);
-        line-height: 1.25;
-        text-decoration: none;
-      }
+        .beta-jump a {
+          display: inline-flex;
+          align-items: center;
+          min-height: 44px;
+          padding: 9px 2px 11px;
+          margin-bottom: calc(-1 * var(--border-width));
+          border-bottom: 3px solid transparent;
+          color: var(--page-muted);
+          font-size: var(--font-size-md);
+          font-weight: var(--font-weight-semibold);
+          line-height: 1.25;
+          text-decoration: none;
+        }
 
-      /* The jumped-to panel is a selection, so the link that made it wears the
+        /* The jumped-to panel is a selection, so the link that made it wears the
          same live mark the picker's tab would. */
-      body:has(#beta-android:target) .beta-jump a[href='#beta-android'],
-      body:has(#beta-ios:target) .beta-jump a[href='#beta-ios'] {
-        color: var(--page-link);
-        border-bottom-color: var(--brand);
-      }
+        body:has(#beta-android:target) .beta-jump a[href='#beta-android'],
+        body:has(#beta-ios:target) .beta-jump a[href='#beta-ios'] {
+          color: var(--page-link);
+          border-bottom-color: var(--brand);
+        }
 
-      /* Filter to the jumped-to panel — but only once one is targeted, so the
+        /* Filter to the jumped-to panel — but only once one is targeted, so the
          bare URL still reads as two stacked sections. Where :has() is missing
          (Firefox below 121) nothing matches and the reader keeps both panels
          plus a working jump, which is the behavior this replaces. */
-      body:has(.beta-platform-panel:target) .beta-platform-panel:not(:target) {
-        display: none;
-      }
+        body:has(.beta-platform-panel:target) .beta-platform-panel:not(:target) {
+          display: none;
+        }
 
-      /* The row the reader just used stays in view above the panel it opened. */
-      .beta-platform-panel {
-        scroll-margin-top: 90px;
-      }
-    </style>
+        /* The row the reader just used stays in view above the panel it opened. */
+        .beta-platform-panel {
+          scroll-margin-top: 90px;
+        }
+      </style>
 
-    <nav class="beta-jump" aria-label="Which device are you installing on?">
-      <a href="#beta-android">Android</a>
-      <a href="#beta-ios">iPhone / iPad</a>
-    </nav>
-  </noscript>
+      <nav class="beta-jump" aria-label="Which device are you installing on?">
+        <a href="#beta-android">Android</a>
+        <a href="#beta-ios">iPhone / iPad</a>
+      </nav>
+    </noscript>
 
-  <div class="beta-platform-panel" id="beta-android" data-platform="android">
-    <AndroidBetaPanel />
-  </div>
-  <div class="beta-platform-panel" id="beta-ios" data-platform="ios">
-    <IosBetaPanel />
-  </div>
+    <div class="beta-platform-panel" id="beta-android" data-platform="android">
+      <AndroidBetaPanel />
+      <a class="alternate-platform" data-sveltekit-reload href={betaPathFor('ios')}
+        >Joining on iPhone or iPad?</a
+      >
+    </div>
+    <div class="beta-platform-panel" id="beta-ios" data-platform="ios">
+      <IosBetaPanel />
+      <a class="alternate-platform" data-sveltekit-reload href={betaPathFor('android')}
+        >Joining on Android?</a
+      >
+    </div>
 
-  <ScrollCue />
-</PageShell>
+    <ScrollCue />
+  </PageShell>
+</div>
 
 <style>
-  .beta-platform-picker {
-    margin-bottom: 34px;
+  .alternate-platform {
+    display: none;
+    min-height: 44px;
+    align-items: center;
+    margin-top: var(--space-4);
+    color: var(--page-link);
+    font-size: var(--font-size-sm);
   }
 
-  /* On a phone the sheet is the screen (PageShell drops its frame at this
-     width), so the tab row gives up the text gutter too: the rule runs to the
-     glass and the two cells split the whole screen between them. The picker
-     divides whatever width it is handed — the bleed is the page's, because the
-     gutter is. Restates PHONE_MAX_WIDTH_PX (lib/breakpoints.ts); phoneStep.test.ts
-     fails if this and PageShell's step disagree. */
-  @media (max-width: 540px) {
-    .beta-platform-picker {
-      margin-inline: calc(-1 * var(--page-gutter));
+  /* Touch-only hiding preserves content during desktop zoom.
+     SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
+  @media (max-height: 500px) and (hover: none) and (pointer: coarse) {
+    .beta :global(.hero) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
+
+    .beta :global(.lede),
+    .beta-platform-picker {
+      display: none;
+    }
+
+    :global(html[data-beta-os]) .alternate-platform {
+      display: inline-flex;
+    }
+  }
+
+  .beta-platform-picker {
+    margin-bottom: 34px;
   }
 
   /* Both panels are always in the document, so the tabs are a filter rather than
