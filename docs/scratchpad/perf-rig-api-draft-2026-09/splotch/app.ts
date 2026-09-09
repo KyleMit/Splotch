@@ -1,33 +1,64 @@
 // The Splotch app contract. Every selector, hook, mark and seam the harness may touch, declared
-// once. Values are the ones the 2026-09 harness targets (see boundary.md); the drift guards that
-// hold them against the components stay in the Splotch repo.
-import { defineApp } from 'perf-rig';
+// once; the drift guards that hold them against the components stay in the Splotch repo.
+import { defineApp, type PageFunction, type PrimeReport, type Selector } from 'perf-rig';
+
+export const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'] as const;
+export type Brush = (typeof BRUSHES)[number];
+
+const BRUSH_BUTTON = {
+  pen: '#penBrushButton',
+  crayon: '#crayonBrushButton',
+  magic: '#magicBrushButton',
+  eraser: '#eraserButton',
+} satisfies Record<Brush, Selector>;
 
 const EXPAND_CONTROLS = 'button[aria-label="Expand controls"]';
+const SETTINGS_BUTTON = '#settingsButton';
 const SETTINGS_MODAL = '#settingsModal';
+const SETTINGS_CLOSE = '#settingsModal button[aria-label="Close"]';
 const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
+const RESOLVED_THEME =
+  'document.documentElement.dataset.theme ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")';
+const HYDRATED = 'typeof window.__committedBrushMode === "function"';
+
+// Sources shipped verbatim into the bootstrap; the real bodies live in tools/perf/lib today.
+const ERASER_FILL_APPLY =
+  'function applyEraserFill() { /* eraser-fill.mjs: paint #7c4dff into every canvas[data-live-tile] whose data-tile-backing matches, sample five points */ }' as PageFunction<
+    [],
+    PrimeReport
+  >;
+const ERASER_FILL_VERIFY =
+  'function verifyEraserFill() { /* eraser-fill.mjs verify-only mode */ }' as PageFunction<
+    [],
+    PrimeReport
+  >;
+const UNDO_DRIVE =
+  'function driveUndo(index) { /* undo-driver.mjs: click #undoButton, await one new engine.undo measure and one rAF, return {index, engineMs, nextFrameMs, beforeCount, afterCount} */ }' as PageFunction<
+    [number],
+    {
+      index: number;
+      engineMs: number;
+      nextFrameMs: number;
+      beforeCount: number;
+      afterCount: number;
+    } | null
+  >;
 
 export const splotch = defineApp({
   name: 'splotch',
   build: {
     outputDir: 'web/build',
-    buildCommand: ['npm', 'run', 'build'],
-    serveCommand: [
-      'node',
-      'tools/run-web-tool.mjs',
-      'vite',
-      'preview',
-      '--port',
-      '{port}',
-      '--host',
-    ],
-    seams: {
-      env: { PERF_MARKS: 'true', PUBLIC_ENABLE_DEV_HARNESS: 'true' },
-      present: 'typeof window.__committedBrushMode === "function"',
+    build: { command: ['npm', 'run', 'build'] },
+    serve: {
+      command: ['node', 'tools/run-web-tool.mjs', 'vite', 'preview', '--host'],
+      portFlag: '--port',
+      readyWhen: 'listening',
     },
+    seams: { env: { PERF_MARKS: 'true', PUBLIC_ENABLE_DEV_HARNESS: 'true' } },
     identity: {
-      entryModule: /\/_app\/immutable\/entry\/start\.[^"']+\.js/,
-      immutableChunk: /\/_app\/immutable\/[A-Za-z0-9._\-/]+\.js/g,
+      strategy: 'chunks',
+      entryModule: '/_app/immutable/entry/start\\.[^"\']+\\.js',
+      immutableChunk: '/_app/immutable/[A-Za-z0-9._\\-/]+\\.js',
     },
     refusedVariants: [
       {
@@ -42,41 +73,35 @@ export const splotch = defineApp({
   page: {
     path: '/',
     surface: '#drawingCanvas',
-    outputSurfaces: 'canvas[data-live-tile]',
+    outputSurfaces: { selector: 'canvas[data-live-tile]', proof: 'pixels' },
     hitTestAncestor: '.canvas-stack',
-    hydrated: 'typeof window.__committedBrushMode === "function"',
-    resting: '!document.querySelector(".paper-view")?.hasAttribute("data-paper-active")',
-    toleratedQueryParams: [
-      'probe',
-      'verify',
-      'arm',
-      'rehydrate',
-      'perf-actions',
-      'perf-android-web',
-    ],
-    allowsSameOriginScript: true,
+    hydrated: HYDRATED,
+    resting: {
+      expression: '!document.querySelector(".paper-view")?.hasAttribute("data-paper-active")',
+    },
+    paper: {
+      element: '.paper-view',
+      activeAttribute: 'data-paper-active',
+      artShowing:
+        '(() => { const img = document.querySelector("#coloringOverlay"); return !!img && !!img.src && !img.hidden; })()',
+    },
+    liftIndicator: '.brush-ring, .eraser-bubble',
   },
   hooks: {
-    committedMode: 'window.__committedBrushMode()',
     historyDepth: {
-      read: 'window.__drawingDebug.getUndoDebug()',
-      fields: [
-        'snapshots',
-        'liveRasters',
-        'rasterBytes',
-        'baseRasters',
-        'baseRasterBytes',
-        'historyLength',
-      ],
+      depth: '(d => d.snapshots ?? d.historyLength)(window.__drawingDebug.getUndoDebug())',
+      extra: {
+        liveRasters: 'window.__drawingDebug.getUndoDebug().liveRasters',
+        rasterBytes: 'window.__drawingDebug.getUndoDebug().rasterBytes',
+        baseRasters: 'window.__drawingDebug.getUndoDebug().baseRasters',
+        baseRasterBytes: 'window.__drawingDebug.getUndoDebug().baseRasterBytes',
+        historyLength: 'window.__drawingDebug.getUndoDebug().historyLength',
+      },
       quiescent:
         '(d => d.pendingCommands === 0 && d.historyLength <= d.snapshots)(window.__drawingDebug.getUndoDebug())',
     },
     topology: 'window.__drawingDebug.getLiveSurfaceTopology?.() ?? null',
-    bundledReportMailbox: {
-      object: 'window.__bundledCaptureReport',
-      storageKeyIsNonce: true,
-      schema: 1,
-    },
+    bundledReportMailbox: { object: 'window.__bundledCaptureReport', schema: 1 },
     downloadSink: { global: '__screenshotSaveSink' },
   },
   marks: {
@@ -90,27 +115,29 @@ export const splotch = defineApp({
       scanEmpty: 'engine.scanEmpty',
       crayonShadow: 'engine.crayonShadow',
     },
+    attribution: { draw: 'engine.draw', commit: 'engine.commit' },
     pairedEnd: ['engine.undo'],
   },
   state: {
-    seed: { 'splotch-install-dismissed': '1' },
+    seed: { localStorage: { 'splotch-install-dismissed': '1' } },
     dimensions: {
       theme: {
         values: ['light', 'dark'],
-        read: 'document.documentElement.dataset.theme ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")',
+        read: RESOLVED_THEME,
         set: {
           name: 'theme-through-settings',
-          values: ['light', 'dark'],
           steps: (theme) => [
             {
               kind: 'retryUntil',
               expression: 'document.querySelector("#settingsModal")?.open === true',
               equals: true,
-              attempts: 4,
-              body: [{ kind: 'click', target: 'button[aria-label="Settings"]' }],
+              checkFirst: true,
+              settleMs: 400,
+              timeoutMs: 20_000,
+              body: [{ kind: 'click', target: SETTINGS_BUTTON }],
             },
             {
-              kind: 'ifVisible',
+              kind: 'ifPresent',
               target: COMPACT_SHELL_MARKER,
               then: [
                 {
@@ -118,13 +145,15 @@ export const splotch = defineApp({
                   expression:
                     'document.querySelector("#quickNightToggle")?.getAttribute("aria-checked")',
                   equals: String(theme === 'dark'),
-                  attempts: 2,
+                  checkFirst: true,
+                  settleMs: 400,
+                  timeoutMs: 10_000,
                   body: [{ kind: 'click', target: '#quickNightToggle' }],
                 },
               ],
               else: [
                 {
-                  kind: 'ifVisible',
+                  kind: 'ifPresent',
                   target: '#themeOption-light',
                   then: [],
                   else: [
@@ -132,44 +161,92 @@ export const splotch = defineApp({
                       kind: 'click',
                       target: `${SETTINGS_MODAL} button[data-section="appearance"]`,
                     },
+                    { kind: 'waitPresent', target: '#themeOption-light', timeoutMs: 10_000 },
                   ],
                 },
                 { kind: 'click', target: `#themeOption-${theme}` },
               ],
             },
-            { kind: 'click', target: `${SETTINGS_MODAL} button[aria-label="Close"]` },
+            { kind: 'until', expression: RESOLVED_THEME, equals: theme, timeoutMs: 20_000 },
+            { kind: 'click', target: SETTINGS_CLOSE },
+            {
+              kind: 'until',
+              expression: 'document.querySelector("#settingsModal")?.open !== true',
+              equals: true,
+              timeoutMs: 5000,
+            },
+            { kind: 'settle', ms: 400, reason: 'dialog close transition' },
           ],
           postcondition: (theme) => ({
-            expression:
-              'document.documentElement.dataset.theme ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")',
+            expression: RESOLVED_THEME,
             equals: theme,
-            timeoutMs: 5000,
+            timeoutMs: 20_000,
           }),
         },
       },
       orientation: {
         values: ['PORTRAIT', 'LANDSCAPE'],
         read: 'innerWidth > innerHeight ? "LANDSCAPE" : "PORTRAIT"',
-        platformOwned: ['ios-tablet', 'android-tablet', 'desktop'],
+        set: {
+          via: 'transport',
+          map: { PORTRAIT: 'PORTRAIT', LANDSCAPE: 'LANDSCAPE' },
+          releaseLock: {
+            name: 'release-native-rotation-lock',
+            steps: [
+              { kind: 'click', target: SETTINGS_BUTTON },
+              { kind: 'waitPresent', target: SETTINGS_MODAL, timeoutMs: 10_000 },
+              {
+                kind: 'ifPresent',
+                target: '#lockRotationToggle[aria-checked="true"]',
+                then: [{ kind: 'click', target: '#lockRotationToggle' }],
+              },
+              { kind: 'click', target: SETTINGS_CLOSE },
+            ],
+          },
+          restoreLock: {
+            name: 'restore-native-rotation-lock',
+            steps: [
+              { kind: 'click', target: SETTINGS_BUTTON },
+              { kind: 'waitPresent', target: SETTINGS_MODAL, timeoutMs: 10_000 },
+              {
+                kind: 'ifPresent',
+                target: '#lockRotationToggle[aria-checked="false"]',
+                then: [{ kind: 'click', target: '#lockRotationToggle' }],
+              },
+              { kind: 'click', target: SETTINGS_CLOSE },
+            ],
+          },
+        },
       },
     },
   },
-  modes: {
-    values: ['pen', 'crayon', 'magic', 'eraser'],
+  tools: {
+    values: BRUSHES,
+    committed: 'window.__committedBrushMode()',
     select: {
       name: 'select-brush',
-      values: ['pen', 'crayon', 'magic', 'eraser'],
       steps: (brush) => [
-        { kind: 'click', target: EXPAND_CONTROLS },
-        { kind: 'waitVisible', target: '#brushButton' },
-        { kind: 'click', target: '#brushButton' },
-        { kind: 'waitVisible', target: BRUSH_BUTTON[brush]! },
-        { kind: 'click', target: BRUSH_BUTTON[brush]! },
+        {
+          kind: 'retryUntil',
+          expression: `window.__committedBrushMode?.() === ${JSON.stringify(brush)}`,
+          equals: true,
+          checkFirst: true,
+          settleMs: 500,
+          timeoutMs: 12_000,
+          attempts: 4,
+          body: [
+            { kind: 'click', target: EXPAND_CONTROLS },
+            { kind: 'waitVisible', target: '#brushButton', timeoutMs: 3000 },
+            { kind: 'click', target: '#brushButton' },
+            { kind: 'waitVisible', target: BRUSH_BUTTON[brush], timeoutMs: 3000 },
+            { kind: 'click', target: BRUSH_BUTTON[brush] },
+          ],
+        },
       ],
       postcondition: (brush) => ({
         expression: 'window.__committedBrushMode()',
         equals: brush,
-        timeoutMs: 12000,
+        timeoutMs: 12_000,
       }),
     },
     dismissMenus: {
@@ -179,6 +256,9 @@ export const splotch = defineApp({
           kind: 'retryUntil',
           expression: '!document.querySelector("#penBrushButton")?.offsetParent',
           equals: true,
+          checkFirst: true,
+          settleMs: 500,
+          timeoutMs: 5000,
           attempts: 3,
           body: [{ kind: 'click', target: '#brushButton' }],
         },
@@ -186,29 +266,18 @@ export const splotch = defineApp({
       postcondition: {
         expression: '!document.querySelector("#penBrushButton")?.offsetParent',
         equals: true,
+        timeoutMs: 2000,
       },
     },
     prime: {
       eraser: {
         name: 'fill-tiles-with-ink',
-        steps: [
-          {
-            kind: 'evaluate',
-            functionSource: 'function fillTiles(color) { /* eraser-fill.mjs source */ }',
-            args: ['#7c4dff'],
-            recordAs: 'eraserFill',
-          },
-          { kind: 'settle', ms: 400, reason: 'let the fill commit before verifying' },
-          {
-            kind: 'evaluate',
-            functionSource: 'function verifyTiles() { /* sample five points opaque */ }',
-            recordAs: 'eraserFillVerified',
-          },
-        ],
-        postcondition: {
-          expression: 'window.__perfRigLast.eraserFillVerified === true',
-          equals: true,
-        },
+        apply: ERASER_FILL_APPLY,
+        verify: ERASER_FILL_VERIFY,
+        settleMs: 400,
+        budgetMs: 4000,
+        onWipedDuringSettle: 'repair-and-record',
+        betweenPasses: { requireNewTrustedLift: true, idleFrames: 2 },
       },
     },
     admits: { pen: ['undo'] },
@@ -219,6 +288,7 @@ export const splotch = defineApp({
       enabled: '!document.querySelector("#undoButton").disabled',
       measure: 'engine.undo',
       activate: 'dom',
+      drive: UNDO_DRIVE,
     },
     clear: {
       selector: '#clearButton',
@@ -240,32 +310,39 @@ export const splotch = defineApp({
       ready: 'document.querySelector("#brushButton").getAttribute("aria-expanded") === "true"',
     },
     crayonBrush: {
-      selector: '#crayonBrushButton',
+      selector: BRUSH_BUTTON.crayon,
       ready: 'document.querySelector(".actions-panel")?.dataset.brush === "crayon"',
     },
     magicBrush: {
-      selector: '#magicBrushButton',
+      selector: BRUSH_BUTTON.magic,
       ready: 'document.querySelector(".actions-panel")?.dataset.brush === "magic"',
     },
     eraser: {
-      selector: '#eraserButton',
+      selector: BRUSH_BUTTON.eraser,
       ready: 'document.querySelector(".actions-panel")?.dataset.brush === "eraser"',
     },
     penBrush: {
-      selector: '#penBrushButton',
+      selector: BRUSH_BUTTON.pen,
       ready: '!document.querySelector(".actions-panel")?.dataset.brush',
     },
     strokeWidthMenu: { selector: '#strokeWidthButton' },
     strokeWidthOption: { selector: '.stroke-width-menu button[aria-pressed="false"]' },
     settings: {
-      selector: 'button[aria-label="Settings"]',
+      selector: SETTINGS_BUTTON,
       ready: 'document.querySelector("#settingsModal")?.open === true',
     },
     closeSettings: {
-      selector: '#settingsModal button[aria-label="Close"]',
+      selector: SETTINGS_CLOSE,
       ready: 'document.querySelector("#settingsModal")?.open !== true',
     },
-    settingsSection: { selector: '#settingsModal button[data-section]' },
+    settingsSection: {
+      selector: '#settingsModal button[data-section]',
+      ready: '!!document.querySelector("#settingsModal .settings-pane, #settingsModal .hub-list")',
+    },
+    parentCenter: {
+      selector: '#settingsModal button[data-section="parent"]',
+      ready: '!!document.querySelector("#parentalGate")',
+    },
     themeLight: {
       selector: '#themeOption-light',
       ready: 'document.documentElement.dataset.theme === "light"',
@@ -274,7 +351,11 @@ export const splotch = defineApp({
       selector: '#themeOption-dark',
       ready: 'document.documentElement.dataset.theme === "dark"',
     },
-    quickNightToggle: { selector: '#quickNightToggle' },
+    quickNightToggle: { selector: '#quickNightToggle', ready: 'true' },
+    soundToggle: { selector: '#soundToggle' },
+    saveOnDeleteToggle: { selector: '#saveOnDeleteToggle' },
+    advancedControlsToggle: { selector: '#advancedControlsToggle' },
+    screenshotToggle: { selector: '#screenshotToggle' },
     coloringBooks: {
       selector: '#coloringBookButton',
       ready: '!!document.querySelector("#coloring-book-dialog")',
@@ -284,14 +365,17 @@ export const splotch = defineApp({
       selector: 'button[aria-label$="coloring page"]',
       ready: 'document.querySelector("#coloringOverlay")?.classList.contains("overlay-ready")',
     },
-    clearColoringPage: { selector: 'button[aria-label^="Clear active coloring page:"]' },
+    coloringPages: { selector: '#coloring-book-dialog' },
+    clearColoringPage: {
+      selector: 'button[aria-label^="Clear active coloring page:"]',
+      ready: 'document.querySelector("#coloringOverlay")?.hidden === true',
+    },
     paletteSwatch: { selector: '.color-swatch[data-color]:not(.active)', ready: 'true' },
     colorPicker: {
       selector: '.gradient-swatch',
       ready: '!!document.querySelector("#color-picker")',
     },
     colorPickerHexagon: { selector: '#color-picker .hexagon:not(.selected)' },
-    rotate: { selector: 'html', activate: 'trusted' },
   },
   native: {
     android: {
@@ -299,25 +383,19 @@ export const splotch = defineApp({
       activity: '.MainActivity',
       webviewClass: 'android.webkit.WebView',
       packagedOrigin: 'https://localhost',
+      build: { command: ['npm', 'run', 'perf:build:cap'] },
+      install: { command: ['npm', 'run', 'android:run:device'] },
     },
     ios: {
       bundleId: 'art.splotch.app',
       packagedOrigin: 'capacitor://localhost',
       wdaBundleId: 'art.splotch.WebDriverAgentRunner',
       xcodeConfigFile: 'ios/local.xcconfig',
+      build: { command: ['npm', 'run', 'perf:build:cap'] },
+      install: { command: ['npm', 'run', 'ios:run:device'] },
     },
     remotePreviewSupported: true,
   },
-  engineHarness: {
-    path: '/dev/engine',
-    ready: 'window.__engineReady === true',
-    api: 'window.__engine',
-  },
 });
 
-const BRUSH_BUTTON: Record<string, string> = {
-  pen: '#penBrushButton',
-  crayon: '#crayonBrushButton',
-  magic: '#magicBrushButton',
-  eraser: '#eraserButton',
-};
+export type Splotch = typeof splotch;

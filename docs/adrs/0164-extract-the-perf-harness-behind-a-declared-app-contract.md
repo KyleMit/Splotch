@@ -41,8 +41,12 @@ Alternatives considered:
 ## Decision
 
 The harness is extracted behind one declared object, an **app contract**, and the extraction
-proceeds along ADR-0053's escalation path: contract in place, then a nested independently installed
-package under `tools/`, then a separate repository consumed as a pinned `devDependencies` entry.
+proceeds along ADR-0053's escalation path in that order: the contract lands in place, then a nested
+independently installed package under `tools/` (not a workspace member, its `node_modules` off
+Capacitor's resolution path), and only when a second consumer or an independent release cadence
+exists, a separate repository consumed as an exact-pinned `devDependencies` entry. The nested rung
+is the first implemented step because it keeps every drift guard, corpus test and script in one
+commit while forcing the self-containment a separate repo needs.
 
 The contract and the surface around it are drafted as typed declarations in
 `docs/scratchpad/perf-rig-api-draft-2026-09/`, with Splotch's forty scripts written against them and
@@ -53,9 +57,12 @@ type-checked. The draft fixes these properties of the seam:
   measurable controls. The package holds none of its own. The in-page probes are rendered from the
   contract, so the copy the probe carries is the same copy the Node side reads.
 * **Page interactions are data, compiled per channel.** A small procedure vocabulary (click, tap,
-  wait for layout, poll until, branch on visibility, retry, settle, evaluate app-supplied source)
-  lets one declared procedure run through Playwright, Appium, and the injected same-origin
-  bootstrap. A procedure carries a postcondition; one without is recorded as unverified.
+  press, type, wait for presence or layout, poll until, branch, retry that checks before its first
+  run, settle, evaluate app-supplied function source) lets one declared procedure run through
+  Playwright, Appium, and the injected same-origin bootstrap. A postcondition is evaluated in the
+  channel that ran the steps, which on the plan-polled split channel means inside the page; a
+  procedure without one is recorded as unverified. Tool priming is a protocol (apply, verify-only
+  after the settle, repair and record, acknowledge between passes), not a boolean.
 * **Targets are data; transports are proved pairings.** A target names its drawing transport, its
   actions transport and its measurement channel independently (ADR-0135), and the package refuses a
   pairing it has not proved. Splotch's eleven targets stay in Splotch, drift-guarded against the
@@ -84,10 +91,10 @@ type-checked. The draft fixes these properties of the seam:
 * \+ Under ADR-0070 the package lands in `devDependencies`, which Netlify skips.
 * − The procedure vocabulary is a constraint on what a scenario can do without an app hook. That is
   deliberate: an interaction the vocabulary cannot express is a missing hook, not a missing branch.
-* − Versioning crosses the seam. The artifact schema, the probe row schemas, the probe-host protocol
-  token and the ledger statuses become package contracts, and Splotch's corpus-calibrated tests pin
-  the version they were written against.
+* − Versioning crosses the seam once the package is published. The `COMPAT` policy is the answer,
+  and the reason the separate repository is the last rung rather than the first.
 * − The release-seam guard derives its forbidden tokens from the app's own source; mark emission
   stays inline in the app, and the contract only names the marks.
-* The draft's critique log records what two adversarial review rounds changed; the migration plan
-  names the proof each phase must produce, ending with a real capture on a physical target.
+* The draft's `critique-rounds.md` records what the adversarial review rounds changed and what was
+  declined; `migration.md` names the proof each phase must produce, ending with a real capture on a
+  physical target and a campaign resume against a pre-extraction ledger.

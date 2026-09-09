@@ -1,94 +1,160 @@
 /**
  * Declarative page procedures.
  *
- * Every transport reaches the page through a different channel — a Playwright page, a WebDriver
- * session, or a same-origin script injected into a proxied route that has no script channel at all
- * (ADR-0135). The harness therefore never accepts a JavaScript function for "select the pen" or
- * "switch to dark"; it accepts a procedure as data and compiles it once per channel. The same
- * procedure runs through `page.click()` on desktop, `POST /element/click` under Appium, and
- * `document.querySelector(...).click()` inside the split-capture bootstrap.
+ * Every transport reaches the page through a different channel: a Playwright page, a WebDriver
+ * session, or a same-origin script injected into a proxied route that has no script channel at all.
+ * The harness therefore never accepts a JavaScript function for "select the pen" or "switch to
+ * dark". It accepts a procedure as data and compiles it once per channel. Semantics are the lowest
+ * common denominator so the same procedure means the same thing everywhere: selectors do not pierce
+ * shadow roots, visibility means laid out (`offsetParent`), and a DOM click is a DOM click. Only
+ * `tap` reaches for the transport's trusted input.
  *
- * The step vocabulary is deliberately small. Anything it cannot express is a sign the app needs a
- * hook (see `AppContract.hooks`), not that the vocabulary needs a branch.
+ * A postcondition is evaluated in the channel that ran the steps. On the plan-polled channel that
+ * means inside the page, with the answer posted back; the harness never assumes it can ask.
  */
 
-/** A CSS selector. The harness never derives selectors; every one is declared by the app. */
 export type Selector = string;
+export type PageExpression = string;
+export type Literal = string | number | boolean | null;
 
 /**
- * A JavaScript expression evaluated in the page, returning a JSON-serialisable value. Written as
- * source text because one of the channels cannot accept a function. Keep it a single expression.
+ * Source text of a self-contained function. The harness wraps and invokes it; it never evals a
+ * string. It must not close over Node scope. `Args` and `Result` are documentation-grade phantom
+ * types: the compiler cannot check the body, and every page function's source is part of the
+ * instrument fingerprint.
  */
-export type PageExpression = string;
+export type PageFunction<
+  Args extends readonly Literal[] = readonly Literal[],
+  Result = unknown,
+> = string & {
+  readonly __args?: Args;
+  readonly __result?: Result;
+};
+
+export interface Postcondition {
+  readonly expression: PageExpression;
+  readonly equals: Literal;
+  readonly timeoutMs: number;
+}
 
 export type Step =
-  /** Click the first match. Fails if nothing matches. */
-  | { readonly kind: 'click'; readonly target: Selector }
+  | { readonly kind: 'click'; readonly target: Selector; readonly nth?: number }
   /**
-   * Activate a control through the transport's trusted input rather than a DOM click, so the
-   * activation is measured as a user would produce it. Falls back to `click` on channels that
-   * have no trusted input (the split bootstrap).
+   * Activate through the transport's trusted input. On a channel with no trusted input the
+   * procedure either refuses or clicks and records `activation: 'dom-click'` in the result.
    */
-  | { readonly kind: 'tap'; readonly target: Selector }
-  /** Wait until the selector matches and is laid out (has an `offsetParent`), not merely present. */
-  | { readonly kind: 'waitVisible'; readonly target: Selector; readonly timeoutMs?: number }
-  /** Wait until the selector stops being laid out. A control that is always in the DOM cannot be probed by presence. */
-  | { readonly kind: 'waitHidden'; readonly target: Selector; readonly timeoutMs?: number }
-  /** Poll an expression until it is strictly equal to `equals`. */
+  | {
+      readonly kind: 'tap';
+      readonly target: Selector;
+      readonly onUntrustedChannel: 'refuse' | 'click-and-record';
+    }
+  | { readonly kind: 'press'; readonly key: string; readonly target?: Selector }
+  | { readonly kind: 'type'; readonly target: Selector; readonly text: string }
+  | { readonly kind: 'hover'; readonly target: Selector }
+  | {
+      readonly kind: 'wheel';
+      readonly target: Selector;
+      readonly deltaX: number;
+      readonly deltaY: number;
+    }
+  | {
+      readonly kind: 'drag';
+      readonly from: Selector;
+      readonly to: { readonly dx: number; readonly dy: number };
+      readonly durationMs: number;
+    }
+  | { readonly kind: 'waitPresent'; readonly target: Selector; readonly timeoutMs: number }
+  | { readonly kind: 'waitVisible'; readonly target: Selector; readonly timeoutMs: number }
+  | { readonly kind: 'waitHidden'; readonly target: Selector; readonly timeoutMs: number }
   | {
       readonly kind: 'until';
       readonly expression: PageExpression;
-      readonly equals: string | number | boolean | null;
-      readonly timeoutMs?: number;
+      readonly equals: Literal;
+      readonly timeoutMs: number;
+      readonly pollMs?: number;
     }
-  /** Branch on whether a selector is currently laid out. */
+  | {
+      readonly kind: 'ifPresent';
+      readonly target: Selector;
+      readonly then: readonly Step[];
+      readonly else?: readonly Step[];
+    }
   | {
       readonly kind: 'ifVisible';
       readonly target: Selector;
       readonly then: readonly Step[];
       readonly else?: readonly Step[];
     }
-  /** Repeat the body until the expression equals the value, at most `attempts` times. */
+  /**
+   * Test the expression, and only while it is not satisfied run the body, settle, and test again.
+   * The expression is tested BEFORE the first body run: a satisfied expression runs the body zero
+   * times. A retry that ran its body first once toggled a closed menu open on the odd click.
+   */
   | {
       readonly kind: 'retryUntil';
       readonly expression: PageExpression;
-      readonly equals: string | number | boolean | null;
-      readonly attempts: number;
+      readonly equals: Literal;
       readonly body: readonly Step[];
+      readonly checkFirst: true;
+      readonly settleMs: number;
+      readonly timeoutMs: number;
+      readonly attempts?: number;
     }
-  /** Sleep. Named so the settle it exists for can be read back from the artifact. */
   | { readonly kind: 'settle'; readonly ms: number; readonly reason: string }
   /**
-   * Run app-supplied function source in the page. The escape hatch for work the vocabulary cannot
-   * express, such as verifying a fill landed on every tile. The source is shipped verbatim into
-   * the bootstrap, so it must be self-contained and must not close over Node scope.
+   * Run an app-supplied page function. The result lands in the procedure result under `recordAs`,
+   * never in a window global. `awaits` says whether the function returns a promise, which decides
+   * the WebDriver `execute` versus `executeAsync` path.
    */
   | {
       readonly kind: 'evaluate';
-      readonly functionSource: string;
-      readonly args?: readonly (string | number | boolean | null)[];
-      readonly recordAs?: string;
+      readonly fn: PageFunction;
+      readonly args?: readonly Literal[];
+      readonly awaits: boolean;
+      readonly recordAs: string;
     };
 
 export interface Procedure {
   readonly name: string;
   readonly steps: readonly Step[];
-  /**
-   * An expression that must hold once the procedure finishes, evaluated by the harness after the
-   * last step. A procedure with no postcondition is not verified, and the artifact records it as
-   * `unverified` in the trust ledger.
-   */
-  readonly postcondition?: {
-    readonly expression: PageExpression;
-    readonly equals: string | number | boolean | null;
-    readonly timeoutMs?: number;
-  };
+  /** Without a postcondition the procedure is recorded as `unverified` in the trust ledger. */
+  readonly postcondition?: Postcondition;
 }
 
-/** A procedure whose steps depend on a value, such as the theme or the mode being selected. */
+/** A procedure whose steps depend on a value; the parent declares the value set once. */
 export interface ParameterisedProcedure<Value extends string> {
   readonly name: string;
-  readonly values: readonly Value[];
-  readonly steps: (value: Value) => readonly Step[];
-  readonly postcondition: (value: Value) => NonNullable<Procedure['postcondition']>;
+  steps(value: Value): readonly Step[];
+  postcondition(value: Value): Postcondition;
+}
+
+export interface ProcedureResult {
+  readonly name: string;
+  readonly verified: boolean | 'unverified';
+  readonly activation?: 'trusted-touch' | 'dom-click';
+  /** Values recorded by `evaluate` steps, by `recordAs`. */
+  readonly records: Readonly<Record<string, unknown>>;
+  readonly channel: 'playwright' | 'webdriver' | 'in-page';
+}
+
+export interface PrimeReport {
+  readonly pending?: readonly string[];
+  readonly transparent: number;
+}
+
+/**
+ * Work a tool needs before every pass so repeated passes measure the same thing (an eraser needs
+ * ink). `apply` paints and reports; it is polled until it reports nothing pending within
+ * `budgetMs`. After `settleMs`, `verify` runs and never paints; a wipe found there is repaired and
+ * recorded as `repairedAfterSettle` rather than silently repainted. Between gesture passes the
+ * harness proves the previous pass delivered a new trusted lift before priming again.
+ */
+export interface PrimeProcedure {
+  readonly name: string;
+  readonly apply: PageFunction<[], PrimeReport>;
+  readonly verify: PageFunction<[], PrimeReport>;
+  readonly settleMs: number;
+  readonly budgetMs: number;
+  readonly onWipedDuringSettle: 'repair-and-record';
+  readonly betweenPasses: { readonly requireNewTrustedLift: true; readonly idleFrames: number };
 }

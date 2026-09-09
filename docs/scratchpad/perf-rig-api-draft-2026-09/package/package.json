@@ -1,0 +1,50 @@
+{
+  "name": "perf-rig",
+  "version": "0.0.0-draft",
+  "description": "Frame-timing capture and scoring for web apps on real devices, with input and measurement on separate channels.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.6"
+  },
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.mjs"
+    },
+    "./campaign": {
+      "types": "./types/campaign.d.ts",
+      "default": "./src/campaign/index.mjs"
+    },
+    "./rig": {
+      "types": "./types/rig.d.ts",
+      "default": "./src/rig/index.mjs"
+    }
+  },
+  "files": [
+    "src",
+    "types",
+    "probes",
+    "bootstrap",
+    "floor-control",
+    "README.md",
+    "docs"
+  ],
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "peerDependencies": {
+    "playwright-core": "*"
+  },
+  "peerDependenciesMeta": {
+    "playwright-core": {
+      "optional": true
+    }
+  },
+  "devDependencies": {},
+  "x-notes": {
+    "peer": "playwright-core must resolve to the same version as the consuming app's @playwright/test, or a second browser set downloads; the consumer adds a version drift guard.",
+    "no-appium-client": "The WebDriver client is hand-rolled over fetch; the package never depends on appium or webdriverio.",
+    "host-tools": "adb, xcrun, idevice_id, iproxy, pymobiledevice3, an Appium server, perfetto and xctrace are discovered by doctor, never installed.",
+    "install-scripts": "None. A registry tarball is inert under pnpm's fail-closed allowBuilds; a link: install at the nested rung is registered explicitly by the consumer."
+  }
+}

@@ -4,43 +4,55 @@
  * A gate is a policy applied to a summary: thresholds, per-cell exceptions, per-label allowances,
  * and the confirmation rule that says how many scored repeats must breach. The package ships the
  * evaluator and the vocabulary; every number is the app's, and every exception carries its basis
- * so the artifact and the report can quote it. A single capture cannot know its matrix target id,
- * so exceptions keyed by target are applied by the caller that does.
+ * so the artifact and the report can quote it. The artifact records the policy it was scored
+ * under as provenance; a campaign fold re-evaluates under the current policy and never reads the
+ * stored verdict for a decision.
  */
 
-export interface DrawingGate {
-  readonly paintP95Ms: number;
-  readonly paintP99Ms: number;
-  readonly paintMaxMs: number;
+import type { DesktopEngine } from './target.js';
+import type { PhaseSummary } from './scoring.js';
+
+export interface DrawingGate<Target extends string = string, Tool extends string = string> {
+  readonly frameP95Ms: number;
+  readonly frameP99Ms: number;
+  readonly frameMaxMs: number;
   readonly lostFrameTimeShare: number;
-  /** Keyed `<targetId>:<mode>`; entries only ratchet down, and are set from the worst single capture. */
-  readonly exceptions?: Readonly<
-    Record<string, { readonly lostFrameTimeShare: number; readonly basis: string }>
-  >;
+  /** Entries only ratchet down and are set from the worst single capture, never the best median. */
+  readonly exceptions?: readonly {
+    readonly target: Target;
+    readonly tool: Tool;
+    readonly lostFrameTimeShare: number;
+    readonly basis: string;
+  }[];
 }
 
-export interface ActionGate {
+export interface ActionGate<Target extends string = string, Runtime extends string = string> {
   readonly frameP95Ms: number;
   readonly frameMaxMs: number;
   readonly firstFrameMs: number;
-  /** A max breach is confirmed by this many scored repeats; one breach is `unconfirmed`. */
   readonly maxBreachConfirmingSamples: number;
   readonly warmupRepeats: number;
   readonly minGatedSamples: number;
-  /** Per-target, per-label allowances with their measured basis. */
-  readonly allowances?: Readonly<
-    Record<
-      string,
-      Readonly<
-        Record<string, { readonly p95Ms?: number; readonly maxMs?: number; readonly basis: string }>
-      >
-    >
-  >;
-  /** Labels whose first frame is not applicable on a runtime, with the reason. */
-  readonly firstFrameNotApplicable?: (runtime: string, label: string) => string | null;
+  readonly allowances?: readonly {
+    readonly target: Target;
+    readonly adrs: readonly string[];
+    readonly entries: readonly {
+      readonly actionId: string;
+      readonly p95Ms?: number;
+      readonly maxMs?: number;
+      readonly basis: string;
+    }[];
+  }[];
+  /** Actions whose first frame is not applicable on a runtime (and, on desktop, an engine measured inert). */
+  readonly firstFrameNotApplicable?: readonly {
+    readonly actionIdPattern: string;
+    readonly runtimes: readonly Runtime[];
+    readonly engines?: readonly DesktopEngine[];
+    readonly reason: string;
+  }[];
 }
 
-export interface MeasuredActionGate {
+export interface RepeatedActionGate {
   readonly engineP95Ms: number;
   readonly nextFrameP95Ms: number;
   readonly nextFrameMaxMs: number;
@@ -51,12 +63,22 @@ export interface CommitGate {
   readonly percentile: number;
   /** A breach is confirmed by a second measurement of the same case. */
   readonly confirmations: number;
+  /** Optional per-case normalisation by same-run throughput against a controlled reference. */
+  readonly normalise?: {
+    readonly caseKey: string;
+    readonly referenceTotalMs: number;
+    readonly enabled: boolean;
+  };
 }
 
-export interface GatePolicy {
-  readonly drawing?: DrawingGate;
-  readonly actions?: ActionGate;
-  readonly measuredAction?: MeasuredActionGate;
+export interface GatePolicy<
+  Target extends string = string,
+  Tool extends string = string,
+  Runtime extends string = string,
+> {
+  readonly drawing?: DrawingGate<Target, Tool>;
+  readonly actions?: ActionGate<Target, Runtime>;
+  readonly repeatedAction?: RepeatedActionGate;
   readonly commit?: CommitGate;
 }
 
@@ -69,43 +91,48 @@ export interface GateVerdict {
     readonly limit: number;
   }[];
   readonly unconfirmed: readonly { readonly scope: string; readonly cause: string }[];
-  /** Stable fingerprint `<scope>:<cause>` per breach, so a retry can confirm only the same failure (ADR-0158). */
+  /** `<scope>:<cause>` per breach, so a retry can confirm only the same failure. */
   readonly fingerprint: readonly string[];
 }
 
-export declare function evaluateDrawing(
-  phases: readonly {
-    readonly key: string;
-    readonly frames: {
-      readonly p95: number;
-      readonly p99: number;
-      readonly max: number;
-      readonly lostFrameTimeShare: number;
-    };
-  }[],
-  gate: DrawingGate,
-  cell?: { readonly targetId: string; readonly mode: string }
+export declare function evaluateDrawing<T extends string, M extends string>(
+  phases: readonly PhaseSummary[],
+  gate: DrawingGate<T, M>,
+  cell: { readonly target: T; readonly tool: M }
 ): GateVerdict;
 
-export declare function evaluateActions(
+export declare function evaluateActions<T extends string, R extends string>(
   summaries: readonly {
     readonly label: string;
-    readonly firstFrame: { readonly p95: number };
-    readonly postActionFrames: {
+    readonly actionId: string;
+    readonly firstFrame: { readonly p95: number; readonly na: string | null };
+    readonly frames: {
       readonly p95: number;
       readonly max: number;
       readonly maxBreachSamples: number;
     };
   }[],
-  gate: ActionGate,
-  context: { readonly targetId?: string; readonly runtime: string }
+  gate: ActionGate<T, R>,
+  context: { readonly target: T; readonly runtime: R; readonly engine: DesktopEngine | null }
 ): GateVerdict;
 
+/** Per case: the measurement, its confirmation, and a tri-state outcome. */
 export declare function evaluateCommit(
-  cases: readonly { readonly key: string; readonly measurements: readonly number[] }[],
+  cases: readonly {
+    readonly key: string;
+    readonly first: readonly number[];
+    readonly confirmation?: readonly number[];
+    readonly normaliser?: number;
+  }[],
   gate: CommitGate
-): GateVerdict;
+): GateVerdict & {
+  readonly cases: readonly {
+    readonly key: string;
+    readonly outcome: 'pass' | 'unconfirmed' | 'confirmed-breach' | 'skipped';
+  }[];
+};
 
+/** Intersect two failure fingerprints; an uncomparable pair is named rather than read as "nothing reproduced". */
 export declare function reproducedFailures(
   first: readonly string[],
   second: readonly string[]

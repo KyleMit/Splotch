@@ -2,204 +2,228 @@
  * The app contract.
  *
  * Everything the harness knows about a particular application enters through one declared object.
- * The package holds no selector, mark name, window global, route, package id, or storage key of its
- * own; a capture that needs one reads it from here. The contract is also what the probe templates
- * are rendered from, so the in-page recorders — which cannot import anything — carry the same
- * values as the Node side without a second copy.
+ * The package holds no selector, mark name, window global, route, package id or storage key of its
+ * own; a capture that needs one reads it from here, and the in-page recorders are rendered from it
+ * so there is no second copy to drift. The contract's literal types flow into the scenario, gate
+ * and target definers, so a control name the contract does not declare is a type error rather than
+ * a capture that spent device time.
  *
- * The shape follows what the drawing-app harness proved necessary: a way to prove the page
- * hydrated, a way to prove which tool the engine committed, a measure namespace, a history depth,
- * a hit-test ancestor, a resting state the probe can recognise, and a declared set of controls.
- * An app that cannot provide one of the required hooks cannot be measured trustworthily by this
- * harness, and `perf-rig doctor` says which one is missing rather than letting a capture run.
+ * An app that cannot provide a required hook cannot be measured trustworthily by this harness, and
+ * `perf-rig doctor` says which one is missing rather than letting a capture run.
  */
 
-import type { ParameterisedProcedure, Procedure, PageExpression, Selector } from './procedure.js';
+import type {
+  PageExpression,
+  PageFunction,
+  ParameterisedProcedure,
+  PrimeProcedure,
+  Procedure,
+  Selector,
+} from './procedure.js';
 
-export interface AppContract {
-  /** Package-style name used in artifact labels and the probe-host protocol token. */
+export interface AppContract<
+  Tool extends string = string,
+  ControlName extends string = string,
+  DimensionName extends string = string,
+> {
   readonly name: string;
   readonly build: BuildContract;
   readonly page: PageContract;
   readonly hooks: HooksContract;
   readonly marks: MarksContract;
-  readonly state: StateContract;
-  /** Selectable tools or modes (brushes, instruments, layers). Required by `frames` scenarios. */
-  readonly modes?: ModesContract;
-  /** Discrete controls a scenario may activate and measure. Required by `actions` scenarios. */
-  readonly controls?: Readonly<Record<string, Control>>;
-  /** Only for apps that also ship a packaged native build. */
+  readonly state: StateContract<DimensionName>;
+  /** Selectable tools (brushes, instruments, layers). Required by `frames` scenarios. */
+  readonly tools?: ToolsContract<Tool>;
+  /** Discrete controls a scenario may activate and measure. Required by `actions` and `first-show`. */
+  readonly controls?: Readonly<Record<ControlName, Control>>;
   readonly native?: NativeContract;
-  /** Optional harness route with an imperative API, for `engine` scenarios. */
-  readonly engineHarness?: EngineHarnessContract;
 }
+
+export type ToolOf<A extends AppContract> =
+  A extends AppContract<infer T, string, string> ? T : never;
+export type ControlOf<A extends AppContract> =
+  A extends AppContract<string, infer C, string> ? C : never;
+export type DimensionOf<A extends AppContract> =
+  A extends AppContract<string, string, infer D> ? D : never;
 
 /**
  * How the instrumented bundle is produced, served, and told apart from every other bundle that
- * could be sitting on the same port. Build freshness is the first family of plausible-wrong-number
- * failures the harness catalogued, so nothing here is optional.
+ * could be sitting on the same port. `outputDir`, `build` and `serve` are required by the `build`
+ * and `reuse` capture modes; a `url` capture against a server the app runs itself needs only
+ * `identity` and `seams`, and `planCapture` refuses a mode the contract cannot serve.
  */
 export interface BuildContract {
-  /** Absolute or repo-relative path of the build output the preview serves. */
-  readonly outputDir: string;
-  /** Command that produces an instrumented build, run with `seams.env` set. */
-  readonly buildCommand: readonly string[];
-  /** Command that serves `outputDir` on a port; `{port}` is substituted. */
-  readonly serveCommand: readonly string[];
-  /** Build-time seams. The harness sets these when building and refuses to score a bundle without them. */
+  readonly outputDir?: string;
+  readonly build?: { readonly command: readonly string[] };
+  readonly serve?: {
+    readonly command: readonly string[];
+    readonly portFlag: string;
+    readonly readyWhen: 'listening' | { readonly url: string };
+  };
   readonly seams: {
     /** Env vars that compile the instrumentation in. */
     readonly env: Readonly<Record<string, string>>;
-    /** Expression proving the served page carries the seams (typically that a hook exists). */
-    readonly present: PageExpression;
+    /** Expression proving the served page carries the seams; defaults to `page.hydrated`. */
+    readonly present?: PageExpression;
   };
   /**
-   * How to recognise the served HTML's entry module and the immutable chunks it references, so the
-   * harness can digest what a port serves against what `outputDir` holds. SvelteKit's are
-   * `/_app/immutable/entry/start.*.js` and `/_app/immutable/**.js`.
+   * How the harness proves the page it drives is the build it thinks it is. `chunks` digests the
+   * entry module and every immutable chunk the HTML references against `outputDir`; `stamp` reads a
+   * build id the page exposes. Patterns are source text; the package compiles them without flags.
    */
-  readonly identity: {
-    readonly entryModule: RegExp;
-    readonly immutableChunk: RegExp;
-  };
-  /**
-   * A build variant that must never be served for a web capture (a native static export written
-   * into the same directory, say). Detected by files the variant drops.
-   */
+  readonly identity:
+    | { readonly strategy: 'chunks'; readonly entryModule: string; readonly immutableChunk: string }
+    | {
+        readonly strategy: 'stamp';
+        readonly expression: PageExpression;
+        expected(): Promise<string>;
+      };
+  /** A variant that must never be served for a web capture, detected by files the variant drops. */
   readonly refusedVariants?: readonly {
     readonly name: string;
     readonly markerFile: string;
     readonly absentFiles: readonly string[];
     readonly remedy: string;
   }[];
-  /** Runs after `buildCommand` to stamp the commit into the output; the package supplies the writer. */
   readonly provenanceFile?: string;
 }
 
 export interface PageContract {
-  /** Route the drawing surface lives on. */
-  readonly path: string;
+  readonly path: string | { pathFor(options: { readonly fixture?: string }): string };
   /** The element whose bounding rect is the input target. Must be sized once ready. */
   readonly surface: Selector;
-  /** Every element whose pixels prove work happened; digested before and after a capture. */
-  readonly outputSurfaces: Selector;
+  /** Elements whose change proves work happened, digested before and after a capture. */
+  readonly outputSurfaces: {
+    readonly selector: Selector;
+    readonly proof: 'pixels' | 'mutation-count' | 'expression';
+    readonly expression?: PageExpression;
+  };
   /** What `elementFromPoint` at the surface centre must resolve inside for a touch to land. */
   readonly hitTestAncestor: Selector;
   /**
-   * How the harness knows the client bundle ran. The route may be server-rendered, in which case
-   * every selector resolves on a page whose modules failed to load. Hydration is proved by an
-   * expression that cannot be true in server markup — typically that a hook function exists.
+   * How the harness knows the client bundle ran. A server-rendered route answers every selector on
+   * a page whose modules failed to load, so hydration is proved by an expression that cannot be
+   * true in server markup.
    */
   readonly hydrated: PageExpression;
-  /**
-   * An expression that is true only when no work is in flight, so a probe phase starts its clock
-   * honestly. For the drawing app this is the absence of an active-paper attribute.
-   */
-  readonly resting: PageExpression;
-  /** Query parameters the route must carry without changing behaviour. Verified by `doctor`. */
-  readonly toleratedQueryParams: readonly string[];
-  /** The route's CSP must allow a same-origin script. Verified by `doctor` against the served headers. */
-  readonly allowsSameOriginScript: true;
+  /** True only when no work is in flight, or quiet for a window when the app never fully rests. */
+  readonly resting: { readonly expression: PageExpression } | { readonly quietForMs: number };
+  /** Runs after `hydrated` and before `resting`: dismiss a wall, load a fixture. Recorded as a guard. */
+  readonly prepare?: Procedure;
+  /** The element the frames probe reads paper state from, if the app has a paper concept. */
+  readonly paper?: {
+    readonly element: Selector;
+    readonly activeAttribute: string;
+    readonly artShowing: PageExpression;
+  };
+  /** Transient per-stroke chrome whose disappearance ends the lift path (`liftLatencies`). */
+  readonly liftIndicator?: Selector;
+  /** A CSP nonce the page exposes, for routes whose policy is nonce-based rather than `'self'`. */
+  readonly cspNonce?: PageExpression;
 }
 
 export interface HooksContract {
   /**
-   * Synchronous read of the mode the engine actually committed. Selecting a tool through a menu
-   * is proved, never assumed; the value persists across navigations, so every capture selects
-   * explicitly and asserts.
-   */
-  readonly committedMode: PageExpression;
-  /**
-   * A monotone history depth, so an undo-style action can be asserted to reduce it by exactly N.
-   * Also read by the frames probe into its `history` rows.
+   * A history depth an undo-style control reduces by exactly one per activation. `extra` fields
+   * ride the frames probe's `history` rows, encoded `-1` when absent.
    */
   readonly historyDepth?: {
-    readonly read: PageExpression;
-    /** Fields copied into the probe's history rows, in order. */
-    readonly fields: readonly string[];
-    /** Expression that is true when history has settled (no pending work). */
-    readonly quiescent: PageExpression;
+    readonly depth: PageExpression;
+    readonly extra?: Readonly<Record<string, PageExpression>>;
+    readonly quiescent?: PageExpression;
   };
   /** Recorded as provenance; never scored. */
   readonly topology?: PageExpression;
-  /**
-   * For packaged native pages that cannot upload over HTTP: `arm(nonce)`, `collect(nonce)` and
-   * `clear(nonce)` on a window object, backed by durable storage the host can pull. Required by
-   * the `preferences-mailbox` measurement channel.
-   */
-  readonly bundledReportMailbox?: {
-    readonly object: PageExpression;
-    readonly storageKeyIsNonce: true;
-    readonly schema: number;
-  };
+  /** For packaged pages that cannot upload over HTTP: `arm`, `collect`, `clear` on a window object, keyed by nonce. */
+  readonly bundledReportMailbox?: { readonly object: PageExpression; readonly schema: number };
   /** A sink the app calls instead of downloading a file when the harness installs it. */
   readonly downloadSink?: { readonly global: string };
 }
 
 export interface MarksContract {
-  /** Prefix every engine measure carries. The probes filter on it. */
+  /** Prefix every engine measure carries; the probes filter on it. */
   readonly namespace: string;
-  /** Named measures the scorer attributes. `commit` and `draw` are read by the frames scorer. */
-  readonly measures: {
-    readonly draw: string;
-    readonly commit: string;
-    readonly [name: string]: string;
-  };
-  /** Measures that pair an explicit end mark rather than closing at the next measure. */
+  readonly measures: Readonly<Record<string, string>>;
+  /** Which measures the frames scorer attributes as draw and commit work. Absent means unattributed. */
+  readonly attribution?: { readonly draw?: string; readonly commit?: string };
   readonly pairedEnd?: readonly string[];
 }
 
-export interface StateContract {
-  /** Storage keys the harness may write before first paint, with the value each capture needs. */
-  readonly seed?: Readonly<Record<string, string>>;
+export interface StateContract<DimensionName extends string = string> {
+  readonly seed?: {
+    readonly localStorage?: Readonly<Record<string, string>>;
+    readonly sessionStorage?: Readonly<Record<string, string>>;
+    readonly cookies?: readonly {
+      readonly name: string;
+      readonly value: string;
+      readonly domain?: string;
+      readonly path?: string;
+    }[];
+  };
   /**
-   * Capture dimensions that are set through the product's own controls and read back from the
-   * resolved page state, never written directly. The drawing app's are theme and orientation.
-   * A dimension without a `set` procedure is observed only.
+   * Capture dimensions. Set through the product's own controls or through the transport, always
+   * read back from the resolved page state; the artifact records the observed value. Orientation
+   * is a dimension like any other.
    */
-  readonly dimensions: Readonly<Record<string, Dimension>>;
+  readonly dimensions: Readonly<Record<DimensionName, Dimension<string>>>;
 }
 
-export interface Dimension {
-  readonly values: readonly string[];
-  /** Expression returning the current resolved value, accounting for defaults that follow the OS. */
+export interface Dimension<Value extends string> {
+  readonly values: readonly Value[];
   readonly read: PageExpression;
-  readonly set?: ParameterisedProcedure<string>;
-  /**
-   * Platforms that own this dimension outside the page (tablets render no in-app rotation lock).
-   * The harness sets it through the transport there and records which path it used.
-   */
-  readonly platformOwned?: readonly ('ios-tablet' | 'android-tablet' | 'desktop')[];
+  readonly set?:
+    | ParameterisedProcedure<Value>
+    | {
+        readonly via: 'transport';
+        readonly map: Readonly<Record<Value, 'PORTRAIT' | 'LANDSCAPE'>>;
+        /** For platforms where the app keeps its own lock over the OS setting. */
+        readonly releaseLock?: Procedure;
+        readonly restoreLock?: Procedure;
+      };
 }
 
-export interface ModesContract {
-  readonly values: readonly string[];
-  /** Selects a mode and proves it through `hooks.committedMode`. */
-  readonly select: ParameterisedProcedure<string>;
-  /** A procedure that leaves no menu over the surface afterwards; verified by the hit test. */
+export interface ToolsContract<Tool extends string> {
+  readonly values: readonly Tool[];
+  /** Synchronous read of the tool the engine actually committed; selection is proved, never assumed. */
+  readonly committed: PageExpression;
+  readonly select: ParameterisedProcedure<Tool>;
+  /** Leaves no menu over the surface; verified by the hit test. */
   readonly dismissMenus: Procedure;
-  /**
-   * Work some modes need before every pass so repeated passes measure the same thing — the eraser
-   * needs ink to erase. Verified after running and again after the settle, so a wipe during the
-   * settle is recorded rather than silently repainted.
-   */
-  readonly prime?: Readonly<Record<string, Procedure>>;
-  /** Extra measured actions a mode admits, by name from `controls`. */
-  readonly admits?: Readonly<Record<string, readonly string[]>>;
+  readonly prime?: Readonly<Partial<Record<Tool, PrimeProcedure>>>;
+  /** Controls a tool admits as a repeated measured action after drawing. */
+  readonly admits?: Readonly<Partial<Record<Tool, readonly string[]>>>;
 }
+
+export type Activation =
+  | 'trusted-touch'
+  | 'trusted-cdp-touch'
+  | 'native-accessibility-click'
+  | 'webdriver-element-click'
+  | 'dom-click';
 
 export interface Control {
   readonly selector: Selector;
-  /** How the control is activated. `trusted` uses the transport's input; `dom` clicks. */
   readonly activate?: 'trusted' | 'dom';
-  /** Expression true when the control may be used. */
   readonly enabled?: PageExpression;
-  /** Expression that becomes true when the control's effect has landed; ends the readiness window. */
+  /** Becomes true when the control's effect has landed; ends the readiness window. */
   readonly ready?: PageExpression;
-  /** Measure name from `marks.measures` that this control's work emits, if any. */
+  /** Measure from `marks.measures` this control's work emits. */
   readonly measure?: string;
-  /** How canvases created or resized by this control are classified in the action probe's mutation rows. */
+  /**
+   * An in-page driver for repeated measurement with proof: returns the sample or null. Needed by
+   * channels that cannot orchestrate the control from outside the page.
+   */
+  readonly drive?: PageFunction<[index: number], RepeatedActionSample | null>;
+  /** How canvases created or resized by this control are classified in the actions probe's mutation rows. */
   readonly canvasKinds?: Readonly<Record<string, Selector>>;
+}
+
+export interface RepeatedActionSample {
+  readonly index: number;
+  readonly engineMs: number;
+  readonly nextFrameMs: number;
+  readonly beforeCount: number;
+  readonly afterCount: number;
 }
 
 export interface NativeContract {
@@ -208,24 +232,33 @@ export interface NativeContract {
     readonly activity: string;
     readonly webviewClass: string;
     readonly packagedOrigin: string;
+    readonly build?: { readonly command: readonly string[] };
+    readonly install?: { readonly command: readonly string[] };
   };
   readonly ios?: {
     readonly bundleId: string;
     readonly packagedOrigin: string;
-    /** WebDriverAgent runner bundle id the rig signs. */
     readonly wdaBundleId: string;
     readonly xcodeConfigFile?: string;
+    readonly build?: { readonly command: readonly string[] };
+    readonly install?: { readonly command: readonly string[] };
   };
-  /** A capture-only remote URL the packaged app may load; page identity is `unprovable` there. */
   readonly remotePreviewSupported?: boolean;
 }
 
-export interface EngineHarnessContract {
-  readonly path: string;
-  readonly ready: PageExpression;
-  /** Window object exposing the imperative API an `engine` scenario drives. */
-  readonly api: PageExpression;
-}
+export declare function defineApp<
+  const Tool extends string,
+  const ControlName extends string,
+  const DimensionName extends string,
+>(
+  app: AppContract<Tool, ControlName, DimensionName>
+): AppContract<Tool, ControlName, DimensionName>;
 
-/** Identity helper that gives the contract literal types for the rest of the surface. */
-export declare function defineApp<const A extends AppContract>(app: A): A;
+/** Query parameters the harness appends; `doctor` verifies the route ignores each. */
+export declare const HARNESS_QUERY_PARAMS: readonly [
+  'probe',
+  'verify',
+  'arm',
+  'rehydrate',
+  'perf-actions',
+];

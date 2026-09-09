@@ -1,7 +1,15 @@
 // The frames scenario family: one brush, the real-screen probe, the fixed gesture plan, and the
 // pen cell's ten measured undos. Geometry is Splotch's and deliberately fixed for every brush
 // (a canvas saturates by pass five); freshness comes from the eraser's prime between passes.
-import { defineScenario, type Bounds, type GesturePlan, type PointerAction } from 'perf-rig';
+import {
+  defineScenario,
+  type Bounds,
+  type GesturePlan,
+  type PointerAction,
+  type PointerSequence,
+  type PaperControls,
+} from 'perf-rig';
+import { splotch, type Brush } from '../app.js';
 
 const LONG_STROKE_SEEDS = [0.2, 0.7] as const;
 const LONG_STROKE_WAVES = 3;
@@ -36,9 +44,13 @@ function longStroke(bounds: Bounds, seed: number): PointerAction[] {
   const actions: PointerAction[] = [move(startX, y, 0), { type: 'pointerDown', button: 0 }];
   for (let segment = 1; segment <= LONG_STROKE_SEGMENTS; segment += 1) {
     const t = segment / LONG_STROKE_SEGMENTS;
-    const x = startX + bounds.width * 0.76 * t;
-    const wave = Math.sin(t * Math.PI * 2 * LONG_STROKE_WAVES) * bounds.height * 0.08;
-    actions.push(move(x, y + wave, LONG_STROKE_MS / LONG_STROKE_SEGMENTS));
+    actions.push(
+      move(
+        startX + bounds.width * 0.76 * t,
+        y + Math.sin(t * Math.PI * 2 * LONG_STROKE_WAVES) * bounds.height * 0.08,
+        LONG_STROKE_MS / LONG_STROKE_SEGMENTS
+      )
+    );
   }
   actions.push({ type: 'pointerUp' }, { type: 'pause', duration: LONG_STROKE_PAUSE_MS });
   return actions;
@@ -57,6 +69,7 @@ function shortStroke(bounds: Bounds, [fx, fy]: readonly [number, number]): Point
 }
 
 export const GESTURE_REPEATS = 10;
+export const UNDO_COUNT = 10;
 
 export const trustedGesturePlan = (primeBetweenPasses: boolean): GesturePlan => ({
   id: primeBetweenPasses ? 'fixed-geometry-refilled' : 'fixed-geometry',
@@ -64,69 +77,100 @@ export const trustedGesturePlan = (primeBetweenPasses: boolean): GesturePlan => 
   repeats: GESTURE_REPEATS,
   pauseMs: 0,
   primeBetweenPasses,
-  generate: (bounds, repeats, pauseMs) => {
-    const plan: PointerAction[] = [];
+  generate: (bounds, repeats, pauseMs): readonly PointerSequence[] => {
+    const actions: PointerAction[] = [];
     for (let repeat = 0; repeat < repeats; repeat += 1) {
-      for (const seed of LONG_STROKE_SEEDS) plan.push(...longStroke(bounds, seed));
-      for (const origin of SHORT_STROKE_ORIGINS) plan.push(...shortStroke(bounds, origin));
-      if (pauseMs > 0) plan.push({ type: 'pause', duration: pauseMs });
+      for (const seed of LONG_STROKE_SEEDS) actions.push(...longStroke(bounds, seed));
+      for (const origin of SHORT_STROKE_ORIGINS) actions.push(...shortStroke(bounds, origin));
+      if (pauseMs > 0) actions.push({ type: 'pause', duration: pauseMs });
     }
-    return plan;
+    return [{ source: 'finger', pointerType: 'touch', actions }];
   },
 });
 
-export const UNDO_COUNT = 10;
+export const paperControls: PaperControls = {
+  ensureBlank: {
+    name: 'clear-coloring-page',
+    steps: [
+      {
+        kind: 'ifPresent',
+        target: 'button[aria-label^="Clear active coloring page:"]',
+        then: [{ kind: 'click', target: 'button[aria-label^="Clear active coloring page:"]' }],
+      },
+    ],
+  },
+  ensurePage: {
+    name: 'open-coloring-page',
+    steps: [
+      { kind: 'click', target: '#coloringBookButton' },
+      { kind: 'waitVisible', target: 'button[aria-label$="coloring book"]', timeoutMs: 5000 },
+      { kind: 'click', target: 'button[aria-label$="coloring book"]' },
+      { kind: 'waitVisible', target: 'button[aria-label$="coloring page"]', timeoutMs: 5000 },
+      { kind: 'click', target: 'button[aria-label$="coloring page"]' },
+      { kind: 'waitPresent', target: '#coloringOverlay.overlay-ready', timeoutMs: 10_000 },
+    ],
+  },
+  instructions: {
+    blank: 'Draw on blank paper.',
+    page: 'Open the coloring book and tap any page, then draw on it.',
+  },
+};
 
-export const drawingCell = (brush: 'pen' | 'crayon' | 'magic' | 'eraser') =>
-  defineScenario({
+export const drawingCell = (brush: Brush) =>
+  defineScenario(splotch, {
     kind: 'frames',
     id: `drawing-${brush}`,
     description: `Blank-paper drawing with the ${brush} brush over the trusted gesture plan.`,
-    mode: brush,
-    phases: [{ key: 'blank' }],
-    gesture: trustedGesturePlan(brush === 'eraser'),
-    contactMs: 60_000,
-    hud: false,
+    tool: brush,
+    phases: [{ key: 'blank', paper: 'blank' }],
+    input: { kind: 'transport', gesture: trustedGesturePlan(brush === 'eraser') },
+    contactCapMs: 60_000,
     ...(brush === 'pen'
-      ? {
-          afterDrawing: {
-            control: 'undo',
-            count: UNDO_COUNT,
-            pauseMs: 250,
-            proof: 'history-depth-and-pixels' as const,
-          },
-        }
+      ? { repeatedAction: { control: 'undo' as const, count: UNDO_COUNT, pauseMs: 250 } }
       : {}),
   });
 
-// The hand-driven and suppression-sweep variants of perf:ios:webkit:frames / perf:web:frames.
-export const realScreenSweep = defineScenario({
+/** perf:web:frames without an iPad: the probe's own synthetic hand at iPad Pro geometry. */
+export const localFrames = (brush: Brush) =>
+  defineScenario(splotch, {
+    kind: 'frames',
+    id: `local-frames-${brush}`,
+    description: 'The real-screen probe driven by its synthetic hand in a local browser.',
+    tool: brush,
+    phases: [{ key: 'blank', paper: 'blank' }],
+    input: { kind: 'probe-synthetic', hz: 120, shape: 'mixed' },
+    contactCapMs: 25_000,
+    ...(brush === 'pen'
+      ? { repeatedAction: { control: 'undo' as const, count: UNDO_COUNT, pauseMs: 250 } }
+      : {}),
+  });
+
+/** The HUD-guided suppression sweep of perf:ios:webkit:frames; the nudge pin is a computed value, not a static rule. */
+export const realScreenSweep = defineScenario(splotch, {
   kind: 'frames',
   id: 'real-screen-sweep',
   description: 'HUD-guided phase sweep over the blend nudge, mix-blend-mode, and pointer halos.',
-  mode: 'pen',
+  tool: 'pen',
   phases: [
-    { key: 'blank' },
+    { key: 'blank', paper: 'blank' },
+    { key: 'page', paper: 'page' },
     {
-      key: 'page',
-      setup: {
-        name: 'open-coloring-page',
-        steps: [
-          { kind: 'click', target: '#coloringBookButton' },
-          { kind: 'waitVisible', target: 'button[aria-label$="coloring page"]' },
-          { kind: 'click', target: 'button[aria-label$="coloring page"]' },
-          { kind: 'waitVisible', target: '#coloringOverlay.overlay-ready' },
-        ],
-      },
+      key: 'page-no-nudge',
+      paper: 'page',
+      suppress: [{ kind: 'pin-computed', target: '.paper-view', property: 'transform' }],
     },
-    { key: 'page-no-nudge', suppressCss: '.paper-view { transform: none !important; }' },
-    { key: 'page-no-blend', suppressCss: '.paper-view { mix-blend-mode: normal !important; }' },
+    {
+      key: 'page-no-blend',
+      paper: 'page',
+      suppress: [{ kind: 'css', css: '.paper-view { mix-blend-mode: normal !important; }' }],
+    },
     {
       key: 'page-no-halos',
-      suppressCss: '.brush-ring, .eraser-bubble { display: none !important; }',
+      paper: 'page',
+      suppress: [{ kind: 'css', css: '.brush-ring, .eraser-bubble { display: none !important; }' }],
     },
   ],
-  gesture: trustedGesturePlan(false),
-  contactMs: 25_000,
+  input: { kind: 'human', seconds: 25 },
+  contactCapMs: 25_000,
   hud: true,
 });

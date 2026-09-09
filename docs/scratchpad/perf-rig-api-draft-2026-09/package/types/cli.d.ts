@@ -1,29 +1,32 @@
 /**
- * The command line.
+ * The command line, at the published rung.
  *
  * `perf-rig` reads `perf-rig.config.mjs` from the working directory (exporting `app`, `targets`,
- * `scenarios`, `gates`, `rig`, and optional `campaigns`) and exposes one subcommand per lifecycle
- * step. An app's `package.json` scripts wrap these with their own names; the package never
- * assumes an npm script exists.
+ * `scenarios`, `gates`, and optional `rig`, `fidelity`, `campaigns`). At the nested rung the app's
+ * own scripts call the library directly and no CLI exists. Every command takes `--json`.
  */
 
 export type CliCommand =
-  /** Inventory: tools on PATH, devices attached, transports usable, contract hooks reachable on a served page. */
-  | 'doctor'
-  /** Write a starter config with every required contract field marked, and a first desktop scenario. */
+  /** Write a starter config: every required contract field marked with the failure it prevents, and one `actions` scenario over one declared control. */
   | 'init'
+  /** Inventory: tools on PATH, devices attached, transports usable, every contract hook evaluated against a served page (`--url` or `--serve`). */
+  | 'doctor'
   | 'capture'
   | 'serve'
   | 'probe-host'
   | 'probe render'
   | 'preflight'
   | 'operator'
+  | 'calibrate'
   | 'release'
+  | 'campaign plan'
   | 'campaign run'
   | 'campaign status'
   | 'rescore'
   | 'evidence keep'
-  | 'analyze'
+  | 'analyze frames'
+  | 'analyze chrome'
+  | 'analyze web-inspector'
   | 'floor-control'
   | 'verify input'
   | 'verify rotation'
@@ -47,20 +50,27 @@ export interface DoctorReport {
     readonly usable: boolean;
     readonly reason?: string;
   }[];
-  /** Each contract hook evaluated against the served page, so a missing hook is found before a capture. */
   readonly contract: readonly {
     readonly field: string;
     readonly ok: boolean;
     readonly detail: string;
   }[];
+  readonly calibration: readonly {
+    readonly runtime: string;
+    readonly uncalibrated: readonly string[];
+  }[];
 }
 
-/** Exit codes shared by every command, so a wrapper script can branch without parsing output. */
-export declare const EXIT: {
-  readonly ok: 0;
-  readonly failed: 1;
-  /** A guard refused before measuring; the artifact carries the trust ledger. */
-  readonly refused: 2;
-  /** Prerequisites missing; `doctor` names them. */
-  readonly unready: 3;
-};
+/** External programs the package shells out to, discovered by `doctor`, never dependencies. */
+export declare const HOST_TOOLS: readonly {
+  readonly name:
+    | 'adb'
+    | 'xcrun'
+    | 'idevice_id'
+    | 'iproxy'
+    | 'pymobiledevice3'
+    | 'appium'
+    | 'perfetto'
+    | 'xctrace';
+  readonly neededBy: readonly string[];
+}[];

@@ -1,20 +1,28 @@
-// Every number is Splotch's. The package evaluates; the basis strings are what the report quotes.
+// Every number is Splotch's, copied from the shipped ledgers with its basis. The package evaluates.
 import { defineGates, type FidelityExpectations } from 'perf-rig';
+import type { SplotchRuntime } from './targets.js';
 
 export const gates = defineGates({
   drawing: {
-    paintP95Ms: 20,
-    paintP99Ms: 33,
-    paintMaxMs: 50,
+    frameP95Ms: 20,
+    frameP99Ms: 33,
+    frameMaxMs: 50,
     lostFrameTimeShare: 0.01,
-    exceptions: {
-      'ipad-device-web:crayon': {
+    exceptions: [
+      {
+        target: 'ipad-device-browser',
+        tool: 'crayon',
         lostFrameTimeShare: 0.015,
         basis:
-          'ADR-0137: thirteen measured implementations; worst single capture, ratchets down only',
+          'ADR-0137: thirteen measured implementations; worst single capture; ratchets down only',
       },
-      'ipad-device-native:crayon': { lostFrameTimeShare: 0.015, basis: 'ADR-0137' },
-    },
+      {
+        target: 'ipad-device-packaged',
+        tool: 'crayon',
+        lostFrameTimeShare: 0.015,
+        basis: 'ADR-0137',
+      },
+    ],
   },
   actions: {
     frameP95Ms: 20,
@@ -23,74 +31,116 @@ export const gates = defineGates({
     maxBreachConfirmingSamples: 2,
     warmupRepeats: 1,
     minGatedSamples: 3,
-    allowances: {
-      'ipad-device-web': {
-        'open Settings': { p95Ms: 27, basis: 'ADR-0160 perf-profiles/evidence/2026-09-0x' },
-        'select coloring page': { p95Ms: 26, basis: 'ADR-0160' },
+    allowances: [
+      {
+        target: 'ipad-device-browser',
+        adrs: ['ADR-0090', 'ADR-0160'],
+        entries: [
+          {
+            actionId: 'settings.open',
+            p95Ms: 29,
+            maxMs: 56,
+            basis: 'perf-profiles/evidence/2026-09-02 and 2026-09-06 iPad Safari sweeps',
+          },
+          { actionId: 'settings.close', p95Ms: 22, basis: 'ADR-0160' },
+          { actionId: 'coloring.select-page', p95Ms: 30, basis: 'ADR-0160' },
+          { actionId: 'theme.switch', p95Ms: 23, basis: 'ADR-0160 (light to dark)' },
+          { actionId: 'rotation.with-ink', p95Ms: 26, basis: 'ADR-0160 (portrait to landscape)' },
+        ],
       },
-      'android-device-web': {
-        'disable Night Mode': { p95Ms: 33.4, basis: 'ADR-0162' },
+      {
+        target: 'android-device-browser',
+        adrs: ['ADR-0162'],
+        entries: [
+          {
+            actionId: 'theme.switch',
+            p95Ms: 33.5,
+            basis: 'ADR-0162: compact-shell Night Mode toggle, GPU-attributed',
+          },
+        ],
       },
-    },
-    firstFrameNotApplicable: (runtime, label) =>
-      /rotation/.test(label) && (runtime === 'ios-safari' || runtime === 'desktop-playwright')
-        ? 'ADR-0142: rotation first frames anchor at resize on these runtimes'
-        : null,
+    ],
+    firstFrameNotApplicable: [
+      {
+        actionIdPattern: '^rotation\\.',
+        runtimes: ['ios-safari'],
+        reason: 'ADR-0142: rotation first frames anchor at resize on iPad Safari',
+      },
+      {
+        actionIdPattern: '^rotation\\.',
+        runtimes: ['desktop-playwright'],
+        engines: ['webkit'],
+        reason: 'desktop WebKit measured inert on rotation; Chromium and Firefox stay gated',
+      },
+    ],
   },
-  measuredAction: { engineP95Ms: 20, nextFrameP95Ms: 33, nextFrameMaxMs: 50 },
-  commit: { budgetMs: 25, percentile: 0.95, confirmations: 2 },
+  repeatedAction: { engineP95Ms: 20, nextFrameP95Ms: 33, nextFrameMaxMs: 50 },
+  commit: {
+    budgetMs: 25,
+    percentile: 0.95,
+    confirmations: 2,
+    normalise: { caseKey: 'crayon-scribbles', referenceTotalMs: 60_800, enabled: false },
+  },
 });
 
 // Calibrated against the tracked corpus in perf-profiles/evidence (ADR-0139/0141/0144/0145).
-export const fidelity: FidelityExpectations = {
-  'ios-safari': [
-    { kind: 'trustedTouch', state: 'calibrated', bounds: { min: 1 } },
-    {
-      kind: 'cadence',
-      state: 'calibrated',
-      bounds: { min: 0.9 },
-      basis: '2026-08-23 iPad hand corpus',
+// trustedTouch and cadence are universal; the per-runtime checks describe a runtime.
+export const fidelity: FidelityExpectations<SplotchRuntime> = {
+  universal: {
+    cadence: {
+      movesPerFrameMin: 0.9,
+      moveGapP95MaxMs: 25,
+      basis:
+        'ADR-0145: between the Appium control at 0.82 and the healthy floor at 0.96; gap cap 1.5× the slowest beat',
     },
-    { kind: 'moveGap', state: 'calibrated', bounds: { max: 25 } },
-    { kind: 'pressure', state: 'calibrated', bounds: { min: 0, max: 0 } },
-    { kind: 'contactGeometry', state: 'calibrated', bounds: { min: 40, max: 100 } },
-    { kind: 'coalescing', state: 'witness' },
-  ],
-  'ios-capacitor-webview': [
-    { kind: 'trustedTouch', state: 'calibrated', bounds: { min: 1 } },
-    { kind: 'cadence', state: 'calibrated', bounds: { min: 0.9 } },
-    { kind: 'moveGap', state: 'calibrated', bounds: { max: 25 } },
-    { kind: 'coalescing', state: 'witness' },
-  ],
-  'android-chrome': [
-    { kind: 'trustedTouch', state: 'calibrated', bounds: { min: 1 } },
-    {
-      kind: 'cadence',
-      state: 'calibrated',
-      bounds: { min: 0.9 },
-      basis: 'issue 1218 hand capture 135.5–178.0 mv/s',
+  },
+  runtimes: {
+    'ios-safari': {
+      pressure: {
+        state: 'calibrated',
+        bounds: { min: 0, max: 0 },
+        basis: '2026-08-23 iPad hand corpus',
+        negativeControl: 'SafariDriver actions (pressure 0, contact 13,660 px)',
+      },
+      contactGeometry: {
+        state: 'calibrated',
+        bounds: { min: 40, max: 100 },
+        basis: '2026-08-23 iPad hand corpus (~74 px radius)',
+        negativeControl: 'SafariDriver actions',
+      },
+      coalescing: {
+        state: 'not-applicable',
+        basis: 'ADR-0144: tracks page delivery, not input; floors at 1',
+      },
     },
-    { kind: 'moveGap', state: 'calibrated', bounds: { max: 25 } },
-    { kind: 'pressure', state: 'not-applicable', basis: 'reports 1 for finger and robot alike' },
-    { kind: 'contactGeometry', state: 'not-applicable' },
-    { kind: 'coalescing', state: 'witness' },
-  ],
-  'android-capacitor-webview': [
-    { kind: 'trustedTouch', state: 'calibrated', bounds: { min: 1 } },
-    { kind: 'cadence', state: 'calibrated', bounds: { min: 0.9 } },
-    { kind: 'moveGap', state: 'calibrated', bounds: { max: 25 } },
-    {
-      kind: 'contactGeometry',
-      state: 'witness',
-      basis: 'ADR-0144 amendment: separates driver from driver, not faithful from unfaithful',
+    'ios-capacitor-webview': {
+      pressure: { state: 'uncalibrated' },
+      contactGeometry: { state: 'uncalibrated' },
+      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
     },
-  ],
-  'desktop-playwright': [
-    {
-      kind: 'trustedTouch',
-      state: 'not-applicable',
-      basis: 'synthetic by construction; desktop calibration is advisory',
+    'android-chrome': {
+      pressure: {
+        state: 'not-applicable',
+        basis: 'issue 1218: reports 1 for finger and robot alike',
+      },
+      contactGeometry: { state: 'not-applicable', basis: 'issue 1218: no radius reported' },
+      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
     },
-    { kind: 'cadence', state: 'uncalibrated' },
-  ],
+    'android-capacitor-webview': {
+      pressure: { state: 'not-applicable', basis: 'issue 1274 two-arm evidence' },
+      contactGeometry: {
+        state: 'not-applicable',
+        basis: 'ADR-0144 amendment: separates driver from driver, not faithful from unfaithful',
+      },
+      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
+    },
+    'desktop-playwright': {
+      pressure: {
+        state: 'not-applicable',
+        basis: 'synthetic by construction; desktop is advisory',
+      },
+      contactGeometry: { state: 'not-applicable', basis: 'synthetic by construction' },
+      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
+    },
+  },
 };

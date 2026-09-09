@@ -3,120 +3,209 @@
  *
  * A campaign drives a target through a grid of cells resumably. The package owns the runner, the
  * append-only ledger, the retry budget, the instrument-change refusal, and the one artifact
- * inspector that both the runner and the report generator call — two conforming implementations
- * once disagreed on absent-data boundaries, so there is exactly one. The app owns the grid: what a
- * mode is, what a cell is, where it writes, and which fields prove it measured what it claims.
+ * inspector that both the runner and any report generator call. The app owns the grid: what a
+ * variant is, what a cell is, where it writes, and which fields beyond the standard ones prove it
+ * measured what it claims.
  */
 
+import type { AppContract, DimensionOf } from './app.js';
 import type { CaptureArtifact } from './artifact.js';
-import type { CaptureOptions } from './capture.js';
-import type { Scenario } from './scenario.js';
-import type { TargetDefinition } from './target.js';
+import type { CaptureOptions, RefusalCode } from './capture.js';
+import type { Scenario, ScenarioKind } from './scenario.js';
+import type { FidelityExpectations } from './scoring.js';
+import type { TargetDefinition, Viewport } from './target.js';
 
-export interface CellDefinition {
-  /** `<mode>/<item>`; unique within a target. */
-  readonly id: string;
-  readonly mode: string;
-  readonly item: string;
-  readonly scenario: Scenario;
-  readonly options: CaptureOptions;
-  /** Path relative to the campaign output root; asserted unique at plan time. */
+export type StandardLedgerStatus =
+  | 'valid-json'
+  | 'already-valid'
+  | 'missing-or-invalid-json'
+  | 'attempts-exhausted'
+  | 'runtime-mismatch'
+  | 'verdict-absent'
+  | 'failed-input-fidelity'
+  | 'uncalibrated-runtime'
+  | 'off-refresh-regime'
+  | 'wrong-gesture-repeats'
+  | 'wrong-gesture-plan'
+  | 'prime-failed'
+  | 'blank-output'
+  | 'instrument-change-accepted';
+
+export interface LedgerRow<AppStatus extends string = never> {
+  readonly timestamp: string;
+  readonly cell: string;
+  readonly status: StandardLedgerStatus | AppStatus;
+  /** Its own column, never suffixed onto the status. */
+  readonly exitCode: number | null;
+  readonly attempt: number;
   readonly artifact: string;
-  /** Whether the scenario's transport writes a fidelity verdict and a refresh regime. */
-  readonly reports: { readonly fidelity: boolean; readonly refreshRegime: boolean };
+  readonly log: string;
+  readonly instrument: string | null;
 }
 
-export interface CampaignDefinition {
+export interface CellDefinition<
+  A extends AppContract = AppContract,
+  K extends ScenarioKind = ScenarioKind,
+> {
+  /** `<variant>/<item>`; unique within a target. */
+  readonly id: string;
+  readonly variant: string;
+  readonly item: string;
+  readonly scenario: Extract<Scenario<A>, { kind: K }>;
+  readonly options: CaptureOptions<A>;
+  /** Path relative to the campaign output root; asserted unique at plan time. */
+  readonly artifact: string;
+  /** Files beyond the package's own that decide what this cell measures; fingerprinted per cell. */
+  readonly instrument?: readonly string[];
+}
+
+export interface CampaignVariant<A extends AppContract> {
+  readonly id: string;
+  readonly dimensions: Readonly<Partial<Record<DimensionOf<A>, string>>>;
+  /** Desktop targets take orientation from a viewport pair rather than the device. */
+  readonly viewport?: Viewport;
+}
+
+export interface AcceptanceRule<
+  AppStatus extends string = string,
+  K extends ScenarioKind = ScenarioKind,
+> {
+  readonly status: AppStatus;
+  readonly spendsAttempt: boolean;
+  /** `never` ends the retry loop; `until-calibrated` re-asks the fidelity table on every resume. */
+  readonly retry: 'always' | 'never' | 'until-calibrated';
+  readonly appliesTo: readonly K[];
+  check(
+    artifact: CaptureArtifact<K>,
+    cell: CellDefinition<AppContract, K>
+  ): { readonly ok: true } | { readonly ok: false; readonly detail: string };
+}
+
+/**
+ * Applied to every cell before the app's rules, in this order, so the ledger names the recapture's
+ * first problem: missing-or-invalid-json, runtime-mismatch, verdict-absent, failed-input-fidelity
+ * or uncalibrated-runtime, off-refresh-regime, wrong-gesture-repeats, wrong-gesture-plan,
+ * prime-failed (anomalous entry or a shortfall of repeats − 1), blank-output. Absent fields on an
+ * artifact predating a rule are tolerated; malformed ones are refused.
+ */
+/** A rule for one scenario kind; a list of rules is a union over kinds so a frames-only rule sits beside a generic one. */
+export type AcceptanceRules<Status extends string> = {
+  [K in ScenarioKind]: AcceptanceRule<Status, K>;
+}[ScenarioKind];
+
+export declare const STANDARD_ACCEPTANCE: readonly AcceptanceRules<StandardLedgerStatus>[];
+
+export interface CampaignDefinition<
+  A extends AppContract = AppContract,
+  AppStatus extends string = never,
+> {
+  readonly app: A;
   readonly target: TargetDefinition;
-  readonly modes: readonly {
-    readonly id: string;
-    readonly dimensions: Readonly<Record<string, string>>;
-    readonly orientation: 'PORTRAIT' | 'LANDSCAPE';
-  }[];
+  readonly variants: readonly CampaignVariant<A>[];
   readonly items: readonly string[];
-  readonly cellFor: (mode: CampaignDefinition['modes'][number], item: string) => CellDefinition;
+  cellFor(variant: CampaignVariant<A>, item: string): CellDefinition<A>;
+  readonly fidelity: FidelityExpectations;
   /**
    * A cell repeated at the start, middle and end of a physical-device queue to measure
-   * within-session drift; a sub-threshold spread is reported, never treated as an acquittal.
+   * within-session drift; rides the first planned variant; a sub-threshold spread is reported,
+   * never treated as an acquittal.
    */
   readonly reference?: {
     readonly item: string;
-    readonly metric: (artifact: CaptureArtifact) => number;
+    readonly onlyWhenQueueContains: readonly string[];
+    metric(artifact: CaptureArtifact<'frames'>): number;
     readonly warnAboveDelta: number;
   };
-  /** Ordered most-fundamental-first, so the ledger names the recapture's first problem. */
-  readonly acceptance: readonly AcceptanceRule[];
+  readonly acceptance: readonly AcceptanceRules<StandardLedgerStatus | AppStatus>[];
   readonly maxAttempts: number;
   readonly outputRoot: string;
 }
 
-export interface AcceptanceRule {
-  /** Ledger status written when the rule rejects. */
-  readonly status: string;
-  /** Whether a rejection spends one of the cell's attempts. A rule that no retry can change returns false. */
-  readonly spendsAttempt: boolean;
-  readonly check: (
-    artifact: CaptureArtifact,
-    cell: CellDefinition
-  ) => { readonly ok: true } | { readonly ok: false; readonly detail: string };
-}
-
-/** Rules every campaign gets, in this order, ahead of the app's own. */
-export declare const STANDARD_ACCEPTANCE: readonly AcceptanceRule[];
-// 'missing-or-invalid-json' → 'runtime-mismatch' → 'failed-input-fidelity' | 'uncalibrated-runtime'
-// → 'off-refresh-regime' → 'wrong-gesture-plan' → 'wrong-gesture-repeats' → 'prime-failed' → 'blank-output'
-
-export interface LedgerRow {
-  readonly timestamp: string;
-  readonly cell: string;
-  readonly status: string;
-  readonly attempt: number;
-  readonly artifact: string;
-  readonly log: string;
-  readonly instrument: string;
-}
-
-export declare function parseLedger(text: string): readonly LedgerRow[];
-export declare function formatLedgerRow(row: LedgerRow): string;
+export declare function parseLedger(text: string): readonly LedgerRow<string>[];
+export declare function formatLedgerRow(row: LedgerRow<string>): string;
 export declare function completedCells(
-  rows: readonly LedgerRow[],
+  rows: readonly LedgerRow<string>[],
   inspect: (cell: string) => boolean
 ): readonly string[];
+export declare function nextAction(
+  rows: readonly LedgerRow<string>[],
+  cellId: string,
+  options: {
+    readonly artifactValid: boolean;
+    readonly maxAttempts: number;
+    readonly runtimeStillUncalibrated: boolean;
+  }
+): { readonly action: 'skip' | 'run' | 'p1'; readonly attempt: number; readonly reason: string };
 
 export interface RunCampaignOptions {
-  readonly modes?: readonly string[];
+  readonly variants?: readonly string[];
   readonly items?: readonly string[];
+  readonly label?: string;
   readonly ledgerPath?: string;
   readonly dryRun?: boolean;
-  /** Write `instrument-change-accepted` rows and continue past a fingerprint mismatch. */
   readonly acceptInstrumentChange?: boolean;
   readonly device?: CaptureOptions['device'];
+  readonly url?: string;
+  readonly rebootSimulator?: string;
+  /** Each cell in a fresh process, so an edit mid-run splits at a cell boundary and the fingerprint names it. */
+  readonly isolation?: 'child-process' | 'in-process';
+}
+
+export interface CampaignPlan {
+  readonly cells: readonly {
+    readonly id: string;
+    readonly artifact: string;
+    readonly endpoint: string;
+  }[];
+  readonly references: readonly {
+    readonly id: string;
+    readonly position: 'start' | 'middle' | 'end';
+    readonly artifact: string;
+  }[];
+  readonly refusals: readonly {
+    readonly code: RefusalCode | 'artifact-path-collision' | 'instrument-changed';
+    readonly message: string;
+    readonly remedy: string;
+  }[];
 }
 
 export interface CampaignResult {
   readonly complete: number;
   readonly planned: number;
   readonly p1: readonly { readonly cell: string; readonly reason: string }[];
-  readonly referenceDrift?: {
+  readonly references?: {
+    readonly measurements: readonly {
+      readonly position: 'start' | 'middle' | 'end';
+      readonly value: number;
+      readonly capturedAt: string;
+    }[];
     readonly delta: number;
     readonly exceedsWarning: boolean;
     readonly sessionScope: 'single' | 'mixed' | 'unknown';
   };
 }
 
-export declare function runCampaign(
-  campaign: CampaignDefinition,
+export declare function planCampaign<A extends AppContract, S extends string>(
+  campaign: CampaignDefinition<A, S>,
+  options?: RunCampaignOptions
+): Promise<CampaignPlan>;
+export declare function runCampaign<A extends AppContract, S extends string>(
+  campaign: CampaignDefinition<A, S>,
   options?: RunCampaignOptions
 ): Promise<CampaignResult>;
 
-/** The single artifact inspector. The report generator calls this too. */
-export declare function inspectCell(
-  campaign: CampaignDefinition,
-  cell: CellDefinition
-): Promise<{ readonly ok: boolean; readonly status: string; readonly detail?: string }>;
+/** The single artifact inspector. Any report generator calls this too. */
+export declare function inspectCell<A extends AppContract, S extends string>(
+  campaign: CampaignDefinition<A, S>,
+  cell: CellDefinition<A>
+): Promise<{
+  readonly ok: boolean;
+  readonly status: StandardLedgerStatus | S;
+  readonly detail?: string;
+}>;
 
-export declare function campaignStatus(
-  campaign: CampaignDefinition,
+export declare function campaignStatus<A extends AppContract, S extends string>(
+  campaign: CampaignDefinition<A, S>,
   options?: { readonly ledgerPath?: string }
 ): Promise<{
   readonly complete: readonly string[];
@@ -128,27 +217,41 @@ export declare function campaignStatus(
   readonly ledgerDisagrees: readonly string[];
 }>;
 
-/** Hash the modules and rendered probes that decide what a capture measures. Scorers are outside it on purpose. */
-export declare function instrumentFingerprint(files: readonly string[]): {
+export interface InstrumentDescriptor {
+  readonly harnessVersion: string;
+  readonly probes: readonly ('frames' | 'actions' | 'input-recorder')[];
+  /** Only the contract fields the probes and bootstrap read. */
+  readonly contract: Pick<AppContract, 'page' | 'hooks' | 'marks' | 'tools' | 'controls'>;
+  readonly pageFunctions: readonly string[];
+  readonly files?: readonly string[];
+}
+
+/** Per-part hashes, so a change names the part; scorers are outside it on purpose and re-derive at fold time. */
+export declare function instrumentFingerprint(descriptor: InstrumentDescriptor): {
   readonly fingerprint: string;
-  readonly files: Readonly<Record<string, string>>;
+  readonly parts: Readonly<Record<string, string>>;
 };
+export declare function instrumentChangeProblem(
+  recorded: Readonly<Record<string, string>>,
+  current: Readonly<Record<string, string>>
+): string | null;
 
 export interface EvidenceSelection {
   readonly corpus: string;
   readonly campaign: string;
   readonly productCommit: string;
-  /** Selection key per artifact; refuse to guess (no silent fallback). */
-  readonly keyOf: (artifact: CaptureArtifact, path: string) => string;
+  readonly target?: string;
+  readonly filter?: string;
+  keyOf(artifact: CaptureArtifact, path: string): string;
   readonly keepAll?: { readonly study: string };
   readonly allowFailed?: boolean;
+  readonly force?: boolean;
 }
 
 /**
  * Promote captures into a tracked corpus, whole and minified, one per key, preferring the
- * scoreability tier (passed, calibration-only failure, no verdict, invalidating failure) and never
- * the score; device identifiers redacted; a `cellAttributable: false` mark where the nonce audit
- * contradicts the label.
+ * scoreability tier and never the score; device identifiers redacted; a `cellAttributable: false`
+ * mark where the nonce audit contradicts the label.
  */
 export declare function keepEvidence(
   selection: EvidenceSelection,
@@ -158,68 +261,15 @@ export declare function keepEvidence(
 export interface RescoreOptions {
   readonly corpus: string;
   readonly filter?: string;
+  readonly target?: string;
   readonly includeUnattributable?: boolean;
-  /** Resolve the cell an artifact belongs to; throws rather than guessing. */
-  readonly cellOf: (
-    artifact: CaptureArtifact,
-    path: string
-  ) => { readonly target: string; readonly mode: string; readonly item: string };
-  readonly score: (
-    artifact: CaptureArtifact
-  ) => Readonly<Record<string, number | string | boolean>>;
+  readonly json?: string;
+  /** Required only for pre-package artifacts; v1 artifacts carry their cell. */
+  readonly legacy?: { upgrade(json: unknown, path: string): CaptureArtifact };
+  score(artifact: CaptureArtifact): Readonly<Record<string, number | string | boolean>>;
 }
 
-/** Re-derive every capture in a corpus from `report`, through the shipped scorers, never from stored summaries. */
+/** Re-derive every capture in a corpus from `report` through the shipped scorers, never from stored summaries. */
 export declare function rescore(
   options: RescoreOptions
 ): Promise<readonly Readonly<Record<string, unknown>>[]>;
-
-/**
- * Domain-free grid rendering for a published report: targets × modes × metrics with per-cell heat
- * and tooltips, every metric riding the cell as data so a switcher swaps number and heat
- * client-side. The model that feeds it is the app's.
- */
-export declare function renderMatrix(model: MatrixModel): {
-  readonly markdown: string;
-  readonly html: string;
-};
-
-export interface MatrixModel {
-  readonly title: string;
-  readonly columns: readonly { readonly id: string; readonly label: string }[];
-  readonly rows: readonly {
-    readonly id: string;
-    readonly label: string;
-    readonly role: 'gated' | 'tripwire' | 'advisory';
-    readonly cells: Readonly<Record<string, MatrixCell>>;
-  }[];
-  readonly notes: readonly string[];
-}
-
-export interface MatrixCell {
-  readonly metrics: Readonly<
-    Record<
-      string,
-      {
-        readonly value: number | null;
-        readonly heat: 'pass' | 'warn' | 'fail' | 'unscoreable' | 'missing';
-        readonly tooltip: string;
-      }
-    >
-  >;
-  readonly provenance: {
-    readonly commit: string | null;
-    readonly capturedAt: string | null;
-    readonly preserved: boolean;
-  };
-}
-
-/** Compare a captured commit's measured surface (tree hashes of declared paths) against a base. */
-export declare function stalenessOutcome(
-  rows: readonly {
-    readonly target: string;
-    readonly capturedAt: string;
-    readonly verdict: 'current' | 'current (specs only)' | 'STALE' | 'UNVERIFIABLE';
-  }[],
-  options: { readonly strict: boolean }
-): { readonly exitCode: 0 | 1; readonly summary: string };

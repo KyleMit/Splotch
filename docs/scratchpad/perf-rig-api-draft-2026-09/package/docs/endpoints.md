@@ -1,161 +1,142 @@
 # Capture endpoints
 
-An endpoint is a proved pairing of an input transport and a measurement channel on a platform.
-There are nine. Each section lists what must be true before the endpoint can run, the guards the
-package runs and records, the validations it cannot make for you, how to customise it, and the
-traps that produce a plausible wrong number on it. `perf-rig capture --dry-run` prints the endpoint
-a request resolves to and every refusal it would hit.
+An endpoint is a proved pairing of an input transport and a measurement channel on a platform. There
+are ten. Each section lists what must be true before the endpoint can run, the guards it adds to the
+common set in [`guards.md`](guards.md), the validations the package cannot make for you, how to
+customise it, and the traps that produce a plausible wrong number on it.
+`perf-rig capture --dry-run` prints the endpoint a request resolves to and every refusal it would
+hit.
 
-| Endpoint                      | Input                  | Measurement           | Platform                | Trusted input | Runs unattended | Calibrated hand-shape |
-| ----------------------------- | ---------------------- | --------------------- | ----------------------- | ------------- | --------------- | --------------------- |
-| `desktop`                     | `desktop-playwright`   | `same-process`        | desktop engines         | no            | yes             | no                    |
-| `android-cdp-actions`         | `cdp-touch`            | `cdp-evaluate`        | Android Chrome          | yes           | yes             | taps only             |
-| `android-split`               | `adb-input`            | `http-upload`         | Android Chrome, WebView | yes           | yes             | passes                |
-| `android-bundled`             | `adb-input`            | `cdp-evaluate`        | Android packaged WebView | yes           | yes             | passes                |
-| `android-native-actions`      | `appium-uiautomator2`  | `appium-execute`      | Android packaged WebView | yes           | yes             | taps only             |
-| `ios-appium`                  | `appium-xcuitest`      | `appium-execute`      | iPad Safari, WKWebView  | yes           | needs a tunnel  | calibrated            |
-| `ios-split`                   | `wda-http`             | `http-upload`         | iPad Safari             | yes           | yes             | passes                |
-| `ios-bundled`                 | `appium-xcuitest`      | `preferences-mailbox` | iPad packaged WKWebView | yes           | needs a tunnel  | calibrated            |
-| `ios-inspector`               | `human` or in-page     | `webkit-inspector`    | iPad Safari             | hand          | no              | the reference         |
+| Endpoint                 | Input                | Measurement           | Platform                 | Trusted | Unattended     | Drives                   |
+| ------------------------ | -------------------- | --------------------- | ------------------------ | ------- | -------------- | ------------------------ |
+| `desktop`                | `desktop-playwright` | `same-process`        | desktop engines          | no      | yes            | session, frames, actions |
+| `android-cdp-session`    | `desktop-playwright` | `cdp-evaluate`        | Android packaged WebView | no      | yes            | session                  |
+| `android-cdp-actions`    | `cdp-touch`          | `cdp-evaluate`        | Android Chrome           | yes     | yes            | actions                  |
+| `android-split`          | `adb-input`          | `http-upload`         | Android Chrome, WebView  | yes     | yes            | frames                   |
+| `android-bundled`        | `adb-input`          | `cdp-evaluate`        | Android packaged WebView | yes     | yes            | frames                   |
+| `android-native-actions` | `appium`             | `appium-execute`      | Android packaged WebView | yes     | yes            | actions                  |
+| `ios-appium`             | `appium`             | `appium-execute`      | iPad Safari, WKWebView   | yes     | needs a tunnel | frames, actions          |
+| `ios-split`              | `wda-http`           | `http-upload`         | iPad Safari              | yes     | yes            | frames                   |
+| `ios-bundled`            | `appium`             | `preferences-mailbox` | iPad packaged WKWebView  | yes     | needs a tunnel | frames                   |
+| `ios-inspector`          | `human` or in-page   | `webkit-inspector`    | iPad Safari              | hand    | no             | frames                   |
 
-## Guards every endpoint runs
-
-These are recorded as `trust[]` entries in every artifact, in this order. A `failed` entry outside
-the request's `tolerate` list stops the capture before measurement and exits 2.
-
-1. `refused-build-variant` — the build directory does not hold a variant the contract refuses (a
-   native static export written over the web build).
-2. `build-seams-present` — the served page carries the instrumentation seams; a page without them
-   completes every capture and reports zero measures.
-3. `served-build-identity` — the entry module the port serves and every immutable chunk it
-   references digest to what `outputDir` holds. Proves self-consistency and ownership, not currency.
-4. `page-identity-nonce` — the page's query string echoes this run's nonce; a leftover tab that
-   polls the same plan stands down instead of uploading near-empty tables.
-5. `route-hydrated` — the contract's `hydrated` expression is true. Server-rendered routes answer
-   every selector and do nothing when their modules fail to load.
-6. `dimension-observed` — each requested dimension was set through the app's own controls and read
-   back resolved; the artifact records the observed value, never the requested one.
-7. `committed-mode` — the mode the engine reports equals the one selected; the value persists across
-   navigations, so pen is selected explicitly like every other mode.
-8. `hit-test-surface` — `elementFromPoint` at the surface centre resolves inside the hit-test
-   ancestor; a menu left open over the surface produces frames and zero pointer events.
-9. `prime-verified` — a mode's prime procedure met its postcondition, again after the settle.
-10. `painted-output` — the output surfaces' digest changed across the capture; temporal gates pass a
-    renderer that painted nothing.
-11. `host-quiet` — host load per core stayed under the threshold across the window; the host drives
-    the input, so contention changes cadence.
-12. `instrument-restored` — every instrument's `restore` ran, including on an interrupted run.
-
-Endpoint-specific guards are listed below.
+Whether an endpoint's input is hand-shaped enough to score is the app's calibration for that
+runtime, never a column here. `appium` drives taps on every platform and draws only on iOS, where
+XCUITest was calibrated against a hand; on Android it under-drives a drawing stream and the plan
+refuses it for `frames`.
 
 ## `desktop`
 
-**Prerequisites.** Playwright with the engine installed. No device.
+**Prerequisites.** Playwright with the engine installed. No device, no rig definition.
 
-**Guards added.** None beyond the common set.
+**Validations left to you.** Desktop input is synthetic, so `input-fidelity` is not applicable and
+the numbers are advisory. Headless capture sees nothing presentational: a compositing hint can pass
+every desktop capture and render black on a device. Desktop WebKit is not an iPad; its clock is
+clamped and there is no throttle.
 
-**Validations left to you.** Desktop input is synthetic and untrusted, so no fidelity check can pass;
-the artifact records `input-fidelity: not-applicable` and the numbers are advisory. Headless capture
-sees nothing presentational: a compositing hint can pass every desktop capture and render black on a
-device. Desktop WebKit is not an iPad; `performance.now()` is clamped and there is no throttle.
+**Customisation.** `instruments: cdp-cpu-throttle` (Chromium only; refused elsewhere),
+`cdp-tracing`, `cdp-network-emulation`; `viewport`, `headed`; `build.mode: 'url'` with
+`allowForeignBuild` for an A/B against a historical build served from an isolated worktree on its
+own port; `input.kind: 'probe-synthetic'` for the frames probe's own hand at a chosen rate.
 
-**Customisation.** `options.instruments.cpuThrottle` (Chromium only; refused on other engines),
-`options.instruments.trace` for a CDP trace, `target.viewport`, `target.engine`,
-`options.build.mode: 'url'` with `allowForeignBuild` for an A/B against a historical build served
-from an isolated worktree on its own port.
+**Traps.** Any E2E run rebuilds the output directory without the seams; identity passes because the
+build is internally consistent and `build-seams-present` is the only tell. A preview left running
+from another checkout keeps the port and serves that checkout's build; identity names it.
 
-**Traps.** Any E2E run rebuilds the output directory without the seams; the identity guard passes
-because the build is internally consistent and `build-seams-present` is the only tell. A preview
-left running from another checkout keeps the port and serves that checkout's build; the identity
-guard names the mismatch.
+## `android-cdp-session`
+
+**Prerequisites.** `adb`, the packaged app installed from an instrumented build
+(`native.android.build` and `install`), its WebView DevTools socket forwardable.
+
+**Guards added.** `foreground-package`, `packaged-origin`.
+
+**Validations left to you.** Installing through the platform's normal run path re-chains a plain
+build and overwrites the instrumented one; the capture still runs. `build-seams-present` on the
+attached page is the guard; check `report.meta.counts.measures` before believing an engine table.
 
 ## `android-cdp-actions`
 
 **Prerequisites.** `adb` with the device authorised; Chrome installed; the preview reachable from
-the device over the LAN, with `adb reverse` or a LAN URL passed explicitly.
+the device over the LAN.
 
-**Guards added.** `service-worker-blocked`; `entry-module-match` against `document.scripts`;
-`instrument-restored` for `android-refresh-pin`, which pins an adaptive-sync panel to 60 Hz for the
-sweep, verifies the pin against `dumpsys display`, and restores it on exit including interrupts.
+**Guards added.** `service-worker-blocked`, `entry-module-match`, `foreground-package`;
+`instrument-restored` for `android-refresh-pin`, which pins an adaptive-sync panel for the sweep,
+verifies the pin against `dumpsys display`, and restores it on exit including interrupts.
 
-**Validations left to you.** A restored Chrome tab can hold the foreground while the run's page
-answers every poll; the tell is zero events and zero downs on the first action. An emulator started
-from a snapshot is not a fresh boot; record guest uptime if the capture is a cold-boot control.
+**Validations left to you.** A restored tab can hold the foreground while the run's page answers
+every poll; `input-received` reads zero events on the first action. An emulator started from a
+snapshot is not a fresh boot; the artifact records guest uptime for a cold-boot control to compare.
 
-**Customisation.** `options.device.cdpPort`, `options.instruments.trace`, focused `actions`
-scenarios (which keep their own id so a fold refuses them as the canonical sweep).
+**Customisation.** `device.cdpPort`, `instruments: cdp-tracing`, `focusActions` by group id.
 
-**Traps.** Awaiting each touch acknowledgement in series slowed a scroll to 50 ms between draws on a
-16.7 ms clock and scored a false red; scrolls dispatch through a native gesture and the artifact
-records `scrollDelivery`. A leaked refresh pin fails every later drawing cell on the phone as
-off-regime and names nothing; `doctor` reports `renderFrameRate` when it does not match the panel.
+**Traps.** Awaiting each touch acknowledgement in series once slowed a scroll to three vsyncs apart
+and scored a false red; scrolls dispatch as native gestures and the artifact records
+`scrollDelivery`. A leaked refresh pin fails every later drawing cell on the phone as off-regime and
+names nothing; `doctor` reports the panel rate.
 
 ## `android-split`
 
-**Prerequisites.** A probe host (`perf-rig probe-host`) proxying the preview, reachable from the
-phone by a LAN address that is not a loopback name (`localhost`, `localtest.me`, `*.nip.io` to
-127.0.0.1 are refused at plan time); `adb`.
+**Prerequisites.** A probe host proxying the preview, reachable from the phone by a LAN address that
+is not a loopback name (`localhost`, `localtest.me`, `*.nip.io` to `127.0.0.1` are refused at plan
+time); `adb`.
 
-**Guards added.** `page-identity-nonce` is mandatory here; `orientation-followed` reads the
-orientation the page reports after the stop → rotate → launch sequence; `runtime-user-agent` refuses
-an artifact whose UA contradicts the labelled runtime; for packaged WebViews, `packaged-origin`.
+**Guards added.** `page-identity-nonce` is mandatory; `dimension-observed` reads orientation from
+the page after the stop, rotate, launch sequence; `runtime-user-agent`; for packaged WebViews
+`packaged-origin`.
+
+**How it runs.** The page fetches a plan carrying the nonce, runs the compiled bootstrap (identity,
+hydration, tool selection, dimensions, prime, probe), posts readiness, polls the plan, and uploads
+its tables when the host marks the plan finished. Between passes the host writes a prime request
+into the plan and awaits the page's acknowledgement, which proves a new trusted lift landed before
+priming again. Procedure postconditions are evaluated in the page and posted back.
 
 **Validations left to you.** Cadence near half the calibrated band on a quiet rig is a degraded adb
-server (`adb kill-server`), not the product. A native orientation lock can rotate the page after
-readiness; the contract's orientation dimension declares how the lock is released and restored.
+server, not the product. A native orientation lock can rotate the page after readiness; the
+orientation dimension declares how the lock is released and restored.
 
-**Customisation.** `gesture.primeBetweenPasses` for modes that consume what they draw; `afterDrawing`
-for a measured action proved through history depth and pixel deltas; `options.device.probeHost`.
+**Customisation.** `gesture.primeBetweenPasses`, `repeatedAction`, `device.probeHost`,
+`transport.input: 'human'` for a hand capture through the same channel.
 
-**Traps.** Uploads carry the nonce, and the host keeps whichever report saw more input, because a
+**Traps.** Uploads carry the nonce and the host keeps the report that saw more input, because a
 suspended tab once overwrote a real capture with near-empty tables. A capture that fails fidelity is
-written and then fails; "the artifact parses" is not "the cell is complete".
+written and then fails; the artifact parsing is not the cell being complete.
 
 ## `android-bundled`
 
-**Prerequisites.** The packaged app installed from an instrumented build; the WebView DevTools socket
-forwardable. No server.
+**Prerequisites.** The packaged app installed from an instrumented build; the WebView DevTools
+socket forwardable. No server.
 
-**Guards added.** `packaged-origin` (the attached target's origin is the packaged scheme, not a
-remote preview); `runtime-user-agent` identifies the WebView.
+**Guards added.** `packaged-origin`, `runtime-user-agent`, `foreground-package`.
 
-**Validations left to you.** The installed build must be the instrumented one; installing through the
-platform's normal run path re-chains a plain build and overwrites it, and the capture still runs.
-Check `report.meta.counts.measures > 0`.
-
-**Customisation.** `transport.input: 'human'` for a hand capture in place of `adb-input`.
+**Customisation.** `transport.input: 'human'` in place of `adb-input`.
 
 ## `android-native-actions`
 
-**Prerequisites.** Appium with UiAutomator2 and a Chromedriver matching the WebView's Chromium major
-(physical Chrome, the physical WebView and an emulator image routinely run different majors).
+**Prerequisites.** Appium with UiAutomator2 (through a capabilities file) and a Chromedriver
+matching the WebView's Chromium major.
 
-**Guards added.** WebView context selection is fail-closed on the app's package; the first debuggable
-context may be a healthy page in the wrong process.
-
-**Validations left to you.** UiAutomator2 is correct for taps and under-drives a drawing stream; the
-package refuses it for `frames` scenarios at plan time.
+**Guards added.** WebView context selection is fail-closed on `native.android.package`; the first
+debuggable context may be a healthy page in the wrong process.
 
 ## `ios-appium`
 
 **Prerequisites.** Appium with XCUITest; a signed WebDriverAgent (`native.ios.wdaBundleId`,
-`xcodeConfigFile`); the device's hardware UDID (`idevice_id -l`), not the CoreDevice UUID
-`devicectl` prints; a running RemoteXPC tunnel, which is root-owned and prompts for a password, so
-it is reused when present and named as a blocker when absent; the automation grant armed while a
-launch is running (`perf-rig operator`).
+`xcodeConfigFile`); the device's hardware UDID, not the CoreDevice UUID `devicectl` prints; a
+running RemoteXPC tunnel, which is root-owned and prompts for a password, so it is reused when
+present and named as a blocker when absent; the automation grant armed while a launch is running
+(`operatorSession`).
 
-**Guards added.** `entry-module-match`; `service-worker-blocked`; the Safari window rect is compared
-with `screen.width` so a Stage Manager window is refused; the iOS identifier is classified by shape
-before any session is attempted.
+**Guards added.** `window-fills-screen`, `entry-module-match`, `service-worker-blocked`; the
+identifier is classified by shape before any session is attempted.
 
 **Validations left to you.** Guided Access blocks every launch disguised as `xcodebuild` code 65;
 read to the innermost error. A failed OS update leaves a full-screen alert that passes the window
-check; read the alert text before accepting anything. A physical session omitting `deviceName`
-still needs `deviceClass: tablet` on the target for the right allowances.
+check; read the alert text before accepting anything. A physical session omitting `deviceName` still
+needs `device.deviceClass: 'tablet'` for the right allowances.
 
-**Customisation.** `options.device.capabilitiesFile` replaces the whole capability set (this is how
-`wdaLocalPort` moves off 8100 when another server owns it); `options.device.sessionId` borrows a
-session.
+**Customisation.** `device.capabilitiesFile` replaces the whole capability set (this is how
+`wdaLocalPort` moves off 8100 when another server owns it); `device.sessionId` borrows a session;
+`transport.activation: 'webdriver-element-click'` for the WebDriver click path.
 
 **Traps.** Two Appium servers cannot share a WDA port; the second proxies into the first's session
 with errors that never mention a port. The XCTest prompt exists only during a launch, so a human
@@ -168,9 +149,9 @@ No Appium session and no RemoteXPC tunnel.
 
 **Guards added.** As `android-split`.
 
-**Validations left to you.** WebDriverAgent's own action synthesis re-derived at about 1.95 moves per
-frame in 2026-08, but an earlier measurement read 60; treat its cadence as something to check on
-every capture rather than assume.
+**Validations left to you.** WebDriverAgent's own action synthesis measured near two moves per frame
+in one session and near one in an earlier one; treat its cadence as something the verdict checks on
+every capture rather than a property of the transport.
 
 ## `ios-bundled`
 
@@ -186,18 +167,17 @@ and the exact byte length.
 
 ## `ios-inspector`
 
-**Prerequisites.** `pymobiledevice3` (the older `ios_webkit_debug_proxy` lists the device and zero
-pages on iOS 17 and later, which reads like a disabled Web Inspector setting and is not); Safari
-foregrounded on the page. Replies are matched by id because the bridge sends an unsolicited event
-first.
+**Prerequisites.** `pymobiledevice3` (the older proxy lists the device and zero pages on iOS 17 and
+later, which reads like a disabled Web Inspector setting and is not); Safari foregrounded on the
+page. Replies are matched by id because the bridge sends an unsolicited event first.
 
-**Guards added.** The selected tab is proved responsive with a bounded probe; a backgrounded tab
-lists and announces a target and never runs JavaScript, so a command against it hangs.
+**Guards added.** `tab-responsive`.
 
-**Validations left to you.** This is the endpoint that produces calibration data: a hand capture here
-sets the fidelity bounds every driven endpoint on the same runtime is judged by. The WebKit Timeline
-domain is available and too coarse to attribute per-frame cost; `xctrace` is the frame-level
-instrument on this platform.
+**Validations left to you.** This endpoint produces calibration data: a hand capture here, with a
+known-bad control, is what `calibrate` turns into the fidelity bounds every driven endpoint on the
+same runtime is judged by. The WebKit Timeline domain is available and too coarse to attribute
+per-frame cost; `xctrace` is the frame-level instrument on this platform.
 
-**Customisation.** `hud: true` walks the operator through phases; `phases[].suppressCss` for A/B
-sweeps; `perf-rig probe render` writes the rendered probe for pasting into Web Inspector.
+**Customisation.** `hud: true` walks the operator through phases; `phases[].suppress` for A/B
+sweeps, including `pin-computed` for a transform nudge; `perf-rig probe render` writes the rendered
+probe for pasting into Web Inspector.

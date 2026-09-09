@@ -1,46 +1,67 @@
-// The deployment-target campaign: four modes × five items per target, references on physical
-// queues, Splotch's acceptance rules appended after the package's standard ones.
+// The deployment-target campaign: four variants × five items per target, references on physical
+// queues, Splotch's undo-evidence rule appended after the package's standard ones.
 import {
   STANDARD_ACCEPTANCE,
   type AcceptanceRule,
   type CampaignDefinition,
-  type CaptureArtifact,
+  type CampaignVariant,
   type TargetDefinition,
 } from 'perf-rig';
+import { splotch, type Brush, type Splotch } from './app.js';
+import { fidelity } from './gates.js';
 import { actionSweep } from './scenarios/actions.js';
 import { drawingCell, GESTURE_REPEATS, UNDO_COUNT } from './scenarios/drawing.js';
 
-const MODES = [
-  { id: 'portrait-light', orientation: 'PORTRAIT', dimensions: { theme: 'light' } },
-  { id: 'portrait-dark', orientation: 'PORTRAIT', dimensions: { theme: 'dark' } },
-  { id: 'landscape-light', orientation: 'LANDSCAPE', dimensions: { theme: 'light' } },
-  { id: 'landscape-dark', orientation: 'LANDSCAPE', dimensions: { theme: 'dark' } },
-] as const;
+const LANDSCAPE = { width: 1366, height: 915, deviceScaleFactor: 2 } as const;
+const PORTRAIT = { width: 915, height: 1366, deviceScaleFactor: 2 } as const;
+
+const VARIANTS: readonly CampaignVariant<Splotch>[] = [
+  {
+    id: 'portrait-light',
+    dimensions: { orientation: 'PORTRAIT', theme: 'light' },
+    viewport: PORTRAIT,
+  },
+  {
+    id: 'portrait-dark',
+    dimensions: { orientation: 'PORTRAIT', theme: 'dark' },
+    viewport: PORTRAIT,
+  },
+  {
+    id: 'landscape-light',
+    dimensions: { orientation: 'LANDSCAPE', theme: 'light' },
+    viewport: LANDSCAPE,
+  },
+  {
+    id: 'landscape-dark',
+    dimensions: { orientation: 'LANDSCAPE', theme: 'dark' },
+    viewport: LANDSCAPE,
+  },
+];
 
 const ITEMS = ['pen-undo', 'crayon', 'magic', 'eraser', 'actions'] as const;
-type Item = (typeof ITEMS)[number];
-
 const BRUSH_BY_ITEM = {
   'pen-undo': 'pen',
   crayon: 'crayon',
   magic: 'magic',
   eraser: 'eraser',
-} as const;
+} satisfies Record<Exclude<(typeof ITEMS)[number], 'actions'>, Brush>;
 
-const undoEvidence: AcceptanceRule = {
+type SplotchStatus = 'undo-evidence-incomplete';
+
+const undoEvidence: AcceptanceRule<SplotchStatus, 'frames'> = {
   status: 'undo-evidence-incomplete',
   spendsAttempt: true,
-  check: (artifact: CaptureArtifact) => {
-    const evidence = artifact.evidence as {
-      measuredAction?: { count: number; depthDelta: number; changedEveryStep: boolean };
-    };
-    if (!evidence.measuredAction) return { ok: true };
-    const { count, depthDelta, changedEveryStep } = evidence.measuredAction;
-    return count === UNDO_COUNT && depthDelta === UNDO_COUNT && changedEveryStep
+  retry: 'always',
+  appliesTo: ['frames'],
+  check: (artifact) => {
+    const proof = artifact.evidence.repeatedAction;
+    if (!proof) return { ok: true };
+    const depthDelta = proof.depthBefore - proof.depthAfter;
+    return proof.count === UNDO_COUNT && depthDelta === UNDO_COUNT && proof.changedEveryStep
       ? { ok: true }
       : {
           ok: false,
-          detail: `undo proof: ${count}/${UNDO_COUNT} actions, depth fell ${depthDelta}, pixels changed every step: ${changedEveryStep}`,
+          detail: `undo proof: ${proof.count}/${UNDO_COUNT} actions, depth fell ${depthDelta}, pixels changed every step: ${proof.changedEveryStep}`,
         };
   },
 };
@@ -48,41 +69,40 @@ const undoEvidence: AcceptanceRule = {
 export const deploymentCampaign = (
   target: TargetDefinition,
   outputRoot = 'perf-profiles/campaign'
-): CampaignDefinition => ({
+): CampaignDefinition<Splotch, SplotchStatus> => ({
+  app: splotch,
   target,
-  modes: MODES,
+  variants: VARIANTS,
   items: [...ITEMS],
   outputRoot,
   maxAttempts: 3,
-  cellFor: (mode, item) => {
+  fidelity,
+  cellFor: (variant, item) => {
     const isActions = item === 'actions';
-    const brush = isActions ? null : BRUSH_BY_ITEM[item as Exclude<Item, 'actions'>];
+    const brush = isActions ? null : BRUSH_BY_ITEM[item as keyof typeof BRUSH_BY_ITEM];
     return {
-      id: `${mode.id}/${item}`,
-      mode: mode.id,
+      id: `${variant.id}/${item}`,
+      variant: variant.id,
       item,
       scenario: isActions ? actionSweep : drawingCell(brush!),
       options: {
-        dimensions: mode.dimensions,
-        orientation: mode.orientation,
-        label: `${target.id}-${mode.id}-${item}`,
+        dimensions: variant.dimensions,
+        viewport: target.host === 'desktop' ? variant.viewport : undefined,
+        label: `${target.id}-${variant.id}-${item}`,
         ...(isActions ? { repeats: 4 } : {}),
       },
       artifact: isActions
-        ? `${target.id}/${mode.id}/actions/actions.json`
-        : `${target.id}/${mode.id}/${brush}-real-screen.json`,
-      reports: { fidelity: !isActions && target.host !== 'desktop', refreshRegime: !isActions },
+        ? `${target.id}/${variant.id}/actions/actions.json`
+        : `${target.id}/${variant.id}/${brush}-real-screen.json`,
     };
   },
   reference: target.physicalDevice
     ? {
         item: 'crayon',
+        onlyWhenQueueContains: ['pen-undo', 'crayon', 'magic', 'eraser'],
         metric: (artifact) =>
-          (
-            artifact.summaries as {
-              phases: { key: string; frames: { lostFrameTimeShare: number } }[];
-            }
-          ).phases.find((p) => p.key === 'blank')!.frames.lostFrameTimeShare,
+          artifact.summaries!.phases.find((p) => p.key === 'blank')!.starvation.inContact
+            .lostFrameTimeShare,
         warnAboveDelta: 0.005,
       }
     : undefined,

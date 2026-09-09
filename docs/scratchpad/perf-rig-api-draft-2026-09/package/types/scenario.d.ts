@@ -1,182 +1,210 @@
 /**
  * Scenarios.
  *
- * A scenario says what the harness does to the page and what it records. Reading the twelve
- * capturing entry points of the drawing-app harness together, six shapes cover them. A scenario
- * never names a transport; the target does. A scenario never names a selector; it names a control
- * or mode from the app contract, and the harness resolves it.
+ * A scenario says what the harness does to the page and what it records. Four shapes cover the
+ * capture paths the drawing-app harness proved: a scripted session, a discrete-action sweep, a
+ * frame-pacing capture, and a first-show measurement. Scenarios that drive an app's own harness
+ * route through an imperative API are not a package shape; they are app scripts composed from the
+ * package's channel and scoring primitives.
+ *
+ * A scenario never names a transport; the target does. A scenario never names a selector; it names
+ * a control or tool from the app contract, and the type checker refuses one the contract lacks.
  */
 
+import type { AppContract, ControlOf, DimensionOf, ToolOf } from './app.js';
 import type { Procedure, Step } from './procedure.js';
-import type { Bounds, PointerAction } from './transport.js';
+import type { Bounds, PointerSequence } from './transport.js';
+import type { Viewport } from './target.js';
 
-export type ScenarioKind =
-  'session' | 'actions' | 'frames' | 'engine' | 'mount' | 'first-show' | 'custom';
+export type ScenarioKind = 'session' | 'actions' | 'frames' | 'first-show';
 
-export type Scenario =
-  | SessionScenario
-  | ActionsScenario
-  | FramesScenario
-  | EngineScenario
-  | MountScenario
-  | FirstShowScenario
-  | CustomScenario;
+export type Scenario<A extends AppContract = AppContract> =
+  SessionScenario<A> | ActionsScenario<A> | FramesScenario<A> | FirstShowScenario<A>;
 
-interface ScenarioBase<Kind extends ScenarioKind> {
+interface ScenarioBase<Kind extends ScenarioKind, A extends AppContract> {
   readonly kind: Kind;
   readonly id: string;
   readonly description: string;
-  /** Dimension values this scenario requires, by dimension name from the app contract. */
-  readonly requires?: Readonly<Record<string, string>>;
+  readonly requires?: Readonly<Partial<Record<DimensionOf<A>, string>>>;
 }
 
 /**
- * A scripted session of beats — the "toddler session". Recorded with a Chrome trace where the
- * channel offers one, user-timing measures everywhere. Diagnostic; no gate.
+ * A scripted session of beats, traced where the channel offers a trace, or a bare navigation
+ * window when `beats` is empty (the page-load case). Diagnostic; no gate.
  */
-export interface SessionScenario extends ScenarioBase<'session'> {
+export interface SessionScenario<A extends AppContract> extends ScenarioBase<'session', A> {
   readonly beats: readonly {
     readonly label: string;
-    readonly steps: readonly (Step | GestureStep)[];
+    readonly steps: readonly (Step | GestureStep<A>)[];
   }[];
   readonly trace: boolean;
+  readonly network?: 'slow-4g' | 'offline' | 'unthrottled';
+  /** Long-task observer from time zero and a settle after load; the page-load window. */
+  readonly load?: { readonly postLoadSettleMs: number };
 }
 
-export type GestureStep =
+/** Session strokes are synthetic in-page pointer events; `pointers > 1` is their only multi-pointer path. */
+export type GestureStep<A extends AppContract> =
   | { readonly kind: 'stroke'; readonly path: PathGenerator; readonly pointers?: number }
-  | { readonly kind: 'dragBeyond'; readonly control: string; readonly fraction: number };
+  | { readonly kind: 'dragBeyond'; readonly control: ControlOf<A>; readonly fraction: number };
 
-/** Produces viewport points for a stroke from the surface bounds. */
 export type PathGenerator = (
   bounds: Bounds
-) => readonly { readonly x: number; readonly y: number }[];
+) => readonly { readonly x: number; readonly y: number; readonly atMs: number }[];
 
 /**
- * A discrete-action sweep: an idle control, then named groups of controls activated in a fixed
- * order, each recorded action-to-first-frame, readiness, and post-action frame gaps. The plan is
- * emitted into the artifact as data (`actionPlan`) so the matrix can refuse results outside it.
+ * A discrete-action sweep: an idle baseline, then named groups of actions in a fixed order, each
+ * recorded action-to-first-frame, readiness, and post-action frame gaps. The plan is resolved once
+ * against the observed context and emitted into the artifact as data.
  */
-export interface ActionsScenario extends ScenarioBase<'actions'> {
-  readonly control: { readonly label: string; readonly idleMs: number };
-  readonly groups: readonly ActionGroup[];
+export interface ActionsScenario<A extends AppContract> extends ScenarioBase<'actions', A> {
+  readonly idleBaseline: { readonly label: string; readonly idleMs: number };
+  readonly groups: readonly ActionGroup<A>[];
   readonly repeats: { readonly warmup: number; readonly scored: number };
-  /** Settle frames appended to each action's window. */
   readonly settleTailFrames: number;
 }
 
-export interface ActionGroup {
+export interface ActionGroup<A extends AppContract> {
   readonly id: string;
-  /** Applicability is decided from observed context, and exclusions are recorded with a reason. */
-  readonly applicable?: (context: ActionContext) => true | { readonly reason: string };
-  readonly actions: readonly MeasuredAction[];
+  /** Decided from observed context; an exclusion is recorded with its reason. */
+  applicable?(context: ActionContext<A>): true | { readonly reason: string };
+  readonly actions: readonly MeasuredAction<A>[];
 }
 
-export interface ActionContext {
-  readonly orientation: 'PORTRAIT' | 'LANDSCAPE';
-  readonly dimensions: Readonly<Record<string, string>>;
+export interface ActionContext<A extends AppContract> {
+  readonly dimensions: Readonly<Record<DimensionOf<A>, string>>;
   readonly deviceClass: 'tablet' | 'handset' | 'desktop';
-  readonly nativeApp: boolean;
+  readonly packaged: boolean;
+  /** App-declared shell variant observed on the page (a compact settings layout, say). */
+  readonly variant?: string;
 }
 
-export interface MeasuredAction {
-  /** Label is the identity a gate allowance or a matrix column keys on; spell it once. */
-  readonly label: string | ((context: ActionContext) => string);
-  /** Name from `AppContract.controls`. */
-  readonly control: string;
+/** A label is data: a string or a template over context variables, resolved once at plan time. */
+export type ActionLabel<A extends AppContract> =
+  string | { readonly template: string; readonly vars: readonly (DimensionOf<A> | 'variant')[] };
+
+export type MeasuredAction<A extends AppContract> = ControlAction<A> | ExternalAction<A>;
+
+export interface ControlAction<A extends AppContract> {
+  /** Stable identity for focusing and allowances. */
+  readonly id: string;
+  readonly label: ActionLabel<A>;
+  readonly control: ControlOf<A>;
   readonly setup?: readonly Step[];
   readonly teardown?: readonly Step[];
-  /** Event types that count as the activation; the first trusted one stamps the action origin. */
   readonly eventTypes?: readonly string[];
-  /** For actions the page cannot originate (rotation): the transport performs it and marks the origin. */
-  readonly external?: 'rotate' | 'resize';
 }
 
+/** An action the page cannot originate; the transport performs it and marks the origin. */
+export interface ExternalAction<A extends AppContract> {
+  readonly id: string;
+  readonly label: ActionLabel<A>;
+  readonly external: 'rotate';
+  to(context: ActionContext<A>): 'PORTRAIT' | 'LANDSCAPE';
+  readonly setup?: readonly Step[];
+}
+
+export interface ResolvedActionPlan {
+  readonly schemaVersion: 1;
+  readonly scenarioId: string;
+  readonly groups: readonly string[];
+  readonly actions: readonly {
+    readonly id: string;
+    readonly label: string;
+    readonly group: string;
+  }[];
+  readonly excluded: readonly {
+    readonly id: string;
+    readonly group: string;
+    readonly reason: string;
+  }[];
+  readonly context: {
+    readonly dimensions: Readonly<Record<string, string>>;
+    readonly variant?: string;
+  };
+}
+
+export declare function resolveActionPlan<A extends AppContract>(
+  scenario: ActionsScenario<A>,
+  context: ActionContext<A>
+): ResolvedActionPlan;
+
+/** A subset by group id keeps its own scenario id, so a fold never mistakes it for the canonical sweep. */
+export declare function focusActions<A extends AppContract>(
+  scenario: ActionsScenario<A>,
+  groupIds: readonly string[]
+): ActionsScenario<A>;
+
 /**
- * A frame-pacing capture: select a mode, run the frames probe through its phases while a gesture
- * plan is dispatched over the drawing transport, then optionally drive a measured action N times.
+ * A frame-pacing capture: select a tool, run the frames probe through its phases while input
+ * arrives, then optionally repeat a measured control with proof.
  */
-export interface FramesScenario extends ScenarioBase<'frames'> {
-  readonly mode: string;
+export interface FramesScenario<A extends AppContract> extends ScenarioBase<'frames', A> {
+  readonly tool: ToolOf<A>;
   readonly phases: readonly ProbePhase[];
-  readonly gesture: GesturePlan;
-  /** In-page contact time to bank per phase, in milliseconds. */
-  readonly contactMs: number;
-  /** A measured action repeated after drawing, proved through history depth and pixel deltas. */
-  readonly afterDrawing?: {
-    readonly control: string;
+  /** Where the strokes come from: the target's drawing transport, the probe's own synthetic hand, or a person. */
+  readonly input:
+    | { readonly kind: 'transport'; readonly gesture: GesturePlan }
+    | {
+        readonly kind: 'probe-synthetic';
+        readonly hz: number;
+        readonly shape: 'mixed' | 'long' | 'short';
+      }
+    | { readonly kind: 'human'; readonly seconds: number };
+  /** Safety cap on in-contact time the probe banks per phase before ending it on its own. */
+  readonly contactCapMs: number;
+  /** A control repeated after drawing, proved through history depth and output-surface deltas. */
+  readonly repeatedAction?: {
+    readonly control: ControlOf<A>;
     readonly count: number;
     readonly pauseMs: number;
-    readonly proof: 'history-depth-and-pixels';
   };
-  readonly hud: boolean;
+  readonly hud?: boolean;
 }
 
 export interface ProbePhase {
   readonly key: string;
-  /** CSS injected for the phase, for A/B suppression sweeps. */
-  readonly suppressCss?: string;
-  /** Procedure that prepares the page for the phase (open a coloring page, say). */
-  readonly setup?: Procedure;
+  /** The probe re-asserts this every tick through the app's paper controls. */
+  readonly paper: 'blank' | 'page';
+  readonly suppress?: readonly Suppression[];
 }
 
+export type Suppression =
+  | { readonly kind: 'css'; readonly css: string }
+  /** Pin the element's current computed value so per-event nudges stop producing damage without moving it. */
+  | { readonly kind: 'pin-computed'; readonly target: string; readonly property: 'transform' };
+
 export interface GesturePlan {
-  /** Stable id recorded into the artifact; acceptance refuses a cell recorded under a different plan. */
+  /** Recorded into the artifact; acceptance refuses a cell recorded under a different plan. */
   readonly id: string;
   readonly strokesPerRepeat: number;
   readonly repeats: number;
   readonly pauseMs: number;
-  readonly generate: (bounds: Bounds, repeats: number, pauseMs: number) => readonly PointerAction[];
-  /** Whether the mode's `prime` procedure runs between passes. */
+  generate(bounds: Bounds, repeats: number, pauseMs: number): readonly PointerSequence[];
+  /** Runs the tool's prime procedure between passes. */
   readonly primeBetweenPasses: boolean;
 }
 
-/** Drives the app's engine harness route directly through its imperative API. */
-export interface EngineScenario extends ScenarioBase<'engine'> {
-  readonly cases: readonly {
-    readonly key: string;
-    readonly label: string;
-    /** Product code paths the case exercises, for sole-exerciser derivation. */
-    readonly exercises: readonly string[];
-    readonly run: string;
-  }[];
-  /** Expression on the engine API that is true once history has settled. */
-  readonly quiescent: string;
-  readonly settle: { readonly stableSamples: number; readonly budgetMs: number };
-}
-
-/** A page-load window: trace across navigation with a long-task observer from time zero. */
-export interface MountScenario extends ScenarioBase<'mount'> {
-  readonly postLoadSettleMs: number;
-  readonly network?: 'slow-4g' | 'none';
-}
-
-/** First presentation of a surface scored against its reopen. */
-export interface FirstShowScenario extends ScenarioBase<'first-show'> {
+/** First presentation of a surface scored against its reopen, per shell. */
+export interface FirstShowScenario<A extends AppContract> extends ScenarioBase<'first-show', A> {
   readonly shells: readonly {
     readonly name: string;
-    readonly viewport: {
-      readonly width: number;
-      readonly height: number;
-      readonly deviceScaleFactor: number;
-    };
-    readonly open: string;
-    readonly shown: string;
+    readonly viewport: Viewport;
+    readonly open: ControlOf<A>;
     readonly warm: string;
-    readonly close: Procedure;
-    readonly closed: string;
+    readonly close: ControlOf<A>;
   }[];
   readonly cycles: number;
 }
 
-/**
- * The escape hatch: an app-supplied in-page recorder and a Node scorer. The harness still runs
- * every guard, wraps the rows in the standard envelope, and records the scenario as custom so a
- * campaign cannot fold it into a standard cell.
- */
-export interface CustomScenario extends ScenarioBase<'custom'> {
-  readonly recorderSource: string;
-  readonly tables: readonly string[];
-  readonly summarise: (tables: Readonly<Record<string, readonly unknown[]>>) => unknown;
-}
+export declare function defineScenario<A extends AppContract, const S extends Scenario<A>>(
+  app: A,
+  scenario: S
+): S;
 
-export declare function defineScenario<const S extends Scenario>(scenario: S): S;
+/** Paper controls a frames scenario with a `page` phase needs; declared beside the tools. */
+export interface PaperControls {
+  readonly ensureBlank: Procedure;
+  readonly ensurePage: Procedure;
+  readonly instructions: Readonly<Record<'blank' | 'page', string>>;
+}
