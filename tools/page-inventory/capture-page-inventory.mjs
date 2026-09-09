@@ -358,12 +358,12 @@ function routeSurfaces() {
     betaPanelSurface(
       'android',
       'Beta sign-up · Android',
-      'Google Play closed-test instructions, on the Android tab of the beta page.'
+      'Google Play closed-test instructions in the Android panel of the beta page.'
     ),
     betaPanelSurface(
       'ios',
       'Beta sign-up · iOS',
-      'TestFlight instructions, on the iOS tab of the beta page.'
+      'TestFlight instructions in the iOS panel of the beta page.'
     ),
     surface(
       'routes',
