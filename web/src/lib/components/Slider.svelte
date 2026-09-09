@@ -171,10 +171,16 @@
       <div class="slider-notch" style:left="{snapPercent}%"></div>
     {/if}
   </div>
+  <div
+    class="slider-thumb"
+    style:left="calc({fillPercent}% - {fillPercent / 100} * var(--slider-thumb-size))"
+  ></div>
 </div>
 
 <style>
   .slider {
+    --slider-thumb-size: 36px;
+    position: relative;
     width: 100%;
     cursor: pointer;
     touch-action: none;
@@ -182,12 +188,22 @@
   }
 
   .slider:focus-visible {
-    outline: none;
+    outline: 3px solid var(--brand);
+    outline-offset: 6px;
+    border-radius: var(--radius-pill);
   }
 
-  .slider:focus-visible .slider-track {
-    outline: 3px solid var(--brand);
-    outline-offset: 2px;
+  .slider-thumb {
+    position: absolute;
+    top: 50%;
+    width: var(--slider-thumb-size);
+    height: var(--slider-thumb-size);
+    transform: translateY(-50%);
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border-warm);
+    box-shadow: var(--shadow-control);
+    pointer-events: none;
   }
 
   .slider-track {
