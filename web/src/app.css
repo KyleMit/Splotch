@@ -568,6 +568,11 @@ body {
    position:relative .flyout-wrapper (a Svelte component adds no wrapper DOM,
    so this menu is a direct child of it). */
 .flyout-menu {
+  --stagger: 25ms;
+  --flyout-from-x: 0px;
+  --flyout-from-y: 6px;
+  transform-origin: calc(var(--action-btn-size) / 2) 100%;
+  animation: flyout-shell var(--duration-base) var(--ease-pop) both;
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
@@ -584,6 +589,9 @@ body {
 
 @media (orientation: portrait) {
   .flyout-menu {
+    --flyout-from-x: -6px;
+    --flyout-from-y: 0px;
+    transform-origin: 0 100%;
     left: calc(100% + 8px);
     bottom: 0;
   }
@@ -598,10 +606,6 @@ body {
   .flyout-menu {
     flex-direction: column;
   }
-}
-
-.flyout-menu[hidden] {
-  display: none;
 }
 
 .flyout-option {
@@ -878,4 +882,31 @@ body {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
+}
+
+@keyframes flyout-shell {
+  from {
+    opacity: 0;
+    transform: translate(var(--flyout-from-x), var(--flyout-from-y)) scale(0.96);
+  }
+}
+@keyframes flyout-option {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.flyout-menu > button {
+  animation: flyout-option var(--duration-base) var(--ease-pop) backwards;
+  animation-delay: calc(40ms + var(--i) * var(--stagger));
+}
+.flyout-menu.motionless,
+.flyout-menu.motionless > button {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flyout-menu,
+  .flyout-menu > button {
+    animation: none;
+  }
 }

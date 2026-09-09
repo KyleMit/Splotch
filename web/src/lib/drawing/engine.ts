@@ -1055,6 +1055,10 @@ const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
 // --- Undo, clear, and canvas-empty API --------------------------------------
 
+export function isStrokeActive(): boolean {
+  return activePointers.size > 0 || penStreamAdopter.hasCanvasExit();
+}
+
 export function undo(): Promise<void> {
   if (!canUndo || !canvas || !ctx) return Promise.resolve();
   if (PERF_MARKS) performance.mark('engine.undo:start');

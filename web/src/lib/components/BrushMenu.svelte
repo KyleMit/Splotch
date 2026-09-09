@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isStrokeActive } from '$lib/drawing/engine';
   import Icon from './Icon.svelte';
   import {
     toolState,
@@ -26,22 +27,29 @@
     enabledOptionalBrushes: OptionalBrushType[];
     onpick: (brush: BrushType) => void;
   } = $props();
+
+  const visibleBrushes = $derived(
+    BRUSH_OPTIONS.filter(
+      (option) => option.brush === 'pen' || enabledOptionalBrushes.includes(option.brush)
+    )
+  );
 </script>
 
 <!-- The pen and crayon icons draw their ink parts in currentColor, so the menu
      carries the active color the way the stroke-width control does (the
      magic/eraser icons ignore it — no currentColor). -->
-<div
-  class="flyout-menu brush-menu"
-  class:white-stroke={inkWhite}
-  class:dark-stroke={inkDark}
-  hidden={!open}
-  style:color={activeColor}
->
-  {#each BRUSH_OPTIONS as opt (opt.brush)}
-    {#if opt.brush === 'pen' || enabledOptionalBrushes.includes(opt.brush)}
+{#if open}
+  <div
+    class="flyout-menu brush-menu"
+    class:white-stroke={inkWhite}
+    class:dark-stroke={inkDark}
+    class:motionless={isStrokeActive()}
+    style:color={activeColor}
+  >
+    {#each visibleBrushes as opt, index (opt.brush)}
       <button
         class="flyout-option"
+        style:--i={index}
         class:active={toolState.brush === opt.brush}
         id={opt.id}
         aria-label={opt.label}
@@ -50,9 +58,9 @@
       >
         <Icon name={opt.icon} class="action-icon" />
       </button>
-    {/if}
-  {/each}
-</div>
+    {/each}
+  </div>
+{/if}
 
 <style>
   /* The .flyout-menu / .flyout-option chrome is shared with StrokeWidthMenu and
