@@ -13,7 +13,8 @@ can see it. The last column is honest about the gaps.
 | Build      | Another run rebuilt the output without the instrumentation seams                   | guard `build-seams-present`                                                                         |
 | Build      | A resolving manifest belongs to a different checkout                               | guard `served-build-identity` (digest against `outputDir`)                                          |
 | Build      | The device's service worker serves the previous shell                              | guard `service-worker-blocked` + `entry-module-match`                                               |
-| Build      | A native static export overwrote the web build in place                            | guard `refused-build-variant`                                                                       |
+| Build      | A native static export overwrote the web build in place                            | guard `refused-build-variant`, keyed on the capture's page delivery                                 |
+| Build      | A native split capture was served the web build                                    | guard `refused-build-variant`: the export is required for `remote-preview` delivery                 |
 | Build      | Installing through the normal run path overwrote the instrumented native bundle    | guard `build-seams-present` on the attached page                                                    |
 | Build      | Build stamped after the fact to claim a newer commit                               | provenance reads the stamp written by the build step only                                           |
 | Build      | Editing a capture module mid-campaign splits the run                               | campaign refusal `instrument-changed` (fingerprint per cell, config excluded)                       |
@@ -27,6 +28,7 @@ can see it. The last column is honest about the gaps.
 | Channel    | Serial touch acknowledgements slow the measured thing                              | `cdp-touch` dispatches scrolls as native gestures; records `scrollDelivery`                         |
 | Channel    | The first debuggable WebView context is the wrong process                          | guard `foreground-package`; context keyed on the app package                                        |
 | Channel    | A suspended tab uploads near-empty tables over the real capture                    | guard `page-identity-nonce` + report store keeps the thicker report                                 |
+| Channel    | A mailboxed or uploaded report is truncated, or belongs to another page or agent   | verdict `report-integrity` (schema, nonce, page, user agent, table counts, bytes)                   |
 | Channel    | A backgrounded Safari tab hangs every command                                      | guard `tab-responsive`                                                                              |
 | Channel    | Bridge sends an unsolicited event before the first reply                           | replies matched by id                                                                               |
 | Channel    | Single evaluate over USB fails late with hundreds of kilobytes                     | `readTable` reads in slices                                                                         |
@@ -40,7 +42,7 @@ can see it. The last column is honest about the gaps.
 | Rig        | Emulator snapshot boot is not a fresh boot                                         | documented; artifact records guest uptime                                                           |
 | Rig        | Interrupted sweep leaks a 60 Hz panel pin                                          | verdict `instrument-restored`; `doctor` reads the panel rate                                        |
 | Rig        | Restored browser tab holds the foreground                                          | verdict `input-received`; documented tell                                                           |
-| Rig        | Native orientation lock rotates the page after readiness                           | guard `dimension-observed`; the orientation dimension declares unlock and restore                   |
+| Rig        | Native orientation lock rotates the page after readiness                           | guard `dimension-observed`; the lock query keeps the held orientation for release and restore       |
 | Rig        | A control always in the DOM cannot be probed by presence                           | procedure steps `waitVisible`/`waitHidden`/`ifVisible` use layout; `retryUntil` checks first        |
 | Rig        | The selected mode persists across navigations                                      | guard `committed-tool`, every tool selected explicitly                                              |
 | Rig        | Ad-hoc teardown locks the phone or strands a WDA session                           | `release` drains sessions first; documented                                                         |
@@ -54,6 +56,8 @@ can see it. The last column is honest about the gaps.
 | Scoring    | A retry "confirms" a different failure                                             | `reproducedFailures` intersects fingerprints                                                        |
 | Scoring    | Settle timeout fires before quiescence was observable                              | app script over `openChannel` polls `hooks.historyDepth.quiescent`; documented                      |
 | Scoring    | A focused subset is not the canonical sweep                                        | focused scenarios keep their own id; fold refuses                                                   |
+| Scoring    | The same group names in a different sample order fold as one instrument            | the resolved plan records every sample's position; the plan-parity test holds it to the sweep       |
+| Scoring    | A guard refusal banked as a capture with empty tables                              | `RefusedCapture` carries no report; acceptance records `guard-refused`                              |
 | Acceptance | A native transport did not prove a native page                                     | verdict `capture-shell` (`shellOf`); acceptance `runtime-mismatch`                                  |
 | Acceptance | Eraser passes erased nothing after the first                                       | guard `prime-verified`, verdict `prime-between-passes`; acceptance `prime-failed`                   |
 | Acceptance | Different repeat counts are not the same cell                                      | acceptance `wrong-gesture-repeats`                                                                  |

@@ -65,14 +65,17 @@ type-checked. The draft fixes these properties of the seam:
   procedure without one is recorded as unverified. Tool priming is a protocol (apply, verify-only
   after the settle, repair and record, acknowledge between passes), not a boolean.
 * **Targets are data; transports are proved pairings.** A target names its drawing transport, its
-  actions transport and its measurement channel independently (ADR-0135), and the package refuses a
-  pairing it has not proved. Splotch's eleven targets stay in Splotch, drift-guarded against the
-  docs table as today.
+  actions transport and its measurement channel independently (ADR-0135), and its page delivery
+  (browser, packaged origin, or the instrumented export served into a packaged shell) separately
+  from its shell, because the guards key on delivery. The package refuses a pairing it has not
+  proved. Splotch's eleven targets keep their registry ids and stay in Splotch, drift-guarded
+  against the docs table as today.
 * **Every guard is a named entry in the artifact's trust ledger.** Served-build identity, seams
   present, page-identity nonce, route hydrated, committed mode, hit-test, dimension observed,
   painted output, host quiet, instrument restored, and the rest: recorded as verified, failed,
-  unrecorded, or not-applicable. A failure stops the capture before measurement and still writes the
-  artifact. The plausible-wrong-number catalogue in `docs/PROFILING-CAMPAIGNS.md` maps onto this
+  unrecorded, or not-applicable, by transport, page delivery and scenario kind. A failure stops the
+  capture before measurement and writes a refusal envelope carrying the ledger and no fabricated
+  measurement. The plausible-wrong-number catalogue in `docs/PROFILING-CAMPAIGNS.md` maps onto this
   ledger, and the draft names which traps remain documented-only.
 * **Calibration stays with the app.** Fidelity expectations, gate thresholds, exceptions and
   allowances are Splotch's, with a basis string on each, because ADR-0139 calibrates them against
@@ -82,6 +85,10 @@ type-checked. The draft fixes these properties of the seam:
   function; two conforming implementations once disagreed on absent-data boundaries.
 * **Scripts keep their names.** ADR-0019's catalogue is the public API; every `perf:*` script
   survives verbatim as a few lines over the package or as a Splotch script composing package calls.
+* **Parity before freezing.** The declared scenarios are transcriptions of the shipped instruments,
+  and executable parity checks (the channel-protocol order, the resolved action plan against the
+  recorded sweeps, the scorers over the tracked corpus) are the first gate of the migration; the
+  surface stays a draft until they pass.
 
 ## Consequences
 

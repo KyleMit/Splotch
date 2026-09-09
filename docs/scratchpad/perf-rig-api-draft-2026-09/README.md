@@ -41,9 +41,9 @@ Start with `package/types/index.d.ts` for the lifecycle, then `app.d.ts`: the ap
 seam, and everything else is either a transport that reads it or a scorer that takes its values as
 arguments. `procedure.d.ts` is the step vocabulary that lets one declared procedure run through
 Playwright, Appium, and an injected same-origin script alike; it exists because the split-capture
-transport has no script channel and the route's CSP forbids eval. `artifact.d.ts` is the envelope
-every capture writes, with evidence typed per scenario kind so the package's acceptance rules and
-Splotch's read the same fields.
+transport has no script channel, so the same interaction must compile to page code the route's CSP
+will run. `artifact.d.ts` is the envelope every capture writes, with evidence typed per scenario
+kind so the package's acceptance rules and Splotch's read the same fields.
 
 Then `splotch/app.ts` to see the contract filled in with Splotch's real selectors and hooks, and
 `splotch/scripts.ts` to see each npm script as a call.

@@ -68,6 +68,12 @@ Splotch code wearing a generic name:
   then stays terminal until the campaign's fidelity table changes.
 * `legacy.upgrade` on `rescore`, replacing a silent `pen` fallback that once discarded twenty-six
   crayon captures.
+* Round four (the PR review): `ActionsScenario.sequence` blocks with position separate from group,
+  `ToggleAction` and `ScrollAction`, `PrepareBlock`, control families with a member, `page.variant`,
+  `Query` for the rotation lock, `RefusedCapture` and the `outcome` unions, `report-integrity`,
+  `ReadinessReport` with `awaitReady` and `awaitPulse`, `pageDelivery` per scenario kind on a
+  target, `CaptureRequest.fidelity`, `CampaignDefinition.gates`, and the six diagnostic functions.
+* Lost in round four: the `-browser`/`-packaged` target ids, which had renamed every artifact path.
 * Cut: `EngineScenario`, `CustomScenario`, `MountScenario`, `renderMatrix`, `stalenessOutcome`, the
   default fidelity constants, the label template mini-language. The engine family is three Splotch
   scripts over `openChannel`.

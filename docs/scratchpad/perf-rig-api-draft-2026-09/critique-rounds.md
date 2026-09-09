@@ -178,3 +178,94 @@ equivalence to the committed probe is a claim until phase 2 executes it; and the
 a signature. The reviews' remaining nits (a scoring-epoch reader in the golden ledger,
 `ACTIONS_PROBE_SCHEMA` deriving `COMPAT.frameStampEpoch`, the vocabulary of `Control.activation`
 versus the recorded `Activation`) are recorded here rather than left implicit.
+
+## Round 4 — the PR review, 25 findings
+
+The first review posted on the pull request read all forty files against the shipped code with
+compiler probes, happy-dom evaluations of the draft's expressions, and the scorers re-run over the
+tracked corpus. Twenty-three findings were blocking and every one held against the code; the two
+suggestions were taken too.
+
+### What changed
+
+* **The action sweep is transcribed, not summarised** (blocking, seven findings). Group membership
+  is separate from position: `ActionsScenario.sequence` is a list of blocks, so Settings opens once,
+  its sections, theme and controls are measured inside it, and it closes once, in the order
+  `runActionSweep` runs. Every preparation between samples is a step in the data: the drawer state,
+  the brush menu reopened before each selection, the trusted stroke before screenshot, undo, clear
+  and rotation, the parental gate closed after Parent Center, dialogs closed before Settings.
+  Toggles are a measured kind with a baseline and both directions (`${id}.enable` / `${id}.disable`
+  by the resulting state), so a light baseline in the compact shell measures enable then disable;
+  the sectioned theme round trip always prepares dark and measures to-light then to-dark. The
+  coloring scroll is a measured `scroll` action before page selection with its not-applicable
+  condition. Rotation keeps desktop (the Playwright client swaps the viewport) and both with-ink
+  legs. Settings rows bind to their real section ids through a control family whose readiness
+  follows the observed shell variant; the Parent Center row is a member, not a separate control with
+  an id the app does not have. Wrapping composes setup and teardown rather than overwriting them.
+* **Transcription errors against the shipped code** (blocking). The drawer state reads attribute
+  presence, as `toggleAttribute` writes it. The first-frame exemption matches `rotation.empty.*` and
+  `rotation.with-ink.*` only; the clicks after a rotation stay gated. The fixed-geometry generator
+  is copied constant for constant and produces identical actions to `trustedGestureActions` on the
+  same bounds. First-show waits for each shell's presented content, not the open flag.
+* **The rotation lock keeps its orientation** (blocking). `LockState` is `platform-owned` or
+  `{ locked: value | null }`; the read is a `Query` with preparation steps that put the lock
+  controls on the page before it is answered; release and restore re-select the orientation the lock
+  held.
+* **Summary and probe shapes match the corpus** (blocking). Field names were corrected by re-running
+  the scorers over the tracked iPad and Android captures; a key check finds no undeclared field, and
+  migration phase 3 makes it a Splotch test. The schema-2 frames report keeps `{w, h}`.
+* **Page delivery is separate from shell** (blocking). ADR-0135's Android native split capture is
+  `remote-preview` delivery into the packaged WebView; `packaged-origin` applies to packaged
+  delivery only, build variants declare which deliveries they serve, and the nonce guard is not
+  applicable to a fixed packaged URL.
+* **Target ids are the registry's** (blocking). `ipad-device-web`, `android-device-native` and
+  siblings survive; `shell` and `pageDelivery` carry the vocabulary the ids once tried to.
+* **A refusal has an envelope** (blocking). `RefusedCapture` carries the resolved plan, the trust
+  ledger and what the page reported, never a fabricated report; `CaptureResult` and `readArtifact`
+  are unions on `outcome`; acceptance records `guard-refused` before any rule runs and `rescore`
+  lists refusals unscored.
+* **`report-integrity` is a verdict** (blocking): the mailbox and upload validation the runners
+  perform (schema, nonce, page, user agent, table counts, bytes), run first, with `channelEvidence`.
+* **Verdicts apply by scenario kind** (blocking). The table gained a kinds column so a beatless
+  session or a first-show records the drawing verdicts as not applicable.
+* **Readiness is typed** (blocking). The plan-polled channel exposes `awaitReady` and `awaitPulse`;
+  `ReadinessReport` carries geometry, every dimension, the committed tool and the initial prime; the
+  phase-1 proof drives bootstrap, ready, guards, dispatch, pulse, finish, report in that order.
+* **Policy inputs reach both entry points** (blocking). `CaptureRequest.fidelity`, `doctor`'s
+  `fidelity`, `CampaignDefinition.gates`.
+* **Diagnostics are library calls** (blocking): `verifyInput`, `verifyRotation`, `probeOverhead`,
+  `analyzeFrames`, `analyzeChromeTrace`, `analyzeWebInspector`, each taking the marks contract or
+  the gesture plan and fidelity table as arguments.
+* **Undo evidence is scoped by the cell** (blocking): a cell whose scenario repeats undo rejects
+  absent or incomplete evidence.
+* **The legacy alias table is a literal** (suggestion): one entry, with the exit-suffix cases the
+  parser test pins.
+* **The literal-type escape paths are closed** (suggestion): `ExternalAction` is distributed over
+  the dimension so its setter returns that dimension's values, `ScenarioOverrides<A>` types the
+  tool, and a control family's member is checked; a compiler probe with `@ts-expect-error` on each
+  passes.
+
+### The strategy critique, and what it changed
+
+The review's strongest alternative is a function-based plugin seam around the existing procedural
+runner, with typed driver operations and bundled page functions, on the grounds that one consumer
+already has working control flow and a general DSL, template renderer and new evidence model
+together create a second instrument whose equivalence must be proved. The draft keeps the DSL,
+because the split channel has no script channel at all and the same interaction has to run through
+Playwright, Appium and an injected same-origin script, and because the round-four findings are
+evidence for the point rather than against it: a bare group list could not be checked against the
+shipped sweep, and the transcribed data can. What the critique did change is the gate order the
+migration commits to: the executable parity checks (the channel-protocol test in phase 1, the
+corpus-to-type and plan-parity tests in phase 3) are the first gate, the declarations stay a draft
+until they pass, and the nested rung earns its keep only by proving import isolation and unchanged
+capture and resume behaviour in the same repository (phase 4's proof). The reviewer's note that CSP
+does not by itself force a declarative DSL is accepted and the README's wording is corrected: CSP
+means the compiled bootstrap must be deployable page code; the missing script channel is what
+requires a compiler.
+
+### What remains open
+
+The parity tests are still tests that do not exist; they are named per phase in `migration.md`.
+`ControlAction.ready` on the palette swatch cannot name the swatch that was clicked, so the
+`palette.change` completion is weaker than the shipped `classList.contains('active')` on the picked
+element; a per-activation `self` reference in expressions is a candidate vocabulary addition.
