@@ -5,7 +5,7 @@ import { SHORT_PAGE_HEIGHT_PX } from './breakpoints';
 
 it.each([
   '../routes/beta/+page.svelte',
-  '../routes/changelog/+page.svelte',
+  './components/design/SegmentedPicker.svelte',
   './components/page/PageShell.svelte',
 ])('%s uses the short-page height', (path) => {
   const source = readFileSync(new URL(path, import.meta.url), 'utf8');

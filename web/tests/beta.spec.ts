@@ -54,12 +54,13 @@ test.describe('short touch screens', () => {
   }
 });
 
-test('short desktop viewports preserve the beta introduction and platform picker', async ({
+test('short desktop viewports disclose the beta introduction and preserve its picker', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 683, height: 360 });
   await page.goto('/beta');
   await expect(page.locator('.hero')).toHaveCSS('position', 'static');
+  await page.getByRole('button', { name: 'Why we ask' }).click();
   await expect(page.locator('.lede')).toBeVisible();
   await expect(page.locator('.beta-platform-picker')).toBeVisible();
   await expect(shownPanel(page).locator('.alternate-platform')).toBeHidden();

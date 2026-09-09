@@ -25,9 +25,10 @@ test.describe('short touch screens', () => {
   });
 });
 
-test('short desktop viewports preserve the changelog introduction', async ({ page }) => {
+test('short desktop viewports disclose the changelog introduction', async ({ page }) => {
   await page.setViewportSize({ width: 683, height: 360 });
   await page.goto('/changelog');
+  await page.getByRole('button', { name: 'Why we ask' }).click();
   await expect(page.locator('.lede')).toBeVisible();
 });
 
