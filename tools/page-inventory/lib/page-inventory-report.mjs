@@ -567,7 +567,7 @@ function surfaceCard(item, critique, sharedPixels) {
   return `<article class="surface" id="${esc(item.id)}" data-search="${search}"><header class="surface-head"><div><h3><span class="name">${esc(item.title)}</span><a class="anchor" href="#${esc(item.id)}" aria-label="Link to ${esc(item.title)}">#</a></h3><p>${esc(item.description)}</p></div><div class="surface-meta">${surfaceTallies(item, critique)}<span class="surface-source">${esc(item.source)}</span></div></header>${themeCaptures}</article>`;
 }
 
-export function renderPageInventoryReport(items, critique, pixelIdenticalGroups) {
+export function renderPageInventoryReport(items, critique, pixelIdenticalGroups, reviewer) {
   const sharedPixels = sharedPixelsByReviewId(pixelIdenticalGroups);
   const severityCounts = Object.fromEntries(
     PAGE_INVENTORY_SEVERITIES.map((severity) => [severity, 0])
@@ -575,10 +575,14 @@ export function renderPageInventoryReport(items, critique, pixelIdenticalGroups)
   for (const entry of critique.values()) severityCounts[entry.severity] += 1;
   const snapshotCount =
     items.length * PAGE_INVENTORY_VIEWPORTS.length * PAGE_INVENTORY_THEMES.length;
+  const reviewerLabel = reviewer
+    ? `Reviewed by ${reviewer.runner} · ${reviewer.model}`
+    : 'Reviewer not recorded';
   const stats =
     `<span class="chip accent"><b>${items.length}</b> surfaces</span>` +
     `<span class="chip"><b>${snapshotCount}</b> screenshots</span>` +
-    `<span class="chip"><b>${PAGE_INVENTORY_VIEWPORTS.length}</b> viewports</span>`;
+    `<span class="chip"><b>${PAGE_INVENTORY_VIEWPORTS.length}</b> viewports</span>` +
+    (critique.size ? `<span class="chip">${esc(reviewerLabel)}</span>` : '');
   const groups = Object.entries(PAGE_INVENTORY_GROUPS)
     .map(([groupId, { title, description }]) => {
       const cards = items

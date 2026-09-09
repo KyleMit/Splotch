@@ -1096,10 +1096,11 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
           `${JSON.stringify(manifest, null, 2)}\n`
         );
         let critique = new Map();
+        let reviewer = null;
         if (critiquePath) {
           copyFileSync(critiquePath, join(staging, 'design-critique.json'));
           try {
-            critique = readDesignCritique(critiquePath, manifest);
+            ({ entries: critique, reviewer } = readDesignCritique(critiquePath, manifest));
           } catch (error) {
             console.warn(`Preserved but detached stale design critique: ${error.message}`);
           }
@@ -1109,7 +1110,8 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
           renderPageInventoryReport(
             items,
             critique,
-            pixelIdenticalReviewGroups(manifest.captures, critique)
+            pixelIdenticalReviewGroups(manifest.captures, critique),
+            reviewer
           )
         );
       }

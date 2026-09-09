@@ -381,14 +381,20 @@ export function pixelIdenticalReviewGroups(captures, reviews) {
 }
 
 export function readDesignCritique(path, manifest, options) {
-  if (!path) return new Map();
+  if (!path) return { entries: new Map(), reviewer: null };
   const document = readJson(path, 'design critique');
   if (document.schema_version !== PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION) {
     throw new Error(
       `Design critique at ${path} schema_version must be ${PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION}`
     );
   }
-  return validateCritiqueEntries(document.entries, manifest, options);
+  const entries = validateCritiqueEntries(document.entries, manifest, options);
+  const reviewer = document.scope?.reviewer ?? null;
+  if (reviewer !== null) {
+    requireString(reviewer.runner, 'Design critique reviewer.runner');
+    requireString(reviewer.model, 'Design critique reviewer.model');
+  }
+  return { entries, reviewer };
 }
 
 export function expectedCritiqueReviews(manifest) {

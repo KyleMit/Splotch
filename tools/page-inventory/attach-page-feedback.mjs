@@ -78,14 +78,15 @@ export function writePageInventoryFeedback(out, critiquePath, items) {
       throw new Error(`Capture manifest has a stale image hash for ${capture.image}`);
     }
   }
-  const critique = readDesignCritique(critiquePath, manifest);
+  const { entries: critique, reviewer } = readDesignCritique(critiquePath, manifest);
   const index = join(out, 'index.html');
   writeFileSync(
     index,
     renderPageInventoryReport(
       items,
       critique,
-      pixelIdenticalReviewGroups(manifest.captures, critique)
+      pixelIdenticalReviewGroups(manifest.captures, critique),
+      reviewer
     )
   );
   return critique.size;
