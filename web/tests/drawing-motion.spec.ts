@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { gotoApp } from './helpers';
-import { openDrawer } from './flows-harness';
+import { gotoApp, drawCommittedStroke } from './helpers';
+import { openDrawer, opaqueCanvasPixelCount } from './flows-harness';
 
 test('flyouts replay staggered arrivals and unmount immediately on close', async ({ page }) => {
   await gotoApp(page);
@@ -40,4 +40,42 @@ test('brush face rolls only for a changed explicit menu pick', async ({ page }) 
   await page.locator('#brushButton').click();
   await page.locator('#crayonBrushButton').click();
   expect(await original!.evaluate((element) => element.isConnected)).toBe(true);
+});
+
+test('undo retires ink immediately beneath a shrinking overlay and drawing cancels it', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  await drawCommittedStroke(page, [
+    { x: 250, y: 200 },
+    { x: 440, y: 240 },
+  ]);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+  await page.locator('#undoButton').evaluate((button) => {
+    button.click();
+    for (const animation of document
+      .querySelector('.ink-motion')
+      ?.getAnimations({ subtree: true }) ?? [])
+      animation.pause();
+  });
+  const overlay = page.locator('.undo-ink-motion');
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toHaveCSS('animation-name', 'undo-ink');
+  await expect(page.locator('#undoButton .action-icon')).toHaveCSS('animation-name', 'undo-spin');
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(0);
+  expect(
+    await overlay.evaluate((canvas: HTMLCanvasElement) =>
+      canvas
+        .getContext('2d')!
+        .getImageData(0, 0, canvas.width, canvas.height)
+        .data.some((value, index) => index % 4 === 3 && value > 0)
+    )
+  ).toBe(true);
+  await drawCommittedStroke(page, [
+    { x: 300, y: 300 },
+    { x: 450, y: 330 },
+  ]);
+  await expect(overlay).toHaveCount(0);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
 });

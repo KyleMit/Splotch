@@ -559,7 +559,12 @@
         use:scribbleTap={handleUndoClick}
         bind:this={undoBtnEl}
       >
-        <Icon name="undo" class="action-icon" />
+        {#key canvasState.undoCount}
+          <Icon
+            name="undo"
+            class={canvasState.undoCount > 0 ? 'action-icon undo-firing' : 'action-icon'}
+          />
+        {/key}
       </button>
     </div>
   </div>

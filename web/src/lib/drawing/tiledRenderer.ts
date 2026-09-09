@@ -427,6 +427,10 @@ export function commitTiledCommand() {
   return true;
 }
 
+export function peekTiledUndoCommand(): StrokeGroupCommand | undefined {
+  return history.at(-1);
+}
+
 export function peekTiledUndoPaper(): RecordedPaperState | undefined {
   return history.at(-1)?.wasEmpty === false ? history.at(-1)?.recordedPaper : undefined;
 }

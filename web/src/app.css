@@ -910,3 +910,39 @@ body {
     animation: none;
   }
 }
+
+.ink-motion {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.undo-ink-motion {
+  position: absolute;
+  transform-origin: center;
+  animation: undo-ink 300ms var(--ease-glide) forwards;
+}
+@keyframes undo-ink {
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+.undo-firing {
+  animation: undo-spin var(--duration-slow) var(--ease-pop);
+}
+@keyframes undo-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .undo-ink-motion {
+    display: none;
+    animation: none;
+  }
+  .undo-firing {
+    animation: none;
+  }
+}
