@@ -106,3 +106,11 @@ sheet still has a frame hangs its rule over the ground. `PHONE_MAX_WIDTH_PX` (`l
 names the step, `phoneStep.test.ts` holds every file that restates it — `PageShell`, `BrandMark`,
 the two beta ledger components, the picker, and the page — to that one value, and fails on a second
 step declared anywhere near it.
+
+## Amendment (2026-09): keep the beta picker inside the page gutter
+
+The page-inventory triage reverses the beta page's phone-width bleed: the active underline and its
+row align with the body copy and section divider. The negative page margin is removed; the underline
+skin still divides its available content width evenly on phones. The beta route no longer owns a
+phone-width query, so it leaves the phone-step drift guard; the shared chrome and picker remain
+guarded. The responsive beta spec measures both row edges against the visible panel.

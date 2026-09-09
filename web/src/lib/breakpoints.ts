@@ -15,14 +15,9 @@
 // disagree on the same device.
 export const TABLET_MIN_SIDE_PX = 600;
 
-// The width at which a standalone page (PageShell) stops being a card on a
-// ground and takes over the screen: the sheet loses its frame, radius and
-// shadow, the masthead's type steps down, the beta step ledger tightens, and the
-// underline tab row stops hugging the left to split the width evenly and bleed
-// to the glass. They are one decision — "this is a phone, the page IS the
-// screen" — so they must step together, or the row bleeds past a sheet that
-// still has edges. A CSS media query cannot import this, so each site restates
-// it and phoneStep.test.ts holds them all to this value.
+// Standalone pages lose their frame at phone width; mastheads and beta steps
+// tighten while underline pickers split the content width evenly.
+// CSS sites restate this value, enforced by phoneStep.test.ts.
 export const PHONE_MAX_WIDTH_PX = 540;
 
 // The large-tablet floor, one step above it: a 13-inch iPad measures 1024 CSS

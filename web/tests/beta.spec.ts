@@ -133,13 +133,9 @@ test.describe('the deprecated solo links', () => {
   }
 });
 
-// The tab row is the one piece of this page that changes shape with the
-// viewport, and it does it in CSS with no JS to observe: on a sheet the labels
-// hug the left, and once the sheet IS the screen the two cells split it evenly
-// and the rule reaches the glass. Measured rather than assumed — a stale
-// breakpoint or a lost negative margin leaves a row that looks plausible in
-// isolation and wrong on the device.
-test('the tabs hug the left on a sheet and split the screen on a phone', async ({ page }) => {
+test('the tabs hug the left on a sheet and split the content width on a phone', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1100, height: 900 });
   await page.goto('/beta');
 
@@ -156,26 +152,37 @@ test('the tabs hug the left on a sheet and split the screen on a phone', async (
     'on a sheet the labels take only the room they need'
   ).toBeLessThan(sheetRow.width / 2);
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  const phoneRow = (await row.boundingBox())!;
-  const phoneCells = await cellWidths();
+  for (const viewportWidth of [390, 375]) {
+    await page.setViewportSize({ width: viewportWidth, height: 844 });
+    await page.evaluate(() => document.fonts.ready);
+    const phoneRow = (await row.boundingBox())!;
+    const phoneCells = await cellWidths();
 
-  expect(phoneRow.x, 'the row bleeds past the page gutter to the left edge').toBeLessThan(1);
-  expect(phoneRow.width, 'and reaches the right edge').toBeGreaterThan(389);
-  for (const width of phoneCells) {
-    expect(Math.abs(width - phoneRow.width / 2), 'each cell is half the screen').toBeLessThan(1);
+    const body = (await shownPanel(page).boundingBox())!;
+    expect(Math.abs(phoneRow.x - body.x), 'the row starts at the body gutter').toBeLessThan(1);
+    expect(Math.abs(phoneRow.width - body.width), 'the row ends at the body gutter').toBeLessThan(
+      1
+    );
+    for (const width of phoneCells) {
+      expect(
+        Math.abs(width - phoneRow.width / 2),
+        'each cell is half the content width'
+      ).toBeLessThan(1);
+    }
+
+    // Half the phone content width is the tightest the labels ever get, and `iPhone / iPad`
+    // is the longest of them — measured rather than eyeballed, because a wrapped
+    // label is what would push the row past the touch-target floor below.
+    const labelLines = await page
+      .locator('.beta-platform-picker .option-label')
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const style = getComputedStyle(el);
+          return el.getBoundingClientRect().height / Number.parseFloat(style.lineHeight);
+        })
+      );
+    for (const lines of labelLines) expect(lines, 'each label stays on one line').toBeLessThan(1.5);
   }
-
-  // Half a phone screen is the tightest the labels ever get, and `iPhone / iPad`
-  // is the longest of them — measured rather than eyeballed, because a wrapped
-  // label is what would push the row past the touch-target floor below.
-  const labelLines = await page.locator('.beta-platform-picker .option-label').evaluateAll((els) =>
-    els.map((el) => {
-      const style = getComputedStyle(el);
-      return el.getBoundingClientRect().height / Number.parseFloat(style.lineHeight);
-    })
-  );
-  for (const lines of labelLines) expect(lines, 'each label stays on one line').toBeLessThan(1.5);
 });
 
 // The design system's interaction floor is a property of the control, not of the
