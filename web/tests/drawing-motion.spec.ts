@@ -27,3 +27,17 @@ test('reduced motion makes flyouts appear without animation', async ({ page }) =
   await expect(page.locator('.flyout-menu')).toHaveCSS('animation-name', 'none');
   await expect(page.locator('#penBrushButton')).toHaveCSS('animation-name', 'none');
 });
+
+test('brush face rolls only for a changed explicit menu pick', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+  const face = page.locator('.brush-button-faces');
+  await expect(face).toHaveCSS('animation-name', 'none');
+  await page.locator('#brushButton').click();
+  await page.locator('#crayonBrushButton').click();
+  await expect(face).toHaveCSS('animation-name', /face-roll/);
+  const original = await face.elementHandle();
+  await page.locator('#brushButton').click();
+  await page.locator('#crayonBrushButton').click();
+  expect(await original!.evaluate((element) => element.isConnected)).toBe(true);
+});
