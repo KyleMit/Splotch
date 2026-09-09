@@ -61,21 +61,23 @@ export const gates = defineGates({
         references: ['ADR-0162'],
         entries: [
           {
-            actionId: 'theme.compact-disable',
+            actionId: 'theme.compact.disable',
             p95Ms: 33.5,
             basis: 'ADR-0162: compact-shell Night Mode toggle, GPU-attributed',
           },
         ],
       },
     ],
+    // Orientation changes only: the clicks taken after a rotation (`rotation.undo-clear`,
+    // `rotation.clear-restored`) stay gated, as the shipped matcher keeps them (action-stats.mjs).
     firstFrameNotApplicable: [
       {
-        actionIdPattern: '^rotation\\.',
+        actionIdPattern: '^rotation\\.(empty|with-ink)\\.',
         runtimes: ['ios-safari'],
         reason: 'ADR-0142: rotation first frames anchor at resize on iPad Safari',
       },
       {
-        actionIdPattern: '^rotation\\.',
+        actionIdPattern: '^rotation\\.(empty|with-ink)\\.',
         runtimes: ['desktop-playwright'],
         engines: ['webkit'],
         reason: 'desktop WebKit measured inert on rotation; Chromium and Firefox stay gated',

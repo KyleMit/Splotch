@@ -76,7 +76,7 @@ export type PointerAction =
       readonly pressure?: number;
     }
   | { readonly type: 'pointerDown'; readonly button: 0; readonly pressure?: number }
-  | { readonly type: 'pointerUp' }
+  | { readonly type: 'pointerUp'; readonly button?: 0 }
   | { readonly type: 'pause'; readonly duration: number };
 
 export interface Bounds {

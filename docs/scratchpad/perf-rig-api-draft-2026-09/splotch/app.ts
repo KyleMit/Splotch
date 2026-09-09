@@ -5,12 +5,15 @@ import {
   type LockState,
   type PageFunction,
   type PrimeReport,
+  type Query,
   type Selector,
   type Step,
 } from 'perf-rig';
 
 export const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'] as const;
 export type Brush = (typeof BRUSHES)[number];
+export type Orientation = 'PORTRAIT' | 'LANDSCAPE';
+type RotationLock = LockState<Orientation>;
 
 const BRUSH_BUTTON = {
   pen: '#penBrushButton',
@@ -19,16 +22,56 @@ const BRUSH_BUTTON = {
   eraser: '#eraserButton',
 } satisfies Record<Brush, Selector>;
 
+// SECTIONS in web/src/lib/components/settings/sections.ts, in nav order; the phase-0 drift test
+// holds the two lists together. Every member binds to its own row and completion condition.
+export const SETTINGS_SECTIONS = [
+  'appearance',
+  'sound',
+  'controls',
+  'coloring',
+  'ai',
+  'saving',
+  'parentCenter',
+  'setup',
+  'feedback',
+  'whatsnew',
+  'about',
+] as const;
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
+/** The nav labels the sweep's action labels quote; held to SECTIONS by the same drift test. */
+export const SETTINGS_SECTION_LABEL = {
+  appearance: 'Appearance',
+  sound: 'Sound',
+  controls: 'Tool Drawer',
+  coloring: 'Coloring',
+  ai: 'AI Art',
+  saving: 'Saving',
+  parentCenter: 'Parent Center',
+  setup: 'Install',
+  feedback: 'Feedback',
+  whatsnew: "What's New",
+  about: 'About',
+} satisfies Record<SettingsSection, string>;
+const sectionRow = (section: SettingsSection) => `#settingsModal button[data-section="${section}"]`;
+
 const EXPAND_CONTROLS = 'button[aria-label="Expand controls"]';
 const SETTINGS_BUTTON = '#settingsButton';
 const SETTINGS_CLOSE = '#settingsModal button[aria-label="Close"]';
 const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
-const APPEARANCE_SECTION = '#settingsModal button[data-section="appearance"]';
-const RESOLVED_THEME =
+const ACTION_PANEL = '.actions-panel[data-action-panel-live]';
+export const RESOLVED_THEME =
   'document.documentElement.dataset.theme ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")';
 const HYDRATED = 'typeof window.__committedBrushMode === "function"';
 const SETTINGS_OPEN = 'document.querySelector("#settingsModal")?.open === true';
 const SETTINGS_CLOSED = 'document.querySelector("#settingsModal")?.open !== true';
+// SettingsModal.svelte's COMPACT_QUERY and WIDE_QUERY (TABLET_MIN_SIDE_PX − 1); compact wins where
+// a landscape phone matches both, as the component resolves it. Drift-tested in phase 0.
+const SETTINGS_SHELL =
+  '(matchMedia("(orientation: landscape) and (max-height: 599px)").matches ? "compact" : matchMedia("(min-width: 700px)").matches ? "wide" : "hub")';
+export const panelHas = (attribute: string) =>
+  `document.querySelector(${JSON.stringify(ACTION_PANEL)})?.hasAttribute(${JSON.stringify(attribute)}) === true`;
+export const panelLacks = (attribute: string) =>
+  `document.querySelector(${JSON.stringify(ACTION_PANEL)})?.hasAttribute(${JSON.stringify(attribute)}) === false`;
 
 // Sources shipped verbatim into the bootstrap; the real bodies live in tools/perf/lib today.
 const ERASER_FILL_APPLY =
@@ -70,23 +113,94 @@ const closeSettings: readonly Step[] = [
   { kind: 'until', expression: SETTINGS_CLOSED, equals: true, timeoutMs: 25_000 },
   { kind: 'settle', ms: 1100, reason: 'dialog close transition and shell re-render' },
 ];
+// The Appearance pane is proved by its theme picker, which every sectioned shell renders; the
+// rotation lock is not on a tablet's pane, so waiting for it would time out against the product.
 const openAppearance: readonly Step[] = [
   {
     kind: 'ifPresent',
-    target: '#lockRotationToggle',
+    target: '#themeOption-light',
     then: [],
     else: [
-      { kind: 'click', target: APPEARANCE_SECTION },
-      { kind: 'waitPresent', target: '#lockRotationToggle', timeoutMs: 10_000 },
+      { kind: 'click', target: sectionRow('appearance') },
+      { kind: 'waitPresent', target: '#themeOption-light', timeoutMs: 10_000 },
     ],
   },
 ];
+// The compact shell renders the lock as quick toggles on its first screen; the sectioned shells in
+// the Appearance pane.
+const openLockControls: readonly Step[] = [
+  { kind: 'ifPresent', target: COMPACT_SHELL_MARKER, then: [], else: openAppearance },
+];
 
-// The rotation lock lives in the Appearance section of the sectioned shell and as quick toggles in
-// the compact shell; tablets render none (the platform owns rotation). The lock read feeds release,
-// whose result feeds restore, so an unlocked device is never locked on the way out.
-const ROTATION_LOCK_STATE =
-  '(() => { const q = document.querySelector("#quickLockPortrait, #quickLockLandscape"); if (q) return document.querySelector("[id^=quickLock][aria-pressed=true]") ? "locked" : "unlocked"; const t = document.querySelector("#lockRotationToggle"); if (!t) return "platform-owned"; return t.getAttribute("aria-checked") === "true" ? "locked" : "unlocked"; })()';
+// Transcribed from campaign-state.mjs's readCompactLockedOrientation and
+// readSectionedLockedOrientation: the lock keeps which orientation it holds, and both contradictory
+// states the product cannot legally show throw rather than read as unlocked. Valid only with the
+// lock controls on the page, which is what the query's `before` steps guarantee.
+const ROTATION_LOCK_STATE = `(() => {
+  const portrait = document.querySelector("#quickLockPortrait");
+  const landscape = document.querySelector("#quickLockLandscape");
+  if (portrait && landscape) {
+    const pressed = [portrait, landscape].filter((b) => b.getAttribute("aria-pressed") === "true");
+    if (pressed.length > 1) throw new Error("Compact Settings reports both rotation-lock orientations selected");
+    return { locked: pressed[0] === portrait ? "PORTRAIT" : pressed[0] === landscape ? "LANDSCAPE" : null };
+  }
+  const lock = document.querySelector("#lockRotationToggle");
+  if (!lock) return "platform-owned";
+  const locked = lock.getAttribute("aria-checked") === "true";
+  const force = document.querySelector("#forceLandscapeToggle");
+  if (locked && !force) throw new Error("Settings reports rotation locked without its orientation control");
+  return { locked: locked ? (force.getAttribute("aria-checked") === "true" ? "LANDSCAPE" : "PORTRAIT") : null };
+})()`;
+const LOCK_RELEASED = `(() => { const s = ${ROTATION_LOCK_STATE}; return s !== "platform-owned" && s.locked === null; })()`;
+const lockHolds = (orientation: Orientation) =>
+  `(() => { const s = ${ROTATION_LOCK_STATE}; return s !== "platform-owned" && s.locked === ${JSON.stringify(orientation)}; })()`;
+const quickLock = (orientation: Orientation) =>
+  orientation === 'LANDSCAPE' ? '#quickLockLandscape' : '#quickLockPortrait';
+const holdsLock = (state: RotationLock): state is { readonly locked: Orientation } =>
+  state !== 'platform-owned' && state.locked !== null;
+const releaseLock: readonly Step[] = [
+  ...openSettings,
+  ...openLockControls,
+  {
+    kind: 'ifPresent',
+    target: COMPACT_SHELL_MARKER,
+    then: [{ kind: 'click', target: '[id^=quickLock][aria-pressed=true]' }],
+    else: [{ kind: 'click', target: '#lockRotationToggle' }],
+  },
+  { kind: 'until', expression: LOCK_RELEASED, equals: true, timeoutMs: 10_000 },
+  ...closeSettings,
+];
+const restoreLock = (orientation: Orientation): readonly Step[] => [
+  ...openSettings,
+  ...openLockControls,
+  {
+    kind: 'ifPresent',
+    target: COMPACT_SHELL_MARKER,
+    then: [{ kind: 'click', target: quickLock(orientation) }],
+    else: [
+      { kind: 'click', target: '#lockRotationToggle' },
+      { kind: 'waitPresent', target: '#forceLandscapeToggle', timeoutMs: 10_000 },
+      ...(orientation === 'LANDSCAPE'
+        ? [
+            {
+              kind: 'retryUntil' as const,
+              expression: lockHolds('LANDSCAPE'),
+              equals: true,
+              settleMs: 400,
+              timeoutMs: 10_000,
+              body: [{ kind: 'click' as const, target: '#forceLandscapeToggle' }],
+            },
+          ]
+        : []),
+    ],
+  },
+  { kind: 'until', expression: lockHolds(orientation), equals: true, timeoutMs: 10_000 },
+  ...closeSettings,
+];
+// The lock is verified by the `until` inside each procedure while its controls are on the page; the
+// postcondition proves the dialog was left closed, because the lock expression cannot be answered
+// once the lazy modal is gone.
+const settingsLeftClosed = () => ({ expression: SETTINGS_CLOSED, equals: true, timeoutMs: 25_000 });
 
 export const splotch = defineApp({
   name: 'splotch',
@@ -104,11 +218,23 @@ export const splotch = defineApp({
       entryModule: '/_app/immutable/entry/start\\.[^"\']+\\.js',
       immutableChunk: '/_app/immutable/[A-Za-z0-9._\\-/]+\\.js',
     },
-    refusedVariants: [
+    // build:cap writes the native export into the same directory (build-variant.mjs); the export is
+    // defined by the web-only files it drops. A browser capture refuses it and a capture delivered
+    // into the packaged WebView requires it (ADR-0135).
+    variants: [
+      {
+        name: 'web',
+        markerFile: '_headers',
+        absentFiles: [],
+        servesFor: ['browser'],
+        remedy:
+          'web/build holds the web build; run `npm run perf:build:cap` before a native capture.',
+      },
       {
         name: 'native-static-export',
         markerFile: 'index.html',
         absentFiles: ['_headers', '_redirects'],
+        servesFor: ['remote-preview', 'packaged'],
         remedy: 'web/build holds the Capacitor export; run `npm run perf:build` before serving.',
       },
     ],
@@ -123,6 +249,7 @@ export const splotch = defineApp({
     resting: {
       expression: '!document.querySelector(".paper-view")?.hasAttribute("data-paper-active")',
     },
+    variant: { values: ['compact', 'hub', 'wide'], read: SETTINGS_SHELL },
     paper: {
       element: '.paper-view',
       activeAttribute: 'data-paper-active',
@@ -186,18 +313,7 @@ export const splotch = defineApp({
                   body: [{ kind: 'click', target: '#quickNightToggle' }],
                 },
               ],
-              else: [
-                {
-                  kind: 'ifPresent',
-                  target: '#themeOption-light',
-                  then: [],
-                  else: [
-                    { kind: 'click', target: APPEARANCE_SECTION },
-                    { kind: 'waitPresent', target: '#themeOption-light', timeoutMs: 10_000 },
-                  ],
-                },
-                { kind: 'click', target: `#themeOption-${theme}` },
-              ],
+              else: [...openAppearance, { kind: 'click', target: `#themeOption-${theme}` }],
             },
             { kind: 'until', expression: RESOLVED_THEME, equals: theme, timeoutMs: 20_000 },
             ...closeSettings,
@@ -217,60 +333,21 @@ export const splotch = defineApp({
           capability: 'orientation',
           map: { PORTRAIT: 'PORTRAIT', LANDSCAPE: 'LANDSCAPE' },
           lock: {
-            read: `(() => { const settingsWasOpen = ${SETTINGS_OPEN}; return ${ROTATION_LOCK_STATE}; })()`,
+            read: {
+              name: 'read-rotation-lock',
+              before: [...openSettings, ...openLockControls],
+              expression: ROTATION_LOCK_STATE,
+              after: closeSettings,
+            } satisfies Query<RotationLock>,
             release: {
               name: 'release-rotation-lock',
-              steps: (state: LockState) =>
-                state !== 'locked'
-                  ? []
-                  : [
-                      ...openSettings,
-                      {
-                        kind: 'ifPresent',
-                        target: COMPACT_SHELL_MARKER,
-                        then: [{ kind: 'click', target: '[id^=quickLock][aria-pressed=true]' }],
-                        else: [...openAppearance, { kind: 'click', target: '#lockRotationToggle' }],
-                      },
-                      {
-                        kind: 'until',
-                        expression: ROTATION_LOCK_STATE,
-                        equals: 'unlocked',
-                        timeoutMs: 10_000,
-                      },
-                      ...closeSettings,
-                    ],
-              postcondition: (state: LockState) => ({
-                expression: ROTATION_LOCK_STATE,
-                equals: state === 'platform-owned' ? 'platform-owned' : 'unlocked',
-                timeoutMs: 10_000,
-              }),
+              steps: (state: RotationLock) => (holdsLock(state) ? releaseLock : []),
+              postcondition: settingsLeftClosed,
             },
             restore: {
               name: 'restore-rotation-lock',
-              steps: (state: LockState) =>
-                state !== 'locked'
-                  ? []
-                  : [
-                      ...openSettings,
-                      {
-                        kind: 'ifPresent',
-                        target: COMPACT_SHELL_MARKER,
-                        then: [{ kind: 'click', target: '#quickLockPortrait' }],
-                        else: [...openAppearance, { kind: 'click', target: '#lockRotationToggle' }],
-                      },
-                      {
-                        kind: 'until',
-                        expression: ROTATION_LOCK_STATE,
-                        equals: 'locked',
-                        timeoutMs: 10_000,
-                      },
-                      ...closeSettings,
-                    ],
-              postcondition: (state: LockState) => ({
-                expression: ROTATION_LOCK_STATE,
-                equals: state,
-                timeoutMs: 10_000,
-              }),
+              steps: (state: RotationLock) => (holdsLock(state) ? restoreLock(state.locked) : []),
+              postcondition: settingsLeftClosed,
             },
           },
         },
@@ -344,55 +421,72 @@ export const splotch = defineApp({
       activation: 'dom',
       drive: UNDO_DRIVE,
     },
+    // Clear activates by a drag from the button across the screen, never a click.
     clear: {
       selector: '#clearButton',
-      ready: 'document.querySelector("#screenshotButton").disabled === true',
+      gesture: { kind: 'drag', fraction: 0.48, durationMs: 450 },
+      ready: 'document.querySelector("#screenshotButton")?.disabled === true',
     },
     screenshot: { selector: '#screenshotButton' },
-    expandDrawer: {
-      selector: EXPAND_CONTROLS,
-      ready:
-        'document.querySelector(".actions-panel[data-action-panel-live]")?.dataset.drawerOpen === "true"',
-    },
+    // The app writes data-drawer-open with toggleAttribute (actionButtonLayout.ts), so its value
+    // is the empty string; presence is the state.
+    expandDrawer: { selector: EXPAND_CONTROLS, ready: panelHas('data-drawer-open') },
     collapseDrawer: {
       selector: 'button[aria-label="Collapse controls"]',
-      ready:
-        'document.querySelector(".actions-panel[data-action-panel-live]")?.dataset.drawerOpen !== "true"',
+      ready: panelLacks('data-drawer-open'),
     },
     brushMenu: {
       selector: '#brushButton',
-      ready: 'document.querySelector("#brushButton").getAttribute("aria-expanded") === "true"',
+      ready: 'document.querySelector("#brushButton")?.getAttribute("aria-expanded") === "true"',
     },
     crayonBrush: {
       selector: BRUSH_BUTTON.crayon,
-      ready: 'document.querySelector(".actions-panel")?.dataset.brush === "crayon"',
+      ready: `document.querySelector(${JSON.stringify(ACTION_PANEL)})?.dataset.brush === "crayon"`,
     },
     magicBrush: {
       selector: BRUSH_BUTTON.magic,
-      ready: 'document.querySelector(".actions-panel")?.dataset.brush === "magic"',
+      ready: `document.querySelector(${JSON.stringify(ACTION_PANEL)})?.dataset.brush === "magic"`,
     },
     eraser: {
       selector: BRUSH_BUTTON.eraser,
-      ready: 'document.querySelector(".actions-panel")?.dataset.brush === "eraser"',
+      ready: `document.querySelector(${JSON.stringify(ACTION_PANEL)})?.dataset.brush === "eraser"`,
     },
-    penBrush: {
-      selector: BRUSH_BUTTON.pen,
-      ready: '!document.querySelector(".actions-panel")?.dataset.brush',
+    penBrush: { selector: BRUSH_BUTTON.pen, ready: panelLacks('data-brush') },
+    strokeWidthMenu: {
+      selector: '#strokeWidthButton',
+      ready:
+        'document.querySelector("#strokeWidthButton")?.getAttribute("aria-expanded") === "true"',
     },
-    strokeWidthMenu: { selector: '#strokeWidthButton' },
-    strokeWidthOption: { selector: '.stroke-width-menu button[aria-pressed="false"]' },
+    strokeWidthOption: {
+      selector: '.stroke-width-menu button[aria-pressed="false"]',
+      ready:
+        'document.querySelector(".stroke-width-menu button[aria-pressed=\\"true\\"]") !== null && document.querySelector("#strokeWidthButton")?.getAttribute("aria-expanded") === "false"',
+    },
     strokeWidthLarge: { selector: 'button[aria-label="Size 5"]' },
     settings: { selector: SETTINGS_BUTTON, ready: SETTINGS_OPEN },
-    closeSettings: { selector: SETTINGS_CLOSE, ready: SETTINGS_CLOSED },
+    closeSettings: { selector: SETTINGS_CLOSE, ready: SETTINGS_CLOSED, activation: 'dom' },
+    settingsBack: { selector: '#settingsModal .settings-back' },
+    // Transcribed from settingsSectionMeasurement in capture-xcuitest-actions.mjs: the wide pane is
+    // a table of contents over one scrolling pane, so a click scrolls and the row reports a reading
+    // position; the hub drills in and shows its back control; Parent Center may open its gate first.
     settingsSection: {
-      selector: '#settingsModal button[data-section]',
-      ready: '!!document.querySelector("#settingsModal .settings-pane, #settingsModal .hub-list")',
+      members: SETTINGS_SECTIONS,
+      selector: (section: SettingsSection) => sectionRow(section),
+      ready: (section: SettingsSection, { variant }: { variant: string | null }) => {
+        const opened =
+          variant === 'wide'
+            ? `document.querySelector(${JSON.stringify(sectionRow(section))})?.getAttribute("aria-current") === "location"`
+            : 'document.querySelector("#settingsModal .settings-back") !== null';
+        return section === 'parentCenter'
+          ? `document.querySelector("#parentalGate")?.open === true || (${opened})`
+          : opened;
+      },
+      activation: 'dom',
     },
-    parentCenter: {
-      selector: '#settingsModal button[data-section="parent"]',
-      ready: '!!document.querySelector("#parentalGate")',
+    closeParentalGate: {
+      selector: '#parentalGate button[aria-label="Close"]',
+      ready: 'document.querySelector("#parentalGate")?.open !== true',
     },
-    closeParentalGate: { selector: '#parentalGate button[aria-label="Close"]' },
     themeLight: {
       selector: '#themeOption-light',
       ready: 'document.documentElement.dataset.theme === "light"',
@@ -401,7 +495,7 @@ export const splotch = defineApp({
       selector: '#themeOption-dark',
       ready: 'document.documentElement.dataset.theme === "dark"',
     },
-    quickNightToggle: { selector: '#quickNightToggle', ready: 'true' },
+    quickNightToggle: { selector: '#quickNightToggle' },
     soundToggle: { selector: '#soundToggle' },
     quickSoundToggle: { selector: '#quickSoundToggle' },
     saveOnDeleteToggle: { selector: '#saveOnDeleteToggle' },
@@ -410,24 +504,39 @@ export const splotch = defineApp({
     screenshotToggle: { selector: '#screenshotToggle' },
     coloringBooks: {
       selector: '#coloringBookButton',
-      ready: '!!document.querySelector("#coloring-book-dialog")',
+      ready: 'document.querySelector("#coloring-book-dialog")?.open === true',
     },
-    coloringBook: { selector: 'button[aria-label$="coloring book"]' },
+    coloringBack: { selector: '#coloring-book-dialog .coloring-back-button' },
+    coloringBook: {
+      selector: '#coloring-book-dialog button[aria-label$="coloring book"]',
+      ready:
+        'document.querySelector("#coloring-book-dialog button[aria-label$=\\"coloring page\\"]") !== null',
+      activation: 'dom',
+    },
     coloringPage: {
-      selector: 'button[aria-label$="coloring page"]',
-      ready: 'document.querySelector("#coloringOverlay")?.classList.contains("overlay-ready")',
+      selector: '#coloring-book-dialog button[aria-label$="coloring page"]',
+      ready:
+        'document.querySelector("#coloring-book-dialog")?.open !== true && document.querySelector("#coloringOverlay")?.classList.contains("overlay-ready") && document.querySelector("#coloringOverlay")?.naturalWidth > 0',
+      activation: 'dom',
     },
     coloringPages: { selector: '#coloring-book-dialog' },
     clearColoringPage: {
-      selector: 'button[aria-label^="Clear active coloring page:"]',
-      ready: 'document.querySelector("#coloringOverlay")?.hidden === true',
+      selector: '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]',
+      ready:
+        'document.querySelector("#coloring-book-dialog")?.open !== true && document.querySelector("#coloringOverlay")?.hidden === true',
     },
-    paletteSwatch: { selector: '.color-swatch[data-color]:not(.active)', ready: 'true' },
+    paletteSwatch: {
+      selector: '.color-swatch[data-color]:not(.active):not(.gradient-swatch)',
+      ready: '!!document.querySelector(".color-swatch.active")',
+    },
     colorPicker: {
       selector: '.gradient-swatch',
-      ready: '!!document.querySelector("#color-picker")',
+      ready: 'document.querySelector("#color-picker")?.open === true',
     },
-    colorPickerHexagon: { selector: '#color-picker .hexagon:not(.selected)' },
+    colorPickerHexagon: {
+      selector: '#color-picker .hexagon:not(.selected)',
+      ready: 'document.querySelector("#color-picker")?.open !== true',
+    },
   },
   native: {
     android: {

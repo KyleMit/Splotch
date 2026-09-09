@@ -14,6 +14,14 @@ export type Platform = 'ios' | 'android' | 'macos' | 'linux' | 'windows';
 export type Host = 'device' | 'simulator' | 'emulator' | 'desktop';
 /** Whether the page runs in a browser or inside the app's packaged shell. */
 export type Shell = 'browser' | 'packaged';
+/**
+ * How the page reaches the shell: a browser loads the served preview; a packaged shell either
+ * loads its bundled origin (`packaged`) or, as ADR-0135's native split capture does, loads the
+ * instrumented native export from the served preview through its capture-only server URL
+ * (`remote-preview`). Delivery decides which build variant is served and which identity proof
+ * applies; the shell alone does not.
+ */
+export type PageDelivery = 'browser' | 'remote-preview' | 'packaged';
 export type DeviceClass = 'tablet' | 'handset' | 'desktop';
 export type DesktopEngine = 'chromium' | 'webkit' | 'firefox';
 
@@ -53,6 +61,8 @@ export interface TargetDefinition<
   readonly platform: Platform;
   readonly host: Host;
   readonly shell: Shell;
+  /** Defaults to `browser` for a browser shell and `packaged` for a packaged one. */
+  readonly pageDelivery?: PageDelivery;
   readonly deviceClass: DeviceClass;
   readonly engine?: DesktopEngine;
   /** Key into the app's fidelity expectations. Stated, never derived from the id. */

@@ -114,6 +114,21 @@ export type Step =
       readonly recordAs: string;
     };
 
+/**
+ * A read with the steps that make it valid: `before` puts the page in the state the expression can
+ * answer in (open the section that renders a control), `after` leaves it as found. The result is
+ * the expression's JSON-serialisable value; `Result` is a documentation-grade phantom type, as on
+ * `PageFunction`. On the plan-polled channel the whole query runs in the page and the value is
+ * posted back.
+ */
+export interface Query<Result = unknown> {
+  readonly name: string;
+  readonly before?: readonly Step[];
+  readonly expression: PageExpression;
+  readonly after?: readonly Step[];
+  readonly __result?: Result;
+}
+
 export interface Procedure {
   readonly name: string;
   readonly steps: readonly Step[];
@@ -126,7 +141,7 @@ export interface Procedure {
  * package invokes `steps` and `postcondition` only with members of that set (`doctor` compiles
  * every member).
  */
-export interface ParameterisedProcedure<Value extends string> {
+export interface ParameterisedProcedure<Value> {
   readonly name: string;
   steps(value: Value): readonly Step[];
   postcondition(value: Value): Postcondition;
