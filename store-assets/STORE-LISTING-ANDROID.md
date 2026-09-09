@@ -12,7 +12,7 @@ Splotch: Drawing for Kids
 ## Short description (max 80)
 
 ```
-Doodle, color, and create. A quiet, ad-free coloring app made for little hands
+Doodle, color, and create. A calm, gentle drawing app made for little hands
 ```
 
 ## Full description (max 4000)

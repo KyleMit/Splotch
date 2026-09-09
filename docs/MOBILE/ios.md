@@ -228,20 +228,23 @@ required floor gate unless a successful run is captured.
 * [ ] Upload: drag the `.ipa` into Apple's **Transporter** app (Mac App Store), or use Xcode →
       Window → Organizer → Distribute App. (CLI alternative: `xcrun altool`/`notarytool` are
       deprecated for apps — use `xcodebuild -exportArchive` + Transporter.)
-* [ ] First upload creates nothing by itself — create the app record first in App Store Connect:
+* [x] First upload creates nothing by itself — create the app record first in App Store Connect:
       **My Apps → + → New App**, platform iOS, bundle ID `art.splotch.app`, SKU `splotch`.
 
 ### App Store Connect setup
 
-* [ ] Listing fields + screenshots: copy/paste from `store-assets/STORE-LISTING-IOS.md`, upload
+* [x] Listing fields + screenshots: copy/paste from `store-assets/STORE-LISTING-IOS.md`, upload
       `store-assets/screenshots/iphone69/` and `ipad13/`.
-* [ ] **App Privacy** nutrition label (declarations written out in `STORE-LISTING-IOS.md`); privacy
+* [x] **App Privacy** nutrition label (declarations written out in `STORE-LISTING-IOS.md`); privacy
       policy URL `https://splotch.art/privacy`.
-* [ ] **Age rating** questionnaire: enter the exact answers in `store-assets/STORE-LISTING-IOS.md`,
+* [x] **Age rating** questionnaire: enter the exact answers in `store-assets/STORE-LISTING-IOS.md`,
       confirm App Store Connect calculates 4+, then opt into **Kids Category, 5 & Under** while
       eligible.
 * [ ] **TestFlight**: internal testing needs no review; invite yourself, smoke the production build
       on hardware.
+* [x] **Pricing and Availability**: Free tier, all regions, Public distribution. Leave **Apple
+      Silicon Mac** and **Apple Vision Pro** availability unchecked — visionOS is not allowed for
+      Made for Kids apps, and the Mac build has never been tested. Leave **Game Center** off.
 * [ ] Submit for **App Review**. Kids Category review is stricter and slower — in *App Review
       notes*, explain the default gated free AI allowance and the later access-code /
       bring-your-own-key paths up front.
@@ -251,10 +254,10 @@ required floor gate unless a successful run is captured.
 See [native.md](native.md) §4 for the shared baseline (no ad/analytics SDKs, COPPA/GDPR-K, privacy
 policy). The Apple Kids Category adds:
 
-* [ ] Use the **Kids Category** (optional but fitting; age band **5 & Under**). Kids Category apps
+* [x] Use the **Kids Category** (optional but fitting; age band **5 & Under**). Kids Category apps
       **must not** include third-party analytics/advertising and must gate any external links /
       purchases behind a **parental gate**.
-* [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content,
+* [x] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content,
       Customer Support, optional Other Diagnostic Data, Device ID, and Product Interaction exactly
       as written in `store-assets/STORE-LISTING-IOS.md`. All five are app functionality, not linked,
       and not tracking. Confirmed AI reports retain image evidence until the daily purge after their
