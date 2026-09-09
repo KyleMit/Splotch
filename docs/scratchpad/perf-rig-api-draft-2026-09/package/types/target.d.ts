@@ -8,7 +8,6 @@
  * be drift-guarded against the same resolver the runner uses.
  */
 
-import type { ScenarioKind } from './scenario.js';
 import type { InputTransportId, MeasurementChannelId, InstrumentId } from './transport.js';
 
 export type Platform = 'ios' | 'android' | 'macos' | 'linux' | 'windows';
@@ -63,11 +62,11 @@ export interface TargetDefinition<
   readonly host: Host;
   readonly shell: Shell;
   /**
-   * Defaults to `browser` for a browser shell and `packaged` for a packaged one. A packaged shell
-   * may be delivered differently per scenario kind (drawing over the split transport is remote
-   * delivery; discrete actions over Appium are packaged), so a map is accepted.
+   * Fixed override only; normally derived by `resolvePageDelivery` from the shell and the
+   * measurement channel the request actually uses, because one packaged target is delivered both
+   * ways (remote delivery over the split channel, packaged origin over Appium or CDP).
    */
-  readonly pageDelivery?: PageDelivery | Readonly<Partial<Record<ScenarioKind, PageDelivery>>>;
+  readonly pageDelivery?: PageDelivery;
   readonly deviceClass: DeviceClass;
   readonly engine?: DesktopEngine;
   /** Key into the app's fidelity expectations. Stated, never derived from the id. */
@@ -104,8 +103,14 @@ export declare function resolveTransports(target: TargetDefinition): {
   readonly measurement: MeasurementChannelId;
 };
 
-/** The delivery a capture of this kind on this target uses; what the build-variant and origin guards key on. */
+/**
+ * The delivery a request uses, what the build-variant, nonce and origin guards key on: a browser
+ * shell is `browser`; a packaged shell is `remote-preview` over the plan-polled `http-upload`
+ * channel (ADR-0135's native split capture loads the export from the served preview) and
+ * `packaged` over every other channel, unless the target or the request overrides it. The plan
+ * prints it, so `--dry-run` shows the delivery an endpoint override produced.
+ */
 export declare function resolvePageDelivery(
   target: TargetDefinition,
-  kind: ScenarioKind
+  request: { readonly channel: MeasurementChannelId; readonly override?: PageDelivery }
 ): PageDelivery;

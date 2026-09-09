@@ -20,7 +20,7 @@ import type {
 import type { GatePolicy, GateVerdict } from './gates.js';
 import type { Scenario, ScenarioKind } from './scenario.js';
 import type { FidelityExpectations } from './scoring.js';
-import type { RefreshRegimeId, TargetDefinition, Viewport } from './target.js';
+import type { PageDelivery, RefreshRegimeId, TargetDefinition, Viewport } from './target.js';
 import type { InputTransportId, MeasurementChannelId } from './transport.js';
 
 export declare const EXIT: {
@@ -159,6 +159,8 @@ export interface CaptureOptions<A extends AppContract = AppContract> {
     readonly channel?: MeasurementChannelId;
     /** Overrides every control's and action's `ActivationRequest` for the run; recorded as `webdriver-script-click`. */
     readonly activation?: 'trusted' | 'webdriver-script-click';
+    /** Overrides `resolvePageDelivery`'s channel rule for a request that loads the page another way. */
+    readonly delivery?: PageDelivery;
   };
   readonly refreshRegime?: RefreshRegimeId | null;
   readonly device?: DeviceSelection;
@@ -250,6 +252,7 @@ export declare function planCapture<A extends AppContract>(
 export interface CapturePlan {
   readonly endpoint: string;
   readonly transport: { readonly input: InputTransportId; readonly channel: MeasurementChannelId };
+  readonly delivery: PageDelivery;
   readonly guards: readonly GuardId[];
   readonly verdicts: readonly VerdictId[];
   readonly probeDigest: string | null;

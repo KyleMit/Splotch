@@ -43,8 +43,10 @@ const ipad = <const H extends 'device' | 'simulator', const S extends ShellId>(
 });
 
 // ADR-0135: the native shell draws over the split transport with the instrumented export loaded
-// from the served preview (remote delivery, `pageIdentity: unprovable`), and measures its discrete
-// actions over Appium against the packaged origin.
+// from the served preview (remote delivery, `pageIdentity: unprovable`) and measures its discrete
+// actions over Appium against the packaged origin; a bundled frames capture over CDP is packaged
+// too. The delivery follows the request's channel through resolvePageDelivery, so one target
+// serves all three.
 const android = <const H extends 'device' | 'emulator', const S extends ShellId>(
   host: H,
   shellId: S
@@ -54,9 +56,6 @@ const android = <const H extends 'device' | 'emulator', const S extends ShellId>
   platform: 'android',
   host,
   shell: SHELL[shellId],
-  ...(shellId === 'native'
-    ? { pageDelivery: { frames: 'remote-preview' as const, actions: 'packaged' as const } }
-    : {}),
   deviceClass: 'handset',
   captureRuntime: shellId === 'web' ? 'android-chrome' : 'android-capacitor-webview',
   refreshRegime: host === 'device' ? '120hz' : '60hz',
