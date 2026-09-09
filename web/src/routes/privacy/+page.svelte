@@ -135,8 +135,8 @@
             stored on your device and never sent to us. An access code or your own OpenAI key is
             stored on the device too: the code alongside those settings, the key in the device's
             secure storage (the Keychain on Apple devices) and encrypted in the browser on the web.
-            Unlike a setting, either one is sent to us — once when a grown-up adds it, so we can
-            check it, and again each time someone makes or reports an AI picture with it.
+            The access code or OpenAI key is sent to us when a grown-up adds it so we can check it.
+            It is sent again with each AI picture made or reported using it.
           </p>
         </section>
 
