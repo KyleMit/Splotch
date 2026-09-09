@@ -24,13 +24,18 @@ export type DesktopEngine = 'chromium' | 'webkit' | 'firefox';
  */
 export type RefreshRegimeId = string;
 
-export interface RefreshRegimeBand {
-  readonly id: RefreshRegimeId;
+export interface RefreshRegimeBand<Id extends RefreshRegimeId = RefreshRegimeId> {
+  readonly id: Id;
+  readonly nominalMs: number;
   readonly intervalMs: { readonly min: number; readonly max: number; readonly toleranceMs: number };
 }
 
-/** Bands measured on the panels the package has been run against; the app may extend or replace. */
-export declare const DEFAULT_REFRESH_REGIMES: readonly RefreshRegimeBand[];
+/** Bands measured on the panels the package has been run against; the app may extend or replace through `AppContract.refreshRegimes`. */
+export declare const DEFAULT_REFRESH_REGIMES: readonly [
+  RefreshRegimeBand<'60hz'>,
+  RefreshRegimeBand<'120hz'>,
+];
+export type RegimeIdOf<Bands extends readonly RefreshRegimeBand[]> = Bands[number]['id'];
 
 /**
  * The role a target's numbers play: `gated` rows count toward a release decision; `advisory`

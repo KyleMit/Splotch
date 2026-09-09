@@ -1,5 +1,6 @@
 // Host-local. Lives in a gitignored local file in practice; shown here for the shape.
-import { DEFAULT_PORTS, defineRig } from 'perf-rig';
+import { DEFAULT_PORTS } from 'perf-rig';
+import { defineRig } from 'perf-rig/rig';
 
 export const rig = defineRig({
   outputRoot: 'perf-profiles',
@@ -20,7 +21,11 @@ export const rig = defineRig({
       'tools/perf-rig/',
     ],
   },
-  appium: { capabilitiesFile: 'perf-profiles/local/ipad-caps.json' },
+  appium: {
+    capabilitiesFile: 'perf-profiles/local/ipad-caps.json',
+    wdaBundleId: 'art.splotch.WebDriverAgentRunner',
+    xcodeConfigFile: 'ios/local.xcconfig',
+  },
   host: {
     sandboxMarkerEnv: 'CODEX_SANDBOX',
     grantLog: {

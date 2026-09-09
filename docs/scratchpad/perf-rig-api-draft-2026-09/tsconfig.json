@@ -10,7 +10,11 @@
     "noUncheckedIndexedAccess": true,
     "types": ["node"],
     "lib": ["ES2022"],
-    "paths": { "perf-rig": ["./package/types/index.d.ts"] }
+    "paths": {
+      "perf-rig": ["./package/types/index.d.ts"],
+      "perf-rig/campaign": ["./package/types/campaign.d.ts"],
+      "perf-rig/rig": ["./package/types/rig.d.ts"]
+    }
   },
   "include": ["package/types/**/*.d.ts", "splotch/**/*.ts"]
 }

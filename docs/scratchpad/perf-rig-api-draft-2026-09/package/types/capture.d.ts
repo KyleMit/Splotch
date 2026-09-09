@@ -8,13 +8,12 @@
  * fails never stops a write: the artifact lands first and the process exits 1 after.
  */
 
-import type { AppContract, DimensionOf } from './app.js';
-import type { CaptureArtifact, GuardId, TrustEntry } from './artifact.js';
+import type { AppContract, DimensionSelection } from './app.js';
+import type { CaptureArtifactOf, GuardId, TrustEntry, VerdictId } from './artifact.js';
 import type { GatePolicy, GateVerdict } from './gates.js';
 import type { Scenario, ScenarioKind } from './scenario.js';
 import type { RefreshRegimeId, TargetDefinition, Viewport } from './target.js';
 import type { InputTransportId, MeasurementChannelId } from './transport.js';
-import type { RigDefinition } from './rig.js';
 
 export declare const EXIT: {
   readonly ok: 0;
@@ -27,6 +26,34 @@ export declare const EXIT: {
 };
 export type ExitCode = (typeof EXIT)[keyof typeof EXIT];
 
+export type PortRole =
+  'preview' | 'probe' | 'appium' | 'wda' | 'androidCdp' | 'inspector' | 'floorControl';
+
+export interface PortPolicy {
+  readonly port: number;
+  /** Never stops a listener another checkout owns; "ours" is decided by the listener's working directory. */
+  readonly onConflict:
+    'replace-if-ours-or-shift' | 'reuse-compatible-or-shift' | 'reuse-or-shift' | 'shift';
+  readonly shiftTo: readonly number[];
+}
+
+export declare const DEFAULT_PORTS: Readonly<Record<PortRole, PortPolicy>>;
+
+/** The host-local facts a single capture may need; `perf-rig/rig` extends this for the device lifecycle. */
+export interface HostOptions {
+  readonly outputRoot: string;
+  readonly ports?: Readonly<Partial<Record<PortRole, PortPolicy>>>;
+  readonly appium?: {
+    readonly url?: string;
+    readonly capabilitiesFile?: string;
+    readonly wdaLocalPort?: number;
+    /** Signing inputs for the WebDriverAgent runner; host facts, never the app's. */
+    readonly wdaBundleId?: string;
+    readonly xcodeConfigFile?: string;
+    readonly allowProvisioning?: boolean;
+  };
+}
+
 export interface CaptureRequest<
   A extends AppContract = AppContract,
   S extends Scenario<A> = Scenario<A>,
@@ -36,7 +63,7 @@ export interface CaptureRequest<
   readonly scenario: S;
   readonly gates?: GatePolicy;
   readonly options?: CaptureOptions<A>;
-  readonly rig?: RigDefinition;
+  readonly host?: HostOptions;
   readonly signal?: AbortSignal;
   readonly onEvent?: (event: HarnessEvent) => void;
   readonly timeouts?: Readonly<Partial<Record<TimeoutId, number>>>;
@@ -45,7 +72,15 @@ export interface CaptureRequest<
 }
 
 export type TimeoutId =
-  'ready' | 'hydration' | 'toolCommit' | 'dimensionSet' | 'prime' | 'planPoll' | 'report' | 'phase';
+  | 'ready'
+  | 'hydration'
+  | 'toolCommit'
+  | 'dimensionSet'
+  | 'prime'
+  | 'planPoll'
+  | 'report'
+  | 'phase'
+  | 'settle';
 
 export interface HarnessEffects {
   readonly now: () => number;
@@ -68,6 +103,8 @@ export type RefusalCode =
   | 'unproved-transport-pairing'
   | 'transport-cannot-drive-scenario'
   | 'too-many-pointers'
+  | 'step-unsupported-on-channel'
+  | 'human-input-needs-channel'
   | 'build-mode-unsupported'
   | 'probe-host-unreachable-from-device'
   | 'loopback-probe-host'
@@ -75,14 +112,18 @@ export type RefusalCode =
   | 'unknown-capture-runtime'
   | 'unknown-dimension-value';
 
+export type InstrumentRequest =
+  | { readonly id: 'cdp-cpu-throttle'; readonly rate: number }
+  | { readonly id: 'cdp-tracing' }
+  | { readonly id: 'cdp-network-emulation'; readonly profile: 'slow-4g' | 'offline' }
+  | { readonly id: 'android-refresh-pin'; readonly hz: number }
+  | { readonly id: 'webkit-timeline-count' }
+  /** Sampled at 1 Hz across the window and gated on the in-window mean; a witness unless `gate` is true. */
+  | { readonly id: 'host-quiet'; readonly maxLoadPerCore: number; readonly gate?: boolean };
+
 export interface CaptureOptions<A extends AppContract = AppContract> {
   readonly label?: string;
   readonly output?: string;
-  /**
-   * `build` runs the build contract; `reuse` serves what `outputDir` holds and asserts freshness;
-   * `url` attaches to a server someone else runs and asserts identity unless `allowForeignBuild`
-   * says the mismatch is deliberate (an A/B against a historical build).
-   */
   readonly build?: {
     readonly mode: 'build' | 'reuse' | 'url';
     readonly url?: string;
@@ -92,8 +133,9 @@ export interface CaptureOptions<A extends AppContract = AppContract> {
     readonly port?: number;
     readonly probeHostPort?: number;
     readonly attachOnly?: boolean;
+    readonly noRebind?: boolean;
   };
-  readonly dimensions?: Readonly<Partial<Record<DimensionOf<A>, string>>>;
+  readonly dimensions?: DimensionSelection<A>;
   readonly fixture?: string;
   readonly viewport?: Viewport;
   readonly headed?: boolean;
@@ -102,51 +144,54 @@ export interface CaptureOptions<A extends AppContract = AppContract> {
     readonly channel?: MeasurementChannelId;
     readonly activation?: 'trusted' | 'webdriver-element-click';
   };
-  /** Overrides the target's declared regime for this capture; recorded in the artifact. */
   readonly refreshRegime?: RefreshRegimeId | null;
   readonly device?: DeviceSelection;
-  readonly repeats?: number;
   /** Fields of the scenario a script may vary per run without defining a new scenario. */
   readonly scenarioOverrides?: ScenarioOverrides;
   readonly human?: {
     readonly seconds?: number;
     readonly open?: 'adb' | 'devicectl' | 'manual';
+    readonly terminateExisting?: boolean;
     readonly buzz?: boolean;
   };
-  /** Record verdicts but exit zero. Never affects what is written. */
   readonly reportOnly?: boolean;
-  /** Guards that may report `failed` without stopping the capture; each is a named exception in the artifact. */
-  readonly tolerate?: readonly GuardId[];
+  /** Guards and verdicts that may fail without stopping or failing the capture; each is recorded as `tolerated`. */
+  readonly tolerate?: readonly (GuardId | VerdictId)[];
   readonly instruments?: readonly InstrumentRequest[];
   readonly forensics?: boolean;
 }
 
-export type InstrumentRequest =
-  | { readonly id: 'cdp-cpu-throttle'; readonly rate: number }
-  | { readonly id: 'cdp-tracing' }
-  | { readonly id: 'cdp-network-emulation'; readonly profile: 'slow-4g' | 'offline' }
-  | { readonly id: 'android-refresh-pin'; readonly hz: number }
-  | { readonly id: 'webkit-timeline-count' }
-  | { readonly id: 'host-quiet'; readonly maxLoadPerCore: number };
-
 export interface ScenarioOverrides {
-  readonly repeats?: number;
-  readonly pauseMs?: number;
+  readonly gestureRepeats?: number;
+  readonly gesturePauseMs?: number;
   readonly contactCapMs?: number;
   readonly phases?: readonly string[];
-  readonly repeatedAction?: { readonly count?: number; readonly pauseMs?: number };
-  readonly groups?: readonly string[];
-  readonly drive?: {
-    readonly hz?: number;
-    readonly shape?: 'mixed' | 'long' | 'short';
-    readonly pointerType?: 'touch' | 'pen' | 'mouse';
+  readonly tool?: string;
+  readonly hud?: boolean;
+  readonly input?:
+    | { readonly kind: 'transport' }
+    | {
+        readonly kind: 'probe-synthetic';
+        readonly hz?: number;
+        readonly shape?: 'mixed' | 'long' | 'short';
+        readonly pointerType?: 'touch' | 'pen' | 'mouse';
+      }
+    | { readonly kind: 'human' };
+  readonly repeatedAction?: {
+    readonly count?: number;
+    readonly pauseMs?: number;
+    readonly rotateBefore?: boolean;
+    readonly settleMs?: number;
   };
+  readonly actionRepeats?: { readonly warmup?: number; readonly scored?: number };
+  readonly groups?: readonly string[];
   readonly freeDrawSeconds?: number;
-  readonly rotateBeforeRepeatedAction?: boolean;
+  readonly cycles?: number;
 }
 
 export interface DeviceSelection {
   readonly id?: string;
+  readonly name?: string;
   readonly appiumUrl?: string;
   /** Replaces the built-in capability set entirely; must carry every native capability. */
   readonly capabilitiesFile?: string;
@@ -160,7 +205,7 @@ export interface DeviceSelection {
 
 export interface CaptureResult<K extends ScenarioKind = ScenarioKind> {
   readonly artifactPath: string;
-  readonly artifact: CaptureArtifact<K>;
+  readonly artifact: CaptureArtifactOf<K>;
   readonly trust: readonly TrustEntry[];
   readonly gate?: GateVerdict;
   readonly exitCode: ExitCode;
@@ -180,15 +225,52 @@ export interface CapturePlan {
   readonly endpoint: string;
   readonly transport: { readonly input: InputTransportId; readonly channel: MeasurementChannelId };
   readonly guards: readonly GuardId[];
+  readonly verdicts: readonly VerdictId[];
   readonly probeDigest: string | null;
   readonly instrumentFingerprint: string;
-  readonly ports: Readonly<Record<string, number>>;
+  readonly ports: Readonly<Partial<Record<PortRole, number>>>;
   readonly refusals: readonly {
     readonly code: RefusalCode;
     readonly message: string;
     readonly remedy: string;
   }[];
 }
+
+export interface DoctorReport {
+  readonly tools: readonly {
+    readonly name: string;
+    readonly found: boolean;
+    readonly version?: string;
+    readonly neededBy: readonly string[];
+  }[];
+  readonly devices: readonly {
+    readonly platform: 'ios' | 'android';
+    readonly identifier: string;
+    readonly state: string;
+    readonly notes: readonly string[];
+  }[];
+  readonly transports: readonly {
+    readonly id: InputTransportId;
+    readonly usable: boolean;
+    readonly reason?: string;
+  }[];
+  /** Every contract hook evaluated against the served page, and every parameterised procedure compiled for every member. */
+  readonly contract: readonly {
+    readonly field: string;
+    readonly ok: boolean;
+    readonly detail: string;
+  }[];
+  readonly calibration: readonly {
+    readonly runtime: string;
+    readonly uncalibrated: readonly string[];
+  }[];
+}
+
+/** Inventory the host and evaluate the contract against a served page (`serve: true` starts one). */
+export declare function doctor(
+  app: AppContract,
+  options?: { readonly url?: string; readonly serve?: boolean; readonly host?: HostOptions }
+): Promise<DoctorReport>;
 
 export declare function serve(
   app: AppContract,
@@ -207,8 +289,11 @@ export declare function openChannel(
   options: {
     readonly path: string;
     readonly ready: string;
+    readonly build?: CaptureOptions['build'];
+    readonly instruments?: readonly InstrumentRequest[];
     readonly device?: DeviceSelection;
     readonly server?: CaptureOptions['server'];
+    readonly host?: HostOptions;
   }
 ): Promise<{
   evaluate<T>(expression: string): Promise<T>;

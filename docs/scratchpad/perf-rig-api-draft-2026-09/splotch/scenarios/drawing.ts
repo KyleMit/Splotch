@@ -77,13 +77,10 @@ export const trustedGesturePlan = (primeBetweenPasses: boolean): GesturePlan => 
   repeats: GESTURE_REPEATS,
   pauseMs: 0,
   primeBetweenPasses,
-  generate: (bounds, repeats, pauseMs): readonly PointerSequence[] => {
+  generate: (bounds, _pass): readonly PointerSequence[] => {
     const actions: PointerAction[] = [];
-    for (let repeat = 0; repeat < repeats; repeat += 1) {
-      for (const seed of LONG_STROKE_SEEDS) actions.push(...longStroke(bounds, seed));
-      for (const origin of SHORT_STROKE_ORIGINS) actions.push(...shortStroke(bounds, origin));
-      if (pauseMs > 0) actions.push({ type: 'pause', duration: pauseMs });
-    }
+    for (const seed of LONG_STROKE_SEEDS) actions.push(...longStroke(bounds, seed));
+    for (const origin of SHORT_STROKE_ORIGINS) actions.push(...shortStroke(bounds, origin));
     return [{ source: 'finger', pointerType: 'touch', actions }];
   },
 });
@@ -138,7 +135,7 @@ export const localFrames = (brush: Brush) =>
     description: 'The real-screen probe driven by its synthetic hand in a local browser.',
     tool: brush,
     phases: [{ key: 'blank', paper: 'blank' }],
-    input: { kind: 'probe-synthetic', hz: 120, shape: 'mixed' },
+    input: { kind: 'probe-synthetic', hz: 120, shape: 'mixed', pointerType: 'touch' },
     contactCapMs: 25_000,
     ...(brush === 'pen'
       ? { repeatedAction: { control: 'undo' as const, count: UNDO_COUNT, pauseMs: 250 } }
@@ -170,7 +167,7 @@ export const realScreenSweep = defineScenario(splotch, {
       suppress: [{ kind: 'css', css: '.brush-ring, .eraser-bubble { display: none !important; }' }],
     },
   ],
-  input: { kind: 'human', seconds: 25 },
+  input: { kind: 'human' },
   contactCapMs: 25_000,
   hud: true,
 });

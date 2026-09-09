@@ -46,10 +46,13 @@ npx perf-rig capture --target local-chromium --scenario first-actions
 ```
 
 `init` writes a starter `actions` scenario over one declared control, because that shape needs no
-tool concept and no calibration. `doctor` refuses to report ready while a required contract field is
-unanswered, and evaluates each hook against the served page so a resting-state expression that is
-never true is found before a capture runs. Nothing under `perf-rig/rig` is needed until a device is
-involved.
+tool concept and no calibration, and a starter target with `refreshRegime: null`, which is banked
+but never scored until a regime is established from a first capture's beat. `doctor` refuses to
+report ready while a required contract field is unanswered, compiles every parameterised procedure
+for every declared value, and evaluates each hook against the served page so a resting-state
+expression that is never true is found before a capture runs. On a laptop, `host-quiet` is a witness
+unless asked to gate, and any verdict can be tolerated by name. Nothing under `perf-rig/rig` is
+needed until a device is involved.
 
 At the nested rung, before the package is published, there is no CLI: an app's own scripts call the
 library directly and `doctor` is a library call too.

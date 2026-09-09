@@ -13,13 +13,13 @@ asks for the generic half to live in its own repository, consumed as a pinned `d
 entry, leaving Splotch's scenarios, gates and campaign orchestration behind.
 
 Reading every module (rather than classifying by keyword) found the boundary is not where the file
-names put it. Of the 42 `lib/` modules, 16 are generic as they stand, 7 are Splotch scenario or gate
-vocabulary, and 19 are a generic mechanism with a Splotch value welded in: a selector, a mark name,
-a package id, a repo path, an exception table keyed by target id. `real-screen-stats.mjs` is 95%
-generic with six literal `engine.*` sites; `refresh-regime.mjs` is entirely generic and already
-takes the target table as an argument; `campaign-plan.mjs` is three files wearing one name. The
-probes cannot import anything and so carry a third copy of every selector. Two entry points under
-`ios/` are simultaneously entry points, plan owners and the Appium client for five other runners.
+names put it. Most `lib/` modules are a generic mechanism with a Splotch value welded in: a
+selector, a mark name, a package id, a repo path, an exception table keyed by target id; the
+per-file dispositions are in the draft's `boundary.md`. `real-screen-stats.mjs` is 95% generic with
+six literal `engine.*` sites; `refresh-regime.mjs` is entirely generic and already takes the target
+table as an argument; `campaign-plan.mjs` is three files wearing one name. The probes cannot import
+anything and so carry a third copy of every selector. Two entry points under `ios/` are
+simultaneously entry points, plan owners and the Appium client for five other runners.
 
 What is actually missing is the thing the issue named: a scenario contract. Today scenario knowledge
 and capture mechanics are interleaved because there is no declared place for the app's knowledge to
@@ -41,12 +41,13 @@ Alternatives considered:
 ## Decision
 
 The harness is extracted behind one declared object, an **app contract**, and the extraction
-proceeds along ADR-0053's escalation path in that order: the contract lands in place, then a nested
-independently installed package under `tools/` (not a workspace member, its `node_modules` off
-Capacitor's resolution path), and only when a second consumer or an independent release cadence
-exists, a separate repository consumed as an exact-pinned `devDependencies` entry. The nested rung
-is the first implemented step because it keeps every drift guard, corpus test and script in one
-commit while forcing the self-containment a separate repo needs.
+proceeds along ADR-0053's escalation path in that order: the contract lands in place and the
+existing runners read it, then a nested independently installed package under `tools/` (not a
+workspace member, its `node_modules` off Capacitor's resolution path), and only when a second
+consumer or an independent release cadence exists, a separate repository consumed as an exact-pinned
+`devDependencies` entry. The nested rung is the first packaging step because it keeps every drift
+guard, corpus test and script in one commit while forcing the self-containment a separate repo
+needs.
 
 The contract and the surface around it are drafted as typed declarations in
 `docs/scratchpad/perf-rig-api-draft-2026-09/`, with Splotch's forty scripts written against them and

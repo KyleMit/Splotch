@@ -98,8 +98,83 @@ Findings are summarised by theme with what changed; declined findings carry the 
 * **Removing the desktop `evidenceRole` distinction** (operator). The matrix's five fidelity labels
   are Splotch's to render; the package keeps gated versus advisory and the app maps the rest.
 
-## Round 2 — verification pass
+## Round 2 — verification pass, 40 findings
 
-The second round asked the same three lenses to verify the round-one fixes against the revised draft
-and the real code, and to find what the fixes broke. Its findings and the changes they produced are
-recorded below.
+The same three lenses re-read the revised draft against their round-one reports and the real code.
+The outsider marked 19 of 30 resolved, the operator 22 of 35, the architecture reviewer 23 of 32; no
+round-one blocker survived in the types. What round two found was the half-wired seams the rewrite
+left, and two transcription errors against the shipped code.
+
+### What changed
+
+* **The artifact is a discriminated union** (architecture). `CaptureArtifactOf<K>` with a top-level
+  `kind`, `CaptureArtifact` as the mapped union, a flat `AcceptanceRule` and a `ruleFor` narrower;
+  narrowing the kind narrows the report, evidence and summaries with it.
+* **The scoring pipeline composes** (architecture, outsider). Samples and summaries carry the action
+  id; `summariseActions` takes the resolved plan and the gate, and `firstFrameNaFor` and
+  `allowancesFor` are exported so a corpus test and a doc guard derive the callback from the same
+  data. The summary shapes are transcribed from the shipped scorers rather than paraphrased.
+* **The Splotch fidelity table was wrong on two runtimes** (operator, blocker). Both iOS runtimes
+  are hand-calibrated for pressure and contact geometry; desktop is uncalibrated. Transcribed from
+  `RUNTIME_EXPECTATIONS`, with the drift test moved to migration phase 0.
+* **Action ids are one per measured direction** (operator). `theme.to-dark`, `theme.to-light`, the
+  compact enable and disable, and the rotation directions are separate ids inside a
+  `SequenceAction`, so an allowance for one direction cannot loosen the other; the group order is
+  the shipped order and `idle` is always emitted first; per-section rows and the compact-shell
+  variants enumerate from context.
+* **Dimension values have literal types** (architecture, outsider). `DimensionSelection<A>` and
+  `DimensionValueOf` flow from the contract into options, variants and requirements.
+* **Orientation is a transport capability** (architecture). `Dimension.set.via: 'transport'` names a
+  capability; `ExternalAction` names a dimension; the driver reads and sets capabilities; the page
+  geometry no longer carries an orientation of its own. The app's rotation lock is a
+  read-release-restore triple whose release result feeds the restore, so an unlocked device is never
+  locked on the way out.
+* **Scenario steps reference controls** (architecture). `ScenarioStep<A>` targets are control names
+  or a selector with a required reason; the second Settings spelling inside the draft is gone.
+* **The plan-poll protocol is typed** (architecture). `PlanPatch`, `PrimeEntry` (the fields the
+  fail-closed refill validator reads) and `PlanPolledReport<K>`; `TrustEntry.evaluatedBy` says
+  whether the host or the page evaluated a guard.
+* **Regimes reach the verdict** (outsider). Bands are declared on the app contract and threaded into
+  the capture; `RegimeIdOf` derives the id union from the bands.
+* **Verdicts can be tolerated by name** (outsider); `host-quiet` samples across the window and is a
+  witness unless asked to gate; exit-2 refusals have a ledger status.
+* **Literal-only fields are gone** (outsider, architecture). `retryUntil` always checks first; the
+  prime protocol's fixed behaviours are documented, not declared.
+* **The label template mini-language is gone** (architecture). A label is a string or a function of
+  context, resolved once by `resolveActionPlan`.
+* **The three entry points are real** (outsider, architecture). The root re-exports neither the
+  campaign nor the rig; `HostOptions` lives in `capture.d.ts` and `RigDefinition` extends it; the
+  WebDriverAgent signing inputs are host options, not app contract.
+* **`package.json`**: no dependencies (the WebKit Inspector client uses the global `WebSocket`),
+  `playwright-core` pinned to the root's range with a drift guard, no `allowBuilds` claim.
+* **Migration proofs are producible**: the probe phase proves selector assertions and a happy-dom
+  execution rather than a byte diff; the resume phase reads the legacy ledger through
+  `LEGACY_LEDGER_STATUS`; the corpus tests keep their bodies through a thin binding at the old
+  `input-fidelity` path; the golden ledger carries its scoring epoch.
+* Leftovers: `perf-android-web` in `HARNESS_QUERY_PARAMS`, `pageIdentity` spelled `proven-by-*` as
+  the runners write it, `RepeatedActionSample.startedAt`, the theme close wait at the bootstrap's
+  budget, `RegimeMixture` transcribed and nullable, `ProbeConfig.tool` documented as a label,
+  `doctor` declared as a library call, the operator steps declared, the iOS branches restored in the
+  split scripts, `--max-attempts`, `--no-throttle` on the mount capture.
+
+### Declined, with reasons
+
+* **Keep the shipped ledger status names verbatim** (operator). `runtime-mismatch`, `verdict-absent`
+  and `prime-failed` name what happened where the shipped ledger folds three causes into two
+  statuses; `LEGACY_LEDGER_STATUS` maps a pre-extraction ledger on read, which is what the resume
+  proof exercises.
+* **Cut `first-show`** (architecture, restated). Kept; routed through controls it names no selector
+  and no other shape expresses a first presentation against a reopen.
+* **Fold `perf:campaign:sources` into the package** (operator). The fold's completeness and
+  build-binding rules are the matrix manifest's; the script stays Splotch's and composes `shellOf`
+  and the standard rules.
+
+## Round 3 — what remains open
+
+The round-three draft is what this folder holds. Three things are known to be unverified and are the
+first work of the implementation: the bootstrap compiler's fidelity to the seventeen-step sequence
+is asserted by a test that does not exist yet (migration phase 1 names it); the rendered probe's
+equivalence to the committed probe is a claim until phase 2 executes it; and the legacy upgrader is
+a signature. The reviews' remaining nits (a scoring-epoch reader in the golden ledger,
+`ACTIONS_PROBE_SCHEMA` deriving `COMPAT.frameStampEpoch`, the vocabulary of `Control.activation`
+versus the recorded `Activation`) are recorded here rather than left implicit.

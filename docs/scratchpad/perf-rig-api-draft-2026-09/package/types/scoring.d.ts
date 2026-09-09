@@ -2,37 +2,52 @@
  * Scoring.
  *
  * Pure functions from raw rows to numbers. Nothing here reads a file or a device, so a whole
- * corpus can be re-derived offline when a definition turns out to be wrong. Field names on the
- * summaries are the ones every tracked capture already carries; renaming them is what breaks a
- * corpus. Every function that needs app knowledge takes it as an argument, and the package ships
- * no calibration constant: a threshold set from the automation is not calibrated.
+ * corpus can be re-derived offline when a definition turns out to be wrong. The summary shapes are
+ * transcribed from the shipped scorers with their field names, because every tracked capture
+ * already carries them and renaming them is what breaks a corpus. Every function that needs app
+ * knowledge takes it as an argument, and the package ships no calibration constant.
  */
 
 import type { FramesReport } from './artifact.js';
+import type { ActionGate } from './gates.js';
 import type { FrameStampEpoch } from './probe.js';
-import type { RefreshRegimeBand, RefreshRegimeId } from './target.js';
+import type { ResolvedActionPlan } from './scenario.js';
+import type { DesktopEngine, RefreshRegimeBand, RefreshRegimeId } from './target.js';
 
 export declare function percentile(values: readonly number[], fraction: number): number | undefined;
 
 /** The dominant frame interval: the largest 0.5 ms bucket's own median. A percentile drags toward doubled intervals. */
 export declare function observedFrameIntervalMs(frames: FramesReport['frames']): number;
 
-/** Lost time over elapsed time, priced against the beat, crediting a late frame the next frame gives back. */
+/** Frame pacing over one population, priced against the beat, crediting a late frame the next frame gives back. */
 export interface PacingStats {
-  readonly p95: number;
-  readonly p99: number;
-  readonly max: number;
-  readonly lostFrameTimeShare: number;
-  readonly lateFrames: number;
-  readonly creditedFrames: number;
   readonly frames: number;
+  readonly p50: number | undefined;
+  readonly p95: number | undefined;
+  readonly p99: number | undefined;
+  readonly max: number | undefined;
+  readonly budgetMs: number;
+  readonly lateThresholdMs: number;
+  readonly lateShare: number;
+  readonly stallShare: number;
+  readonly elapsedMs: number;
+  readonly lostMs: number;
+  readonly lostFrameTimeShare: number | undefined;
 }
-export declare function frameStats(deltas: readonly number[], intervalMs: number): PacingStats;
+export declare function frameStats(
+  deltas: readonly number[],
+  intervalMs: number,
+  nextDeltas?: readonly number[]
+): PacingStats;
 
+/** As the shipped regime module records it; `null` when no minority frames were observed. */
 export interface RegimeMixture {
-  readonly minorityShare: number;
-  readonly sustainedMinorityShare: number;
+  readonly observedRegime: RefreshRegimeId;
+  readonly minorityRegime: RefreshRegimeId;
   readonly slowerThanObserved: boolean;
+  readonly sustainedMinorityShare: number;
+  readonly runMinFrames: number;
+  readonly frames: number;
 }
 
 export declare function classifyRefreshRegime(
@@ -40,10 +55,7 @@ export declare function classifyRefreshRegime(
   regimes: readonly RefreshRegimeBand[]
 ): RefreshRegimeId | null;
 
-/**
- * `matched` is the runner's question (retry or bank); `scoreable` is the fold's (publish a number).
- * An unestablished target is banked but never scored; a mixed in-contact presentation is refused.
- */
+/** `matched` is the runner's question (retry or bank); `scoreable` is the fold's (publish a number). */
 export interface RefreshRegimeVerdict {
   readonly regime: RefreshRegimeId | null;
   readonly expected: RefreshRegimeId | null;
@@ -55,30 +67,32 @@ export interface RefreshRegimeVerdict {
 export declare function refreshRegimeVerdict(
   intervalMs: number,
   expected: RefreshRegimeId | null,
-  mixture: RegimeMixture,
+  mixture: RegimeMixture | null,
   regimes: readonly RefreshRegimeBand[]
 ): RefreshRegimeVerdict;
 
-/** The input block every phase summary carries; the legacy field names are the contract. */
+/** The input block every phase summary carries. `kinds` is the pointer kinds seen joined with `+`. */
 export interface InputSummary {
-  readonly kinds: 'touch' | 'pen' | 'mouse' | 'mixed' | 'none';
-  readonly trust: { readonly share: number };
-  readonly movesPerSecond: number;
+  readonly moves: number;
   readonly movesPerFrame: number;
-  readonly moveGapP95Ms: number;
-  readonly pressure?: { readonly p50: number };
-  readonly contactWidth?: { readonly p50: number };
-  readonly contactHeight?: { readonly p50: number };
-  readonly coalescedPerMove?: number;
+  readonly movesPerSecond: number;
+  readonly kinds: string;
+  readonly coalescedPerMove: number;
+  readonly coalescedSpanMs: { readonly p50: number | undefined; readonly p95: number | undefined };
+  readonly trust: { readonly share: number; readonly untrusted: number };
+  readonly pressure: { readonly p50: number | undefined; readonly nonZero: number };
+  readonly contactWidth: { readonly p50: number | undefined };
+  readonly contactHeight: { readonly p50: number | undefined };
+  readonly moveGapP95Ms: number | undefined;
+  readonly moveGapMaxMs: number | undefined;
 }
 
 /**
- * Input fidelity. Two checks are universal: trusted touch and cadence (density in moves per frame
- * plus a burst cap on the p95 gap, never a rate, because a rate encodes the panel's refresh). The
- * rest describe a runtime and carry one of three states: calibrated against a hand capture and a
- * known-bad control; uncalibrated, which is a gap recapturing cannot close and never a pass; or
- * not-applicable, measured and found to carry no information, recorded as a witness and absent
- * from the checks so silence is never mistaken for a pass.
+ * Input fidelity. Trusted touch and cadence are universal; the rest describe a runtime and carry
+ * one of three states: calibrated against a hand capture and a known-bad control; uncalibrated,
+ * which is a gap recapturing cannot close and never a pass; or not-applicable, measured and found
+ * to carry no information, recorded as a witness and absent from the checks so silence is never
+ * mistaken for a pass.
  */
 export type UniversalCheck = 'trustedTouch' | 'cadence';
 export type RuntimeCheck = 'pressure' | 'contactGeometry' | 'coalescing';
@@ -105,14 +119,13 @@ export interface FidelityExpectations<Runtime extends string = string> {
   readonly runtimes: Readonly<Record<Runtime, Readonly<Record<RuntimeCheck, RuntimeCheckState>>>>;
 }
 
+/** The shipped verdict shape: `null` marks an uncalibrated check; a not-applicable check is absent. */
 export interface FidelityVerdict {
   readonly runtime: string;
   readonly passed: boolean;
-  /** `null` marks an uncalibrated check; a not-applicable check is absent. */
   readonly checks: Readonly<Partial<Record<FidelityCheckKind, boolean | null>>>;
   readonly uncalibrated: readonly FidelityCheckKind[];
   readonly notApplicable: readonly FidelityCheckKind[];
-  readonly witnesses: Readonly<Partial<Record<RuntimeCheck, number>>>;
 }
 
 export declare function inputFidelity<R extends string>(
@@ -121,7 +134,6 @@ export declare function inputFidelity<R extends string>(
   expectations: FidelityExpectations<R>
 ): FidelityVerdict;
 export declare function describeFidelityFailures(verdict: FidelityVerdict): string;
-/** A failure that invalidates the number, as opposed to one that only reveals an uncalibrated instrument. */
 export declare function numberInvalidatingFailure(
   verdict: FidelityVerdict | null | undefined
 ): boolean;
@@ -137,40 +149,55 @@ export interface FramesSummaryOptions {
   readonly passthroughPhaseFields?: readonly string[];
 }
 
-export type PhaseVerdict =
-  | 'clean'
+export type PhaseFinding =
   | 'input loss'
   | 'redundant per-event work'
   | 'input queued'
   | 'frame loss'
   | 'stalls'
-  | 'paint latency'
-  | 'no drawing recorded';
+  | 'paint latency';
 
+export interface StarvationPopulation {
+  readonly episodes: number;
+  readonly lostMs: number;
+  readonly lostFrameTimeShare: number | undefined;
+  readonly commitsAttributed: number;
+}
+
+/** Transcribed from the shipped phase summariser; the app's passthrough fields ride alongside. */
 export interface PhaseSummary {
   readonly key: string;
-  readonly intervalMs: number;
+  readonly suppress: string;
+  readonly abandoned: boolean;
+  readonly contactSeconds: number;
   readonly pacing: PacingStats;
   readonly betweenStrokes: PacingStats;
   readonly wholeWindow: PacingStats;
-  readonly paintLatencyMs: {
-    readonly p95: number;
-    readonly p99: number;
-    readonly max: number;
-  } | null;
-  readonly queueDelayMs: { readonly p95: number; readonly max: number } | null;
-  readonly input: InputSummary;
-  readonly strokes: { readonly count: number; readonly longestMs: number };
   readonly starvation: {
-    readonly all: { readonly lostFrameTimeShare: number };
-    readonly inContact: { readonly lostFrameTimeShare: number };
-    readonly betweenStrokes: { readonly lostFrameTimeShare: number };
+    readonly thresholdMs: number;
+    readonly attributionWindowMs: number;
+    readonly all: StarvationPopulation;
+    readonly inContact: StarvationPopulation;
+    readonly betweenStrokes: StarvationPopulation;
     readonly episodes: readonly {
       readonly startMs: number;
       readonly durationMs: number;
       readonly trustedMoves: number;
+      readonly engineShare: number;
     }[];
   };
+  readonly paintLatencyMs: {
+    readonly p50: number | undefined;
+    readonly p95: number | undefined;
+    readonly p99: number | undefined;
+    readonly max: number | undefined;
+  };
+  readonly queueDelayMs: {
+    readonly p50: number | undefined;
+    readonly p95: number | undefined;
+    readonly max: number | undefined;
+  };
+  readonly input: InputSummary;
   readonly engine: {
     readonly msPerFrame: number;
     readonly msPerLateFrame: number;
@@ -178,20 +205,36 @@ export interface PhaseSummary {
     readonly byName: Readonly<
       Record<string, { readonly count: number; readonly maxMs: number; readonly totalMs: number }>
     >;
-  } | null;
+  };
+  readonly strokes: {
+    readonly count: number;
+    readonly long: number;
+    readonly short: number;
+    readonly adopted: number;
+    readonly movesPerLongStroke: number;
+    readonly endHitchMaxMs: number | undefined;
+    readonly stalledLifts: number;
+    readonly measuredLifts: number;
+    readonly notableLifts: number;
+    readonly liftMs: { readonly p50: number | undefined; readonly p95: number | undefined };
+    readonly longStrokeTrend: number | null;
+  };
   readonly worstFrames: readonly {
     readonly atMs: number;
     readonly gapMs: number;
     readonly marks: readonly string[];
   }[];
-  readonly verdict: PhaseVerdict;
+  /** The findings joined with ` + `, or `clean`, or `no drawing recorded`. */
+  readonly verdict: string;
+  readonly findings: readonly PhaseFinding[];
   readonly [passthrough: string]: unknown;
 }
 
 export interface FramesSummary {
   readonly intervalMs: number;
-  readonly regimeMixture: RegimeMixture;
+  readonly regimeMixture: RegimeMixture | null;
   readonly phases: readonly PhaseSummary[];
+  readonly scoringEpoch: number;
 }
 
 export declare function summariseFrames(
@@ -208,17 +251,25 @@ export interface ActionFrameRow {
   readonly actualGapMs?: number;
 }
 
-/** A sample as the actions probe emits it; the scorer selects frames from these fields. */
+/** A sample as the actions probe emits it, stamped with the resolved action id by the runner. */
 export interface ActionSample {
+  readonly actionId: string;
   readonly label: string;
   readonly repeat: number;
   readonly warmup: boolean;
   readonly eventType: string;
-  readonly trusted: boolean;
+  readonly trusted: boolean | null;
   readonly readyMs: number | null;
-  readonly firstFrameMs: number;
+  readonly firstFrameMs: number | null;
   readonly postActionFrames: readonly ActionFrameRow[];
-  readonly activities: readonly { readonly atFromActionMs: number; readonly type: string }[];
+  /** Kept for artifacts that predate `postActionFrames`. */
+  readonly frameGapsMs?: readonly number[];
+  readonly postActionFrameGapsMs?: readonly number[];
+  readonly activities: readonly {
+    readonly atFromActionMs: number;
+    readonly type: string;
+    readonly property?: string;
+  }[];
   readonly canvasMutations: readonly {
     readonly atFromActionMs: number;
     readonly kind: string;
@@ -232,21 +283,32 @@ export interface ActionSample {
   readonly frameStampEpoch: FrameStampEpoch;
 }
 
+export interface Distribution {
+  readonly count: number;
+  readonly p50: number | undefined;
+  readonly p95: number | undefined;
+  readonly max: number | undefined;
+}
+
+/** Transcribed from the shipped action-group summariser. */
 export interface ActionSummary {
+  readonly actionId: string;
   readonly label: string;
   readonly count: number;
   readonly totalCount: number;
-  readonly activation: string;
-  readonly firstFrame: { readonly p95: number; readonly max: number; readonly na: string | null };
-  readonly ready: { readonly p95: number };
-  readonly frames: {
-    readonly p95: number;
-    readonly max: number;
-    readonly raw: readonly number[];
+  readonly activation: {
+    readonly captured: number;
+    readonly valid: number;
+    readonly passed: boolean;
+  };
+  readonly firstFrame: Distribution & { readonly na?: true };
+  readonly ready: Distribution;
+  readonly frames: Distribution & {
+    readonly raw: Distribution;
     readonly maxBreachSamples: number;
     readonly maxUnconfirmed: boolean;
   };
-  readonly frameSamples: number;
+  readonly frameSamples: { readonly scored: number; readonly raw: number };
   readonly frameStamps?: {
     readonly hiddenOverruns: number;
     readonly actualGapP95: number;
@@ -256,20 +318,33 @@ export interface ActionSummary {
   readonly passed: boolean;
 }
 
-export declare const ACTION_SETTLE_TAIL_FRAMES: 4;
-
-export declare function summariseActions(
+/** The plan is the join between samples, allowances and the first-frame rule; nothing is keyed by label. */
+export declare function summariseActions<T extends string, R extends string>(
   samples: readonly ActionSample[],
-  expectedLabels: readonly string[],
-  allowances: Readonly<Record<string, { readonly p95Ms?: number; readonly maxMs?: number }>>,
-  firstFrameNaFor: (label: string) => string | null
+  plan: ResolvedActionPlan,
+  gate: ActionGate<T, R>,
+  context: { readonly target: T; readonly runtime: R; readonly engine: DesktopEngine | null }
 ): readonly ActionSummary[];
+
+/** Exported so a corpus test and a doc guard derive the callback from the same data the scorer uses. */
+export declare function firstFrameNaFor<T extends string, R extends string>(
+  gate: ActionGate<T, R>,
+  context: { readonly runtime: R; readonly engine: DesktopEngine | null }
+): (actionId: string) => string | null;
+export declare function allowancesFor<T extends string>(
+  gate: ActionGate<T, string>,
+  target: T
+): Readonly<Record<string, { readonly p95Ms?: number; readonly maxMs?: number }>>;
 
 /** Scheduled-versus-actual clock divergence over the scored frames; attribution, never gating. */
 export declare function frameStampDivergence(
   frames: readonly ActionFrameRow[],
   maxGateMs: number
-): { readonly hiddenOverruns: number; readonly actualGapP95: number } | null;
+): {
+  readonly hiddenOverruns: number;
+  readonly actualGapP95: number;
+  readonly callbackDelayP95: number;
+} | null;
 
 export interface RepeatedActionSummary {
   readonly count: number;
@@ -284,8 +359,13 @@ export interface RepeatedActionSummary {
 }
 
 export declare function summariseRepeatedAction(
-  samples: readonly { readonly engineMs: number; readonly nextFrameMs: number }[],
-  frames: readonly number[] | null,
+  samples: readonly {
+    readonly engineMs: number;
+    readonly nextFrameMs: number;
+    readonly startedAt: number;
+    readonly endedAt: number;
+  }[],
+  frames: FramesReport['frames'] | null,
   gate: {
     readonly engineP95Ms: number;
     readonly nextFrameP95Ms: number;
@@ -293,7 +373,6 @@ export declare function summariseRepeatedAction(
   }
 ): RepeatedActionSummary;
 
-/** Fast-set selection over a rolling history of full runs: sole exercisers are mandatory, the rest rank by headroom. */
 export interface FastSetHistory {
   readonly schemaVersion: 1;
   readonly runs: readonly {
@@ -331,4 +410,3 @@ export declare function validateFastSetHistory(
 ): FastSetHistory;
 
 export declare const LONG_TASK_MS: 50;
-export declare const HOST_QUIET_MAX_LOAD_PER_CORE: 0.5;

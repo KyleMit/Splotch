@@ -1,5 +1,6 @@
 // The toddler session (perf:web, perf:web:webkit, perf:android) and the page-load window
-// (perf:web:mount), both `session` shapes. Strokes here are in-page synthetic events.
+// (perf:web:mount), both `session` shapes. Strokes here are in-page synthetic events; every other
+// step names a control, and the one selector escape hatch says why a control would not do.
 import { defineScenario, type PathGenerator } from 'perf-rig';
 import { splotch } from '../app.js';
 
@@ -35,30 +36,34 @@ export const toddlerSession = defineScenario(splotch, {
       label: 'change-colors',
       steps: BRAND.map((hex) => ({
         kind: 'click' as const,
-        target: `.color-swatch[data-color="${hex}"]`,
+        target: {
+          selector: `.color-swatch[data-color="${hex}"]`,
+          reason:
+            'the beat cycles the brand palette by hex; the paletteSwatch control selects any inactive swatch',
+        },
       })),
     },
     {
       label: 'stroke-size',
       steps: [
-        { kind: 'click', target: '#strokeWidthButton' },
-        { kind: 'click', target: 'button[aria-label="Size 5"]' },
+        { kind: 'click', target: 'strokeWidthMenu' },
+        { kind: 'click', target: 'strokeWidthLarge' },
         { kind: 'stroke', path: zigzag },
       ],
     },
     {
       label: 'erase',
       steps: [
-        { kind: 'click', target: '#brushButton' },
-        { kind: 'click', target: '#eraserButton' },
+        { kind: 'click', target: 'brushMenu' },
+        { kind: 'click', target: 'eraser' },
         { kind: 'stroke', path: circle },
       ],
     },
     {
       label: 'undo',
       steps: [
-        { kind: 'click', target: '#undoButton' },
-        { kind: 'click', target: '#undoButton' },
+        { kind: 'click', target: 'undo' },
+        { kind: 'click', target: 'undo' },
       ],
     },
     { label: 'clear', steps: [{ kind: 'dragBeyond', control: 'clear', fraction: 0.48 }] },

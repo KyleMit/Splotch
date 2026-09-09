@@ -8,6 +8,7 @@ import {
   deriveIdealFastSet,
   evaluateFastSet,
   appendFullRun,
+  type InstrumentRequest,
   type TargetDefinition,
 } from 'perf-rig';
 import { splotch } from './app.js';
@@ -27,19 +28,33 @@ export const FAST_UNDO_SCENARIO_KEYS = ['multi-finger', 'crayon-scribbles'] as c
 
 const ENGINE_ROUTE = { path: '/dev/engine', ready: 'window.__engineReady === true' } as const;
 
+interface EngineRunOptions {
+  readonly throttle?: number;
+  readonly reuseBuild?: boolean;
+}
+
+const engineInstruments = (options: EngineRunOptions): InstrumentRequest[] => [
+  { id: 'cdp-tracing' },
+  ...(options.throttle ? [{ id: 'cdp-cpu-throttle' as const, rate: options.throttle }] : []),
+];
+
 export async function runUndoScenarios(
   target: TargetDefinition,
-  options: {
+  options: EngineRunOptions & {
     readonly keys: readonly string[];
     readonly historyPath?: string;
     readonly history?: unknown;
   }
 ) {
-  const channel = await openChannel(splotch, target, ENGINE_ROUTE);
+  const channel = await openChannel(splotch, target, {
+    ...ENGINE_ROUTE,
+    build: { mode: options.reuseBuild ? 'reuse' : 'build' },
+    instruments: engineInstruments(options),
+  });
   try {
     const measurements: { key: string; first: number[]; confirmation?: number[] }[] = [];
     for (const key of options.keys) {
-      await channel.evaluate(`window.__engine.clearCanvas()`);
+      await channel.evaluate('window.__engine.clearCanvas()');
       const draw = await channel.evaluate<number[]>(
         `(async () => { /* run-undo-scenarios.mjs: drawStrokes for ${key}, settle via getUndoDebug, return engine.commit durations */ })()`
       );
@@ -82,8 +97,16 @@ export async function runUndoScenarios(
   }
 }
 
-export async function replayRecording(target: TargetDefinition, recordingPath: string) {
-  const channel = await openChannel(splotch, target, ENGINE_ROUTE);
+export async function replayRecording(
+  target: TargetDefinition,
+  recordingPath: string,
+  options: EngineRunOptions = {}
+) {
+  const channel = await openChannel(splotch, target, {
+    ...ENGINE_ROUTE,
+    build: { mode: options.reuseBuild ? 'reuse' : 'build' },
+    instruments: engineInstruments(options),
+  });
   try {
     await channel.trace?.start();
     await channel.evaluate(

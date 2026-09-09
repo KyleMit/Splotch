@@ -87,15 +87,15 @@ export type Step =
     }
   /**
    * Test the expression, and only while it is not satisfied run the body, settle, and test again.
-   * The expression is tested BEFORE the first body run: a satisfied expression runs the body zero
-   * times. A retry that ran its body first once toggled a closed menu open on the odd click.
+   * The expression is always tested before the first body run, so a satisfied expression runs the
+   * body zero times; a retry that ran its body first once toggled a closed menu open on the odd
+   * click.
    */
   | {
       readonly kind: 'retryUntil';
       readonly expression: PageExpression;
       readonly equals: Literal;
       readonly body: readonly Step[];
-      readonly checkFirst: true;
       readonly settleMs: number;
       readonly timeoutMs: number;
       readonly attempts?: number;
@@ -121,7 +121,11 @@ export interface Procedure {
   readonly postcondition?: Postcondition;
 }
 
-/** A procedure whose steps depend on a value; the parent declares the value set once. */
+/**
+ * A procedure whose steps depend on a value; the parent declares the value set once, and the
+ * package invokes `steps` and `postcondition` only with members of that set (`doctor` compiles
+ * every member).
+ */
 export interface ParameterisedProcedure<Value extends string> {
   readonly name: string;
   steps(value: Value): readonly Step[];
@@ -131,23 +135,33 @@ export interface ParameterisedProcedure<Value extends string> {
 export interface ProcedureResult {
   readonly name: string;
   readonly verified: boolean | 'unverified';
-  readonly activation?: 'trusted-touch' | 'dom-click';
+  readonly activation?:
+    | 'trusted-touch'
+    | 'trusted-cdp-touch'
+    | 'native-accessibility-click'
+    | 'webdriver-element-click'
+    | 'dom-click';
   /** Values recorded by `evaluate` steps, by `recordAs`. */
   readonly records: Readonly<Record<string, unknown>>;
   readonly channel: 'playwright' | 'webdriver' | 'in-page';
 }
 
-export interface PrimeReport {
-  readonly pending?: readonly string[];
-  readonly transparent: number;
-}
+/** What a prime function reports: surfaces still waiting for a backing, or the surfaces it checked and which of them are transparent. */
+export type PrimeReport =
+  | { readonly pending: readonly string[] }
+  | {
+      readonly tiles: number;
+      readonly backings: number;
+      readonly transparentTiles: readonly string[];
+    };
 
 /**
  * Work a tool needs before every pass so repeated passes measure the same thing (an eraser needs
- * ink). `apply` paints and reports; it is polled until it reports nothing pending within
- * `budgetMs`. After `settleMs`, `verify` runs and never paints; a wipe found there is repaired and
- * recorded as `repairedAfterSettle` rather than silently repainted. Between gesture passes the
- * harness proves the previous pass delivered a new trusted lift before priming again.
+ * ink). `apply` paints and reports; it is polled until it reports nothing pending and nothing
+ * transparent within `budgetMs`. After `settleMs`, `verify` runs and never paints; a wipe found
+ * there is repaired, re-proved, and recorded as `repairedAfterSettle`. Between gesture passes the
+ * harness proves the previous pass delivered a new trusted lift before priming again, and waits
+ * `idleFramesBetweenPasses` so the prime's own paint is outside the next in-contact window.
  */
 export interface PrimeProcedure {
   readonly name: string;
@@ -155,6 +169,5 @@ export interface PrimeProcedure {
   readonly verify: PageFunction<[], PrimeReport>;
   readonly settleMs: number;
   readonly budgetMs: number;
-  readonly onWipedDuringSettle: 'repair-and-record';
-  readonly betweenPasses: { readonly requireNewTrustedLift: true; readonly idleFrames: number };
+  readonly idleFramesBetweenPasses: number;
 }

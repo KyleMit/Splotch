@@ -7,12 +7,12 @@
  * artifact is stored whole; trimming `events` leaves the headline number plausible while the
  * fidelity verdict silently flips to false.
  *
- * Evidence and summaries are typed per scenario kind, so the acceptance rules the package ships and
- * the ones an app adds read the same fields through the same types.
+ * The artifact is a discriminated union on `scenario.kind`, so narrowing the kind narrows the
+ * report, evidence and summaries with it, and a rule written for one kind is a no-op for the rest.
  */
 
 import type { Activation } from './app.js';
-import type { FrameStampEpoch } from './probe.js';
+import type { ACTIONS_PROBE_SCHEMA, FrameStampEpoch } from './probe.js';
 import type { ResolvedActionPlan, ScenarioKind } from './scenario.js';
 import type { Platform, Shell } from './target.js';
 import type {
@@ -26,6 +26,7 @@ import type {
   MeasurementChannelId,
   InstrumentId,
   PageGeometry,
+  PrimeEntry,
 } from './transport.js';
 
 /** Everything that crosses the seam and can change independently, with the policy each follows. */
@@ -34,17 +35,18 @@ export declare const COMPAT: {
   readonly artifactSchema: 1;
   readonly framesProbeSchema: 2;
   readonly actionsProbeSchema: 2;
-  readonly frameStampEpoch: FrameStampEpoch;
-  /** Bumps whenever any `summarise*` or `evaluate*` output can change on identical rows; an app regenerates its golden ledgers in the same change that adopts it. */
+  readonly frameStampEpoch: typeof ACTIONS_PROBE_SCHEMA.frameStampEpoch;
+  /**
+   * Bumps whenever any `summarise*` or `evaluate*` output can change on identical rows. A golden
+   * ledger records the epoch it was generated under and its test refuses to compare across a
+   * mismatch, so a scorer change without a bump, or a bump without a regeneration, fails by name.
+   */
   readonly scoringEpoch: number;
   /** Package-owned; the app name travels as a separate header. */
   readonly probeHostProtocol: `perf-rig/${number}`;
 };
 
-/**
- * Guards run before measurement. A failed guard outside the request's `tolerate` list stops the
- * capture with exit 2, and the artifact is written with the ledger so the failure is evidence.
- */
+/** Guards run before measurement. A failed guard outside `tolerate` stops the capture with exit 2. */
 export type GuardId =
   | 'refused-build-variant'
   | 'build-seams-present'
@@ -75,18 +77,20 @@ export type VerdictId =
   | 'gesture-repeats'
   | 'prime-between-passes'
   | 'repeated-action-proof'
-  | 'capture-runtime'
+  | 'capture-shell'
   | 'host-quiet'
   | 'instrument-restored';
 
 /**
  * `verified`: ran and held. `failed`: ran and did not. `unrecorded`: should have run on this
  * transport and did not; a reader treats it as failed. `not-applicable`: does not apply to this
- * transport, by the package's table, never by omission.
+ * transport, by the package's table, never by omission. `tolerated`: failed, and the request named
+ * it as an accepted exception.
  */
 export interface TrustEntry {
   readonly name: GuardId | VerdictId;
-  readonly state: 'verified' | 'failed' | 'unrecorded' | 'not-applicable';
+  readonly state: 'verified' | 'failed' | 'tolerated' | 'unrecorded' | 'not-applicable';
+  readonly evaluatedBy: 'host' | 'page';
   readonly detail?: string;
 }
 
@@ -102,8 +106,10 @@ export interface Provenance {
   readonly capturedAt: string;
   readonly nonce: string | null;
   readonly pageIdentity:
-    'proved-by-url' | 'proved-by-attached-target' | 'proved-by-container-nonce' | 'unprovable';
+    'proven-by-url' | 'proven-by-attached-target' | 'proven-by-container-nonce' | 'unprovable';
   readonly pageDelivery: 'browser' | 'remote-preview' | 'packaged';
+  /** The gate policy the capture-time verdicts were scored under; a fold re-evaluates under the current one. */
+  readonly gatePolicyDigest: string | null;
 }
 
 export interface FramesEvidence {
@@ -113,11 +119,7 @@ export interface FramesEvidence {
   readonly prime?: {
     readonly verified: boolean;
     readonly repairedAfterSettle: boolean;
-    readonly betweenPasses: readonly {
-      readonly afterStroke: number;
-      readonly ok: boolean;
-      readonly detail?: string;
-    }[];
+    readonly betweenPasses: readonly PrimeEntry[];
   };
   readonly paintedOutput:
     { readonly changed: boolean; readonly surfaces: number } | { readonly error: string };
@@ -131,13 +133,16 @@ export interface FramesEvidence {
       readonly index: number;
       readonly engineMs: number;
       readonly nextFrameMs: number;
+      readonly startedAt: number;
+      readonly endedAt: number;
     }[];
   };
   readonly hostQuiet?: {
-    readonly load1Start: number;
-    readonly load1End: number;
+    readonly samples: readonly number[];
     readonly cores: number;
     readonly thresholdPerCore: number;
+    readonly load1Start: number;
+    readonly load1End: number;
   };
 }
 
@@ -145,7 +150,7 @@ export interface ActionsEvidence {
   readonly plan: ResolvedActionPlan;
   readonly frameStampEpoch: FrameStampEpoch;
   readonly activation: Activation;
-  /** Allowances the capture was scored under; the fold re-scores under current policy and refuses a superset. */
+  /** Keyed by action id. The fold re-scores under current policy and refuses a superset. */
   readonly gateAllowances: Readonly<
     Record<string, { readonly p95Ms?: number; readonly maxMs?: number }>
   >;
@@ -194,8 +199,13 @@ export type ReportFor<K extends ScenarioKind> = K extends 'frames'
     ? ActionsReport
     : TraceReport;
 
-export interface CaptureArtifact<K extends ScenarioKind = ScenarioKind> {
-  readonly schema: { readonly name: 'perf-rig.capture'; readonly version: 1 };
+export interface CaptureArtifactOf<K extends ScenarioKind> {
+  readonly schema: {
+    readonly name: 'perf-rig.capture';
+    readonly version: typeof COMPAT.artifactSchema;
+  };
+  /** Top-level discriminant, duplicated from `scenario.kind` so narrowing works on the artifact itself. */
+  readonly kind: K;
   readonly label: string;
   readonly target: string;
   readonly scenario: { readonly kind: K; readonly id: string };
@@ -226,6 +236,8 @@ export interface CaptureArtifact<K extends ScenarioKind = ScenarioKind> {
   readonly summaries?: SummariesFor<K>;
   readonly verdicts?: Readonly<Record<string, Verdict>>;
 }
+
+export type CaptureArtifact = { [K in ScenarioKind]: CaptureArtifactOf<K> }[ScenarioKind];
 
 export interface FramesReport {
   readonly meta: {
@@ -279,8 +291,19 @@ export interface Verdict {
   readonly reasons: readonly string[];
 }
 
-/** Which shell an artifact proves it measured, from transport, packaged origin and package; contradictory fields match neither. */
-export declare function runtimeOf(artifact: CaptureArtifact): Shell | 'contradictory';
+/**
+ * Which shell an artifact proves it measured, from transport, packaged origin and package against
+ * the app's native contract. Contradictory fields are named so acceptance can quote them.
+ */
+export declare function shellOf(
+  artifact: CaptureArtifact,
+  native:
+    | {
+        readonly android?: { readonly package: string; readonly packagedOrigin: string };
+        readonly ios?: { readonly packagedOrigin: string };
+      }
+    | undefined
+): { readonly shell: Shell } | { readonly contradictory: readonly string[] };
 
 export declare function artifactDirectory(root: string, label: string, now?: Date): string;
 /** Refuses an unknown schema; an app upgrades its pre-package corpus with its own reader. */

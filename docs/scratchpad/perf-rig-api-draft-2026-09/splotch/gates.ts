@@ -1,4 +1,5 @@
-// Every number is Splotch's, copied from the shipped ledgers with its basis. The package evaluates.
+// Every number is Splotch's, transcribed from the shipped ledgers with its basis; a Splotch drift
+// test pins this file against the tracked corpus from phase 0. The package evaluates.
 import { defineGates, type FidelityExpectations } from 'perf-rig';
 import type { SplotchRuntime } from './targets.js';
 
@@ -29,12 +30,11 @@ export const gates = defineGates({
     frameMaxMs: 33.5,
     firstFrameMs: 33.5,
     maxBreachConfirmingSamples: 2,
-    warmupRepeats: 1,
     minGatedSamples: 3,
     allowances: [
       {
         target: 'ipad-device-browser',
-        adrs: ['ADR-0090', 'ADR-0160'],
+        references: ['ADR-0090', 'ADR-0160'],
         entries: [
           {
             actionId: 'settings.open',
@@ -44,16 +44,24 @@ export const gates = defineGates({
           },
           { actionId: 'settings.close', p95Ms: 22, basis: 'ADR-0160' },
           { actionId: 'coloring.select-page', p95Ms: 30, basis: 'ADR-0160' },
-          { actionId: 'theme.switch', p95Ms: 23, basis: 'ADR-0160 (light to dark)' },
-          { actionId: 'rotation.with-ink', p95Ms: 26, basis: 'ADR-0160 (portrait to landscape)' },
+          {
+            actionId: 'theme.to-dark',
+            p95Ms: 23,
+            basis: 'ADR-0160: light to dark only; the reverse reads 17–18 ms on the base gate',
+          },
+          {
+            actionId: 'rotation.with-ink.portrait-to-landscape',
+            p95Ms: 26,
+            basis: 'ADR-0160: one direction only',
+          },
         ],
       },
       {
         target: 'android-device-browser',
-        adrs: ['ADR-0162'],
+        references: ['ADR-0162'],
         entries: [
           {
-            actionId: 'theme.switch',
+            actionId: 'theme.compact-disable',
             p95Ms: 33.5,
             basis: 'ADR-0162: compact-shell Night Mode toggle, GPU-attributed',
           },
@@ -83,8 +91,25 @@ export const gates = defineGates({
   },
 });
 
-// Calibrated against the tracked corpus in perf-profiles/evidence (ADR-0139/0141/0144/0145).
-// trustedTouch and cadence are universal; the per-runtime checks describe a runtime.
+// Transcribed from RUNTIME_EXPECTATIONS in tools/perf/lib/input-fidelity.mjs. trustedTouch and
+// cadence are universal; both iOS runtimes share the hand-calibrated pressure and contact checks.
+const IOS_PRESSURE = {
+  state: 'calibrated',
+  bounds: { min: 0, max: 0 },
+  basis: '2026-08-23 iPad hand corpus: Safari reports pressure 0 for a finger',
+  negativeControl: 'SafariDriver actions (pressure 0, contact 13,660 px)',
+} as const;
+const IOS_CONTACT = {
+  state: 'calibrated',
+  bounds: { min: 40, max: 100 },
+  basis: '2026-08-23 iPad hand corpus (~74 px radius)',
+  negativeControl: 'SafariDriver actions',
+} as const;
+const COALESCING_WITNESS = {
+  state: 'not-applicable',
+  basis: 'ADR-0144: tracks page delivery, not input; floors at 1',
+} as const;
+
 export const fidelity: FidelityExpectations<SplotchRuntime> = {
   universal: {
     cadence: {
@@ -96,27 +121,14 @@ export const fidelity: FidelityExpectations<SplotchRuntime> = {
   },
   runtimes: {
     'ios-safari': {
-      pressure: {
-        state: 'calibrated',
-        bounds: { min: 0, max: 0 },
-        basis: '2026-08-23 iPad hand corpus',
-        negativeControl: 'SafariDriver actions (pressure 0, contact 13,660 px)',
-      },
-      contactGeometry: {
-        state: 'calibrated',
-        bounds: { min: 40, max: 100 },
-        basis: '2026-08-23 iPad hand corpus (~74 px radius)',
-        negativeControl: 'SafariDriver actions',
-      },
-      coalescing: {
-        state: 'not-applicable',
-        basis: 'ADR-0144: tracks page delivery, not input; floors at 1',
-      },
+      pressure: IOS_PRESSURE,
+      contactGeometry: IOS_CONTACT,
+      coalescing: COALESCING_WITNESS,
     },
     'ios-capacitor-webview': {
-      pressure: { state: 'uncalibrated' },
-      contactGeometry: { state: 'uncalibrated' },
-      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
+      pressure: IOS_PRESSURE,
+      contactGeometry: IOS_CONTACT,
+      coalescing: COALESCING_WITNESS,
     },
     'android-chrome': {
       pressure: {
@@ -124,7 +136,7 @@ export const fidelity: FidelityExpectations<SplotchRuntime> = {
         basis: 'issue 1218: reports 1 for finger and robot alike',
       },
       contactGeometry: { state: 'not-applicable', basis: 'issue 1218: no radius reported' },
-      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
+      coalescing: COALESCING_WITNESS,
     },
     'android-capacitor-webview': {
       pressure: { state: 'not-applicable', basis: 'issue 1274 two-arm evidence' },
@@ -132,15 +144,12 @@ export const fidelity: FidelityExpectations<SplotchRuntime> = {
         state: 'not-applicable',
         basis: 'ADR-0144 amendment: separates driver from driver, not faithful from unfaithful',
       },
-      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
+      coalescing: COALESCING_WITNESS,
     },
     'desktop-playwright': {
-      pressure: {
-        state: 'not-applicable',
-        basis: 'synthetic by construction; desktop is advisory',
-      },
-      contactGeometry: { state: 'not-applicable', basis: 'synthetic by construction' },
-      coalescing: { state: 'not-applicable', basis: 'ADR-0144' },
+      pressure: { state: 'uncalibrated' },
+      contactGeometry: { state: 'uncalibrated' },
+      coalescing: COALESCING_WITNESS,
     },
   },
 };

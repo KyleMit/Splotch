@@ -39,9 +39,14 @@ export declare function renderProbe(
 export declare function configureProbe(probe: RenderedProbe, config: ProbeConfig): string;
 
 export interface ProbeConfig {
-  readonly phases: readonly { readonly key: string; readonly paper: 'blank' | 'page' }[];
+  readonly phases: readonly {
+    readonly key: string;
+    readonly paper: 'blank' | 'page';
+    readonly suppress?: readonly { readonly kind: 'css'; readonly css: string }[];
+  }[];
   readonly contactCapMs: number;
   readonly hud: boolean;
+  /** A label the probe records; the driver selects the tool before the probe is installed. */
   readonly tool?: string;
   /** Only for `input.kind: 'probe-synthetic'`. */
   readonly drive?: {

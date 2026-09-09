@@ -1,6 +1,13 @@
 // The Splotch app contract. Every selector, hook, mark and seam the harness may touch, declared
 // once; the drift guards that hold them against the components stay in the Splotch repo.
-import { defineApp, type PageFunction, type PrimeReport, type Selector } from 'perf-rig';
+import {
+  defineApp,
+  type LockState,
+  type PageFunction,
+  type PrimeReport,
+  type Selector,
+  type Step,
+} from 'perf-rig';
 
 export const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'] as const;
 export type Brush = (typeof BRUSHES)[number];
@@ -14,16 +21,18 @@ const BRUSH_BUTTON = {
 
 const EXPAND_CONTROLS = 'button[aria-label="Expand controls"]';
 const SETTINGS_BUTTON = '#settingsButton';
-const SETTINGS_MODAL = '#settingsModal';
 const SETTINGS_CLOSE = '#settingsModal button[aria-label="Close"]';
 const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
+const APPEARANCE_SECTION = '#settingsModal button[data-section="appearance"]';
 const RESOLVED_THEME =
   'document.documentElement.dataset.theme ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")';
 const HYDRATED = 'typeof window.__committedBrushMode === "function"';
+const SETTINGS_OPEN = 'document.querySelector("#settingsModal")?.open === true';
+const SETTINGS_CLOSED = 'document.querySelector("#settingsModal")?.open !== true';
 
 // Sources shipped verbatim into the bootstrap; the real bodies live in tools/perf/lib today.
 const ERASER_FILL_APPLY =
-  'function applyEraserFill() { /* eraser-fill.mjs: paint #7c4dff into every canvas[data-live-tile] whose data-tile-backing matches, sample five points */ }' as PageFunction<
+  'function applyEraserFill() { /* eraser-fill.mjs: paint #7c4dff into every canvas[data-live-tile] whose data-tile-backing matches; report {pending} or {tiles, backings, transparentTiles} */ }' as PageFunction<
     [],
     PrimeReport
   >;
@@ -33,16 +42,51 @@ const ERASER_FILL_VERIFY =
     PrimeReport
   >;
 const UNDO_DRIVE =
-  'function driveUndo(index) { /* undo-driver.mjs: click #undoButton, await one new engine.undo measure and one rAF, return {index, engineMs, nextFrameMs, beforeCount, afterCount} */ }' as PageFunction<
+  'function driveUndo(index) { /* undo-driver.mjs: click #undoButton, await one new engine.undo measure and one rAF */ }' as PageFunction<
     [number],
     {
       index: number;
+      startedAt: number;
+      endedAt: number;
       engineMs: number;
       nextFrameMs: number;
       beforeCount: number;
       afterCount: number;
     } | null
   >;
+
+const openSettings: readonly Step[] = [
+  {
+    kind: 'retryUntil',
+    expression: SETTINGS_OPEN,
+    equals: true,
+    settleMs: 400,
+    timeoutMs: 20_000,
+    body: [{ kind: 'click', target: SETTINGS_BUTTON }],
+  },
+];
+const closeSettings: readonly Step[] = [
+  { kind: 'click', target: SETTINGS_CLOSE },
+  { kind: 'until', expression: SETTINGS_CLOSED, equals: true, timeoutMs: 25_000 },
+  { kind: 'settle', ms: 1100, reason: 'dialog close transition and shell re-render' },
+];
+const openAppearance: readonly Step[] = [
+  {
+    kind: 'ifPresent',
+    target: '#lockRotationToggle',
+    then: [],
+    else: [
+      { kind: 'click', target: APPEARANCE_SECTION },
+      { kind: 'waitPresent', target: '#lockRotationToggle', timeoutMs: 10_000 },
+    ],
+  },
+];
+
+// The rotation lock lives in the Appearance section of the sectioned shell and as quick toggles in
+// the compact shell; tablets render none (the platform owns rotation). The lock read feeds release,
+// whose result feeds restore, so an unlocked device is never locked on the way out.
+const ROTATION_LOCK_STATE =
+  '(() => { const q = document.querySelector("#quickLockPortrait, #quickLockLandscape"); if (q) return document.querySelector("[id^=quickLock][aria-pressed=true]") ? "locked" : "unlocked"; const t = document.querySelector("#lockRotationToggle"); if (!t) return "platform-owned"; return t.getAttribute("aria-checked") === "true" ? "locked" : "unlocked"; })()';
 
 export const splotch = defineApp({
   name: 'splotch',
@@ -127,15 +171,7 @@ export const splotch = defineApp({
         set: {
           name: 'theme-through-settings',
           steps: (theme) => [
-            {
-              kind: 'retryUntil',
-              expression: 'document.querySelector("#settingsModal")?.open === true',
-              equals: true,
-              checkFirst: true,
-              settleMs: 400,
-              timeoutMs: 20_000,
-              body: [{ kind: 'click', target: SETTINGS_BUTTON }],
-            },
+            ...openSettings,
             {
               kind: 'ifPresent',
               target: COMPACT_SHELL_MARKER,
@@ -145,7 +181,6 @@ export const splotch = defineApp({
                   expression:
                     'document.querySelector("#quickNightToggle")?.getAttribute("aria-checked")',
                   equals: String(theme === 'dark'),
-                  checkFirst: true,
                   settleMs: 400,
                   timeoutMs: 10_000,
                   body: [{ kind: 'click', target: '#quickNightToggle' }],
@@ -157,10 +192,7 @@ export const splotch = defineApp({
                   target: '#themeOption-light',
                   then: [],
                   else: [
-                    {
-                      kind: 'click',
-                      target: `${SETTINGS_MODAL} button[data-section="appearance"]`,
-                    },
+                    { kind: 'click', target: APPEARANCE_SECTION },
                     { kind: 'waitPresent', target: '#themeOption-light', timeoutMs: 10_000 },
                   ],
                 },
@@ -168,14 +200,7 @@ export const splotch = defineApp({
               ],
             },
             { kind: 'until', expression: RESOLVED_THEME, equals: theme, timeoutMs: 20_000 },
-            { kind: 'click', target: SETTINGS_CLOSE },
-            {
-              kind: 'until',
-              expression: 'document.querySelector("#settingsModal")?.open !== true',
-              equals: true,
-              timeoutMs: 5000,
-            },
-            { kind: 'settle', ms: 400, reason: 'dialog close transition' },
+            ...closeSettings,
           ],
           postcondition: (theme) => ({
             expression: RESOLVED_THEME,
@@ -189,32 +214,64 @@ export const splotch = defineApp({
         read: 'innerWidth > innerHeight ? "LANDSCAPE" : "PORTRAIT"',
         set: {
           via: 'transport',
+          capability: 'orientation',
           map: { PORTRAIT: 'PORTRAIT', LANDSCAPE: 'LANDSCAPE' },
-          releaseLock: {
-            name: 'release-native-rotation-lock',
-            steps: [
-              { kind: 'click', target: SETTINGS_BUTTON },
-              { kind: 'waitPresent', target: SETTINGS_MODAL, timeoutMs: 10_000 },
-              {
-                kind: 'ifPresent',
-                target: '#lockRotationToggle[aria-checked="true"]',
-                then: [{ kind: 'click', target: '#lockRotationToggle' }],
-              },
-              { kind: 'click', target: SETTINGS_CLOSE },
-            ],
-          },
-          restoreLock: {
-            name: 'restore-native-rotation-lock',
-            steps: [
-              { kind: 'click', target: SETTINGS_BUTTON },
-              { kind: 'waitPresent', target: SETTINGS_MODAL, timeoutMs: 10_000 },
-              {
-                kind: 'ifPresent',
-                target: '#lockRotationToggle[aria-checked="false"]',
-                then: [{ kind: 'click', target: '#lockRotationToggle' }],
-              },
-              { kind: 'click', target: SETTINGS_CLOSE },
-            ],
+          lock: {
+            read: `(() => { const settingsWasOpen = ${SETTINGS_OPEN}; return ${ROTATION_LOCK_STATE}; })()`,
+            release: {
+              name: 'release-rotation-lock',
+              steps: (state: LockState) =>
+                state !== 'locked'
+                  ? []
+                  : [
+                      ...openSettings,
+                      {
+                        kind: 'ifPresent',
+                        target: COMPACT_SHELL_MARKER,
+                        then: [{ kind: 'click', target: '[id^=quickLock][aria-pressed=true]' }],
+                        else: [...openAppearance, { kind: 'click', target: '#lockRotationToggle' }],
+                      },
+                      {
+                        kind: 'until',
+                        expression: ROTATION_LOCK_STATE,
+                        equals: 'unlocked',
+                        timeoutMs: 10_000,
+                      },
+                      ...closeSettings,
+                    ],
+              postcondition: (state: LockState) => ({
+                expression: ROTATION_LOCK_STATE,
+                equals: state === 'platform-owned' ? 'platform-owned' : 'unlocked',
+                timeoutMs: 10_000,
+              }),
+            },
+            restore: {
+              name: 'restore-rotation-lock',
+              steps: (state: LockState) =>
+                state !== 'locked'
+                  ? []
+                  : [
+                      ...openSettings,
+                      {
+                        kind: 'ifPresent',
+                        target: COMPACT_SHELL_MARKER,
+                        then: [{ kind: 'click', target: '#quickLockPortrait' }],
+                        else: [...openAppearance, { kind: 'click', target: '#lockRotationToggle' }],
+                      },
+                      {
+                        kind: 'until',
+                        expression: ROTATION_LOCK_STATE,
+                        equals: 'locked',
+                        timeoutMs: 10_000,
+                      },
+                      ...closeSettings,
+                    ],
+              postcondition: (state: LockState) => ({
+                expression: ROTATION_LOCK_STATE,
+                equals: state,
+                timeoutMs: 10_000,
+              }),
+            },
           },
         },
       },
@@ -230,7 +287,6 @@ export const splotch = defineApp({
           kind: 'retryUntil',
           expression: `window.__committedBrushMode?.() === ${JSON.stringify(brush)}`,
           equals: true,
-          checkFirst: true,
           settleMs: 500,
           timeoutMs: 12_000,
           attempts: 4,
@@ -256,7 +312,6 @@ export const splotch = defineApp({
           kind: 'retryUntil',
           expression: '!document.querySelector("#penBrushButton")?.offsetParent',
           equals: true,
-          checkFirst: true,
           settleMs: 500,
           timeoutMs: 5000,
           attempts: 3,
@@ -276,8 +331,7 @@ export const splotch = defineApp({
         verify: ERASER_FILL_VERIFY,
         settleMs: 400,
         budgetMs: 4000,
-        onWipedDuringSettle: 'repair-and-record',
-        betweenPasses: { requireNewTrustedLift: true, idleFrames: 2 },
+        idleFramesBetweenPasses: 2,
       },
     },
     admits: { pen: ['undo'] },
@@ -287,7 +341,7 @@ export const splotch = defineApp({
       selector: '#undoButton',
       enabled: '!document.querySelector("#undoButton").disabled',
       measure: 'engine.undo',
-      activate: 'dom',
+      activation: 'dom',
       drive: UNDO_DRIVE,
     },
     clear: {
@@ -327,14 +381,9 @@ export const splotch = defineApp({
     },
     strokeWidthMenu: { selector: '#strokeWidthButton' },
     strokeWidthOption: { selector: '.stroke-width-menu button[aria-pressed="false"]' },
-    settings: {
-      selector: SETTINGS_BUTTON,
-      ready: 'document.querySelector("#settingsModal")?.open === true',
-    },
-    closeSettings: {
-      selector: SETTINGS_CLOSE,
-      ready: 'document.querySelector("#settingsModal")?.open !== true',
-    },
+    strokeWidthLarge: { selector: 'button[aria-label="Size 5"]' },
+    settings: { selector: SETTINGS_BUTTON, ready: SETTINGS_OPEN },
+    closeSettings: { selector: SETTINGS_CLOSE, ready: SETTINGS_CLOSED },
     settingsSection: {
       selector: '#settingsModal button[data-section]',
       ready: '!!document.querySelector("#settingsModal .settings-pane, #settingsModal .hub-list")',
@@ -343,6 +392,7 @@ export const splotch = defineApp({
       selector: '#settingsModal button[data-section="parent"]',
       ready: '!!document.querySelector("#parentalGate")',
     },
+    closeParentalGate: { selector: '#parentalGate button[aria-label="Close"]' },
     themeLight: {
       selector: '#themeOption-light',
       ready: 'document.documentElement.dataset.theme === "light"',
@@ -353,8 +403,10 @@ export const splotch = defineApp({
     },
     quickNightToggle: { selector: '#quickNightToggle', ready: 'true' },
     soundToggle: { selector: '#soundToggle' },
+    quickSoundToggle: { selector: '#quickSoundToggle' },
     saveOnDeleteToggle: { selector: '#saveOnDeleteToggle' },
     advancedControlsToggle: { selector: '#advancedControlsToggle' },
+    quickAdvancedControlsToggle: { selector: '#quickAdvancedControlsToggle' },
     screenshotToggle: { selector: '#screenshotToggle' },
     coloringBooks: {
       selector: '#coloringBookButton',
@@ -389,8 +441,6 @@ export const splotch = defineApp({
     ios: {
       bundleId: 'art.splotch.app',
       packagedOrigin: 'capacitor://localhost',
-      wdaBundleId: 'art.splotch.WebDriverAgentRunner',
-      xcodeConfigFile: 'ios/local.xcconfig',
       build: { command: ['npm', 'run', 'perf:build:cap'] },
       install: { command: ['npm', 'run', 'ios:run:device'] },
     },

@@ -5,31 +5,37 @@ import {
   capture,
   serve,
   serveProbeHost,
-  serveFloorControl,
-  preflight,
-  planRelease,
-  release,
-  operatorSession,
-  calibrate,
-  planCampaign,
-  runCampaign,
-  campaignStatus,
-  rescore,
-  keepEvidence,
+  doctor,
+  planCapture,
   renderProbe,
   configureProbe,
-  planCapture,
-  scanForDeviceIdentifiers,
   type CaptureRequest,
   type CaptureOptions,
   type Scenario,
   type TargetDefinition,
 } from 'perf-rig';
+import {
+  planCampaign,
+  runCampaign,
+  campaignStatus,
+  rescore,
+  keepEvidence,
+} from 'perf-rig/campaign';
+import {
+  preflight,
+  planRelease,
+  release,
+  operatorSession,
+  calibrate,
+  serveFloorControl,
+  scanForDeviceIdentifiers,
+} from 'perf-rig/rig';
 import { splotch, type Brush, type Splotch } from './app.js';
 import { targets } from './targets.js';
 import { gates } from './gates.js';
 import { rig } from './rig.js';
 import { deploymentCampaign } from './campaign.js';
+import { operatorSteps } from './operator.js';
 import { upgradeLegacyArtifact } from './legacy-artifacts.js';
 import { drawingCell, localFrames, realScreenSweep, paperControls } from './scenarios/drawing.js';
 import { actionSweep, focusedActions } from './scenarios/actions.js';
@@ -65,6 +71,10 @@ const viewportOf = (
       }
     : fallback;
 };
+const throttle = (flags: Flags, fallback: number) =>
+  flags['no-throttle']
+    ? []
+    : [{ id: 'cdp-cpu-throttle' as const, rate: num(flags, 'throttle') ?? fallback }];
 
 const PHONE = { width: 412, height: 915, deviceScaleFactor: 2.6 };
 const IPAD_PRO = { width: 1366, height: 915, deviceScaleFactor: 2 };
@@ -111,10 +121,11 @@ const common = (flags: Flags): CaptureOptions<Splotch> => ({
     port: num(flags, 'port'),
     probeHostPort: num(flags, 'probe-port'),
     attachOnly: flags['no-serve'] === true,
+    noRebind: flags['no-rebind'] === true,
   },
   dimensions: {
-    ...(flags['theme'] ? { theme: str(flags, 'theme') } : {}),
-    ...(flags['orientation'] ? { orientation: str(flags, 'orientation') } : {}),
+    theme: str(flags, 'theme') as 'light' | 'dark' | undefined,
+    orientation: str(flags, 'orientation') as 'PORTRAIT' | 'LANDSCAPE' | undefined,
   },
   headed: flags['headed'] === true,
   reportOnly: flags['report-only'] === true,
@@ -122,6 +133,7 @@ const common = (flags: Flags): CaptureOptions<Splotch> => ({
   refreshRegime: str(flags, 'refresh-regime'),
   device: {
     id: str(flags, 'device-id') ?? str(flags, 'device-serial') ?? str(flags, 'device-udid'),
+    name: str(flags, 'name'),
     appiumUrl: str(flags, 'appium-url'),
     capabilitiesFile: str(flags, 'capabilities-file'),
     sessionId: str(flags, 'session-id'),
@@ -132,27 +144,38 @@ const common = (flags: Flags): CaptureOptions<Splotch> => ({
     deviceClass: str(flags, 'device-class') as 'tablet' | undefined,
   },
   scenarioOverrides: {
-    repeats: num(flags, 'gesture-repeats') ?? num(flags, 'repeats'),
-    pauseMs: num(flags, 'repeat-pause-ms'),
+    gestureRepeats: num(flags, 'gesture-repeats'),
+    gesturePauseMs: num(flags, 'repeat-pause-ms'),
     contactCapMs: num(flags, 'contact-seconds') ? num(flags, 'contact-seconds')! * 1000 : undefined,
     phases: list(flags, 'phases'),
-    repeatedAction: { count: num(flags, 'undo-count'), pauseMs: num(flags, 'undo-pause-ms') },
-    groups: list(flags, 'actions'),
-    drive: flags['drive']
+    tool: str(flags, 'brush'),
+    hud: flags['no-hud'] ? false : flags['hud'] ? true : undefined,
+    input: flags['drive']
       ? {
-          shape: str(flags, 'drive') as 'mixed',
+          kind: 'probe-synthetic',
+          shape: str(flags, 'drive') as 'mixed' | undefined,
           hz: num(flags, 'drive-hz'),
-          pointerType: str(flags, 'pointer-type') as 'touch',
+          pointerType: str(flags, 'pointer-type') as 'touch' | undefined,
         }
       : undefined,
+    repeatedAction: {
+      count: num(flags, 'undo-count'),
+      pauseMs: num(flags, 'undo-pause-ms'),
+      rotateBefore: flags['rotate-before-undo'] === true,
+      settleMs: num(flags, 'history-settle-ms'),
+    },
+    actionRepeats: num(flags, 'repeats')
+      ? { warmup: 1, scored: num(flags, 'repeats')! - 1 }
+      : undefined,
+    groups: list(flags, 'actions'),
     freeDrawSeconds: num(flags, 'free-draw'),
-    rotateBeforeRepeatedAction: flags['rotate-before-undo'] === true,
   },
-  human: { seconds: num(flags, 'seconds'), open: str(flags, 'open') as 'adb' | undefined },
+  human: {
+    seconds: num(flags, 'seconds'),
+    open: str(flags, 'open') as 'adb' | undefined,
+    terminateExisting: flags['terminate-existing'] === true,
+  },
   instruments: [
-    ...(num(flags, 'throttle') && !flags['no-throttle']
-      ? [{ id: 'cdp-cpu-throttle' as const, rate: num(flags, 'throttle')! }]
-      : []),
     ...(flags['trace'] === true ? [{ id: 'cdp-tracing' as const }] : []),
     ...(flags['timeline'] === true ? [{ id: 'webkit-timeline-count' as const }] : []),
   ],
@@ -168,22 +191,23 @@ const request = <S extends Scenario<Splotch>>(
   target,
   scenario,
   gates,
-  rig,
+  host: rig,
   options: { ...common(flags), ...extra },
 });
 
 const deviceOf = (flags: Flags, fallback: keyof typeof DEVICES = 'phone') =>
   DEVICES[(str(flags, 'device') as keyof typeof DEVICES | undefined) ?? fallback];
+const iosSplitTarget = (flags: Flags) =>
+  targets[flags['native-app'] ? 'ipad-device-packaged' : 'ipad-device-browser'];
+const androidSplitTarget = (flags: Flags) =>
+  targets[flags['native-app'] ? 'android-device-packaged' : 'android-device-browser'];
 
 export const scripts = {
   // ---- local web, session shape
   'perf:web': (f: Flags) =>
     capture(
       request(local('chromium', deviceOf(f)), toddlerSession, f, {
-        instruments: [
-          { id: 'cdp-cpu-throttle', rate: num(f, 'throttle') ?? 4 },
-          { id: 'cdp-tracing' },
-        ],
+        instruments: [...throttle(f, 4), { id: 'cdp-tracing' }],
       })
     ),
   'perf:web:raw': (f: Flags) =>
@@ -206,32 +230,48 @@ export const scripts = {
     capture(
       request(local('chromium', deviceOf(f)), mount, f, {
         instruments: [
-          { id: 'cdp-cpu-throttle', rate: num(f, 'throttle') ?? 4 },
+          ...throttle(f, 4),
           { id: 'cdp-tracing' },
           { id: 'cdp-network-emulation', profile: 'slow-4g' },
         ],
       })
     ),
   'perf:web:settings': (f: Flags) =>
-    capture(request(local('chromium'), settingsFirstShow, f, { repeats: num(f, 'repeats') ?? 3 })),
+    capture(
+      request(local('chromium'), settingsFirstShow, f, {
+        scenarioOverrides: { cycles: num(f, 'repeats') ?? 3 },
+      })
+    ),
   // ---- frames shape
   'perf:web:frames': (f: Flags) =>
     capture(
-      request(local(engineOf(f, 'webkit'), viewportOf(f, IPAD_PRO)), localFrames(brushOf(f)), f)
+      request(local(engineOf(f, 'webkit'), viewportOf(f, IPAD_PRO)), localFrames(brushOf(f)), f, {
+        instruments: throttle(f, 1),
+      })
     ),
   'perf:ios:webkit:frames': (f: Flags) =>
     capture(
       request(targets['ipad-device-browser'], realScreenSweep, f, {
-        transport: { input: 'human', channel: 'webkit-inspector' },
+        transport: {
+          input: f['drive'] ? 'desktop-playwright' : 'human',
+          channel: 'webkit-inspector',
+        },
       })
     ),
   'perf:ios:xcuitest:screen': (f: Flags) =>
     capture(
       request(
-        targets[f['native-app'] ? 'ipad-device-packaged' : 'ipad-device-browser'],
+        iosSplitTarget(f),
         drawingCell(brushOf(f)),
         f,
-        f['hand-input'] ? { transport: { input: 'human' } } : undefined
+        f['bundled-report']
+          ? {
+              transport: {
+                input: f['hand-input'] ? 'human' : 'appium',
+                channel: 'preferences-mailbox',
+              },
+            }
+          : undefined
       )
     ),
   'perf:ios:bundled:frames': (f: Flags) =>
@@ -243,13 +283,7 @@ export const scripts = {
   'perf:device:frames': (f: Flags) =>
     capture(
       request(
-        targets[
-          str(f, 'platform') === 'ios'
-            ? 'ipad-device-browser'
-            : f['native-app']
-              ? 'android-device-packaged'
-              : 'android-device-browser'
-        ],
+        str(f, 'platform') === 'ios' ? iosSplitTarget(f) : androidSplitTarget(f),
         drawingCell(brushOf(f)),
         f,
         {
@@ -263,13 +297,7 @@ export const scripts = {
   'perf:device:hand': (f: Flags) =>
     capture(
       request(
-        targets[
-          str(f, 'platform') === 'ios'
-            ? 'ipad-device-packaged'
-            : f['native-app']
-              ? 'android-device-packaged'
-              : 'android-device-browser'
-        ],
+        str(f, 'platform') === 'ios' ? iosSplitTarget(f) : androidSplitTarget(f),
         drawingCell(brushOf(f)),
         f,
         { transport: { input: 'human', channel: 'http-upload' } }
@@ -290,20 +318,16 @@ export const scripts = {
       request(
         local(engineOf(f, 'webkit'), viewportOf(f, DESKTOP_ACTIONS)),
         f['actions'] ? focusedActions(list(f, 'actions')!) : actionSweep,
-        f,
-        { repeats: num(f, 'repeats') ?? 4 }
+        f
       )
     ),
   'perf:ios:xcuitest:actions': (f: Flags) =>
     capture(
       request(
-        targets[f['native-app'] ? 'ipad-device-packaged' : 'ipad-device-browser'],
+        iosSplitTarget(f),
         f['actions'] ? focusedActions(list(f, 'actions')!) : actionSweep,
         f,
-        {
-          repeats: num(f, 'repeats') ?? 4,
-          transport: { activation: f['webdriver-clicks'] ? 'webdriver-element-click' : 'trusted' },
-        }
+        { transport: { activation: f['webdriver-clicks'] ? 'webdriver-element-click' : 'trusted' } }
       )
     ),
   'perf:android:browser:actions': (f: Flags) =>
@@ -313,7 +337,6 @@ export const scripts = {
         f['actions'] ? focusedActions(list(f, 'actions')!) : actionSweep,
         f,
         {
-          repeats: num(f, 'repeats') ?? 4,
           instruments: [
             { id: 'android-refresh-pin', hz: 60 },
             ...(f['trace'] === true ? [{ id: 'cdp-tracing' as const }] : []),
@@ -325,16 +348,25 @@ export const scripts = {
   'perf:web:undo': (f: Flags) =>
     runUndoScenarios(local('chromium', IPAD_PRO), {
       keys: list(f, 'scenarios') ?? UNDO_CASES.map((c) => c.key),
+      throttle: f['no-throttle'] ? undefined : (num(f, 'throttle') ?? 4),
+      reuseBuild: f['no-build'] === true,
     }),
   'perf:web:undo:webkit': (f: Flags) =>
     runUndoScenarios(local('webkit', IPAD_PRO), {
       keys: list(f, 'scenarios') ?? UNDO_CASES.map((c) => c.key),
       historyPath: str(f, 'fast-set-history'),
+      reuseBuild: f['no-build'] === true,
     }),
-  'perf:web:undo:webkit:fast': (_f: Flags) =>
-    runUndoScenarios(local('webkit', IPAD_PRO), { keys: FAST_UNDO_SCENARIO_KEYS }),
+  'perf:web:undo:webkit:fast': (f: Flags) =>
+    runUndoScenarios(local('webkit', IPAD_PRO), {
+      keys: FAST_UNDO_SCENARIO_KEYS,
+      reuseBuild: f['no-build'] === true,
+    }),
   'perf:web:replay': (f: Flags) =>
-    replayRecording(local('chromium', IPAD_PRO), str(f, 'recording')!),
+    replayRecording(local('chromium', IPAD_PRO), str(f, 'recording')!, {
+      throttle: f['no-throttle'] ? undefined : num(f, 'throttle'),
+      reuseBuild: f['no-build'] === true,
+    }),
   'perf:ios:webkit:gates': (f: Flags) =>
     ipadEngineGates(targets['ipad-device-browser'], str(f, 'device-id')!),
   // ---- serving and hosts
@@ -355,16 +387,19 @@ export const scripts = {
       reportDir: 'perf-profiles/split-capture/reports',
     }),
   // ---- rig lifecycle
+  'perf:doctor': (f: Flags) => doctor(splotch, { url: str(f, 'url'), serve: !f['url'], host: rig }),
   'perf:preflight': (f: Flags) =>
     preflight(rig, {
       androidSerial: str(f, 'android-serial'),
       iosUdid: str(f, 'ios-udid'),
       appiumUrl: str(f, 'appium-url'),
+      previewPort: num(f, 'port'),
       wakeAndroid: f['wake-android'] === true,
       holdAndroidAwake: f['hold-android-awake'] === true,
       verifyAndroidInput: f['verify-android-input'] === true,
       verifyIosLaunch: f['verify-ios-launch'] === true,
       json: f['json'] === true,
+      logTimestamp: f['log-timestamp'] === true,
     }),
   'perf:release': async (f: Flags) => {
     const plan = await planRelease(rig, {
@@ -375,7 +410,18 @@ export const scripts = {
     return f['dry-run'] ? plan : release(rig, plan, { json: f['json'] === true });
   },
   'perf:operator': (f: Flags) =>
-    operatorSession(rig, [], { plan: f['plan'] === true, only: list(f, 'steps') }),
+    operatorSession(rig, operatorSteps(list(f, 'brushes') as Brush[] | undefined), {
+      plan: f['plan'] === true,
+      only: list(f, 'steps'),
+      capture: { ...common(f), label: str(f, 'label') },
+      promote: f['campaign']
+        ? {
+            campaign: str(f, 'campaign')!,
+            corpus: str(f, 'corpus')!,
+            productCommit: str(f, 'product-commit')!,
+          }
+        : undefined,
+    }),
   'perf:calibrate': (f: Flags) =>
     calibrate({
       runtime: str(f, 'runtime')!,
@@ -391,6 +437,7 @@ export const scripts = {
         items: list(f, 'items'),
         label: str(f, 'label'),
         ledgerPath: str(f, 'ledger'),
+        maxAttempts: num(f, 'max-attempts'),
         acceptInstrumentChange: f['accept-instrument-change'] === true,
         url: str(f, 'url'),
         rebootSimulator: str(f, 'reboot-simulator'),
@@ -414,10 +461,7 @@ export const scripts = {
       score: (artifact) => ({
         label: artifact.label,
         target: artifact.target,
-        tool:
-          artifact.report && 'meta' in artifact.report
-            ? (artifact.report.meta.tool ?? 'unknown')
-            : 'n/a',
+        tool: artifact.kind === 'frames' ? (artifact.report.meta.tool ?? 'unknown') : 'n/a',
       }),
     }),
   'perf:evidence:keep': (f: Flags) =>
@@ -454,7 +498,7 @@ export const scripts = {
   'perf:build:cap': (_f: Flags) => Promise.resolve('unchanged npm script'),
   'perf:campaign:sources': (_f: Flags) =>
     Promise.resolve(
-      'stays a Splotch script: folds a campaign into the matrix manifest over inspectCell'
+      'stays a Splotch script: runtime and undo-evidence checks, build binding across a variant, four brushes plus the sweep, into the matrix manifest'
     ),
   'gen:performance-matrix': (_f: Flags) =>
     Promise.resolve('stays a Splotch script over the campaign inspector and Splotch renderer'),

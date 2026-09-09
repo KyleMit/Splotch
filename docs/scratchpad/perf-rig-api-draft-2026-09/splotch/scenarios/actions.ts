@@ -1,17 +1,31 @@
-// The discrete-action sweep as data: fifteen groups, every label spelled once, ids stable for
-// allowances and focusing. `--actions=` takes group ids; a focused subset keeps its own scenario id.
-import { defineScenario, focusActions, type ActionGroup, type ActionContext } from 'perf-rig';
+// The discrete-action sweep as data, in the shipped group order (order is part of the instrument).
+// Every id is one measured direction, so an allowance for light-to-dark cannot leak to dark-to-light.
+import {
+  defineScenario,
+  focusActions,
+  type ActionGroup,
+  type ActionContext,
+  type ControlAction,
+  type ScenarioStep,
+} from 'perf-rig';
 import { splotch, type Splotch } from '../app.js';
 
 type Ctx = ActionContext<Splotch>;
+type Steps = readonly ScenarioStep<Splotch>[];
 const flip = (o: string) => (o === 'PORTRAIT' ? 'LANDSCAPE' : 'PORTRAIT');
-const openSettings = [
-  { kind: 'click', target: '#settingsButton' },
-  { kind: 'waitPresent', target: '#settingsModal', timeoutMs: 10_000 },
-] as const;
-const closeSettings = [
-  { kind: 'click', target: '#settingsModal button[aria-label="Close"]' },
-] as const;
+const compact = (c: Ctx) => c.variant === 'compact';
+const openSettings: Steps = [
+  { kind: 'click', target: 'settings' },
+  { kind: 'waitPresent', target: 'settings', timeoutMs: 10_000 },
+];
+const closeSettings: Steps = [{ kind: 'click', target: 'closeSettings' }];
+const inSettings = (action: ControlAction<Splotch>): ControlAction<Splotch> => ({
+  ...action,
+  setup: openSettings,
+  teardown: closeSettings,
+});
+const compactSuffix = (label: string) => (c: Ctx) =>
+  compact(c) ? `${label} in the compact shell` : label;
 
 const groups: ActionGroup<Splotch>[] = [
   {
@@ -59,72 +73,109 @@ const groups: ActionGroup<Splotch>[] = [
   {
     id: 'settings-sections',
     applicable: (c: Ctx) =>
-      c.variant === 'compact' ? { reason: 'the compact shell has no section rows' } : true,
-    actions: [
-      {
-        id: 'settings-sections.open',
-        label: 'open Settings section',
-        control: 'settingsSection',
-        setup: [...openSettings],
-        teardown: [...closeSettings],
-      },
-      {
+      compact(c) ? { reason: 'the compact shell has no section rows' } : true,
+    // One row per section after the first, enumerated from the page; the parental gate is closed after.
+    actions: (c: Ctx) => [
+      ...(c.dimensions.theme ? ['drawing', 'sounds', 'saving', 'appearance'] : []).map((section) =>
+        inSettings({
+          id: `settings-sections.${section}`,
+          label: `open Settings section: ${section}`,
+          control: 'settingsSection',
+        })
+      ),
+      inSettings({
         id: 'settings-sections.parent-center',
         label: 'open Parent Center',
         control: 'parentCenter',
-        setup: [...openSettings],
-        teardown: [...closeSettings],
-      },
-    ],
-  },
-  {
-    id: 'theme',
-    actions: [
-      {
-        id: 'theme.switch',
-        label: {
-          template:
-            '{variant:compact?disable Night Mode in the compact shell:switch {theme} theme to {theme:flip}}',
-          vars: ['theme', 'variant'],
-        },
-        control: 'quickNightToggle',
-        setup: [...openSettings],
-        teardown: [...closeSettings],
-      },
+        teardown: [{ kind: 'click', target: 'closeParentalGate' }, ...closeSettings],
+      }),
     ],
   },
   {
     id: 'settings-controls',
-    actions: [
-      {
+    actions: (c: Ctx) => [
+      inSettings({
         id: 'settings-controls.sound',
-        label: 'drawing sounds',
-        control: 'soundToggle',
-        setup: [...openSettings],
-        teardown: [...closeSettings],
-      },
-      {
-        id: 'settings-controls.save-on-delete',
-        label: 'auto-save on delete',
-        control: 'saveOnDeleteToggle',
-        setup: [...openSettings],
-        teardown: [...closeSettings],
-      },
-      {
+        label: compactSuffix('drawing sounds'),
+        control: compact(c) ? 'quickSoundToggle' : 'soundToggle',
+      }),
+      ...(compact(c)
+        ? []
+        : [
+            inSettings({
+              id: 'settings-controls.save-on-delete',
+              label: 'auto-save on delete',
+              control: 'saveOnDeleteToggle',
+            }),
+          ]),
+      inSettings({
         id: 'settings-controls.advanced',
-        label: 'advanced controls',
-        control: 'advancedControlsToggle',
-        setup: [...openSettings],
-        teardown: [...closeSettings],
-      },
-      {
-        id: 'settings-controls.screenshot',
-        label: 'screenshot action button',
-        control: 'screenshotToggle',
-        setup: [...openSettings],
-        teardown: [...closeSettings],
-      },
+        label: compactSuffix('advanced controls'),
+        control: compact(c) ? 'quickAdvancedControlsToggle' : 'advancedControlsToggle',
+      }),
+      ...(compact(c)
+        ? []
+        : [
+            inSettings({
+              id: 'settings-controls.screenshot',
+              label: 'screenshot action button',
+              control: 'screenshotToggle',
+            }),
+          ]),
     ],
+  },
+  {
+    id: 'theme',
+    actions: (c: Ctx) =>
+      compact(c)
+        ? [
+            {
+              id: 'theme.compact-round-trip',
+              steps: [
+                inSettings({
+                  id: 'theme.compact-disable',
+                  label: 'disable Night Mode in the compact shell',
+                  control: 'quickNightToggle',
+                }),
+                inSettings({
+                  id: 'theme.compact-enable',
+                  label: 'enable Night Mode in the compact shell',
+                  control: 'quickNightToggle',
+                }),
+              ],
+            },
+          ]
+        : [
+            {
+              id: 'theme.round-trip',
+              steps:
+                c.dimensions.theme === 'dark'
+                  ? [
+                      inSettings({
+                        id: 'theme.to-light',
+                        label: 'switch dark theme to light',
+                        control: 'themeLight',
+                      }),
+                      inSettings({
+                        id: 'theme.to-dark',
+                        label: 'switch light theme to dark',
+                        control: 'themeDark',
+                      }),
+                    ]
+                  : [
+                      inSettings({
+                        id: 'theme.to-dark',
+                        label: 'switch light theme to dark',
+                        control: 'themeDark',
+                      }),
+                      inSettings({
+                        id: 'theme.to-light',
+                        label: 'switch dark theme to light',
+                        control: 'themeLight',
+                      }),
+                    ],
+            },
+          ],
   },
   {
     id: 'coloring',
@@ -146,23 +197,50 @@ const groups: ActionGroup<Splotch>[] = [
     id: 'rotation',
     applicable: (c: Ctx) =>
       c.deviceClass === 'desktop' ? { reason: 'desktop engines do not rotate' } : true,
-    actions: [
-      {
-        id: 'rotation.empty',
-        label: {
-          template: 'empty after clear: {orientation} to {orientation:flip}',
-          vars: ['orientation'],
+    actions: (c: Ctx) => {
+      const from = c.dimensions.orientation.toLowerCase();
+      const to = flip(c.dimensions.orientation).toLowerCase();
+      return [
+        {
+          id: 'rotation.blank-sequence',
+          steps: [
+            {
+              id: `rotation.empty.${from}-to-${to}`,
+              label: `empty after clear: ${from.toUpperCase()} to ${to.toUpperCase()}`,
+              dimension: 'orientation',
+              to: (ctx: Ctx) => flip(ctx.dimensions.orientation),
+            },
+            {
+              id: 'rotation.undo-clear',
+              label: 'undo clear after blank rotation',
+              control: 'undo',
+            },
+            {
+              id: 'rotation.undo-restored-stroke',
+              label: 'undo restored stroke after blank rotation',
+              control: 'undo',
+            },
+            {
+              id: 'rotation.clear-restored',
+              label: 'clear restored drawing after blank rotation',
+              control: 'clear',
+            },
+            {
+              id: `rotation.empty.${to}-to-${from}`,
+              label: `empty after clear: ${to.toUpperCase()} to ${from.toUpperCase()}`,
+              dimension: 'orientation',
+              to: (ctx: Ctx) => flip(ctx.dimensions.orientation),
+            },
+          ],
         },
-        external: 'rotate',
-        to: (c: Ctx) => flip(c.dimensions.orientation),
-      },
-      {
-        id: 'rotation.with-ink',
-        label: { template: 'with ink: {orientation} to {orientation:flip}', vars: ['orientation'] },
-        external: 'rotate',
-        to: (c: Ctx) => flip(c.dimensions.orientation),
-      },
-    ],
+        {
+          id: `rotation.with-ink.${from}-to-${to}`,
+          label: `with ink: ${from.toUpperCase()} to ${to.toUpperCase()}`,
+          dimension: 'orientation',
+          to: (ctx: Ctx) => flip(ctx.dimensions.orientation),
+        },
+      ];
+    },
   },
 ];
 
@@ -170,7 +248,7 @@ export const actionSweep = defineScenario(splotch, {
   kind: 'actions',
   id: 'action-sweep',
   description:
-    'Idle baseline then every discrete product action, one warmup and three scored repeats.',
+    'Idle baseline then every discrete product action in the shipped order, one warmup and three scored repeats.',
   idleBaseline: { label: 'idle frame control', idleMs: 5000 },
   groups,
   repeats: { warmup: 1, scored: 3 },

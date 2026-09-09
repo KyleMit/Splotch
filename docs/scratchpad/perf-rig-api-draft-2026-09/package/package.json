@@ -4,7 +4,7 @@
   "description": "Frame-timing capture and scoring for web apps on real devices, with input and measurement on separate channels.",
   "type": "module",
   "engines": {
-    "node": ">=20.6"
+    "node": ">=22.13"
   },
   "exports": {
     ".": {
@@ -29,22 +29,19 @@
     "README.md",
     "docs"
   ],
-  "dependencies": {
-    "ws": "^8.18.0"
-  },
+  "dependencies": {},
   "peerDependencies": {
-    "playwright-core": "*"
+    "playwright-core": "^1.62.1"
   },
   "peerDependenciesMeta": {
     "playwright-core": {
       "optional": true
     }
   },
-  "devDependencies": {},
   "x-notes": {
-    "peer": "playwright-core must resolve to the same version as the consuming app's @playwright/test, or a second browser set downloads; the consumer adds a version drift guard.",
-    "no-appium-client": "The WebDriver client is hand-rolled over fetch; the package never depends on appium or webdriverio.",
+    "no-dependencies": "The WebKit Inspector client uses the global WebSocket (Node 22); the WebDriver client is hand-rolled over fetch. The package never depends on ws, appium or webdriverio.",
+    "peer": "playwright-core is pinned to the same range as the consuming app's @playwright/test and a drift guard in the consumer holds the two resolved versions equal; the nested rung's pnpm-workspace.yaml sets autoInstallPeers: false so a mismatch cannot install silently.",
     "host-tools": "adb, xcrun, idevice_id, iproxy, pymobiledevice3, an Appium server, perfetto and xctrace are discovered by doctor, never installed.",
-    "install-scripts": "None. A registry tarball is inert under pnpm's fail-closed allowBuilds; a link: install at the nested rung is registered explicitly by the consumer."
+    "install-scripts": "None. The nested rung is consumed as a link: entry under the root's devDependencies; the published rung as an exact-pinned devDependencies entry. Neither runs a lifecycle script, so nothing is registered under allowBuilds."
   }
 }

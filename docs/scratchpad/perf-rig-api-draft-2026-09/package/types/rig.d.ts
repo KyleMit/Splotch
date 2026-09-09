@@ -1,30 +1,16 @@
 /**
- * The rig.
+ * The rig (`perf-rig/rig`).
  *
- * A rig is the host plus the devices cabled to it: ports, the processes the harness may stop, the
- * tools it expects, the identifiers it must never commit. Everything here is host-local and travels
- * as flags or a local config file, never as environment and never in a committed artifact. A
- * desktop-only user needs none of it; every field is optional and `preflight` reports what a
- * requested endpoint would need.
+ * A rig is the host plus the devices cabled to it: the processes the harness may stop, the tools
+ * it expects, the identifiers it must never commit. Everything here is host-local and travels as
+ * flags or a local config file, never as environment and never in a committed artifact. A
+ * desktop-only user never imports this entry point.
  */
 
-export type PortRole =
-  'preview' | 'probe' | 'appium' | 'wda' | 'androidCdp' | 'inspector' | 'floorControl';
+import type { CaptureOptions, HostOptions } from './capture.js';
 
-export interface PortPolicy {
-  readonly port: number;
-  /** Never stops a listener another checkout owns; "ours" is decided by the listener's working directory. */
-  readonly onConflict:
-    'replace-if-ours-or-shift' | 'reuse-compatible-or-shift' | 'reuse-or-shift' | 'shift';
-  readonly shiftTo: readonly number[];
-}
-
-export declare const DEFAULT_PORTS: Readonly<Record<PortRole, PortPolicy>>;
-
-export interface RigDefinition {
-  readonly outputRoot: string;
+export interface RigDefinition extends HostOptions {
   readonly evidenceRoot?: string;
-  readonly ports?: Readonly<Partial<Record<PortRole, PortPolicy>>>;
   readonly devices?: {
     readonly androidSerial?: string;
     readonly iosUdid?: string;
@@ -36,15 +22,9 @@ export interface RigDefinition {
     readonly worktreeContainers?: readonly string[];
     readonly ownedScriptPatterns?: readonly string[];
   };
-  readonly appium?: {
-    readonly url?: string;
-    readonly capabilitiesFile?: string;
-    readonly wdaLocalPort?: number;
-  };
   /** Host concerns an agent-driven rig has and a laptop does not. */
   readonly host?: {
     readonly sandboxMarkerEnv?: string;
-    /** A tracked log of automation-grant attempts, device pseudonymised with the salt. */
     readonly grantLog?: { readonly path: string; readonly salt: string };
   };
 }
@@ -62,34 +42,34 @@ export interface ReadinessVerdict {
   readonly checks: readonly ReadinessCheck[];
   readonly androidSerial: string | null;
   readonly iosUdid: string | null;
-  readonly ports: Readonly<Partial<Record<PortRole, number>>>;
+  readonly ports: Readonly<Partial<Record<HostPortRole, number>>>;
   readonly portDecisions: Readonly<
     Partial<
-      Record<PortRole, { readonly port: number; readonly action: string; readonly reason: string }>
+      Record<
+        HostPortRole,
+        { readonly port: number; readonly action: string; readonly reason: string }
+      >
     >
   >;
 }
+
+type HostPortRole = keyof NonNullable<HostOptions['ports']>;
 
 export interface PreflightOptions {
   readonly endpoints?: readonly string[];
   readonly androidSerial?: string;
   readonly iosUdid?: string;
   readonly appiumUrl?: string;
+  readonly previewPort?: number;
   readonly wakeAndroid?: boolean;
   readonly holdAndroidAwake?: boolean;
-  /** Drive a real touch against the floor control and read the cadence; also proves the page follows a rotation. */
   readonly verifyAndroidInput?: boolean;
-  /** A real WebDriverAgent build and session, about a minute, exclusive. */
   readonly verifyIosLaunch?: boolean;
   readonly json?: boolean;
+  readonly logTimestamp?: boolean;
 }
 
-/**
- * Prove the rig can capture the requested endpoints. Reuses whatever is already running, moves off
- * a contended port rather than stopping a listener, prints the hardware identifier a driver wants
- * rather than the one the platform CLI prints, and refuses to report ready while anything is
- * unresolved. A preflight proves only the operations it performs.
- */
+/** Prove the rig can capture the requested endpoints; reuses what runs, never stops a foreign listener. A preflight proves only the operations it performs. */
 export declare function preflight(
   rig: RigDefinition,
   options?: PreflightOptions
@@ -101,6 +81,10 @@ export interface OperatorStep {
   readonly instructions: readonly string[];
   run(context: {
     readonly readiness: ReadinessVerdict;
+    readonly capture: Pick<
+      CaptureOptions,
+      'human' | 'device' | 'server' | 'dimensions' | 'label' | 'output'
+    >;
   }): Promise<{ readonly status: 'pass' | 'fail'; readonly detail: string }>;
 }
 
@@ -112,6 +96,15 @@ export declare function operatorSession(
     readonly plan?: boolean;
     readonly only?: readonly string[];
     readonly grantAttempts?: number;
+    readonly capture?: Pick<
+      CaptureOptions,
+      'human' | 'device' | 'server' | 'dimensions' | 'label' | 'output'
+    >;
+    readonly promote?: {
+      readonly campaign: string;
+      readonly corpus: string;
+      readonly productCommit: string;
+    };
   }
 ): Promise<
   readonly {
@@ -121,11 +114,7 @@ export declare function operatorSession(
   }[]
 >;
 
-/**
- * Turn a hand capture and a known-bad control on one runtime into a proposed expectations block
- * with `basis` and `negativeControl` filled from the two artifacts. Refuses without the control:
- * a positive corpus is not a calibration.
- */
+/** Turn a hand capture and a known-bad control into a proposed expectations block; refuses without the control. */
 export declare function calibrate(options: {
   readonly runtime: string;
   readonly handArtifact: string;
@@ -167,11 +156,7 @@ export declare function scanForDeviceIdentifiers(
   rig: RigDefinition
 ): readonly { readonly kind: string; readonly masked: string; readonly line: number }[];
 
-/**
- * The floor control: the cheapest drawing page that could exist, rendered with the contract's
- * selectors and measured by the same probe, so browser-floor frame loss can be separated from the
- * app's. A diagnostic, never a gate.
- */
+/** The cheapest drawing page that could exist, rendered with the contract's selectors and measured by the same probe. A diagnostic, never a gate. */
 export declare function serveFloorControl(options: {
   readonly port: number;
   readonly reportDir: string;

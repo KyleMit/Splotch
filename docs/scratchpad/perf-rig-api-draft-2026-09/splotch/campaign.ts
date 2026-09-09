@@ -1,12 +1,12 @@
 // The deployment-target campaign: four variants × five items per target, references on physical
 // queues, Splotch's undo-evidence rule appended after the package's standard ones.
+import type { TargetDefinition } from 'perf-rig';
 import {
   STANDARD_ACCEPTANCE,
-  type AcceptanceRule,
+  ruleFor,
   type CampaignDefinition,
   type CampaignVariant,
-  type TargetDefinition,
-} from 'perf-rig';
+} from 'perf-rig/campaign';
 import { splotch, type Brush, type Splotch } from './app.js';
 import { fidelity } from './gates.js';
 import { actionSweep } from './scenarios/actions.js';
@@ -48,11 +48,9 @@ const BRUSH_BY_ITEM = {
 
 type SplotchStatus = 'undo-evidence-incomplete';
 
-const undoEvidence: AcceptanceRule<SplotchStatus, 'frames'> = {
-  status: 'undo-evidence-incomplete',
-  spendsAttempt: true,
+const undoEvidence = ruleFor('frames', {
+  status: 'undo-evidence-incomplete' as SplotchStatus,
   retry: 'always',
-  appliesTo: ['frames'],
   check: (artifact) => {
     const proof = artifact.evidence.repeatedAction;
     if (!proof) return { ok: true };
@@ -64,7 +62,7 @@ const undoEvidence: AcceptanceRule<SplotchStatus, 'frames'> = {
           detail: `undo proof: ${proof.count}/${UNDO_COUNT} actions, depth fell ${depthDelta}, pixels changed every step: ${proof.changedEveryStep}`,
         };
   },
-};
+});
 
 export const deploymentCampaign = (
   target: TargetDefinition,
@@ -101,8 +99,8 @@ export const deploymentCampaign = (
         item: 'crayon',
         onlyWhenQueueContains: ['pen-undo', 'crayon', 'magic', 'eraser'],
         metric: (artifact) =>
-          artifact.summaries!.phases.find((p) => p.key === 'blank')!.starvation.inContact
-            .lostFrameTimeShare,
+          artifact.summaries?.phases.find((p) => p.key === 'blank')?.starvation.inContact
+            .lostFrameTimeShare ?? null,
         warnAboveDelta: 0.005,
       }
     : undefined,

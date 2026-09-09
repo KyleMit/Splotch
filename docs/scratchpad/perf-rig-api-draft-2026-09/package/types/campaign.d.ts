@@ -1,15 +1,15 @@
 /**
- * Campaigns, acceptance, evidence, and re-scoring.
+ * Campaigns, acceptance, evidence, and re-scoring (`perf-rig/campaign`).
  *
  * A campaign drives a target through a grid of cells resumably. The package owns the runner, the
  * append-only ledger, the retry budget, the instrument-change refusal, and the one artifact
  * inspector that both the runner and any report generator call. The app owns the grid: what a
- * variant is, what a cell is, where it writes, and which fields beyond the standard ones prove it
+ * variant is, what a cell is, where it writes, and which rules beyond the standard ones prove it
  * measured what it claims.
  */
 
-import type { AppContract, DimensionOf } from './app.js';
-import type { CaptureArtifact } from './artifact.js';
+import type { AppContract, DimensionSelection } from './app.js';
+import type { CaptureArtifact, CaptureArtifactOf } from './artifact.js';
 import type { CaptureOptions, RefusalCode } from './capture.js';
 import type { Scenario, ScenarioKind } from './scenario.js';
 import type { FidelityExpectations } from './scoring.js';
@@ -20,6 +20,7 @@ export type StandardLedgerStatus =
   | 'already-valid'
   | 'missing-or-invalid-json'
   | 'attempts-exhausted'
+  | 'guard-refused'
   | 'runtime-mismatch'
   | 'verdict-absent'
   | 'failed-input-fidelity'
@@ -31,11 +32,14 @@ export type StandardLedgerStatus =
   | 'blank-output'
   | 'instrument-change-accepted';
 
+/** Statuses a pre-package ledger may carry, and what `parseLedger` reads them as. */
+export declare const LEGACY_LEDGER_STATUS: Readonly<Record<string, StandardLedgerStatus>>;
+
 export interface LedgerRow<AppStatus extends string = never> {
   readonly timestamp: string;
   readonly cell: string;
   readonly status: StandardLedgerStatus | AppStatus;
-  /** Its own column, never suffixed onto the status. */
+  /** Its own column; a legacy `-exit-N` suffix on the status is split into it. */
   readonly exitCode: number | null;
   readonly attempt: number;
   readonly artifact: string;
@@ -47,7 +51,6 @@ export interface CellDefinition<
   A extends AppContract = AppContract,
   K extends ScenarioKind = ScenarioKind,
 > {
-  /** `<variant>/<item>`; unique within a target. */
   readonly id: string;
   readonly variant: string;
   readonly item: string;
@@ -61,39 +64,43 @@ export interface CellDefinition<
 
 export interface CampaignVariant<A extends AppContract> {
   readonly id: string;
-  readonly dimensions: Readonly<Partial<Record<DimensionOf<A>, string>>>;
+  readonly dimensions: DimensionSelection<A>;
   /** Desktop targets take orientation from a viewport pair rather than the device. */
   readonly viewport?: Viewport;
 }
 
-export interface AcceptanceRule<
-  AppStatus extends string = string,
-  K extends ScenarioKind = ScenarioKind,
-> {
-  readonly status: AppStatus;
-  readonly spendsAttempt: boolean;
-  /** `never` ends the retry loop; `until-calibrated` re-asks the fidelity table on every resume. */
+export interface AcceptanceRule<Status extends string = string> {
+  readonly status: Status;
+  /** `never` ends the retry loop; `until-calibrated` re-asks the fidelity table on every resume. A `never` rule spends no attempt. */
   readonly retry: 'always' | 'never' | 'until-calibrated';
-  readonly appliesTo: readonly K[];
+  readonly appliesTo: readonly ScenarioKind[] | 'all';
   check(
-    artifact: CaptureArtifact<K>,
-    cell: CellDefinition<AppContract, K>
+    artifact: CaptureArtifact,
+    cell: CellDefinition
   ): { readonly ok: true } | { readonly ok: false; readonly detail: string };
 }
+
+/** Narrow once, so an app rule is written against one kind with no cast and is a no-op for the others. */
+export declare function ruleFor<K extends ScenarioKind, S extends string>(
+  kind: K,
+  rule: {
+    readonly status: S;
+    readonly retry: AcceptanceRule['retry'];
+    check(
+      artifact: CaptureArtifactOf<K>,
+      cell: CellDefinition<AppContract, K>
+    ): { readonly ok: true } | { readonly ok: false; readonly detail: string };
+  }
+): AcceptanceRule<S>;
 
 /**
  * Applied to every cell before the app's rules, in this order, so the ledger names the recapture's
  * first problem: missing-or-invalid-json, runtime-mismatch, verdict-absent, failed-input-fidelity
  * or uncalibrated-runtime, off-refresh-regime, wrong-gesture-repeats, wrong-gesture-plan,
- * prime-failed (anomalous entry or a shortfall of repeats − 1), blank-output. Absent fields on an
- * artifact predating a rule are tolerated; malformed ones are refused.
+ * prime-failed (an anomalous entry or a shortfall of repeats − 1), blank-output. Absent fields on
+ * an artifact predating a rule are tolerated; malformed ones are refused.
  */
-/** A rule for one scenario kind; a list of rules is a union over kinds so a frames-only rule sits beside a generic one. */
-export type AcceptanceRules<Status extends string> = {
-  [K in ScenarioKind]: AcceptanceRule<Status, K>;
-}[ScenarioKind];
-
-export declare const STANDARD_ACCEPTANCE: readonly AcceptanceRules<StandardLedgerStatus>[];
+export declare const STANDARD_ACCEPTANCE: readonly AcceptanceRule<StandardLedgerStatus>[];
 
 export interface CampaignDefinition<
   A extends AppContract = AppContract,
@@ -105,18 +112,15 @@ export interface CampaignDefinition<
   readonly items: readonly string[];
   cellFor(variant: CampaignVariant<A>, item: string): CellDefinition<A>;
   readonly fidelity: FidelityExpectations;
-  /**
-   * A cell repeated at the start, middle and end of a physical-device queue to measure
-   * within-session drift; rides the first planned variant; a sub-threshold spread is reported,
-   * never treated as an acquittal.
-   */
+  /** A cell repeated at start, middle and end of a physical-device queue; rides the first planned variant. */
   readonly reference?: {
     readonly item: string;
     readonly onlyWhenQueueContains: readonly string[];
-    metric(artifact: CaptureArtifact<'frames'>): number;
+    /** `null` when the artifact carries no measurement; recorded as unmeasured, never as zero. */
+    metric(artifact: CaptureArtifactOf<'frames'>): number | null;
     readonly warnAboveDelta: number;
   };
-  readonly acceptance: readonly AcceptanceRules<StandardLedgerStatus | AppStatus>[];
+  readonly acceptance: readonly AcceptanceRule<StandardLedgerStatus | AppStatus>[];
   readonly maxAttempts: number;
   readonly outputRoot: string;
 }
@@ -142,12 +146,12 @@ export interface RunCampaignOptions {
   readonly items?: readonly string[];
   readonly label?: string;
   readonly ledgerPath?: string;
+  readonly maxAttempts?: number;
   readonly dryRun?: boolean;
   readonly acceptInstrumentChange?: boolean;
   readonly device?: CaptureOptions['device'];
   readonly url?: string;
   readonly rebootSimulator?: string;
-  /** Each cell in a fresh process, so an edit mid-run splits at a cell boundary and the fingerprint names it. */
   readonly isolation?: 'child-process' | 'in-process';
 }
 
@@ -194,7 +198,7 @@ export declare function runCampaign<A extends AppContract, S extends string>(
   options?: RunCampaignOptions
 ): Promise<CampaignResult>;
 
-/** The single artifact inspector. Any report generator calls this too. */
+/** The single artifact inspector. A stale `summaries.scoringEpoch` is reported in `detail`, never as a status. */
 export declare function inspectCell<A extends AppContract, S extends string>(
   campaign: CampaignDefinition<A, S>,
   cell: CellDefinition<A>
@@ -226,7 +230,6 @@ export interface InstrumentDescriptor {
   readonly files?: readonly string[];
 }
 
-/** Per-part hashes, so a change names the part; scorers are outside it on purpose and re-derive at fold time. */
 export declare function instrumentFingerprint(descriptor: InstrumentDescriptor): {
   readonly fingerprint: string;
   readonly parts: Readonly<Record<string, string>>;
@@ -248,11 +251,6 @@ export interface EvidenceSelection {
   readonly force?: boolean;
 }
 
-/**
- * Promote captures into a tracked corpus, whole and minified, one per key, preferring the
- * scoreability tier and never the score; device identifiers redacted; a `cellAttributable: false`
- * mark where the nonce audit contradicts the label.
- */
 export declare function keepEvidence(
   selection: EvidenceSelection,
   evidenceRoot: string

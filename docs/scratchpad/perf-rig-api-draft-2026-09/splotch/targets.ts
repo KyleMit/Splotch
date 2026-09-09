@@ -1,6 +1,11 @@
 // The eleven deployment targets, as data. docs/PROFILING-MECHANICS.md restates this table and a
 // Splotch-owned test holds the two together through the package's resolveTransports.
-import { DEFAULT_REFRESH_REGIMES, defineTargets, type TargetDefinition } from 'perf-rig';
+import {
+  DEFAULT_REFRESH_REGIMES,
+  defineTargets,
+  type RegimeIdOf,
+  type TargetDefinition,
+} from 'perf-rig';
 
 export type SplotchRuntime =
   | 'ios-safari'
@@ -8,7 +13,7 @@ export type SplotchRuntime =
   | 'android-chrome'
   | 'android-capacitor-webview'
   | 'desktop-playwright';
-export type SplotchRegime = '60hz' | '120hz';
+export type SplotchRegime = RegimeIdOf<typeof DEFAULT_REFRESH_REGIMES>;
 
 type Target<Id extends string> = TargetDefinition<SplotchRuntime, SplotchRegime> & {
   readonly id: Id;

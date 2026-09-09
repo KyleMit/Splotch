@@ -42,8 +42,10 @@ Ship the three probes as templates rendered from the contract, with the configur
 separate so the instrument fingerprint excludes per-cell config. `real-screen.test.mjs` asserts
 against the rendered source.
 
-**Proof.** The rendered frames probe equals the committed probe file modulo the prelude, a byte-diff
-test expected to shrink to zero; `action-probe.test.mjs` runs against the rendered source.
+**Proof.** The rendered frames probe passes `real-screen.test.mjs`'s selector assertions against
+`renderProbe('frames', splotch).source`; a happy-dom execution reaches `finish()` with all six
+tables and `meta.schema` equal to `FRAMES_PROBE_SCHEMA.version`; `action-probe.test.mjs` runs
+against the rendered actions probe.
 
 ## Phase 3 — split the three-role modules and type the evidence
 
@@ -52,12 +54,15 @@ the WebDriver client for five other runners. Move the client, context selection,
 cache eviction into the `appium` transport and `ActionDriver`; move `runActionSweep` into a runner
 over a resolved `ActionsScenario` plan; leave the two entry points thin. Split `campaign-plan.mjs`
 into the target registry (Splotch), the plan expander (package) and the artifact-field readers
-(typed evidence read by `STANDARD_ACCEPTANCE`). Write `splotch/legacy-artifacts.ts`'s upgrader and
-point every corpus-calibrated test through it.
+(typed evidence read by `STANDARD_ACCEPTANCE`). Write `splotch/legacy-artifacts.ts`'s upgrader for
+the readers that need a v1 envelope, and keep a thin binding at `tools/perf/lib/input-fidelity.mjs`
+that closes over Splotch's expectations so the one- and two-argument calls the corpus tests make
+keep their meaning. The golden action-verdict ledger gains a `scoringEpoch` header.
 
 **Proof.** `xcuitest-actions.test.mjs` and `campaign-plan.test.mjs` pass; `perf:campaign --dry-run`
 prints an identical queue for every target; `input-fidelity.test.mjs` and
-`action-frame-stamps.test.mjs` pass with only their import lines changed.
+`action-frame-stamps.test.mjs` pass with their bodies unchanged and their imports pointing at the
+binding; the golden ledger's epoch equals `COMPAT.scoringEpoch`.
 
 ## Phase 4 — the nested package
 
@@ -71,9 +76,11 @@ test naming the extraction as the reason for the copy. `tools/perf` imports it b
 guard that the package's `playwright-core` resolves to the same version as the root
 `@playwright/test`. Every `perf:*` script name is unchanged.
 
-**Proof.** `perf:campaign` for one physical target end to end and a resume against a pre-extraction
-ledger; `cap sync` leaves `android/capacitor.settings.gradle` and the SPM manifest byte-identical;
-`npm run lint:dead`, `format:check` and `test:tools` green.
+**Proof.** `perf:campaign` for one physical target end to end; a resume against a pre-extraction
+ledger, read through `LEGACY_LEDGER_STATUS`, run with `acceptInstrumentChange` and banking every
+previously valid cell as `instrument-change-accepted` with zero recaptures; `cap sync` leaves
+`android/capacitor.settings.gradle` and the SPM manifest byte-identical; `npm run lint:dead`,
+`format:check` and `test:tools` green.
 
 ## Phase 5 — the separate repo
 

@@ -52,9 +52,9 @@ can see it. The last column is honest about the gaps.
 | Scoring    | A single capture cannot know its matrix target's exceptions                        | `evaluateDrawing` requires the cell; the fold re-evaluates under current policy                     |
 | Scoring    | One max breach declared rather than confirmed                                      | gate `maxBreachConfirmingSamples`                                                                   |
 | Scoring    | A retry "confirms" a different failure                                             | `reproducedFailures` intersects fingerprints                                                        |
-| Scoring    | Settle timeout fires before quiescence was observable                              | `settle.stableSamples` guard                                                                        |
+| Scoring    | Settle timeout fires before quiescence was observable                              | app script over `openChannel` polls `hooks.historyDepth.quiescent`; documented                      |
 | Scoring    | A focused subset is not the canonical sweep                                        | focused scenarios keep their own id; fold refuses                                                   |
-| Acceptance | A native transport did not prove a native page                                     | verdict `capture-runtime` (`runtimeOf`); acceptance `runtime-mismatch`                              |
+| Acceptance | A native transport did not prove a native page                                     | verdict `capture-shell` (`shellOf`); acceptance `runtime-mismatch`                                  |
 | Acceptance | Eraser passes erased nothing after the first                                       | guard `prime-verified`, verdict `prime-between-passes`; acceptance `prime-failed`                   |
 | Acceptance | Different repeat counts are not the same cell                                      | acceptance `wrong-gesture-repeats`                                                                  |
 | Acceptance | A fidelity-failed artifact banked because it parsed                                | acceptance `failed-input-fidelity` distinct from missing                                            |
