@@ -33,8 +33,14 @@ compiler's test, and the semantics the reviews pinned (`retryUntil` tests before
 presence versus layout, the twenty-second theme budget, verify-only priming after the settle) are
 asserted there.
 
-**Proof.** The executed-in-happy-dom tests pass; a physical Android split pen cell and an eraser
-cell each recapture with `report` tables comparable to the previous run on the same build.
+**Proof.** The executed-in-happy-dom tests pass. A channel-protocol test drives the compiled
+bootstrap against a fake plan-polled channel and asserts the order `capture-device-frames.mjs` runs
+today: bootstrap, `awaitReady` (with the one relaunch when nothing reports), the host's pre-input
+guards over the readiness record (committed tool, resolved theme, page orientation), bounds from
+`ReadinessReport.geometry`, dispatch with a prime acknowledgement between passes, `awaitPulse`,
+finish, `awaitReport`; and asserts that readiness carries geometry, every dimension, the committed
+tool and the initial prime entry. A physical Android split pen cell and an eraser cell each
+recapture with `report` tables comparable to the previous run on the same build.
 
 ## Phase 2 — probes rendered from the contract
 
@@ -60,7 +66,12 @@ that closes over Splotch's expectations so the one- and two-argument calls the c
 keep their meaning. The golden action-verdict ledger gains a `scoringEpoch` header.
 
 **Proof.** `xcuitest-actions.test.mjs` and `campaign-plan.test.mjs` pass; `perf:campaign --dry-run`
-prints an identical queue for every target; `input-fidelity.test.mjs` and
+prints an identical queue for every target, under the same target ids and artifact paths; a
+corpus-to-type test re-runs `summariseFrames` and `summariseActions` over every tracked capture
+under `perf-profiles/evidence` and fails on any key the declarations do not name (the transcription
+check the reviews ran by hand); the resolved action plan for each shell and both starting
+orientations is compared, sample by sample including preparation steps, against the recorded
+`applicableLabels` of the tracked sweeps; `input-fidelity.test.mjs` and
 `action-frame-stamps.test.mjs` pass with their bodies unchanged and their imports pointing at the
 binding; the golden ledger's epoch equals `COMPAT.scoringEpoch`.
 

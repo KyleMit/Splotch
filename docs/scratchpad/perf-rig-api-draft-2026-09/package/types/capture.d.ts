@@ -4,12 +4,19 @@
  * The call resolves the app, target and scenario into a plan, refuses transport pairings it has
  * not proved, runs the guard sequence, drives the input, collects the measurement, attaches
  * instruments, scores, and writes the artifact. A guard that fails stops the capture before
- * measurement with exit 2; the artifact is still written with the trust ledger. A verdict that
- * fails never stops a write: the artifact lands first and the process exits 1 after.
+ * measurement with exit 2 and writes a `RefusedCapture`: the plan, the trust ledger and whatever
+ * the page reported, never a fabricated measurement. A verdict that fails never stops a write: the
+ * artifact lands first and the process exits 1 after.
  */
 
 import type { AppContract, DimensionSelection } from './app.js';
-import type { CaptureArtifactOf, GuardId, TrustEntry, VerdictId } from './artifact.js';
+import type {
+  CaptureArtifactOf,
+  GuardId,
+  RefusedCapture,
+  TrustEntry,
+  VerdictId,
+} from './artifact.js';
 import type { GatePolicy, GateVerdict } from './gates.js';
 import type { Scenario, ScenarioKind } from './scenario.js';
 import type { RefreshRegimeId, TargetDefinition, Viewport } from './target.js';
@@ -203,14 +210,24 @@ export interface DeviceSelection {
   readonly deviceClass?: 'tablet' | 'handset' | 'desktop';
 }
 
-export interface CaptureResult<K extends ScenarioKind = ScenarioKind> {
-  readonly artifactPath: string;
-  readonly artifact: CaptureArtifactOf<K>;
-  readonly trust: readonly TrustEntry[];
-  readonly gate?: GateVerdict;
-  readonly exitCode: ExitCode;
-  readonly warnings: readonly string[];
-}
+export type CaptureResult<K extends ScenarioKind = ScenarioKind> =
+  | {
+      readonly outcome: 'captured';
+      readonly artifactPath: string;
+      readonly artifact: CaptureArtifactOf<K>;
+      readonly trust: readonly TrustEntry[];
+      readonly gate?: GateVerdict;
+      readonly exitCode: typeof EXIT.ok | typeof EXIT.failed;
+      readonly warnings: readonly string[];
+    }
+  | {
+      readonly outcome: 'refused';
+      readonly artifactPath: string;
+      readonly artifact: RefusedCapture;
+      readonly trust: readonly TrustEntry[];
+      readonly exitCode: typeof EXIT.refused;
+      readonly warnings: readonly string[];
+    };
 
 export declare function capture<A extends AppContract, S extends Scenario<A>>(
   request: CaptureRequest<A, S>

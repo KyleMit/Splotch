@@ -119,6 +119,31 @@ export interface PlanPolledReport<K extends ScenarioKind> {
   readonly records: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * What the page reports once the compiled bootstrap has run and before any input is dispatched:
+ * the facts the host's pre-input guards read (`dimension-observed`, `committed-tool`,
+ * `runtime-user-agent`, `prime-verified`) and the geometry `InputDriver.boundsFrom` maps input
+ * onto. On the plan-polled channel the page posts it; on a scripted channel the host assembles the
+ * same record from its own evaluations, so the guards read one shape.
+ */
+export interface ReadinessReport {
+  readonly nonce: string | null;
+  readonly geometry: PageGeometry;
+  /** Every declared dimension read back through `Dimension.read`. */
+  readonly dimensions: Readonly<Record<string, string>>;
+  readonly committedTool: string | null;
+  readonly identity: {
+    readonly userAgent: string;
+    readonly origin: string;
+    readonly entryModule: string | null;
+  };
+  /** Preparation, tool selection, menu dismissal, dimension setters and the initial prime, with their postconditions. */
+  readonly procedures: readonly ProcedureResult[];
+  readonly prime: PrimeEntry | null;
+  /** Digest of the output surfaces before input, the `painted-output` verdict's baseline. */
+  readonly paintedBaseline: string;
+}
+
 /** @internal The driver behind an input transport for a drawing stream. */
 export interface InputDriver {
   readonly transport: InputTransportId;
@@ -171,15 +196,27 @@ export type MeasurementChannel =
         name: string,
         options?: { readonly sliceRows?: number }
       ): Promise<readonly unknown[]>;
+      /** Assembled by the host from its evaluations after the compiled procedures ran. */
+      readiness(): Promise<ReadinessReport>;
     }
+  /**
+   * The order is the protocol, and the compiler proof drives it end to end: the page fetches the
+   * plan and runs the bootstrap; `awaitReady` returns once readiness is posted (one relaunch is
+   * allowed when nothing reports); the host runs its pre-input guards over it and maps bounds; the
+   * driver dispatches passes with `awaitPrimeAck` between them; `awaitPulse` proves input arrived
+   * before `control({ finish: true })`; `awaitReport` returns the tables.
+   */
   | {
       readonly kind: 'plan-polled';
       readonly id: 'http-upload';
+      awaitReady(timeoutMs: number): Promise<ReadinessReport | null>;
       control(patch: PlanPatch): Promise<void>;
       awaitPrimeAck(
         key: { readonly sequence: number; readonly afterStroke: number },
         timeoutMs: number
       ): Promise<PrimeEntry>;
+      /** The page's heartbeat: the live event count, posted until first contact and once after. */
+      awaitPulse(timeoutMs: number): Promise<{ readonly events: number }>;
       awaitReport<K extends ScenarioKind>(timeoutMs: number): Promise<PlanPolledReport<K>>;
     };
 

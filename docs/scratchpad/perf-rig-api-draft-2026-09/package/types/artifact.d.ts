@@ -67,8 +67,13 @@ export type GuardId =
   | 'hit-test-surface'
   | 'prime-verified';
 
-/** Verdicts computed after measurement. A failure exits 1 after the artifact is written. */
+/**
+ * Verdicts computed after measurement. A failure exits 1 after the artifact is written.
+ * `report-integrity` runs first: a report that is not the page's whole report invalidates every
+ * verdict that reads it.
+ */
 export type VerdictId =
+  | 'report-integrity'
   | 'input-received'
   | 'input-fidelity'
   | 'refresh-regime'
@@ -204,6 +209,7 @@ export interface CaptureArtifactOf<K extends ScenarioKind> {
     readonly name: 'perf-rig.capture';
     readonly version: typeof COMPAT.artifactSchema;
   };
+  readonly outcome: 'captured';
   /** Top-level discriminant, duplicated from `scenario.kind` so narrowing works on the artifact itself. */
   readonly kind: K;
   readonly label: string;
@@ -231,6 +237,12 @@ export interface CaptureArtifactOf<K extends ScenarioKind> {
     readonly summary?: unknown;
   }[];
   readonly trust: readonly TrustEntry[];
+  /** What the `report-integrity` verdict checked on a mailboxed or uploaded report; absent on scripted channels. */
+  readonly channelEvidence?: {
+    readonly expectedBytes: number;
+    readonly actualBytes: number;
+    readonly counts: Readonly<Record<string, number>>;
+  };
   readonly report: ReportFor<K>;
   readonly evidence: EvidenceFor<K>;
   readonly summaries?: SummariesFor<K>;
@@ -238,6 +250,40 @@ export interface CaptureArtifactOf<K extends ScenarioKind> {
 }
 
 export type CaptureArtifact = { [K in ScenarioKind]: CaptureArtifactOf<K> }[ScenarioKind];
+
+/**
+ * What a guard refusal writes: the plan as resolved, the trust ledger up to the failed guard, and
+ * whatever the page had reported by then. No report, no evidence, no summaries; geometry and
+ * observed dimensions are present only if readiness was reached. Acceptance records it as
+ * `guard-refused` before any rule runs, and `rescore` lists it without scoring it.
+ */
+export interface RefusedCapture {
+  readonly schema: {
+    readonly name: 'perf-rig.refusal';
+    readonly version: typeof COMPAT.artifactSchema;
+  };
+  readonly outcome: 'refused';
+  readonly kind: ScenarioKind;
+  readonly label: string;
+  readonly target: string;
+  readonly scenario: { readonly kind: ScenarioKind; readonly id: string };
+  readonly platform: Platform;
+  readonly shell: Shell;
+  readonly transport: InputTransportId;
+  readonly channel: MeasurementChannelId;
+  readonly captureRuntime: string;
+  readonly appUrl: string | null;
+  readonly nativePackage?: string;
+  readonly provenance: Provenance;
+  readonly device: CaptureArtifact['device'];
+  readonly geometry: PageGeometry | null;
+  readonly dimensions: Readonly<Partial<Record<string, string>>>;
+  readonly instruments: CaptureArtifact['instruments'];
+  readonly trust: readonly TrustEntry[];
+  readonly refusal: { readonly guard: GuardId; readonly detail: string; readonly remedy?: string };
+}
+
+export type CaptureOutcome = CaptureArtifact | RefusedCapture;
 
 /** Schema 2, keyed as the shipped probe writes it; a renamed key is schema 3 with an upgrade, never a silent change. */
 export interface FramesReport {
@@ -318,6 +364,7 @@ export declare function shellOf(
 
 export declare function artifactDirectory(root: string, label: string, now?: Date): string;
 /** Refuses an unknown schema; an app upgrades its pre-package corpus with its own reader. */
-export declare function readArtifact(path: string): Promise<CaptureArtifact>;
+export declare function readArtifact(path: string): Promise<CaptureOutcome>;
 export declare function isCaptureArtifact(value: unknown): value is CaptureArtifact;
-export declare function writeArtifact(path: string, artifact: CaptureArtifact): Promise<void>;
+export declare function isRefusedCapture(value: unknown): value is RefusedCapture;
+export declare function writeArtifact(path: string, artifact: CaptureOutcome): Promise<void>;

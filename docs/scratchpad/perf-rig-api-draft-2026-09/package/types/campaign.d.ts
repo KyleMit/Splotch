@@ -95,10 +95,11 @@ export declare function ruleFor<K extends ScenarioKind, S extends string>(
 
 /**
  * Applied to every cell before the app's rules, in this order, so the ledger names the recapture's
- * first problem: missing-or-invalid-json, runtime-mismatch, verdict-absent, failed-input-fidelity
- * or uncalibrated-runtime, off-refresh-regime, wrong-gesture-repeats, wrong-gesture-plan,
- * prime-failed (an anomalous entry or a shortfall of repeats − 1), blank-output. Absent fields on
- * an artifact predating a rule are tolerated; malformed ones are refused.
+ * first problem: missing-or-invalid-json, guard-refused (a `RefusedCapture` envelope; no rule sees
+ * one), runtime-mismatch, verdict-absent, failed-input-fidelity or uncalibrated-runtime,
+ * off-refresh-regime, wrong-gesture-repeats, wrong-gesture-plan, prime-failed (an anomalous entry
+ * or a shortfall of repeats − 1), blank-output. Absent fields on an artifact predating a rule are
+ * tolerated; malformed ones are refused.
  */
 export declare const STANDARD_ACCEPTANCE: readonly AcceptanceRule<StandardLedgerStatus>[];
 
@@ -267,7 +268,11 @@ export interface RescoreOptions {
   score(artifact: CaptureArtifact): Readonly<Record<string, number | string | boolean>>;
 }
 
-/** Re-derive every capture in a corpus from `report` through the shipped scorers, never from stored summaries. */
-export declare function rescore(
-  options: RescoreOptions
-): Promise<readonly Readonly<Record<string, unknown>>[]>;
+/**
+ * Re-derive every capture in a corpus from `report` through the shipped scorers, never from stored
+ * summaries. A `RefusedCapture` is listed under `refused` and never passed to `score`.
+ */
+export declare function rescore(options: RescoreOptions): Promise<{
+  readonly rows: readonly Readonly<Record<string, unknown>>[];
+  readonly refused: readonly { readonly path: string; readonly guard: string }[];
+}>;
