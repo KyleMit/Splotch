@@ -37,6 +37,7 @@ this app's shape.
 | App complete and useful without any credential (free allowance, core drawing) | Required — 2.1, 4.2                   | Required — Broken-functionality policies  | ADR-0105; issue 599                                                               |
 | Kids metadata, age declarations, content rating from real answers             | Required — 2.3.8, Kids Category       | Required — Target audience + IARC         | `store-assets/STORE-LISTING-*.md`                                                 |
 | Permission hygiene; no location for a child-directed app                      | Required — 5.1.1 purpose strings      | Required — Families location rule         | Minimal manifests; `android.md` checklist                                         |
+| Package name + signing key registered for Android developer verification      | N/A                                   | Required — Play Console requirements      | Issue 1521; `android.md` checklist                                                |
 | No trademarked third-party content in bundles or metadata                     | Required — 5.2.1                      | Required — Intellectual Property policy   | Issue 851 (coloring-book list removal)                                            |
 
 ## Apple — App Review Guidelines
@@ -328,6 +329,22 @@ for Splotch. `STORE-LISTING-ANDROID.md` pre-records the answers: data collected 
 30-day confirmed-report retention, Device or other IDs for the one-way allowance pseudonym, App
 interactions for allowance and operational generation records, and opt-in diagnostics. It also
 records encryption in transit, deletion on request, and the automatic purge.
+
+### Android developer verification (Play Console requirement, not a content policy)
+
+> "Any Play apps not registered by September 30, 2026 will be removed from Google Play globally.
+> Android apps from other participating stores that are not registered will also no longer be
+> installable on certified Android devices in select countries."
+
+**Impact.** A Play-side identity and package-name registration gate, independent of app content:
+`art.splotch.app` and every key that signs a distributed build must be registered to a verified
+developer, and an unfinished draft registration does not count.
+
+**Decisions.** Registered 2026-09-09 (issue 1521): the *Android developer verification* page in Play
+Console shows `art.splotch.app` as Registered with one Verified key. Splotch ships through Play
+only, so no outside-Play package-name + key pair is registered and none is needed; the debug and CI
+test-signed APKs are local test installs, not distribution. The fingerprint and the re-check rule
+live in the `android.md` checklist.
 
 ## Provider obligations that ride along
 

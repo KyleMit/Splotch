@@ -288,7 +288,9 @@ Three things that will waste your time here:
     then `cp keystore.properties.example keystore.properties` and fill it in.
   * ⚠️ In `keystore.properties`, do **not** wrap values in quotes — Java `.properties` treats quotes
     as literal characters, so a quoted password fails with *"keystore password was incorrect"*.
-* [ ] Enroll in **Play App Signing** (recommended) when creating the app.
+* [x] Enroll in **Play App Signing** (recommended) when creating the app. Done: Play makes it
+      mandatory for apps created after August 2021 that upload an AAB, so the key Play registered
+      for developer verification is the Play-held app signing key, not the upload key.
 * [x] **Produce a signed release `.aab`:** `npm run android:bundle` →
       `android/app/build/outputs/bundle/release/app-release.aab` (Play requires AAB). Verify it's
       signed with `npm run android:verify` (expect `jar verified`; the self-signed / no-timestamp
@@ -296,14 +298,23 @@ Three things that will waste your time here:
 
 ### Google Play Console setup
 
-* [ ] Create a **Google Play Developer account** ($25 one-time). Allow time for identity
-      verification (can take days).
-* [ ] Create the app; choose **App** (not Game), **Free**.
-* [ ] **Register the app in Play Console** to meet the
+* [x] Create a **Google Play Developer account** ($25 one-time). Allow time for identity
+      verification (can take days). Done: the "Kyle Mit Dev" developer account exists and is
+      verified.
+* [x] Create the app; choose **App** (not Game), **Free**. Done: "Splotch" (`art.splotch.app`)
+      exists in Play Console.
+* [x] **Register the app in Play Console** to meet the
       [Android developer verification](https://developer.android.com/developer-verification)
-      requirement. ~99% of apps were auto-registered, but confirm `art.splotch.app` shows as
-      registered on the Play Console Home page — an unregistered app faces **global removal from
-      Play**.
+      requirement — an unregistered app faces **global removal from Play** after 2026-09-30. Done
+      2026-09-09: Play Console Home reports "All of your apps have been successfully registered",
+      and *Android developer verification* lists `art.splotch.app` as **Registered** with one
+      **Verified** signing-key fingerprint
+      (`1A:4D:83:FF:20:35:42:B6:40:D1:EF:36:57:43:46:2B:CE:AE:4D:9D:C7:38:15:AC:85:C9:45:4A:93:6D:F5:98`).
+      Re-check that page after any signing-key change, and register any new key there. Splotch is
+      **distributed through Play only** — no direct `.apk`, no other store — so no additional
+      package-name + key pair needs registering; the debug and CI test-signed APKs are local test
+      installs, not distribution. If that ever changes, register the new pair on the same page
+      before shipping (issue 1521).
 * [ ] Complete **Data safety** from the exact declarations in
       `store-assets/STORE-LISTING-ANDROID.md`. “No data collected” is wrong: declare the deliberate
       AI images, private feedback, optional diagnostics, and the confirmed-report-only 30-day
@@ -318,7 +329,8 @@ Three things that will waste your time here:
       **Families policy** (below).
 * [x] Privacy Policy URL → `https://splotch.art/privacy` (see [native.md](native.md)).
 * [ ] Store listing copy + graphics (see [native.md](native.md) §3).
-* [ ] Set up **Closed testing** track first; promote to Production after review.
+* [x] Set up **Closed testing** track first; promote to Production after review. Done: "Splotch:
+      Drawing for Kids" is on the Closed testing track as of 2026-09-09.
 
 ### Families policy (kids compliance)
 
