@@ -133,3 +133,36 @@ test('portrait keeps its display heading and visible introduction', async ({ pag
   await expect(page.locator('h1')).toHaveCSS('font-size', '34px');
   await expect(page.locator('.page')).toHaveCSS('padding', '0px');
 });
+
+test('narrow short windows retain the phone reading width', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 480 });
+  await page.goto('/feedback');
+  await expect(page.getByRole('button', { name: 'Why we ask' })).toBeVisible();
+  await expect(page.locator('.page')).toHaveCSS('padding-left', '0px');
+  await expect(page.locator('.page')).toHaveCSS('padding-right', '0px');
+  await expect(page.locator('.sheet')).toHaveCSS('padding-left', '20px');
+  await expect(page.locator('.sheet')).toHaveCSS('padding-right', '20px');
+  await expect(page.locator('#reportMessage')).toHaveCSS('width', '335px');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
+});
+
+test('the introduction stays readable until the disclosure is interactive', async ({ page }) => {
+  let releaseScripts: () => void = () => {};
+  const scriptsReady = new Promise<void>((resolve) => {
+    releaseScripts = resolve;
+  });
+  await page.route('**/*.js', async (route) => {
+    await scriptsReady;
+    await route.continue();
+  });
+  await page.setViewportSize(SHORT_VIEWPORTS[0]);
+  await page.goto('/feedback', { waitUntil: 'commit' });
+  try {
+    await expect(page.locator('.lede')).toBeVisible();
+    await expect(page.locator('.lede-toggle')).toHaveCount(0);
+  } finally {
+    releaseScripts();
+  }
+  await expect(page.getByRole('button', { name: 'Why we ask' })).toBeVisible();
+  await expect(page.locator('.lede')).toBeHidden();
+});

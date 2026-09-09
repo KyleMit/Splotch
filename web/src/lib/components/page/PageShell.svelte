@@ -319,5 +319,17 @@
     .lede.collapsed {
       display: none;
     }
+
+    @media (max-width: 540px) {
+      .page {
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .sheet {
+        padding-left: var(--page-gutter);
+        padding-right: var(--page-gutter);
+      }
+    }
   }
 </style>
