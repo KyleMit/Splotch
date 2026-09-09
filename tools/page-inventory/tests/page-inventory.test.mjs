@@ -717,6 +717,36 @@ describe('page inventory output', () => {
     expect(html).not.toContain('class="review"');
     expect(html).not.toContain('data-facet="severity"');
     expect(html).toContain('data-severity="unreviewed"');
+    expect(html).not.toContain('Reviewed by');
+    expect(html).not.toContain('Reviewer not recorded');
+  });
+
+  it.each([
+    {
+      reviewer: { runner: 'codex', model: 'gpt-6-astra' },
+      label: 'Reviewed by codex · gpt-6-astra',
+    },
+    {
+      reviewer: { runner: 'claude', model: '<model>&' },
+      label: 'Reviewed by claude · &lt;model&gt;&amp;',
+    },
+    { reviewer: undefined, label: 'Reviewer not recorded' },
+  ])('renders the recorded reviewer as escaped text: $label', ({ reviewer, label }) => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const item = inventoryItem();
+    const manifest = writeCaptures(out, item);
+    const critique = join(root, 'design-critique.json');
+    writeFileSync(
+      critique,
+      JSON.stringify(finalizeDesignCritique(manifest, critiqueEntries(manifest), { reviewer }))
+    );
+
+    writePageInventoryFeedback(out, critique, [item]);
+
+    expect(readFileSync(join(out, 'index.html'), 'utf8')).toContain(
+      `<span class="chip">${label}</span>`
+    );
   });
 
   it('attaches complete hash-bound feedback without changing images', () => {

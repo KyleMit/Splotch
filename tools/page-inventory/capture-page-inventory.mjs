@@ -326,14 +326,15 @@ async function admin(page) {
 // One surface per beta panel, each deep-linked so the pre-paint stamp opens the
 // tab this capture is for whatever the context's user agent says. The wait is
 // load-bearing: the prerendered document raises no tab (the picker only catches
-// up on hydration), so a shot taken before it shows a tab row with nothing live.
+// up on hydration). The active option must exist even on short touch screens,
+// where the hydrated picker is deliberately hidden in favor of the steps.
 function betaPanelSurface(platform, title, description) {
   const route = `/beta?os=${platform}`;
   return surface('routes', `beta-${platform}`, title, description, route, async (page) => {
     await navigate(page, route);
     await page
       .locator('.beta-platform-picker .option.active')
-      .waitFor({ state: 'visible', timeout: ACTION_MS });
+      .waitFor({ state: 'attached', timeout: ACTION_MS });
   });
 }
 
@@ -357,12 +358,12 @@ function routeSurfaces() {
     betaPanelSurface(
       'android',
       'Beta sign-up · Android',
-      'Google Play closed-test instructions, on the Android tab of the beta page.'
+      'Google Play closed-test instructions in the Android panel of the beta page.'
     ),
     betaPanelSurface(
       'ios',
       'Beta sign-up · iOS',
-      'TestFlight instructions, on the iOS tab of the beta page.'
+      'TestFlight instructions in the iOS panel of the beta page.'
     ),
     surface(
       'routes',
@@ -1095,10 +1096,11 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
           `${JSON.stringify(manifest, null, 2)}\n`
         );
         let critique = new Map();
+        let reviewer = null;
         if (critiquePath) {
           copyFileSync(critiquePath, join(staging, 'design-critique.json'));
           try {
-            critique = readDesignCritique(critiquePath, manifest);
+            ({ entries: critique, reviewer } = readDesignCritique(critiquePath, manifest));
           } catch (error) {
             console.warn(`Preserved but detached stale design critique: ${error.message}`);
           }
@@ -1108,7 +1110,8 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
           renderPageInventoryReport(
             items,
             critique,
-            pixelIdenticalReviewGroups(manifest.captures, critique)
+            pixelIdenticalReviewGroups(manifest.captures, critique),
+            reviewer
           )
         );
       }
