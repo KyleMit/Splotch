@@ -13,7 +13,7 @@
 
 import type { Activation } from './app.js';
 import type { ACTIONS_PROBE_SCHEMA, FrameStampEpoch } from './probe.js';
-import type { ResolvedActionPlan, ScenarioKind } from './scenario.js';
+import type { ExecutedActionPlan, ScenarioKind } from './scenario.js';
 import type { PageDelivery, Platform, Shell } from './target.js';
 import type {
   ActionSample,
@@ -152,7 +152,7 @@ export interface FramesEvidence {
 }
 
 export interface ActionsEvidence {
-  readonly plan: ResolvedActionPlan;
+  readonly plan: ExecutedActionPlan;
   readonly frameStampEpoch: FrameStampEpoch;
   readonly activation: Activation;
   /** Keyed by action id. The fold re-scores under current policy and refuses a superset. */

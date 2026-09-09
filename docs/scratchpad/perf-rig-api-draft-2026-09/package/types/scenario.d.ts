@@ -24,6 +24,7 @@ import type {
   VariantOf,
 } from './app.js';
 import type { Literal, PageExpression, PageFunction, Procedure, Selector } from './procedure.js';
+import type { Activation } from './app.js';
 import type { Bounds, PointerSequence, PointerType } from './transport.js';
 import type { Viewport } from './target.js';
 
@@ -205,7 +206,12 @@ export interface ControlAction<A extends AppContract> {
   readonly eventTypes?: readonly string[];
   /** Replaces the package's plain settle for an animated completion. */
   readonly settleMs?: number;
-  /** Emitted only when the target is present at resolve time; otherwise recorded as not applicable with the reason. */
+  /**
+   * Decided when the action's turn comes, after the previous action's teardown and before this
+   * action's setup, never at plan time: a target absent then records the action as not applicable
+   * with the reason in the executed plan. A catalogue that opens straight to its pages has no book
+   * to open, and the page cannot say so until the dialog is open.
+   */
   readonly when?: { readonly present: Target<A>; readonly reason: string };
   /** Emitted only when the named group is not selected (a clear the rotation block needs when `clear` is not measured). */
   readonly onlyWithoutGroup?: string;
@@ -278,27 +284,51 @@ export interface SequenceAction<A extends AppContract> {
   readonly teardown?: readonly ScenarioStep<A>[];
 }
 
+/**
+ * The plan as resolved before the sweep from the context alone. Every operation the sweep will
+ * perform is listed in order, preparation included, so the plan can be compared against an
+ * execution trace of another runner and not only against its sample labels. Conditions the page
+ * decides later (`when`, a scroll's `notApplicable`) are listed as `condition` operations; the
+ * executed plan records how each resolved.
+ */
 export interface ResolvedActionPlan {
   readonly schemaVersion: 1;
   readonly scenarioId: string;
   /** Selected groups, in first-position order. */
   readonly groups: readonly string[];
-  /** Every sample the sweep will take, in emission order. */
+  /** Every sample the sweep may take, in emission order. */
   readonly actions: readonly {
     readonly id: string;
     readonly label: string;
     readonly group: string;
     readonly position: number;
+    readonly activation: ActivationRequest;
+    /** The reason recorded if the page decides against it at execution. */
+    readonly conditional?: string;
   }[];
+  readonly operations: readonly PlanOperation[];
+  readonly context: {
+    readonly dimensions: Readonly<Record<string, string>>;
+    readonly variant: string | null;
+  };
+}
+
+/** One thing the sweep does, in order; `detail` is the step or sample rendered as text. */
+export interface PlanOperation {
+  /** The action id, or the group for a block-level step, or `prepare` for a prepare block. */
+  readonly owner: string;
+  readonly phase: 'prepare' | 'setup' | 'condition' | 'sample' | 'teardown';
+  readonly detail: string;
+}
+
+/** The plan after the sweep ran: every page-decided condition resolved, and each sample's delivery. */
+export interface ExecutedActionPlan extends ResolvedActionPlan {
   readonly notApplicable: readonly {
     readonly id: string;
     readonly group: string;
     readonly reason: string;
   }[];
-  readonly context: {
-    readonly dimensions: Readonly<Record<string, string>>;
-    readonly variant: string | null;
-  };
+  readonly delivered: Readonly<Record<string, Activation>>;
 }
 
 export declare function resolveActionPlan<A extends AppContract>(

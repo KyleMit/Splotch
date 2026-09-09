@@ -32,10 +32,11 @@ export interface AppContract<
   Tool extends string = string,
   Controls extends ControlMap = ControlMap,
   Dims extends Dimensions = Dimensions,
+  Variant extends string = string,
 > {
   readonly name: string;
   readonly build: BuildContract;
-  readonly page: PageContract;
+  readonly page: PageContract<Variant>;
   readonly hooks: HooksContract;
   readonly marks: MarksContract;
   readonly state: StateContract<Dims>;
@@ -52,9 +53,9 @@ export interface AppContract<
 }
 
 export type ToolOf<A extends AppContract> =
-  A extends AppContract<infer T, ControlMap, Dimensions> ? T : never;
+  A extends AppContract<infer T, ControlMap, Dimensions, string> ? T : never;
 type ControlsOf<A extends AppContract> =
-  A extends AppContract<string, infer C, Dimensions> ? C : never;
+  A extends AppContract<string, infer C, Dimensions, string> ? C : never;
 /** Names of single controls; a family is addressed through `ControlRef`. */
 export type ControlOf<A extends AppContract> = {
   [K in keyof ControlsOf<A>]: ControlsOf<A>[K] extends ControlFamily<string> ? never : K;
@@ -82,11 +83,9 @@ export type DimensionSelection<A extends AppContract> = {
 export type ObservedDimensions<A extends AppContract> = {
   readonly [D in DimensionOf<A>]: DimensionValueOf<A, D>;
 };
-export type VariantOf<A extends AppContract> = A['page'] extends {
-  readonly variant: { readonly values: readonly (infer V)[] };
-}
-  ? V
-  : never;
+/** The declared shell variants; `string` for an app that declares none, carried by the definer like the tools. */
+export type VariantOf<A extends AppContract> =
+  A extends AppContract<string, ControlMap, Dimensions, infer V> ? V : never;
 
 /**
  * How the instrumented bundle is produced, served, and told apart from every other bundle that
@@ -149,7 +148,7 @@ export type OutputProof =
       readonly expression: PageExpression;
     };
 
-export interface PageContract {
+export interface PageContract<Variant extends string = string> {
   readonly path: string | { pathFor(options: { readonly fixture?: string }): string };
   /** The element whose bounding rect is the input target. Must be sized once ready. */
   readonly surface: Selector;
@@ -170,7 +169,7 @@ export interface PageContract {
    * phone hub, a compact landscape shell, a wide pane). Read once the page is ready, before any
    * action runs, and recorded in the resolved plan; a control family's readiness may depend on it.
    */
-  readonly variant?: { readonly values: readonly string[]; readonly read: PageExpression };
+  readonly variant?: { readonly values: readonly Variant[]; readonly read: PageExpression };
   /** The element the frames probe reads paper state from, if the app has a paper concept. */
   readonly paper?: {
     readonly element: Selector;
@@ -350,7 +349,8 @@ export declare function defineApp<
   const Tool extends string,
   const Controls extends ControlMap,
   const Dims extends Dimensions,
->(app: AppContract<Tool, Controls, Dims>): AppContract<Tool, Controls, Dims>;
+  const Variant extends string = string,
+>(app: AppContract<Tool, Controls, Dims, Variant>): AppContract<Tool, Controls, Dims, Variant>;
 
 /** Query parameters the harness appends; `doctor` verifies the route ignores each. */
 export declare const HARNESS_QUERY_PARAMS: readonly [

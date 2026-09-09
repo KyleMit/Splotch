@@ -69,9 +69,12 @@ keep their meaning. The golden action-verdict ledger gains a `scoringEpoch` head
 prints an identical queue for every target, under the same target ids and artifact paths; a
 corpus-to-type test re-runs `summariseFrames` and `summariseActions` over every tracked capture
 under `perf-profiles/evidence` and fails on any key the declarations do not name (the transcription
-check the reviews ran by hand); the resolved action plan for each shell and both starting
-orientations is compared, sample by sample including preparation steps, against the recorded
-`applicableLabels` of the tracked sweeps; `input-fidelity.test.mjs` and
+check the reviews ran by hand); the preparation-parity test runs the shipped `runActionSweep` under
+a fake client and `execute` that record every `clickSetupElement`, `performNativeGesture`,
+`ensureState`, `waitForReady` and `measureClick` call with its activation mode, for each shell and
+both starting orientations, and compares that trace operation by operation with the resolved plan's
+`operations` (the tracked `applicableLabels` are a sample-coverage check only, since `record()`
+populates them from samples and never from preparation); `input-fidelity.test.mjs` and
 `action-frame-stamps.test.mjs` pass with their bodies unchanged and their imports pointing at the
 binding; the golden ledger's epoch equals `COMPAT.scoringEpoch`.
 

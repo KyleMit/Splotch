@@ -488,16 +488,10 @@ const sequence: readonly SweepBlock<Splotch>[] = [
         label: 'open coloring books',
         control: 'coloringBooks',
         settleMs: ANIMATED_SETTLE_MS,
-      },
-      {
-        id: 'coloring.open-book',
-        label: 'open coloring book',
-        control: 'coloringBook',
-        when: {
-          present: 'coloringBook',
-          reason: 'a single-book catalogue opens straight to its pages',
-        },
-        setup: [
+        // showColoringBookChoices: the dialog is normalised to its catalogue before the next action
+        // decides whether there is a book to open. The lazy overlay is not mounted on a fresh page,
+        // so the decision has to wait until here.
+        teardown: [
           {
             kind: 'ifPresent',
             target: 'coloringBack',
@@ -508,6 +502,15 @@ const sequence: readonly SweepBlock<Splotch>[] = [
             ],
           },
         ],
+      },
+      {
+        id: 'coloring.open-book',
+        label: 'open coloring book',
+        control: 'coloringBook',
+        when: {
+          present: 'coloringBook',
+          reason: 'a single-book catalogue opens straight to its pages',
+        },
         settleMs: ANIMATED_SETTLE_MS,
       },
       // Measured before the page selection closes the dialog, as measureColoringPageScroll runs it.
