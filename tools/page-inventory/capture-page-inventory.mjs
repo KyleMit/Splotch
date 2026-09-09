@@ -326,14 +326,15 @@ async function admin(page) {
 // One surface per beta panel, each deep-linked so the pre-paint stamp opens the
 // tab this capture is for whatever the context's user agent says. The wait is
 // load-bearing: the prerendered document raises no tab (the picker only catches
-// up on hydration), so a shot taken before it shows a tab row with nothing live.
+// up on hydration). The active option must exist even on short touch screens,
+// where the hydrated picker is deliberately hidden in favor of the steps.
 function betaPanelSurface(platform, title, description) {
   const route = `/beta?os=${platform}`;
   return surface('routes', `beta-${platform}`, title, description, route, async (page) => {
     await navigate(page, route);
     await page
       .locator('.beta-platform-picker .option.active')
-      .waitFor({ state: 'visible', timeout: ACTION_MS });
+      .waitFor({ state: 'attached', timeout: ACTION_MS });
   });
 }
 
