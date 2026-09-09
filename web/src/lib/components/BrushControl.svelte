@@ -65,6 +65,7 @@
     class:white-stroke={inkWhite}
     class:dark-stroke={inkDark}
     id="brushButton"
+    style:--i={0}
     aria-label={singleOptionalBrushLabel ?? 'Brushes'}
     aria-expanded={optionalBrushes.length > 1 ? open : undefined}
     aria-pressed={singleOptionalBrush ? toolState.brush === singleOptionalBrush : undefined}

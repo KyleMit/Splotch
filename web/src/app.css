@@ -972,3 +972,21 @@ body {
     animation: none;
   }
 }
+
+.actions-drawer.opening .action-button:not(.action-unavailable) {
+  animation: btn-cascade var(--duration-slow) var(--ease-pop) backwards;
+  animation-delay: calc(var(--i) * var(--cascade));
+}
+
+@keyframes btn-cascade {
+  from {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions-drawer.opening .action-button:not(.action-unavailable) {
+    animation: none;
+  }
+}
