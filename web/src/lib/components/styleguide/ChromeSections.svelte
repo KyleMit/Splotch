@@ -148,7 +148,9 @@
   <h3>Settings furniture</h3>
   <p>
     The shared rows every Settings section is built from — pure props, themed end to end, icons from
-    the app set. Live and interactive below.
+    the app set. The slider drags relatively (grab anywhere, slide the value) and wears a 36px disc
+    thumb so the handle is obvious; the tick marks the snap detent where a row defines one. Live and
+    interactive below.
   </p>
   <div class="furniture-demo">
     <ToggleRow
