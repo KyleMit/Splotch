@@ -269,3 +269,39 @@ The parity tests are still tests that do not exist; they are named per phase in 
 `ControlAction.ready` on the palette swatch cannot name the swatch that was clicked, so the
 `palette.change` completion is weaker than the shipped `classList.contains('active')` on the picked
 element; a per-activation `self` reference in expressions is a candidate vocabulary addition.
+
+## Round 5 — the follow-up review, 8 findings
+
+The second posted review checked the round-four fixes against the shipped code with the same
+instruments and found seven blockers and one suggestion in their follow-through; every one held.
+
+* **The compact theme predicate compared the fallback, not the theme** (blocking). `??` binds looser
+  than `===`; the expression is parenthesised, reproduced and confirmed in happy-dom with an
+  explicit override and with the system fallback.
+* **`VariantOf` resolved to `never`** (blocking). The variant is a fourth parameter of `AppContract`
+  carried by `defineApp`, like the tools; probes for all three declared variants pass and an
+  undeclared one is an error.
+* **A page-decided condition was decided at plan time** (blocking). `ControlAction.when` is decided
+  when the action's turn comes; the coloring catalogue is normalised in the open-books action's
+  teardown, so the book choice is read on an open dialog.
+* **Measured Settings rows lost their WebDriver element click** (blocking). `ActivationRequest`
+  distinguishes the native tap, the native accessibility element, the WebDriver element click and
+  the in-page click, and the rows, the Settings close, the coloring book and page, the coloring
+  clear and the packaged screenshot request what the shipped sweep requests; the run-wide override
+  is the script click it records.
+* **The lock proof read the pre-transition controls** (blocking). Release and restore prove their
+  state through a retry that reopens the Appearance controls, as `waitForRotationLockState` does,
+  because changing the lock can change the shell.
+* **Delivery contradicted the endpoint** (blocking). Delivery follows the request's measurement
+  channel (`http-upload` is remote delivery into a packaged shell; every other channel is packaged),
+  with an override and a line in the dry-run plan; the per-kind map on the target is gone.
+* **The nonce guard claimed proof for remote delivery** (blocking). It is not applicable to either
+  fixed native URL; identity stays with the served-build and entry-module checks.
+* **The parity oracle could not see preparation** (suggestion). The resolved plan lists every
+  operation in order with its activation, the executed plan records how conditions resolved, and the
+  phase-3 oracle is an execution trace of the shipped sweep under a fake client; the tracked labels
+  remain a coverage check.
+
+The strategy verdict stands as round four recorded it: the DSL is kept while executable equivalence
+gates the adoption of each part, and this round's findings (a precedence slip, a plan-time decision,
+a lost activation request) are exactly the class the trace oracle now exists to catch.

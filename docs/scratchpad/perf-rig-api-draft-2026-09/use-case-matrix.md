@@ -71,8 +71,10 @@ Splotch code wearing a generic name:
 * Round four (the PR review): `ActionsScenario.sequence` blocks with position separate from group,
   `ToggleAction` and `ScrollAction`, `PrepareBlock`, control families with a member, `page.variant`,
   `Query` for the rotation lock, `RefusedCapture` and the `outcome` unions, `report-integrity`,
-  `ReadinessReport` with `awaitReady` and `awaitPulse`, `pageDelivery` per scenario kind on a
-  target, `CaptureRequest.fidelity`, `CampaignDefinition.gates`, and the six diagnostic functions.
+  `ReadinessReport` with `awaitReady` and `awaitPulse`, page delivery derived from the request's
+  channel, `CaptureRequest.fidelity`, `CampaignDefinition.gates`, and the six diagnostic functions.
+* Round five: a variant parameter on the contract, four activation requests, execution-time
+  conditions, and the plan's operation trace with the executed plan's resolutions.
 * Lost in round four: the `-browser`/`-packaged` target ids, which had renamed every artifact path.
 * Cut: `EngineScenario`, `CustomScenario`, `MountScenario`, `renderMatrix`, `stalenessOutcome`, the
   default fidelity constants, the label template mini-language. The engine family is three Splotch
