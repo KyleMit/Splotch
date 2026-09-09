@@ -1,8 +1,50 @@
 import { expect, test } from '@playwright/test';
 
 import releases from '../src/lib/releases.json' with { type: 'json' };
+import { SHORT_PAGE_HEIGHT_PX } from '../src/lib/breakpoints';
 
 import { openHydratedContents } from './helpers';
+
+test.describe('short touch screens', () => {
+  test.use({ hasTouch: true });
+
+  test('short screens compress the hero and open on release content', async ({ page }) => {
+    for (const viewport of [
+      { width: 956, height: 440 },
+      { width: 812, height: 375 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/changelog');
+      await expect(page.locator('.lede')).toBeHidden();
+      await expect(page.locator('.release').first().getByRole('heading').first()).toBeInViewport();
+      const compactHeight = (await page.locator('.hero').boundingBox())!.height;
+      await page.setViewportSize({ width: viewport.width, height: SHORT_PAGE_HEIGHT_PX + 1 });
+      await expect(page.locator('.lede')).toBeVisible();
+      expect((await page.locator('.hero').boundingBox())!.height).toBeGreaterThan(compactHeight);
+    }
+  });
+});
+
+test('short desktop viewports preserve the changelog introduction', async ({ page }) => {
+  await page.setViewportSize({ width: 683, height: 360 });
+  await page.goto('/changelog');
+  await expect(page.locator('.lede')).toBeVisible();
+});
+
+test('the changelog lede keeps its closing phrase together', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto('/changelog');
+  await page.evaluate(() => document.fonts.ready);
+  const phraseLines = await page.locator('.lede').evaluate((lede) => {
+    const text = [...lede.childNodes].find((node) => node.textContent?.includes('shipped'))!;
+    const start = text.textContent!.indexOf('shipped');
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, text.textContent!.trimEnd().length);
+    return range.getClientRects().length;
+  });
+  expect(phraseLines).toBe(1);
+});
 
 test('the changelog renders every release with its notes', async ({ page }) => {
   await page.goto('/changelog');

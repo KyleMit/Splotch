@@ -78,7 +78,8 @@
 <div class="changelog" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
   <PageShell title="Changelog" wordmark="Splotch">
     {#snippet lede()}
-      Every public Splotch release, newest first, with the notes that shipped alongside it.
+      Every public Splotch release, newest first, with the notes that
+      shipped&nbsp;alongside&nbsp;it.
     {/snippet}
 
     <div class="changelog-body">
@@ -120,6 +121,14 @@
 </div>
 
 <style>
+  /* Touch-only hiding preserves content during desktop zoom.
+     SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
+  @media (max-height: 500px) and (hover: none) and (pointer: coarse) {
+    .changelog :global(.lede) {
+      display: none;
+    }
+  }
+
   .changelog-body {
     /* Both off the spacing scale on purpose: the rail is the width that holds
        "Version 1.4.0" over its date without wrapping at --font-size-sm, and the
