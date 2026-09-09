@@ -5,6 +5,7 @@ import {
   TESTERS_GROUP_URL,
 } from '../src/lib/components/beta/androidBeta';
 import { betaPathFor } from '../src/lib/components/beta/betaPlatform';
+import { SHORT_PAGE_HEIGHT_PX } from '../src/lib/breakpoints';
 import { TESTFLIGHT_APP_URL, TESTFLIGHT_INVITE_URL } from '../src/lib/components/beta/iosBeta';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
@@ -21,6 +22,48 @@ import { ANDROID_UA, IPAD_UA, renderedText } from './helpers';
 function shownPanel(page: Page) {
   return page.locator('.beta-platform-panel:visible');
 }
+
+test.describe('short touch screens', () => {
+  test.use({ hasTouch: true });
+
+  for (const platform of ['android', 'ios'] as const) {
+    test(`short screens open on the ${platform} steps and keep the other platform reachable`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 812, height: 375 });
+      await page.goto(betaPathFor(platform));
+      await tabsAreLive(page);
+      await expect(page.locator('.lede')).toBeHidden();
+      await expect(page.locator('.beta-platform-picker')).toBeHidden();
+      const panel = shownPanel(page);
+      await expect(panel.getByRole('heading').first()).toBeInViewport();
+      await expect(panel.locator('.beta-step').first()).toBeInViewport();
+      const alternate = panel.locator('.alternate-platform');
+      await expect(alternate).not.toBeInViewport();
+      await alternate.click();
+      await expect(page).toHaveURL(betaPathFor(platform === 'ios' ? 'android' : 'ios'));
+      await expect(shownPanel(page)).toHaveAttribute(
+        'data-platform',
+        platform === 'ios' ? 'android' : 'ios'
+      );
+      await page.setViewportSize({ width: 812, height: SHORT_PAGE_HEIGHT_PX + 1 });
+      await expect(page.locator('.beta-platform-picker')).toBeVisible();
+      await expect(page.locator('.lede')).toBeVisible();
+      await expect(shownPanel(page).locator('.alternate-platform')).toBeHidden();
+    });
+  }
+});
+
+test('short desktop viewports preserve the beta introduction and platform picker', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 683, height: 360 });
+  await page.goto('/beta');
+  await expect(page.locator('.hero')).toHaveCSS('position', 'static');
+  await expect(page.locator('.lede')).toBeVisible();
+  await expect(page.locator('.beta-platform-picker')).toBeVisible();
+  await expect(shownPanel(page).locator('.alternate-platform')).toBeHidden();
+});
 
 function tab(page: Page, name: string) {
   return page.getByRole('radio', { name });
@@ -279,7 +322,17 @@ test('the support address is absent from the served HTML and added after hydrati
 // prerendered document. With scripting off the filter cannot run, so it stands
 // down rather than stranding half the testers on the wrong instructions.
 test.describe('without JavaScript', () => {
-  test.use({ javaScriptEnabled: false });
+  test.use({ javaScriptEnabled: false, hasTouch: true });
+
+  test('short screens keep the hash links as the platform chooser', async ({ page }) => {
+    await page.setViewportSize({ width: 812, height: 375 });
+    await page.goto('/beta');
+    await expect(page.locator('.alternate-platform:visible')).toHaveCount(0);
+    await page.getByRole('link', { name: 'iPhone / iPad', exact: true }).click();
+    await expect(shownPanel(page)).toHaveAttribute('data-platform', 'ios');
+    await page.getByRole('link', { name: 'Android', exact: true }).click();
+    await expect(shownPanel(page)).toHaveAttribute('data-platform', 'android');
+  });
 
   test('both platforms read as stacked sections and the picker stands down', async ({ page }) => {
     await page.goto('/beta');

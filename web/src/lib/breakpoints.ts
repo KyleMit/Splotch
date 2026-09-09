@@ -42,3 +42,7 @@ export function actionButtonSizeClass(shorterViewportSidePx: number): ActionButt
   if (shorterViewportSidePx >= LARGE_TABLET_MIN_SIDE_PX) return 'largeTablet';
   return shorterViewportSidePx >= TABLET_MIN_SIDE_PX ? 'tablet' : 'phone';
 }
+
+// Phone-landscape pages prioritize their reading content below this height.
+// pageHeight.test.ts guards the CSS copies of this boundary.
+export const SHORT_PAGE_HEIGHT_PX = 500;
