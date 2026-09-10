@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   buildMarker,
   buildReviewRequest,
@@ -7,6 +10,7 @@ import {
   parsePostArgs,
   partitionFindings,
   postReview,
+  postFromSession,
   REPOSITORY,
 } from '../post-review.mjs';
 
@@ -264,5 +268,193 @@ describe('posting', () => {
       session: '/tmp/s',
     });
     expect(() => parsePostArgs(['--pr', 'seven', '--session', '/tmp/s'])).toThrow(/usage/);
+  });
+
+  const sensitiveExamples = [
+    '12345678-ABCDEF0123456789',
+    'R9Z12345678',
+    'abcdef0123456789',
+    'IOS_UDID=' + 'e'.repeat(40),
+    'adb -s SYNTHETIC123 shell',
+    '"deviceId": "SYNTHETIC123"',
+    'ghp_' + 'x'.repeat(36),
+    'sk-proj-' + 'x'.repeat(40),
+    'API_KEY=syntheticCredentialValue',
+    'Authorization: Bearer syntheticCredentialValue',
+    '-----BEGIN PRIVATE KEY-----',
+  ];
+
+  it.each(sensitiveExamples)('blocks a sensitive review body before any POST: %s', (value) => {
+    const { gh, calls } = fakeGh();
+    expect(() => postReview({ ...options, findings: { ...FINDINGS, summary: value }, gh })).toThrow(
+      /publication blocked.*body:/
+    );
+    expect(calls.some(({ args }) => args.includes('POST'))).toBe(false);
+  });
+
+  it.each(sensitiveExamples)('blocks a sensitive inline comment before any POST: %s', (value) => {
+    const { gh, calls } = fakeGh();
+    expect(() =>
+      postReview({
+        ...options,
+        findings: { ...FINDINGS, findings: [finding({ body: value })] },
+        gh,
+      })
+    ).toThrow(/publication blocked.*comments\[0\].body:/);
+    expect(calls.some(({ args }) => args.includes('POST'))).toBe(false);
+  });
+
+  it.each(['claim', 'command', 'reason'])(
+    'scans unverified %s without echoing the value',
+    (field) => {
+      const value = 'R9Z12345678';
+      const { gh } = fakeGh();
+      let error;
+      try {
+        postReview({
+          ...options,
+          findings: {
+            ...FINDINGS,
+            unverified: [{ claim: 'claim', command: 'command', reason: 'reason', [field]: value }],
+          },
+          gh,
+        });
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error?.message).toContain('publication blocked');
+      expect(error?.message).not.toContain(value);
+      expect(error?.message).toContain('--sanitized-findings');
+    }
+  );
+
+  it('blocks off-diff findings and inline paths containing identifiers', () => {
+    const value = 'R9Z12345678';
+    expect(() =>
+      postReview({
+        ...options,
+        findings: { ...FINDINGS, findings: [finding({ line: 99, body: value })] },
+        gh: fakeGh().gh,
+      })
+    ).toThrow(/body:/);
+    expect(() =>
+      postReview({
+        ...options,
+        patch: PATCH.replaceAll('src/one.ts', `src/${value}.ts`),
+        findings: { ...FINDINGS, findings: [finding({ path: `src/${value}.ts` })] },
+        gh: fakeGh().gh,
+      })
+    ).toThrow(/comments\[0\].path:/);
+  });
+
+  it('publishes clean findings byte-for-byte, including commit references and marker UUIDs', () => {
+    const { gh, calls } = fakeGh();
+    const findings = { ...FINDINGS, summary: `Checked ${BASE} through ${HEAD}.` };
+    const id = '12345678-1234-1234-1234-123456789abc';
+    postReview({ ...options, findings, id, gh });
+    const request = buildReviewRequest({
+      ...options,
+      findings,
+      anchors: parseDiffAnchors(PATCH),
+      marker: buildMarker({ ...options, id }),
+    });
+    expect(JSON.parse(calls.find(({ args }) => args.includes('POST')).input)).toEqual(request);
+  });
+});
+
+describe('sanitized recovery', () => {
+  let session;
+  afterEach(() => {
+    if (session) rmSync(session, { recursive: true, force: true });
+  });
+
+  function setup() {
+    session = mkdtempSync(join(tmpdir(), 'safe-review-test-'));
+    mkdirSync(join(session, 'packet'));
+    writeFileSync(join(session, 'packet/diff.patch'), PATCH);
+    writeFileSync(
+      join(session, 'session.json'),
+      JSON.stringify({
+        rival: 'claude',
+        round: 1,
+        scope: { description: 'pull request 7', base: BASE, head: HEAD },
+      })
+    );
+    const original = { ...FINDINGS, summary: 'Device R9Z12345678' };
+    const originalText = JSON.stringify(original);
+    writeFileSync(join(session, 'findings.json'), originalText);
+    const sanitized = { ...original, summary: 'Device [REDACTED]' };
+    const sanitizedFindings = join(session, 'sanitized.json');
+    writeFileSync(sanitizedFindings, JSON.stringify(sanitized));
+    return { originalText, sanitized, sanitizedFindings };
+  }
+
+  it('publishes a marked copy on the original range without altering local findings or anchors', () => {
+    const { originalText, sanitizedFindings } = setup();
+    const { gh, calls } = fakeGh();
+    postFromSession({ number: 7, session, sanitizedFindings, gh });
+    const posted = JSON.parse(calls.find(({ args }) => args.includes('POST')).input);
+    expect(posted.body).toContain('Sanitized review:');
+    expect(posted.body).toContain(`base=${BASE};head=${HEAD};`);
+    expect(posted.commit_id).toBe(HEAD);
+    expect(JSON.stringify(posted)).not.toContain('R9Z12345678');
+    expect(posted.comments).toEqual(
+      buildReviewRequest({ findings: FINDINGS, anchors: parseDiffAnchors(PATCH) }).comments
+    );
+    expect(readFileSync(join(session, 'findings.json'), 'utf8')).toBe(originalText);
+  });
+
+  it('rescans a sanitized copy and refuses remaining sensitive values', () => {
+    const { sanitized, sanitizedFindings } = setup();
+    sanitized.findings = [
+      finding({ body: 'ghp_' + 'x'.repeat(36) }),
+      ...sanitized.findings.slice(1),
+    ];
+    writeFileSync(sanitizedFindings, JSON.stringify(sanitized));
+    const { gh, calls } = fakeGh();
+    expect(() => postFromSession({ number: 7, session, sanitizedFindings, gh })).toThrow(
+      /publication blocked/
+    );
+    expect(calls.some(({ args }) => args.includes('POST'))).toBe(false);
+  });
+
+  it.each(['path', 'line', 'side', 'severity'])(
+    'refuses changes to %s during sanitization',
+    (field) => {
+      const { sanitized, sanitizedFindings } = setup();
+      sanitized.findings = sanitized.findings.map((item) => ({
+        ...item,
+        [field]: { path: 'src/other.ts', line: 12, side: 'LEFT', severity: 'nit' }[field],
+      }));
+      writeFileSync(sanitizedFindings, JSON.stringify(sanitized));
+      expect(() =>
+        postFromSession({ number: 7, session, sanitizedFindings, gh: fakeGh().gh })
+      ).toThrow(/preserve every finding/);
+    }
+  );
+
+  it('refuses the original findings as a sanitized copy', () => {
+    setup();
+    expect(() =>
+      postFromSession({
+        number: 7,
+        session,
+        sanitizedFindings: join(session, 'findings.json'),
+        gh: fakeGh().gh,
+      })
+    ).toThrow(/separate sanitized/);
+  });
+
+  it('parses the explicit sanitized copy option', () => {
+    expect(
+      parsePostArgs([
+        '--pr',
+        '7',
+        '--session',
+        '/tmp/s',
+        '--sanitized-findings',
+        '/tmp/s/sanitized.json',
+      ])
+    ).toEqual({ number: 7, session: '/tmp/s', sanitizedFindings: '/tmp/s/sanitized.json' });
   });
 });

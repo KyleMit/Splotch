@@ -13,6 +13,46 @@ import { PACKET_FILES } from './worktree.mjs';
 export const REPOSITORY = 'KyleMit/Splotch';
 export const MARKER_PREFIX = 'splotch-rival-review';
 const OID_PATTERN = /^[0-9a-f]{40}$/;
+const SENSITIVE_PATTERNS = [
+  ['iOS device identifier', /\b[0-9a-f]{8}-[0-9a-f]{16}\b/i],
+  ['Android device identifier', /\b(?:R[0-9A-Z]{10}|[0-9a-fA-F]{16})\b/],
+  [
+    'device identifier',
+    /(?:\b(?:[\w.-]*(?:udid|serial|device[_-]?id))\b["'`\s:=]+|\b(?:adb\s+-s|idevice\w*\s+-u)\s+["'`]?|\bplatform=iOS,id=)[a-z0-9][a-z0-9.-]{5,}/i,
+  ],
+  [
+    'credential',
+    /\b(?:gh[pousr]_[a-z0-9]{20,}|github_pat_[a-z0-9_]{20,}|sk-[a-z0-9_-]{20,}|AKIA[A-Z0-9]{16}|AIza[a-z0-9_-]{30,})\b/i,
+  ],
+  ['private key', /-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----/],
+  [
+    'credential',
+    /\b(?:[\w.-]*(?:api[_-]?key|access[_-]?token|auth[_-]?token|password|secret))\b["'`\s]*[:=]["'`\s]*[a-z0-9_+/.=-]{8,}/i,
+  ],
+  ['authorization credential', /\b(?:Bearer|Basic)\s+[a-z0-9_+/.=-]{8,}/i],
+];
+
+// Scan the rendered payload so summaries, off-diff findings, commands and inline paths share the
+// same publication boundary. Diagnostics identify fields, never the matched repository values.
+export function assertSafeReview(request) {
+  const fields = [['body', request.body]];
+  request.comments.forEach((comment, index) => {
+    fields.push(
+      [`comments[${index}].body`, comment.body],
+      [`comments[${index}].path`, comment.path]
+    );
+  });
+  const detections = fields.flatMap(([field, text]) =>
+    SENSITIVE_PATTERNS.filter(([, pattern]) => pattern.test(text)).map(
+      ([kind]) => `${field}: ${kind}`
+    )
+  );
+  if (detections.length > 0) {
+    throw new Error(
+      `Review publication blocked (${detections.join('; ')}). No review was posted. Keep the original findings.json; create a separate sanitized copy, replace sensitive values with [REDACTED], and retry post-review.mjs with --sanitized-findings <file>. See tools/rival-agent/README.md for safe recovery.`
+    );
+  }
+}
 
 export function buildMarker({ rival, base, head, id }) {
   return `<!-- ${MARKER_PREFIX}:rival=${rival};base=${base};head=${head};id=${id} -->`;
@@ -207,6 +247,7 @@ export function postReview({
   head,
   gh = defaultGh,
   id = randomUUID(),
+  sanitized = false,
 }) {
   const metadata = readPullRequest(number, gh);
   if (metadata.headRefOid !== head) {
@@ -235,6 +276,10 @@ export function postReview({
     scope,
     head,
   });
+  if (sanitized) {
+    request.body = `_Sanitized review: sensitive values removed by the handler; original findings retained locally._\n\n${request.body}`;
+  }
+  assertSafeReview(request);
   const created = JSON.parse(
     gh(['api', '--method', 'POST', `repos/${REPOSITORY}/pulls/${number}/reviews`, '--input', '-'], {
       input: JSON.stringify(request),
@@ -264,22 +309,67 @@ export function parsePostArgs(argv) {
     args: argv,
     strict: true,
     allowPositionals: false,
-    options: { pr: { type: 'string' }, session: { type: 'string' } },
+    options: {
+      pr: { type: 'string' },
+      session: { type: 'string' },
+      'sanitized-findings': { type: 'string' },
+    },
   });
   if (positionals.length > 0 || !/^\d+$/.test(values.pr ?? '') || !values.session) {
     throw new Error('usage: post-review.mjs --pr <number> --session <dir>');
   }
-  return { number: Number(values.pr), session: resolve(values.session) };
+  return {
+    number: Number(values.pr),
+    session: resolve(values.session),
+    ...(values['sanitized-findings']
+      ? { sanitizedFindings: resolve(values['sanitized-findings']) }
+      : {}),
+  };
 }
 
-export function postFromSession({ number, session, gh = defaultGh }) {
+function readValidatedFindings(path) {
+  const parsed = parseFindings(readFileSync(path, 'utf8'));
+  if (!parsed.ok)
+    throw new Error('Findings do not match the schema; validate the local file before publishing.');
+  return parsed.findings;
+}
+
+function readSanitizedFindings(path, original) {
+  const sanitized = readValidatedFindings(path);
+  const anchors = (document) =>
+    document.findings.map(({ path, line, startLine, side, severity }) => [
+      path,
+      line,
+      startLine,
+      side,
+      severity,
+    ]);
+  if (
+    JSON.stringify(anchors(sanitized)) !== JSON.stringify(anchors(original)) ||
+    sanitized.unverified.length !== original.unverified.length
+  ) {
+    throw new Error(
+      'Sanitization must preserve every finding, anchor, severity and unverified entry.'
+    );
+  }
+  return sanitized;
+}
+
+export function postFromSession({ number, session, sanitizedFindings, gh = defaultGh }) {
   const record = readSession(session);
   if (!record) throw new Error(`no session at ${session}`);
-  const parsed = parseFindings(readFileSync(join(session, SESSION_FILES.findings), 'utf8'));
-  if (!parsed.ok) throw new Error(`findings do not match the schema: ${parsed.errors.join('; ')}`);
+  const originalPath = join(session, SESSION_FILES.findings);
+  const original = readValidatedFindings(originalPath);
+  if (sanitizedFindings && resolve(sanitizedFindings) === resolve(originalPath)) {
+    throw new Error('Use a separate sanitized findings file; retain the original findings.json.');
+  }
+  const findings = sanitizedFindings
+    ? readSanitizedFindings(sanitizedFindings, original)
+    : original;
   return postReview({
     number,
-    findings: parsed.findings,
+    findings,
+    sanitized: Boolean(sanitizedFindings),
     patch: readFileSync(join(session, SESSION_FILES.packet, PACKET_FILES.diff), 'utf8'),
     rival: record.rival,
     round: record.round,

@@ -6,9 +6,9 @@ CLI) inside a disposable worktree pinned to one commit id, confined by the rival
 sandbox rooted at that worktree with the network off. The rival runs its own tests, checks, and
 repros there; the broker is its door out for what the sandbox refuses: it asks, the handler runs the
 command under its own permission rules or declines, and the answer flows back. The rival returns
-findings against one schema and the handler posts them verbatim. `NOTES.md` holds the design
-history: why this shape, what was rejected, the accepted exposures, and the Claude versus Codex
-parity table.
+findings against one schema and the handler posts them after a sensitive-value check. `NOTES.md`
+holds the design history: why this shape, what was rejected, the accepted exposures, and the Claude
+versus Codex parity table.
 
 The runtime files in this folder import nothing from outside it. The Codex-side installer copies
 those files into `~/.local/libexec` as hashed trusted bytes, where the rest of the checkout does not
@@ -89,3 +89,46 @@ Every CLI prints one JSON document on stdout and diagnostics on stderr, and exit
 failure. The stream watchdog terminates the rival's whole process group after ten minutes with
 neither a stream event nor broker traffic. The poster refuses a head or base that moved since the
 review and never posts twice for one range.
+
+## Sensitive findings and safe manual recovery
+
+Both the standalone poster and the fixed orchestrated publisher call the same pre-publish guard. It
+checks the rendered review body (including off-diff findings and unverified commands), inline
+comment bodies and inline paths before the POST. A match fails closed: no review is created, the
+original session files are untouched, and diagnostics name only the field and detection category.
+Clean reviews publish unchanged.
+
+The guard recognizes modern physical iOS UDIDs, Samsung-style Android serials, 16-digit hexadecimal
+Android identifiers, and device identifiers named by serial/UDID/device-ID fields or common device
+commands. Legacy 40-digit iOS UDIDs require that device context because an unlabelled value has the
+same shape as a Git commit OID. Credential checks cover common GitHub, OpenAI, AWS and Google token
+shapes, private-key headers, secret/key/password assignments and Basic/Bearer authorization values.
+This is a conservative shape check, not a universal secret detector: unusual unlabelled identifiers,
+encoded values and unknown credential formats still need human inspection. False positives must be
+removed from the public wording, never bypassed by disabling the guard.
+
+To recover a blocked review:
+
+1. Keep `findings.json` in the owner-only session directory. Make a separate local copy there named
+   `sanitized-findings.json`; do not attach either file or raw diagnostics to GitHub.
+2. Inspect every summary, finding and unverified entry. Replace sensitive literal values with
+   `[REDACTED]`, preserving the substantive claim, evidence and fix. Keep every finding in order,
+   with its path, line, startLine, side and severity unchanged, and retain every unverified entry.
+3. Re-run the standalone poster for the same session and PR with
+   `--sanitized-findings <absolute-path-to-copy>`. Codex uses the installed
+   `/Users/kylemit/.local/libexec/splotch-rival-agent/post-review.mjs` wrapper; the Claude handler
+   uses `node tools/rival-agent/post-review.mjs`. Keep the normal `--pr` and `--session` arguments.
+   This also recovers a blocked orchestrated run: use the session path printed in its progress log,
+   rather than launching another reviewer round.
+4. The copy is schema-checked, checked for unchanged finding anchors/severities, scanned again and
+   explicitly marked as sanitized. Base/head OIDs and the hidden attribution marker still come from
+   the original session; moved ranges remain blocked. Verify the posted review and its inline
+   comments before declaring recovery complete.
+
+There is no force-publish option. If a sensitive value is part of an anchor path or the session
+metadata, leave publication blocked; fix the source path or metadata and review the corrected range.
+Do not alter the reviewed range to disguise the original review as one of different code.
+
+Installed Codex publishers gain these checks only after the trusted canonical checkout contains the
+change and its normal `npm run run-claude:install` procedure refreshes the installed bytes. Do not
+copy a PR worktree's publisher over the trusted wrapper to review that same PR.
