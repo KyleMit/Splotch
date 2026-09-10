@@ -463,7 +463,11 @@ describe('workflow hygiene', () => {
       workflow: 'android-deploy.yml',
     },
     {
-      body: ['maestro-ios-report', 'did not boot and paint'],
+      body: [
+        'maestro-ios-report',
+        'XCTest driver startup',
+        'does not prove the app failed to boot',
+      ],
       env: {
         ARTIFACT: 'maestro-ios-report',
         GITHUB_REF_NAME: 'v1.5.0',
@@ -509,6 +513,28 @@ describe('workflow hygiene', () => {
       expect(ghCalls).not.toContain('issue create');
       for (const excerpt of step.body) expect(body).toContain(excerpt);
     });
+  });
+
+  it.each([
+    { smoke: 'failure', report: 'success', excerpt: 'XCTest driver startup' },
+    { smoke: 'skipped', report: 'success', excerpt: 'smoke step did not fail' },
+    { smoke: '', report: 'skipped', excerpt: 'never reached' },
+    { smoke: 'success', report: 'failure', excerpt: 'No maestro-ios-report artifact was produced' },
+  ])('reports iOS smoke=$smoke and report=$report without inferring an app failure', (scenario) => {
+    const step = filingSteps.find(({ workflow }) => workflow === 'ios-deploy.yml');
+    const script = stepScript(
+      workflows.find(({ name }) => name === step.workflow).lines,
+      'File the failure'
+    );
+    const { body, result } = runFilingStep(
+      script,
+      { ...step.env, SMOKE_OUTCOME: scenario.smoke, REPORT_OUTCOME: scenario.report },
+      ''
+    );
+    expect(result.status).toBe(0);
+    expect(body).toContain(scenario.excerpt);
+    expect(body).not.toContain('shipped artifact did not boot and paint');
+    expect(body).not.toContain('makes this a real regression');
   });
 
   // The fail-closed arm of the same step. A comparison that could not run still

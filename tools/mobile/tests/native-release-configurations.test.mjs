@@ -56,4 +56,21 @@ describe('native release configuration gates', () => {
     expect(iosSmokeRunner).toContain("const SKIP_SYNC_FLAG = '--skip-sync';");
     expect(iosSmokeRunner).toContain("if (!skipSync) await sh('npm run cap:sync');");
   });
+
+  it('budgets hosted XCTest startup independently of the app paint assertion', () => {
+    const smokeStep = iosWorkflow
+      .split('- name: Run iOS simulator smoke test')[1]
+      .split('- name:')[0];
+    expect(smokeStep).toContain('MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000');
+    expect(read('.maestro/smoke.yaml')).toContain('timeout: 30000');
+  });
+
+  it('retains XCTest startup diagnostics alongside Maestro flow evidence', () => {
+    const reportStep = iosWorkflow.split('- name: Upload Maestro report')[1].split('- name:')[0];
+    expect(reportStep).toContain('~/.maestro/tests/');
+    expect(reportStep).toContain('~/Library/Logs/maestro/xctest_runner_logs/');
+    const reportAction = read('.github/actions/upload-maestro-report/action.yml');
+    expect(reportAction).toContain('path: ${{ inputs.path }}');
+    expect(reportAction).toContain('default: ~/.maestro/tests/');
+  });
 });

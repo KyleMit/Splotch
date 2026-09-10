@@ -44,6 +44,9 @@ jobs:
       # same flow the Android smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
         id: smoke
+        env:
+          # Budget cold hosted XCTest startup separately from the app's paint assertion.
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000
         run: npm run test:ios -- --skip-sync
 
       - name: Upload Maestro report
@@ -52,6 +55,9 @@ jobs:
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-ios-report
+          path: |
+            ~/.maestro/tests/
+            ~/Library/Logs/maestro/xctest_runner_logs/
 
       # Same reasoning as android-deploy.yml's filing step, down to why
       # `failure()` stays job-wide while the body distinguishes a failed smoke
@@ -70,17 +76,19 @@ jobs:
         run: |
           title="${PLATFORM} native deploy gate failed"
           if [[ "$SMOKE_OUTCOME" == "failure" ]]; then
-            cause="The launch smoke itself failed, so the shipped artifact did not boot and paint. The
-          flow asserts only that (ADR-0120), which makes this a real regression in the build, the
-          Capacitor config, the static export, or the WebView start — not flow drift."
+            cause="The smoke command failed during simulator setup, build/install, XCTest driver startup,
+          or the app launch assertion. A failed command alone does not prove the app failed to boot.
+          Inspect the run and XCTest logs to identify the failing phase before classifying a product
+          regression. The flow checks only launch and first paint (ADR-0120)."
           else
             cause="The smoke step did not fail (outcome: ${SMOKE_OUTCOME:-never reached}); the job went red
           somewhere else — checkout, toolchain, the build, or the report upload. Read the run before
           treating this as a product regression."
           fi
           if [[ "$REPORT_OUTCOME" == "success" ]]; then
-            evidence="* Evidence: the ${ARTIFACT} artifact on that run holds the flow log and any
-            screenshot taken at the failing step."
+            evidence="* Evidence: the report upload step succeeded for ${ARTIFACT}. When produced, the
+            artifact includes Maestro flow logs, failure screenshots, and XCTest runner startup logs.
+            A failure before Maestro starts may leave no report files; inspect the job log too."
           else
             evidence="* No ${ARTIFACT} artifact was produced (upload outcome: ${REPORT_OUTCOME:-never reached})."
           fi
