@@ -62,6 +62,7 @@ describe('native release configuration gates', () => {
       .split('- name: Run iOS simulator smoke test')[1]
       .split('- name:')[0];
     expect(smokeStep).toContain('MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000');
+    expect(smokeStep).toContain('timeout-minutes: 20');
     expect(read('.maestro/smoke.yaml')).toContain('timeout: 30000');
   });
 

@@ -44,6 +44,8 @@ jobs:
       # same flow the Android smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
         id: smoke
+        # Leave time to upload diagnostics before the job-wide cancellation deadline.
+        timeout-minutes: 20
         env:
           # Budget cold hosted XCTest startup separately from the app's paint assertion.
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 300000
@@ -55,6 +57,7 @@ jobs:
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-ios-report
+          # Collect both legacy appdirs and session-local XCTest logs across CLI upgrades.
           path: |
             ~/.maestro/tests/
             ~/Library/Logs/maestro/xctest_runner_logs/
