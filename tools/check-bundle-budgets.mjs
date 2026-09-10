@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import { parse } from 'svelte/compiler';
 import { filesRecursively } from './lib/filesystem.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
+import { isInstrumentedBuild } from './lib/build-instrumentation.mjs';
 
 const OUTPUT_DIR = join(ROOT, 'web/.svelte-kit/output');
 const PRERENDERED_INDEX = join(OUTPUT_DIR, 'prerendered/pages/index.html');
@@ -168,13 +169,14 @@ export async function checkBundleBudgets({
     prerenderedIndex,
     clientDir,
   });
-  // ADR-0032 retains marks and function names only for profiling; release byte
-  // limits describe the artifact enforced by CI's uninstrumented release build.
-  const profiling = env.PERF_MARKS === 'true';
+  // Diagnostic code does not ship; release byte limits describe the artifact
+  // enforced by CI's uninstrumented release build (ADR-0032).
+  const instrumented = isInstrumentedBuild(env);
   const problems = webBundleBudgetProblems(measurement);
-  if (!profiling && problems.length) throw new Error(problems.join('\n'));
+  if (!instrumented && problems.length) throw new Error(problems.join('\n'));
+  for (const problem of problems) log(`[bundle-budgets] report-only: ${problem}`);
   log(
-    `[bundle-budgets] ${profiling ? 'PERF_MARKS=true: release byte budgets are report-only; ' : ''}startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
+    `[bundle-budgets] ${instrumented ? 'instrumented build: release byte budgets are report-only; ' : ''}startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
       `largest lazy JS ${measurement.largestLazyChunk.bytes}/${MAX_LAZY_CHUNK_BYTES} bytes (${measurement.largestLazyChunk.path})`
   );
 }

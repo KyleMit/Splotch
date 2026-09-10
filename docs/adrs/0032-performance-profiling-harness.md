@@ -44,13 +44,17 @@ A profiling harness in `scripts/perf/`, built on the existing Playwright app-dri
   `PERF_MARKS=true`, serves via `vite preview`, and drives the minified bundle that actually ships.
   Profiling-only builds add `keepNames` so the CPU sampler's self-time is readable.
 
-  Web release byte budgets apply to the uninstrumented artifact. With `PERF_MARKS=true`, the
-  postbuild checker measures startup JS/CSS and the largest lazy chunk and logs their sizes against
-  those budgets as report-only; build-output integrity checks remain mandatory. CI's release build
-  smoke explicitly unsets profiling and dev-harness flags and enforces the unchanged limits. Native
-  export limits remain enforced. This avoids increasing the production allowance to cover bytes that
-  do not ship, introducing an arbitrary second profiling allowance, or dropping useful trace names
-  to satisfy a release-size constraint (issue #1746).
+  Web release byte budgets apply to the uninstrumented artifact. With `PERF_MARKS=true` or
+  `PUBLIC_ENABLE_DEV_HARNESS=true`, the postbuild checker measures startup JS/CSS and the largest
+  lazy chunk and logs their sizes against those budgets as report-only; build-output integrity
+  checks remain mandatory. CI's release build smoke explicitly unsets profiling and dev-harness
+  flags and enforces the unchanged limits. Native export limits remain enforced. Instrumented
+  startup and lazy-chunk sizes deliberately have no separate hard limit; exceeding a release budget
+  produces an explicit diagnostic. A second absolute size limit would bound the diagnostic artifact,
+  but would not measure its overhead relative to the production artifact. We retain the production
+  gate and visible diagnostic measurements rather than adopting a second limit without a
+  profiling-overhead contract, increasing the release allowance, or dropping useful trace names to
+  satisfy a release-size constraint (issue #1746).
 
 * **One shared session, three page sources.** `session.mjs` owns the deterministic scenario +
   capture; the platform entries differ only in how the page is obtained:

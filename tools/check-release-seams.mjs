@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
+import { isInstrumentedBuild } from './lib/build-instrumentation.mjs';
 
 const CLIENT_BUNDLE_DIR = join(ROOT, 'web/.svelte-kit/output/client/_app/immutable');
 const ENGINE_SOURCE_PATH = 'web/src/lib/drawing/engine.ts';
@@ -156,8 +157,7 @@ export async function checkReleaseSeams({
 } = {}) {
   const sourceProblems = [...engineDevGateProblems(), ...drawingWorkHotPathProblems()];
   if (sourceProblems.length) throw new Error(sourceProblems.join('\n'));
-  const instrumented = env.PERF_MARKS === 'true' || env.PUBLIC_ENABLE_DEV_HARNESS === 'true';
-  if (instrumented) {
+  if (isInstrumentedBuild(env)) {
     log('[release-seams] instrumented build: profiling seams retained');
     return;
   }

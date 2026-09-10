@@ -13,6 +13,13 @@ re-runnable on any saved trace.
 
 ## Commands
 
+Instrumented web builds (`PERF_MARKS=true` or `PUBLIC_ENABLE_DEV_HARNESS=true`) report startup
+JS/CSS and lazy-chunk sizes against the release byte budgets without enforcing those limits: marks,
+retained function names, and dev-harness seams add bytes that do not ship (ADR-0032). Exceeded
+budgets produce explicit report-only diagnostics. Build-output integrity checks still fail normally.
+Ordinary web builds, including CI's explicitly uninstrumented release build smoke, enforce the
+unchanged byte limits. Native export budgets remain enforced.
+
 | Command                                              | Profiles                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Capture                                                                                                                                    |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `npm run perf:web`                                   | Production preview in headless Chromium, phone viewport, **4× CPU throttle**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | full CDP Chrome trace                                                                                                                      |
@@ -74,14 +81,6 @@ stores, not the JS heap** — so `performance.memory` / the heap table can't see
 `rasterBytes + baseRasterBytes` (ADR-0085/0086).
 
 ### Which undo run to reach for
-
-Web profiling builds (`PERF_MARKS=true`) report startup JS/CSS and lazy-chunk sizes against the
-release byte budgets without enforcing those limits: retained marks and function names add bytes
-that do not ship (ADR-0032). Build-output integrity checks still fail normally. Ordinary web builds,
-including CI's explicitly uninstrumented release build smoke, enforce the unchanged byte limits;
-`PUBLIC_ENABLE_DEV_HARNESS=true` alone does not opt out. Native export budgets remain enforced. An
-instrumented build passing its prerequisites is not a timing pass: the fast WebKit gate must produce
-commit samples and a measured verdict in its `undo-scenarios` artifacts.
 
 Run **both** when you touch the commit or tiled-history path; they answer different questions and
 neither substitutes for the other.

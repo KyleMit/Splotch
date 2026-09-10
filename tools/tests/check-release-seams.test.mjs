@@ -98,18 +98,23 @@ it('requires surface-visit accounting to stay behind the compile-time gate', () 
   );
 });
 
-it('skips an explicitly instrumented build before reading its bundle', async () => {
-  const log = vi.fn();
+it.each([{ PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+  'skips an explicitly instrumented build before reading its bundle: %j',
+  async (env) => {
+    const log = vi.fn();
 
-  await expect(
-    checkReleaseSeams({
-      dir: join(fixture(), 'missing'),
-      env: { PERF_MARKS: 'true' },
-      log,
-    })
-  ).resolves.toBeUndefined();
-  expect(log).toHaveBeenCalledWith('[release-seams] instrumented build: profiling seams retained');
-});
+    await expect(
+      checkReleaseSeams({
+        dir: join(fixture(), 'missing'),
+        env,
+        log,
+      })
+    ).resolves.toBeUndefined();
+    expect(log).toHaveBeenCalledWith(
+      '[release-seams] instrumented build: profiling seams retained'
+    );
+  }
+);
 
 it('reports a missing release client directory', async () => {
   const missing = join(fixture(), 'missing');

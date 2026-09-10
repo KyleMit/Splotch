@@ -107,7 +107,7 @@ it('measures every file in the native export and rejects an oversized package', 
   ]);
 });
 
-it.each([{}, { PERF_MARKS: 'false' }, { PERF_MARKS: '1' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+it.each([{}, { PERF_MARKS: 'false' }, { PERF_MARKS: '1' }, { PUBLIC_ENABLE_DEV_HARNESS: '1' }])(
   'rejects an oversized web bundle without explicit profiling: %j',
   async (env) => {
     const root = temporaryDirectory();
@@ -129,7 +129,11 @@ it.each([{}, { PERF_MARKS: 'false' }, { PERF_MARKS: '1' }, { PUBLIC_ENABLE_DEV_H
   }
 );
 
-it('reports oversized profiling startup and lazy chunks without enforcing release byte limits', async () => {
+it.each([
+  { PERF_MARKS: 'true' },
+  { PUBLIC_ENABLE_DEV_HARNESS: 'true' },
+  { PERF_MARKS: 'true', PUBLIC_ENABLE_DEV_HARNESS: 'true' },
+])('reports oversized instrumented startup and lazy chunks: %j', async (env) => {
   const root = temporaryDirectory();
   const clientDir = join(root, 'client');
   const prerenderedIndex = join(root, 'prerendered/pages/index.html');
@@ -142,42 +146,58 @@ it('reports oversized profiling startup and lazy chunks without enforcing releas
   );
   const log = vi.fn();
 
-  await checkBundleBudgets({ prerenderedIndex, clientDir, env: { PERF_MARKS: 'true' }, log });
+  await checkBundleBudgets({ prerenderedIndex, clientDir, env, log });
 
   expect(log).toHaveBeenCalledWith(
-    `[bundle-budgets] PERF_MARKS=true: release byte budgets are report-only; startup JS/CSS ${MAX_STARTUP_JS_CSS_BYTES + 1}/${MAX_STARTUP_JS_CSS_BYTES} bytes across 1 linked files + 0 inline CSS bytes; largest lazy JS ${MAX_LAZY_CHUNK_BYTES + 1}/${MAX_LAZY_CHUNK_BYTES} bytes (_app/immutable/chunks/lazy.js)`
+    `[bundle-budgets] report-only: Startup JS/CSS is ${MAX_STARTUP_JS_CSS_BYTES + 1} bytes, above the ${MAX_STARTUP_JS_CSS_BYTES}-byte budget`
+  );
+  expect(log).toHaveBeenCalledWith(
+    `[bundle-budgets] report-only: Largest lazy JS chunk is ${MAX_LAZY_CHUNK_BYTES + 1} bytes, above the ${MAX_LAZY_CHUNK_BYTES}-byte budget (_app/immutable/chunks/lazy.js)`
+  );
+  expect(log).toHaveBeenCalledWith(
+    `[bundle-budgets] instrumented build: release byte budgets are report-only; startup JS/CSS ${MAX_STARTUP_JS_CSS_BYTES + 1}/${MAX_STARTUP_JS_CSS_BYTES} bytes across 1 linked files + 0 inline CSS bytes; largest lazy JS ${MAX_LAZY_CHUNK_BYTES + 1}/${MAX_LAZY_CHUNK_BYTES} bytes (_app/immutable/chunks/lazy.js)`
   );
 });
 
-it('still rejects missing startup resources in a profiling build', async () => {
-  const root = temporaryDirectory();
-  const clientDir = join(root, 'client');
-  const prerenderedIndex = join(root, 'index.html');
-  writeFileSync(
-    prerenderedIndex,
-    '<link href="./_app/immutable/entry/missing.js" rel="modulepreload">'
-  );
+it.each([{ PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+  'still rejects missing startup resources in an instrumented build: %j',
+  async (env) => {
+    const root = temporaryDirectory();
+    const clientDir = join(root, 'client');
+    const prerenderedIndex = join(root, 'index.html');
+    writeFileSync(
+      prerenderedIndex,
+      '<link href="./_app/immutable/entry/missing.js" rel="modulepreload">'
+    );
 
-  await expect(
-    checkBundleBudgets({ prerenderedIndex, clientDir, env: { PERF_MARKS: 'true' }, log: vi.fn() })
-  ).rejects.toThrow('Startup resource does not exist');
-});
+    await expect(
+      checkBundleBudgets({ prerenderedIndex, clientDir, env, log: vi.fn() })
+    ).rejects.toThrow('Startup resource does not exist');
+  }
+);
 
-it.each([{}, { PERF_MARKS: 'true' }])('rejects an oversized native export: %j', async (env) => {
-  const nativeDir = temporaryDirectory();
-  writeSizedFile(join(nativeDir, 'index.html'), MAX_NATIVE_EXPORT_BYTES + 1);
+it.each([{}, { PERF_MARKS: 'true' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+  'rejects an oversized native export: %j',
+  async (env) => {
+    const nativeDir = temporaryDirectory();
+    writeSizedFile(join(nativeDir, 'index.html'), MAX_NATIVE_EXPORT_BYTES + 1);
 
-  await expect(checkBundleBudgets({ native: true, nativeDir, env, log: vi.fn() })).rejects.toThrow(
-    `Native static export is ${MAX_NATIVE_EXPORT_BYTES + 1} bytes, above the ${MAX_NATIVE_EXPORT_BYTES}-byte budget`
-  );
-});
+    await expect(
+      checkBundleBudgets({ native: true, nativeDir, env, log: vi.fn() })
+    ).rejects.toThrow(
+      `Native static export is ${MAX_NATIVE_EXPORT_BYTES + 1} bytes, above the ${MAX_NATIVE_EXPORT_BYTES}-byte budget`
+    );
+  }
+);
 
 it('keeps CI release build validation explicitly uninstrumented', () => {
   const workflow = readFileSync(
     new URL('../../.github/workflows/test.yml', import.meta.url),
     'utf8'
   );
-  expect(workflow).toContain('run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build');
+  expect(workflow.split('\n').map((line) => line.trim())).toContain(
+    'run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build'
+  );
 });
 
 it('is wired into both release build lifecycle hooks', () => {
