@@ -41,7 +41,7 @@ const SENSITIVE_PATTERNS = [
   ],
   [
     'authorization credential',
-    /\b(?:[Bb]earer|[Bb]asic)\s+(?=[a-zA-Z0-9_+/.=-]*(?:[0-9_+/.=-]|[A-Z][a-z]|[a-z][A-Z]))[a-zA-Z0-9_+/.=-]{8,}/,
+    /\b(?:[Bb]earer|[Bb]asic)\s+(?=[A-Za-z0-9_+/=-]*(?:[0-9_+/=-]|[a-z][A-Z]))[A-Za-z0-9_+/=-][A-Za-z0-9_+/.=-]{7,}/,
   ],
 ];
 

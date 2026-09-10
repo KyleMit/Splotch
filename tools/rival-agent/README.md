@@ -110,6 +110,12 @@ conservative shape check, not a universal secret detector: unusual unlabelled id
 values and unknown credential formats still need human inspection. False positives must be removed
 from the public wording, never bypassed by disabling the guard.
 
+Bare assignments to credential-named fields remain conservative: an identifier-like right-hand side
+can be either a code reference or an actual shell/environment credential value. A terminating
+semicolon cannot safely distinguish them, since shell assignments also use semicolons. Reword a
+non-sensitive reference as a description when necessary; do not exempt all semicolon-terminated
+assignments.
+
 To recover a blocked review:
 
 1. Keep `findings.json` in the owner-only session directory. Make a separate local copy there named
