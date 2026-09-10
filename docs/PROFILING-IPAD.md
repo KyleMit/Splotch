@@ -6,11 +6,18 @@ This is the runbook for profiling on a **physical iPad** — the highest-fidelit
 the drawing engine, because it's the real **WebKit/JavaScriptCore engine + Apple GPU + 120 Hz
 ProMotion** display the app actually ships on.
 
-The gates run is automated by **`npm run perf:ios:webkit:gates`**; trusted-touch real-screen capture
-is automated by **`npm run perf:ios:xcuitest:screen`**, and discrete UI-action regression coverage
-by **`npm run perf:ios:xcuitest:actions`**. The installed app's bundled WKWebView uses
-**`npm run perf:ios:bundled:frames`**. This file covers their one-time device setup, the Timeline
-recording they deliberately do *not* replace, and the by-hand fallbacks.
+On the physical iPad running iPadOS 26.5, the established automation path is **Appium/XCUITest**:
+**`npm run perf:ios:xcuitest:screen`** for trusted-touch drawing and
+**`npm run perf:ios:xcuitest:actions`** for discrete UI actions. The installed app's bundled
+WKWebView uses **`npm run perf:ios:bundled:frames`**. Start with the full device preflight in the
+`start-capture-session` skill.
+
+**The legacy `perf:ios:webkit:gates` and `perf:ios:webkit:frames` entries still use
+`ios_webkit_debug_proxy`.** The campaign runbook documents that proxy's discovery failure on iOS 17
+and newer; it is not the working Appium path. Do not infer an unsupported iPad or a recent OS update
+from that command finding no Safari pages. See
+[the transport distinction](PROFILING-CAMPAIGNS.md#ios_webkit_debug_proxy-is-obsolete-on-ios-17-and-newer).
+This file also covers the engine probe, manual Web Inspector recordings, and legacy entry points.
 
 Where the device sits among the harness targets:
 
@@ -19,8 +26,8 @@ Where the device sits among the harness targets:
   the iPad's CPU, GPU, or refresh rate.
 * Apple exposes no **CDP** endpoint on a physical device — but it does expose Safari's own **WebKit
   Inspector Protocol** over USB, which carries `Runtime.evaluate` and `Console.messageAdded`.
-  `npm run perf:ios:webkit:gates` speaks that protocol directly; Safari's Web Inspector is the same
-  channel with a UI on top.
+  Appium's remote debugger reaches the current device; the legacy gates entry reaches the protocol
+  through the older proxy. Safari's Web Inspector provides the manual console and Timeline UI.
 
 Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear where the action happens.
 
@@ -38,9 +45,11 @@ Safari-on-iPad and the native WKWebView run the **same** WebKit engine, so for e
 performance Approach A is the right default; Approach B is a sanity check on the app shell. Both are
 documented below.
 
-Approach A has two forms, and they produce the same table: **`npm run perf:ios:webkit:gates`** (next
-section) and the by-hand paste in A1–A4. Reach for the command first — the hand path exists for when
-it won't attach, and for the Timeline run in A5–A6, which stays manual.
+Approach A names the engine surface, not a transport. The standalone `engine-gates.js` probe can run
+in a working Appium page session or through the manual console in A1–A4. The legacy
+`perf:ios:webkit:gates` wrapper below does not provide a modern Appium transport. Do not substitute
+the real-screen workload and call it an equivalent engine-gates run: their inputs and timing
+boundaries differ. Timeline recording in A5–A6 remains manual.
 
 ---
 
@@ -57,7 +66,8 @@ application menu.
 **⟨Mac⟩ + ⟨iPad⟩** Connect the iPad to the Mac by **USB**, unlock the iPad, and tap **Trust This
 Computer** when prompted. Put both devices on the **same Wi‑Fi** network.
 
-**⟨Mac⟩** For `npm run perf:ios:webkit:gates`, install the USB relay once:
+**⟨Mac⟩ — legacy transport only.** The old `perf:ios:webkit:gates` entry requires this relay;
+installing it does not repair its modern-iOS discovery limitation:
 
 ```sh
 brew install ios-webkit-debug-proxy
@@ -120,6 +130,9 @@ puts it on `PATH` through nvm. Confirm the tunnel with one short probe before qu
 ---
 
 ## The automated gates run — `npm run perf:ios:webkit:gates` — **⟨Mac⟩**
+
+This is the **legacy proxy wrapper**. Its instructions apply when that transport actually exposes
+Safari pages; use the established Appium connection or the manual console on the current iPad.
 
 ```sh
 npm run perf:ios:webkit:gates                                # all four scenarios

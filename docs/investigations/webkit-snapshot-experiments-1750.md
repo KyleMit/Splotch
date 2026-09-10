@@ -213,3 +213,43 @@ candidate was selected for a physical A/B, pixel/redo checks, fresh-runner compa
 independent PR review. The original issue's done-when remains unmet. The evidence branch contains
 the rejected experiments and the small driver correction; it must not close issue 1750 or be
 described as a product performance fix.
+
+## Self-heal: connection failure and OS version history
+
+The initial statement that the iPad could not be driven was too broad. The observed failure was
+session-specific USB capture discovery. Neither that failure nor the legacy inspector wrapper's
+separate limitation established that this iPad was incompatible with automation.
+
+The retained history supports the owner's report that this device was already being driven on 26.5:
+
+* The [July 29 investigation notes](../scratchpad/perf/2026-07-29-ipad-real-screen/findings.md) name
+  iPad13,8 and iPadOS 26.5. This is a historical narrative, not an OS installation log.
+* The
+  [September 3 native crayon artifact](../../perf-profiles/evidence/2026-09-03-deployment-target-matrix-ipad-native/ipad-device-native-crayon.json)
+  and
+  [September 5 Safari action artifact](../../perf-profiles/evidence/2026-09-05-epic-1567-advanced-controls-control/ipad-device-web-actions.json)
+  each record `device.os` as `26.5`.
+* The [automation grant log](../../perf-profiles/evidence/operator/ipad-grant-log.tsv) records
+  successful WDA launch and page rotation on September 5, 6 and 7, as well as the two September 10
+  successes in this session. Those rows prove the exercised launch operations, not continuous
+  availability between sessions.
+* Before this session's reconnect, CoreDevice already reported `osVersionNumber: 26.5` and build
+  `23F77`. After recovery, the physical capture recorded iOS/Safari 26.5. The local discovery output
+  remains in `/tmp/issue-1750-ipad-discovery.json`; its exact device identifiers are not copied into
+  this report.
+
+The recovery sequence was USB reconnection, starting the missing root-owned RemoteXPC tunnel through
+the approved macOS dialog, and successful WDA launch/rotation. No OS or Appium dependency upgrade
+was required by those recovery steps. The records do not establish why enumeration failed, why the
+tunnel was absent, or when 26.5 was installed; they do not support a recent OS-update explanation.
+Nor do they establish an expired XCTest grant as the cause of the initial discovery failure.
+
+Desktop Playwright reported WebKit 26.6. That is a different runtime from the physical iPad's 26.5
+and was never a required iPadOS version. The multi-finger driver defect was discovered after
+connectivity worked and did not cause the initial inability to discover or launch on the iPad.
+
+The documentation failure was separate and actionable: this runbook's transport catalogue had
+already documented the old inspector proxy's modern-iOS limitation, while the iPad reference still
+said to reach for that wrapper first. The profiling entry points now direct current-device sessions
+to Appium, and the campaign guide requires reports to name the failing connection layer without
+inferring an unsupported device or recent OS change.

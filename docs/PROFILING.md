@@ -13,6 +13,12 @@ re-runnable on any saved trace.
 
 ## Commands
 
+For the physical iPad on iPadOS 26.5, use the established Appium/XCUITest capture entries after the
+full device preflight. The `perf:ios:webkit:gates` and `perf:ios:webkit:frames` entries use a legacy
+inspector proxy with a documented modern-iOS discovery limitation; they are not evidence that the
+iPad itself cannot be automated. Read the [iPad transport guidance](PROFILING-IPAD.md) before
+selecting one of those entries.
+
 Instrumented web builds (`PERF_MARKS=true` or `PUBLIC_ENABLE_DEV_HARNESS=true`) report startup
 JS/CSS and lazy-chunk sizes against the release byte budgets without enforcing those limits: marks,
 retained function names, and dev-harness seams add bytes that do not ship (ADR-0032). Exceeded
