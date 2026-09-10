@@ -17,5 +17,7 @@ runs:
       with:
         name: ${{ inputs.name }}
         path: ${{ inputs.path }}
+        # Multiple report roots make .maestro a hidden ancestor of the flow evidence.
+        include-hidden-files: true
         retention-days: 7
         if-no-files-found: ignore

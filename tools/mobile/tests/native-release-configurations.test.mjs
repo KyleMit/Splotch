@@ -72,5 +72,6 @@ describe('native release configuration gates', () => {
     const reportAction = read('.github/actions/upload-maestro-report/action.yml');
     expect(reportAction).toContain('path: ${{ inputs.path }}');
     expect(reportAction).toContain('default: ~/.maestro/tests/');
+    expect(reportAction).toContain('include-hidden-files: true');
   });
 });

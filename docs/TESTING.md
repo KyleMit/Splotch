@@ -616,10 +616,10 @@ the whole Maestro report — flow log plus the screenshot taken at a failing ste
 build artifact, and a failure on a **tag** push files or comments on a GitHub issue, since nobody is
 watching a tag-triggered run at the moment it goes red.
 
-The iOS job budgets XCTest driver startup with `MAESTRO_DRIVER_STARTUP_TIMEOUT` separately from
-the flow's app-paint timeout. Its report also retains `~/Library/Logs/maestro/xctest_runner_logs/`:
-Maestro's flow log alone can show connection refusals without the underlying `xcodebuild` error.
-A failed `test:ios` command can mean simulator setup, build/install, or driver startup failed before
+The iOS job budgets XCTest driver startup with `MAESTRO_DRIVER_STARTUP_TIMEOUT` separately from the
+flow's app-paint timeout. Its report also retains `~/Library/Logs/maestro/xctest_runner_logs/`:
+Maestro's flow log alone can show connection refusals without the underlying `xcodebuild` error. A
+failed `test:ios` command can mean simulator setup, build/install, or driver startup failed before
 the app assertion ran. Inspect that phase before calling it a product boot regression. Issue
 [#1734](https://github.com/KyleMit/Splotch/issues/1734) was filed after the XCTest driver timed out,
 with no flow execution or screenshot.

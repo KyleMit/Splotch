@@ -97,9 +97,9 @@ The native smoke launches the installed app, waits for the UI to paint, and stop
 The invariant to keep: an app launch/paint assertion failure means a boot regression in the tested
 artifact. Simulator setup, build/install, and Maestro driver startup failures can precede the
 assertion; a failed smoke command alone does not establish a product regression. The iOS report
-retains XCTest startup logs so these phases can be distinguished (issue #1734).
-Adding a navigation step gives that signal back its old ambiguity, where red meant "the app is
-broken" or "the UI moved" and only a human could tell which.
+retains XCTest startup logs so these phases can be distinguished (issue #1734). Adding a navigation
+step gives that signal back its old ambiguity, where red meant "the app is broken" or "the UI moved"
+and only a human could tell which.
 
 ## Consequences
 
