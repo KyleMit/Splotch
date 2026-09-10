@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { actionPanelEvents } from '$lib/actions/actionPanelEvents';
   import { drawerCascade } from '$lib/actions/drawerCascade';
-  import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
+  import ColorControl from './ColorControl.svelte';
+  import { isPhoneLandscape } from '$lib/breakpoints';
   import BrushControl from './BrushControl.svelte';
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
@@ -48,6 +50,8 @@
   // app boots and nothing changes it afterward.
   const storeCapture = storeCaptureMode();
 
+  let colorWrapperEl: HTMLDivElement | undefined = $state();
+  let colorTriggerEl: HTMLButtonElement | undefined = $state();
   let brushWrapperEl: HTMLDivElement | undefined = $state();
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
@@ -71,10 +75,9 @@
   let screenshotModulePromise: Promise<typeof import('$lib/drawing/screenshot')> | null = null;
   const refreshFreeGenerationGrant = createFreeGenerationGrantRefresher();
 
-  // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
-  // opening one closes the other and the outside-click handler below only ever
-  // watches a single wrapper.
-  let openFlyout = $state<'brush' | 'stroke' | null>(null);
+  // Flyouts share one open-state slot so dismissal and focus restoration
+  // always act on the control that owns the open menu.
+  let openFlyout = $state<'color' | 'brush' | 'stroke' | null>(null);
 
   const erasing = $derived(toolState.brush === 'eraser');
 
@@ -82,6 +85,7 @@
   // else orientation-dependent here (drawer collapse axis, chevron direction)
   // is CSS. The shared layout module owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
+  const phoneLandscape = $derived(isPhoneLandscape(layout.viewportWidth, layout.viewportHeight));
 
   // Landscape: sit just past the Color Palette so we clear it. The raw
   // prerendered page gets the same deterministic width from the shared CSS
@@ -95,7 +99,7 @@
   const landscapePaletteWidth = $derived(resolvedLandscapePaletteWidth());
   const portraitPaletteHeight = $derived(resolvedPortraitPaletteHeight());
   const leftOffset = $derived(
-    !browser || isPortrait
+    !browser || isPortrait || phoneLandscape
       ? undefined
       : `calc(${landscapePaletteWidth + PANEL_INSET}px + ${safeAreaLength('left')})`
   );
@@ -141,20 +145,22 @@
   const buttonSize = $derived(
     !browser
       ? undefined
-      : buttonSizeCssExpr(
-          isPortrait
-            ? {
-                orientation: 'portrait',
-                buttonCount: layoutButtonCount,
-                paletteHeight: portraitPaletteHeight,
-                viewportHeight: layout.viewportHeight,
-              }
-            : {
-                orientation: 'landscape',
-                buttonCount: layoutButtonCount,
-                paletteWidth: landscapePaletteWidth,
-              }
-        )
+      : phoneLandscape
+        ? 'var(--landscape-action-size)'
+        : buttonSizeCssExpr(
+            isPortrait
+              ? {
+                  orientation: 'portrait',
+                  buttonCount: layoutButtonCount,
+                  paletteHeight: portraitPaletteHeight,
+                  viewportHeight: layout.viewportHeight,
+                }
+              : {
+                  orientation: 'landscape',
+                  buttonCount: layoutButtonCount,
+                  paletteWidth: landscapePaletteWidth,
+                }
+          )
   );
 
   // When advanced controls are disabled the chevron is hidden and the drawer
@@ -257,7 +263,11 @@
 
   function openFlyoutWrapper() {
     if (!openFlyout) return undefined;
-    return openFlyout === 'brush' ? brushWrapperEl : strokeWrapperEl;
+    return openFlyout === 'color'
+      ? colorWrapperEl
+      : openFlyout === 'brush'
+        ? brushWrapperEl
+        : strokeWrapperEl;
   }
 
   // Every close path runs through here so they can't drift apart. restoreFocus
@@ -272,7 +282,12 @@
   // records why the flyouts still coordinate both themselves.
   function closeFlyout({ restoreFocus = false } = {}) {
     const wrapper = openFlyoutWrapper();
-    const trigger = openFlyout === 'brush' ? brushTriggerEl : strokeTriggerEl;
+    const trigger =
+      openFlyout === 'color'
+        ? colorTriggerEl
+        : openFlyout === 'brush'
+          ? brushTriggerEl
+          : strokeTriggerEl;
     const holdsFocus = restoreFocus && !!wrapper?.contains(document.activeElement);
     openFlyout = null;
     if (holdsFocus) trigger?.focus();
@@ -286,35 +301,6 @@
     if (event.detail === 0) return;
     event.currentTarget.focus();
   }
-
-  onMount(() => {
-    // Click outside closes the open flyout
-    const onDocPointerDown = (e: PointerEvent) => {
-      const wrapper = openFlyoutWrapper();
-      if (wrapper && !wrapper.contains(e.target as Node)) closeFlyout();
-    };
-    const onDocKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || !openFlyout) return;
-      closeFlyout({ restoreFocus: true });
-    };
-    // The shared layout orientation settles after resize; this marker must clear
-    // first so the CSS breakpoint cannot animate a stale drawer transition.
-    const screenOrientation = window.screen?.orientation;
-    document.addEventListener('pointerdown', onDocPointerDown);
-    document.addEventListener('keydown', onDocKeyDown);
-    window.addEventListener('orientationchange', stopDrawerMotion);
-    if (typeof screenOrientation?.addEventListener === 'function')
-      screenOrientation.addEventListener('change', stopDrawerMotion);
-
-    return () => {
-      document.removeEventListener('pointerdown', onDocPointerDown);
-      document.removeEventListener('keydown', onDocKeyDown);
-      window.removeEventListener('orientationchange', stopDrawerMotion);
-      if (typeof screenOrientation?.removeEventListener === 'function')
-        screenOrientation.removeEventListener('change', stopDrawerMotion);
-      if (drawerMotionProbeFrame !== undefined) cancelAnimationFrame(drawerMotionProbeFrame);
-    };
-  });
 
   function handleUndoClick() {
     if (canvasState.canUndo) {
@@ -368,6 +354,15 @@
     onPressStart: prepareScreenshotPress,
     onPressCancel: cancelScreenshotPress,
   };
+
+  function setColorFlyout(open: boolean) {
+    if (open) openFlyout = 'color';
+    else closeFlyout({ restoreFocus: true });
+  }
+
+  $effect(() => {
+    if (!phoneLandscape && openFlyout === 'color') closeFlyout({ restoreFocus: true });
+  });
 
   function handleStrokeBtnClick() {
     if (openFlyout === 'stroke') {
@@ -445,8 +440,20 @@
   style:left={leftOffset}
   style:--action-btn-size={buttonSize}
   bind:this={panelEl}
+  use:actionPanelEvents={{
+    wrapper: openFlyoutWrapper,
+    close: closeFlyout,
+    stopMotion: stopDrawerMotion,
+  }}
   use:scribbleGuard
 >
+  <ColorControl
+    bind:wrapperEl={colorWrapperEl}
+    bind:triggerEl={colorTriggerEl}
+    open={openFlyout === 'color'}
+    onOpenChange={setColorFlyout}
+    onfold={toggleDrawer}
+  />
   <!-- Always rendered; the drawer's open/closed state and each control's toggle
        in Settings are driven purely by CSS. app.html's <html> seed owns
        first paint; the panel-local publish effect owns hydrated changes. -->
@@ -808,5 +815,10 @@
      whole wrapper. */
   .flyout-wrapper {
     position: relative;
+  }
+  @media (orientation: landscape) and (max-height: 599.98px) {
+    .actions-panel {
+      pointer-events: none;
+    }
   }
 </style>

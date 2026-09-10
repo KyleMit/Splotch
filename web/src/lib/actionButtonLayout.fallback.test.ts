@@ -117,6 +117,7 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(widths).toEqual([
       PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns,
       PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn,
+      0,
     ]);
     expect(appCssSource).toContain(landscapeSingleColumnMediaQuery());
     expect(colorPaletteSource).toContain('width: var(--palette-landscape-width)');

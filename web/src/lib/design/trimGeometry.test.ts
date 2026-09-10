@@ -110,17 +110,27 @@ describe('ColorPalette', () => {
   );
   const layoutSwitch = landscape.filter((rule) => rule.body.includes('grid-template-columns'));
   const twoColumnTrim = landscape.filter(
-    (rule) => !has(rule, 'min-height') && has(rule, 'max-height')
+    (rule) => !has(rule, 'min-height') && has(rule, 'max-height') && hiddenRanks(rule).length > 0
+  );
+  const phonePaletteHidden = landscape.filter(
+    (rule) => rule.body.includes('.color-palette {') && rule.body.includes('display: none')
   );
   const portraitTrim = rules.filter(
     (rule) => rule.condition.includes('orientation: portrait') && has(rule, 'max-width')
   );
 
   it('classifies every @media rule, so no ladder is silently skipped', () => {
-    const classified = [...singleColumnTrim, ...layoutSwitch, ...twoColumnTrim, ...portraitTrim];
+    const classified = [
+      ...singleColumnTrim,
+      ...layoutSwitch,
+      ...twoColumnTrim,
+      ...portraitTrim,
+      ...phonePaletteHidden,
+    ];
     expect(new Set(classified).size).toBe(classified.length);
     expect(classified).toHaveLength(thresholdRules(rules).length);
     expect(layoutSwitch).toHaveLength(1);
+    expect(phonePaletteHidden).toHaveLength(1);
   });
 
   it('restates the landscape column geometry', () => {
@@ -176,7 +186,9 @@ describe('ColorPalette', () => {
 
   it('gives every swatch below the roomiest step a rank to be trimmed by', () => {
     const trimmed = new Set(
-      [...singleColumnTrim, ...twoColumnTrim, ...portraitTrim].flatMap(hiddenRanks)
+      [...singleColumnTrim, ...twoColumnTrim, ...portraitTrim, ...phonePaletteHidden].flatMap(
+        hiddenRanks
+      )
     );
     expect([...trimmed].sort((a, b) => a - b)).toEqual(
       Array.from({ length: colorCount }, (_, rank) => rank)

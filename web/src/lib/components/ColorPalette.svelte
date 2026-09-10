@@ -483,4 +483,10 @@
       display: none;
     }
   }
+  /* Phone landscape hands the palette's strip back to the drawing canvas. */
+  @media (orientation: landscape) and (max-height: 599.98px) {
+    .color-palette {
+      display: none;
+    }
+  }
 </style>

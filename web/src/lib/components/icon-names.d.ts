@@ -38,6 +38,7 @@ export type IconName =
   | 'fullscreen-exit'
   | 'github'
   | 'home'
+  | 'ink-splotch'
   | 'install-homescreen'
   | 'line-weight-brush'
   | 'line-weight-eraser'

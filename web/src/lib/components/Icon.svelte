@@ -14,6 +14,7 @@
   // out because they tint via currentColor / theme vars.
   export const COLOR_ICONS = new Set<CommonIconName>([
     'appearance',
+    'ink-splotch',
     'brush-crayon',
     'brush-eraser',
     'brush-magic',

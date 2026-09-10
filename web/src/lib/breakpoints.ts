@@ -15,6 +15,12 @@
 // disagree on the same device.
 export const TABLET_MIN_SIDE_PX = 600;
 
+export const PHONE_LANDSCAPE_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 0.02}px)`;
+
+export function isPhoneLandscape(width: number, height: number): boolean {
+  return width > height && height < TABLET_MIN_SIDE_PX;
+}
+
 // Standalone pages lose their frame at phone width; mastheads and beta steps
 // tighten while underline pickers split the content width evenly.
 // CSS sites restate this value, enforced by phoneStep.test.ts.

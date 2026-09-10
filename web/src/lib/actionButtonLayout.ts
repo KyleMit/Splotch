@@ -24,6 +24,7 @@ import {
   LARGE_TABLET_MIN_SIDE_PX,
   TABLET_MIN_SIDE_PX,
   type ActionButtonSizeClass,
+  isPhoneLandscape,
 } from '$lib/breakpoints';
 
 export const ACTION_BUTTON_GAP = 12;
@@ -93,6 +94,15 @@ const DRAWER_TOGGLE_MARGIN = 8;
 const DRAWER_TOGGLE_SIZE = 48;
 export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
 
+// Leave the top-left corner control clear even at the largest button scale.
+export const PHONE_TOOLBAR_BUTTON_PX = 48;
+export const PHONE_TOOLBAR_LEG_SLOTS = 4;
+const PHONE_TOOLBAR_GAP_PX = 10;
+export const PHONE_TOOLBAR_VERTICAL_CHROME_PX =
+  2 * PANEL_INSET + DRAWER_TOGGLE_SIZE + 3 * PHONE_TOOLBAR_GAP_PX;
+export const PHONE_TOOLBAR_HORIZONTAL_CHROME_PX =
+  PANEL_INSET + DRAWER_TOGGLE_SIZE + SETTINGS_BUTTON_RESERVE + 4 * PHONE_TOOLBAR_GAP_PX;
+
 // Breathing room between the top of the portrait column and the palette bar.
 export const PALETTE_CLEARANCE = 8;
 
@@ -144,6 +154,7 @@ export function visibleActionButtonCount(): number {
 // two values app.css exposes through --palette-landscape-width instead of
 // briefly treating the palette as zero-width.
 export function resolvedLandscapePaletteWidth(): number {
+  if (isPhoneLandscape(layout.viewportWidth, layout.viewportHeight)) return 0;
   const measurement = layout.paletteMeasurement;
   if (
     layout.orientation === 'landscape' &&
@@ -238,9 +249,24 @@ export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
 // parent can't pick a size that would flow off the screen. Clamped to the
 // slider's static range: on an absurdly small viewport the render cap (below)
 // still bounds the actual size.
+function phoneToolbarAvailablePerButton(): number {
+  const { safeArea } = layout;
+  return Math.min(
+    (layout.viewportHeight - safeArea.top - safeArea.bottom - PHONE_TOOLBAR_VERTICAL_CHROME_PX) /
+      PHONE_TOOLBAR_LEG_SLOTS,
+    (layout.viewportWidth - safeArea.left - safeArea.right - PHONE_TOOLBAR_HORIZONTAL_CHROME_PX) /
+      PHONE_TOOLBAR_LEG_SLOTS
+  );
+}
+
 export function maxActionButtonScale(): number {
-  const base = actionButtonBase(layout.orientation);
-  const pct = Math.floor((availablePerButton(visibleActionButtonCount()) / base) * 100);
+  const base = isPhoneLandscape(layout.viewportWidth, layout.viewportHeight)
+    ? PHONE_TOOLBAR_BUTTON_PX
+    : actionButtonBase(layout.orientation);
+  const available = isPhoneLandscape(layout.viewportWidth, layout.viewportHeight)
+    ? phoneToolbarAvailablePerButton()
+    : availablePerButton(visibleActionButtonCount());
+  const pct = Math.floor((available / base) * 100);
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
 }
 
