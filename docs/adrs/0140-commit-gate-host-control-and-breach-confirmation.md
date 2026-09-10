@@ -5,6 +5,24 @@
 
 ## Context
 
+### 2026-09 amendment: a confirmed wait does not identify its origin
+
+The [issue 1717 investigation](../investigations/webkit-commit-gate-1717.md) reproduced both
+scenario breaches on a quiet local host and two fresh macOS runners. Local API probes attributed the
+slow commits to undo-crop `drawImage` calls. Forcing snapshot materialization earlier made commit
+P95 pass while moving the same work into drawing. Across runners, the same runtime charged
+substantially different shares of crayon work to draw versus commit. Confirmation establishes a
+repeated synchronous wait; it does not prove a new commit-only algorithm or rule out deferred
+renderer work. The original "a stall does not reproduce" rationale below is qualified by that
+evidence.
+
+Keep the raw budget, workload, and confirmation policy. Profiling builds additionally record
+snapshot capture/crop measures; scenario artifacts retain their distributions and the inclusive draw
+wall interval for both passes. Diagnose the nested costs without adding crop to its enclosing
+commit, discounting a measured wait, or moving the wait elsewhere to make the gate pass. The
+investigation explains the existing breaches; optimizing the renderer still requires combined
+latency and pixel/depth/memory evidence.
+
 `webkit-commit-gate-fast` runs two scenarios against a 25 ms P95 budget on every push to `main`, and
 files a GitHub issue when it fails. Neither scenario was gating anything, for opposite reasons.
 

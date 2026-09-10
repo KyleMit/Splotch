@@ -1,0 +1,102 @@
+# WebKit commit-gate investigation — issue 1717
+
+The confirmed multi-finger and crayon breaches include deferred canvas rendering paid by undo
+snapshot cropping. They are real synchronous waits inside `engine.commit`; the available evidence
+does not establish a new commit-only algorithmic regression. The raw 25 ms P95 gate remains in
+force. This investigation explains the breaches; it does **not** claim that the renderer meets the
+budget or that the same behavior is acceptable on a physical iPad.
+
+## Evidence and scope
+
+Read all 16 issue comments before building. The
+[final intake comment](https://github.com/KyleMit/Splotch/issues/1717#issuecomment-5621486359)
+allows explaining or fixing each breach, requires unchanged timing thresholds, and distinguishes
+earlier build failures from measured results. Full distributions and experimental interventions are
+preserved in [the evidence JSON](webkit-commit-gate-1717.json). Initial and confirmation passes are
+separate, with every raw commit duration retained.
+
+The [post-merge main run](https://github.com/KyleMit/Splotch/actions/runs/34498053518) at
+cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98 includes PR 1748. Both its first job and fresh-runner retry
+built successfully at 529,324 instrumented startup bytes and uploaded diagnostics. These are
+measured timing failures, distinct from the preceding `unknown:not-comparable` reports whose builds
+produced no commit samples. The reporter correctly retains the non-comparable sentinel; missing
+evidence is not a zero-millisecond pass.
+
+| Capture                       | Multi-finger P95, initial / confirmation | Crayon P95, initial / confirmation | Crayon draw total, initial / confirmation | Crayon commit total, initial / confirmation |
+| ----------------------------- | ---------------------------------------: | ---------------------------------: | ----------------------------------------: | ------------------------------------------: |
+| PR 1748 fresh macOS runner    |                              66 / 106 ms |                         42 / 39 ms |                        94,290 / 96,567 ms |                                597 / 569 ms |
+| Post-merge main, first runner |                              85 / 163 ms |                   3,236 / 3,924 ms |                          8,347 / 6,952 ms |                          34,468 / 37,837 ms |
+| Post-merge main, fresh retry  |                              91 / 130 ms |                   2,077 / 2,177 ms |                                  See JSON |                                    See JSON |
+| Quiet local baseline          |                               50 / 52 ms |                       832 / 851 ms |                          2,311 / 2,321 ms |                            9,230 / 9,263 ms |
+
+Local captures ran serially on the same host and unchanged production build, with an explicit unused
+preview port, without concurrent builds or test suites. A process-load check found desktop
+applications but no competing test or performance workload. This is an idle development host, not a
+dedicated lab machine. The earlier local capture mentioned in the intake comment overlapped reviewer
+builds and is not used as a controlled comparison here.
+
+## Attribution
+
+`commitStrokeGroup()` brackets `commitTiledCommand()` and the stroke-end callbacks.
+`commitTiledCommand()` crops the pre-command undo patches, retains the command, enforces the byte
+budget, and schedules idle folding. The crop copies full pre-command tile snapshots into canvases
+sized to the dirty bounds. The two measured scenarios retain the same patch memory and undo depth
+across the diagnostic interventions.
+
+A temporary in-page probe wrapped `CanvasRenderingContext2D.drawImage` and tracked whether
+`engine.commit:start` had occurred without `engine.commit:end`. It recorded call durations and
+source/destination dimensions without modifying the pixels, workload, pacing, or timing boundary.
+The local crayon probe measured an 889 ms commit with 889 ms in its crop copies; other repeated
+750–834 ms commits likewise spent all but timer quantization in those calls. Multi-finger commits of
+58 and 52 ms spent 57 and 52 ms in the same copies. Crop targets were dirty-region canvases copied
+from 512-pixel-wide tile snapshots, not an accidental full-paper export or blob encode.
+
+This attributes the blocking API call, not a browser-internal CPU stack. A `drawImage` duration can
+include renderer execution, process synchronization, and host scheduling. The repeated
+scenario-shaped crayon costs and the interventions below establish deferred canvas work as a
+material contributor; they do not prove that every millisecond is CPU rasterization or that no
+runner preemption occurred.
+
+The purported local-versus-CI crayon discrepancy is especially misleading when read as commit P95
+alone. The earlier CI runner spent about 95 seconds drawing and 0.6 seconds committing, whereas the
+main runner spent roughly 8 seconds drawing and 34 seconds committing. The same runtime source can
+charge canvas work at different API boundaries. Lower commit P95 did not mean a faster drawing
+session. The remaining host-to-host magnitude difference is not calibrated by these captures; there
+is no justified normalization factor.
+
+## Interventions rejected as product fixes
+
+These experiments used the same built runtime and full scenario input through temporary browser API
+wrappers. None ships. They are causal probes, not passing replacement gate runs.
+
+| Intervention                                          |           Crayon commit P95 | Crayon draw total | Crayon commit total | Disposition                             |
+| ----------------------------------------------------- | --------------------------: | ----------------: | ------------------: | --------------------------------------- |
+| Baseline                                              |                      832 ms |          2,311 ms |            9,230 ms | Confirmed breach                        |
+| Read one snapshot pixel immediately after capture     |                        1 ms |         12,045 ms |                6 ms | Moves the wait into drawing             |
+| Read one live-source pixel immediately before capture |                        1 ms |         11,939 ms |                8 ms | Moves the wait into drawing             |
+| Copy crop pixels using getImageData/putImageData      | 585 ms; confirmation 567 ms |          1,244 ms |           11,102 ms | Still breaches, increases combined work |
+
+The first two interventions also reduced multi-finger commit P95 to 1 ms while raising its draw
+total from 39 ms to 277–297 ms. That is the same relocation, not evidence of an optimization. Moving
+crop work to an idle callback, widening the budget, normalizing by draw throughput, or changing the
+synchronous burst to paced input would similarly require a different contract. None was adopted.
+
+## Changes and disposition
+
+Profiling builds emit `engine.undoPatchCapture` around the initial snapshot copy and
+`engine.undoPatchCrop` around cropping. Normal builds eliminate these blocks. The scenario JSON
+retains each draw-phase measure's distribution, the inclusive draw wall interval, browser version,
+and host platform/version. Both initial and confirmation passes carry this evidence; the Markdown
+report shows the nested timings. Crop is included in commit, so the totals must not be added.
+
+The documentation and generated report no longer claim that fast-tier crayon is normalized, that
+`engine.draw` counts individual pointer moves, or that commit costs are independent of burst pacing.
+Regression coverage verifies that diagnostic crop costs do not discount the gate and that
+confirmation distributions survive serialization.
+
+The remaining product work is a renderer/undo-capture optimization that reduces combined input,
+drawing, commit, and presentation latency while retaining pixels, depth, and memory guarantees. It
+needs controlled browser and physical-device captures. Issues 1700 and 1701 discuss adjacent
+post-burst and readback behavior, but this experiment does not establish that their exact paths
+share one cause. The retained raw gate continues to report these breaches rather than concealing
+them with an apparent timing-only fix.

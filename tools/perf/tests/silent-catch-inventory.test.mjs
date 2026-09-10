@@ -110,7 +110,7 @@ const AUDITED_SWALLOWS = {
     'bare-catch@22b7eee07a18',
     'benign-catch@101e08d432a8',
   ],
-  'web/run-undo-scenarios.mjs': ['benign-catch@d89740044734'],
+  'web/run-undo-scenarios.mjs': ['benign-catch@8cd3c5ea0abe'],
 };
 
 function perfSources(dir = PERF_ROOT) {

@@ -165,6 +165,7 @@ function fakePage({
   commitMaxMs = 1,
   commitCount = REALISTIC_COMMIT_SAMPLE_COUNT,
   commitDurationsMs = null,
+  additionalMeasures = {},
   // A fold backlog that never drains: every read on this navigation reports
   // more retained commands than undo entries, the idle fold loop's own
   // "still folding" condition.
@@ -218,6 +219,7 @@ function fakePage({
               durationsMs: commitSamples,
             },
             'engine.undo': { count: 1, total: 1, max: 1 },
+            ...additionalMeasures,
           };
         },
       },
@@ -246,12 +248,44 @@ function fakeBrowser(page, { withCdp = true } = {}) {
     newPage: vi.fn(async () => page),
     newCDPSession: withCdp ? vi.fn(async () => ({ send: vi.fn(async () => {}) })) : undefined,
   };
-  const browser = { newContext: vi.fn(async () => context), close: vi.fn(async () => {}) };
+  const browser = {
+    version: () => 'test-browser',
+    newContext: vi.fn(async () => context),
+    close: vi.fn(async () => {}),
+  };
   state.browser = { launch: vi.fn(async () => browser) };
   return { browser, context };
 }
 
 describe('undo scenario profiling', () => {
+  it('preserves nested phase distributions in both passes without discounting commit timing', async () => {
+    process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
+    const crop = { count: 2, total: 110, max: 60, durationsMs: [50, 60] };
+    fakeBrowser(
+      fakePage({ commitMaxMs: 60, additionalMeasures: { 'engine.undoPatchCrop': crop } }),
+      { withCdp: false }
+    );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios[0].draw.measures['engine.undoPatchCrop']).toEqual(crop);
+    expect(report.confirmations[0].draw.measures['engine.undoPatchCrop']).toEqual(crop);
+    expect(report.scenarios[0].draw.wallMs).toBeGreaterThan(0);
+    expect(report.gate.scenarioTimings[0]).toMatchObject({
+      rawP95Ms: 60,
+      gateP95Ms: 60,
+      breached: true,
+    });
+    expect(process.exitCode).toBe(1);
+    const markdown = readFileSync(join(fixtureDir, 'undo-scenarios.md'), 'utf8');
+    expect(markdown).toContain('| Confirmation |');
+    expect(markdown).toContain('| engine.undoPatchCrop | 2 | 110.0 ms | 60.0 ms |');
+  });
+
   it('keeps a scenario whose history never reaches its steady state, and says so', async () => {
     // One scenario's fold loop never drains, so the settle deadline expires. The
     // commit samples the gate scores were complete before the wait began, so

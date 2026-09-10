@@ -1,0 +1,1435 @@
+{
+  "issue": 1717,
+  "baselineCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+  "runs": [
+    {
+      "name": "ci-pr1748",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34494960097/artifacts/10159839580",
+      "buildCommit": "558ab0403d300ffe2f9843e932e785a384d21b2f",
+      "intervention": "unchanged",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T15:23:15.884Z",
+        "durationMs": 246636
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 937,
+            "commitCount": 22,
+            "commitMs": 968,
+            "commitP95Ms": 66,
+            "headroomRatio": 2.64,
+            "commitMaxMs": 78,
+            "commitDurationsMs": [
+              0, 66, 57, 35, 36, 37, 33, 34, 60, 46, 39, 40, 43, 50, 51, 29, 35, 31, 43, 59, 78, 66
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 238,
+            "avgMs": 21.636363636363637,
+            "maxMs": 40
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 94290,
+            "commitCount": 22,
+            "commitMs": 597,
+            "commitP95Ms": 42,
+            "headroomRatio": 1.68,
+            "commitMaxMs": 51,
+            "commitDurationsMs": [
+              0, 28, 51, 11, 14, 42, 35, 22, 38, 22, 21, 35, 31, 18, 38, 19, 13, 40, 40, 25, 38, 16
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 110884,
+            "avgMs": 5544.2,
+            "maxMs": 10298
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1480,
+            "commitCount": 22,
+            "commitMs": 1713,
+            "commitP95Ms": 106,
+            "headroomRatio": 4.24,
+            "commitMaxMs": 125,
+            "commitDurationsMs": [
+              0, 74, 57, 72, 62, 99, 78, 82, 78, 69, 85, 65, 76, 100, 125, 106, 72, 79, 74, 91, 99,
+              70
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 350,
+            "avgMs": 31.818181818181817,
+            "maxMs": 59
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 96567,
+            "commitCount": 22,
+            "commitMs": 569,
+            "commitP95Ms": 39,
+            "headroomRatio": 1.56,
+            "commitMaxMs": 42,
+            "commitDurationsMs": [
+              0, 19, 38, 19, 22, 30, 23, 26, 38, 22, 16, 39, 24, 15, 42, 26, 14, 38, 36, 23, 38, 21
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 77833,
+            "avgMs": 3891.65,
+            "maxMs": 4680
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "ci-main",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34498053518/artifacts/10160841397",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "intervention": "unchanged",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T15:49:24.277Z",
+        "durationMs": 115171
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 79,
+            "commitCount": 22,
+            "commitMs": 427,
+            "commitP95Ms": 85,
+            "headroomRatio": 3.4,
+            "commitMaxMs": 167,
+            "commitDurationsMs": [
+              0, 1, 64, 0, 1, 41, 0, 0, 64, 0, 0, 0, 2, 85, 0, 1, 0, 0, 167, 0, 0, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 9,
+            "avgMs": 0.8181818181818182,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 8347,
+            "commitCount": 22,
+            "commitMs": 34468,
+            "commitP95Ms": 3236,
+            "headroomRatio": 129.44,
+            "commitMaxMs": 3572,
+            "commitDurationsMs": [
+              0, 168, 0, 1684, 0, 1, 3198, 263, 3199, 1588, 2065, 3572, 3236, 285, 2736, 1523, 2126,
+              2812, 2542, 200, 2045, 1225
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 35564,
+            "avgMs": 1778.2,
+            "maxMs": 2989
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 89,
+            "commitCount": 22,
+            "commitMs": 797,
+            "commitP95Ms": 163,
+            "headroomRatio": 6.52,
+            "commitMaxMs": 244,
+            "commitDurationsMs": [
+              1, 1, 2, 2, 128, 0, 1, 0, 163, 0, 1, 1, 29, 29, 147, 1, 0, 1, 17, 28, 244, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 4,
+            "avgMs": 0.36363636363636365,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 6952,
+            "commitCount": 22,
+            "commitMs": 37837,
+            "commitP95Ms": 3924,
+            "headroomRatio": 156.96,
+            "commitMaxMs": 4197,
+            "commitDurationsMs": [
+              0, 180, 1, 1270, 0, 0, 2145, 202, 2221, 1761, 2690, 4197, 3407, 197, 2703, 1294, 2238,
+              3785, 3525, 233, 3924, 1864
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 45794,
+            "avgMs": 2289.7,
+            "maxMs": 3309
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "ci-main-retry",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34498053518/artifacts/10161030975",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "intervention": "unchanged",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T15:54:43.667Z",
+        "durationMs": 91961
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 97,
+            "commitCount": 21,
+            "commitMs": 445,
+            "commitP95Ms": 91,
+            "headroomRatio": 3.64,
+            "commitMaxMs": 160,
+            "commitDurationsMs": [
+              0, 1, 73, 1, 52, 1, 0, 1, 45, 0, 0, 0, 15, 91, 0, 0, 0, 4, 160, 1, 0
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 5639,
+            "commitCount": 22,
+            "commitMs": 22857,
+            "commitP95Ms": 2077,
+            "headroomRatio": 83.08,
+            "commitMaxMs": 2194,
+            "commitDurationsMs": [
+              1, 135, 0, 998, 0, 1, 1892, 126, 1746, 979, 1346, 2077, 1996, 177, 1770, 1023, 1424,
+              2194, 1975, 195, 1797, 1005
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 29278,
+            "avgMs": 1463.9,
+            "maxMs": 1942
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 88,
+            "commitCount": 21,
+            "commitMs": 511,
+            "commitP95Ms": 130,
+            "headroomRatio": 5.2,
+            "commitMaxMs": 184,
+            "commitDurationsMs": [
+              0, 0, 0, 0, 70, 0, 0, 2, 72, 0, 0, 8, 27, 130, 0, 0, 0, 1, 17, 184, 0
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 9,
+            "avgMs": 0.8181818181818182,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 6401,
+            "commitCount": 22,
+            "commitMs": 24383,
+            "commitP95Ms": 2177,
+            "headroomRatio": 87.08,
+            "commitMaxMs": 2254,
+            "commitDurationsMs": [
+              0, 160, 1, 1143, 0, 0, 2165, 164, 1847, 1083, 1437, 2177, 2095, 161, 1819, 1104, 1637,
+              2254, 2030, 169, 1877, 1060
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 29408,
+            "avgMs": 1470.4,
+            "maxMs": 1902
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-baseline",
+      "source": "perf-profiles/2026-09-10T15-55-06-815Z-undo-scenarios-webkit-raw/undo-scenarios.json",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "intervention": "unchanged",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T15:55:14.080Z",
+        "durationMs": 50062
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 39,
+            "commitCount": 22,
+            "commitMs": 221,
+            "commitP95Ms": 50,
+            "headroomRatio": 2,
+            "commitMaxMs": 56,
+            "commitDurationsMs": [
+              0, 1, 0, 0, 15, 17, 13, 18, 56, 18, 0, 0, 0, 2, 10, 9, 7, 50, 1, 0, 0, 4
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 2311,
+            "commitCount": 22,
+            "commitMs": 9230,
+            "commitP95Ms": 832,
+            "headroomRatio": 33.28,
+            "commitMaxMs": 852,
+            "commitDurationsMs": [
+              0, 50, 0, 396, 0, 0, 793, 74, 701, 396, 624, 832, 794, 90, 723, 402, 545, 852, 780,
+              67, 701, 410
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 10330,
+            "avgMs": 516.5,
+            "maxMs": 706
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 42,
+            "commitCount": 21,
+            "commitMs": 222,
+            "commitP95Ms": 52,
+            "headroomRatio": 2.08,
+            "commitMaxMs": 68,
+            "commitDurationsMs": [
+              0, 0, 0, 0, 8, 18, 68, 0, 0, 0, 0, 10, 10, 6, 9, 10, 52, 1, 0, 30, 0
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 7,
+            "avgMs": 0.6363636363636364,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 2321,
+            "commitCount": 22,
+            "commitMs": 9263,
+            "commitP95Ms": 851,
+            "headroomRatio": 34.04,
+            "commitMaxMs": 876,
+            "commitDurationsMs": [
+              0, 64, 0, 447, 0, 0, 784, 65, 701, 404, 548, 876, 778, 67, 713, 396, 549, 851, 795,
+              69, 752, 404
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 10124,
+            "avgMs": 506.2,
+            "maxMs": 656
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "local-api-probe",
+      "source": "perf-profiles/2026-09-10T15-57-11-667Z-undo-scenarios-webkit-raw/undo-scenarios.json",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "intervention": "time drawImage during engine.commit",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview (reused build)",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T15:57:12.947Z",
+        "durationMs": 49452
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 40,
+            "commitCount": 21,
+            "commitMs": 202,
+            "commitP95Ms": 52,
+            "headroomRatio": 2.08,
+            "commitMaxMs": 58,
+            "commitDurationsMs": [
+              0, 0, 0, 0, 0, 15, 17, 14, 58, 18, 0, 0, 1, 2, 9, 6, 9, 52, 0, 0, 1
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 2375,
+            "commitCount": 22,
+            "commitMs": 9115,
+            "commitP95Ms": 834,
+            "headroomRatio": 33.36,
+            "commitMaxMs": 890,
+            "commitDurationsMs": [
+              0, 65, 0, 398, 0, 0, 751, 67, 721, 424, 556, 890, 762, 78, 693, 408, 559, 834, 759,
+              65, 698, 387
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 9955,
+            "avgMs": 497.75,
+            "maxMs": 615
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 40,
+            "commitCount": 22,
+            "commitMs": 252,
+            "commitP95Ms": 58,
+            "headroomRatio": 2.32,
+            "commitMaxMs": 59,
+            "commitDurationsMs": [
+              0, 0, 1, 1, 3, 24, 11, 12, 59, 0, 0, 0, 3, 10, 10, 6, 9, 58, 0, 0, 0, 45
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 6,
+            "avgMs": 0.5454545454545454,
+            "maxMs": 1
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 2259,
+            "commitCount": 22,
+            "commitMs": 8998,
+            "commitP95Ms": 822,
+            "headroomRatio": 32.88,
+            "commitMaxMs": 841,
+            "commitDurationsMs": [
+              1, 54, 0, 400, 1, 0, 790, 65, 695, 393, 528, 841, 784, 62, 692, 391, 539, 822, 771,
+              67, 707, 395
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 9952,
+            "avgMs": 497.6,
+            "maxMs": 683
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "apiProbe": [
+        {
+          "label": "22 five-finger drags (~2400 ops/command), then undo all",
+          "commits": [
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 0,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 15,
+              "copyMs": 14,
+              "copyCalls": 14,
+              "copyMaxMs": 6
+            },
+            {
+              "commitMs": 17,
+              "copyMs": 17,
+              "copyCalls": 14,
+              "copyMaxMs": 6
+            },
+            {
+              "commitMs": 14,
+              "copyMs": 14,
+              "copyCalls": 14,
+              "copyMaxMs": 4
+            },
+            {
+              "commitMs": 58,
+              "copyMs": 57,
+              "copyCalls": 14,
+              "copyMaxMs": 57
+            },
+            {
+              "commitMs": 18,
+              "copyMs": 18,
+              "copyCalls": 14,
+              "copyMaxMs": 17
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 1,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 2,
+              "copyMs": 2,
+              "copyCalls": 14,
+              "copyMaxMs": 1
+            },
+            {
+              "commitMs": 9,
+              "copyMs": 9,
+              "copyCalls": 14,
+              "copyMaxMs": 3
+            },
+            {
+              "commitMs": 6,
+              "copyMs": 6,
+              "copyCalls": 14,
+              "copyMaxMs": 2
+            },
+            {
+              "commitMs": 9,
+              "copyMs": 8,
+              "copyCalls": 14,
+              "copyMaxMs": 4
+            },
+            {
+              "commitMs": 52,
+              "copyMs": 52,
+              "copyCalls": 14,
+              "copyMaxMs": 51
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 1,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            }
+          ]
+        },
+        {
+          "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+          "commits": [
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 0,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 65,
+              "copyMs": 65,
+              "copyCalls": 4,
+              "copyMaxMs": 34
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 8,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 398,
+              "copyMs": 398,
+              "copyCalls": 4,
+              "copyMaxMs": 344
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 4,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 8,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 751,
+              "copyMs": 750,
+              "copyCalls": 8,
+              "copyMaxMs": 399
+            },
+            {
+              "commitMs": 67,
+              "copyMs": 67,
+              "copyCalls": 4,
+              "copyMaxMs": 28
+            },
+            {
+              "commitMs": 721,
+              "copyMs": 721,
+              "copyCalls": 8,
+              "copyMaxMs": 495
+            },
+            {
+              "commitMs": 424,
+              "copyMs": 424,
+              "copyCalls": 4,
+              "copyMaxMs": 366
+            },
+            {
+              "commitMs": 556,
+              "copyMs": 556,
+              "copyCalls": 4,
+              "copyMaxMs": 492
+            },
+            {
+              "commitMs": 889,
+              "copyMs": 889,
+              "copyCalls": 8,
+              "copyMaxMs": 541
+            },
+            {
+              "commitMs": 762,
+              "copyMs": 762,
+              "copyCalls": 8,
+              "copyMaxMs": 399
+            },
+            {
+              "commitMs": 78,
+              "copyMs": 78,
+              "copyCalls": 4,
+              "copyMaxMs": 32
+            },
+            {
+              "commitMs": 693,
+              "copyMs": 692,
+              "copyCalls": 8,
+              "copyMaxMs": 477
+            },
+            {
+              "commitMs": 408,
+              "copyMs": 408,
+              "copyCalls": 4,
+              "copyMaxMs": 349
+            },
+            {
+              "commitMs": 559,
+              "copyMs": 559,
+              "copyCalls": 4,
+              "copyMaxMs": 501
+            },
+            {
+              "commitMs": 834,
+              "copyMs": 834,
+              "copyCalls": 8,
+              "copyMaxMs": 487
+            },
+            {
+              "commitMs": 759,
+              "copyMs": 759,
+              "copyCalls": 8,
+              "copyMaxMs": 396
+            },
+            {
+              "commitMs": 65,
+              "copyMs": 65,
+              "copyCalls": 4,
+              "copyMaxMs": 25
+            },
+            {
+              "commitMs": 698,
+              "copyMs": 697,
+              "copyCalls": 8,
+              "copyMaxMs": 482
+            },
+            {
+              "commitMs": 387,
+              "copyMs": 387,
+              "copyCalls": 4,
+              "copyMaxMs": 331
+            }
+          ]
+        },
+        {
+          "label": "22 five-finger drags (~2400 ops/command), then undo all",
+          "commits": [
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 0,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 1,
+              "copyMs": 1,
+              "copyCalls": 14,
+              "copyMaxMs": 1
+            },
+            {
+              "commitMs": 3,
+              "copyMs": 3,
+              "copyCalls": 14,
+              "copyMaxMs": 2
+            },
+            {
+              "commitMs": 23,
+              "copyMs": 23,
+              "copyCalls": 14,
+              "copyMaxMs": 6
+            },
+            {
+              "commitMs": 11,
+              "copyMs": 11,
+              "copyCalls": 14,
+              "copyMaxMs": 5
+            },
+            {
+              "commitMs": 12,
+              "copyMs": 12,
+              "copyCalls": 14,
+              "copyMaxMs": 5
+            },
+            {
+              "commitMs": 59,
+              "copyMs": 59,
+              "copyCalls": 14,
+              "copyMaxMs": 58
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 3,
+              "copyMs": 3,
+              "copyCalls": 14,
+              "copyMaxMs": 1
+            },
+            {
+              "commitMs": 10,
+              "copyMs": 10,
+              "copyCalls": 14,
+              "copyMaxMs": 4
+            },
+            {
+              "commitMs": 10,
+              "copyMs": 10,
+              "copyCalls": 14,
+              "copyMaxMs": 5
+            },
+            {
+              "commitMs": 6,
+              "copyMs": 6,
+              "copyCalls": 14,
+              "copyMaxMs": 2
+            },
+            {
+              "commitMs": 9,
+              "copyMs": 9,
+              "copyCalls": 14,
+              "copyMaxMs": 4
+            },
+            {
+              "commitMs": 58,
+              "copyMs": 58,
+              "copyCalls": 14,
+              "copyMaxMs": 57
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 14,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 45,
+              "copyMs": 45,
+              "copyCalls": 14,
+              "copyMaxMs": 44
+            }
+          ]
+        },
+        {
+          "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+          "commits": [
+            {
+              "commitMs": 1,
+              "copyMs": 0,
+              "copyCalls": 0,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 54,
+              "copyMs": 54,
+              "copyCalls": 4,
+              "copyMaxMs": 31
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 8,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 400,
+              "copyMs": 400,
+              "copyCalls": 4,
+              "copyMaxMs": 344
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 4,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 0,
+              "copyMs": 0,
+              "copyCalls": 8,
+              "copyMaxMs": 0
+            },
+            {
+              "commitMs": 790,
+              "copyMs": 790,
+              "copyCalls": 8,
+              "copyMaxMs": 420
+            },
+            {
+              "commitMs": 65,
+              "copyMs": 65,
+              "copyCalls": 4,
+              "copyMaxMs": 28
+            },
+            {
+              "commitMs": 695,
+              "copyMs": 695,
+              "copyCalls": 8,
+              "copyMaxMs": 482
+            },
+            {
+              "commitMs": 393,
+              "copyMs": 393,
+              "copyCalls": 4,
+              "copyMaxMs": 338
+            },
+            {
+              "commitMs": 528,
+              "copyMs": 528,
+              "copyCalls": 4,
+              "copyMaxMs": 474
+            },
+            {
+              "commitMs": 841,
+              "copyMs": 840,
+              "copyCalls": 8,
+              "copyMaxMs": 483
+            },
+            {
+              "commitMs": 784,
+              "copyMs": 784,
+              "copyCalls": 8,
+              "copyMaxMs": 411
+            },
+            {
+              "commitMs": 62,
+              "copyMs": 62,
+              "copyCalls": 4,
+              "copyMaxMs": 25
+            },
+            {
+              "commitMs": 692,
+              "copyMs": 692,
+              "copyCalls": 8,
+              "copyMaxMs": 480
+            },
+            {
+              "commitMs": 391,
+              "copyMs": 391,
+              "copyCalls": 4,
+              "copyMaxMs": 336
+            },
+            {
+              "commitMs": 539,
+              "copyMs": 539,
+              "copyCalls": 4,
+              "copyMaxMs": 484
+            },
+            {
+              "commitMs": 822,
+              "copyMs": 822,
+              "copyCalls": 8,
+              "copyMaxMs": 476
+            },
+            {
+              "commitMs": 771,
+              "copyMs": 771,
+              "copyCalls": 8,
+              "copyMaxMs": 408
+            },
+            {
+              "commitMs": 67,
+              "copyMs": 67,
+              "copyCalls": 4,
+              "copyMaxMs": 25
+            },
+            {
+              "commitMs": 707,
+              "copyMs": 707,
+              "copyCalls": 8,
+              "copyMaxMs": 491
+            },
+            {
+              "commitMs": 395,
+              "copyMs": 395,
+              "copyCalls": 4,
+              "copyMaxMs": 338
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snapshot-materialization",
+      "source": "perf-profiles/2026-09-10T15-59-03-569Z-undo-scenarios-webkit-raw/undo-scenarios.json",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "intervention": "read 1 pixel from snapshot immediately after capture",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview (reused build)",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T15:59:04.844Z",
+        "durationMs": 49430
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "wallMs": 916,
+            "ops": 22,
+            "totalMs": 277,
+            "commitCount": 21,
+            "commitMs": 5,
+            "commitP95Ms": 1,
+            "headroomRatio": 0.04,
+            "commitMaxMs": 1,
+            "commitDurationsMs": [0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 11,
+            "avgMs": 1,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "wallMs": 12582,
+            "ops": 22,
+            "totalMs": 12045,
+            "commitCount": 22,
+            "commitMs": 6,
+            "commitP95Ms": 1,
+            "headroomRatio": 0.04,
+            "commitMaxMs": 1,
+            "commitDurationsMs": [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 9651,
+            "avgMs": 482.55,
+            "maxMs": 607
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "source-materialization",
+      "source": "perf-profiles/2026-09-10T16-00-03-398Z-undo-scenarios-webkit-raw/undo-scenarios.json",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "intervention": "read 1 pixel from live source immediately before capture",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview (reused build)",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T16:00:04.670Z",
+        "durationMs": 49512
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "wallMs": 976,
+            "ops": 22,
+            "totalMs": 297,
+            "commitCount": 21,
+            "commitMs": 6,
+            "commitP95Ms": 1,
+            "headroomRatio": 0.04,
+            "commitMaxMs": 2,
+            "commitDurationsMs": [0, 1, 0, 0, 0, 0, 0, 2, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "wallMs": 12503,
+            "ops": 22,
+            "totalMs": 11939,
+            "commitCount": 22,
+            "commitMs": 8,
+            "commitP95Ms": 1,
+            "headroomRatio": 0.04,
+            "commitMaxMs": 1,
+            "commitDurationsMs": [0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 9820,
+            "avgMs": 491,
+            "maxMs": 607
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    },
+    {
+      "name": "crop-readback",
+      "source": "perf-profiles/2026-09-10T16-01-08-862Z-undo-scenarios-webkit-raw/undo-scenarios.json",
+      "buildCommit": "cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98",
+      "intervention": "replace crop drawImage with getImageData/putImageData inside commit",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview (reused build)",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T16:01:10.147Z",
+        "durationMs": 49768
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 36,
+            "commitCount": 22,
+            "commitMs": 421,
+            "commitP95Ms": 22,
+            "headroomRatio": 0.88,
+            "commitMaxMs": 40,
+            "commitDurationsMs": [
+              0, 40, 19, 17, 19, 20, 20, 17, 19, 19, 20, 20, 20, 22, 16, 20, 19, 19, 19, 19, 19, 18
+            ]
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 2
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1244,
+            "commitCount": 22,
+            "commitMs": 11102,
+            "commitP95Ms": 585,
+            "headroomRatio": 23.4,
+            "commitMaxMs": 666,
+            "commitDurationsMs": [
+              0, 571, 374, 533, 456, 244, 585, 556, 555, 537, 666, 552, 557, 539, 559, 546, 535,
+              559, 553, 537, 553, 535
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 9719,
+            "avgMs": 485.95,
+            "maxMs": 714
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1218,
+            "commitCount": 22,
+            "commitMs": 11038,
+            "commitP95Ms": 567,
+            "headroomRatio": 22.68,
+            "commitMaxMs": 587,
+            "commitDurationsMs": [
+              1, 587, 381, 543, 453, 245, 556, 528, 559, 550, 541, 550, 567, 540, 559, 558, 558,
+              561, 562, 543, 556, 540
+            ]
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 9822,
+            "avgMs": 491.1,
+            "maxMs": 610
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
+    }
+  ]
+}
