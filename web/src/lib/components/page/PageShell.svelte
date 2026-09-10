@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import BrandMark from './BrandMark.svelte';
 
   // The chrome every standalone page wears: a ground, a centered sheet, a
@@ -25,6 +25,13 @@
   }
 
   let { title, wordmark, lede, actions, children }: Props = $props();
+  const ledeId = $props.id();
+  let ledeOpen = $state(false);
+  let enhanced = $state(false);
+
+  onMount(() => {
+    enhanced = true;
+  });
 </script>
 
 <main class="page">
@@ -42,7 +49,21 @@
       <div class="hero-text">
         <h1>{title}</h1>
         {#if lede}
-          <p class="lede">{@render lede()}</p>
+          {#if enhanced}
+            <button
+              type="button"
+              class="lede-toggle"
+              aria-expanded={ledeOpen}
+              aria-controls={ledeId}
+              onclick={() => (ledeOpen = !ledeOpen)}
+            >
+              Why we ask
+              <span class="lede-chevron" class:open={ledeOpen} aria-hidden="true">›</span>
+            </button>
+          {/if}
+          <p class="lede" id={ledeId} class:collapsed={enhanced && !ledeOpen}>
+            {@render lede()}
+          </p>
         {/if}
       </div>
       {#if actions}
@@ -199,10 +220,43 @@
     color: var(--page-body);
   }
 
+  .lede-toggle {
+    display: none;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+    min-height: 32px;
+    padding: 0 var(--space-1);
+    border: none;
+    background: transparent;
+    color: var(--page-link);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .lede-chevron {
+    font-size: var(--font-size-lg);
+    transition: transform var(--duration-base) ease;
+  }
+
+  .lede-chevron.open {
+    transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lede-chevron {
+      transition: none;
+    }
+  }
+
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
-    .back:hover {
+    .back:hover,
+    .lede-toggle:hover {
       text-decoration: underline;
     }
   }
@@ -219,12 +273,63 @@
 
   /* SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
   @media (max-height: 500px) {
+    .page {
+      padding: var(--space-3) var(--space-6) var(--space-6);
+    }
+
+    .sheet {
+      padding: 0 var(--space-7) 36px;
+    }
+
+    .topbar {
+      padding: 10px 0;
+    }
+
     .hero {
       padding: var(--space-1) 0 var(--space-4);
     }
 
+    .hero-text {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 var(--space-4);
+      min-width: 0;
+    }
+
     h1 {
       font-size: var(--font-size-xl);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .lede-toggle {
+      display: inline-flex;
+    }
+
+    .lede {
+      flex-basis: 100%;
+      margin-top: var(--space-2);
+      font-size: var(--font-size-md);
+      line-height: 1.5;
+    }
+
+    .lede.collapsed {
+      display: none;
+    }
+
+    @media (max-width: 540px) {
+      .page {
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .sheet {
+        padding-left: var(--page-gutter);
+        padding-right: var(--page-gutter);
+      }
     }
   }
 </style>
