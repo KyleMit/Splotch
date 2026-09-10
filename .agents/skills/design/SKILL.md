@@ -145,7 +145,7 @@ don't offer.
 | `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
 |                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
-| `ScrollCue.svelte`       | The fade that says a scroller's content carries on below. No props — render it as the       |
+| `ScrollCue.svelte`       | The fade that says a scroller's content carries on below. Render it as the                  |
 |                          | **last child of the scrolling content** and it plants its own end-of-content sentinel       |
 |                          | there; one IntersectionObserver gives all three states, so it is absent when the content    |
 |                          | fits, absent at the end of the scroll, and present only in between. Depth is the inherited  |
@@ -153,7 +153,10 @@ don't offer.
 |                          | scroller's bottom padding and reaches past it, so the fade meets the edge the scrollport    |
 |                          | clips at however that scroller pads — never compensate for it at the call site. A scroller  |
 |                          | that already paints its own edge affordance (the settings sidebar's `local` shades) does    |
-|                          | not take one as well                                                                        |
+|                          | not take one as well. For a bounded pane, the `children(end)` snippet wraps the scroller;   |
+|                          | render `end()` last inside it so the fade can paint beside it, clear of scrollbar gutters.  |
+|                          | A caller staging mounting or presentation passes `contentPending` to show the fade          |
+|                          | immediately until its content is whole, then returns to the observed fit/end behavior.      |
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 

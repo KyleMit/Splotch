@@ -3,6 +3,7 @@ import { gotoApp, openSettingsModal, SETTINGS_FILL_FRAME_BUDGET } from './helper
 
 const IPAD_LANDSCAPE = { width: 1024, height: 768 };
 const LARGE_IPAD_LANDSCAPE = { width: 1376, height: 1032 };
+const SETTINGS_PREWARM_TIMEOUT_MS = 20_000;
 
 for (const viewport of [IPAD_LANDSCAPE, LARGE_IPAD_LANDSCAPE]) {
   test(`Settings includes its scroll cue from the opening frame at ${viewport.width}px`, async ({
@@ -28,7 +29,14 @@ function openingOpacities(page: Page) {
           const cue = dialog?.querySelector('.scroll-cue');
           if (dialog?.open && pane && cue) {
             opacities.push(Number(getComputedStyle(cue).opacity));
-            if (pane.getAttribute('aria-busy') === 'false' && !dialog.getAnimations().length) {
+            const allSectionsPresented =
+              pane.querySelectorAll('.settings-section:not(.staged)').length ===
+              dialog.querySelectorAll('.settings-nav .toc-row').length;
+            if (
+              pane.getAttribute('aria-busy') === 'false' &&
+              allSectionsPresented &&
+              !dialog.getAnimations().length
+            ) {
               resolve(opacities);
               return;
             }
@@ -48,7 +56,7 @@ test('Settings includes its scroll cue when prewarmed', async ({ page }) => {
   await page.setViewportSize(LARGE_IPAD_LANDSCAPE);
   await gotoApp(page);
   await expect(page.locator('.settings-pane')).toHaveAttribute('aria-busy', 'false', {
-    timeout: 20_000,
+    timeout: SETTINGS_PREWARM_TIMEOUT_MS,
   });
   const samples = await openingOpacities(page);
   expect(samples.length).toBeGreaterThan(0);
