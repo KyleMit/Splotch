@@ -254,9 +254,10 @@ media queries + the head-script stamp in `app.html`).
 > **Layout notes (read before positioning a new control):**
 >
 > * The **Color Palette** is orientation-asymmetric (`ColorPalette.svelte`): a full-width **row
->   along the top edge** in portrait, a **column down the left edge** in landscape (single- or
->   two-column depending on height). So a "top-left corner" is *not* free space — it's under the
->   first swatch in one orientation.
+>   along the top edge** in portrait, a **column down the left edge** on landscape tablets.
+>   Landscape phones below 600px tall replace that bar with the **Color Button** in the Actions
+>   Panel, leaving the canvas full width. On the other layouts, the top-left corner sits under the
+>   first swatch.
 > * **Float canvas-overlay controls inside `.canvas-container`** (`DrawingCanvas.svelte`,
 >   `position: relative`), using `position: absolute`, rather than a fixed viewport corner — that
 >   container already tracks the drawing area across orientations. The **Fullscreen Toggle**
@@ -270,7 +271,11 @@ media queries + the head-script stamp in `app.html`).
 >   changing sizes or breakpoints down there. Every `--z-*` value lives in `lib/design/tokens.ts`.
 
 * **Color Palette** - Container bar holding all color swatches. **Top-edge row in portrait,
-  left-edge column in landscape** (`ColorPalette.svelte`) — see Layout notes above.
+  left-edge column on landscape tablets** (`ColorPalette.svelte`) — see Layout notes above.
+* **Color Button** — the loaded-ink splotch on landscape phones. Opens the eleven-color flyout and
+  its custom-picker shortcut. Color, brush, and width climb the left edge; the remaining actions
+  continue right from the bottom-left corner. Folding leaves color centered on the left and the
+  chevron in the corner; swipe down/up on color also folds/restores the run.
   * **Color Swatch** - Individual circular color selection button
     * **Selection Ring** - Colored ring indicator around the active color swatch
 * **Gradient Swatch** - Last color button, a honeycomb of palette-color hexagons (the `more-colors`

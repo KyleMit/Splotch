@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { isPhoneLandscape } from '../src/lib/breakpoints';
 import { overrideSafeAreaInsets } from './cdp';
 import { DEVICE_PROFILES } from '../src/routes/dev/notch/lib/devices';
 import { supportedOrientations } from '../src/routes/dev/notch/lib/deviceProfile';
@@ -30,7 +31,6 @@ import type { DeviceProfile } from '../src/routes/dev/notch/lib/deviceProfile';
 // is outside the safe area" and "this control no longer renders" into the same
 // green result — the second being the worse regression of the two.
 const HUD_CONTROLS = [
-  { name: 'color palette', selector: '.color-palette' },
   { name: 'clear button', selector: '.clear-button' },
   { name: 'settings button', selector: '.settings-button' },
   { name: 'actions panel', selector: '.actions-panel' },
@@ -101,7 +101,9 @@ async function applyScenario(page: Page, profile: DeviceProfile, orientation: Or
   // Node has to resolve. Every other spec in this directory spells it the same
   // way for the same reason.
   await expect(page.locator('.actions-panel')).toHaveAttribute('data-action-panel-live', '');
-  await expect(page.locator('.color-palette')).toBeVisible();
+  await expect(
+    page.locator(isPhoneLandscape(width, height) ? '#colorButton' : '.color-palette')
+  ).toBeVisible();
   return applied;
 }
 
@@ -179,9 +181,14 @@ test.describe('safe-area matrix', () => {
       // every expect below stays unconditional.
       const expectsToggle = expectsFullscreenToggle(profile);
       await expect(page.locator(FULLSCREEN_TOGGLE)).toHaveCount(expectsToggle ? 1 : 0);
-      const controls = expectsToggle
-        ? [...HUD_CONTROLS, { name: 'fullscreen toggle', selector: FULLSCREEN_TOGGLE }]
-        : HUD_CONTROLS;
+      const colorControl = isPhoneLandscape(viewport.width, viewport.height)
+        ? { name: 'color button', selector: '#colorButton' }
+        : { name: 'color palette', selector: '.color-palette' };
+      const controls = [
+        ...HUD_CONTROLS,
+        colorControl,
+        ...(expectsToggle ? [{ name: 'fullscreen toggle', selector: FULLSCREEN_TOGGLE }] : []),
+      ];
 
       for (const control of controls) {
         await expectInsideSafeArea(control.name, control.selector);

@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
 import type { Orientation } from '$lib/platform';
 import { measureSafeAreaInsets, ZERO_INSETS, type SafeAreaInsets } from '$lib/platform/safeArea';
 
@@ -20,9 +21,11 @@ interface LayoutState {
   orientationAngle: number;
   viewportWidth: number;
   viewportHeight: number;
+  phoneLandscape: boolean;
 }
 
 const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
+const phoneLandscapeQuery = browser ? window.matchMedia(PHONE_LANDSCAPE_QUERY) : null;
 // The physical-iPad profile for issue 977 improved with a 200 ms rotation-only
 // hold. This bounds JS layout lag during orientation events; ordinary resizes
 // continue publishing synchronously.
@@ -82,6 +85,7 @@ export const layout: LayoutState = $state({
   // module load on the client.
   viewportWidth: 0,
   viewportHeight: 0,
+  phoneLandscape: phoneLandscapeQuery?.matches ?? false,
 });
 
 export function publishPaletteMeasurement(width: number, height: number): void {
@@ -110,6 +114,11 @@ function syncViewport() {
   layout.orientationAngle = readOrientationAngle();
   layout.viewportWidth = window.innerWidth;
   layout.viewportHeight = window.innerHeight;
+  syncPhoneLandscape();
+}
+
+function syncPhoneLandscape() {
+  layout.phoneLandscape = phoneLandscapeQuery?.matches ?? false;
 }
 
 function flushPendingPaletteMeasurement() {
@@ -150,6 +159,7 @@ function syncViewportImmediately() {
 if (browser) {
   syncViewportImmediately();
   window.addEventListener('resize', syncViewportOnResize);
+  phoneLandscapeQuery?.addEventListener('change', syncPhoneLandscape);
   window.addEventListener('orientationchange', deferViewportSyncForRotation);
   screen.orientation?.addEventListener('change', deferViewportSyncForRotation);
   // Neither event fires while the document is hidden, so a rotation while the

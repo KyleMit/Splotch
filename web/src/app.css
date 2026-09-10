@@ -109,7 +109,7 @@ body {
    width; actionButtonLayout.fallback.test.ts guards these literals against the
    palette geometry source. */
 :root {
-  --palette-landscape-width: 156px;
+  --palette-landscape-width: 84px;
   --corner-button-size: 48px;
   --action-btn-first-paint-count: 5;
   --action-btn-first-paint-gap-total: 48px;
@@ -117,12 +117,6 @@ body {
      the same height actionButtonLayout.ts reserves as PALETTE_BAR_RESERVE,
      guarded against it by actionButtonLayout.fallback.test.ts. */
   --palette-portrait-height: 76px;
-}
-
-@media (orientation: landscape) and (min-height: 444px) {
-  :root {
-    --palette-landscape-width: 84px;
-  }
 }
 
 /* The settings rows' icon column: the icon box and the gap to its label, shared
@@ -503,6 +497,25 @@ body {
 
 .actions-panel .action-button[hidden] {
   display: none;
+}
+
+/* The L's two four-slot legs share this budget with Settings' scale ceiling.
+   landscapeToolbar.test.ts guards the CSS copy, including first paint. */
+@media (orientation: landscape) and (max-height: 599.98px) {
+  :root {
+    --palette-landscape-width: 0px;
+  }
+  .actions-panel {
+    --landscape-action-size: min(
+      calc(48px * var(--action-btn-scale, 1)),
+      calc((100dvh - var(--safe-area-top) - var(--safe-area-bottom) - 94px) / 4),
+      calc((100vw - var(--safe-area-left) - var(--safe-area-right) - 160px) / 4)
+    );
+  }
+  .actions-panel .action-button {
+    --action-btn-fallback: var(--landscape-action-size);
+    padding: 6px;
+  }
 }
 
 @media (hover: hover) {
@@ -988,5 +1001,106 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .actions-drawer.opening .action-button:not(.action-unavailable) {
     animation: none;
+  }
+}
+
+.actions-panel .color-wrapper {
+  display: none;
+}
+
+/* Phone geometry also exists before hydration; landscapeToolbar.test.ts guards
+     the breakpoint and the size budget shared with Settings. */
+@media (orientation: landscape) and (max-height: 599.98px) {
+  .actions-panel {
+    --action-btn-size: var(--landscape-action-size);
+    --landscape-pitch: calc(var(--action-btn-size) + 10px);
+    --landscape-brush-slots: 1;
+    --landscape-width-slots: 1;
+    left: calc(8px + var(--safe-area-left));
+    pointer-events: none;
+  }
+
+  html[data-off-stroke] .actions-panel:not([data-action-panel-live]),
+  .actions-panel[data-action-panel-live][data-off-stroke] {
+    --landscape-width-slots: 0;
+  }
+  html[data-off-crayon][data-off-magic][data-off-eraser]
+    .actions-panel:not([data-action-panel-live]),
+  .actions-panel[data-action-panel-live][data-off-crayon][data-off-magic][data-off-eraser] {
+    --landscape-brush-slots: 0;
+  }
+
+  html[data-no-actions] .bottom-dock .actions-panel:not([data-action-panel-live]),
+  .bottom-dock .actions-panel[data-action-panel-live][data-no-actions] {
+    display: flex;
+  }
+  html[data-no-actions] .bottom-dock .actions-panel:not([data-action-panel-live]) .drawer-toggle,
+  .bottom-dock .actions-panel[data-action-panel-live][data-no-actions] .drawer-toggle {
+    display: none;
+  }
+
+  .actions-panel .actions-drawer {
+    margin-right: 10px;
+  }
+  .actions-panel .actions-drawer-inner {
+    gap: 10px;
+  }
+  .actions-panel .actions-drawer-inner .action-button,
+  .actions-panel .drawer-toggle,
+  .actions-panel .flyout-menu,
+  .actions-panel .color-wrapper {
+    pointer-events: auto;
+  }
+  .actions-panel .actions-drawer-inner .brush-wrapper,
+  .actions-panel .actions-drawer-inner .stroke-width-wrapper {
+    position: absolute;
+    left: 0;
+  }
+  .actions-panel .actions-drawer-inner .brush-wrapper {
+    bottom: calc((1 + var(--landscape-width-slots)) * var(--landscape-pitch));
+  }
+  .actions-panel .actions-drawer-inner .stroke-width-wrapper {
+    bottom: var(--landscape-pitch);
+  }
+  .actions-panel .color-wrapper {
+    display: block;
+    position: absolute;
+    left: 0;
+    bottom: calc(50dvh - var(--action-btn-size) / 2 - 8px - var(--safe-area-bottom));
+    transition: bottom var(--duration-base) var(--ease-glide);
+  }
+  html[data-drawer-open]:not([data-no-actions])
+    .actions-panel:not([data-action-panel-live])
+    .color-wrapper,
+  .actions-panel[data-action-panel-live][data-drawer-open]:not([data-no-actions]) .color-wrapper {
+    bottom: calc(
+      (1 + var(--landscape-brush-slots) + var(--landscape-width-slots)) * var(--landscape-pitch)
+    );
+  }
+  .actions-panel .color-button {
+    touch-action: none;
+    padding: 0;
+  }
+  .color-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .color-button.ink-outlined path {
+    stroke: var(--dark-ink-keyline);
+    stroke-width: 52px;
+    paint-order: stroke;
+    stroke-linejoin: round;
+  }
+  .actions-panel .flyout-menu {
+    left: calc(100% + 8px);
+    bottom: 0;
+    transform-origin: 0 100%;
+    --flyout-from-x: -6px;
+    --flyout-from-y: 0px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .actions-panel .color-wrapper {
+    transition: none;
   }
 }
