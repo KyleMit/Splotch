@@ -67,8 +67,8 @@ importers:
         specifier: ^18.0.11
         version: 18.0.11
       openai:
-        specifier: ^7.8.0
-        version: 7.8.0(ws@8.21.3)(zod@4.4.3)
+        specifier: ^7.10.0
+        version: 7.10.0(ws@8.21.3)(zod@4.5.4)
       svelte:
         specifier: ^5.57.0
         version: 5.57.0(@typescript-eslint/types@8.69.0)
@@ -4233,8 +4233,8 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  openai@7.8.0:
-    resolution: {integrity: sha512-/2g9JzdnXNcjX1W/UlSNu+OdSFDAaAVt0n9Onom0kPenH54o59G2WrX/xjTnr26UHNSh6hxcAf58doGYRme2rw==}
+  openai@7.10.0:
+    resolution: {integrity: sha512-sn9t2Kls7O52PwuF9BUTYNu4Gk/r0lXJyrgaNht4TNRlZFb3dJIGO0RciSgjARGCBRtWjySubAQFJttlzUvGQQ==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
@@ -9649,10 +9649,10 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@7.8.0(ws@8.21.3)(zod@4.4.3):
+  openai@7.10.0(ws@8.21.3)(zod@4.5.4):
     optionalDependencies:
       ws: 8.21.3
-      zod: 4.4.3
+      zod: 4.5.4
 
   optionator@0.9.4:
     dependencies:
