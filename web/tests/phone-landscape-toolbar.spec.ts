@@ -263,3 +263,19 @@ test('landscape tablets retain the palette and existing toolbar', async ({ page 
   await expect(page.locator('.color-palette')).toBeVisible();
   await expect(page.locator('#colorButton')).toBeHidden();
 });
+
+test('browser chrome does not switch a CSS tablet into the phone toolbar', async ({ page }) => {
+  await page.setViewportSize({ width: 960, height: 600 });
+  await page.addInitScript(() =>
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 550 })
+  );
+  await gotoApp(page);
+  await openDrawer(page);
+  await expect(page.locator('.color-palette')).toBeVisible();
+  await expect(page.locator('#colorButton')).toBeHidden();
+  await expect(page.locator('.actions-panel')).toHaveCSS('left', '92px');
+  await expect(page.locator('.actions-panel')).not.toHaveAttribute(
+    'style',
+    /var\(--landscape-action-size\)/
+  );
+});

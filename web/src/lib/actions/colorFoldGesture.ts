@@ -1,3 +1,5 @@
+import { PRESS_CLICK_CONSUME_WINDOW_MS } from './scribbleGuard';
+
 const TAP_TRAVEL_PX = 18;
 
 interface ColorFoldHandlers {
@@ -11,7 +13,8 @@ export function colorFoldGesture(node: HTMLButtonElement, handlers: ColorFoldHan
   let startX = 0;
   let startY = 0;
   let travel = 0;
-  let consumeClick = false;
+  let consumableClicks = 0;
+  let consumeClicksUntil = 0;
 
   function down(event: PointerEvent) {
     if (pointerId !== undefined || event.button !== 0) return;
@@ -19,7 +22,6 @@ export function colorFoldGesture(node: HTMLButtonElement, handlers: ColorFoldHan
     startX = event.clientX;
     startY = event.clientY;
     travel = 0;
-    consumeClick = false;
     node.setPointerCapture(pointerId);
     event.preventDefault();
   }
@@ -40,22 +42,23 @@ export function colorFoldGesture(node: HTMLButtonElement, handlers: ColorFoldHan
     if (event.pointerId !== pointerId) return;
     move(event);
     release();
-    consumeClick = true;
     const dx = event.clientX - startX;
     const dy = event.clientY - startY;
     if (travel < TAP_TRAVEL_PX) current.tap();
     else if (Math.abs(dy) >= TAP_TRAVEL_PX && Math.abs(dy) > Math.abs(dx)) current.fold(dy > 0);
+    consumableClicks += 1;
+    consumeClicksUntil = performance.now() + PRESS_CLICK_CONSUME_WINDOW_MS;
   }
 
   function cancel(event: PointerEvent) {
     if (event.pointerId !== pointerId) return;
     release();
-    consumeClick = true;
   }
 
   function click(event: MouseEvent) {
-    if (event.detail === 0 || !consumeClick) current.tap();
-    consumeClick = false;
+    if (performance.now() >= consumeClicksUntil) consumableClicks = 0;
+    if (event.detail === 0 || consumableClicks === 0) current.tap();
+    else consumableClicks -= 1;
   }
 
   node.addEventListener('pointerdown', down);

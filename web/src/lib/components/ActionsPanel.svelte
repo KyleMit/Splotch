@@ -3,7 +3,6 @@
   import { drawerCascade } from '$lib/actions/drawerCascade';
   import Icon from './Icon.svelte';
   import ColorControl from './ColorControl.svelte';
-  import { isPhoneLandscape } from '$lib/breakpoints';
   import BrushControl from './BrushControl.svelte';
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
@@ -84,7 +83,7 @@
   // else orientation-dependent here (drawer collapse axis, chevron direction)
   // is CSS. The shared layout module owns the listeners.
   const isPortrait = $derived(layout.orientation === 'portrait');
-  const phoneLandscape = $derived(isPhoneLandscape(layout.viewportWidth, layout.viewportHeight));
+  const phoneLandscape = $derived(layout.phoneLandscape);
 
   // Landscape: sit just past the Color Palette so we clear it. The raw
   // prerendered page gets the same deterministic width from the shared CSS

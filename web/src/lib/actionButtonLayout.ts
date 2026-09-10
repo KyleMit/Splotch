@@ -15,10 +15,7 @@ import type { Orientation } from '$lib/platform';
 import { safeAreaLength } from '$lib/platform/safeArea';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
-import {
-  landscapeSingleColumnMediaQuery,
-  PALETTE_LANDSCAPE_WIDTHS_PX,
-} from '$lib/design/trimGeometry';
+import { PALETTE_LANDSCAPE_WIDTH_PX } from '$lib/design/trimGeometry';
 import {
   actionButtonSizeClass,
   LARGE_TABLET_MIN_SIDE_PX,
@@ -151,10 +148,10 @@ export function visibleActionButtonCount(): number {
 
 // ColorPalette publishes its measured width after hydration. Until then its
 // responsive CSS geometry is deterministic, so layout consumers use the same
-// two values app.css exposes through --palette-landscape-width instead of
+// width app.css exposes through --palette-landscape-width instead of
 // briefly treating the palette as zero-width.
 export function resolvedLandscapePaletteWidth(): number {
-  if (isPhoneLandscape(layout.viewportWidth, layout.viewportHeight)) return 0;
+  if (layout.phoneLandscape) return 0;
   const measurement = layout.paletteMeasurement;
   if (
     layout.orientation === 'landscape' &&
@@ -163,9 +160,7 @@ export function resolvedLandscapePaletteWidth(): number {
   ) {
     return measurement.width;
   }
-  return typeof matchMedia !== 'undefined' && matchMedia(landscapeSingleColumnMediaQuery()).matches
-    ? PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn
-    : PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns;
+  return PALETTE_LANDSCAPE_WIDTH_PX;
 }
 
 export function resolvedPortraitPaletteHeight(): number {

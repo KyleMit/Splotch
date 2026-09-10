@@ -18,7 +18,8 @@ export function actionPanelEvents(node: HTMLElement, handlers: ActionPanelHandle
   const screenOrientation = window?.screen?.orientation;
   const stopMotion = () => current.stopMotion();
   window?.addEventListener('orientationchange', stopMotion);
-  screenOrientation?.addEventListener('change', stopMotion);
+  if (typeof screenOrientation?.addEventListener === 'function')
+    screenOrientation.addEventListener('change', stopMotion);
   document.addEventListener('pointerdown', outside);
   document.addEventListener('keydown', escape);
   return {
@@ -28,7 +29,8 @@ export function actionPanelEvents(node: HTMLElement, handlers: ActionPanelHandle
     destroy() {
       stopMotion();
       window?.removeEventListener('orientationchange', stopMotion);
-      screenOrientation?.removeEventListener('change', stopMotion);
+      if (typeof screenOrientation?.removeEventListener === 'function')
+        screenOrientation.removeEventListener('change', stopMotion);
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', escape);
     },

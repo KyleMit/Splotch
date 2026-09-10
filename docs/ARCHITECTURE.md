@@ -254,10 +254,10 @@ media queries + the head-script stamp in `app.html`).
 > **Layout notes (read before positioning a new control):**
 >
 > * The **Color Palette** is orientation-asymmetric (`ColorPalette.svelte`): a full-width **row
->   along the top edge** in portrait, a **column down the left edge** in landscape (single- or
->   two-column depending on height). Landscape phones below 600px tall replace that bar with the
->   **Color Button** in the Actions Panel, leaving the canvas full width. On the other layouts, the
->   top-left corner sits under the first swatch.
+>   along the top edge** in portrait, a **column down the left edge** on landscape tablets.
+>   Landscape phones below 600px tall replace that bar with the **Color Button** in the Actions
+>   Panel, leaving the canvas full width. On the other layouts, the top-left corner sits under the
+>   first swatch.
 > * **Float canvas-overlay controls inside `.canvas-container`** (`DrawingCanvas.svelte`,
 >   `position: relative`), using `position: absolute`, rather than a fixed viewport corner — that
 >   container already tracks the drawing area across orientations. The **Fullscreen Toggle**

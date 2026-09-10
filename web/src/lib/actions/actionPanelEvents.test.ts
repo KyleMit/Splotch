@@ -46,3 +46,21 @@ it('stops orientation motion and removes listeners on teardown', () => {
   expect(stopMotion).toHaveBeenCalledTimes(2);
   expect(close).not.toHaveBeenCalled();
 });
+
+it('supports a WebView orientation object without listener methods', () => {
+  action.destroy();
+  const original = Object.getOwnPropertyDescriptor(window.screen, 'orientation');
+  Object.defineProperty(window.screen, 'orientation', {
+    configurable: true,
+    value: { angle: 0, type: 'landscape-primary' },
+  });
+  try {
+    action = actionPanelEvents(panel, { wrapper: () => wrapper, close, stopMotion });
+    window.dispatchEvent(new Event('orientationchange'));
+    expect(stopMotion).toHaveBeenCalledTimes(2);
+    expect(() => action.destroy()).not.toThrow();
+  } finally {
+    if (original) Object.defineProperty(window.screen, 'orientation', original);
+    else Reflect.deleteProperty(window.screen, 'orientation');
+  }
+});

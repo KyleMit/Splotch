@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { PHONE_LANDSCAPE_QUERY } from '$lib/breakpoints';
 import type { SafeAreaInsets } from '$lib/platform/safeArea';
 
 const mocks = vi.hoisted(() => ({
   portrait: false,
+  phoneLandscape: false,
   insets: { top: 0, right: 0, bottom: 0, left: 0 },
 }));
 
@@ -15,7 +17,11 @@ vi.mock('$lib/platform/safeArea', () => ({
 function setMatchMedia() {
   window.matchMedia = ((query: string) => ({
     get matches() {
-      return query.includes('portrait') ? mocks.portrait : !mocks.portrait;
+      return query === PHONE_LANDSCAPE_QUERY
+        ? mocks.phoneLandscape
+        : query.includes('portrait')
+          ? mocks.portrait
+          : !mocks.portrait;
     },
     media: query,
     addEventListener() {},
@@ -34,6 +40,7 @@ async function freshModule() {
 beforeEach(() => {
   vi.useFakeTimers();
   mocks.portrait = false;
+  mocks.phoneLandscape = false;
   mocks.insets = { top: 0, right: 0, bottom: 0, left: 0 };
   window.innerWidth = 1024;
   window.innerHeight = 768;
@@ -59,6 +66,16 @@ describe('viewport tracking', () => {
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
     expect(document.documentElement.dataset.orientation).toBe('portrait');
+  });
+
+  it('takes the phone class from CSS rather than the visible viewport height', async () => {
+    window.innerWidth = 960;
+    window.innerHeight = 550;
+    const { layout } = await freshModule();
+    expect(layout.phoneLandscape).toBe(false);
+    mocks.phoneLandscape = true;
+    window.dispatchEvent(new Event('resize'));
+    expect(layout.phoneLandscape).toBe(true);
   });
 
   it('re-measures on resize', async () => {
@@ -136,6 +153,7 @@ describe('viewport tracking', () => {
     // Rotation: the standard orientation event fires, then the insets settle
     // onto a side edge and a resize follows.
     mocks.portrait = false;
+    mocks.phoneLandscape = false;
     window.innerWidth = 1024;
     window.innerHeight = 768;
     screen.orientation.dispatchEvent(new Event('change'));

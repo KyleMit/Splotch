@@ -141,7 +141,7 @@
   .color-palette {
     --selection-ring-width: 4.5px;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     justify-items: center;
     align-content: center;
     width: var(--palette-landscape-width);
@@ -256,11 +256,6 @@
   /* Landscape tablets use one column, trimming swatches as the viewport
      shortens. Phone landscape uses ColorControl instead. trimGeometry.test.ts
      verifies the remaining palette ladder against its geometry. */
-  @media (orientation: landscape) and (min-height: 444px) {
-    .color-palette {
-      grid-template-columns: 1fr;
-    }
-  }
 
   @media (orientation: portrait) {
     .color-palette {
@@ -383,53 +378,43 @@
 
   /* LANDSCAPE, single column (1 bar) — 60px swatches, 12px gaps, 12px side
      padding: N fit at height ≥ 72·N + 12. Floored at the layout switch. */
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 1163.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 1163.98px) {
     .color-swatch[data-trim-rank='0'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 1091.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 1091.98px) {
     .color-swatch[data-trim-rank='1'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 1019.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 1019.98px) {
     .color-swatch[data-trim-rank='2'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 947.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 947.98px) {
     .color-swatch[data-trim-rank='3'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 875.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 875.98px) {
     .color-swatch[data-trim-rank='4'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 803.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 803.98px) {
     .color-swatch[data-trim-rank='5'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 731.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 731.98px) {
     .color-swatch[data-trim-rank='6'] {
       display: none;
     }
   }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 659.98px) {
+  @media (orientation: landscape) and (min-height: 600px) and (max-height: 659.98px) {
     .color-swatch[data-trim-rank='7'] {
-      display: none;
-    }
-  }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 587.98px) {
-    .color-swatch[data-trim-rank='8'] {
-      display: none;
-    }
-  }
-  @media (orientation: landscape) and (min-height: 444px) and (max-height: 515.98px) {
-    .color-swatch[data-trim-rank='9'] {
       display: none;
     }
   }

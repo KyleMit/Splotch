@@ -109,7 +109,7 @@ body {
    width; actionButtonLayout.fallback.test.ts guards these literals against the
    palette geometry source. */
 :root {
-  --palette-landscape-width: 156px;
+  --palette-landscape-width: 84px;
   --corner-button-size: 48px;
   --action-btn-first-paint-count: 5;
   --action-btn-first-paint-gap-total: 48px;
@@ -117,12 +117,6 @@ body {
      the same height actionButtonLayout.ts reserves as PALETTE_BAR_RESERVE,
      guarded against it by actionButtonLayout.fallback.test.ts. */
   --palette-portrait-height: 76px;
-}
-
-@media (orientation: landscape) and (min-height: 444px) {
-  :root {
-    --palette-landscape-width: 84px;
-  }
 }
 
 /* The settings rows' icon column: the icon box and the gap to its label, shared

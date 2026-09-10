@@ -1,3 +1,4 @@
+import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PALETTE_COLORS } from '../palette';
@@ -8,7 +9,6 @@ import {
   type TrimStep,
   hexGridColumnLadderPx,
   hexGridRowLadderPx,
-  landscapeSingleColumnFloorPx,
   landscapeSingleColumnTrimSteps,
   portraitTrimSteps,
 } from './trimGeometry';
@@ -128,7 +128,7 @@ describe('ColorPalette', () => {
     ];
     expect(new Set(classified).size).toBe(classified.length);
     expect(classified).toHaveLength(thresholdRules(rules).length);
-    expect(layoutSwitch).toHaveLength(1);
+    expect(layoutSwitch).toHaveLength(0);
     expect(phonePaletteHidden).toHaveLength(1);
   });
 
@@ -158,16 +158,12 @@ describe('ColorPalette', () => {
     expect(swatch).toContain('transform var(--duration-base) ease');
   });
 
-  it('falls back to two columns at the single-column floor', () => {
-    expect(feature(layoutSwitch[0], 'min-height')).toBe(landscapeSingleColumnFloorPx());
-  });
-
   it('trims the single column a swatch at a time, floored at that same height', () => {
     expect(singleColumnTrim.map((rule) => trimStep(rule, 'max-height'))).toEqual(
       landscapeSingleColumnTrimSteps(colorCount)
     );
     for (const rule of singleColumnTrim) {
-      expect(feature(rule, 'min-height')).toBe(landscapeSingleColumnFloorPx());
+      expect(feature(rule, 'min-height')).toBe(TABLET_MIN_SIDE_PX);
     }
   });
 
