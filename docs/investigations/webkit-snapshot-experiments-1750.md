@@ -1,9 +1,10 @@
 # WebKit snapshot experiments — issue 1750
 
-No product change was selected. Six snapshot interventions failed to demonstrate a convincing
-combined-path improvement, and physical validation was blocked: two host-side capture preflights
-found neither the iPad nor the Android phone. This is an incomplete implementation attempt, not a
-fix or a passing performance report.
+No product optimization was selected. Eleven candidate snapshot interventions failed to demonstrate
+a convincing combined-path improvement. Device readiness was restored and physical iPad diagnostics
+were captured, but no candidate earned correctness or performance approval. The only code change
+repairs multi-finger routing in the iPad measurement driver. Issue 1750 remains unresolved; this is
+an incomplete implementation attempt, not a fix or a passing performance report.
 
 The [evidence JSON](webkit-snapshot-experiments-1750.json) retains the canonical gate's initial and
 confirmation samples, all draw/undo engine distributions, snapshot phase diagnostics, diagnostic
@@ -37,8 +38,8 @@ Diagnostic arms rewrote only the built snapshot factory in the browser response.
 source and build files were unchanged. Each arm used the original `buildScenarios` and
 `runUndoScenario` functions with both fast scenarios, without changing stroke counts, coordinates,
 pointer kinds, pacing, or history settlement. Each candidate was measured once; none is a validated
-product result. Controls ran before the candidates and twice afterwards, serially rather than
-competing for host resources. The JSON records their order and the source/build hashes.
+product result. Controls bracketed groups of candidates, serially rather than competing for host
+resources. The JSON records their order and the source/build hashes.
 
 Three additional diagnostics bracketed the page's complete synchronous draw evaluation, its second
 subsequent animation-frame callback, and its undo loop. The draw timer begins after the payload has
@@ -73,9 +74,10 @@ Multi-finger also rejects a commit-only reading: the readback hint lowered P95 f
 while page draw increased from 356 to 506 ms. Reading one snapshot pixel lowered P95 to 0 ms while
 page draw became 430 ms. The exact per-arm distributions are in the JSON.
 
-Every arm reported the same retained debug state as its control: 11 undo steps for multi-finger and
-20 for crayon, with unchanged patch/base byte counts. These observations are not pixel tests, redo
-validation, or a proof of peak native memory. No candidate proceeded to correctness approval.
+Every arm in the initial snapshot sweep reported the same retained debug state as its control: 11
+undo steps for multi-finger and 20 for crayon, with unchanged patch/base byte counts. These
+observations are not pixel tests, redo validation, or a proof of peak native memory. No candidate
+proceeded to correctness approval.
 
 ## Undo attribution
 
@@ -100,20 +102,21 @@ behavior. No animation change was made under this issue.
 ## Scope and remaining work
 
 The [1717 investigation](webkit-commit-gate-1717.md) retains the fresh-runner comparison and links
-to its raw CI artifacts. This attempt adds local evidence only: no new fresh-runner or physical
-comparison was obtained, and no Chromium candidate validation was run because no candidate was
-selected. The iPad and Android preflight failures are missing validation, never zero-cost passes.
+to its raw CI artifacts. The initial desktop pass added local evidence only. The physical
+diagnostics added on resumption are below; no new fresh-runner comparison or Chromium candidate
+validation was obtained because no candidate was selected. The iPad and Android preflight failures
+are missing validation, never zero-cost passes.
 
 Issues 1700 and 1701 were read with their complete, empty comment threads. This experiment does not
 establish a shared root cause. Issue 1700's post-burst interval outside engine measures was not
 attributed here; issue 1701's deferred under-shadow drain is distinct from the measured undo
 animation replay. Neither issue was relabeled, closed, or absorbed into this attempt.
 
-Resume with connected, unlocked physical devices and a passing capture preflight. Locate the
-snapshot wait on the actual target before selecting a further product experiment, and measure
-animation replay separately from patch restoration. Any selected change still owes the complete
-latency comparison, pixel/depth/memory correctness, initial and confirmation samples, fresh-runner
-comparison, physical validation, and independent PR review required by issue 1750.
+Device readiness was resolved during the resumption below. A further attempt needs an attributed
+rendering-cost hypothesis beyond the rejected snapshot interventions, with animation replay measured
+separately from patch restoration. Any selected change still owes the complete latency comparison,
+pixel/depth/memory correctness, initial and confirmation samples, fresh-runner comparison, physical
+validation, and independent PR review required by issue 1750.
 
 ## Resumption: device readiness and two additional interventions
 
@@ -144,3 +147,69 @@ Immediate release increased multi-finger page draw to 510 ms despite lowering it
 ms. Skipping blank copies left multi-finger page draw at 362 ms and commit P95 at 58 ms. Neither arm
 demonstrated the required combined-path improvement. Their complete engine distributions join the
 original six interventions in the adjacent JSON. No product change has been selected.
+
+## Connected-device resumption and final snapshot experiments
+
+After the iPad was reattached, USB enumeration succeeded. The operator approved the documented
+RemoteXPC tunnel through the macOS administrator dialog. A fresh full preflight passed Android
+trusted input at 1.02 moves per frame (121.7 contact moves per second), both Android rotations, and
+iPad WebDriverAgent launch plus page rotation. Device connectivity is no longer the blocker.
+
+Three further candidate implementations ran against the same unchanged desktop build, followed by
+another unchanged control. They preserve the raw scenario input and pacing:
+
+| Crayon arm                                                     | Commit P95 | Page draw | Draw to second rAF | Page undo loop |
+| -------------------------------------------------------------- | ---------: | --------: | -----------------: | -------------: |
+| Transfer the captured offscreen snapshot to `ImageBitmap`      |          1 |    11,907 |             13,154 |         12,334 |
+| Transfer the cropped offscreen snapshot to `ImageBitmap`       |        872 |    12,581 |             13,142 |         12,171 |
+| Crop retained commands only when the memory budget requires it |          0 |    11,988 |             13,235 |         12,394 |
+| Unchanged control after these experiments                      |        874 |    12,542 |             13,161 |         12,327 |
+
+The budget-triggered policy retains full snapshots until the existing six-paper budget is exceeded,
+then crops retained commands oldest first before considering eviction. It retained twenty crayon
+undo steps, but increased patch storage from 28.0 MiB to 128.1 MiB without reducing the combined
+path. Multi-finger still breached the unchanged raw budget at 50 ms P95; its adjacent control was 48
+ms. Both bitmap strategies retained the original debug depth and bytes. None warrants adoption.
+
+Two **attribution-only fault injections** deliberately omitted copying the before-image. They break
+undo pixels and are not correctness candidates; their undo timings cannot be treated as equivalent
+work. Omitting capture copying alone left crayon draw-to-second-rAF at 13,198 ms and commit P95 at
+606 ms. Omitting both capture copying and cropping left draw-to-second-rAF at 13,067 ms, despite
+commit P95 becoming zero. This bounds the useful claim: in this workload, those copy operations do
+not explain the total delay. It does not identify the remaining renderer work or prove a shared
+cause with issues 1700 or 1701.
+
+## Physical iPad diagnostics and the invalid multi-finger row
+
+The local diagnostic used the repository's Appium client, capabilities, cache cleanup and preview
+identity helpers. The older `perf:ios:webkit:gates` entry uses the legacy inspector proxy that
+`PROFILING-CAMPAIGNS.md` documents as incompatible with modern iOS. The diagnostic instead injected
+the same `engine-gates.js` workload over Appium and retained every measure after each scenario. It
+verified the served entry module against the page before measuring. The device reported iOS 26.5,
+Safari 26.5, a visible 1024 × 1227 viewport and DPR 2. The product build remained unchanged main;
+exact build provenance and raw measures are in the adjacent JSON.
+
+This device workload awaits a frame after each stroke. It is **not comparable** to the desktop
+burst's pacing, is synthetic rather than calibrated trusted finger input, and does not prove actual
+presentation completion. Its page intervals include frame waits but exclude host transport. They
+show why a small engine measure cannot acquit the complete interaction:
+
+| Valid physical row                   | Page draw and frame waits | Page undo and frame waits | Commit max | Undo max | Patch storage |
+| ------------------------------------ | ------------------------: | ------------------------: | ---------: | -------: | ------------: |
+| Crayon scribbles, initial diagnostic |                132,980 ms |                145,207 ms |       1 ms |     6 ms |      24.6 MiB |
+| Multi-finger, corrected dispatch     |                  1,693 ms |                    186 ms |       2 ms |     1 ms |     112.0 MiB |
+
+The original multi-finger row is preserved but **invalid**: both a point sequence and a group of
+pointer sequences are arrays, so `Array.isArray(s)` dispatched the group to `strokeSync`. Its zero
+patch bytes and absent capture measures were missing ink, not a fast multi-touch result. Corrected
+dispatch produced 420 snapshot captures and twelve retained undo steps. The physical correction used
+the scenario key; the committed driver uses an explicit `multi` flag on that scenario. Its
+regression test executes the complete standalone driver and verifies both argument shapes and call
+counts. It failed against the original routing (five single-pointer calls instead of three) and
+passes with the correction.
+
+These are single diagnostic physical samples, not initial/confirmation candidate approval. No
+candidate was selected for a physical A/B, pixel/redo checks, fresh-runner comparison, or
+independent PR review. The original issue's done-when remains unmet. The evidence branch contains
+the rejected experiments and the small driver correction; it must not close issue 1750 or be
+described as a product performance fix.
