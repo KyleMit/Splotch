@@ -9508,7 +9508,9 @@
           "undo max ms": 1,
           "patch MiB": 0,
           "base MiB": 0,
-          "history MiB": 0
+          "history MiB": 0,
+          "valid": false,
+          "classification": "Invalid workload: pointer-group arrays were dispatched to strokeSync; no ink or patches. Exclude from performance comparisons."
         },
         {
           "key": "crayon-scribbles",
@@ -9867,7 +9869,9 @@
               "startTime": 1961,
               "duration": 1
             }
-          ]
+          ],
+          "valid": false,
+          "classification": "Invalid workload: pointer-group arrays were dispatched to strokeSync; no ink or patches. Exclude from performance comparisons."
         },
         {
           "key": "crayon-scribbles",
@@ -13634,5 +13638,12 @@
     "perf-profiles/issue-1750/probe.mjs": "f5a5ed28776518181ebcc0601a85846bbd7e1ca40bf002a4f4d384963dc35f2d",
     "perf-profiles/issue-1750/scenarios.mjs": "d948215c90545b95d3171efdecdb7114fde7e78c55b5c21d954c49166153bf56",
     "perf-profiles/issue-1750/ipad-engine.mjs": "86a4fd7793d234d502d647c699e3585382a5dc639edcbc94e1dce75c9c8031c2"
+  },
+  "connectionDiscovery": {
+    "osVersionNumber": "26.5",
+    "osBuildUpdate": "23F77",
+    "source": "perf-profiles/issue-1750/ipad-discovery.json",
+    "sourceSha256": "c994af0726c694ecf5e60f8f6e7e9d5dc202add3f44e5c5d988ef47c48024565",
+    "projection": "CoreDevice version fields before USB reconnection; device identifiers omitted."
   }
 }

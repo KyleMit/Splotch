@@ -200,6 +200,20 @@ show why a small engine measure cannot acquit the complete interaction:
 | Crayon scribbles, initial diagnostic |                132,980 ms |                145,207 ms |       1 ms |     6 ms |      24.6 MiB |
 | Multi-finger, corrected dispatch     |                  1,693 ms |                    186 ms |       2 ms |     1 ms |     112.0 MiB |
 
+These rows are separate captures, not a paired comparison. Crayon comes from `ipad-main-initial`,
+where it followed the invalid multi-finger scenario and its undo loop on the same page. Corrected
+multi-finger comes from a new page session, `ipad-main-multi-corrected`, with corrected dispatch.
+The crayon row is not a fresh-page sample.
+
+Crayon's recorded `engine.draw` intervals total 302 ms of the 132,980 ms page window, leaving
+132,678 ms (99.77%) outside that measure. The 21 gaps between draw intervals span 5,504–5,998 ms;
+these include the driver's frame waits and any other work outside the draw measure. The earlier
+no-ink multi-finger window on that page was 366 ms for 22 iterations, versus 1,693 ms in the
+separate corrected capture. Those observations contradict a single constant delay applied to every
+iteration, but do not isolate rendering from scheduling, state-dependent throttling, or automation
+effects. They neither validate the no-ink workload nor prove the remaining time was device
+rendering.
+
 The original multi-finger row is preserved but **invalid**: both a point sequence and a group of
 pointer sequences are arrays, so `Array.isArray(s)` dispatched the group to `strokeSync`. Its zero
 patch bytes and absent capture measures were missing ink, not a fast multi-touch result. Corrected
@@ -236,8 +250,9 @@ The retained history supports the owner's report that this device was already be
   availability between sessions.
 * Before this session's reconnect, CoreDevice already reported `osVersionNumber: 26.5` and build
   `23F77`. After recovery, the physical capture recorded iOS/Safari 26.5. The local discovery output
-  remains in `/tmp/issue-1750-ipad-discovery.json`; its exact device identifiers are not copied into
-  this report.
+  is retained locally as `perf-profiles/issue-1750/ipad-discovery.json`; the adjacent evidence
+  JSON's `connectionDiscovery` projection preserves these two version fields and the original file
+  hash. Exact device identifiers are omitted from the committed projection.
 
 The recovery sequence was USB reconnection, starting the missing root-owned RemoteXPC tunnel through
 the approved macOS dialog, and successful WDA launch/rotation. No OS or Appium dependency upgrade

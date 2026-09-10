@@ -6,7 +6,7 @@ This is the runbook for profiling on a **physical iPad** — the highest-fidelit
 the drawing engine, because it's the real **WebKit/JavaScriptCore engine + Apple GPU + 120 Hz
 ProMotion** display the app actually ships on.
 
-On the physical iPad running iPadOS 26.5, the established automation path is **Appium/XCUITest**:
+For physical iPad capture, the established automation path is **Appium/XCUITest**:
 **`npm run perf:ios:xcuitest:screen`** for trusted-touch drawing and
 **`npm run perf:ios:xcuitest:actions`** for discrete UI actions. The installed app's bundled
 WKWebView uses **`npm run perf:ios:bundled:frames`**. Start with the full device preflight in the
@@ -45,11 +45,17 @@ Safari-on-iPad and the native WKWebView run the **same** WebKit engine, so for e
 performance Approach A is the right default; Approach B is a sanity check on the app shell. Both are
 documented below.
 
-Approach A names the engine surface, not a transport. The standalone `engine-gates.js` probe can run
-in a working Appium page session or through the manual console in A1–A4. The legacy
-`perf:ios:webkit:gates` wrapper below does not provide a modern Appium transport. Do not substitute
-the real-screen workload and call it an equivalent engine-gates run: their inputs and timing
-boundaries differ. Timeline recording in A5–A6 remains manual.
+Approach A names the engine surface, not a transport. The standalone `engine-gates.js` probe was
+injected through a local Appium diagnostic driver during the issue 1750 investigation. That driver
+is not committed, and there is no committed Appium entry point for this workload. The manual console
+in A1–A4 is the reproducible engine-gates path on a current device.
+
+The campaign guide documents the outstanding migration of the legacy gates/frames wrappers to
+[`pymobiledevice3`'s inspector bridge](PROFILING-CAMPAIGNS.md#what-the-pymobiledevice3-cdp-bridge-does-and-does-not-carry),
+which supports `Runtime.evaluate`. This is a transport repair to implement, not a capability those
+wrapper commands already provide. The established Appium real-screen and action commands remain
+separate workloads; their inputs and timing boundaries are not equivalent to engine gates. Timeline
+recording in A5–A6 remains manual.
 
 ---
 
@@ -132,7 +138,8 @@ puts it on `PATH` through nvm. Confirm the tunnel with one short probe before qu
 ## The automated gates run — `npm run perf:ios:webkit:gates` — **⟨Mac⟩**
 
 This is the **legacy proxy wrapper**. Its instructions apply when that transport actually exposes
-Safari pages; use the established Appium connection or the manual console on the current iPad.
+Safari pages; use the manual console for this engine workload on the current iPad. The Appium
+real-screen/action commands exercise their own workloads.
 
 ```sh
 npm run perf:ios:webkit:gates                                # all four scenarios
