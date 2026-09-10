@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { FAKE_IOS_UDID, FAKE_ANDROID_SERIAL } from '../../perf/lib/device-identifiers.mjs';
 import {
   buildMarker,
   buildReviewRequest,
@@ -271,8 +272,8 @@ describe('posting', () => {
   });
 
   const sensitiveExamples = [
-    '12345678-ABCDEF0123456789',
-    'R9Z12345678',
+    FAKE_IOS_UDID,
+    FAKE_ANDROID_SERIAL,
     'abcdef0123456789',
     'IOS_UDID=' + 'e'.repeat(40),
     'adb -s SYNTHETIC123 shell',
@@ -280,6 +281,8 @@ describe('posting', () => {
     'ghp_' + 'x'.repeat(36),
     'sk-proj-' + 'x'.repeat(40),
     'API_KEY=syntheticCredentialValue',
+    'GITHUB_ISSUE_TOKEN=syntheticCredentialValue',
+    'password="p@ss!1234"',
     'Authorization: Bearer syntheticCredentialValue',
     '-----BEGIN PRIVATE KEY-----',
   ];
@@ -359,6 +362,18 @@ describe('posting', () => {
       marker: buildMarker({ ...options, id }),
     });
     expect(JSON.parse(calls.find(({ args }) => args.includes('POST')).input)).toEqual(request);
+  });
+
+  it.each([
+    'The serial number is not required.',
+    'The deviceId property is optional.',
+    'A UDID identifies the device.',
+  ])('publishes ordinary identifier prose unchanged: %s', (summary) => {
+    const { gh, calls } = fakeGh();
+    postReview({ ...options, findings: { ...FINDINGS, summary }, gh });
+    expect(JSON.parse(calls.find(({ args }) => args.includes('POST')).input).body).toContain(
+      summary
+    );
   });
 });
 

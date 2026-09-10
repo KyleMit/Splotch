@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { launch } from '../launch.mjs';
+import { FAKE_IOS_UDID } from '../../perf/lib/device-identifiers.mjs';
 import { publishReview } from '../../../.agents/skills/run-rival-agent/scripts/claude-review-publish.mjs';
 
 vi.mock('../launch.mjs', async (importOriginal) => ({
@@ -74,7 +75,7 @@ describe('orchestrated publisher publication boundary', () => {
   it.each(['summary', 'inline'])(
     'blocks sensitive %s output from the real shared publisher',
     async (field) => {
-      const value = '12345678-ABCDEF0123456789';
+      const value = FAKE_IOS_UDID;
       const findings = {
         summary: field === 'summary' ? value : 'Checked the diff.',
         findings: [

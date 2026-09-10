@@ -18,7 +18,7 @@ const SENSITIVE_PATTERNS = [
   ['Android device identifier', /\b(?:R[0-9A-Z]{10}|[0-9a-fA-F]{16})\b/],
   [
     'device identifier',
-    /(?:\b(?:[\w.-]*(?:udid|serial|device[_-]?id))\b["'`\s:=]+|\b(?:adb\s+-s|idevice\w*\s+-u)\s+["'`]?|\bplatform=iOS,id=)[a-z0-9][a-z0-9.-]{5,}/i,
+    /(?:\b(?:[\w.-]*(?:udid|serial|device[_-]?id))\b(?:["'`\s]*[:=]["'`\s]*|\s+["'`]+|\s+(?=[0-9a-f]{40}\b))|\b(?:adb\s+-s|idevice\w*\s+-u)\s+["'`]?|\bplatform=iOS,id=)[a-z0-9][a-z0-9.-]{5,}/i,
   ],
   [
     'credential',
@@ -27,7 +27,7 @@ const SENSITIVE_PATTERNS = [
   ['private key', /-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----/],
   [
     'credential',
-    /\b(?:[\w.-]*(?:api[_-]?key|access[_-]?token|auth[_-]?token|password|secret))\b["'`\s]*[:=]["'`\s]*[a-z0-9_+/.=-]{8,}/i,
+    /\b(?:[\w.-]*(?:api[_-]?key|token|password|secret))\b["'`\s]*[:=]["'`\s]*[^\s"'`[\]{}]{8,}/i,
   ],
   ['authorization credential', /\b(?:Bearer|Basic)\s+[a-z0-9_+/.=-]{8,}/i],
 ];
