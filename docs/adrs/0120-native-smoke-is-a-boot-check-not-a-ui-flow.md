@@ -82,8 +82,9 @@ The native smoke launches the installed app, waits for the UI to paint, and stop
   check-then-create shape `test.yml`'s post-merge WebKit gate uses, for the same reason. The
   condition stays **job-wide** rather than keyed to the smoke step, because a tag that dies at
   checkout or in the APK build is exactly as unwatched; what the report must not do is *assert* a
-  cause it did not observe, so the body claims a boot regression only when the smoke step's own
-  outcome is `failure`, and offers the Maestro artifact only when its upload produced one.
+  cause it did not observe. The body names the failed command or phase and points to available
+  evidence; even a smoke-step failure can precede the app assertion, and a successful upload step
+  can have found no report files.
 * **Route reachability is asserted at build time instead**, in
   `tools/mobile/check-static-bundle.mjs` (`postbuild:cap`). `requiredNativePageProblems` already
   required `privacy.html` and `changelog.html` to survive `NATIVE_EXCLUDED_ROUTES` into the static
@@ -93,14 +94,17 @@ The native smoke launches the installed app, waits for the UI to paint, and stop
   route manifest lists every route as a bare path whether or not anything links there, and a
   prerendered page contains its own path.
 
-The invariant to keep: a failure here now means a genuine boot regression in the shipped artifact.
+The invariant to keep: an app launch/paint assertion failure means a boot regression in the tested
+artifact. Simulator setup, build/install, and Maestro driver startup failures can precede the
+assertion; a failed smoke command alone does not establish a product regression. The iOS report
+retains XCTest startup logs so these phases can be distinguished (issue #1734).
 Adding a navigation step gives that signal back its old ambiguity, where red meant "the app is
 broken" or "the UI moved" and only a human could tell which.
 
 ## Consequences
 
-* \+ The gate reports on the app rather than on the flow's memory of the UI. Red means the shipped
-  artifact does not boot.
+* \+ The app assertion reports on boot rather than on the flow's memory of the UI. Infrastructure
+  failures remain separate diagnoses, established from the job and driver logs.
 * \+ The drift class is gone by construction: with no navigation, there is no section list, heading,
   or body copy left to rot against.
 * \+ A red tag gate raises its own hand, closing the gap that let three releases ship past one.
