@@ -783,12 +783,12 @@
 
   /* Chevron rotation is fully CSS, composed from two custom properties so each
      input is correct at first paint of the prerendered page:
-       • --drawer-axis-rot — orientation axis, from a media query (landscape base
-         points right at 0°; portrait rotates the axis −90°).
+       • --drawer-axis-rot — orientation axis, from a media query.
        • --drawer-open-rot — the 0°/180° open/close flip, from the bootstrap or
          panel-local [data-drawer-open] attribute rather than JS markup.
      Composed:
        landscape closed 0 · open 180 (left)
+       phone landscape closed −45 (up-right) · open 135 (down-left)
        portrait  closed −90 (up) · open 90 (down) */
   :global(.drawer-toggle-icon) {
     pointer-events: none;
@@ -817,6 +817,10 @@
     position: relative;
   }
   @media (orientation: landscape) and (max-height: 599.98px) {
+    :global(.drawer-toggle-icon) {
+      --drawer-axis-rot: -45deg;
+    }
+
     .actions-panel {
       pointer-events: none;
     }
