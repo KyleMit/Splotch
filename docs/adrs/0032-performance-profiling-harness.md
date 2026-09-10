@@ -44,6 +44,14 @@ A profiling harness in `scripts/perf/`, built on the existing Playwright app-dri
   `PERF_MARKS=true`, serves via `vite preview`, and drives the minified bundle that actually ships.
   Profiling-only builds add `keepNames` so the CPU sampler's self-time is readable.
 
+  Web release byte budgets apply to the uninstrumented artifact. With `PERF_MARKS=true`, the
+  postbuild checker measures startup JS/CSS and the largest lazy chunk and logs their sizes against
+  those budgets as report-only; build-output integrity checks remain mandatory. CI's release build
+  smoke explicitly unsets profiling and dev-harness flags and enforces the unchanged limits. Native
+  export limits remain enforced. This avoids increasing the production allowance to cover bytes that
+  do not ship, introducing an arbitrary second profiling allowance, or dropping useful trace names
+  to satisfy a release-size constraint (issue #1746).
+
 * **One shared session, three page sources.** `session.mjs` owns the deterministic scenario +
   capture; the platform entries differ only in how the page is obtained:
   * **Web** — headless Chromium + preview, selectable viewport and CPU throttle (4× to approximate a

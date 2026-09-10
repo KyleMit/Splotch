@@ -151,6 +151,7 @@ export async function checkBundleBudgets({
   prerenderedIndex = PRERENDERED_INDEX,
   clientDir = CLIENT_DIR,
   nativeDir = NATIVE_DIR,
+  env = process.env,
   log = console.log,
 } = {}) {
   if (native) {
@@ -167,10 +168,13 @@ export async function checkBundleBudgets({
     prerenderedIndex,
     clientDir,
   });
+  // ADR-0032 retains marks and function names only for profiling; release byte
+  // limits describe the artifact enforced by CI's uninstrumented release build.
+  const profiling = env.PERF_MARKS === 'true';
   const problems = webBundleBudgetProblems(measurement);
-  if (problems.length) throw new Error(problems.join('\n'));
+  if (!profiling && problems.length) throw new Error(problems.join('\n'));
   log(
-    `[bundle-budgets] startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
+    `[bundle-budgets] ${profiling ? 'PERF_MARKS=true: release byte budgets are report-only; ' : ''}startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
       `largest lazy JS ${measurement.largestLazyChunk.bytes}/${MAX_LAZY_CHUNK_BYTES} bytes (${measurement.largestLazyChunk.path})`
   );
 }

@@ -107,30 +107,77 @@ it('measures every file in the native export and rejects an oversized package', 
   ]);
 });
 
-it('rejects an oversized web bundle through the checker entry point', async () => {
+it.each([{}, { PERF_MARKS: 'false' }, { PERF_MARKS: '1' }, { PUBLIC_ENABLE_DEV_HARNESS: 'true' }])(
+  'rejects an oversized web bundle without explicit profiling: %j',
+  async (env) => {
+    const root = temporaryDirectory();
+    const clientDir = join(root, 'client');
+    const prerenderedIndex = join(root, 'prerendered/pages/index.html');
+    writeSizedFile(join(clientDir, '_app/immutable/entry/app.js'), MAX_STARTUP_JS_CSS_BYTES + 1);
+    writeSizedFile(join(clientDir, '_app/immutable/chunks/lazy.js'), 1);
+    mkdirSync(dirname(prerenderedIndex), { recursive: true });
+    writeFileSync(
+      prerenderedIndex,
+      '<link href="./_app/immutable/entry/app.js" rel="modulepreload">'
+    );
+
+    await expect(
+      checkBundleBudgets({ prerenderedIndex, clientDir, env, log: vi.fn() })
+    ).rejects.toThrow(
+      `Startup JS/CSS is ${MAX_STARTUP_JS_CSS_BYTES + 1} bytes, above the ${MAX_STARTUP_JS_CSS_BYTES}-byte budget`
+    );
+  }
+);
+
+it('reports oversized profiling startup and lazy chunks without enforcing release byte limits', async () => {
   const root = temporaryDirectory();
   const clientDir = join(root, 'client');
   const prerenderedIndex = join(root, 'prerendered/pages/index.html');
   writeSizedFile(join(clientDir, '_app/immutable/entry/app.js'), MAX_STARTUP_JS_CSS_BYTES + 1);
-  writeSizedFile(join(clientDir, '_app/immutable/chunks/lazy.js'), 1);
+  writeSizedFile(join(clientDir, '_app/immutable/chunks/lazy.js'), MAX_LAZY_CHUNK_BYTES + 1);
   mkdirSync(dirname(prerenderedIndex), { recursive: true });
   writeFileSync(
     prerenderedIndex,
     '<link href="./_app/immutable/entry/app.js" rel="modulepreload">'
   );
+  const log = vi.fn();
 
-  await expect(checkBundleBudgets({ prerenderedIndex, clientDir, log: vi.fn() })).rejects.toThrow(
-    `Startup JS/CSS is ${MAX_STARTUP_JS_CSS_BYTES + 1} bytes, above the ${MAX_STARTUP_JS_CSS_BYTES}-byte budget`
+  await checkBundleBudgets({ prerenderedIndex, clientDir, env: { PERF_MARKS: 'true' }, log });
+
+  expect(log).toHaveBeenCalledWith(
+    `[bundle-budgets] PERF_MARKS=true: release byte budgets are report-only; startup JS/CSS ${MAX_STARTUP_JS_CSS_BYTES + 1}/${MAX_STARTUP_JS_CSS_BYTES} bytes across 1 linked files + 0 inline CSS bytes; largest lazy JS ${MAX_LAZY_CHUNK_BYTES + 1}/${MAX_LAZY_CHUNK_BYTES} bytes (_app/immutable/chunks/lazy.js)`
   );
 });
 
-it('rejects an oversized native export through the checker entry point', async () => {
+it('still rejects missing startup resources in a profiling build', async () => {
+  const root = temporaryDirectory();
+  const clientDir = join(root, 'client');
+  const prerenderedIndex = join(root, 'index.html');
+  writeFileSync(
+    prerenderedIndex,
+    '<link href="./_app/immutable/entry/missing.js" rel="modulepreload">'
+  );
+
+  await expect(
+    checkBundleBudgets({ prerenderedIndex, clientDir, env: { PERF_MARKS: 'true' }, log: vi.fn() })
+  ).rejects.toThrow('Startup resource does not exist');
+});
+
+it.each([{}, { PERF_MARKS: 'true' }])('rejects an oversized native export: %j', async (env) => {
   const nativeDir = temporaryDirectory();
   writeSizedFile(join(nativeDir, 'index.html'), MAX_NATIVE_EXPORT_BYTES + 1);
 
-  await expect(checkBundleBudgets({ native: true, nativeDir, log: vi.fn() })).rejects.toThrow(
+  await expect(checkBundleBudgets({ native: true, nativeDir, env, log: vi.fn() })).rejects.toThrow(
     `Native static export is ${MAX_NATIVE_EXPORT_BYTES + 1} bytes, above the ${MAX_NATIVE_EXPORT_BYTES}-byte budget`
   );
+});
+
+it('keeps CI release build validation explicitly uninstrumented', () => {
+  const workflow = readFileSync(
+    new URL('../../.github/workflows/test.yml', import.meta.url),
+    'utf8'
+  );
+  expect(workflow).toContain('run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build');
 });
 
 it('is wired into both release build lifecycle hooks', () => {

@@ -75,6 +75,14 @@ stores, not the JS heap** — so `performance.memory` / the heap table can't see
 
 ### Which undo run to reach for
 
+Web profiling builds (`PERF_MARKS=true`) report startup JS/CSS and lazy-chunk sizes against the
+release byte budgets without enforcing those limits: retained marks and function names add bytes
+that do not ship (ADR-0032). Build-output integrity checks still fail normally. Ordinary web builds,
+including CI's explicitly uninstrumented release build smoke, enforce the unchanged byte limits;
+`PUBLIC_ENABLE_DEV_HARNESS=true` alone does not opt out. Native export budgets remain enforced. An
+instrumented build passing its prerequisites is not a timing pass: the fast WebKit gate must produce
+commit samples and a measured verdict in its `undo-scenarios` artifacts.
+
 Run **both** when you touch the commit or tiled-history path; they answer different questions and
 neither substitutes for the other.
 
