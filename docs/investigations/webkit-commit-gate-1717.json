@@ -1791,6 +1791,230 @@
           "historyRasterMB": 49.326080322265625
         }
       ]
+    },
+    {
+      "name": "ci-instrumented",
+      "source": "https://github.com/KyleMit/Splotch/actions/runs/34500285786/artifacts/10161936630",
+      "buildCommit": "5823b17af6c9c87f2a72949e6ab5d8e1663aade2",
+      "intervention": "committed phase diagnostics on a fresh macOS runner; no API wrappers",
+      "settings": {
+        "target": "web/dev-engine (Playwright WebKit (WebKit/JavaScriptCore) \u2014 the iOS app's engine family, desktop build)",
+        "engine": "webkit",
+        "browserVersion": "26.6",
+        "host": {
+          "platform": "darwin",
+          "arch": "arm64",
+          "release": "25.6.0",
+          "node": "v22.23.2"
+        },
+        "device": "ipad-pro-12.9",
+        "viewport": {
+          "width": 1024,
+          "height": 1366,
+          "deviceScaleFactor": 2,
+          "label": "ipad-pro-12.9"
+        },
+        "throttle": 0,
+        "refreshHz": 120,
+        "frameBudgetMs": 8.333333333333334,
+        "longOps": 1200,
+        "buildMode": "production-preview",
+        "captureMode": "user-timing (no CDP on WebKit)",
+        "fidelity": "Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop build on desktop silicon, not an iPad: it has no CPU throttle and no `performance.memory`, so the JS-heap table below reads n/a. WebKit also clamps `performance.now()` to ~1 ms, so every duration here is quantized to whole milliseconds \u2014 read them as coarse magnitudes, never as sub-ms comparisons.",
+        "startedAt": "2026-09-10T16:10:54.320Z",
+        "durationMs": 233187
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "wallMs": 3747,
+            "ops": 22,
+            "totalMs": 868,
+            "commitCount": 22,
+            "commitMs": 814,
+            "commitP95Ms": 52,
+            "headroomRatio": 2.08,
+            "commitMaxMs": 57,
+            "commitDurationsMs": [
+              0, 57, 42, 48, 37, 30, 36, 42, 27, 34, 39, 52, 41, 29, 43, 35, 43, 34, 27, 31, 47, 40
+            ],
+            "measureSummary": {
+              "engine.draw": {
+                "count": 22,
+                "total": 868,
+                "max": 106
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 814,
+                "max": 57
+              },
+              "engine.undoPatchCapture": {
+                "count": 420,
+                "total": 1477,
+                "max": 568
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 811,
+                "max": 57
+              }
+            }
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 393,
+            "avgMs": 35.72727272727273,
+            "maxMs": 54
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "wallMs": 97324,
+            "ops": 22,
+            "totalMs": 95474,
+            "commitCount": 22,
+            "commitMs": 588,
+            "commitP95Ms": 42,
+            "headroomRatio": 1.68,
+            "commitMaxMs": 46,
+            "commitDurationsMs": [
+              1, 19, 42, 15, 26, 32, 23, 20, 41, 18, 16, 31, 39, 25, 34, 30, 19, 42, 33, 21, 46, 15
+            ],
+            "measureSummary": {
+              "engine.draw": {
+                "count": 22,
+                "total": 95474,
+                "max": 5582
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 588,
+                "max": 46
+              },
+              "engine.undoPatchCapture": {
+                "count": 124,
+                "total": 693,
+                "max": 16
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 580,
+                "max": 45
+              }
+            }
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 96760,
+            "avgMs": 4838,
+            "maxMs": 8086
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "multi-finger",
+          "draw": {
+            "wallMs": 5847,
+            "ops": 22,
+            "totalMs": 1687,
+            "commitCount": 22,
+            "commitMs": 1933,
+            "commitP95Ms": 129,
+            "headroomRatio": 5.16,
+            "commitMaxMs": 139,
+            "commitDurationsMs": [
+              1, 90, 93, 94, 139, 61, 86, 120, 93, 129, 68, 94, 99, 109, 109, 99, 99, 82, 62, 67,
+              74, 65
+            ],
+            "measureSummary": {
+              "engine.draw": {
+                "count": 22,
+                "total": 1687,
+                "max": 130
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 1933,
+                "max": 139
+              },
+              "engine.undoPatchCapture": {
+                "count": 420,
+                "total": 1788,
+                "max": 12
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 1925,
+                "max": 139
+              }
+            }
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 430,
+            "avgMs": 39.09090909090909,
+            "maxMs": 61
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "wallMs": 101830,
+            "ops": 22,
+            "totalMs": 100134,
+            "commitCount": 22,
+            "commitMs": 610,
+            "commitP95Ms": 46,
+            "headroomRatio": 1.84,
+            "commitMaxMs": 50,
+            "commitDurationsMs": [
+              0, 20, 39, 21, 18, 32, 35, 33, 32, 26, 17, 46, 40, 24, 36, 18, 16, 33, 50, 20, 36, 18
+            ],
+            "measureSummary": {
+              "engine.draw": {
+                "count": 22,
+                "total": 100134,
+                "max": 5455
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 610,
+                "max": 50
+              },
+              "engine.undoPatchCapture": {
+                "count": 124,
+                "total": 856,
+                "max": 24
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 606,
+                "max": 50
+              }
+            }
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 93866,
+            "avgMs": 4693.3,
+            "maxMs": 5581
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ]
     }
   ]
 }

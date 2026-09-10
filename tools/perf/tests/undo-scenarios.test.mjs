@@ -258,6 +258,24 @@ function fakeBrowser(page, { withCdp = true } = {}) {
 }
 
 describe('undo scenario profiling', () => {
+  it('collects every engine distribution within the half-open phase window', async () => {
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+      { name: 'engine.undoPatchCrop', startTime: 9, duration: 900 },
+      { name: 'engine.undoPatchCrop', startTime: 10, duration: 4 },
+      { name: 'engine.undoPatchCrop', startTime: 19, duration: 7 },
+      { name: 'engine.undoPatchCrop', startTime: 20, duration: 800 },
+      { name: 'engine.commit', startTime: 12, duration: 15 },
+      { name: 'unrelated', startTime: 12, duration: 700 },
+    ]);
+    const page = { evaluate: async (fn, args) => fn(args) };
+    const { engineMeasuresIn } = await import('../web/run-undo-scenarios.mjs');
+
+    expect(await engineMeasuresIn(page, 10, 20)).toEqual({
+      'engine.undoPatchCrop': { count: 2, total: 11, max: 7, durationsMs: [4, 7] },
+      'engine.commit': { count: 1, total: 15, max: 15, durationsMs: [15] },
+    });
+  });
+
   it('preserves nested phase distributions in both passes without discounting commit timing', async () => {
     process.argv = [...process.argv, '--engine=webkit', '--scenarios=multi-finger'];
     const crop = { count: 2, total: 110, max: 60, durationsMs: [50, 60] };
@@ -274,7 +292,9 @@ describe('undo scenario profiling', () => {
     const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
     expect(report.scenarios[0].draw.measures['engine.undoPatchCrop']).toEqual(crop);
     expect(report.confirmations[0].draw.measures['engine.undoPatchCrop']).toEqual(crop);
-    expect(report.scenarios[0].draw.wallMs).toBeGreaterThan(0);
+    expect(report.scenarios[0].undo.measures['engine.undoPatchCrop']).toEqual(crop);
+    expect(report.confirmations[0].undo.measures['engine.undoPatchCrop']).toEqual(crop);
+    expect(report.scenarios[0].draw.harnessWallMs).toBeGreaterThan(0);
     expect(report.gate.scenarioTimings[0]).toMatchObject({
       rawP95Ms: 60,
       gateP95Ms: 60,
@@ -282,7 +302,10 @@ describe('undo scenario profiling', () => {
     });
     expect(process.exitCode).toBe(1);
     const markdown = readFileSync(join(fixtureDir, 'undo-scenarios.md'), 'utf8');
-    expect(markdown).toContain('| Confirmation |');
+    expect(markdown).toContain('| Confirmation | Draw |');
+    expect(markdown).toContain('| Confirmation | Undo |');
+    expect(markdown).toContain('| Harness wall |');
+    expect(markdown).toContain('driver-side payload serialization/transfer');
     expect(markdown).toContain('| engine.undoPatchCrop | 2 | 110.0 ms | 60.0 ms |');
   });
 

@@ -121,13 +121,16 @@ comparison.
 
 The synchronous burst can leave canvas rendering deferred until a snapshot copy. A slow
 `engine.commit` therefore includes renderer waiting as well as JavaScript bookkeeping; it cannot
-identify a commit-only algorithmic regression by itself. Compare `draw.wallMs`, the raw
-`draw.measures` distributions, and `engine.undoPatchCapture` / `engine.undoPatchCrop` in both
-`scenarios` and `confirmations`. Crop is nested inside commit: do not add those totals. Capture is
-timed around its `drawImage`; crop includes allocation and the copy. Neither proves CPU execution
-versus a GPU-process wait. Moving that wait into drawing can make commit green without improving
-latency. The [issue 1717 investigation](investigations/webkit-commit-gate-1717.md) preserves that
-counterexample and the original local/CI distributions.
+identify a commit-only algorithmic regression by itself. Compare the raw `draw.measures` and
+`undo.measures` distributions, including `engine.undoPatchCapture` / `engine.undoPatchCrop`, in both
+`scenarios` and `confirmations`. Crop is included in commit during drawing and can run during
+undo/repaint: do not add nested totals. Each phase's `harnessWallMs` also includes Playwright round
+trips and driver-side payload serialization/transfer; it is neither page-only latency nor a
+presentation measurement. Capture is timed around its `drawImage`; crop includes allocation and the
+copy. Neither proves CPU execution versus a GPU-process wait. Moving that wait into drawing can make
+commit green without improving latency. The
+[issue 1717 investigation](investigations/webkit-commit-gate-1717.md) preserves that counterexample
+and the original local/CI distributions.
 
 The named fast command reads `FAST_UNDO_SCENARIO_KEYS`; the npm script and workflow do not repeat
 its members. Each scenario declares the commit paths it exercises, and the repo-script suite fails

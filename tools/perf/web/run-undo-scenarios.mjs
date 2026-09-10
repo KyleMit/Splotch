@@ -315,7 +315,8 @@ const now = (page) => page.evaluate(() => performance.now());
 // Engine.* user-timing measures whose startTime falls in [from, to), aggregated
 // by name. Lets us attribute draw-phase vs undo-phase cost per scenario from the
 // same marks the trace records globally.
-function engineMeasuresIn(page, from, to) {
+// Exported so tests execute the browser-side collector with real measure entries.
+export function engineMeasuresIn(page, from, to) {
   return page.evaluate(
     ({ from, to }) => {
       const byName = {};
@@ -578,7 +579,7 @@ export async function runUndoScenario(
     },
     undoSteps: steps,
     draw: {
-      wallMs: drawEnd - drawStart,
+      harnessWallMs: drawEnd - drawStart,
       measures: drawMarks,
       ops: draw.count,
       totalMs: draw.total,
@@ -593,6 +594,8 @@ export async function runUndoScenario(
       commitDurationsMs: commit.durationsMs,
     },
     undo: {
+      harnessWallMs: undoEnd - undoStart,
+      measures: undoMarks,
       steps: undoM.count,
       totalMs: undoM.total,
       avgMs: undoM.count ? undoM.total / undoM.count : 0,
@@ -1173,6 +1176,14 @@ function historyStatus(scenario) {
   return `Completed; history unsettled after ${settle.elapsedMs} ms (${settle.samples} samples)`;
 }
 
+function renderPhaseAttributionRows(pass, phase, label, sample) {
+  return Object.entries(sample?.measures ?? {}).map(
+    ([name, measure]) =>
+      `| ${pass} | ${phase} | ${label} | ${f1(sample.harnessWallMs)} ms | ${name} | ${measure.count} | ` +
+      `${f1(measure.total)} ms | ${f1(measure.max)} ms |`
+  );
+}
+
 function renderUndoReport({ settings, scenarios, confirmations, gate, fastSetEvaluation }) {
   const out = [];
   out.push('# Undo scenario profile (tiled history, ADR-0085/ADR-0086)\n');
@@ -1244,26 +1255,24 @@ function renderUndoReport({ settings, scenarios, confirmations, gate, fastSetEva
         `${f1(s.draw.commitP95Ms)} ms | **${gateCell}** | ${f1(s.draw.commitMaxMs)} ms |`
     );
   }
-  out.push('\n## Draw-phase attribution\n');
+  out.push('\n## Phase attribution\n');
   out.push(
-    'These nested measures are diagnostic, not additive. Snapshot cropping runs inside commit; ' +
-      'a canvas API duration includes any renderer work it waits for. The wall interval includes ' +
-      'input dispatch and all synchronous drawing and commits. Every initial and confirmation ' +
-      'measure distribution is retained in JSON. The gate still scores raw engine.commit P95.\n'
+    'These nested measures are diagnostic, not additive. Snapshot cropping is included in commit ' +
+      'during drawing and can also run during undo/repaint; a canvas API duration includes any ' +
+      'renderer work it waits for. Harness wall includes Playwright round trips, driver-side ' +
+      'payload serialization/transfer, input dispatch, and page execution. It is not page-only ' +
+      'latency or a presentation measurement. Every initial and confirmation draw/undo measure ' +
+      'distribution is retained in JSON. The gate still scores raw engine.commit P95.\n'
   );
-  out.push('| Pass | Scenario | Draw wall | Measure | Count | Total | Max |');
-  out.push('| --- | --- | --- | --- | --- | --- | --- |');
+  out.push('| Pass | Phase | Scenario | Harness wall | Measure | Count | Total | Max |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const [pass, samples] of [
     ['Initial', scenarios],
     ['Confirmation', confirmations],
   ]) {
     for (const s of samples) {
-      for (const [name, measure] of Object.entries(s.draw?.measures ?? {})) {
-        out.push(
-          `| ${pass} | ${s.label} | ${f1(s.draw.wallMs)} ms | ${name} | ${measure.count} | ` +
-            `${f1(measure.total)} ms | ${f1(measure.max)} ms |`
-        );
-      }
+      out.push(...renderPhaseAttributionRows(pass, 'Draw', s.label, s.draw));
+      out.push(...renderPhaseAttributionRows(pass, 'Undo', s.label, s.undo));
     }
   }
   if (fastSetEvaluation) {

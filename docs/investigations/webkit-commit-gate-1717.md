@@ -11,9 +11,14 @@ budget or that the same behavior is acceptable on a physical iPad.
 Read all 16 issue comments before building. The
 [final intake comment](https://github.com/KyleMit/Splotch/issues/1717#issuecomment-5621486359)
 allows explaining or fixing each breach, requires unchanged timing thresholds, and distinguishes
-earlier build failures from measured results. Full distributions and experimental interventions are
-preserved in [the evidence JSON](webkit-commit-gate-1717.json). Initial and confirmation passes are
-separate, with every raw commit duration retained.
+earlier build failures from measured results. Full commit distributions and experimental
+interventions are preserved in [the evidence JSON](webkit-commit-gate-1717.json). Initial and
+confirmation passes are separate, with every raw commit duration retained. This committed JSON is a
+curated projection: `measureSummary` contains only `count`, `total`, and `max` from the capture's
+`draw.measures`; its per-call `durationsMs` arrays are omitted. The linked original capture
+artifacts retain the full distributions. Crop measures cover one crop invocation, not each
+individual tile copy. Historical `draw.wallMs` fields in this evidence use the harness-inclusive
+interval described below; they have not been relabeled as page time.
 
 The [post-merge main run](https://github.com/KyleMit/Splotch/actions/runs/34498053518) at
 cf19b6b8936c671667b44dd8c6e8e7a3d39c0a98 includes PR 1748. Both its first job and fresh-runner retry
@@ -91,15 +96,31 @@ was correctly acquitted by its clean confirmation; crop accounted for 204/151 ms
 207/152 ms commit totals. This variability is further reason to retain confirmation and avoid
 claiming that each recurrence is new JavaScript work.
 
+A [fresh macOS run of the same code](https://github.com/KyleMit/Splotch/actions/runs/34500285786)
+(WebKit 26.6, Darwin 25.6.0 arm64, Node 22.23.2) built successfully and uploaded both passes with
+the new measures. Multi-finger confirmed at 52/129 ms: crop accounted for 811/1,925 ms of 814/1,933
+ms commit totals. Crayon confirmed at 42/46 ms: crop accounted for 580/606 ms of 588/610 ms commit
+totals, while drawing took 95,474/100,134 ms. The fresh-runner diagnostics therefore locate the same
+blocking phase even when most crayon work is paid during drawing. This performance job failed the
+unchanged gate; the PR's ordinary tests passed separately.
+
 The same instrumented build and two scenarios completed in unthrottled Chromium with multi-finger
 commit P95 2.0 ms and crayon 1.3 ms. Crayon draw/commit totals were 3,327/20 ms, with 19 ms in crop.
 This is advisory evidence that the canvas implementation matters, not a substitute WebKit pass.
 
 Profiling builds emit `engine.undoPatchCapture` around the initial snapshot copy and
 `engine.undoPatchCrop` around cropping. Normal builds eliminate these blocks. The scenario JSON
-retains each draw-phase measure's distribution, the inclusive draw wall interval, browser version,
-and host platform/version. Both initial and confirmation passes carry this evidence; the Markdown
-report shows the nested timings. Crop is included in commit, so the totals must not be added.
+retains each draw/undo measure's distribution, each phase's `harnessWallMs`, browser version, and
+host platform/version. Both initial and confirmation passes carry this evidence; the Markdown report
+shows the nested timings. Crop is included in commit during drawing and can run during undo/repaint,
+so nested totals must not be added.
+
+The harness interval includes Playwright round trips and driver-side payload serialization/transfer
+before page execution. A review probe with the same payloads and no drawing measured 355–452 ms for
+multi-finger and 179–208 ms for crayon across WebKit and Chromium. These are illustrative host
+samples, not a fixed subtraction. The field is explicitly named `harnessWallMs`; it cannot establish
+page-only latency or presentation completion. The attribution above uses the nested engine/API
+measurements, not this wall interval.
 
 The documentation and generated report no longer claim that fast-tier crayon is normalized, that
 `engine.draw` counts individual pointer moves, or that commit costs are independent of burst pacing.
