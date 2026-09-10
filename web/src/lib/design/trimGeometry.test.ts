@@ -10,7 +10,6 @@ import {
   hexGridRowLadderPx,
   landscapeSingleColumnFloorPx,
   landscapeSingleColumnTrimSteps,
-  landscapeTwoColumnTrimSteps,
   portraitTrimSteps,
 } from './trimGeometry';
 
@@ -172,10 +171,8 @@ describe('ColorPalette', () => {
     }
   });
 
-  it('drops a landscape two-column row at a time', () => {
-    expect(twoColumnTrim.map((rule) => trimStep(rule, 'max-height'))).toEqual(
-      landscapeTwoColumnTrimSteps(colorCount)
-    );
+  it('has no two-column trim ladder behind the phone color flyout', () => {
+    expect(twoColumnTrim).toEqual([]);
   });
 
   it('drops a portrait swatch at a time', () => {

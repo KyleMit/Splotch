@@ -146,6 +146,55 @@ test.describe('phone landscape interactions', () => {
     await expect(page.locator('dialog[open]')).toBeVisible();
   });
 
+  test('brush and width flyout options receive taps without drawing underneath', async ({
+    page,
+  }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await page.locator('#brushButton').click();
+    await page.locator('#crayonBrushButton').click();
+    await expect(page.locator('.brush-menu')).toBeHidden();
+    await expect(page.locator('.actions-panel')).toHaveAttribute('data-brush', 'crayon');
+    await page.locator('#strokeWidthButton').click();
+    await page.getByRole('button', { name: 'Size 5', exact: true }).click();
+    await expect(page.locator('.stroke-width-menu')).toBeHidden();
+    await page.locator('#strokeWidthButton').click();
+    await expect(page.getByRole('button', { name: 'Size 5', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await expect(page.locator('#screenshotButton')).toBeDisabled();
+  });
+
+  test('disabling every optional control centers colors despite a saved open drawer', async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      ({ keys, drawer }) => {
+        for (const key of keys) localStorage.setItem(key, 'false');
+        localStorage.setItem(drawer, 'true');
+      },
+      {
+        keys: [
+          STORAGE_KEYS.screenshotEnabled,
+          STORAGE_KEYS.undoButtonEnabled,
+          STORAGE_KEYS.strokeWidthControl,
+          STORAGE_KEYS.crayonEnabled,
+          STORAGE_KEYS.magicBrushEnabled,
+          STORAGE_KEYS.eraserEnabled,
+          STORAGE_KEYS.coloringBookEnabled,
+          STORAGE_KEYS.aiImageEnabled,
+        ],
+        drawer: STORAGE_KEYS.drawerOpen,
+      }
+    );
+    await gotoApp(page);
+    await expect(page.locator('.drawer-toggle')).toBeHidden();
+    await expect.poll(async () => (await page.locator('#colorButton').boundingBox())?.y).toBe(140);
+    await page.locator('#colorButton').click();
+    await expect(page.locator('.color-menu')).toBeVisible();
+  });
+
   test('swipes fold and restore without opening colors or drawing beneath the gesture', async ({
     page,
   }) => {
@@ -200,6 +249,7 @@ test.describe('phone landscape interactions', () => {
     await page.locator('#colorButton').click();
     const menu = page.locator('.color-menu');
     await expect(menu.getByRole('button').first()).toHaveCSS('width', '56px');
+    await settleToolbar(page);
     const box = await menu.boundingBox();
     expect(box && box.x + box.width).toBeLessThanOrEqual(560);
     await menu.getByRole('button', { name: 'Custom Color' }).click();

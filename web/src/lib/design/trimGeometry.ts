@@ -119,24 +119,6 @@ function stackRungs(
   return rungs;
 }
 
-/**
- * The two-column grid drops a whole row of two at a time. Rows and single-column
- * slots measure the same way, so its first rung lands exactly on the layout
- * switch: the height where the single column gives up is the height where that
- * row count stops fitting, and everything the taller single column showed above
- * the grid's own capacity goes in that one step.
- */
-function landscapeTwoColumnRungs(): TrimRung[] {
-  const rungs: TrimRung[] = [];
-  for (let rows = LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS; rows >= 1; rows--) {
-    rungs.push({
-      thresholdPx: justBelowPx(stackExtentPx(rows, PALETTE_COLUMN_GEOMETRY)),
-      remainingColors: Math.max(0, LANDSCAPE_FALLBACK_COLUMNS * (rows - 1) - GRADIENT_SLOTS),
-    });
-  }
-  return rungs;
-}
-
 /** Height below which the single column falls back to the two-column grid. */
 export function landscapeSingleColumnFloorPx(): number {
   return stackExtentPx(LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS, PALETTE_COLUMN_GEOMETRY);
@@ -152,11 +134,6 @@ export function landscapeSingleColumnTrimSteps(colorCount: number): TrimStep[] {
     colorCount,
     stackRungs(colorCount, LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS, PALETTE_COLUMN_GEOMETRY)
   );
-}
-
-/** Heights below which the landscape two-column grid loses a row of two. */
-export function landscapeTwoColumnTrimSteps(colorCount: number): TrimStep[] {
-  return trimSteps(colorCount, landscapeTwoColumnRungs());
 }
 
 /** Widths below which the portrait row loses another swatch. */

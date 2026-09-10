@@ -13,6 +13,7 @@ import {
 } from './helpers';
 
 import { openDrawer } from './flows-harness';
+import { prepareAiGeneration } from './ai-harness';
 
 // ── AI generation flow (mocked endpoint) ────────────────────────────────────
 
@@ -25,6 +26,23 @@ async function enableAiInSettings(page: import('@playwright/test').Page) {
   await page.locator('#aiImageToggle').click();
   await settings.getByRole('button', { name: 'Close' }).click();
 }
+
+test('the phone toolbar generates directly when style customization is disabled', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 906, height: 328 });
+  await page.addInitScript(
+    (key) => localStorage.setItem(key, 'false'),
+    STORAGE_KEYS.aiCustomizationEnabled
+  );
+  const endpoint = await prepareAiGeneration(page);
+  await openDrawer(page);
+  await page.locator('#aiImageButton').click();
+  await endpoint.waitForFirstRequest();
+  await endpoint.succeed();
+  await expect(page.locator('.stage-img.result.shown')).toBeVisible();
+  expect(endpoint.requests).toHaveLength(1);
+});
 
 test('a fresh installation does not fetch an AI allowance or show the canvas action', async ({
   page,

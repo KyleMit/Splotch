@@ -253,13 +253,9 @@
     transform: translate(-50%, -50%) scale(var(--pop-scale));
   }
 
-  /* Landscape prefers a single column (1 bar): the narrow bar leaves the most
-     canvas, and it trims swatches one at a time as the viewport shortens. A
-     single column holds N swatches when height ≥ 72·N + 12 (60px swatch + 12px
-     gap, 24px padding); below the floor in design/trimGeometry.ts it would be
-     down to a handful, so the layout falls back to the roomier 2-column grid
-     (the default here), which fits rows of two and trims in pairs. That module
-     is the executable form of this formula, pinned by trimGeometry.test.ts. */
+  /* Landscape tablets use one column, trimming swatches as the viewport
+     shortens. Phone landscape uses ColorControl instead. trimGeometry.test.ts
+     verifies the remaining palette ladder against its geometry. */
   @media (orientation: landscape) and (min-height: 444px) {
     .color-palette {
       grid-template-columns: 1fr;
@@ -298,12 +294,10 @@
 
      The ladders cascade — a smaller viewport satisfies every larger max-*
      threshold at once — and each layout owns its own, because the same viewport
-     holds a different number of swatches depending on which one it is in. The
-     single-column rules carry the layout switch as a min-height floor so they
-     can't fire in the two-column range, where more swatches fit again.
+     holds a different number of swatches depending on which one it is in.
 
      Every threshold is derived arithmetically; design/trimGeometry.ts is the
-     executable form of all three ladders, and trimGeometry.test.ts parses this
+     executable form of the ladders, and trimGeometry.test.ts parses this
      whole style block back out — swatch sizes and gaps as well as the thresholds
      and the ranks each rule hides — and asserts the module still produces
      exactly these values.
@@ -440,49 +434,6 @@
     }
   }
 
-  /* LANDSCAPE, two columns (2 bar) — the fallback below that floor, where full
-     rows of two fit and swatches leave in pairs. n rows fit at height ≥ 72·n +
-     12, and the first rule is the switch itself: the grid holds fewer swatches
-     than the single column above it did, so that step drops several at once. */
-  @media (orientation: landscape) and (max-height: 443.98px) {
-    .color-swatch[data-trim-rank='0'],
-    .color-swatch[data-trim-rank='1'],
-    .color-swatch[data-trim-rank='2'],
-    .color-swatch[data-trim-rank='3'],
-    .color-swatch[data-trim-rank='4'],
-    .color-swatch[data-trim-rank='5'] {
-      display: none;
-    }
-  }
-  @media (orientation: landscape) and (max-height: 371.98px) {
-    .color-swatch[data-trim-rank='6'],
-    .color-swatch[data-trim-rank='7'] {
-      display: none;
-    }
-  }
-  @media (orientation: landscape) and (max-height: 299.98px) {
-    .color-swatch[data-trim-rank='8'],
-    .color-swatch[data-trim-rank='9'] {
-      display: none;
-    }
-  }
-  @media (orientation: landscape) and (max-height: 227.98px) {
-    .color-swatch[data-trim-rank='10'],
-    .color-swatch[data-trim-rank='11'] {
-      display: none;
-    }
-  }
-  @media (orientation: landscape) and (max-height: 155.98px) {
-    .color-swatch[data-trim-rank='12'],
-    .color-swatch[data-trim-rank='13'] {
-      display: none;
-    }
-  }
-  @media (orientation: landscape) and (max-height: 83.98px) {
-    .color-swatch[data-trim-rank='14'] {
-      display: none;
-    }
-  }
   /* Phone landscape hands the palette's strip back to the drawing canvas. */
   @media (orientation: landscape) and (max-height: 599.98px) {
     .color-palette {

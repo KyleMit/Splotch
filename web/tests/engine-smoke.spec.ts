@@ -22,7 +22,7 @@ function palettePanelGeometry(page: Page): Promise<PalettePanelGeometry> {
   return page.evaluate(() => {
     const palette = document.querySelector('.color-palette');
     const panel = document.querySelector('.actions-panel');
-    const button = document.querySelector('.action-button:not([hidden])');
+    const button = document.querySelector('.actions-drawer .action-button:not([hidden])');
     if (
       !(palette instanceof HTMLElement) ||
       !(panel instanceof HTMLElement) ||
@@ -48,7 +48,7 @@ test.describe('Cross-engine critical-path smoke', { tag: ENGINE_SMOKE_TAG }, () 
   });
 
   for (const viewport of [
-    { name: 'two-column', width: 667, height: 375, paletteWidth: 156 },
+    { name: 'phone L', width: 667, height: 375, paletteWidth: 0 },
     { name: 'single-column iPad', width: 1024, height: 768, paletteWidth: 84 },
   ] as const) {
     test(`${viewport.name} Actions Panel first paint matches hydration`, async ({
@@ -61,7 +61,9 @@ test.describe('Cross-engine critical-path smoke', { tag: ENGINE_SMOKE_TAG }, () 
       });
       const preHydrationPage = await preHydrationContext.newPage();
       await preHydrationPage.goto('/');
-      await expect(preHydrationPage.locator('.color-palette')).toBeVisible();
+      await expect(preHydrationPage.locator('.color-palette')).toBeVisible({
+        visible: viewport.paletteWidth > 0,
+      });
       const preHydration = await palettePanelGeometry(preHydrationPage);
       await preHydrationContext.close();
 

@@ -1053,6 +1053,7 @@ body {
   }
   .actions-panel .actions-drawer-inner .action-button,
   .actions-panel .drawer-toggle,
+  .actions-panel .flyout-menu,
   .actions-panel .color-wrapper {
     pointer-events: auto;
   }
@@ -1074,8 +1075,10 @@ body {
     bottom: calc(50dvh - var(--action-btn-size) / 2 - 8px - var(--safe-area-bottom));
     transition: bottom var(--duration-base) var(--ease-glide);
   }
-  html[data-drawer-open] .actions-panel:not([data-action-panel-live]) .color-wrapper,
-  .actions-panel[data-action-panel-live][data-drawer-open] .color-wrapper {
+  html[data-drawer-open]:not([data-no-actions])
+    .actions-panel:not([data-action-panel-live])
+    .color-wrapper,
+  .actions-panel[data-action-panel-live][data-drawer-open]:not([data-no-actions]) .color-wrapper {
     bottom: calc(
       (1 + var(--landscape-brush-slots) + var(--landscape-width-slots)) * var(--landscape-pitch)
     );

@@ -41,7 +41,6 @@
     publishActionPanelState,
   } from '$lib/actionButtonLayout';
   import { prepareCanvasExport, undo, isStrokeActive } from '$lib/drawing/engine';
-  import { generateAiImage } from '$lib/drawing/aiImage';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
   import { storeCaptureMode } from '$lib/storeCapture';
@@ -421,7 +420,9 @@
           return;
         }
 
-        generateAiImage();
+        void import('$lib/drawing/aiImage')
+          .then(({ generateAiImage }) => generateAiImage())
+          .catch((error) => console.error('AI generation failed to load:', error));
       },
       origin
     );
