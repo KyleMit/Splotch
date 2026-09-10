@@ -37,6 +37,32 @@ the hardware UDID that `idevice_id -l` prints (`00008103-…`). Passing the Core
 **"Could not find a pair record for device …"**, which reads like an unreachable device or a missing
 tunnel and is neither. `perf:preflight` prints the right one and rejects the wrong one.
 
+## Report the failing connection layer, not an inferred OS incompatibility
+
+An empty `idevice_id -l` means that command cannot see the device through its USB capture transport.
+Run it outside the sandbox before diagnosing attachment. A paired device answering `devicectl`, even
+with a `wired` transport label, does not prove that the USB capture transport or Appium can reach
+it. When the host USB check is empty, ask for a reconnect and any required Trust prompt; report the
+transport failure without claiming the iPad is unsupported or its OS recently changed.
+
+After enumeration succeeds, check the RemoteXPC tunnel and then perform the real WDA launch. A
+missing root-owned tunnel is host session state; starting the documented tunnel through the system
+authorization dialog does not update the iPad. Attribute an automation-grant failure only when the
+launch reports it, rather than inferring an expired grant from elapsed time.
+
+The September 10 issue-1750 session provides the sequence: CoreDevice already reported iPadOS 26.5
+while USB enumeration failed; reconnecting restored enumeration; starting the missing tunnel was
+followed by successful WDA launch, page rotation and capture. The records do not establish why USB
+discovery failed or why the tunnel was absent. Earlier September 3 and 5 capture artifacts also
+record 26.5. Neither a recent OS upgrade nor a new compatibility break was demonstrated. The
+[investigation](investigations/webkit-snapshot-experiments-1750.md#self-heal-connection-failure-and-os-version-history)
+keeps the version-history sources and the distinction from desktop Playwright's WebKit version.
+
+Keep this separate from the
+[legacy inspector-proxy limitation](#ios_webkit_debug_proxy-is-obsolete-on-ios-17-and-newer). The
+normal Appium drawing/action path can work while an older engine-probe wrapper cannot discover
+Safari pages. A failed wrapper is not proof that the established device automation path is broken.
+
 ## Approvals that are probably already granted
 
 **Check for a running RemoteXPC tunnel before starting one.** It is root-owned, its password prompt
