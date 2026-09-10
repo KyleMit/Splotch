@@ -150,6 +150,13 @@ among several attached devices), `--no-serve` (attach to a server you started yo
 Read the table against [Reading the results](#reading-the-results) — the gates and the column
 meanings are identical to the hand-driven run.
 
+Historical multi-finger rows with zero patch bytes and no snapshot-capture measures can be invalid:
+the standalone driver used an array check to distinguish point sequences from pointer groups, but
+both are arrays. It sent the groups to the single-pointer method and drew no ink. The driver uses an
+explicit scenario flag, protected by an executed-driver regression test. The
+[issue 1750 investigation](investigations/webkit-snapshot-experiments-1750.md) preserves the invalid
+row and a corrected physical capture. Do not read the invalid row's zero timings as a fast result.
+
 **What it deliberately does not do:** record a Timeline. The protocol has a `Timeline` domain, but
 its event stream is not the shape `npm run perf:analyze:web-inspector` parses, so a recording still
 means Web Inspector by hand — A5 and A6 below.
