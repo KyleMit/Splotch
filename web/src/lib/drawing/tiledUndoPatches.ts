@@ -1,4 +1,5 @@
 import type { StrokeGroupCommand } from './strokeOps';
+import { PERF_MARKS } from './perf';
 
 interface SnapshotTile {
   canvas: HTMLCanvasElement;
@@ -55,7 +56,9 @@ export function createTiledUndoPatches() {
       byCommand.delete(command);
       return;
     }
+    const captureStart = PERF_MARKS ? performance.now() : 0;
     snapshotContext.drawImage(tile.canvas, 0, 0);
+    if (PERF_MARKS) performance.measure('engine.undoPatchCapture', { start: captureStart });
     snapshots.set(index, {
       canvas: canvasSnapshot,
       x: 0,
@@ -71,6 +74,7 @@ export function createTiledUndoPatches() {
   function crop(command: StrokeGroupCommand) {
     const snapshots = byCommand.get(command);
     if (!snapshots) return;
+    const cropStart = PERF_MARKS ? performance.now() : 0;
     for (const snapshot of snapshots.values()) {
       if (snapshot.cropped) continue;
       snapshot.cropped = true;
@@ -97,6 +101,7 @@ export function createTiledUndoPatches() {
       snapshot.x = x0;
       snapshot.y = y0;
     }
+    if (PERF_MARKS) performance.measure('engine.undoPatchCrop', { start: cropStart });
   }
 
   function bytes(command: StrokeGroupCommand) {
