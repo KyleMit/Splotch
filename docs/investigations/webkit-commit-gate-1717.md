@@ -83,6 +83,18 @@ synchronous burst to paced input would similarly require a different contract. N
 
 ## Changes and disposition
 
+The committed diagnostics were recaptured locally at 5823b17af6c9c87f2a72949e6ab5d8e1663aade2,
+without API wrappers (WebKit 26.6, Darwin 25.6.0 arm64, Node 24.16.0). Crayon remained a confirmed
+908/818 ms breach: crop accounted for 9,207 of 9,208 ms in the initial commit total and all 8,956 ms
+in confirmation. Snapshot capture itself recorded 1/0 ms total. Multi-finger measured 51/12 ms and
+was correctly acquitted by its clean confirmation; crop accounted for 204/151 ms of the respective
+207/152 ms commit totals. This variability is further reason to retain confirmation and avoid
+claiming that each recurrence is new JavaScript work.
+
+The same instrumented build and two scenarios completed in unthrottled Chromium with multi-finger
+commit P95 2.0 ms and crayon 1.3 ms. Crayon draw/commit totals were 3,327/20 ms, with 19 ms in crop.
+This is advisory evidence that the canvas implementation matters, not a substitute WebKit pass.
+
 Profiling builds emit `engine.undoPatchCapture` around the initial snapshot copy and
 `engine.undoPatchCrop` around cropping. Normal builds eliminate these blocks. The scenario JSON
 retains each draw-phase measure's distribution, the inclusive draw wall interval, browser version,
