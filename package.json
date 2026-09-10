@@ -482,7 +482,7 @@
     "@eslint/js": "^10.0.1",
     "@google/genai": "^2.20.0",
     "@intellectronica/ruler": "0.3.44",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.63.0",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^22.20.1",
     "@vitest/coverage-v8": "^4.1.11",
