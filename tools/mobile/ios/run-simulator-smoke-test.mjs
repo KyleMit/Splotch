@@ -12,7 +12,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { ROOT, fail, sh } from '../../lib/proc.mjs';
-import { runMaestroSmoke } from '../lib/mobile-smoke-test.mjs';
+import { runIosSmokeWithDiagnostics } from './lib/smoke-diagnostics.mjs';
 
 const execFileAsync = promisify(execFile);
 const SKIP_SYNC_FLAG = '--skip-sync';
@@ -67,7 +67,7 @@ try {
     APP_DIR
   );
   await simctl('install', device.udid, APP_PATH);
-  await runMaestroSmoke({ device: device.udid });
+  await runIosSmokeWithDiagnostics(device.udid);
 } finally {
   if (bootedByUs) {
     console.log(`Shutting down ${device.name}`);
