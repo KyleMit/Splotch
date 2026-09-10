@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FAKE_IOS_UDID, FAKE_ANDROID_SERIAL } from '../../perf/lib/device-identifiers.mjs';
+import { parseFindings } from '../validate-findings.mjs';
 import {
   buildMarker,
   buildReviewRequest,
@@ -274,7 +275,7 @@ describe('posting', () => {
   const sensitiveExamples = [
     FAKE_IOS_UDID,
     FAKE_ANDROID_SERIAL,
-    'abcdef0123456789',
+    'ANDROID_SERIAL=abcdef0123456789',
     'IOS_UDID=' + 'e'.repeat(40),
     'adb -s SYNTHETIC123 shell',
     '"deviceId": "SYNTHETIC123"',
@@ -310,7 +311,7 @@ describe('posting', () => {
   it.each(['claim', 'command', 'reason'])(
     'scans unverified %s without echoing the value',
     (field) => {
-      const value = 'R9Z12345678';
+      const value = FAKE_ANDROID_SERIAL;
       const { gh } = fakeGh();
       let error;
       try {
@@ -332,7 +333,7 @@ describe('posting', () => {
   );
 
   it('blocks off-diff findings and inline paths containing identifiers', () => {
-    const value = 'R9Z12345678';
+    const value = FAKE_ANDROID_SERIAL;
     expect(() =>
       postReview({
         ...options,
@@ -368,12 +369,36 @@ describe('posting', () => {
     'The serial number is not required.',
     'The deviceId property is optional.',
     'A UDID identifies the device.',
+    'This is a REQUIREMENT; avoid REGRESSIONS while REFACTORING.',
+    'This `deviceId` argument is never validated.',
+    'The device_id column needs an index.',
+    'The udid: parameter is optional.',
+    'Checksum 0123456789abcdef guards the payload.',
+    'Short OID b115a057e21f535b is referenced.',
+    'The Basic authentication path is untested.',
+    'Prefer Bearer authentication over cookies here.',
+    'const secret = process.env.SPLOTCH_SECRET;',
+    'password: hashedValue,',
+    'api_key = configuration.get("openai")',
   ])('publishes ordinary identifier prose unchanged: %s', (summary) => {
     const { gh, calls } = fakeGh();
     postReview({ ...options, findings: { ...FINDINGS, summary }, gh });
     expect(JSON.parse(calls.find(({ args }) => args.includes('POST')).input).body).toContain(
       summary
     );
+  });
+
+  it('keeps trusted-install hardware shapes aligned with the canonical device guard', () => {
+    const canonical = readFileSync(
+      new URL('../../perf/lib/device-identifiers.mjs', import.meta.url),
+      'utf8'
+    );
+    const publisher = readFileSync(new URL('../post-review.mjs', import.meta.url), 'utf8');
+    for (const name of ['APPLE_HARDWARE_UDID', 'SAMSUNG_SERIAL']) {
+      const pattern = canonical.match(new RegExp(`const ${name} = /(.+)/g;`));
+      expect(pattern).not.toBeNull();
+      expect(publisher).toContain(pattern[1]);
+    }
   });
 });
 
@@ -395,7 +420,7 @@ describe('sanitized recovery', () => {
         scope: { description: 'pull request 7', base: BASE, head: HEAD },
       })
     );
-    const original = { ...FINDINGS, summary: 'Device R9Z12345678' };
+    const original = { ...FINDINGS, summary: `Device ${FAKE_ANDROID_SERIAL}` };
     const originalText = JSON.stringify(original);
     writeFileSync(join(session, 'findings.json'), originalText);
     const sanitized = { ...original, summary: 'Device [REDACTED]' };
@@ -412,7 +437,7 @@ describe('sanitized recovery', () => {
     expect(posted.body).toContain('Sanitized review:');
     expect(posted.body).toContain(`base=${BASE};head=${HEAD};`);
     expect(posted.commit_id).toBe(HEAD);
-    expect(JSON.stringify(posted)).not.toContain('R9Z12345678');
+    expect(JSON.stringify(posted)).not.toContain(FAKE_ANDROID_SERIAL);
     expect(posted.comments).toEqual(
       buildReviewRequest({ findings: FINDINGS, anchors: parseDiffAnchors(PATCH) }).comments
     );
@@ -471,5 +496,20 @@ describe('sanitized recovery', () => {
         '/tmp/s/sanitized.json',
       ])
     ).toEqual({ number: 7, session: '/tmp/s', sanitizedFindings: '/tmp/s/sanitized.json' });
+  });
+
+  it('does not echo sensitive unexpected property names from schema errors', () => {
+    setup();
+    const text = JSON.stringify({ ...FINDINGS, [FAKE_IOS_UDID]: 'unexpected property' });
+    expect(parseFindings(text).errors.join('; ')).toContain(FAKE_IOS_UDID);
+    writeFileSync(join(session, 'findings.json'), text);
+    let error;
+    try {
+      postFromSession({ number: 7, session, gh: fakeGh().gh });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error?.message).toContain('Findings do not match the schema');
+    expect(error?.message).not.toContain(FAKE_IOS_UDID);
   });
 });

@@ -13,12 +13,14 @@ import { PACKET_FILES } from './worktree.mjs';
 export const REPOSITORY = 'KyleMit/Splotch';
 export const MARKER_PREFIX = 'splotch-rival-review';
 const OID_PATTERN = /^[0-9a-f]{40}$/;
+// The trusted install cannot import the perf capability. post-review.test.mjs guards these
+// hardware shapes against tools/perf/lib/device-identifiers.mjs.
 const SENSITIVE_PATTERNS = [
-  ['iOS device identifier', /\b[0-9a-f]{8}-[0-9a-f]{16}\b/i],
-  ['Android device identifier', /\b(?:R[0-9A-Z]{10}|[0-9a-fA-F]{16})\b/],
+  ['iOS device identifier', /\b[0-9A-Fa-f]{8}-[0-9A-Fa-f]{16}\b/],
+  ['Android device identifier', /\bR5C[A-Z0-9]{8}\b/],
   [
     'device identifier',
-    /(?:\b(?:[\w.-]*(?:udid|serial|device[_-]?id))\b(?:["'`\s]*[:=]["'`\s]*|\s+["'`]+|\s+(?=[0-9a-f]{40}\b))|\b(?:adb\s+-s|idevice\w*\s+-u)\s+["'`]?|\bplatform=iOS,id=)[a-z0-9][a-z0-9.-]{5,}/i,
+    /(?:\b(?:[\w.-]*(?:udid|serial|device[_-]?id))\b(?:["'`\s]*[:=]["'`\s]*|\s+["'`]+|\s+(?=[0-9a-f]{16}(?:[0-9a-f]{24})?\b))|\b(?:adb\s+-s|idevice\w*\s+-u)\s+["'`]?|\bplatform=iOS,id=)(?:[0-9a-f]{16}(?:[0-9a-f]{24})?\b|(?=[a-z0-9.-]*\d)[a-z0-9][a-z0-9.-]{5,})/i,
   ],
   [
     'credential',
@@ -27,9 +29,20 @@ const SENSITIVE_PATTERNS = [
   ['private key', /-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----/],
   [
     'credential',
-    /\b(?:[\w.-]*(?:api[_-]?key|token|password|secret))\b["'`\s]*[:=]["'`\s]*[^\s"'`[\]{}]{8,}/i,
+    /\b[\w.-]*(?:api[_-]?key|token|password|secret)\b["'`\s]*[:=]\s*["'`][^\s"'`[\]{}]{8,}/i,
   ],
-  ['authorization credential', /\b(?:Bearer|Basic)\s+[a-z0-9_+/.=-]{8,}/i],
+  [
+    'credential',
+    /\b[\w.-]*(?:api[_-]?key|token|password|secret)\b\s*=\s*(?!process\.env\.|(?:config|configuration)\.|[a-z_$][\w.$]*\s*\()[^\s"'`[\]{}]{8,}/i,
+  ],
+  [
+    'authorization credential',
+    /\bauthorization\b["'`\s]*[:=]["'`\s]*(?:Bearer|Basic)\s+[a-z0-9_+/.=-]{8,}/i,
+  ],
+  [
+    'authorization credential',
+    /\b(?:[Bb]earer|[Bb]asic)\s+(?=[a-zA-Z0-9_+/.=-]*(?:[0-9_+/.=-]|[A-Z][a-z]|[a-z][A-Z]))[a-zA-Z0-9_+/.=-]{8,}/,
+  ],
 ];
 
 // Scan the rendered payload so summaries, off-diff findings, commands and inline paths share the
@@ -316,7 +329,9 @@ export function parsePostArgs(argv) {
     },
   });
   if (positionals.length > 0 || !/^\d+$/.test(values.pr ?? '') || !values.session) {
-    throw new Error('usage: post-review.mjs --pr <number> --session <dir>');
+    throw new Error(
+      'usage: post-review.mjs --pr <number> --session <dir> [--sanitized-findings <file>]'
+    );
   }
   return {
     number: Number(values.pr),

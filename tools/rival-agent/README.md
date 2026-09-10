@@ -98,14 +98,17 @@ comment bodies and inline paths before the POST. A match fails closed: no review
 original session files are untouched, and diagnostics name only the field and detection category.
 Clean reviews publish unchanged.
 
-The guard recognizes modern physical iOS UDIDs, Samsung-style Android serials, 16-digit hexadecimal
-Android identifiers, and device identifiers named by serial/UDID/device-ID fields or common device
-commands. Legacy 40-digit iOS UDIDs require that device context because an unlabelled value has the
-same shape as a Git commit OID. Credential checks cover common GitHub, OpenAI, AWS and Google token
-shapes, private-key headers, secret/key/password assignments and Basic/Bearer authorization values.
-This is a conservative shape check, not a universal secret detector: unusual unlabelled identifiers,
-encoded values and unknown credential formats still need human inspection. False positives must be
-removed from the public wording, never bypassed by disabling the guard.
+The guard recognizes modern physical iOS UDIDs and the Samsung serial shape used by the repository's
+canonical device guard. Generic identifiers (including 16-digit hexadecimal Android identifiers and
+legacy 40-digit iOS UDIDs) require a serial/UDID/device-ID field or common device command, because
+an unlabelled value can also be a checksum or Git OID. Labelled identifiers must contain a digit or
+be a full hexadecimal device-ID shape, so ordinary prose about device fields stays publishable.
+Credential checks cover common GitHub, OpenAI, AWS and Google token shapes, private-key headers,
+quoted secret assignments, bare assignments excluding common code expressions, and Basic/Bearer
+authorization headers or opaque tokens. Ordinary authentication prose remains publishable. This is a
+conservative shape check, not a universal secret detector: unusual unlabelled identifiers, encoded
+values and unknown credential formats still need human inspection. False positives must be removed
+from the public wording, never bypassed by disabling the guard.
 
 To recover a blocked review:
 
