@@ -114,3 +114,33 @@ snapshot wait on the actual target before selecting a further product experiment
 animation replay separately from patch restoration. Any selected change still owes the complete
 latency comparison, pixel/depth/memory correctness, initial and confirmation samples, fresh-runner
 comparison, physical validation, and independent PR review required by issue 1750.
+
+## Resumption: device readiness and two additional interventions
+
+After the devices were connected, Android initially reported locked. Once unlocked, it passed
+trusted input at 1.03 moves per frame (121.7 contact moves per second), then passed both device and
+page rotation through landscape and portrait. Stay-awake and the thirty-minute screen timeout were
+left set for the capture session.
+
+Apple's CoreDevice tool could query the paired iPad and reported a wired transport with no passcode
+required. However, neither `idevice_id -l` nor the Mac's IOUSB hardware registry enumerated the
+iPad. These are conflicting connection observations, not evidence that the capture transport works.
+The normal Appium launch rejected the hardware identifier as unknown. A separate Appium instance
+using its installed driver's supported `APPIUM_XCUITEST_PREFER_DEVICECTL=true` option discovered the
+identifier but failed its device OS-version query through the legacy connection. Neither launched
+WebDriverAgent or completed physical validation. A direct data-cable reconnection and any required
+Trust prompt remain the operator's next step; no capture check was weakened.
+
+While readiness was being resolved, two further single-pass snapshot experiments used the same
+unchanged-main build, scenario input, and diagnostic driver. Both retained the control's debug
+memory and depth:
+
+| Crayon intervention                                                  | Commit P95 | Page draw | Draw to second rAF | Page undo loop |
+| -------------------------------------------------------------------- | ---------: | --------: | -----------------: | -------------: |
+| Reset discarded full snapshot dimensions immediately after cropping  |        875 |    12,442 |             13,018 |         11,845 |
+| Skip source copies for hidden blank snapshots, including their crops |        839 |    12,078 |             12,671 |         12,324 |
+
+Immediate release increased multi-finger page draw to 510 ms despite lowering its commit P95 to 23
+ms. Skipping blank copies left multi-finger page draw at 362 ms and commit P95 at 58 ms. Neither arm
+demonstrated the required combined-path improvement. Their complete engine distributions join the
+original six interventions in the adjacent JSON. No product change has been selected.

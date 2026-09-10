@@ -5564,6 +5564,947 @@
           }
         }
       ]
+    },
+    {
+      "arm": "releaseCrop",
+      "baselineCommit": "1521c86639be58cefc1271da75e78e3d0c256454",
+      "browser": "26.6",
+      "host": {
+        "platform": "darwin",
+        "release": "25.6.0",
+        "arch": "arm64",
+        "node": "v24.16.0"
+      },
+      "intervention": "function Ur(){let e=new WeakMap;function t(t,n,r,i={x0:0,y0:0,x1:n.width,y1:n.height},a=n.canvas.hidden===!0){let o=e.get(t);o||(o=new Map,e.set(t,o));let s=o.get(r);if(s){s.dirty.x0=Math.min(s.dirty.x0,i.x0),s.dirty.y0=Math.min(s.dirty.y0,i.y0),s.dirty.x1=Math.max(s.dirty.x1,i.x1),s.dirty.y1=Math.max(s.dirty.y1,i.y1);return}let c=document.createElement(`canvas`);c.width=n.width,c.height=n.height;let l=c.getContext(`2d`);if(!l){e.delete(t);return}let u=performance.now();l.drawImage(n.canvas,0,0),performance.measure(`engine.undoPatchCapture`,{start:u}),o.set(r,{canvas:c,x:0,y:0,tileWidth:n.width,tileHeight:n.height,dirty:{...i},hidden:a,cropped:!1})}function n(t){let n=e.get(t);if(!n)return;let r=performance.now();for(let e of n.values()){if(e.cropped)continue;e.cropped=!0;let{x0:t,y0:n,x1:r,y1:i}=e.dirty;if(t===0&&n===0&&r===e.tileWidth&&i===e.tileHeight||r<=t||i<=n)continue;let a=document.createElement(`canvas`);a.width=r-t,a.height=i-n;let o=a.getContext(`2d`);o&&(o.drawImage(e.canvas,t,n,a.width,a.height,0,0,a.width,a.height),e.canvas.width=0,e.canvas.height=0,e.canvas=a,e.x=t,e.y=n)}performance.measure(`engine.undoPatchCrop`,{start:r})}function r(t){let n=e.get(t);return n?[...n.values()].reduce((e,t)=>e+t.canvas.width*t.canvas.height*4,0):0}return{capture:t,crop:n,bytes:r,get:t=>e.get(t),delete:t=>e.delete(t)}}",
+      "undoAnimationInstrumentation": null,
+      "note": "Diagnostic response rewrite; unchanged scenario input and pacing. Second rAF is a presentation opportunity, not proof of displayed pixels.",
+      "results": [
+        {
+          "key": "multi-finger",
+          "label": "22 five-finger drags (~2400 ops/command), then undo all",
+          "paths": ["commit", "undo", "depth-cap", "multi-pointer"],
+          "strokes": 22,
+          "crayon": false,
+          "debug": {
+            "strokeRevision": 22,
+            "snapshots": 11,
+            "liveRasters": 11,
+            "rasterBytes": 123943512,
+            "blobBytes": 0,
+            "baseRasters": 20,
+            "baseRasterBytes": 22380544,
+            "historyLength": 11,
+            "patchBytes": 123943512,
+            "pendingCommands": 0
+          },
+          "settle": {
+            "settled": true,
+            "samples": 162,
+            "elapsedMs": 16678,
+            "measuredSamples": [
+              {
+                "atMs": 1557,
+                "readMs": 4,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [4]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 0,
+                  "lastMs": 101,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 3011,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [5]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 13,
+                  "lastMs": 96,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 4564,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [2]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 10,
+                  "lastMs": 93,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 6011,
+                "readMs": 2,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [2]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 13,
+                  "lastMs": 99,
+                  "maxGapMs": 20
+                }
+              },
+              {
+                "atMs": 7562,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [4]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 13,
+                  "lastMs": 96,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 9015,
+                "readMs": 2,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [3]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 8,
+                  "lastMs": 92,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 10567,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [3]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 8,
+                  "lastMs": 91,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 12023,
+                "readMs": 5,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [3]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 3,
+                  "lastMs": 87,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 13575,
+                "readMs": 2,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [3]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 15,
+                  "lastMs": 99,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 15130,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [2]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 9,
+                  "lastMs": 93,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 16574,
+                "readMs": 2,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [4]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 15,
+                  "lastMs": 99,
+                  "maxGapMs": 18
+                }
+              }
+            ]
+          },
+          "undoSteps": 11,
+          "draw": {
+            "harnessWallMs": 991,
+            "measures": {
+              "engine.draw": {
+                "count": 22,
+                "total": 40,
+                "max": 3,
+                "durationsMs": [3, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 1, 2, 2, 2, 1, 1]
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 372,
+                "max": 61,
+                "durationsMs": [
+                  0, 0, 16, 16, 17, 13, 17, 13, 16, 12, 14, 15, 13, 18, 17, 15, 19, 19, 61, 18, 20,
+                  23
+                ]
+              },
+              "engine.undoPatchCapture": {
+                "count": 420,
+                "total": 3,
+                "max": 1,
+                "durationsMs": [
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 372,
+                "max": 61,
+                "durationsMs": [
+                  0, 16, 16, 17, 13, 17, 13, 16, 12, 14, 15, 13, 18, 17, 15, 19, 19, 61, 18, 20, 23
+                ]
+              }
+            },
+            "ops": 22,
+            "totalMs": 40,
+            "commitCount": 22,
+            "commitMs": 372,
+            "commitP95Ms": 23,
+            "headroomRatio": 0.92,
+            "commitMaxMs": 61,
+            "commitDurationsMs": [
+              0, 0, 16, 16, 17, 13, 17, 13, 16, 12, 14, 15, 13, 18, 17, 15, 19, 19, 61, 18, 20, 23
+            ]
+          },
+          "undo": {
+            "harnessWallMs": 175,
+            "measures": {
+              "engine.undo": {
+                "count": 11,
+                "total": 10,
+                "max": 2,
+                "durationsMs": [2, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1]
+              }
+            },
+            "steps": 11,
+            "totalMs": 10,
+            "avgMs": 0.9090909090909091,
+            "maxMs": 2
+          },
+          "historyRasterMB": 139.54549407958984,
+          "pageDiagnostics": [
+            {
+              "name": "diagnostic.pageDraw",
+              "startTime": 1680,
+              "duration": 510
+            },
+            {
+              "name": "diagnostic.drawToSecondRaf",
+              "startTime": 1680,
+              "duration": 592
+            },
+            {
+              "name": "diagnostic.pageUndo",
+              "startTime": 18882,
+              "duration": 171
+            }
+          ]
+        },
+        {
+          "key": "crayon-scribbles",
+          "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+          "paths": ["commit", "undo", "depth-cap", "crayon-fold", "crayon-pass-split"],
+          "strokes": 22,
+          "crayon": true,
+          "debug": {
+            "strokeRevision": 22,
+            "snapshots": 20,
+            "liveRasters": 20,
+            "rasterBytes": 29341600,
+            "blobBytes": 0,
+            "baseRasters": 20,
+            "baseRasterBytes": 22380544,
+            "historyLength": 20,
+            "patchBytes": 29341600,
+            "pendingCommands": 0
+          },
+          "settle": {
+            "settled": true,
+            "samples": 32,
+            "elapsedMs": 3825,
+            "measuredSamples": [
+              {
+                "atMs": 623,
+                "readMs": 1,
+                "changed": false,
+                "measures": {
+                  "engine.crayonShadow": [0]
+                },
+                "frames": {
+                  "count": 4,
+                  "firstMs": 51,
+                  "lastMs": 102,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 2175,
+                "readMs": 624,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [678]
+                },
+                "frames": {
+                  "count": 3,
+                  "firstMs": 7,
+                  "lastMs": 41,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 2277,
+                "readMs": 0,
+                "changed": false,
+                "measures": {
+                  "engine.crayonShadow": [0]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 0,
+                  "lastMs": 98,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 3723,
+                "readMs": 2,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [15],
+                  "engine.crayonShadow": [0]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 5,
+                  "lastMs": 88,
+                  "maxGapMs": 17
+                }
+              }
+            ]
+          },
+          "undoSteps": 20,
+          "draw": {
+            "harnessWallMs": 12697,
+            "measures": {
+              "engine.draw": {
+                "count": 22,
+                "total": 2337,
+                "max": 791,
+                "durationsMs": [
+                  559, 7, 791, 6, 92, 776, 6, 6, 8, 5, 6, 12, 6, 6, 8, 5, 6, 9, 6, 5, 7, 5
+                ]
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 9498,
+                "max": 991,
+                "durationsMs": [
+                  0, 67, 0, 392, 0, 0, 754, 82, 718, 425, 544, 991, 761, 81, 784, 467, 551, 827,
+                  875, 68, 708, 403
+                ]
+              },
+              "engine.undoPatchCapture": {
+                "count": 124,
+                "total": 0,
+                "max": 0,
+                "durationsMs": [
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 9497,
+                "max": 991,
+                "durationsMs": [
+                  67, 0, 392, 0, 0, 754, 82, 718, 425, 544, 991, 761, 80, 784, 467, 551, 827, 875,
+                  68, 708, 403
+                ]
+              }
+            },
+            "ops": 22,
+            "totalMs": 2337,
+            "commitCount": 22,
+            "commitMs": 9498,
+            "commitP95Ms": 875,
+            "headroomRatio": 35,
+            "commitMaxMs": 991,
+            "commitDurationsMs": [
+              0, 67, 0, 392, 0, 0, 754, 82, 718, 425, 544, 991, 761, 81, 784, 467, 551, 827, 875,
+              68, 708, 403
+            ]
+          },
+          "undo": {
+            "harnessWallMs": 11850,
+            "measures": {
+              "engine.undo": {
+                "count": 20,
+                "total": 9969,
+                "max": 615,
+                "durationsMs": [
+                  588, 612, 4, 3, 4, 552, 586, 569, 582, 587, 576, 578, 580, 592, 592, 615, 591,
+                  584, 591, 583
+                ]
+              },
+              "engine.crayonShadow": {
+                "count": 10,
+                "total": 0,
+                "max": 0,
+                "durationsMs": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+              }
+            },
+            "steps": 20,
+            "totalMs": 9969,
+            "avgMs": 498.45,
+            "maxMs": 615
+          },
+          "historyRasterMB": 49.326080322265625,
+          "pageDiagnostics": [
+            {
+              "name": "diagnostic.pageDraw",
+              "startTime": 1412,
+              "duration": 12442
+            },
+            {
+              "name": "diagnostic.drawToSecondRaf",
+              "startTime": 1412,
+              "duration": 13018
+            },
+            {
+              "name": "diagnostic.pageUndo",
+              "startTime": 17686,
+              "duration": 11845
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "transparentSnapshots",
+      "baselineCommit": "1521c86639be58cefc1271da75e78e3d0c256454",
+      "browser": "26.6",
+      "host": {
+        "platform": "darwin",
+        "release": "25.6.0",
+        "arch": "arm64",
+        "node": "v24.16.0"
+      },
+      "intervention": "function Ur(){let e=new WeakMap;function t(t,n,r,i={x0:0,y0:0,x1:n.width,y1:n.height},a=n.canvas.hidden===!0){let o=e.get(t);o||(o=new Map,e.set(t,o));let s=o.get(r);if(s){s.dirty.x0=Math.min(s.dirty.x0,i.x0),s.dirty.y0=Math.min(s.dirty.y0,i.y0),s.dirty.x1=Math.max(s.dirty.x1,i.x1),s.dirty.y1=Math.max(s.dirty.y1,i.y1);return}let c=document.createElement(`canvas`);c.width=n.width,c.height=n.height;let l=c.getContext(`2d`);if(!l){e.delete(t);return}let u=performance.now();(!a&&l.drawImage(n.canvas,0,0)),performance.measure(`engine.undoPatchCapture`,{start:u}),o.set(r,{canvas:c,x:0,y:0,tileWidth:n.width,tileHeight:n.height,dirty:{...i},hidden:a,cropped:!1})}function n(t){let n=e.get(t);if(!n)return;let r=performance.now();for(let e of n.values()){if(e.cropped)continue;e.cropped=!0;let{x0:t,y0:n,x1:r,y1:i}=e.dirty;if(t===0&&n===0&&r===e.tileWidth&&i===e.tileHeight||r<=t||i<=n)continue;let a=document.createElement(`canvas`);a.width=r-t,a.height=i-n;let o=a.getContext(`2d`);o&&((!e.hidden&&o.drawImage(e.canvas,t,n,a.width,a.height,0,0,a.width,a.height)),e.canvas=a,e.x=t,e.y=n)}performance.measure(`engine.undoPatchCrop`,{start:r})}function r(t){let n=e.get(t);return n?[...n.values()].reduce((e,t)=>e+t.canvas.width*t.canvas.height*4,0):0}return{capture:t,crop:n,bytes:r,get:t=>e.get(t),delete:t=>e.delete(t)}}",
+      "undoAnimationInstrumentation": null,
+      "note": "Diagnostic response rewrite; unchanged scenario input and pacing. Second rAF is a presentation opportunity, not proof of displayed pixels.",
+      "results": [
+        {
+          "key": "multi-finger",
+          "label": "22 five-finger drags (~2400 ops/command), then undo all",
+          "paths": ["commit", "undo", "depth-cap", "multi-pointer"],
+          "strokes": 22,
+          "crayon": false,
+          "debug": {
+            "strokeRevision": 22,
+            "snapshots": 11,
+            "liveRasters": 11,
+            "rasterBytes": 123943512,
+            "blobBytes": 0,
+            "baseRasters": 20,
+            "baseRasterBytes": 22380544,
+            "historyLength": 11,
+            "patchBytes": 123943512,
+            "pendingCommands": 0
+          },
+          "settle": {
+            "settled": true,
+            "samples": 162,
+            "elapsedMs": 16656,
+            "measuredSamples": [
+              {
+                "atMs": 1550,
+                "readMs": 4,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [6]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 1,
+                  "lastMs": 101,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 3002,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [3]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 14,
+                  "lastMs": 98,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 4552,
+                "readMs": 1,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [2]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 15,
+                  "lastMs": 98,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 6106,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [2]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 12,
+                  "lastMs": 95,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 7549,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [4]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 2,
+                  "lastMs": 102,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 9101,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [2]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 0,
+                  "lastMs": 100,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 10552,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [4]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 16,
+                  "lastMs": 99,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 12101,
+                "readMs": 1,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [1]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 14,
+                  "lastMs": 97,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 13550,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [4]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 0,
+                  "lastMs": 101,
+                  "maxGapMs": 18
+                }
+              },
+              {
+                "atMs": 15099,
+                "readMs": 3,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [2]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 1,
+                  "lastMs": 101,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 16551,
+                "readMs": 2,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [3]
+                },
+                "frames": {
+                  "count": 7,
+                  "firstMs": 1,
+                  "lastMs": 100,
+                  "maxGapMs": 17
+                }
+              }
+            ]
+          },
+          "undoSteps": 11,
+          "draw": {
+            "harnessWallMs": 818,
+            "measures": {
+              "engine.draw": {
+                "count": 22,
+                "total": 39,
+                "max": 3,
+                "durationsMs": [3, 3, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 1, 2, 1, 2, 1, 1]
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 226,
+                "max": 66,
+                "durationsMs": [
+                  0, 0, 0, 0, 5, 19, 11, 16, 66, 0, 0, 0, 4, 10, 6, 10, 11, 9, 58, 0, 0, 1
+                ]
+              },
+              "engine.undoPatchCapture": {
+                "count": 420,
+                "total": 2,
+                "max": 1,
+                "durationsMs": [
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 225,
+                "max": 66,
+                "durationsMs": [
+                  0, 0, 0, 5, 19, 11, 16, 66, 0, 0, 0, 3, 10, 6, 10, 11, 9, 58, 0, 0, 1
+                ]
+              }
+            },
+            "ops": 22,
+            "totalMs": 39,
+            "commitCount": 22,
+            "commitMs": 226,
+            "commitP95Ms": 58,
+            "headroomRatio": 2.32,
+            "commitMaxMs": 66,
+            "commitDurationsMs": [
+              0, 0, 0, 0, 5, 19, 11, 16, 66, 0, 0, 0, 4, 10, 6, 10, 11, 9, 58, 0, 0, 1
+            ]
+          },
+          "undo": {
+            "harnessWallMs": 174,
+            "measures": {
+              "engine.undo": {
+                "count": 11,
+                "total": 8,
+                "max": 2,
+                "durationsMs": [2, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0]
+              }
+            },
+            "steps": 11,
+            "totalMs": 8,
+            "avgMs": 0.7272727272727273,
+            "maxMs": 2
+          },
+          "historyRasterMB": 139.54549407958984,
+          "pageDiagnostics": [
+            {
+              "name": "diagnostic.pageDraw",
+              "startTime": 1368,
+              "duration": 362
+            },
+            {
+              "name": "diagnostic.drawToSecondRaf",
+              "startTime": 1368,
+              "duration": 464
+            },
+            {
+              "name": "diagnostic.pageUndo",
+              "startTime": 18399,
+              "duration": 170
+            }
+          ]
+        },
+        {
+          "key": "crayon-scribbles",
+          "label": "22 crayon back-and-forth scribbles (mid-stroke pass splits), then undo all",
+          "paths": ["commit", "undo", "depth-cap", "crayon-fold", "crayon-pass-split"],
+          "strokes": 22,
+          "crayon": true,
+          "debug": {
+            "strokeRevision": 22,
+            "snapshots": 20,
+            "liveRasters": 20,
+            "rasterBytes": 29341600,
+            "blobBytes": 0,
+            "baseRasters": 20,
+            "baseRasterBytes": 22380544,
+            "historyLength": 20,
+            "patchBytes": 29341600,
+            "pendingCommands": 0
+          },
+          "settle": {
+            "settled": true,
+            "samples": 32,
+            "elapsedMs": 3866,
+            "measuredSamples": [
+              {
+                "atMs": 623,
+                "readMs": 1,
+                "changed": false,
+                "measures": {
+                  "engine.crayonShadow": [0]
+                },
+                "frames": {
+                  "count": 3,
+                  "firstMs": 67,
+                  "lastMs": 87,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 2214,
+                "readMs": 664,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [717]
+                },
+                "frames": {
+                  "count": 3,
+                  "firstMs": 9,
+                  "lastMs": 42,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 2316,
+                "readMs": 1,
+                "changed": false,
+                "measures": {
+                  "engine.crayonShadow": [0]
+                },
+                "frames": {
+                  "count": 8,
+                  "firstMs": 0,
+                  "lastMs": 94,
+                  "maxGapMs": 17
+                }
+              },
+              {
+                "atMs": 3764,
+                "readMs": 2,
+                "changed": true,
+                "measures": {
+                  "engine.fold": [18],
+                  "engine.crayonShadow": [0]
+                },
+                "frames": {
+                  "count": 6,
+                  "firstMs": 14,
+                  "lastMs": 98,
+                  "maxGapMs": 26
+                }
+              }
+            ]
+          },
+          "undoSteps": 20,
+          "draw": {
+            "harnessWallMs": 12295,
+            "measures": {
+              "engine.draw": {
+                "count": 22,
+                "total": 2351,
+                "max": 776,
+                "durationsMs": [
+                  620, 7, 712, 6, 124, 776, 6, 6, 8, 6, 6, 9, 6, 6, 10, 5, 6, 9, 6, 5, 7, 5
+                ]
+              },
+              "engine.commit": {
+                "count": 22,
+                "total": 9165,
+                "max": 855,
+                "durationsMs": [
+                  0, 53, 0, 397, 0, 0, 735, 64, 695, 400, 542, 839, 774, 74, 706, 388, 539, 855,
+                  762, 76, 695, 571
+                ]
+              },
+              "engine.undoPatchCapture": {
+                "count": 124,
+                "total": 0,
+                "max": 0,
+                "durationsMs": [
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+              },
+              "engine.undoPatchCrop": {
+                "count": 21,
+                "total": 9164,
+                "max": 855,
+                "durationsMs": [
+                  53, 0, 397, 0, 0, 734, 64, 695, 400, 542, 839, 774, 74, 706, 388, 539, 855, 762,
+                  76, 695, 571
+                ]
+              }
+            },
+            "ops": 22,
+            "totalMs": 2351,
+            "commitCount": 22,
+            "commitMs": 9165,
+            "commitP95Ms": 839,
+            "headroomRatio": 33.56,
+            "commitMaxMs": 855,
+            "commitDurationsMs": [
+              0, 53, 0, 397, 0, 0, 735, 64, 695, 400, 542, 839, 774, 74, 706, 388, 539, 855, 762,
+              76, 695, 571
+            ]
+          },
+          "undo": {
+            "harnessWallMs": 12329,
+            "measures": {
+              "engine.undo": {
+                "count": 20,
+                "total": 10460,
+                "max": 1175,
+                "durationsMs": [
+                  559, 534, 4, 3, 3, 552, 583, 579, 577, 582, 587, 574, 573, 565, 575, 581, 1175,
+                  677, 46, 1131
+                ]
+              },
+              "engine.crayonShadow": {
+                "count": 10,
+                "total": 0,
+                "max": 0,
+                "durationsMs": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+              }
+            },
+            "steps": 20,
+            "totalMs": 10460,
+            "avgMs": 523,
+            "maxMs": 1175
+          },
+          "historyRasterMB": 49.326080322265625,
+          "pageDiagnostics": [
+            {
+              "name": "diagnostic.pageDraw",
+              "startTime": 1367,
+              "duration": 12078
+            },
+            {
+              "name": "diagnostic.drawToSecondRaf",
+              "startTime": 1367,
+              "duration": 12671
+            },
+            {
+              "name": "diagnostic.pageUndo",
+              "startTime": 17319,
+              "duration": 12324
+            }
+          ]
+        }
+      ]
     }
   ],
   "sourceHashes": {
@@ -5571,5 +6512,11 @@
     "web/src/lib/drawing/tiledUndoPatches.ts": "d1e4e3caf4beb6c940732defe23d4d61a8c170ed516c0dccd6f67bdd5223c448",
     "web/src/lib/drawing/inkMotion.ts": "31a05c668841fc16acf3b59806c944e3c243a637a164b84354193dbfa40af9c8",
     "web/build/_app/immutable/chunks/BEQIUlxI.js": "df265f9c926c46bc5b05e4b06d43da2e11c01dbfaaa8e778bf5ab61bc64ff934"
+  },
+  "resumption": {
+    "android": "unlocked; trusted input and device/page rotation passed",
+    "ios": "CoreDevice paired and lock-state query accessible; absent from usbmuxd and IOUSB enumeration; standard Appium and its devicectl discovery mode both failed before launch",
+    "candidateSelected": false,
+    "physicalProductCaptureCompleted": false
   }
 }
