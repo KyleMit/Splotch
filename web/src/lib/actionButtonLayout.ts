@@ -21,7 +21,6 @@ import {
   LARGE_TABLET_MIN_SIDE_PX,
   TABLET_MIN_SIDE_PX,
   type ActionButtonSizeClass,
-  isPhoneLandscape,
 } from '$lib/breakpoints';
 
 export const ACTION_BUTTON_GAP = 12;
@@ -255,10 +254,10 @@ function phoneToolbarAvailablePerButton(): number {
 }
 
 export function maxActionButtonScale(): number {
-  const base = isPhoneLandscape(layout.viewportWidth, layout.viewportHeight)
+  const base = layout.phoneLandscape
     ? PHONE_TOOLBAR_BUTTON_PX
     : actionButtonBase(layout.orientation);
-  const available = isPhoneLandscape(layout.viewportWidth, layout.viewportHeight)
+  const available = layout.phoneLandscape
     ? phoneToolbarAvailablePerButton()
     : availablePerButton(visibleActionButtonCount());
   const pct = Math.floor((available / base) * 100);

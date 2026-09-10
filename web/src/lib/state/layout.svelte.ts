@@ -114,6 +114,10 @@ function syncViewport() {
   layout.orientationAngle = readOrientationAngle();
   layout.viewportWidth = window.innerWidth;
   layout.viewportHeight = window.innerHeight;
+  syncPhoneLandscape();
+}
+
+function syncPhoneLandscape() {
   layout.phoneLandscape = phoneLandscapeQuery?.matches ?? false;
 }
 
@@ -155,7 +159,7 @@ function syncViewportImmediately() {
 if (browser) {
   syncViewportImmediately();
   window.addEventListener('resize', syncViewportOnResize);
-  phoneLandscapeQuery?.addEventListener('change', syncViewportImmediately);
+  phoneLandscapeQuery?.addEventListener('change', syncPhoneLandscape);
   window.addEventListener('orientationchange', deferViewportSyncForRotation);
   screen.orientation?.addEventListener('change', deferViewportSyncForRotation);
   // Neither event fires while the document is hidden, so a rotation while the

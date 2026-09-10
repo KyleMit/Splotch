@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { layout } from './state/layout.svelte';
 import { network } from './state/network.svelte';
 import { freeGenerations } from './state/freeGenerations.svelte';
@@ -198,13 +198,23 @@ describe('maxActionButtonScale', () => {
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
+  it('keeps the row size ceiling when CSS is tablet-sized behind browser chrome', () => {
+    layout.viewportWidth = 650;
+    layout.viewportHeight = 550;
+    layout.phoneLandscape = false;
+    layout.paletteMeasurement = { width: 84, height: 600, orientation: 'landscape' };
+    expect(maxActionButtonScale()).toBe(116);
+  });
+
   it('allows the full slider range on a landscape phone', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 600;
     layout.viewportHeight = 375;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('never drops below the slider minimum', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 520;
     layout.viewportHeight = 160;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
@@ -241,6 +251,7 @@ describe('maxActionButtonScale', () => {
   });
 
   it('retains the full slider range when phone controls are switched off', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 600;
     layout.viewportHeight = 375;
     setScreenshot(false);
@@ -249,12 +260,14 @@ describe('maxActionButtonScale', () => {
   });
 
   it('budgets for the free AI button without a credential', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 680;
     layout.viewportHeight = 360;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('subtracts safe-area insets from the budget', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 667;
     layout.viewportHeight = 375;
     layout.viewportHeight = 250;
