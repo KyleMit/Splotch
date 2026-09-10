@@ -624,6 +624,11 @@ the app assertion ran. Inspect that phase before calling it a product boot regre
 [#1734](https://github.com/KyleMit/Splotch/issues/1734) was filed after the XCTest driver timed out,
 with no flow execution or screenshot.
 
+After a Maestro failure, `test:ios` also captures a bounded diagnostic relaunch of the installed app
+in `~/.maestro/tests/ios-app-relaunch.log` before simulator teardown. The console can expose native
+or WebView startup errors; it describes a second launch and does not replace the original failure
+evidence. A successful relaunch never changes the smoke result.
+
 ### npm scripts
 
 ```bash

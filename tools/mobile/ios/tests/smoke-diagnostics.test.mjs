@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { captureFailedAppStartup, runIosSmokeWithDiagnostics } from '../lib/smoke-diagnostics.mjs';
+import { runIosSmokeWithDiagnostics } from '../lib/smoke-diagnostics.mjs';
 import { runMaestroSmoke } from '../../lib/mobile-smoke-test.mjs';
 
 vi.mock('node:child_process', () => ({ execFile: vi.fn() }));
@@ -16,7 +16,9 @@ describe('failed iOS app startup diagnostics', () => {
     execFile.mockImplementation((_command, _args, _options, callback) => {
       callback(new Error('timed out'), 'WebView failed to load', 'native error');
     });
-    await captureFailedAppStartup('owned-simulator');
+    const smokeFailure = new Error('Settings did not paint');
+    runMaestroSmoke.mockRejectedValue(smokeFailure);
+    await expect(runIosSmokeWithDiagnostics('owned-simulator')).rejects.toBe(smokeFailure);
     expect(execFile).toHaveBeenCalledWith(
       'xcrun',
       ['simctl', 'launch', '--terminate-running-process', '--console', 'owned-simulator', 'art.splotch.app'],
@@ -34,7 +36,9 @@ describe('failed iOS app startup diagnostics', () => {
     execFile.mockImplementation((_command, _args, _options, callback) => {
       callback(null, 'WebView loaded', '');
     });
-    await captureFailedAppStartup('owned-simulator');
+    const smokeFailure = new Error('Settings did not paint');
+    runMaestroSmoke.mockRejectedValue(smokeFailure);
+    await expect(runIosSmokeWithDiagnostics('owned-simulator')).rejects.toBe(smokeFailure);
     expect(writeFile).toHaveBeenCalledWith(
       '/diagnostic-home/.maestro/tests/ios-app-relaunch.log',
       expect.stringContaining('the original smoke result is unchanged.\nWebView loaded')

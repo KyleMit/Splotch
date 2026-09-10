@@ -8,7 +8,7 @@ import { runMaestroSmoke } from '../../lib/mobile-smoke-test.mjs';
 const APP_LOG_CAPTURE_MS = 15000;
 const APP_LOG_MAX_BYTES = 4 * 1024 * 1024;
 
-export async function captureFailedAppStartup(device) {
+async function captureFailedAppStartup(device) {
   const reportDirectory = join(homedir(), '.maestro', 'tests');
   await mkdir(reportDirectory, { recursive: true });
   const output = await new Promise((resolve) => {
