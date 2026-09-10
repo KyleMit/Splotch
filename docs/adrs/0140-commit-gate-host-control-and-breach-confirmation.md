@@ -20,10 +20,11 @@ Keep the raw budget, workload, and confirmation policy. Profiling builds additio
 snapshot capture/crop measures; scenario artifacts retain draw/undo distributions and
 `harnessWallMs` for both passes. That interval includes Playwright round trips and driver-side
 payload serialization/transfer as well as page work; it does not measure page-only or presentation
-latency. Diagnose the nested costs without adding crop to its enclosing commit/undo measure,
-discounting a measured wait, or moving the wait elsewhere to make the gate pass. The investigation
-explains the existing breaches; optimizing the renderer still requires combined latency and
-pixel/depth/memory evidence.
+latency. Snapshot capture is not confined to `engine.draw`; progressive clear-capture callbacks and
+repaint can copy outside a queue drain. Diagnose the nested costs without adding crop to its
+enclosing commit/undo measure, discounting a measured wait, or moving the wait elsewhere to make the
+gate pass. The investigation explains the existing breaches; optimizing the renderer still requires
+combined latency and pixel/depth/memory evidence.
 
 `webkit-commit-gate-fast` runs two scenarios against a 25 ms P95 budget on every push to `main`, and
 files a GitHub issue when it fails. Neither scenario was gating anything, for opposite reasons.

@@ -1259,7 +1259,9 @@ function renderUndoReport({ settings, scenarios, confirmations, gate, fastSetEva
   out.push(
     'These nested measures are diagnostic, not additive. Snapshot cropping is included in commit ' +
       'during drawing and can also run during undo/repaint; a canvas API duration includes any ' +
-      'renderer work it waits for. Harness wall includes Playwright round trips, driver-side ' +
+      'renderer work it waits for. Snapshot capture is not confined to engine.draw: clear-capture ' +
+      'callbacks and repaint can copy outside a queue drain. Harness wall includes Playwright round ' +
+      'trips, driver-side ' +
       'payload serialization/transfer, input dispatch, and page execution. It is not page-only ' +
       'latency or a presentation measurement. Every initial and confirmation draw/undo measure ' +
       'distribution is retained in JSON. The gate still scores raw engine.commit P95.\n'

@@ -101,8 +101,15 @@ A [fresh macOS run of the same code](https://github.com/KyleMit/Splotch/actions/
 the new measures. Multi-finger confirmed at 52/129 ms: crop accounted for 811/1,925 ms of 814/1,933
 ms commit totals. Crayon confirmed at 42/46 ms: crop accounted for 580/606 ms of 588/610 ms commit
 totals, while drawing took 95,474/100,134 ms. The fresh-runner diagnostics therefore locate the same
-blocking phase even when most crayon work is paid during drawing. This performance job failed the
-unchanged gate; the PR's ordinary tests passed separately.
+commit-blocking phase even when most crayon work is paid during drawing. This performance job failed
+the unchanged gate; the PR's ordinary tests passed separately.
+
+Capture was not free on that runner: multi-finger snapshot capture totalled 1,477/1,788 ms. Its
+initial single-call maximum was 568 ms, larger than the same pass's draw maximum of 106 ms and
+commit maximum of 57 ms. That call therefore ran outside both bracketed engine measures. Capture can
+also run from progressive clear-capture callbacks and repaint outside a queue drain; these summaries
+do not identify which path produced the outlier. The local 1/0 ms capture totals do not generalize
+to this host. The commit gate does not cover every synchronous snapshot wait.
 
 The same instrumented build and two scenarios completed in unthrottled Chromium with multi-finger
 commit P95 2.0 ms and crayon 1.3 ms. Crayon draw/commit totals were 3,327/20 ms, with 19 ms in crop.
