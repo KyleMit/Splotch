@@ -131,8 +131,9 @@ iPad. These are conflicting connection observations, not evidence that the captu
 The normal Appium launch rejected the hardware identifier as unknown. A separate Appium instance
 using its installed driver's supported `APPIUM_XCUITEST_PREFER_DEVICECTL=true` option discovered the
 identifier but failed its device OS-version query through the legacy connection. Neither launched
-WebDriverAgent or completed physical validation. A direct data-cable reconnection and any required
-Trust prompt remain the operator's next step; no capture check was weakened.
+WebDriverAgent or completed physical validation. The next step at that point was a direct data-cable
+reconnection and any required Trust prompt; the successful recovery is recorded below. No capture
+check was weakened.
 
 While readiness was being resolved, two further single-pass snapshot experiments used the same
 unchanged-main build, scenario input, and diagnostic driver. Both retained the control's debug
