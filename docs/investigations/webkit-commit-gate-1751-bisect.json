@@ -2447,6 +2447,105 @@
           "historyRasterMB": 49.326080322265625
         }
       ]
+    },
+    {
+      "name": "local-fix-subtract-run1",
+      "source": "local",
+      "buildCommit": "f24dccb80400a2dbc7472c6fc360752c6525a723",
+      "product": "current main + the undo ghost change with the post-undo subtraction pass (older ink inside the footprint knocked out of the ghost)",
+      "browser": {
+        "webkit": "26.6",
+        "recordedBySettings": true
+      },
+      "host": "linux x86_64 6.18.44 (4 vCPU cloud container), Node 22.22.2, Playwright 1.63.0",
+      "startedAt": "2026-09-11T14:57:09.930Z",
+      "durationMs": 62586,
+      "gate": {
+        "failures": null,
+        "dispositions": null
+      },
+      "passes": [
+        {
+          "passName": "scenarios",
+          "key": "multi-finger",
+          "draw": {
+            "ops": 22,
+            "totalMs": 308,
+            "commitCount": 21,
+            "commitMs": 29,
+            "commitP95Ms": 3,
+            "commitMaxMs": 3,
+            "commitDurationsMs": [0, 2, 3, 3, 2, 3, 2, 1, 2, 3, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1],
+            "undoPatchCropTotalMs": 26,
+            "undoPatchCaptureTotalMs": 46
+          },
+          "undo": {
+            "steps": 11,
+            "totalMs": 21,
+            "avgMs": 1.9090909090909092,
+            "maxMs": 4,
+            "inkMotionTotalMs": 16,
+            "inkMotionMaxMs": 3
+          },
+          "undoEntries": 11,
+          "historyRasterMB": 139.54549407958984
+        },
+        {
+          "passName": "scenarios",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1201,
+            "commitCount": 22,
+            "commitMs": 15726,
+            "commitP95Ms": 3115,
+            "commitMaxMs": 3177,
+            "commitDurationsMs": [
+              0, 0, 2258, 1, 1, 1, 2821, 0, 1288, 0, 0, 1, 3115, 0, 1563, 0, 1, 0, 3177, 1, 1497, 1
+            ],
+            "undoPatchCropTotalMs": 15724,
+            "undoPatchCaptureTotalMs": 9
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 122,
+            "avgMs": 6.1,
+            "maxMs": 8,
+            "inkMotionTotalMs": 116,
+            "inkMotionMaxMs": 8
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        },
+        {
+          "passName": "confirmations",
+          "key": "crayon-scribbles",
+          "draw": {
+            "ops": 22,
+            "totalMs": 1273,
+            "commitCount": 22,
+            "commitMs": 14555,
+            "commitP95Ms": 2676,
+            "commitMaxMs": 2930,
+            "commitDurationsMs": [
+              0, 1, 2059, 0, 1, 1, 2555, 0, 1355, 0, 0, 1, 2676, 0, 1397, 1, 0, 0, 2930, 0, 1577, 1
+            ],
+            "undoPatchCropTotalMs": 14554,
+            "undoPatchCaptureTotalMs": 7
+          },
+          "undo": {
+            "steps": 20,
+            "totalMs": 151,
+            "avgMs": 7.55,
+            "maxMs": 10,
+            "inkMotionTotalMs": 139,
+            "inkMotionMaxMs": 9
+          },
+          "undoEntries": 20,
+          "historyRasterMB": 49.326080322265625
+        }
+      ],
+      "note": "engine.undoInkMotion carries two entries per crayon undo from this revision on: the tile copy and the subtraction pass."
     }
   ]
 }
