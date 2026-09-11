@@ -31,8 +31,8 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     return wrapper;
   }
 
-  // The ghost is the undone ink as it stands on the live tiles, copied through
-  // a mask of the command's footprint. Replaying the command's ops instead
+  // The ghost is the undone ink as it stands on the live tiles, kept only
+  // inside a mask of the command's footprint. Replaying the command's ops instead
   // re-rasterizes the whole stroke through the crayon pass buffer, which is
   // the cost the 1751 bisect measured on the undo path; the tiles already hold
   // those pixels, and a bounded number of blits reads them.
@@ -54,11 +54,22 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     image.width = bounds.width;
     image.height = bounds.height;
     const target = image.getContext('2d');
-    if (!target) return;
+    const mask = document.createElement('canvas');
+    mask.width = bounds.width;
+    mask.height = bounds.height;
+    const maskTarget = mask.getContext('2d');
+    if (!target || !maskTarget) return;
+    maskTarget.translate(-bounds.left, -bounds.top);
+    paintStrokeFootprint(maskTarget, command);
     target.translate(-bounds.left, -bounds.top);
-    paintStrokeFootprint(target, command);
-    target.globalCompositeOperation = 'source-in';
     paint(target);
+    // One destination-in of the whole footprint: applying the mask per tile
+    // blit would clear everything outside each successive tile instead.
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.globalCompositeOperation = 'destination-in';
+    target.drawImage(mask, 0, 0);
+    mask.width = 0;
+    mask.height = 0;
     image.className = 'undo-ink-motion';
     image.style.cssText = `left:${bounds.left / scale}px;top:${bounds.top / scale}px;width:${bounds.width / scale}px;height:${bounds.height / scale}px`;
     present(canvas.parentElement, image, `matrix(${viewMatrix(view).join(',')})`);
