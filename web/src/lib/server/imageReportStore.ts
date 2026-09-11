@@ -144,8 +144,17 @@ export async function purgeExpiredImageReports(): Promise<{
     const outcomes = await settleWithRetentionConcurrency(expiredKeys, ({ key }) =>
       store.delete(key)
     );
-    deletedBlobs += outcomes.filter(({ status }) => status === 'fulfilled').length;
-    failedBlobs += outcomes.filter(({ status }) => status === 'rejected').length;
+    for (const outcome of outcomes) {
+      if (outcome.status === 'fulfilled') {
+        deletedBlobs++;
+      } else {
+        console.warn(
+          '[purge-image-reports] failed to delete a blob:',
+          outcome.reason instanceof Error ? outcome.reason.message : outcome.reason
+        );
+        failedBlobs++;
+      }
+    }
   }
 
   return {

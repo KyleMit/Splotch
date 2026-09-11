@@ -167,6 +167,7 @@ describe('purgeExpiredGenerationJobs', () => {
   });
 
   it('processes directory pages after isolated job failures without repeating split jobs', async () => {
+    const warnMock = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const readFailure = 'c'.repeat(64);
     const laterExpired = 'd'.repeat(64);
     const laterRetained = 'e'.repeat(64);
@@ -176,16 +177,9 @@ describe('purgeExpiredGenerationJobs', () => {
     ];
     store.list.mockImplementation((options) => {
       expect(options).toEqual({ paginate: true, directories: true });
-      const seen = new Set<string>();
       return (async function* () {
         for (const keys of keyPages) {
-          const directories = keys
-            .map((key) => key.slice(0, key.indexOf('/')))
-            .filter((jobId) => {
-              if (seen.has(jobId)) return false;
-              seen.add(jobId);
-              return true;
-            });
+          const directories = keys.map((key) => key.slice(0, key.indexOf('/')));
           yield { blobs: [], directories };
         }
       })();
@@ -214,6 +208,14 @@ describe('purgeExpiredGenerationJobs', () => {
     expect(store.get.mock.calls.filter(([key]) => key === `${JOB}/status.json`)).toHaveLength(1);
     expect(store.delete).toHaveBeenCalledWith(`${laterExpired}/status.json`);
     expect(store.delete.mock.calls.some(([key]) => key.startsWith(laterRetained))).toBe(false);
+    expect(warnMock).toHaveBeenCalledWith(
+      '[purge-generation-jobs] failed to process a job:',
+      'read failed'
+    );
+    expect(warnMock).toHaveBeenCalledWith(
+      '[purge-generation-jobs] failed to delete a job blob:',
+      'delete failed'
+    );
   });
 
   it('marks a job pending with a lifetime the sweep can act on', async () => {

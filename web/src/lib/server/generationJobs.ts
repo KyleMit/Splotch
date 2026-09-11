@@ -237,10 +237,16 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
   let retainedJobs = 0;
   let deletedBlobs = 0;
   let failedBlobDeletes = 0;
+  const seenJobIds = new Set<string>();
 
   for await (const page of jobStore.list({ paginate: true, directories: true })) {
-    attemptedJobs += page.directories.length;
-    const outcomes = await settleWithRetentionConcurrency(page.directories, async (jobId) => {
+    const jobIds = page.directories.filter((jobId) => {
+      if (seenJobIds.has(jobId)) return false;
+      seenJobIds.add(jobId);
+      return true;
+    });
+    attemptedJobs += jobIds.length;
+    const outcomes = await settleWithRetentionConcurrency(jobIds, async (jobId) => {
       const record = (await jobStore.get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
       if (record && record.expiresAt >= now) return { status: 'retained' as const };
 
@@ -250,7 +256,11 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
         try {
           await jobStore.delete(key);
           jobDeletedBlobs++;
-        } catch {
+        } catch (cause) {
+          console.warn(
+            '[purge-generation-jobs] failed to delete a job blob:',
+            cause instanceof Error ? cause.message : cause
+          );
           jobFailedBlobDeletes++;
         }
       }
@@ -263,6 +273,10 @@ export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
 
     for (const outcome of outcomes) {
       if (outcome.status === 'rejected') {
+        console.warn(
+          '[purge-generation-jobs] failed to process a job:',
+          outcome.reason instanceof Error ? outcome.reason.message : outcome.reason
+        );
         failedJobs++;
       } else if (outcome.value.status === 'retained') {
         retainedJobs++;

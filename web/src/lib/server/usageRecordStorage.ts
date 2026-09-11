@@ -101,6 +101,10 @@ export async function purgeExpiredUsageRecords(): Promise<{
     );
     for (const outcome of outcomes) {
       if (outcome.status === 'rejected') {
+        console.warn(
+          '[purge-usage-records] failed to process a record:',
+          outcome.reason instanceof Error ? outcome.reason.message : outcome.reason
+        );
         failedRecords++;
       } else if (outcome.value === 'expired') {
         deletedExpiredRecords++;

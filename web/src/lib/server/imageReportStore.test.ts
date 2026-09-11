@@ -154,6 +154,7 @@ describe('purgeExpiredImageReports', () => {
   });
 
   it('continues later pages after isolated deletes fail and deduplicates report counts', async () => {
+    const warnMock = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const dayMs = 24 * 60 * 60 * 1000;
     const now = Date.now();
     const expiredA = `${now - (IMAGE_REPORT_RETENTION_DAYS + 1) * dayMs}-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`;
@@ -200,5 +201,9 @@ describe('purgeExpiredImageReports', () => {
       retainedBlobs: 1,
     });
     expect(store.delete).toHaveBeenCalledWith(laterKey);
+    expect(warnMock).toHaveBeenCalledWith(
+      '[purge-image-reports] failed to delete a blob:',
+      'delete failed'
+    );
   });
 });

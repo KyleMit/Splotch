@@ -402,5 +402,13 @@ describe('purgeExpiredUsageRecords', () => {
       retainedRecords: 0,
     });
     expect(store.delete).toHaveBeenCalledWith(keys[6]);
+    expect(console.warn).toHaveBeenCalledWith(
+      '[purge-usage-records] failed to process a record:',
+      'read failed'
+    );
+    expect(console.warn).toHaveBeenCalledWith(
+      '[purge-usage-records] failed to process a record:',
+      'delete failed'
+    );
   });
 });
