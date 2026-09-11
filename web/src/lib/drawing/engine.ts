@@ -141,7 +141,7 @@ export type StrokeStartData = Pick<PointerEvent, 'pointerId' | 'clientX' | 'clie
   magic: boolean;
 };
 
-const inkMotion = createInkMotion();
+const inkMotion = createInkMotion(paintVisibleTiledInk);
 
 interface InitOptions {
   onUndo?: () => void;
@@ -1070,7 +1070,9 @@ export function undo(): Promise<void> {
   if (!canUndo || !canvas || !ctx) return Promise.resolve();
   if (PERF_MARKS) performance.mark('engine.undo:start');
   const animate = !isStrokeActive();
+  const inkMotionStart = PERF_MARKS ? performance.now() : 0;
   if (animate) inkMotion.undo(canvas, peekTiledUndoCommand(), getViewState(), renderScale);
+  if (PERF_MARKS) performance.measure('engine.undoInkMotion', { start: inkMotionStart });
   const recordedPaper =
     activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()
       ? peekTiledUndoPaper()
@@ -1108,7 +1110,7 @@ export function clearCanvas({ animate = false }: { animate?: boolean } = {}) {
   inkMotion.cancel();
   if (!canvas || !ctx) return;
   if (animate && !isStrokeActive() && !canvasEmpty) {
-    inkMotion.clear(canvas, getViewState(), renderScale, viewport, paintVisibleTiledInk);
+    inkMotion.clear(canvas, getViewState(), renderScale, viewport);
   }
   const state = clearTiledRenderer(canvasEmpty);
   crayonPasses.reset();

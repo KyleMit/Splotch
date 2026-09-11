@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { strokeMotionBounds } from './inkMotionBounds';
+import { paintStrokeFootprint, strokeMotionBounds } from './inkMotionBounds';
+import { AA_PAD_PX } from './opGeometry';
 import type { DotOp, StrokeGroupCommand } from './strokeOps';
 
 const dot: DotOp = { kind: 'dot', x: 40, y: 60, radius: 12, color: '#ff0000', erase: false };
@@ -67,5 +68,60 @@ describe('strokeMotionBounds', () => {
     },
   ])('omits history commands that restore appearance', (command) => {
     expect(strokeMotionBounds(command, 100, 100)).toBeNull();
+  });
+});
+
+describe('paintStrokeFootprint', () => {
+  function recordingContext() {
+    const calls: { kind: 'arc' | 'stroke'; radius?: number; lineWidth?: number }[] = [];
+    let lineWidth = 0;
+    const target = {
+      lineCap: 'butt',
+      lineJoin: 'miter',
+      fillStyle: '',
+      strokeStyle: '',
+      get lineWidth() {
+        return lineWidth;
+      },
+      set lineWidth(value: number) {
+        lineWidth = value;
+      },
+      beginPath: () => {},
+      moveTo: () => {},
+      quadraticCurveTo: () => {},
+      arc: (_x: number, _y: number, radius: number) => calls.push({ kind: 'arc', radius }),
+      fill: () => {},
+      stroke: () => calls.push({ kind: 'stroke', lineWidth }),
+    };
+    return { target: target as unknown as CanvasRenderingContext2D, calls, target_: target };
+  }
+
+  it('pads every ink op by the renderer AA bleed and skips erase and non-ink ops', () => {
+    const { target, calls, target_ } = recordingContext();
+    paintStrokeFootprint(target, {
+      wasEmpty: true,
+      ops: [
+        dot,
+        { ...dot, erase: true },
+        { kind: 'crayonFlush' },
+        {
+          kind: 'path',
+          pid: 0,
+          startX: 0,
+          startY: 0,
+          segs: [{ cx: 5, cy: 5, x: 10, y: 10 }],
+          color: '#ff0000',
+          lineWidth: 8,
+          erase: false,
+          crayon: true,
+        },
+      ],
+    });
+    expect(calls).toEqual([
+      { kind: 'arc', radius: dot.radius + AA_PAD_PX },
+      { kind: 'stroke', lineWidth: 8 + 2 * AA_PAD_PX },
+    ]);
+    expect(target_.lineCap).toBe('round');
+    expect(target_.lineJoin).toBe('round');
   });
 });
