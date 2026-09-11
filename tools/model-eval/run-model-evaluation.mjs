@@ -26,10 +26,7 @@ import { pathToFileURL } from 'node:url';
 import {
   ROOT,
   VARIANTS,
-  RATES,
-  ORCHESTRATOR_MODEL,
-  ORCHESTRATOR_REASONING_EFFORT,
-  ORCHESTRATOR_RATES,
+  evaluationMetadata,
   selectModelVariants,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
@@ -110,10 +107,13 @@ async function reportOnly(dir) {
 }
 
 function selectVariants() {
-  const selected = selectModelVariants(VARIANT_FILTER);
-  if (!selected.length) {
+  let selected;
+  try {
+    selected = selectModelVariants(VARIANT_FILTER);
+    if (!selected.length) throw new Error(`No variants matched VARIANTS="${VARIANT_FILTER}"`);
+  } catch (error) {
     console.error(
-      `No variants matched VARIANTS="${VARIANT_FILTER}".\nAvailable keys:\n  ${VARIANTS.map((v) => v.key).join('\n  ')}`
+      `${error.message}\nAvailable keys:\n  ${VARIANTS.map((v) => v.key).join('\n  ')}`
     );
     process.exit(1);
   }
@@ -166,10 +166,12 @@ const cellKey = (row) => `${row.id}::${row.variant}::${row.sample}`;
 // safety reading is counted off, and it would look like a clean run.
 function loadResume(outDir) {
   const previous = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'));
+  const metadata = evaluationMetadata(CONCURRENCY, previous);
   const done = previous.results.filter(
     (row) => row.kind === 'image' && row.outFile && existsSync(join(outDir, row.outFile))
   );
   return {
+    metadata,
     runId: previous.runId,
     samples: previous.samples ?? SAMPLES,
     results: previous.results,
@@ -212,6 +214,7 @@ async function main() {
 
   const outDir = RESUME || OUT;
   const resumed = RESUME ? loadResume(outDir) : null;
+  const metadata = resumed?.metadata ?? evaluationMetadata(CONCURRENCY);
   const effRunId = resumed?.runId ?? runId;
   const effSamples = resumed?.samples ?? SAMPLES;
   const results = resumed ? [...resumed.results] : [];
@@ -248,14 +251,7 @@ async function main() {
         {
           runId: effRunId,
           samples: effSamples,
-          concurrency: CONCURRENCY,
-          requestConfig: {
-            prompt: DEFAULT_PROMPT,
-            systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
-            orchestrator: ORCHESTRATOR_MODEL,
-            reasoningEffort: ORCHESTRATOR_REASONING_EFFORT,
-          },
-          rates: { images: RATES, orchestrator: ORCHESTRATOR_RATES },
+          ...metadata,
           variants,
           results,
         },

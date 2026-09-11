@@ -7,6 +7,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { themes } from '../../../web/src/lib/design/tokens.ts';
 import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
 import { ROOT } from '../../lib/proc.mjs';
@@ -134,6 +135,7 @@ export const RATES = {
     imageOutPerM: 60.0,
   },
   'gpt-image-2': { textInPerM: 5.0, imageInPerM: 8.0, textOutPerM: 5.0, imageOutPerM: 30.0 },
+  // Flare and Sunburst produce images only; their model pages specify no text-output charge.
   'gpt-image-2.5-flare': { textInPerM: 5.0, imageInPerM: 8.0, textOutPerM: 0, imageOutPerM: 30.0 },
   'gpt-image-2.5-sunburst': {
     textInPerM: 5.0,
@@ -150,11 +152,48 @@ export const ORCHESTRATOR_RATES = { inPerM: 4.0, cachedInPerM: 0.4, outPerM: 20.
 
 export function selectModelVariants(filter) {
   if (!filter) return VARIANTS;
-  const keys = filter.split(',').map((key) => key.trim());
-  if (keys.length === 1) return VARIANTS.filter((variant) => variant.key.includes(keys[0]));
+  const keys = filter
+    .split(',')
+    .map((key) => key.trim())
+    .filter(Boolean);
+  if (!keys.length) throw new Error('VARIANTS must name at least one variant');
+  if (!filter.includes(',')) {
+    const exact = VARIANTS.filter((variant) => variant.key === keys[0]);
+    if (exact.length) return exact;
+    const model = VARIANTS.filter(
+      (variant) => variant.model === keys[0] || variant.model.replaceAll('.', '-') === keys[0]
+    );
+    return model.length ? model : VARIANTS.filter((variant) => variant.key.includes(keys[0]));
+  }
   const unknown = keys.filter((key) => !VARIANTS.some((variant) => variant.key === key));
   if (unknown.length) throw new Error(`Unknown variant keys: ${unknown.join(', ')}`);
   return VARIANTS.filter((variant) => keys.includes(variant.key));
+}
+
+export function evaluationMetadata(concurrency, previous) {
+  const current = {
+    concurrency,
+    requestConfig: {
+      prompt: DEFAULT_PROMPT,
+      systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
+      orchestrator: ORCHESTRATOR_MODEL,
+      reasoningEffort: ORCHESTRATOR_REASONING_EFFORT,
+    },
+    rates: { images: RATES, orchestrator: ORCHESTRATOR_RATES },
+  };
+  if (!previous) return current;
+  for (const field of Object.keys(current)) {
+    if (!isDeepStrictEqual(previous[field], current[field])) {
+      throw new Error(
+        `Cannot resume: ${field} is missing or differs from the recorded run. Start a new run or use REPORT_FROM to review existing results.`
+      );
+    }
+  }
+  return {
+    concurrency: previous.concurrency,
+    requestConfig: previous.requestConfig,
+    rates: previous.rates,
+  };
 }
 
 // The only colors a child can lay down with the pen, so faithful inputs must use them.

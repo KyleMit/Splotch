@@ -45,6 +45,14 @@ sword and stick figure, but one baseline sample shifts the figure and sword noti
 
 ## Method and limits
 
+The
+[August gallery](https://github.com/KyleMit/Splotch/blob/e4bdacdcb3c699ccca3f41de54df14141d6bfeb3/scrapbook/model-eval/report/index.html)
+recorded a 2.04¢ baseline over 19 drawings with one sample and six concurrent calls; this run
+records 3.53¢ over 14 drawings with two samples and three concurrent calls. These are different
+input mixes, with different recorded rates and unaligned cache histories. The historical published
+gallery lacks a complete request/usage snapshot, so the difference cannot be attributed to a prompt
+or orchestrator change. It is not a controlled estimate of a production cost regression.
+
 * Fourteen synthetic inputs, one deterministically selected drawing per category, two samples per
   model/quality configuration.
 * The exact shipped base prompt, safety instruction, orchestrator, reasoning setting, and token

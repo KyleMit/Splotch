@@ -5,6 +5,7 @@ import {
   imageDims,
   takePerCategory,
   selectModelVariants,
+  evaluationMetadata,
   VARIANTS,
 } from '../lib/model-eval.mjs';
 import { sizeForAspect } from '../lib/image-providers.mjs';
@@ -39,6 +40,24 @@ describe('imageDims', () => {
 });
 
 describe('VARIANTS', () => {
+  it('limits an exact model name to its own effort tiers', () => {
+    expect(selectModelVariants('gpt-image-2').map((variant) => variant.key)).toEqual([
+      'gpt-image-2-low',
+      'gpt-image-2-medium',
+      'gpt-image-2-high',
+    ]);
+  });
+
+  it('accepts a trailing separator without widening an exact selection', () => {
+    expect(selectModelVariants('gpt-image-2-low,').map((variant) => variant.key)).toEqual([
+      'gpt-image-2-low',
+    ]);
+  });
+
+  it.each([' ', ',', ' , '])('rejects an empty selection %j', (filter) => {
+    expect(() => selectModelVariants(filter)).toThrow('at least one variant');
+  });
+
   it('selects exact comma-separated keys without buying other effort tiers', () => {
     expect(
       selectModelVariants('gpt-image-2-low,gpt-image-2-5-flare-low').map((variant) => variant.key)
@@ -66,6 +85,41 @@ describe('VARIANTS', () => {
     for (const variant of VARIANTS.filter((v) => v.provider === 'openai')) {
       expect(['low', 'medium', 'high'], variant.key).toContain(variant.quality);
     }
+  });
+});
+
+describe('evaluation metadata', () => {
+  it('preserves the saved snapshot when a resume has matching configuration', () => {
+    const previous = structuredClone(evaluationMetadata(3));
+    expect(evaluationMetadata(3, previous)).toEqual(previous);
+    expect(evaluationMetadata(3, previous).requestConfig).toBe(previous.requestConfig);
+  });
+
+  it.each(['requestConfig', 'rates', 'concurrency'])(
+    'rejects missing %s instead of assigning current provenance to old rows',
+    (field) => {
+      const previous = structuredClone(evaluationMetadata(3));
+      delete previous[field];
+      expect(() => evaluationMetadata(3, previous)).toThrow(`Cannot resume: ${field}`);
+    }
+  );
+
+  it('rejects a different prompt even when the orchestrator still matches', () => {
+    const previous = structuredClone(evaluationMetadata(3));
+    previous.requestConfig.prompt = 'An older prompt';
+    expect(() => evaluationMetadata(3, previous)).toThrow('Cannot resume: requestConfig');
+  });
+
+  it('rejects old billing rates rather than relabeling retained costs', () => {
+    const previous = structuredClone(evaluationMetadata(3));
+    previous.rates.orchestrator = { inPerM: 5, cachedInPerM: 0.5, outPerM: 30 };
+    expect(() => evaluationMetadata(3, previous)).toThrow('Cannot resume: rates');
+  });
+
+  it('rejects a changed concurrency limit rather than relabeling retained timings', () => {
+    expect(() => evaluationMetadata(1, evaluationMetadata(3))).toThrow(
+      'Cannot resume: concurrency'
+    );
   });
 });
 
@@ -101,6 +155,7 @@ describe('costOf', () => {
             textInTokens: 19,
             imageInTokens: 1024,
             imageOutTokens: 1756,
+            textOutTokens: 500,
             orchInTokens: 1200,
             orchOutTokens: 150,
           }
