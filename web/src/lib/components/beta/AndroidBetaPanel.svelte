@@ -6,7 +6,12 @@
   import BetaStep from './BetaStep.svelte';
   import BetaStepLedger from './BetaStepLedger.svelte';
   import BetaTroubleshooting from './BetaTroubleshooting.svelte';
-  import { BETA_OPT_IN_URL, PLAY_STORE_LISTING_URL, TESTERS_GROUP_URL } from './androidBeta';
+  import {
+    BETA_OPT_IN_URL,
+    MIN_ANDROID_RELEASE,
+    PLAY_STORE_LISTING_URL,
+    TESTERS_GROUP_URL,
+  } from './androidBeta';
 
   // Step 4 prints the canonical absolute feedback address because testers may
   // read this page on one device and send feedback from another. Its href stays
@@ -122,6 +127,13 @@
     <p>
       The two are signed in to different accounts. In the Play Store app, tap your profile picture
       in the top-right to see which account is active.
+    </p>
+  </div>
+  <div class="row">
+    <h4>Play says the device isn't compatible</h4>
+    <p>
+      Splotch needs Android {MIN_ANDROID_RELEASE} or newer. On a device older than that the store offers
+      no Install button, and none of the account checks above will change it.
     </p>
   </div>
   <div class="row">
