@@ -1,6 +1,7 @@
 import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
+import { createLatestRequest, type LatestRequest } from '$lib/latestRequest';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
 import { network } from '$lib/state/network.svelte';
 import { settings } from '$lib/state/settings.svelte';
@@ -14,6 +15,8 @@ export const freeGenerations = $state({
   loading: true,
   available: false,
 });
+
+const freeGenerationGrantRequest = createLatestRequest();
 
 let installationIdPromise: Promise<string> | null = null;
 
@@ -72,9 +75,10 @@ export function createFreeGenerationGrantRefresher(): () => void {
     const shouldRearm = (ready && !wasReady) || (online && !wasOnline);
     wasReady = ready;
     wasOnline = online;
+    if (!ready || !online) freeGenerationGrantRequest.cancel();
     if (shouldRearm && !freeGenerations.available) freeGenerations.loading = true;
-    if (ready && online && freeGenerations.loading) {
-      void refreshFreeGenerationGrant();
+    if (shouldRearm && ready && online && freeGenerations.loading) {
+      void refreshFreeGenerationGrant(freeGenerationGrantRequest);
     } else if (persistedStateStatus.hydrated && !ready) {
       setFreeGenerationsUnavailable();
     }
@@ -90,17 +94,22 @@ export function grantRefreshReady(): boolean {
   );
 }
 
-async function refreshFreeGenerationGrant(): Promise<void> {
+async function refreshFreeGenerationGrant(latest: LatestRequest): Promise<void> {
+  const request = latest.begin();
   try {
     const id = await installationId();
+    if (!latest.isCurrent(request.id)) return;
     if (!INSTALLATION_ID_PATTERN.test(id)) throw new Error('Invalid installation identifier');
     const response = await fetch(apiUrl('/api/free-generation-grant'), {
       headers: { [INSTALLATION_ID_HEADER]: id },
+      signal: request.signal,
     });
     if (!response.ok) throw new Error('Grant status unavailable');
     const status = (await response.json()) as FreeGenerationGrantStatus;
-    if (status.ok) setFreeGenerationsRemaining(status.remaining);
+    if (latest.isCurrent(request.id) && status.ok) {
+      setFreeGenerationsRemaining(status.remaining);
+    }
   } catch {
-    setFreeGenerationsUnavailable();
+    if (latest.isCurrent(request.id)) setFreeGenerationsUnavailable();
   }
 }
