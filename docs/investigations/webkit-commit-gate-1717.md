@@ -1,5 +1,12 @@
 # WebKit commit-gate investigation — issue 1717
 
+> **Bisected 2026-09-11.** The breaches this investigation explains were measured on WebKit 26.6
+> only. The [issue 1751 bisect](webkit-commit-gate-1751-bisect.md) measured PR 1733's product on
+> WebKit 26.5 and the pre-1733 product on WebKit 26.6 on the same macOS runner: the confirmed commit
+> breaches follow the `@playwright/test` 1.62.1 → 1.63.0 browser bump that landed in the same
+> not-comparable window, not the product. PR 1733's measured regression is on the undo path, and is
+> fixed there. The evidence below is unchanged.
+
 The confirmed multi-finger and crayon breaches include deferred canvas rendering paid by undo
 snapshot cropping. They are real synchronous waits inside `engine.commit`; the available evidence
 does not establish a new commit-only algorithmic regression. The raw 25 ms P95 gate remains in

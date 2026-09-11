@@ -1,5 +1,11 @@
 # WebKit snapshot experiments — issue 1750
 
+> **Bisected 2026-09-11.** The [issue 1751 bisect](webkit-commit-gate-1751-bisect.md) found that the
+> confirmed commit breaches these experiments tried to move follow the WebKit 26.5 → 26.6 build
+> change from the `@playwright/test` 1.63.0 bump, not PR 1733, and that the undo animation replay
+> the "Undo attribution" section below measured was introduced by PR 1733's bbd51a7d882e and is now
+> replaced by a ghost read from the live tiles. The evidence below is unchanged.
+
 No product optimization was selected. Eleven candidate snapshot interventions failed to demonstrate
 a convincing combined-path improvement. Device readiness was restored and physical iPad diagnostics
 were captured, but no candidate earned correctness or performance approval. The only code change

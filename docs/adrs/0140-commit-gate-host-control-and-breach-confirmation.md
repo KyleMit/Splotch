@@ -26,6 +26,25 @@ enclosing commit/undo measure, discounting a measured wait, or moving the wait e
 gate pass. The investigation explains the existing breaches; optimizing the renderer still requires
 combined latency and pixel/depth/memory evidence.
 
+### 2026-09 amendment: the confirmed breaches were bisected to the browser build
+
+The [issue 1751 bisect](../investigations/webkit-commit-gate-1751-bisect.md) closed the question the
+amendment above left open. Measured on the gate's own macOS runner, the product that first failed
+(PR 1733) passes the unchanged gate on Playwright WebKit 26.5, and the product from before it fails
+the gate on WebKit 26.6 in the same two shapes every post-merge failure has shown. The change
+between the last green gate and the first red one that moved the P95 was the `@playwright/test`
+1.62.1 → 1.63.0 bump, which switched the runner's cached WebKit from r2336 to r2359. PR 1733's own
+regression was on the undo path (its motion cue replayed the undone ops through the crayon pass
+buffer) and is fixed; it never touched the commit measure.
+
+Two consequences for reading this ADR. A confirmed breach that appears on two fresh runners is
+evidence of a repeated synchronous wait, and this record now shows that the wait can be introduced
+by the measuring browser rather than by the product; a dependency bump that changes the WebKit build
+is a change to the instrument and belongs in any future bisect window as its own arm. And "confirmed
+wait of unknown origin" is not the end of the 2026-09 story: the origin was found, and what remains
+is the gate-semantics decision (which WebKit build the gate should pin, or whether the physical iPad
+should hold the contract) that the bisect document defers to its own stack.
+
 `webkit-commit-gate-fast` runs two scenarios against a 25 ms P95 budget on every push to `main`, and
 files a GitHub issue when it fails. Neither scenario was gating anything, for opposite reasons.
 
