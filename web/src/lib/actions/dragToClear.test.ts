@@ -41,12 +41,8 @@ function transitionEndEvent(propertyName: string) {
 const acceptRadius = () => Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
 const clearProgress = () => document.documentElement.style.getPropertyValue('--clear-progress');
 
-function setup() {
-  const node = document.createElement('button');
-  node.setPointerCapture = vi.fn();
-  node.releasePointerCapture = vi.fn();
-  document.body.appendChild(node);
-  const options: DragToClearOptions = {
+function createOptions(): DragToClearOptions {
+  return {
     containerEl: document.createElement('div'),
     acceptZoneEl: document.createElement('div'),
     clearPreviewEl: document.createElement('div'),
@@ -57,8 +53,17 @@ function setup() {
     onDragStart: vi.fn(),
     onDragEnd: vi.fn(),
   };
-  const action = dragToClear(node, () => options);
-  return { node, options, action };
+}
+
+function setup() {
+  const node = document.createElement('button');
+  node.setPointerCapture = vi.fn();
+  node.releasePointerCapture = vi.fn();
+  document.body.appendChild(node);
+  const options = createOptions();
+  const getOptions = vi.fn(() => options);
+  const action = dragToClear(node, getOptions);
+  return { node, options, action, getOptions };
 }
 
 describe('dragToClear pointer identity', () => {
@@ -67,6 +72,7 @@ describe('dragToClear pointer identity', () => {
     cleanup?.();
     cleanup = null;
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     document.documentElement.style.removeProperty('--clear-progress');
   });
@@ -100,6 +106,110 @@ describe('dragToClear pointer identity', () => {
     expect(updateClearSound).toHaveBeenNthCalledWith(3, 1.25);
     expect(commitClearSound).toHaveBeenCalledOnce();
     expect(cancelClearSound).not.toHaveBeenCalled();
+  });
+
+  it('reads options once across an accepted drag with many moves', () => {
+    const { node, action, getOptions } = setup();
+    cleanup = () => action.destroy();
+    const radius = acceptRadius();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    for (const fraction of [0.1, 0.3, 0.6, 0.9, 1.1]) {
+      node.dispatchEvent(pointerEvent('pointermove', 1, 100 + radius * fraction, 100));
+    }
+    node.dispatchEvent(pointerEvent('pointerup', 1, 100 + radius * 1.1, 100));
+
+    expect(getOptions).toHaveBeenCalledOnce();
+  });
+
+  it('keeps progress, feedback, and release on the pointer-down radius after resize', () => {
+    const width = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1_000);
+    const height = vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1_000);
+    const { node, options, action } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    expect(options.acceptZoneEl.style.width).toBe('800px');
+
+    width.mockReturnValue(250);
+    height.mockReturnValue(250);
+    node.dispatchEvent(pointerEvent('pointermove', 1, 300, 100));
+
+    expect(clearProgress()).toBe('0.5');
+    expect(updateClearSound).toHaveBeenLastCalledWith(0.5);
+    expect(node.classList.contains('delete-ready')).toBe(false);
+    expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(false);
+    expect(options.clearPreviewEl.classList.contains('committed')).toBe(false);
+    expect(impactThreshold).not.toHaveBeenCalled();
+
+    node.dispatchEvent(pointerEvent('pointermove', 1, 500, 100));
+
+    expect(clearProgress()).toBe('1');
+    expect(updateClearSound).toHaveBeenLastCalledWith(1);
+    expect(node.classList.contains('delete-ready')).toBe(true);
+    expect(options.acceptZoneEl.classList.contains('threshold-reached')).toBe(true);
+    expect(options.clearPreviewEl.classList.contains('committed')).toBe(true);
+    expect(impactThreshold).toHaveBeenCalledOnce();
+
+    node.dispatchEvent(pointerEvent('pointermove', 1, 400, 100));
+    node.dispatchEvent(pointerEvent('pointerup', 1, 400, 100));
+
+    expect(updateClearSound).toHaveBeenLastCalledWith(0.75);
+    expect(options.onClear).not.toHaveBeenCalled();
+    expect(cancelClearSound).toHaveBeenCalledOnce();
+  });
+
+  it('captures fresh options and radius after pointer cancellation', () => {
+    const width = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1_000);
+    const height = vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1_000);
+    const { node, options, action, getOptions } = setup();
+    cleanup = () => action.destroy();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointercancel', 1, 100, 100));
+
+    const freshOptions = createOptions();
+    getOptions.mockReturnValue(freshOptions);
+    width.mockReturnValue(500);
+    height.mockReturnValue(500);
+    node.dispatchEvent(pointerEvent('pointerdown', 2, 100, 100));
+
+    expect(getOptions).toHaveBeenCalledTimes(2);
+    expect(freshOptions.acceptZoneEl.style.width).toBe('400px');
+    expect(freshOptions.containerEl.classList.contains('dragging-active')).toBe(true);
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    node.dispatchEvent(pointerEvent('pointermove', 2, 300, 100));
+    expect(node.classList.contains('delete-ready')).toBe(true);
+  });
+
+  it('uses captured options during destroy and lets a new action capture fresh inputs', () => {
+    const width = vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1_000);
+    const height = vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1_000);
+    const node = document.createElement('button');
+    node.setPointerCapture = vi.fn();
+    node.releasePointerCapture = vi.fn();
+    document.body.appendChild(node);
+    const firstOptions = createOptions();
+    const secondOptions = createOptions();
+    const firstGetter = vi.fn(() => firstOptions);
+    const firstAction = dragToClear(node, firstGetter);
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    expect(firstOptions.acceptZoneEl.style.width).toBe('800px');
+    width.mockReturnValue(500);
+    height.mockReturnValue(500);
+    firstAction.destroy();
+    expect(firstGetter).toHaveBeenCalledOnce();
+
+    const secondGetter = vi.fn(() => secondOptions);
+    const secondAction = dragToClear(node, secondGetter);
+    cleanup = () => secondAction.destroy();
+    node.dispatchEvent(pointerEvent('pointerdown', 2, 100, 100));
+
+    expect(secondGetter).toHaveBeenCalledOnce();
+    expect(secondOptions.acceptZoneEl.style.width).toBe('400px');
+    expect(secondOptions.containerEl.classList.contains('dragging-active')).toBe(true);
+    expect(firstOptions.containerEl.classList.contains('dragging-active')).toBe(false);
   });
 
   it('plays the commit exit animation through its class stages and back to rest', () => {
