@@ -175,7 +175,7 @@ Local Linux A/B, WebKit 26.6, two runs per arm, serial on explicit ports:
 | main d213010 run 2 |         1,116 / 55.8 / 144 ms |                     23 / 2.1 / 4 ms |                          2,950 / 3,020 ms |
 | this change run 1  |             151 / 7.5 / 11 ms |                     22 / 2.0 / 4 ms |                          3,075 / 3,202 ms |
 | this change run 2  |             180 / 9.0 / 23 ms |                     22 / 2.0 / 3 ms |                          3,288 / 3,117 ms |
-| with subtraction   |              122 / 6.1 / 8 ms |                     21 / 1.9 / 4 ms |                          3,115 / 2,930 ms |
+| with subtraction   |              122 / 6.1 / 8 ms |                     21 / 1.9 / 4 ms |                          3,115 / 2,676 ms |
 
 Crayon undo drops by an order of magnitude, multi-finger undo is at parity, and the commit path is
 unchanged, as it must be, because nothing on it changed. The subtraction pass added after review
