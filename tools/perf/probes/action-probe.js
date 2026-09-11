@@ -379,12 +379,13 @@
     const finishedAt = performance.now();
     if (action.actionAt === null) performance.mark(`${action.traceName}:start`);
     performance.measure(action.traceName, `${action.traceName}:start`);
-    // The boundary row (ADR-0163): the frame stamped before the action, which
-    // under rAF-aligned input runs after it and renders it, yet its stamp keeps
-    // it out of every per-action field below. Retained with both clocks for a
-    // later onset re-selection and read by no scoring rule. It is null rather
-    // than omitted when no frame preceded the action, so the key's presence is
-    // what marks a capture whose probe records it.
+    // The onset rows (ADR-0163), which postActionFrames starts after: the frame
+    // stamped before the action, which under rAF-aligned input runs after it
+    // and renders it, and the first frame stamped at or after it, which
+    // firstFrameMs reads. Both are retained whole, with both clocks, for a
+    // later onset re-selection, and no scoring rule reads them. Each is null
+    // rather than omitted when absent, so key presence is what marks a capture
+    // whose probe records them.
     const boundaryFrame = lastFrameStampedBefore(actionAt);
     const actionFrames = frames.filter(([at, gap]) => at >= actionAt && at - gap <= finishedAt);
     const responseEndedAt = Number.isFinite(readyAt) ? readyAt : finishedAt;
@@ -417,7 +418,8 @@
       postActionFrames: actionFrames
         .filter(([at, gap]) => at - gap >= actionAt)
         .map((row) => frameEntry(row, actionAt)),
-      lastPreActionFrame: boundaryFrame && frameEntry(boundaryFrame, actionAt),
+      lastPreActionFrame: boundaryFrame ? frameEntry(boundaryFrame, actionAt) : null,
+      firstActionFrame: firstFrame ? frameEntry(firstFrame, actionAt) : null,
       topFrameGaps,
       frameStampEpoch: FRAME_STAMP_EPOCH,
       activities: action.activities.map(({ at, ...activity }) => ({

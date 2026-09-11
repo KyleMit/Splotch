@@ -4,17 +4,19 @@
 [ADR-0162](0162-measured-p95-allowance-for-the-android-web-theme-flip.md) and
 [ADR-0156](0156-physical-rows-gate-releases-advisory-rows-never-count.md) **Date:** 2026-09
 
-> **Amendment (2026-09, issue #1713): the probe retains the boundary row.** Every sample `finish()`
-> returns carries `lastPreActionFrame` beside `postActionFrames`: the last frame whose scheduled
-> stamp precedes the action, in the same shape as a `postActionFrames` entry, with both clocks. It
-> is `null` — present, never omitted — when no frame preceded the action. No scoring rule reads it:
-> `scoredActionFrames` still iterates `postActionFrames` alone, every per-action field is computed
-> from the frames it was before, and the legacy ledger in
-> `tools/perf/tests/action-frame-stamps.test.mjs` passes unchanged. It is not a new frame-stamp
-> epoch, because an epoch names what the scored table carries and which rule scores it; the key's
-> presence is what marks a capture that can carry the row. Captures made before this amendment,
-> dual-channel ones included, have no boundary row and nothing recovers it from them. Section 5, the
-> onset consequence, and the first and third notes are written against the retained row.
+> **Amendment (2026-09, issue #1713): the probe retains the onset rows.** Every sample `finish()`
+> returns carries two rows beside `postActionFrames`, each in the same shape as a `postActionFrames`
+> entry with both clocks: `lastPreActionFrame`, the last frame whose scheduled stamp precedes the
+> action, and `firstActionFrame`, the first frame stamped at or after it — the frame `firstFrameMs`
+> reads. Each is `null` — present, never omitted — when no such frame exists. No scoring rule reads
+> either: `scoredActionFrames` still iterates `postActionFrames` alone, every per-action field is
+> computed from the frames it was before, and the legacy ledger in
+> `tools/perf/tests/action-frame-stamps.test.mjs` passes unchanged. They are not a new frame-stamp
+> epoch, because an epoch names what the scored table carries and which rule scores it; the keys'
+> presence is what marks a capture that can carry the rows. Captures made before this amendment,
+> dual-channel ones included, have neither row, and nothing recovers the boundary row from them.
+> Section 5, the onset consequence, and the first and third notes are written against the retained
+> rows.
 
 ## Context
 
@@ -150,14 +152,18 @@ of the captures already committed, not from a recapture campaign.
 
 A capture made after the 2026-09 amendment carries the onset too, so a rule that re-selects frames
 there is the same kind of computation. `lastPreActionFrame` holds the frame stamped before the
-action with both clocks — under rAF-aligned input, the frame that ran after the action and rendered
-it (the straddling frame in the Notes below). The first-frame row between it and
-`postActionFrames[0]` is recovered from that entry: its stamp is the entry's `startFromActionMs`,
-and its callback time is the entry's `ranFromActionMs − actualGapMs`; its `visualEffectsActive` flag
-is not carried. A dual-channel capture made before the amendment lacks the boundary row, so over it
-an onset rule can re-read only the frames `finish()` retained. Until a cutover, the actual channel
-is attribution: read it from a red cell's `frameStamps` before spending a trace, and never from a
-green as proof the frame fit.
+action — under rAF-aligned input, the frame that ran after the action and rendered it (the
+straddling frame in the Notes below) — and `firstActionFrame` the frame `firstFrameMs` reads. Both
+are whole rows, `visualEffectsActive` included, with both clocks, and with `postActionFrames` they
+form one contiguous run; the one overlap is a capture with no preceding frame, where
+`firstActionFrame` can be `postActionFrames[0]` itself. On a coarsened clock the onset's order is
+uncertain within one clock quantum (the first note below), so such a rule must read both rows and
+treat that band as unordered. A dual-channel capture made before the amendment lacks both rows: over
+it an onset rule can recover the first-frame row's clocks from `postActionFrames[0]` (its stamp is
+that entry's `startFromActionMs`, its callback time `ranFromActionMs − actualGapMs`) but not its
+`visualEffectsActive` flag, and never the boundary row. Until a cutover, the actual channel is
+attribution: read it from a red cell's `frameStamps` before spending a trace, and never from a green
+as proof the frame fit.
 
 ### 6. What did not change
 
@@ -187,9 +193,9 @@ clock needs to live, and the scorer re-derives from it.
   before the action, run after it — stays out of every scored frame, so a late first callback never
   reaches the figure, and a dual-channel green with zero hidden overruns has said nothing about that
   frame. Captures made after the 2026-09 amendment keep the frame's row, both clocks recorded, as
-  `lastPreActionFrame`, so the late callback is on record for a reader or a later rule. Earlier
-  captures filtered it out by its scheduled stamp before either actual field existed, and it is in
-  no artifact of theirs.
+  `lastPreActionFrame` beside the first-frame row's `firstActionFrame`, so the late callback is on
+  record for a reader or a later rule. Earlier captures filtered it out by its scheduled stamp
+  before either actual field existed, and it is in no artifact of theirs.
 * − Changing the probe changes the campaign instrument fingerprint, so a campaign resumed across
   this record refuses to mix banked cells with new ones until `--accept-instrument-change` says so
   deliberately. That is the guard working, not a regression.
@@ -207,11 +213,16 @@ Recorded here so the next reader does not rediscover them; none is changed by th
   rAF-aligned input the click handler runs inside the `BeginMainFrame` task whose rAF stamp precedes
   the click's `performance.now()`, so the very frame that renders the click's result can carry a
   stamp before `actionAt` and be excluded; `firstFrameMs` then reads the next vsync. The 2026-09
-  amendment keeps that frame's row as `lastPreActionFrame` with both clocks, so a later rule can
-  re-select it from a capture; its `ranFromActionMs` is positive exactly when the frame ran after
-  the action. No field is derived from it and no scoring rule reads it. Changing the selection
-  itself would re-baseline the first-frame gate, a scoring change that waits on section 5's
-  condition, not a probe change.
+  amendment keeps that frame's row as `lastPreActionFrame`, and the row `firstFrameMs` reads as
+  `firstActionFrame`, with both clocks, so a later rule can re-select them from a capture. A
+  positive `ranFromActionMs` on the boundary row shows it ran after the action, but the converse
+  does not hold on a coarsened clock: `actionAt` and the callback time are both `performance.now()`
+  readings, so a callback that ran after the action can read zero, and a whole-millisecond rAF stamp
+  equal to `actionAt` files the onset frame as `firstActionFrame` rather than `lastPreActionFrame`.
+  Zero, or anything within the clock's quantum (the resolution note below), is order-ambiguous. No
+  field is derived from either row and no scoring rule reads them. Changing the selection itself
+  would re-baseline the first-frame gate, a scoring change that waits on section 5's condition, not
+  a probe change.
 * **Activities and frames are on different clocks.** `activities`, `canvasMutations`, and
   `armedEvents` stamp `performance.now()` (actual); frames stamp the rAF timestamp (scheduled).
   `scoredActionFrames` compares the two when it decides which frame an activity belongs to, so an
@@ -219,9 +230,9 @@ Recorded here so the next reader does not rediscover them; none is changed by th
   window one frame later than it should. The effect only widens scoring, never narrows it.
 * **The first frame is a scheduled figure too.** `firstFrameMs` subtracts `actionAt` (actual) from
   the first frame's rAF stamp (scheduled), so the first-frame gate shares the scored channel's
-  optimism. The frame it reads is the row between `lastPreActionFrame` and `postActionFrames[0]`,
-  whose actual counterpart is
-  `postActionFrames[0].ranFromActionMs − postActionFrames[0].actualGapMs` — not
+  optimism. The frame it reads is retained as `firstActionFrame`, so its actual counterpart is
+  `firstActionFrame.ranFromActionMs`; a capture older than the 2026-09 amendment recovers it only as
+  `postActionFrames[0].ranFromActionMs − postActionFrames[0].actualGapMs`. It is not
   `postActionFrames[0].ranFromActionMs`, which is the next frame's. No figure is derived from it
   here.
 * **Resolution differs by engine.** Chrome's rAF stamp and `performance.now()` both resolve to 0.1

@@ -193,7 +193,15 @@ function captureRafAlignedClick() {
   return window.__actionProbe.finish();
 }
 
-describe('action probe boundary row (ADR-0163, issue 1713)', () => {
+function armToggle() {
+  const button = document.createElement('button');
+  button.id = 'night-mode';
+  document.body.append(button);
+  window.__actionProbe.begin('toggle', '#night-mode', ['click']);
+  return () => button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+describe('action probe onset rows (ADR-0163, issue 1713)', () => {
   afterEach(() => vi.restoreAllMocks());
 
   const closeTo = (values) => values.map((ms) => expect.closeTo(ms, 5));
@@ -208,22 +216,37 @@ describe('action probe boundary row (ADR-0163, issue 1713)', () => {
       ranFromActionMs: expect.closeTo(71.8 - 70, 5),
       actualGapMs: expect.closeTo(71.8 - 33.4, 5),
     });
-    expect(Object.keys(sample.lastPreActionFrame)).toEqual(Object.keys(sample.postActionFrames[0]));
-    expect(JSON.parse(JSON.stringify(sample)).lastPreActionFrame).toEqual(
-      sample.lastPreActionFrame
-    );
-
-    // The first-frame row between the boundary row and the first post-action
-    // frame is recoverable on both clocks from that entry, as ADR-0163 says.
-    const [next] = sample.postActionFrames;
-    expect(next.startFromActionMs).toBeCloseTo(sample.firstFrameMs, 5);
-    expect(next.ranFromActionMs - next.actualGapMs).toBeCloseTo(83.5 - 70, 5);
+    expect(sample.firstActionFrame).toEqual({
+      gapMs: expect.closeTo(16.7, 5),
+      startFromActionMs: expect.closeTo(66.8 - 70, 5),
+      endFromActionMs: expect.closeTo(83.5 - 70, 5),
+      visualEffectsActive: false,
+      ranFromActionMs: expect.closeTo(83.5 - 70, 5),
+      actualGapMs: expect.closeTo(83.5 - 71.8, 5),
+    });
+    expect(sample.firstFrameMs).toBe(sample.firstActionFrame.endFromActionMs);
+    for (const row of [sample.lastPreActionFrame, sample.firstActionFrame]) {
+      expect(Object.keys(row)).toEqual(Object.keys(sample.postActionFrames[0]));
+    }
+    const roundTripped = JSON.parse(JSON.stringify(sample));
+    expect(roundTripped.lastPreActionFrame).toEqual(sample.lastPreActionFrame);
+    expect(roundTripped.firstActionFrame).toEqual(sample.firstActionFrame);
   });
 
-  it('keeps the boundary row out of every per-action field and every scored figure', () => {
+  it('joins the onset rows to postActionFrames as one contiguous run on both clocks', () => {
+    const sample = captureRafAlignedClick();
+    const run = [sample.lastPreActionFrame, sample.firstActionFrame, ...sample.postActionFrames];
+    for (let index = 1; index < run.length; index++) {
+      const [previous, row] = [run[index - 1], run[index]];
+      expect(row.startFromActionMs).toBeCloseTo(previous.endFromActionMs, 5);
+      expect(row.ranFromActionMs - row.actualGapMs).toBeCloseTo(previous.ranFromActionMs, 5);
+    }
+  });
+
+  it('leaves every per-action field and every scored figure as it was without the onset rows', () => {
     const sample = captureRafAlignedClick();
 
-    // firstFrameMs reads the next vsync, exactly as it did before the row was kept.
+    // firstFrameMs reads the next vsync, exactly as it did before the rows were kept.
     expect(sample.firstFrameMs).toBeCloseTo(83.5 - 70, 5);
     expect(sample.frameGapsMs).toEqual(closeTo([16.7, 16.7, 16.7]));
     expect(sample.settleFrameGapsMs).toEqual([]);
@@ -239,31 +262,31 @@ describe('action probe boundary row (ADR-0163, issue 1713)', () => {
     expect(summary.frames.max).toBeCloseTo(16.7, 5);
     expect(summary.frameStamps.frames).toBe(summary.frameSamples.scored);
 
-    const { lastPreActionFrame: boundary, ...withoutBoundary } = sample;
-    const absurdBoundary = {
-      ...boundary,
+    const { lastPreActionFrame: boundary, firstActionFrame: first, ...withoutOnsetRows } = sample;
+    const absurd = (row) => ({
+      ...row,
       gapMs: 1000,
       startFromActionMs: 0,
       endFromActionMs: 1000,
+      visualEffectsActive: true,
       ranFromActionMs: 9999,
       actualGapMs: 1000,
-    };
-    expect(summarizeActionGroup([withoutBoundary], 'toggle')).toEqual(summary);
+    });
+    expect(summarizeActionGroup([withoutOnsetRows], 'toggle')).toEqual(summary);
     expect(
-      summarizeActionGroup([{ ...sample, lastPreActionFrame: absurdBoundary }], 'toggle')
+      summarizeActionGroup(
+        [{ ...sample, lastPreActionFrame: absurd(boundary), firstActionFrame: absurd(first) }],
+        'toggle'
+      )
     ).toEqual(summary);
   });
 
   it('records the boundary row as null, not omitted, when no frame preceded the action', () => {
     const clock = installVsyncClock();
     Function(ACTION_PROBE)();
-
-    const button = document.createElement('button');
-    button.id = 'night-mode';
-    document.body.append(button);
-    window.__actionProbe.begin('toggle', '#night-mode', ['click']);
+    const click = armToggle();
     clock.at(5);
-    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    click();
     clock.tick();
     clock.tick();
     clock.tick();
@@ -273,6 +296,47 @@ describe('action probe boundary row (ADR-0163, issue 1713)', () => {
     expect(sample.firstFrameMs).toBeCloseTo(33.4 - 5, 5);
     expect(sample).toHaveProperty('lastPreActionFrame', null);
     expect(JSON.parse(JSON.stringify(sample))).toHaveProperty('lastPreActionFrame', null);
+    // The one overlap ADR-0163 names: with no row before it, the first frame's
+    // scheduled start can fall after the action, which makes it a post-action frame too.
+    expect(sample.firstActionFrame).toEqual(sample.postActionFrames[0]);
+  });
+
+  it('records the first action frame as null, not omitted, when no frame followed the action', () => {
+    const clock = installVsyncClock();
+    Function(ACTION_PROBE)();
+    clock.tick();
+    clock.tick();
+    const click = armToggle();
+    clock.at(40);
+    click();
+
+    clock.at(45);
+    const sample = window.__actionProbe.finish();
+    expect(sample.firstFrameMs).toBeNull();
+    expect(sample.postActionFrames).toEqual([]);
+    expect(sample.lastPreActionFrame.endFromActionMs).toBeCloseTo(33.4 - 40, 5);
+    expect(sample).toHaveProperty('firstActionFrame', null);
+    expect(JSON.parse(JSON.stringify(sample))).toHaveProperty('firstActionFrame', null);
+  });
+
+  // WebKit's whole-millisecond rAF stamp can equal actionAt. The strict `<`
+  // files that frame as the first action frame, and a finish before the next
+  // vsync leaves postActionFrames empty; both onset rows stay on record anyway.
+  it('keeps both onset rows when a stamp ties the action and no post-action frame exists', () => {
+    const clock = installVsyncClock({ intervalMs: 16 });
+    Function(ACTION_PROBE)();
+    clock.tick();
+    clock.tick();
+    const click = armToggle();
+    clock.at(48);
+    click();
+    clock.tick();
+
+    const sample = window.__actionProbe.finish();
+    expect(sample.firstFrameMs).toBe(0);
+    expect(sample.postActionFrames).toEqual([]);
+    expect(sample.lastPreActionFrame).toMatchObject({ endFromActionMs: -16, ranFromActionMs: -16 });
+    expect(sample.firstActionFrame).toMatchObject({ endFromActionMs: 0, ranFromActionMs: 0 });
   });
 });
 
