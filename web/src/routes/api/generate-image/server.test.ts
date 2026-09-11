@@ -45,20 +45,25 @@ import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/api
 import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
 import { POST } from './+server';
 
-function post(style?: string) {
-  const url = new URL('http://localhost/api/generate-image');
-  if (style !== undefined) url.searchParams.set('style', style);
-  const request = new Request(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'image/png' },
-    body: new Uint8Array([1]),
-  });
+function handle(request: Request) {
   return POST({
     request,
     url: new URL(request.url),
     getClientAddress: () => '198.51.100.1',
     platform: undefined,
   } as unknown as Parameters<typeof POST>[0]);
+}
+
+function post(style?: string) {
+  const url = new URL('http://localhost/api/generate-image');
+  if (style !== undefined) url.searchParams.set('style', style);
+  return handle(
+    new Request(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/png' },
+      body: new Uint8Array([1]),
+    })
+  );
 }
 
 beforeEach(() => {
@@ -79,6 +84,84 @@ beforeEach(() => {
 });
 
 describe('POST /api/generate-image', () => {
+  it('keeps the legacy multipart request contract', async () => {
+    mocks.authorize.mockResolvedValue({
+      authorized: true,
+      kind: 'managed',
+      effectiveKey: 'project-key',
+      managedToken: 'daycare-club',
+    });
+    mocks.generateImage.mockResolvedValue({
+      kind: 'image',
+      data: Buffer.from('generated').toString('base64'),
+      mimeType: 'image/png',
+    });
+    const body = new FormData();
+    body.set('token', 'daycare-club');
+    body.set('style', 'Felt');
+    body.set('image', new Blob(['drawing'], { type: 'image/png' }));
+
+    const response = await handle(
+      new Request('http://localhost/api/generate-image', { method: 'POST', body })
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.authorize).toHaveBeenCalledWith({
+      apiKey: null,
+      token: 'daycare-club',
+      installationId: null,
+      clientAddress: '198.51.100.1',
+    });
+    expect(mocks.generateImage).toHaveBeenCalledWith({
+      apiKey: 'project-key',
+      image: { base64: Buffer.from('drawing').toString('base64'), mimeType: 'image/png' },
+      prompt: expect.any(String),
+      deadlineMs: 1_000,
+    });
+  });
+
+  it('rejects an oversized legacy multipart envelope before authorization', async () => {
+    const boundary = 'splotch-test-boundary';
+    const body = [
+      `--${boundary}\r\nContent-Disposition: form-data; name="token"\r\n\r\ndaycare-club\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="drawing.png"\r\nContent-Type: image/png\r\n\r\ndrawing\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="unused"\r\n\r\n`,
+      'x'.repeat(16 * 1024 * 1024),
+      `\r\n--${boundary}--\r\n`,
+    ].join('');
+
+    const response = await handle(
+      new Request('http://localhost/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        body,
+      })
+    );
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ ok: false, error: 'Image is too large' });
+    expect(mocks.authorize).not.toHaveBeenCalled();
+    expect(mocks.generateImage).not.toHaveBeenCalled();
+  });
+
+  it('rejects a malformed legacy multipart envelope before authorization', async () => {
+    const response = await handle(
+      new Request('http://localhost/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        body: 'not a multipart envelope',
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Expected multipart form data',
+    });
+    expect(mocks.authorize).not.toHaveBeenCalled();
+    expect(mocks.generateImage).not.toHaveBeenCalled();
+  });
+
   it('routes the daily ceiling to setup and records its own failure kind', async () => {
     const response = await post();
 

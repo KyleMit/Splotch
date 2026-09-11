@@ -20,12 +20,43 @@ function expectParsedBody(
   expect(result.ok, 'the body did not parse').toBe(true);
 }
 
-function jsonRequest(body: string) {
+function jsonRequest(body: string, headers: HeadersInit = {}) {
   return new Request('http://localhost/api/test', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body,
   });
+}
+
+function chunkedRequest(chunks: string[], contentLength?: string) {
+  const encoded = chunks.map((chunk) => new TextEncoder().encode(chunk));
+  let pulls = 0;
+  let cancellations = 0;
+  const body = new ReadableStream<Uint8Array>(
+    {
+      pull(controller) {
+        const chunk = encoded[pulls];
+        pulls += 1;
+        if (chunk) controller.enqueue(chunk);
+        if (pulls === encoded.length) controller.close();
+      },
+      cancel() {
+        cancellations += 1;
+      },
+    },
+    { highWaterMark: 0 }
+  );
+  const request = new Request('http://localhost/api/test', {
+    method: 'POST',
+    headers: contentLength === undefined ? undefined : { 'Content-Length': contentLength },
+    body,
+    duplex: 'half',
+  } as RequestInit);
+  return {
+    request,
+    pulls: () => pulls,
+    cancellations: () => cancellations,
+  };
 }
 
 describe('contentTypeOf', () => {
@@ -44,14 +75,14 @@ describe('contentTypeOf', () => {
 
 describe('readJsonBody', () => {
   it('returns the parsed object for a valid JSON body', async () => {
-    expect(await readJsonBody(jsonRequest('{"code":"sunny-meadow"}'))).toEqual({
+    expect(await readJsonBody(jsonRequest('{"code":"sunny-meadow"}'), 64)).toEqual({
       ok: true,
       body: { code: 'sunny-meadow' },
     });
   });
 
   it('returns a valid array body without treating it as an object', async () => {
-    const result = await readJsonBody(jsonRequest('["sunny-meadow"]'));
+    const result = await readJsonBody(jsonRequest('["sunny-meadow"]'), 64);
 
     expectParsedBody(result);
     expect(result.body).toEqual(['sunny-meadow']);
@@ -59,7 +90,7 @@ describe('readJsonBody', () => {
   });
 
   it('returns a canonical 400 response for a malformed body', async () => {
-    const result = await readJsonBody(jsonRequest('not json'));
+    const result = await readJsonBody(jsonRequest('not json'), 64);
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -67,6 +98,85 @@ describe('readJsonBody', () => {
     expect(await result.response.json()).toEqual({
       ok: false,
       error: 'Expected a JSON body',
+    });
+  });
+
+  it('accepts a multibyte body at its exact byte limit', async () => {
+    const raw = '{"label":"é"}';
+
+    expect(await readJsonBody(jsonRequest(raw), Buffer.byteLength(raw))).toEqual({
+      ok: true,
+      body: { label: 'é' },
+    });
+  });
+
+  it('accepts a leading UTF-8 byte-order mark like Request.json', async () => {
+    const raw = '\uFEFF{"code":"sunny-meadow"}';
+
+    expect(await readJsonBody(jsonRequest(raw), Buffer.byteLength(raw))).toEqual({
+      ok: true,
+      body: { code: 'sunny-meadow' },
+    });
+  });
+
+  it('maps a failed body stream to the malformed-body response', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"code"'));
+      },
+      pull(controller) {
+        controller.error(new Error('client aborted'));
+      },
+    });
+    const request = new Request('http://localhost/api/test', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit);
+
+    const result = await readJsonBody(request, 64);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(400);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'Expected a JSON body',
+    });
+  });
+
+  it('preserves a platform body-limit failure as a 413', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(Object.assign(new Error('platform cap'), { status: 413 }));
+      },
+    });
+    const request = new Request('http://localhost/api/test', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit);
+
+    const result = await readJsonBody(request, 64);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(413);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'Request body is too large',
+    });
+  });
+
+  it('returns a canonical 413 response for an oversized body', async () => {
+    const result = await readJsonBody(jsonRequest('{"code":"sunny-meadow"}'), 8);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(413);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'Request body is too large',
     });
   });
 });
@@ -140,15 +250,12 @@ describe('readBodyWithinLimit', () => {
   it.each([
     ['absent', undefined],
     ['lower than the actual size', '2'],
-  ])('rejects actual bytes over the cap when Content-Length is %s', async (_, contentLength) => {
-    const headers = contentLength === undefined ? undefined : { 'Content-Length': contentLength };
-    const request = new Request('http://localhost/api/test', {
-      method: 'POST',
-      headers,
-      body: 'oversized',
-    });
+  ])('stops streamed bytes at the cap when Content-Length is %s', async (_, length) => {
+    const stream = chunkedRequest(['1234', '56789', 'unread'], length);
 
-    expect(await readBodyWithinLimit(request, 8)).toEqual({ ok: false });
+    expect(await readBodyWithinLimit(stream.request, 8)).toEqual({ ok: false });
+    expect(stream.pulls()).toBe(2);
+    expect(stream.cancellations()).toBe(0);
   });
 
   it('counts multibyte UTF-8 payloads by bytes instead of string length', async () => {
@@ -160,6 +267,16 @@ describe('readBodyWithinLimit', () => {
 
     expect(body.length).toBe(2);
     expect(await readBodyWithinLimit(request, 3)).toEqual({ ok: false });
+  });
+
+  it('accepts a streamed body at the exact byte limit', async () => {
+    const stream = chunkedRequest(['12', '34']);
+
+    expect(await readBodyWithinLimit(stream.request, 4)).toEqual({
+      ok: true,
+      bytes: Buffer.from('1234'),
+    });
+    expect(stream.cancellations()).toBe(0);
   });
 });
 

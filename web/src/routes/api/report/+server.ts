@@ -9,6 +9,9 @@ import type { RequestHandler } from './$types';
 
 export type ReportResponse = { ok: true } | { ok: false; error: string };
 
+// Covers the capped message plus an optional device snapshot and JSON framing.
+const MAX_REPORT_BODY_BYTES = 64 * 1024;
+
 /**
  * Receive an in-app "report a bug / suggest a feature" submission and open a
  * labelled GitHub issue for it. Body: { kind, message, device?, hp? }. Returns
@@ -32,7 +35,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   );
   if (limited) return throttled(retryAfter);
 
-  const parsed = await readJsonBody(request);
+  const parsed = await readJsonBody(request, MAX_REPORT_BODY_BYTES);
   if (!parsed.ok) return parsed.response;
   const body = asRecord(parsed.body);
   const result = await submitReport({

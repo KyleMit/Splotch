@@ -29,7 +29,7 @@ The **client** contract for `POST /api/generate-image` is:
 
 * **Body:** the raw image bytes. `Content-Type: image/png | image/jpeg | image/webp` carries the
   type (an absent type defaults to PNG); the server validates it against the same allowlist and
-  reads the bytes with a single `request.arrayBuffer()`.
+  reads the bytes through the shared size-capped stream reader.
 * **Credentials — in headers, never the query string:** `X-Access-Token: <managed token>` **or**
   `X-Api-Key: <BYO Gemini key>` (mutually exclusive; a key takes the BYOK path). Request headers are
   not logged by default, not kept in history, and not sent in `Referer`.
@@ -48,10 +48,11 @@ form fields), everything else is read as a raw body. The multipart branch is a l
 delete once the oldest supported client sends the raw body.
 
 Supporting changes: the CORS allow-list (`hooks.server.ts`) adds `X-Access-Token, X-Api-Key` so the
-native apps' cross-origin preflight passes. The raw path checks `Content-Length` up front (cheap
-reject) and re-checks the actual byte length after the read, since `Content-Length` can be absent or
-wrong. The `15 MiB` `MAX_IMAGE_BYTES` cap and the 400/413/415 failure codes are unchanged on both
-paths.
+native apps' cross-origin preflight passes. Both paths check `Content-Length` up front as a cheap
+reject and stream only through the first chunk that crosses their cap, since `Content-Length` can be
+absent or wrong. The multipart envelope gets 64 KiB above the `15 MiB` `MAX_IMAGE_BYTES` cap for
+fields, part headers, and boundaries; it is parsed only after that whole envelope is known to be
+bounded. The 400/413/415 failure codes are unchanged on both paths.
 
 ### CSRF
 
@@ -65,7 +66,7 @@ removed, the route stops depending on `trustedOrigins`.
 
 ## Consequences
 
-* **+** For the raw path, one `arrayBuffer()` read replaces buffer-parse-copy: no multipart parse,
+* **+** For the raw path, one bounded stream read replaces buffer-parse-copy: no multipart parse,
   one fewer image copy, lower peak memory on the buffered function. New clients get this
   immediately; legacy multipart clients keep the old cost until they update.
 * **+** The two secrets never touch a URL, so they can't leak through access logs, browser history,

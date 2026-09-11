@@ -32,9 +32,17 @@ every thrown failure into the same shape at the boundary — a SvelteKit `error(
 and message, and an unexpected exception becomes a 500 with the generic error text — so neither
 throw-based control flow nor a crashed dependency can leak SvelteKit's `{ message }` body. The one
 exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
-module's `readJsonBody(request)` is the shared JSON-body parser — a malformed body is a uniform
-`400 "Expected a JSON body"`. Use these helpers in any new endpoint instead of hand-rolling the
-parse, the failure body, or the 429.
+module's `readJsonBody(request, maxBytes)` is the shared bounded JSON-body parser — every caller
+supplies a named endpoint cap, an oversized body is a uniform `413 "Request body is too large"`, and
+a malformed body is a uniform `400 "Expected a JSON body"`. The shared raw-body reader consumes
+streams only through the first chunk that crosses the cap and then releases its reader;
+`Content-Length` remains an early-rejection hint rather than the authority. It deliberately does not
+cancel because SvelteKit's Node adapter maps cancellation to socket destruction before the 413 can
+be written. Use these helpers in any new endpoint instead of hand-rolling the parse, the failure
+body, or the 429.
+
+The small credential and admin-mutation JSON endpoints cap their bodies at 8 KiB. `/api/report`
+allows 64 KiB for its 4,000-character message plus the optional device snapshot.
 
 An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
 managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`
@@ -82,6 +90,10 @@ already-installed client for missing credential headers. The handler branches on
 multipart branch is a labelled shim to remove once the oldest supported client sends the raw body.
 This is also why the CSRF `trustedOrigins` allow-list (ADR-0007) is still required — the legacy
 multipart POST from native is a cross-origin form submission that the guard would otherwise reject.
+The complete legacy multipart envelope is capped at the 15 MiB image limit plus 64 KiB for fields,
+part headers, and boundaries before it is parsed, so unused fields cannot create an unbounded read.
+A malformed legacy envelope is rejected with `400 "Expected multipart form data"` before
+authorization.
 
 Managed tokens are rate-limited per token (15/min); BYOK requests are rate-limited per IP with a
 deliberately generous limit (30/min), because the branch is otherwise unauthenticated and its

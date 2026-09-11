@@ -7,9 +7,26 @@ export function contentTypeOf(request: Request): string {
 
 export type JsonBodyResult = { ok: true; body: unknown } | { ok: false; response: Response };
 
-export async function readJsonBody(request: Request): Promise<JsonBodyResult> {
+export async function readJsonBody(request: Request, maxBytes: number): Promise<JsonBodyResult> {
+  let body: Awaited<ReturnType<typeof readBodyWithinLimit>>;
   try {
-    return { ok: true, body: await request.json() };
+    body = await readBodyWithinLimit(request, maxBytes);
+  } catch (cause) {
+    const tooLarge = asRecord(cause)?.status === 413;
+    return {
+      ok: false,
+      response: fail(
+        tooLarge ? 413 : 400,
+        tooLarge ? 'Request body is too large' : 'Expected a JSON body'
+      ),
+    };
+  }
+  if (!body.ok) {
+    return { ok: false, response: fail(413, 'Request body is too large') };
+  }
+
+  try {
+    return { ok: true, body: JSON.parse(new TextDecoder().decode(body.bytes)) };
   } catch {
     return { ok: false, response: fail(400, 'Expected a JSON body') };
   }
@@ -24,10 +41,31 @@ export async function readBodyWithinLimit(
     return { ok: false };
   }
 
-  // Content-Length is only an early-rejection hint: raw byte length remains
-  // authoritative when the header is absent or dishonest, including for multibyte text.
-  const bytes = Buffer.from(await request.arrayBuffer());
-  return bytes.byteLength > maxBytes ? { ok: false } : { ok: true, bytes };
+  const stream = request.body;
+  if (!stream) return { ok: true, bytes: Buffer.alloc(0) };
+
+  const reader = stream.getReader();
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        // SvelteKit's Node adapter maps cancellation to socket destruction, which prevents the
+        // caller's 413 from reaching the client. Releasing the lock stops pulls without retaining
+        // the unread bytes; the API smoke test guards the chunked-request response.
+        return { ok: false };
+      }
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return { ok: true, bytes: Buffer.concat(chunks, totalBytes) };
 }
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
