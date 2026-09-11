@@ -1,5 +1,5 @@
-import { paintStrokeFootprint, strokeMotionBounds } from './inkMotionBounds';
-import type { StrokeGroupCommand } from './strokeOps';
+import { paintStrokeFootprint, strokeGhostReadsTiles, strokeMotionBounds } from './inkMotionBounds';
+import { renderOp, type StrokeGroupCommand } from './strokeOps';
 import { viewMatrix, type EngineViewState } from './paperView';
 
 // `paint` lays the visible live tiles onto a target under its current transform;
@@ -31,11 +31,37 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     return wrapper;
   }
 
-  // The ghost is the undone ink as it stands on the live tiles, kept only
-  // inside a mask of the command's footprint. Replaying the command's ops instead
-  // re-rasterizes the whole stroke through the crayon pass buffer, which is
-  // the cost the 1751 bisect measured on the undo path; the tiles already hold
-  // those pixels, and a bounded number of blits reads them.
+  // Copies the visible live tiles into the overlay and keeps only the command's
+  // footprint. The mask is applied once with destination-in after every tile
+  // is composited: applying it per tile blit would clear everything outside
+  // each successive tile instead.
+  function ghostFromTiles(
+    target: CanvasRenderingContext2D,
+    command: StrokeGroupCommand,
+    bounds: { left: number; top: number; width: number; height: number }
+  ) {
+    const mask = document.createElement('canvas');
+    mask.width = bounds.width;
+    mask.height = bounds.height;
+    const maskTarget = mask.getContext('2d');
+    if (!maskTarget) return false;
+    maskTarget.translate(-bounds.left, -bounds.top);
+    paintStrokeFootprint(maskTarget, command);
+    paint(target);
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.globalCompositeOperation = 'destination-in';
+    target.drawImage(mask, 0, 0);
+    mask.width = 0;
+    mask.height = 0;
+    return true;
+  }
+
+  // A crayon or magic ghost is the undone ink as it stands on the live tiles.
+  // Replaying those ops re-rasterizes the whole stroke through the crayon pass
+  // buffer, which is the cost the 1751 bisect measured on the undo path; the
+  // tiles already hold the pixels, and a bounded number of blits reads them. A
+  // pen ghost still replays: that is exact and cheap, and a five-finger drag's
+  // footprint covers most of the paper, where the tile copy is the dearer path.
   function undo(
     canvas: HTMLCanvasElement,
     command: StrokeGroupCommand | undefined,
@@ -54,22 +80,13 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     image.width = bounds.width;
     image.height = bounds.height;
     const target = image.getContext('2d');
-    const mask = document.createElement('canvas');
-    mask.width = bounds.width;
-    mask.height = bounds.height;
-    const maskTarget = mask.getContext('2d');
-    if (!target || !maskTarget) return;
-    maskTarget.translate(-bounds.left, -bounds.top);
-    paintStrokeFootprint(maskTarget, command);
+    if (!target) return;
     target.translate(-bounds.left, -bounds.top);
-    paint(target);
-    // One destination-in of the whole footprint: applying the mask per tile
-    // blit would clear everything outside each successive tile instead.
-    target.setTransform(1, 0, 0, 1, 0, 0);
-    target.globalCompositeOperation = 'destination-in';
-    target.drawImage(mask, 0, 0);
-    mask.width = 0;
-    mask.height = 0;
+    if (strokeGhostReadsTiles(command)) {
+      if (!ghostFromTiles(target, command, bounds)) return;
+    } else {
+      for (const op of command.ops) renderOp(target, op);
+    }
     image.className = 'undo-ink-motion';
     image.style.cssText = `left:${bounds.left / scale}px;top:${bounds.top / scale}px;width:${bounds.width / scale}px;height:${bounds.height / scale}px`;
     present(canvas.parentElement, image, `matrix(${viewMatrix(view).join(',')})`);

@@ -1,5 +1,13 @@
 import { opPaddedUserBounds, paintOpShape } from './opGeometry';
-import type { StrokeGroupCommand } from './strokeOps';
+import { isCrayonInkOp, type StrokeGroupCommand } from './strokeOps';
+
+// Crayon ink is re-rasterized through the pass buffer on every replay, and
+// magic ink paints nothing until its sheet has decoded, so both read their
+// ghost from the live tiles. Plain pen ink replays in a couple of milliseconds
+// and its replay is exact, so it keeps the cheaper path.
+export function strokeGhostReadsTiles(command: StrokeGroupCommand) {
+  return command.ops.some((op) => isCrayonInkOp(op) || ('magic' in op && op.magic === true));
+}
 
 // Lay down the command's ink footprint — every dot and path op at its padded
 // width, in one opaque colour — so a `source-in` copy of the live tiles keeps
