@@ -4,6 +4,13 @@ import { viewMatrix, type EngineViewState } from './paperView';
 
 // `paint` lays the visible live tiles onto a target under its current transform;
 // both ghosts read their pixels from it rather than replaying history.
+function canvasOf(width: number, height: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
 export function createInkMotion(paint: (target: CanvasRenderingContext2D) => void) {
   let overlay: HTMLDivElement | null = null;
 
@@ -40,15 +47,13 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     command: StrokeGroupCommand,
     bounds: { left: number; top: number; width: number; height: number }
   ) {
-    const mask = document.createElement('canvas');
-    mask.width = bounds.width;
-    mask.height = bounds.height;
+    const mask = canvasOf(bounds.width, bounds.height);
     const maskTarget = mask.getContext('2d');
     if (!maskTarget) return false;
     maskTarget.translate(-bounds.left, -bounds.top);
     paintStrokeFootprint(maskTarget, command);
     paint(target);
-    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.resetTransform();
     target.globalCompositeOperation = 'destination-in';
     target.drawImage(mask, 0, 0);
     mask.width = 0;
@@ -76,9 +81,7 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
       Math.round(view.paperCssHeight * scale)
     );
     if (!bounds) return;
-    const image = document.createElement('canvas');
-    image.width = bounds.width;
-    image.height = bounds.height;
+    const image = canvasOf(bounds.width, bounds.height);
     const target = image.getContext('2d');
     if (!target) return;
     target.translate(-bounds.left, -bounds.top);
@@ -102,9 +105,7 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const rect = canvas.parentElement?.getBoundingClientRect();
     if (!rect) return;
-    const image = document.createElement('canvas');
-    image.width = viewport.width;
-    image.height = viewport.height;
+    const image = canvasOf(viewport.width, viewport.height);
     const target = image.getContext('2d');
     if (!target) return;
     target.setTransform(...viewMatrix({ ...view, tx: view.tx * scale, ty: view.ty * scale }));

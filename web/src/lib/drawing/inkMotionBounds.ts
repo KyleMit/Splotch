@@ -1,4 +1,4 @@
-import { opPaddedUserBounds, paintOpShape } from './opGeometry';
+import { AA_PAD_PX, opGeometricExtent, opPaddedUserBounds, paintOpShape } from './opGeometry';
 import { isCrayonInkOp, type StrokeGroupCommand } from './strokeOps';
 
 // Crayon ink is re-rasterized through the pass buffer on every replay, and
@@ -21,9 +21,8 @@ export function paintStrokeFootprint(
   target.lineJoin = 'round';
   for (const op of command.ops) {
     if ((op.kind !== 'dot' && op.kind !== 'path') || op.erase) continue;
-    const { pad } = opPaddedUserBounds(op);
-    const halfWidth = op.kind === 'dot' ? op.radius : op.lineWidth / 2;
-    paintOpShape(target, op, '#000', halfWidth > 0 ? pad / halfWidth : 1);
+    const { halfWidth } = opGeometricExtent(op);
+    paintOpShape(target, op, '#000', halfWidth > 0 ? 1 + AA_PAD_PX / halfWidth : 1);
   }
 }
 
