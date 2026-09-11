@@ -291,6 +291,10 @@ before calls or result writes, including a resume with no pending cells. Keep `C
 the original run. Use `REPORT_FROM` to inspect old results without changing their provenance; start
 a separate run when changing the request or measurement settings.
 
+A narrower `VARIANTS` selection only limits new calls. Saved metadata and rebuilt reports retain
+every candidate already recorded in the run; newly selected candidates are added once. A changed
+definition behind an existing variant key is rejected.
+
 The production request contract is mirrored here, not imported: `lib/model-eval.mjs` copies
 `DEFAULT_PROMPT` from `web/src/lib/ai/prompt.ts` and `SAFETY_SYSTEM_INSTRUCTION` from the provider
 adapter, and `assertProductionConfig()` re-reads both files at startup so drift fails the run. Keep

@@ -27,6 +27,7 @@ import {
   ROOT,
   VARIANTS,
   evaluationMetadata,
+  evaluationVariants,
   selectModelVariants,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
@@ -167,11 +168,14 @@ const cellKey = (row) => `${row.id}::${row.variant}::${row.sample}`;
 function loadResume(outDir) {
   const previous = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'));
   const metadata = evaluationMetadata(CONCURRENCY, previous);
+  if (!Array.isArray(previous.variants))
+    throw new Error('Cannot resume: recorded variants are missing');
   const done = previous.results.filter(
     (row) => row.kind === 'image' && row.outFile && existsSync(join(outDir, row.outFile))
   );
   return {
     metadata,
+    variants: previous.variants,
     runId: previous.runId,
     samples: previous.samples ?? SAMPLES,
     results: previous.results,
@@ -215,6 +219,7 @@ async function main() {
   const outDir = RESUME || OUT;
   const resumed = RESUME ? loadResume(outDir) : null;
   const metadata = resumed?.metadata ?? evaluationMetadata(CONCURRENCY);
+  const runVariants = evaluationVariants(variants, resumed?.variants ?? []);
   const effRunId = resumed?.runId ?? runId;
   const effSamples = resumed?.samples ?? SAMPLES;
   const results = resumed ? [...resumed.results] : [];
@@ -252,7 +257,7 @@ async function main() {
           runId: effRunId,
           samples: effSamples,
           ...metadata,
-          variants,
+          variants: runVariants,
           results,
         },
         null,
@@ -317,7 +322,7 @@ async function main() {
         results,
         samples: effSamples,
         concurrency: CONCURRENCY,
-        variants,
+        variants: runVariants,
         browser,
       });
       console.log(`\nReport: ${pathToFileURL(htmlPath).href}`);

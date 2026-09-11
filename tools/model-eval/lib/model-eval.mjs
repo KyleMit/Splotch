@@ -148,7 +148,7 @@ export const RATES = {
 };
 
 // The orchestrator's own tokens, billed separately from the image tool.
-export const ORCHESTRATOR_RATES = { inPerM: 4.0, cachedInPerM: 0.4, outPerM: 20.0 };
+const ORCHESTRATOR_RATES = { inPerM: 4.0, cachedInPerM: 0.4, outPerM: 20.0 };
 
 export function selectModelVariants(filter) {
   if (!filter) return VARIANTS;
@@ -194,6 +194,18 @@ export function evaluationMetadata(concurrency, previous) {
     requestConfig: previous.requestConfig,
     rates: previous.rates,
   };
+}
+
+export function evaluationVariants(selected, previous) {
+  const variants = new Map(previous.map((variant) => [variant.key, variant]));
+  for (const variant of selected) {
+    const saved = variants.get(variant.key);
+    if (saved && !isDeepStrictEqual(saved, variant)) {
+      throw new Error(`Cannot resume: variant ${variant.key} differs from the recorded run`);
+    }
+    variants.set(variant.key, saved ?? variant);
+  }
+  return [...variants.values()];
 }
 
 // The only colors a child can lay down with the pen, so faithful inputs must use them.

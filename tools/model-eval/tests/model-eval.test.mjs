@@ -6,6 +6,7 @@ import {
   takePerCategory,
   selectModelVariants,
   evaluationMetadata,
+  evaluationVariants,
   VARIANTS,
 } from '../lib/model-eval.mjs';
 import { sizeForAspect } from '../lib/image-providers.mjs';
@@ -89,6 +90,26 @@ describe('VARIANTS', () => {
 });
 
 describe('evaluation metadata', () => {
+  it('keeps every recorded candidate when a resume selects only one', () => {
+    const previous = structuredClone(
+      selectModelVariants('gpt-image-2-low,gpt-image-2-5-flare-low')
+    );
+    expect(evaluationVariants(selectModelVariants('gpt-image-2-low'), previous)).toEqual(previous);
+  });
+
+  it('adds a new candidate once while preserving the stored candidate order', () => {
+    const previous = selectModelVariants('gpt-image-2-low');
+    const selected = selectModelVariants('gpt-image-2-low,gpt-image-2-5-flare-low');
+    expect(evaluationVariants(selected, previous)).toEqual(selected);
+  });
+
+  it('rejects a changed definition behind a retained variant key', () => {
+    const selected = selectModelVariants('gpt-image-2-low');
+    const previous = structuredClone(selected);
+    previous[0].model = 'different-model';
+    expect(() => evaluationVariants(selected, previous)).toThrow('variant gpt-image-2-low differs');
+  });
+
   it('preserves the saved snapshot when a resume has matching configuration', () => {
     const previous = structuredClone(evaluationMetadata(3));
     expect(evaluationMetadata(3, previous)).toEqual(previous);
