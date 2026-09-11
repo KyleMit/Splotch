@@ -3,16 +3,18 @@
 A **manual** quality / cost / latency bake-off across every candidate production image variant for
 `/api/generate-image`. A variant is a **provider × model × effort tier**:
 
-| variant                  | provider | effort   | role             |
-| ------------------------ | -------- | -------- | ---------------- |
-| `gemini-2.5-flash-image` | Gemini   | —        | current prod     |
-| `gemini-3.1-flash-image` | Gemini   | —        | gemini candidate |
-| `gpt-image-2`            | OpenAI   | `low`    | openai candidate |
-| `gpt-image-2`            | OpenAI   | `medium` | openai candidate |
-| `gpt-image-2`            | OpenAI   | `high`   | openai candidate |
-| `gpt-image-1.5`          | OpenAI   | `medium` | openai candidate |
-| `gpt-image-1-mini`       | OpenAI   | `low`    | openai budget    |
-| `gpt-image-1-mini`       | OpenAI   | `medium` | openai budget    |
+| variant                  | provider | effort          | role                |
+| ------------------------ | -------- | --------------- | ------------------- |
+| `gemini-2.5-flash-image` | Gemini   | —               | historical baseline |
+| `gemini-3.1-flash-image` | Gemini   | —               | gemini candidate    |
+| `gpt-image-2`            | OpenAI   | `low`           | current prod        |
+| `gpt-image-2.5-flare`    | OpenAI   | `low`, `medium` | openai candidate    |
+| `gpt-image-2.5-sunburst` | OpenAI   | `low`, `medium` | openai candidate    |
+| `gpt-image-2`            | OpenAI   | `medium`        | openai candidate    |
+| `gpt-image-2`            | OpenAI   | `high`          | openai candidate    |
+| `gpt-image-1.5`          | OpenAI   | `medium`        | openai candidate    |
+| `gpt-image-1-mini`       | OpenAI   | `low`           | openai budget       |
+| `gpt-image-1-mini`       | OpenAI   | `medium`        | openai budget       |
 
 It sends a corpus of **canvas-plausible toddler drawings** to a **real call per variant** using the
 **exact production request config** (the same `DEFAULT_PROMPT` and `SAFETY_SYSTEM_INSTRUCTION` the
@@ -92,8 +94,8 @@ instead of paying twice.
   SVG only if it is meaningfully smaller than the PNG — otherwise commit the PNG to `samples/`
   instead.
 * The **reference report** lives in the committed `/scrapbook` tree (ADR-0059), not here, so GitHub
-  Pages serves it rendered: [`scrapbook/model-eval/report/`](../../../scrapbook/model-eval/report/)
-  → <https://kylemit.github.io/Splotch/model-eval/report/>. It's a folder — `index.html` plus an
+  Pages serves it rendered: [`scrapbook/model-eval/report/`](../../scrapbook/model-eval/report/) →
+  <https://kylemit.github.io/Splotch/model-eval/report/>. It's a folder — `index.html` plus an
   `assets/` folder of thumbnail files (referenced by relative path, not base64-inlined, so diffs
   stay readable and unchanged thumbnails dedupe in git) and its `results.json` + `summary.json`.
 
@@ -162,17 +164,17 @@ against the Netlify ceiling, format/safety, and a per-category input→output ga
 
 ### Useful env
 
-| var            | default | effect                                                                                                             |
-| -------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
-| `FILTER`       | —       | only inputs whose id contains this substring                                                                       |
-| `VARIANTS`     | —       | only variants whose key contains this substring                                                                    |
-| `PER_CATEGORY` | —       | cap inputs per category — the balanced way to bound the cost of a full-grid run                                    |
-| `SAMPLES`      | `1`     | samples per (input × variant); >1 surfaces run-to-run variance                                                     |
-| `CONCURRENCY`  | `1`     | parallel calls; keep at 1 for an isolated single-call latency floor, raise it to finish a full grid in minutes     |
-| `OUT_TAG`      | —       | suffix on the run-dir name                                                                                         |
-| `SKIP_REPORT`  | —       | skip the HTML report (results.json only)                                                                           |
-| `RESUME`       | —       | `=<run dir>`: fill only the missing/failed cells, keeping images already on disk                                   |
-| `REPORT_FROM`  | —       | `=<run dir>`: rebuild `report/index.html` from an existing `results.json`, no API calls (pair with `VERDICT_FILE`) |
+| var            | default | effect                                                                                                                          |
+| -------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `FILTER`       | —       | only inputs whose id contains this substring                                                                                    |
+| `VARIANTS`     | —       | exact key or model name first, otherwise one substring; comma-separated entries are exact keys; invalid lists fail before calls |
+| `PER_CATEGORY` | —       | cap inputs per category — the balanced way to bound the cost of a full-grid run                                                 |
+| `SAMPLES`      | `1`     | samples per (input × variant); >1 surfaces run-to-run variance                                                                  |
+| `CONCURRENCY`  | `1`     | parallel calls; keep at 1 for an isolated single-call latency floor, raise it to finish a full grid in minutes                  |
+| `OUT_TAG`      | —       | suffix on the run-dir name                                                                                                      |
+| `SKIP_REPORT`  | —       | skip the HTML report (results.json only)                                                                                        |
+| `RESUME`       | —       | `=<run dir>`: fill only the missing/failed cells, keeping images already on disk                                                |
+| `REPORT_FROM`  | —       | `=<run dir>`: rebuild `report/index.html` from an existing `results.json`, no API calls (pair with `VERDICT_FILE`)              |
 
 ```bash
 PER_CATEGORY=2 CONCURRENCY=6 npm run model-eval        # balanced full grid, ~20 min
@@ -180,10 +182,34 @@ VARIANTS=gpt-image-2 FILTER=coloring npm run model-eval # one model's tiers on t
 SAMPLES=3 FILTER=art-detail__cat npm run model-eval     # variance probe on one drawing
 ```
 
+For the GPT Image 2.5 comparison, hold the winning composition prompt (ADR-0118) and the production
+safety orchestrator fixed, and generate a fresh production baseline alongside the candidates:
+
+```bash
+VARIANTS=gpt-image-2-low,gpt-image-2-5-flare-low,gpt-image-2-5-flare-medium,gpt-image-2-5-sunburst-low,gpt-image-2-5-sunburst-medium PER_CATEGORY=1 SAMPLES=2 CONCURRENCY=3 npm run model-eval
+```
+
+The [September 2026 findings](../../docs/scratchpad/image-model-bakeoff-2026-09-10.md) cover the
+140-image screen and the sequential finalist check. The committed gallery lives at the reference
+report path above.
+
+New runs record the exact prompt, safety instruction, orchestrator settings, and token rates. GPT
+Image 2.5 rates come from the official
+[Flare](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare) and
+[Sunburst](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst) model pages; the
+orchestrator uses [Sol pricing](https://developers.openai.com/api/docs/models/gpt-5.6-sol). Equal
+token rates do not imply equal image cost: compare the usage each response actually reports. Runs
+with concurrent calls measure latency under that load; confirm a finalist sequentially before
+claiming an isolated latency improvement.
+
+Flare and Sunburst have no separately billed text output according to their model pages. The cost
+tests exercise nonzero reported text-output tokens to preserve that distinction from GPT Image 2.
+
 **Budget before you run.** A full grid is `inputs × variants` paid calls, and the tiers are not
 close to each other in price — one `gpt-image-2 · high` cell costs ~28× a `gpt-image-1-mini · low`
 cell. `PER_CATEGORY=2` over the eight shipped variants is roughly $9 and about 20 minutes at
-`CONCURRENCY=6`. The runner prints a running `$` total per call and a spend summary at the end.
+`CONCURRENCY=6` in that historical run. Size new comparisons from their selected inputs, variants,
+and samples. The runner prints a cost per call and a spend summary at the end.
 
 ## Reviewing (this is the test)
 
@@ -258,6 +284,16 @@ writes its own `output/<runId>/`. A resumed evaluation writes into the selected 
 keeps only cells whose image is already on disk; refusal and error cells are re-called, so resuming
 re-pays for the safety corpus. Authored `gen__*`/`line__*` inputs are intentionally preserved by
 deterministic fixture regeneration.
+
+Resume requires the recorded prompt, safety instruction, orchestrator settings, rate tables, and
+concurrency limit to match the current invocation. Missing legacy metadata or any difference fails
+before calls or result writes, including a resume with no pending cells. Keep `CONCURRENCY` equal to
+the original run. Use `REPORT_FROM` to inspect old results without changing their provenance; start
+a separate run when changing the request or measurement settings.
+
+A narrower `VARIANTS` selection only limits new calls. Saved metadata and rebuilt reports retain
+every candidate already recorded in the run; newly selected candidates are added once. A changed
+definition behind an existing variant key is rejected.
 
 The production request contract is mirrored here, not imported: `lib/model-eval.mjs` copies
 `DEFAULT_PROMPT` from `web/src/lib/ai/prompt.ts` and `SAFETY_SYSTEM_INSTRUCTION` from the provider

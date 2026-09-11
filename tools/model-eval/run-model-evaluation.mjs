@@ -26,6 +26,9 @@ import { pathToFileURL } from 'node:url';
 import {
   ROOT,
   VARIANTS,
+  evaluationMetadata,
+  evaluationVariants,
+  selectModelVariants,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
   assertProductionConfig,
@@ -105,12 +108,13 @@ async function reportOnly(dir) {
 }
 
 function selectVariants() {
-  const selected = VARIANTS.filter(
-    (variant) => !VARIANT_FILTER || variant.key.includes(VARIANT_FILTER)
-  );
-  if (!selected.length) {
+  let selected;
+  try {
+    selected = selectModelVariants(VARIANT_FILTER);
+    if (!selected.length) throw new Error(`No variants matched VARIANTS="${VARIANT_FILTER}"`);
+  } catch (error) {
     console.error(
-      `No variants matched VARIANTS="${VARIANT_FILTER}".\nAvailable keys:\n  ${VARIANTS.map((v) => v.key).join('\n  ')}`
+      `${error.message}\nAvailable keys:\n  ${VARIANTS.map((v) => v.key).join('\n  ')}`
     );
     process.exit(1);
   }
@@ -163,10 +167,15 @@ const cellKey = (row) => `${row.id}::${row.variant}::${row.sample}`;
 // safety reading is counted off, and it would look like a clean run.
 function loadResume(outDir) {
   const previous = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'));
+  const metadata = evaluationMetadata(CONCURRENCY, previous);
+  if (!Array.isArray(previous.variants))
+    throw new Error('Cannot resume: recorded variants are missing');
   const done = previous.results.filter(
     (row) => row.kind === 'image' && row.outFile && existsSync(join(outDir, row.outFile))
   );
   return {
+    metadata,
+    variants: previous.variants,
     runId: previous.runId,
     samples: previous.samples ?? SAMPLES,
     results: previous.results,
@@ -209,6 +218,8 @@ async function main() {
 
   const outDir = RESUME || OUT;
   const resumed = RESUME ? loadResume(outDir) : null;
+  const metadata = resumed?.metadata ?? evaluationMetadata(CONCURRENCY);
+  const runVariants = evaluationVariants(variants, resumed?.variants ?? []);
   const effRunId = resumed?.runId ?? runId;
   const effSamples = resumed?.samples ?? SAMPLES;
   const results = resumed ? [...resumed.results] : [];
@@ -242,7 +253,13 @@ async function main() {
     writeFileSync(
       join(outDir, 'results.json'),
       JSON.stringify(
-        { runId: effRunId, samples: effSamples, concurrency: CONCURRENCY, variants, results },
+        {
+          runId: effRunId,
+          samples: effSamples,
+          ...metadata,
+          variants: runVariants,
+          results,
+        },
         null,
         2
       )
@@ -305,7 +322,7 @@ async function main() {
         results,
         samples: effSamples,
         concurrency: CONCURRENCY,
-        variants,
+        variants: runVariants,
         browser,
       });
       console.log(`\nReport: ${pathToFileURL(htmlPath).href}`);

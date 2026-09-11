@@ -312,7 +312,7 @@ const REGISTRY = {
     hue: 'blue',
     title: 'Image-model bake-off',
     blurb:
-      'Eight image models run over the same coloring pages. Compares cost, speed, and picture quality, and records which model shipped and why.',
+      'Image models and quality settings compared on the same drawings. Review cost, speed, and picture quality against the production baseline.',
     entry: 'model-eval/report/index.html',
     count: (dir) => {
       const n = childReports(dir, 'model-eval').length;
