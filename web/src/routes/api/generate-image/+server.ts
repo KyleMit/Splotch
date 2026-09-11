@@ -252,7 +252,6 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       }
     }
 
-    const imageBase64 = inputBytes.toString('base64');
     const imageMimeType = mimeType || 'image/png';
 
     // Hand the long half to the background worker when the caller can wait for
@@ -284,6 +283,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       }
     }
 
+    const imageBase64 = inputBytes.toString('base64');
     usageAttempted = true;
     const result = await aiProvider.generateImage({
       apiKey: authorization.effectiveKey,

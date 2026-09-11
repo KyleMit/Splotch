@@ -215,14 +215,56 @@ describe('POST /api/generate-image', () => {
     });
     mocks.acceptsBackground.mockReturnValue(true);
     mocks.startBackground.mockResolvedValue({ jobId: 'job-1' });
+    const bufferToString = vi.spyOn(Buffer.prototype, 'toString');
 
-    const response = await post('Paper');
+    try {
+      const response = await post('Paper');
 
-    expect(response.status).toBe(202);
+      expect(response.status).toBe(202);
+      expect(bufferToString.mock.calls.filter(([encoding]) => encoding === 'base64')).toHaveLength(
+        0
+      );
+    } finally {
+      bufferToString.mockRestore();
+    }
     expect(mocks.generateImage).not.toHaveBeenCalled();
     expect(mocks.recordTokenUsage).toHaveBeenCalledWith('daycare-club', {
       style: 'Paper',
       outcome: 'accepted',
+    });
+  });
+
+  it('encodes the validated input once for synchronous fallback', async () => {
+    const generatedData = Buffer.from('generated').toString('base64');
+    mocks.authorize.mockResolvedValue({
+      authorized: true,
+      kind: 'managed',
+      effectiveKey: 'project-key',
+      managedToken: 'daycare-club',
+    });
+    mocks.generateImage.mockResolvedValue({
+      kind: 'image',
+      data: generatedData,
+      mimeType: 'image/png',
+    });
+    mocks.acceptsBackground.mockReturnValue(true);
+    const bufferToString = vi.spyOn(Buffer.prototype, 'toString');
+
+    try {
+      const response = await post();
+
+      expect(response.status).toBe(200);
+      expect(bufferToString.mock.calls.filter(([encoding]) => encoding === 'base64')).toHaveLength(
+        1
+      );
+    } finally {
+      bufferToString.mockRestore();
+    }
+    expect(mocks.generateImage).toHaveBeenCalledWith({
+      apiKey: 'project-key',
+      image: { base64: 'AQ==', mimeType: 'image/png' },
+      prompt: expect.any(String),
+      deadlineMs: 1_000,
     });
   });
 });
