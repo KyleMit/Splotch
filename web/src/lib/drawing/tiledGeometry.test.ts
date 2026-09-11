@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { AA_PAD_PX } from './opGeometry';
+import { AA_PAD_PX, opPaddedUserBounds } from './opGeometry';
 import { geometryIntersectsTile, tileCssSpan, tilesIntersect } from './tiledGeometry';
 
 const tile = {
@@ -19,7 +19,14 @@ describe('tiled geometry', () => {
   it('includes anti-aliased stroke coverage beyond the geometric radius', () => {
     expect(
       geometryIntersectsTile(
-        { kind: 'dot', x: 101.5, y: 50, radius: 1, color: '#000000', erase: false },
+        opPaddedUserBounds({
+          kind: 'dot',
+          x: 101.5,
+          y: 50,
+          radius: 1,
+          color: '#000000',
+          erase: false,
+        }),
         tile
       )
     ).toBe(true);
@@ -29,14 +36,14 @@ describe('tiled geometry', () => {
     expect(tilesIntersect(tile, { ...tile, x: 100, paperLeft: 100, paperRight: 200 })).toBe(false);
     expect(
       geometryIntersectsTile(
-        {
+        opPaddedUserBounds({
           kind: 'dot',
           x: tile.paperRight + 1 + AA_PAD_PX,
           y: 50,
           radius: 1,
           color: '#000000',
           erase: false,
-        },
+        }),
         tile
       )
     ).toBe(false);

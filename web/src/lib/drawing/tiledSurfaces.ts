@@ -3,6 +3,7 @@ import { setMagicPatternRegion } from './magicBrush';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
 import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
+import { opPaddedUserBounds } from './opGeometry';
 import { geometryIntersectsTile, tilesIntersect, type TileBounds } from './tiledGeometry';
 
 export interface LiveTile extends TileBounds {
@@ -328,8 +329,9 @@ export function renderHistoryBaseOp(tiles: HistoryBaseTile[], op: StrokeOp) {
     for (const tile of tiles) renderOp(tile.ctx, op);
     return;
   }
+  const bounds = opPaddedUserBounds(op);
   for (const tile of tiles) {
-    if (!geometryIntersectsTile(op, tile)) continue;
+    if (!geometryIntersectsTile(bounds, tile)) continue;
     renderOp(tile.ctx, op);
     if (!op.erase) tile.painted = true;
   }

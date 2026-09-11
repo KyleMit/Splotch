@@ -1,5 +1,4 @@
-import { opPaddedUserBounds } from './opGeometry';
-import type { StrokeOp } from './strokeOps';
+import type { OpPaddedUserBounds } from './opGeometry';
 
 export interface TileBounds {
   x: number;
@@ -12,11 +11,8 @@ export interface TileBounds {
   paperBottom: number;
 }
 
-export function geometryIntersectsTile(
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>,
-  tile: TileBounds
-) {
-  const { x0, y0, x1, y1, pad } = opPaddedUserBounds(op);
+export function geometryIntersectsTile(bounds: OpPaddedUserBounds, tile: TileBounds) {
+  const { x0, y0, x1, y1, pad } = bounds;
   return (
     x1 + pad > tile.paperLeft &&
     x0 - pad < tile.paperRight &&
@@ -46,20 +42,24 @@ export function tileCssSpan(index: number, count: number, totalCssPx: number, de
 
 export function opDeviceBounds(
   tile: TileBounds & { ctx: CanvasRenderingContext2D },
-  op: Extract<StrokeOp, { kind: 'dot' | 'path' }>
+  bounds: OpPaddedUserBounds
 ) {
-  const { x0, y0, x1, y1, pad } = opPaddedUserBounds(op);
+  const { x0, y0, x1, y1, pad } = bounds;
   const matrix = tile.ctx.getTransform();
-  const corners = [
-    matrix.transformPoint({ x: x0 - pad, y: y0 - pad }),
-    matrix.transformPoint({ x: x1 + pad, y: y0 - pad }),
-    matrix.transformPoint({ x: x0 - pad, y: y1 + pad }),
-    matrix.transformPoint({ x: x1 + pad, y: y1 + pad }),
-  ];
+  const topLeft = matrix.transformPoint({ x: x0 - pad, y: y0 - pad });
+  const topRight = matrix.transformPoint({ x: x1 + pad, y: y0 - pad });
+  const bottomLeft = matrix.transformPoint({ x: x0 - pad, y: y1 + pad });
+  const bottomRight = matrix.transformPoint({ x: x1 + pad, y: y1 + pad });
   return {
-    x0: Math.max(0, Math.floor(Math.min(...corners.map((point) => point.x)))),
-    y0: Math.max(0, Math.floor(Math.min(...corners.map((point) => point.y)))),
-    x1: Math.min(tile.width, Math.ceil(Math.max(...corners.map((point) => point.x)))),
-    y1: Math.min(tile.height, Math.ceil(Math.max(...corners.map((point) => point.y)))),
+    x0: Math.max(0, Math.floor(Math.min(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x))),
+    y0: Math.max(0, Math.floor(Math.min(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y))),
+    x1: Math.min(
+      tile.width,
+      Math.ceil(Math.max(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x))
+    ),
+    y1: Math.min(
+      tile.height,
+      Math.ceil(Math.max(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y))
+    ),
   };
 }
