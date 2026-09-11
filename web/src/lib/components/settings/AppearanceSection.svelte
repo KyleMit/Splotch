@@ -12,6 +12,7 @@
   } from '$lib/state/settings.svelte';
   import type { ThemePreference } from '$lib/theme';
   import { supportsOrientationLock } from '$lib/platform';
+  import '$lib/components/deferredIcons';
 
   // Windowed platforms (iPadOS 26+) own device orientation through their own
   // window controls and ignore in-app locks, so the toggles are hidden there.

@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import '$lib/components/deferredIcons';
 
   interface Props {
     /** Retargets the challenge — the gate owns it, since activating this line

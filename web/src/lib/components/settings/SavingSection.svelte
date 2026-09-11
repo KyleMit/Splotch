@@ -5,6 +5,7 @@
   import { settings, setSaveOnDelete, setScreenshot } from '$lib/state/settings.svelte';
   import { changeSaveFolder, forgetSaveFolder } from '$lib/state/saveFolder.svelte';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
+  import '$lib/components/deferredIcons';
 
   // The optional save folder is desktop-Chromium only (File System Access API).
   // On every other browser the row is hidden and saves stay as downloads.

@@ -34,7 +34,10 @@ paths:
   `ActionsPanel.svelte`). Never `!important` to beat a sibling rule — fix specificity or ordering.
 * A prop that renders help/explanatory text for a control must wire it to the control (`id` +
   `aria-describedby`) — axe does not flag the omission.
-* New icons: drop the SVG in `src/lib/icons/`, run
+* New icons: drop the SVG in `src/lib/icons/` — or in `src/lib/icons/deferred/` when only lazily
+  loaded UI renders it (a settings section, an overlay, a route other than `/`, the styleguide);
+  every file that names a deferred icon then also carries `import '$lib/components/deferredIcons';`,
+  enforced by `deferredIcons.test.ts` (ADR-0164) — run
   `npm run gen:icon-viewbox && npm run optimize:svg-assets` (imported artwork arrives on foreign
   grids — Material exports on `0 -960 960 960`; every icon must sit on the canonical
   `viewBox="0 0 1000 1000"`, enforced by `iconViewBox.test.ts` and pixel-verified by the rebase

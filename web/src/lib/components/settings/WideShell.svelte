@@ -12,6 +12,7 @@
   import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
+  import '$lib/components/deferredIcons';
 
   interface Props {
     /** Where the pane parks on each open — the deep-linked section, else the first. */

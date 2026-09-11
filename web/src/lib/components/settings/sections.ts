@@ -4,6 +4,7 @@ import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 import { coloringPackState } from '$lib/state/coloringPacks.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 import { hiddenDrawingToolCount } from './drawingTools';
+import '$lib/components/deferredIcons';
 
 // Settings is one flat list of sections (ADR-0061). Both shells — the phone hub
 // with full-page drill-in and the tablet table of contents over one continuous

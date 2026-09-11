@@ -14,6 +14,7 @@
   } from '$lib/state/settings.svelte';
   import { playVolumePreview, stopDrawSound } from '$lib/audio/drawingSound';
   import { SECTION_SLIDE } from './sections';
+  import '$lib/components/deferredIcons';
 
   const PREVIEW_SPEED = 0.45;
   // Intentionally untracked: only read/written inside event handlers, never rendered.

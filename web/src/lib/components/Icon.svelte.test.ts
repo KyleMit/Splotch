@@ -12,15 +12,22 @@ import { themes } from '../design/tokens';
 // stroke-size previews that tint via currentColor / theme vars), so the
 // inclusion is one-directional: {colorful} ⊆ COLOR_ICONS.
 //
-// Mirror Icon.svelte's own glob so the guard covers exactly the icons the app
-// can render through <Icon>. The exclusions repeat NON_RENDERABLE_ICONS from
-// iconTypes.ts — that list is authoritative, but Vite resolves import.meta.glob
-// statically, so the patterns can't be built from it.
-const svgs = import.meta.glob<string>(['../icons/*.svg', '!../icons/splotchy.svg'], {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-});
+// Mirror Icon.svelte's own glob plus the deferred directory (ADR-0164) so the
+// guard covers exactly the icons the app can render through <Icon>. The
+// exclusions repeat NON_RENDERABLE_ICONS from iconTypes.ts — that list is
+// authoritative, but Vite resolves import.meta.glob statically, so the
+// patterns can't be built from it.
+const svgs = import.meta.glob<string>(
+  ['../icons/*.svg', '../icons/deferred/*.svg', '!../icons/splotchy.svg'],
+  {
+    eager: true,
+    query: '?raw',
+    import: 'default',
+  }
+);
+const svgByName = Object.fromEntries(
+  Object.entries(svgs).map(([path, src]) => [iconNameFromPath(path), src])
+);
 
 describe('COLOR_ICONS allowlist', () => {
   const colorful = new Set(
@@ -69,9 +76,7 @@ describe('monochrome icon fill', () => {
   const painted = monochrome.filter((name) => !NO_PAINT_EXCEPTIONS.has(name));
 
   const inkOf = (name: string) =>
-    paintedValues(svgs[`../icons/${name}.svg`]).filter(
-      ({ attr }) => attr === 'fill' || attr === 'stroke'
-    );
+    paintedValues(svgByName[name]).filter(({ attr }) => attr === 'fill' || attr === 'stroke');
 
   // Both lists below are parametrized from this split, so an exception naming an icon that no
   // longer ships would silently empty one of them instead of failing.

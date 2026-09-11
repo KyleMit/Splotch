@@ -4,6 +4,7 @@
   // Generated at build time from releases/*.md (see tools/release/gen-release-notes.mjs).
   import releases from '$lib/releases.json';
   import CurrentReleaseNotes, { RELEASE_NOTE_SECTION_COUNT } from './CurrentReleaseNotes.svelte';
+  import '$lib/components/deferredIcons';
 
   // Called once the staged reveal below has no more blocks to add. A parent that
   // stages this section's own mount needs to know it keeps growing after it is

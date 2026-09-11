@@ -19,10 +19,12 @@ guard the production icon set, and `/design` renders the same split for review.
 
 ## Name generation
 
-`gen-icon-names.mjs` reads every `web/src/lib/icons/*.svg`, sorts the basenames, and replaces
-`web/src/lib/components/icon-names.d.ts`. It has no flags or external prerequisites beyond Node. An
-empty icon directory fails rather than replacing the union with an empty type. The command runs in
-both prebuild hooks; never hand-edit the generated declaration.
+`gen-icon-names.mjs` reads every SVG under `web/src/lib/icons/` — the startup set at the top level
+and the deferred set in `deferred/` (ADR-0164) — sorts the basenames, and replaces
+`web/src/lib/components/icon-names.d.ts`. A basename present in both directories fails the run. It
+has no flags or external prerequisites beyond Node. An empty icon directory fails rather than
+replacing the union with an empty type. The command runs in both prebuild hooks; never hand-edit the
+generated declaration.
 
 After adding, deleting, or renaming an icon, run:
 

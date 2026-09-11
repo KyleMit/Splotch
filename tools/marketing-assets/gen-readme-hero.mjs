@@ -38,7 +38,7 @@ const FRAME_COLOR = '#25282d';
 const FRAME_EDGE_COLOR = '#474b54';
 const HOME_COLOR = '#afb4bd';
 const OUTPUT = join(ROOT, 'docs/assets/readme-hero.webp');
-const HOME_SVG = readFileSync(join(ROOT, 'web/src/lib/icons/home.svg'), 'utf8');
+const HOME_SVG = readFileSync(join(ROOT, 'web/src/lib/icons/deferred/home.svg'), 'utf8');
 const DEVICES = [
   {
     name: 'phone',

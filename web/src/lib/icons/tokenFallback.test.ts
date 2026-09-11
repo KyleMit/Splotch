@@ -16,7 +16,7 @@ import { brand, themes, toCssVarName } from '../design/tokens';
 // which silently wipes the var() and reverts the path to its baked light hex. No
 // error, no visual change in light mode, just a dark-mode regression nobody
 // notices for a month. The reverse check turns that into a red test.
-const svgs = import.meta.glob<string>('./*.svg', {
+const svgs = import.meta.glob<string>(['./*.svg', './deferred/*.svg'], {
   eager: true,
   query: '?raw',
   import: 'default',

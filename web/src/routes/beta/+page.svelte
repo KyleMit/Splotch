@@ -21,6 +21,7 @@
   import type { CommonIconName } from '$lib/components/iconTypes';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import { isAndroidBrowser, isIosDevice } from '$lib/platform';
+  import '$lib/components/deferredIcons';
 
   // The sniff stays here rather than in betaPlatform.ts: that module is read by
   // the E2E specs, which run outside Vite and cannot resolve a `$app` import.

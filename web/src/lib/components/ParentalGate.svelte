@@ -7,6 +7,7 @@
   import { paletteHex } from '$lib/palette';
   import { COLOR_FAMILIES } from '$lib/hexPickerLayout';
   import type { Origin } from '$lib/state/modal.svelte';
+  import '$lib/components/deferredIcons';
   import {
     gate,
     dismissGate,

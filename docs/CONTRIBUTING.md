@@ -265,10 +265,13 @@ project-relative, and the broad `/tmp` scope is deliberate for session scratch f
 
 ## Adding a new icon
 
-1. Drop an SVG into `web/src/lib/icons/`.
+1. Drop an SVG into `web/src/lib/icons/` — or into `web/src/lib/icons/deferred/` when only lazily
+   loaded UI renders it (a settings section, an overlay, a route other than `/`, the styleguide), so
+   its bytes stay off the startup path (ADR-0164).
 2. Run `npm run gen:icon-names` (it also runs automatically before every build).
 3. Use `<Icon name="your-icon-name" />` — the `name` prop is type-checked against the generated
-   union.
+   union. A file that names a deferred icon also imports `$lib/components/deferredIcons` for its
+   side effect; `deferredIcons.test.ts` says so when one is missing.
 
 ## Dependency updates
 

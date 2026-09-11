@@ -12,7 +12,7 @@ const CLIENT_DIR = join(OUTPUT_DIR, 'client');
 const NATIVE_DIR = join(ROOT, 'web/build');
 const RUNTIME_GENERATED_STARTUP_URLS = new Set(['_app/env.js']);
 
-// The reviewed 2026-08-19 startup baseline is 470,860 bytes; 54,140 bytes of headroom permits ordinary app growth while catching another large eager dependency.
+// The reviewed 2026-09-11 startup baseline is 473,352 bytes, after ADR-0164 moved the deferred icons off the path; 51,648 bytes of headroom permits ordinary app growth while catching another large eager dependency. Consuming it is the cue to find the next lever before raising the number (ADR-0032's headroom amendment).
 export const MAX_STARTUP_JS_CSS_BYTES = 525_000;
 // The reviewed 2026-08-19 largest bundle-wide lazy chunk is the public /design route at 65,418 bytes; 9,582 bytes of headroom permits modest growth while catching a larger deployed lazy route.
 export const MAX_LAZY_CHUNK_BYTES = 75_000;

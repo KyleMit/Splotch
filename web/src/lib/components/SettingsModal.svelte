@@ -19,6 +19,7 @@
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
   import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
   import { createSettingsMediaQueries } from './settings/settingsMediaQuery.svelte';
+  import '$lib/components/deferredIcons';
 
   // Two shells, one section list (ADR-0061). Below the breakpoint it's a hub
   // that drills into a full-page section; at or above it's a persistent sidebar

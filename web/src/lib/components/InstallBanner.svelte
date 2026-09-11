@@ -19,6 +19,7 @@
   import { layout } from '$lib/state/layout.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+  import '$lib/components/deferredIcons';
 
   // Continued drawing hands the install guide off to Settings with a short parting message.
   const PARTING_MESSAGE_MS = 4000;

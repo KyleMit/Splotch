@@ -6,6 +6,7 @@
     supportedOrientations,
   } from './lib/deviceProfile';
   import ScenarioTile from './lib/ScenarioTile.svelte';
+  import '$lib/components/deferredIcons';
 
   // Every distinct safe-area profile the app can land in, held one way at a
   // time, with the real HUD inside. A section per profile, a tile per

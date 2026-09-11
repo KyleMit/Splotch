@@ -1,5 +1,6 @@
 <script lang="ts">
-  import Icon, { COLOR_ICONS, ICON_NAMES } from '$lib/components/Icon.svelte';
+  import Icon, { COLOR_ICONS, STARTUP_ICON_NAMES } from '$lib/components/Icon.svelte';
+  import { DEFERRED_ICON_NAMES } from '$lib/components/deferredIcons';
   import type { CommonIconName } from '$lib/components/iconTypes';
   import { themes } from '$lib/design/tokens';
   import { PALETTE_COLORS } from '$lib/palette';
@@ -12,6 +13,7 @@
 
   let { group }: Props = $props();
 
+  const ICON_NAMES = [...STARTUP_ICON_NAMES, ...DEFERRED_ICON_NAMES].sort();
   const monoIcons = ICON_NAMES.filter((name) => !COLOR_ICONS.has(name));
   const spotIcons = ICON_NAMES.filter((name) => COLOR_ICONS.has(name));
 

@@ -11,6 +11,7 @@
     setColoringPacksAllowMetered,
   } from '$lib/state/settings.svelte';
   import { notifyColoringPackPolicyChanged } from '$lib/coloringPacks/policy';
+  import '$lib/components/deferredIcons';
 
   let removing = $state(false);
   let removeError = $state(false);

@@ -2,6 +2,7 @@
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import { copyKey, type Invite } from './AdminConsole.svelte';
+  import '$lib/components/deferredIcons';
 
   // One ledger row's action surface, rendered as two sibling cells inside
   // InviteLedger's row: the actions cell (inline Copy / Copy link / Remove on

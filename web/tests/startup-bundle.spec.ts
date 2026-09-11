@@ -16,6 +16,7 @@ import { expect, test } from '@playwright/test';
 const outputDir = fileURLToPath(new URL('../.svelte-kit/output', import.meta.url));
 const prerenderedIndex = `${outputDir}/prerendered/pages/index.html`;
 const clientDir = `${outputDir}/client`;
+const deferredIconsDir = fileURLToPath(new URL('../src/lib/icons/deferred', import.meta.url));
 
 // One minification-proof string literal per lazily-loaded save module.
 const SAVE_MODULE_MARKERS: Record<string, string> = {
@@ -28,6 +29,26 @@ const COLORING_PACK_MODULE_MARKERS: Record<string, string> = {
   'manager.ts': 'Coloring-pack download paused',
   'nativeStore.ts': 'ColoringPacks',
 };
+
+// ADR-0164: the icons under src/lib/icons/deferred/ ship in the chunk of
+// lib/components/deferredIcons.ts, and a static import of that module from a
+// startup module (the shape deferredIcons.test.ts's per-file import rule gives
+// the regression) hauls every one of them back onto the critical path. The
+// marker is path data from one deferred icon: raw SVG is inlined as a string
+// literal, so it survives minification verbatim.
+const DEFERRED_ICON_MARKER_LENGTH = 40;
+const DEFERRED_ICON_MODULE_MARKERS: Record<string, string> = {
+  'deferredIcons.ts': deferredIconPathMarker('whats-new'),
+};
+
+function deferredIconPathMarker(name: string): string {
+  const svg = readFileSync(`${deferredIconsDir}/${name}.svg`, 'utf8');
+  const pathData = /\sd="([^"]+)"/.exec(svg)?.[1];
+  if (!pathData || pathData.length < DEFERRED_ICON_MARKER_LENGTH) {
+    throw new Error(`${name}.svg has no path data long enough to serve as a marker`);
+  }
+  return pathData.slice(0, DEFERRED_ICON_MARKER_LENGTH);
+}
 
 test.skip(!!process.env.DEV_SERVER, 'guards the production build output');
 
@@ -61,6 +82,12 @@ test('the save pipeline stays out of the prerendered modulepreload list', () => 
         `${module} (marker "${marker}") is back in modulepreloaded chunk ${href} — coloring-pack I/O must stay off the drawing startup path`
       ).toBe(false);
     }
+    for (const [module, marker] of Object.entries(DEFERRED_ICON_MODULE_MARKERS)) {
+      expect(
+        chunk.includes(marker),
+        `${module} (marker "${marker}") is back in modulepreloaded chunk ${href} — a startup module imports the deferred icon registry, putting every deferred icon on the critical path`
+      ).toBe(false);
+    }
   }
   expect(
     scanned,
@@ -86,6 +113,12 @@ test('the save-module markers still identify code in the client build', () => {
     expect(
       chunks.some((chunk) => chunk.includes(marker)),
       `marker "${marker}" for ${module} no longer appears anywhere in the client build — update COLORING_PACK_MODULE_MARKERS`
+    ).toBe(true);
+  }
+  for (const [module, marker] of Object.entries(DEFERRED_ICON_MODULE_MARKERS)) {
+    expect(
+      chunks.some((chunk) => chunk.includes(marker)),
+      `marker "${marker}" for ${module} no longer appears anywhere in the client build — the deferred icon is not shipping at all`
     ).toBe(true);
   }
 });

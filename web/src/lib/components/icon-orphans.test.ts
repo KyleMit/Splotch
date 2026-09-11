@@ -3,19 +3,24 @@ import { describe, it, expect } from 'vitest';
 import { NON_RENDERABLE_ICONS, iconNameFromPath } from './iconTypes';
 
 // Guards against orphaned icon assets: an SVG nobody renders still inflates the
-// generated IconName union and the eager glob in Icon.svelte, and nothing else
-// would ever notice. Mirror Icon.svelte's own glob — the exclusions repeat
-// NON_RENDERABLE_ICONS from iconTypes.ts, which is authoritative, but Vite
-// resolves import.meta.glob statically so the patterns can't be built from it.
-const svgs = import.meta.glob<string>(['../icons/*.svg', '!../icons/splotchy.svg'], {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-});
+// generated IconName union and the eager glob in Icon.svelte (or the deferred
+// registry in deferredIcons.ts, ADR-0164), and nothing else would ever notice.
+// Mirror Icon.svelte's own glob plus the deferred directory — the exclusions
+// repeat NON_RENDERABLE_ICONS from iconTypes.ts, which is authoritative, but
+// Vite resolves import.meta.glob statically so the patterns can't be built
+// from it.
+const svgs = import.meta.glob<string>(
+  ['../icons/*.svg', '../icons/deferred/*.svg', '!../icons/splotchy.svg'],
+  {
+    eager: true,
+    query: '?raw',
+    import: 'default',
+  }
+);
 
 // The unfiltered set, so the guard below can prove the literals above really do
 // exclude NON_RENDERABLE_ICONS and nothing else.
-const allSvgs = import.meta.glob<string>('../icons/*.svg', {
+const allSvgs = import.meta.glob<string>(['../icons/*.svg', '../icons/deferred/*.svg'], {
   eager: true,
   query: '?raw',
   import: 'default',

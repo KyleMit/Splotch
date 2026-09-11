@@ -16,6 +16,7 @@
   } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
   import { supportsOrientationLock, type Orientation } from '$lib/platform';
+  import '$lib/components/deferredIcons';
 
   const showOrientationControls = supportsOrientationLock();
 

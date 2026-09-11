@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { brand } from '../design/tokens';
-import sunny from './dottie-sunny.svg?raw';
+import sunny from './deferred/dottie-sunny.svg?raw';
 
-const expressions = import.meta.glob<string>('./dottie-*.svg', {
+const expressions = import.meta.glob<string>('./deferred/dottie-*.svg', {
   eager: true,
   query: '?raw',
   import: 'default',
@@ -14,7 +14,7 @@ const bodyShape = (svg: string) => bodyPath(svg).match(/\sd="([^"]+)"/)?.[1];
 
 describe('Dottie expressions', () => {
   it('includes the reference expression with a body path', () => {
-    expect(expressions).toHaveProperty('./dottie-sunny.svg', sunny);
+    expect(expressions).toHaveProperty('./deferred/dottie-sunny.svg', sunny);
     expect(bodyShape(sunny)).toMatch(/^M\d/);
   });
 
