@@ -858,7 +858,8 @@ findings above is negligible engine cost beside long rendering-side records.
   are on the same Wi‑Fi (a guest SSID with client isolation blocks this even though both say "same
   network"), that `npm run perf:serve` is listening on the resolved preview port and a LAN
   interface, and that you used the Mac's LAN IP (not `localhost`). A firewall prompt on the Mac may
-  need approving.
+  need approving. Plain `npm run preview` binds localhost only and does not set the dev-harness
+  flag; use `npm run perf:serve` for this capture path.
 * **`window.__engine` is undefined** → paste this to see which case it is:
 
   ```js

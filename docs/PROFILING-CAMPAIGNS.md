@@ -83,17 +83,21 @@ For a stalled Safari navigation:
    try one off/on cycle, restore Wi-Fi to on, and verify the network becomes selected before
    retrying Safari. Re-find the switch after toggling it; Settings can replace its accessibility
    element, making the previous element stale. If association still fails, report that specific
-   failure and the human action needed; do not keep cycling or forget the saved network.
+   failure and the human action needed; do not keep cycling or forget the saved network. If the
+   network is already selected, or Safari still cannot load after reconnection, check the current
+   Mac Wi-Fi address and resolved preview port, guest-network client isolation, and the macOS
+   firewall prompt using the iPad runbook's
+   [LAN troubleshooting checks](PROFILING-IPAD.md#caveats--troubleshooting). Do not repeat the Wi-Fi
+   cycle for a connection that is already associated.
 4. Close the diagnostic Settings session before creating a fresh Safari session. Retry the explicit
    preview URL, then prove the loaded page's build entry and service-worker state through the
    existing freshness checks before treating the result as current-checkout evidence.
 
-Issue [1527](https://github.com/KyleMit/Splotch/issues/1527#issuecomment-5636045347) exercised this
-sequence: native control worked, Safari's screen reported offline, and Settings showed a saved
-network stuck connecting. Reconnecting Wi-Fi was followed by successful current-build Safari
-navigation and twelve trusted-touch Settings openings. The evidence establishes that recovery, not
-the cause of the stalled association. Do not re-diagnose USB pairing or the automation grant from a
-page-load failure after device control has already passed.
+Issue [1527](https://github.com/KyleMit/Splotch/issues/1527#issuecomment-5636045347) records native
+control working and Wi-Fi stuck connecting. Reconnecting Wi-Fi was followed by successful
+current-build Safari navigation and twelve trusted-touch openings of Splotch's Settings dialog. The
+evidence establishes that recovery, not the cause of the stalled association. Do not re-diagnose USB
+pairing or the automation grant from a page-load failure after device control has already passed.
 
 ### An installed-app fallback answers a narrower question
 
