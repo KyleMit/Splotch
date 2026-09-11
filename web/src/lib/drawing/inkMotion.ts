@@ -13,10 +13,12 @@ function canvasOf(width: number, height: number) {
 // both ghosts read their pixels from it rather than replaying history.
 export function createInkMotion(paint: (target: CanvasRenderingContext2D) => void) {
   let overlay: HTMLDivElement | null = null;
+  let pendingSubtract: CanvasRenderingContext2D | null = null;
 
   function cancel() {
     overlay?.remove();
     overlay = null;
+    pendingSubtract = null;
   }
 
   function present(host: HTMLElement | null, image: HTMLCanvasElement, transform: string) {
@@ -41,7 +43,8 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
   // Copies the visible live tiles into the overlay and keeps only the command's
   // footprint. The mask is applied once with destination-in after every tile
   // is composited: applying it per tile blit would clear everything outside
-  // each successive tile instead.
+  // each successive tile instead. The target keeps its paper-space transform
+  // so the subtraction pass can paint the tiles again without restoring it.
   function ghostFromTiles(
     target: CanvasRenderingContext2D,
     command: StrokeGroupCommand,
@@ -49,16 +52,13 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
   ) {
     const mask = canvasOf(bounds.width, bounds.height);
     const maskTarget = mask.getContext('2d');
-    if (!maskTarget) return false;
+    if (!maskTarget) return;
     maskTarget.translate(-bounds.left, -bounds.top);
     paintStrokeFootprint(maskTarget, command);
     paint(target);
-    target.resetTransform();
     target.globalCompositeOperation = 'destination-in';
-    target.drawImage(mask, 0, 0);
-    mask.width = 0;
-    mask.height = 0;
-    return true;
+    target.drawImage(mask, bounds.left, bounds.top);
+    pendingSubtract = target;
   }
 
   // A crayon or magic ghost is the undone ink as it stands on the live tiles.
@@ -85,14 +85,24 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     const target = image.getContext('2d');
     if (!target) return;
     target.translate(-bounds.left, -bounds.top);
-    if (strokeGhostReadsTiles(command)) {
-      if (!ghostFromTiles(target, command, bounds)) return;
-    } else {
-      for (const op of command.ops) renderOp(target, op);
-    }
+    if (strokeGhostReadsTiles(command)) ghostFromTiles(target, command, bounds);
+    else for (const op of command.ops) renderOp(target, op);
     image.className = 'undo-ink-motion';
     image.style.cssText = `left:${bounds.left / scale}px;top:${bounds.top / scale}px;width:${bounds.width / scale}px;height:${bounds.height / scale}px`;
     present(canvas.parentElement, image, `matrix(${viewMatrix(view).join(',')})`);
+  }
+
+  // Once the undo has restored the tiles, every pixel still on the paper inside
+  // the footprint is ink the command never owned. Knocking it out of the ghost
+  // keeps that older ink pinned in place while the ghost shrinks over it; the
+  // tiles are transparent wherever no ink remains, so the pass costs the same
+  // bounded blits as the copy.
+  function subtractRemainingInk() {
+    const target = pendingSubtract;
+    pendingSubtract = null;
+    if (!target) return;
+    target.globalCompositeOperation = 'destination-out';
+    paint(target);
   }
 
   function clear(
@@ -113,13 +123,8 @@ export function createInkMotion(paint: (target: CanvasRenderingContext2D) => voi
     image.className = 'clear-ink-motion';
     const wrapper = present(document.body, image, 'none');
     wrapper.classList.add('clear-ink-layer');
-    Object.assign(wrapper.style, {
-      left: `${rect.left}px`,
-      top: `${rect.top}px`,
-      width: `${rect.width}px`,
-      height: `${rect.height}px`,
-    });
+    wrapper.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;
   }
 
-  return { cancel, undo, clear };
+  return { cancel, undo, subtractRemainingInk, clear };
 }

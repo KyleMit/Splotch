@@ -121,12 +121,16 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
 });
 
-test('crayon undo ghost reads the tiles and is masked to the footprint', async ({ page }) => {
+test('crayon undo ghost carries only the pixels the undone stroke owned', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
   await drawCommittedStroke(page, [
     { x: 425, y: 200 },
     { x: 435, y: 200 },
+  ]);
+  await drawCommittedStroke(page, [
+    { x: 295, y: 210 },
+    { x: 305, y: 210 },
   ]);
   await pickBrush(page, '#crayonBrushButton');
   await drawCommittedStroke(page, [
@@ -158,8 +162,9 @@ test('crayon undo ghost reads the tiles and is masked to the footprint', async (
       },
       { x, y, box: overlayBox }
     );
-  expect(await ghostAlphaAt(canvasBox.x + 345, canvasBox.y + 220)).toBeGreaterThan(0);
+  expect(await ghostAlphaAt(canvasBox.x + 390, canvasBox.y + 229)).toBeGreaterThan(0);
   expect(await ghostAlphaAt(canvasBox.x + 430, canvasBox.y + 200)).toBe(0);
+  expect(await ghostAlphaAt(canvasBox.x + 300, canvasBox.y + 210)).toBe(0);
 });
 
 test('clear snapshots ink while clearing history and still permits undo', async ({ page }) => {

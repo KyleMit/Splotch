@@ -1073,12 +1073,12 @@ export function undo(): Promise<void> {
   const inkMotionStart = PERF_MARKS ? performance.now() : 0;
   if (animate) inkMotion.undo(canvas, peekTiledUndoCommand(), getViewState(), renderScale);
   if (PERF_MARKS) performance.measure('engine.undoInkMotion', { start: inkMotionStart });
-  const recordedPaper =
-    activePointers.size === 0 && !penStreamAdopter.hasCanvasExit()
-      ? peekTiledUndoPaper()
-      : undefined;
+  const recordedPaper = animate ? peekTiledUndoPaper() : undefined;
   if (recordedPaper) setCanvasEmptyState(false, recordedPaper, true);
   const state = undoTiledCommand(renderScale);
+  const subtractStart = PERF_MARKS ? performance.now() : 0;
+  if (animate) inkMotion.subtractRemainingInk();
+  if (PERF_MARKS) performance.measure('engine.undoInkMotion', { start: subtractStart });
   setCanvasEmptyState(state.empty, state.recordedPaper);
   setCanUndo(state.canUndo);
   state.restoreAppearance?.();
