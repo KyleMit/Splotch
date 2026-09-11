@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-09-10 | [vet-audits](#2026-09-10--vet-audits)                           |
 | 2026-09-10 | [code-audit](#2026-09-10--code-audit)                           |
 | 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-3)         |
 | 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-2)         |
@@ -88,6 +89,16 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-09-10 · vet-audits
+
+Adversarial review of the ten ranked Web-only findings filed seven issues in priority order: #1757,
+#1758, #1759, #1760, #1761, #1762, and #1763. Each survivor was revalidated against current code and
+relevant ADRs and sharpened with a concrete regression or measurement path. Three findings were
+dropped: canceling superseded Magic-sheet worker jobs lacked a credible measured payoff for the
+cross-worker protocol it would add; Color Picker's dual grid is ADR-0048's explicit retained
+architecture; and caching Slider width per drag was an unmeasured micro-optimization outside a
+meaningful hot path. The staging backlog was fully drained and `docs/AUDIT.md` deleted.
 
 ## 2026-09-10 · code-audit
 
