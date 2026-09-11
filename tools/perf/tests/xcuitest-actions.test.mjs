@@ -37,6 +37,7 @@ import {
   settingsSectionMeasurement,
   settingsSectionSetupReady,
   uiActivationLabel,
+  unclassifiedDeviceWarning,
   validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
 } from '../ios/capture-xcuitest-actions.mjs';
@@ -173,6 +174,19 @@ describe('actionGateAllowances', () => {
   const physicalIpadSession = {
     capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' },
   };
+  // The shape a real device actually reports: udid, platformName, platformVersion and
+  // browserName, and no deviceName at all. Every positive case that supplies a
+  // deviceName the device does not send is how the ledger stayed unreachable while
+  // these tests passed.
+  const minimalPhysicalSafariSession = {
+    capabilities: {
+      browserName: 'Safari',
+      platformName: 'iOS',
+      platformVersion: '26.5',
+      udid: physicalIpadUdid,
+      automationName: 'XCUITest',
+    },
+  };
 
   it('applies the calibrated ledger to the local physical iPad web path', () => {
     expect(
@@ -185,27 +199,52 @@ describe('actionGateAllowances', () => {
     ).toBe(IOS_ACTION_GATE_ALLOWANCES);
   });
 
-  // The shape a real device actually reports: udid, platformName, platformVersion and
-  // browserName, and no deviceName at all. Every other positive case here supplies a
-  // deviceName the device does not send, which is how the ledger stayed unreachable
-  // while these tests passed.
   it('applies the ledger to a physical iPad session that reports no deviceName', () => {
     expect(
       actionGateAllowances({
         nativeApp: false,
         deviceClass: 'tablet',
         requestedCapabilities: null,
-        session: {
-          capabilities: {
-            browserName: 'Safari',
-            platformName: 'iOS',
-            platformVersion: '26.5',
-            udid: physicalIpadUdid,
-            automationName: 'XCUITest',
-          },
-        },
+        session: minimalPhysicalSafariSession,
       })
     ).toBe(IOS_ACTION_GATE_ALLOWANCES);
+  });
+
+  describe('unclassifiedDeviceWarning', () => {
+    const simulatorUdid = 'C6012C49-AA93-4869-B3A6-E47C9EAAC567';
+    const unclassified = {
+      nativeApp: false,
+      deviceId: physicalIpadUdid,
+      requestedCapabilities: null,
+      session: minimalPhysicalSafariSession,
+    };
+
+    it('warns about an unclassified physical Safari capture that still records base gates', () => {
+      expect(unclassifiedDeviceWarning(unclassified)).toBe(
+        '[ipad-actions] Physical iOS Safari capture without --device-class: base gates will be recorded'
+      );
+      expect(actionGateAllowances(unclassified)).toEqual({});
+    });
+
+    it.each([
+      ['an explicit tablet', { deviceClass: 'tablet' }, IOS_ACTION_GATE_ALLOWANCES],
+      ['an explicit handset', { deviceClass: 'handset' }, {}],
+      ['a native-app capture', { nativeApp: true }, {}],
+      [
+        'a simulator capture',
+        {
+          deviceId: simulatorUdid,
+          session: {
+            capabilities: { browserName: 'Safari', platformName: 'iOS', udid: simulatorUdid },
+          },
+        },
+        {},
+      ],
+    ])('stays silent for %s and keeps its allowances', (_name, changes, allowances) => {
+      const classification = { ...unclassified, ...changes };
+      expect(unclassifiedDeviceWarning(classification)).toBeNull();
+      expect(actionGateAllowances(classification)).toEqual(allowances);
+    });
   });
 
   it('keeps a handset on the base gates even when the session names no device', () => {
