@@ -124,12 +124,17 @@ test('undo retires ink immediately beneath a shrinking overlay and drawing cance
 test('crayon undo ghost reads the tiles and is masked to the footprint', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
+  await drawCommittedStroke(page, [
+    { x: 425, y: 200 },
+    { x: 435, y: 200 },
+  ]);
   await pickBrush(page, '#crayonBrushButton');
   await drawCommittedStroke(page, [
     { x: 250, y: 200 },
     { x: 440, y: 240 },
   ]);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+  const canvasBox = (await page.locator('#drawingCanvas').boundingBox())!;
   await page.locator('#undoButton').evaluate((button: HTMLButtonElement) => {
     button.click();
     for (const animation of document
@@ -139,14 +144,22 @@ test('crayon undo ghost reads the tiles and is masked to the footprint', async (
   });
   const overlay = page.locator('.undo-ink-motion');
   await expect(overlay).toBeVisible();
-  const { inked, transparent } = await overlay.evaluate((canvas: HTMLCanvasElement) => {
-    const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
-    let inked = 0;
-    for (let index = 3; index < data.length; index += 4) if (data[index] > 0) inked++;
-    return { inked, transparent: data.length / 4 - inked };
-  });
-  expect(inked).toBeGreaterThan(0);
-  expect(transparent).toBeGreaterThan(0);
+  const overlayBox = (await overlay.boundingBox())!;
+  const ghostAlphaAt = (x: number, y: number) =>
+    overlay.evaluate(
+      (canvas: HTMLCanvasElement, point) => {
+        const scale = canvas.width / point.box.width;
+        const cx = Math.round((point.x - point.box.x) * scale);
+        const cy = Math.round((point.y - point.box.y) * scale);
+        const data = canvas.getContext('2d')!.getImageData(cx - 1, cy - 1, 3, 3).data;
+        let alpha = 0;
+        for (let index = 3; index < data.length; index += 4) alpha = Math.max(alpha, data[index]);
+        return alpha;
+      },
+      { x, y, box: overlayBox }
+    );
+  expect(await ghostAlphaAt(canvasBox.x + 345, canvasBox.y + 220)).toBeGreaterThan(0);
+  expect(await ghostAlphaAt(canvasBox.x + 430, canvasBox.y + 200)).toBe(0);
 });
 
 test('clear snapshots ink while clearing history and still permits undo', async ({ page }) => {
