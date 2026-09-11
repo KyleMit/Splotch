@@ -5,7 +5,7 @@ complements [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md), and is amende
 [ADR-0089](0089-css-presented-tiled-paper-on-rotation.md) for rotated settled tiles; bounded
 polaroid feedback amended 2026-08-02 and 2026-08-09; worker context-loss recovery added by
 [ADR-0110](0110-single-replay-worker-canvas-context-recovery.md); trusted-press preparation amended
-2026-08-17. **Date:** 2026-07
+2026-08-17 and 2026-09-11. **Date:** 2026-07
 
 ## Context
 
@@ -169,17 +169,20 @@ simulated 1× device scale; it remains unmeasured on physical scale-mismatch har
 
 Issue #978 moved lazy screenshot-module loading from trusted `pointerup` to the matching
 `pointerdown`. Once that module resolves, it checks the active-save and cooldown gates before
-requesting an immutable snapshot during the press. Activation, visible feedback, persistence, and
-cooldown still begin only after the guarded tap completes; a drag, cancellation, or destroyed
-control closes any prepared tile bitmaps and never saves. This preserves the user's ability to
-cancel a press while using the remaining contact interval for snapshot work without making a
-suppressed press pay the capture cost.
+requesting immutable tile snapshots during the press. Activation, composition, encoding, visible
+feedback, persistence, and cooldown begin only after the guarded tap completes; a drag,
+cancellation, or destroyed control closes any prepared tile bitmaps and never composes or saves.
+This preserves the user's ability to cancel a press while using the remaining contact interval for
+snapshot capture without making a suppressed press pay the capture, composition, or encoding cost.
 
-On the same physical iPad running iPadOS 26.5, one warmup plus five scored native-touch saves passed
-with first-frame P95 8 ms, ready P95 236 ms, post-action P95 17 ms, and a 29 ms maximum. The bounded
-preview became available about 85 ms earlier than the click-time baseline, matching the trusted
-press interval. The remaining save-ready duration is asynchronous worker encoding and persistence;
-ADR-0090 keeps readiness as an observed upper bound rather than a frame gate.
+The original eager-composition implementation passed one warmup plus five scored native-touch saves
+on the same physical iPad running iPadOS 26.5, with first-frame P95 8 ms, ready P95 236 ms,
+post-action P95 17 ms, and a 29 ms maximum. Its bounded preview became available about 85 ms earlier
+than the click-time baseline, matching the trusted press interval. Issue #1757 later deferred
+composition and encoding until activation so canceled presses release their tile bitmaps without
+doing that work. That amendment deliberately gives up the measured preview head start; current
+readiness is unmeasured and is expected to return toward the click-time baseline. ADR-0090 keeps
+readiness as an observed upper bound rather than a frame gate.
 
 If another pointer keeps drawing while the camera is pressed, the prepared image includes that
 stroke only through the snapshot point; later ink remains on the paper but not in that PNG. This is
@@ -196,10 +199,11 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
    `createImageBitmap()` on all 16 live tile canvases and records each tile's paper position. For a
    trusted Screenshot Button press, `pointerdown` loads the lazy screenshot module; once resolved,
    that module rejects already-suppressed work before requesting this preparation. The preparation
-   is consumed only when the guarded tap activates, and cancellation closes the requested bitmaps.
-   Other export callers prepare immediately when they request the blob. The promises may settle
-   later, but invoking them synchronously also preserves the save-on-delete race: clearing the live
-   drawing immediately afterward cannot blank the requested snapshots.
+   is consumed and composition begins only when the guarded tap activates; cancellation closes the
+   requested bitmaps without starting composition or encoding. Other export callers prepare
+   immediately when they request the blob. The promises may settle later, but invoking them
+   synchronously also preserves the save-on-delete race: clearing the live drawing immediately
+   afterward cannot blank the requested snapshots.
 2. `exportDrawing.ts` resolves those tile snapshots plus optional paper-texture and coloring-overlay
    bitmaps. It passes them directly to the cached encoder worker; the main thread never owns a new
    full-page export surface.
@@ -212,19 +216,20 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
    rotated settled snapshot is eligible too. A scale mismatch still needs vector replay rather than
    interpolated live pixels and retains the disposable full-snapshot architecture.
 5. `screenshotFeedback.ts` animates the existing camera icon immediately after a guarded tap
-   activates. Snapshot preparation may already be running from `pointerdown`, but no visible
-   feedback, preview, or save occurs until activation. When screenshot export uses the tiled worker
-   path, that worker starts the full-resolution PNG encode, downsamples the canonical composited
-   canvas to a preview no wider than 480 CSS pixels at most 2× backing scale, and transfers the
-   resulting `ImageBitmap`. On a scale-mismatch compatibility export, the engine separately
-   snapshots the settled live tiles before replay and `exportDrawing.ts` composites them directly
-   into the same bounded preview dimensions on the main thread. A one-second deadline bounds that
-   optional preview wait; on expiry the save proceeds, already-resolved and late-arriving tile
-   bitmaps close, and feedback remains the camera-icon pulse. The main thread copies a completed
-   bounded bitmap into a decorative canvas, closes it, and runs the 1.9-second polaroid flight with
-   transform and opacity. Preview creation or delivery failure does not cancel the save; an active
-   pointer or missing transferable-canvas APIs retain the camera-icon feedback without a polaroid.
-   The isolated local-tile measurements above are candidate evidence, not an integrated-path result.
+   activates. Tile snapshot preparation may already be running from `pointerdown`, but the
+   compositor, visible feedback, preview, and save do not start until activation. When screenshot
+   export uses the tiled worker path, that worker starts the full-resolution PNG encode, downsamples
+   the canonical composited canvas to a preview no wider than 480 CSS pixels at most 2× backing
+   scale, and transfers the resulting `ImageBitmap`. On a scale-mismatch compatibility export, the
+   engine separately snapshots the settled live tiles before replay and `exportDrawing.ts`
+   composites them directly into the same bounded preview dimensions on the main thread. A
+   one-second deadline bounds that optional preview wait; on expiry the save proceeds,
+   already-resolved and late-arriving tile bitmaps close, and feedback remains the camera-icon
+   pulse. The main thread copies a completed bounded bitmap into a decorative canvas, closes it, and
+   runs the 1.9-second polaroid flight with transform and opacity. Preview creation or delivery
+   failure does not cancel the save; an active pointer or missing transferable-canvas APIs retain
+   the camera-icon feedback without a polaroid. The isolated local-tile measurements above are
+   candidate evidence, not an integrated-path result.
 6. `screenshot.ts` owns at most one prepared press and continues coalescing concurrent Screenshot
    Button taps into one active save.
 7. After a successful save finishes, `screenshot.ts` suppresses further Screenshot Button taps for
@@ -262,6 +267,8 @@ because the tiled path requires the full set of transferable canvas APIs.
   produced no long frame.
 * \+ Tile snapshot invocation still precedes the first `await`, preserving save-on-delete
   correctness.
+* \+ A canceled Screenshot Button press releases its prepared tile bitmaps without starting the
+  compositor or PNG encoder.
 * \+ The worker and compositor stay out of the initial drawing-route preload graph.
 * \+ The celebratory polaroid is restored without decoding the saved PNG or constructing another
   full-page surface. Its bounded worker preview passed the physical-iPad action gate at 17 ms frame
@@ -281,6 +288,9 @@ because the tiled path requires the full set of transferable canvas APIs.
 * − The integrated compatibility preview plus full-resolution replay has browser correctness
   coverage but no physical scale-mismatch frame-budget result. The measured physical iPad takes the
   matched-scale worker path.
+* − Deferring composition and encoding until activation gives up the eager implementation's measured
+  85 ms preview head start. Current readiness is unmeasured and expected to return toward the
+  click-time baseline.
 * − Completion time is intentionally not a hard gate. A save can finish slowly under device pressure
   as long as UI frames remain below the 33.5 ms interaction threshold.
 

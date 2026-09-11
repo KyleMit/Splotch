@@ -153,7 +153,7 @@ describe('saveScreenshot', () => {
     expect(prepareExport).not.toHaveBeenCalled();
   });
 
-  it('cancels an unactivated engine preparation without completing it', async () => {
+  it('releases once across repeated cancellation requests without completing', async () => {
     const complete = vi.fn(async () => new Blob(['cancelled']));
     const cancel = vi.fn();
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
@@ -173,6 +173,25 @@ describe('saveScreenshot', () => {
     expect(complete).not.toHaveBeenCalled();
     expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
     expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+  });
+
+  it('releases and replaces an orphaned preparation before the next press', async () => {
+    const firstComplete = vi.fn(async () => new Blob(['stale']));
+    const firstCancel = vi.fn();
+    const secondComplete = vi.fn(async () => new Blob(['current']));
+    const secondCancel = vi.fn();
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    prepareScreenshot(() => ({ complete: firstComplete, cancel: firstCancel }));
+    prepareScreenshot(() => ({ complete: secondComplete, cancel: secondCancel }));
+
+    expect(firstCancel).toHaveBeenCalledOnce();
+    expect(firstComplete).not.toHaveBeenCalled();
+    await saveScreenshot();
+
+    expect(secondComplete).toHaveBeenCalledOnce();
+    expect(secondCancel).not.toHaveBeenCalled();
   });
 
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {

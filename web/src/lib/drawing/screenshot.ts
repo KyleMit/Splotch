@@ -103,57 +103,24 @@ function createPreparedScreenshot(
   exportPreparation: CanvasExportPreparation | null = null
 ): PreparedScreenshot {
   const preview = createPolaroidPreviewRequest();
-  let activated = false;
-  let cancelled = false;
-  let result: Promise<ExportResult> | null = null;
-  let pendingPreview: ImageBitmap | null = null;
-  const deferredPreview = preview
-    ? {
-        width: preview.width,
-        onReady(bitmap: ImageBitmap) {
-          if (cancelled) {
-            bitmap.close();
-          } else if (activated) {
-            preview.onReady(bitmap);
-          } else {
-            pendingPreview?.close();
-            pendingPreview = bitmap;
-          }
-        },
-      }
-    : null;
-  const exportOptions = deferredPreview ? { preview: deferredPreview } : undefined;
+  const exportOptions = preview ? { preview } : undefined;
   return {
     activate() {
-      if (result) return result;
-      if (cancelled) return Promise.resolve({ blob: null });
-      activated = true;
       playScreenshotFeedback();
-      if (pendingPreview) {
-        const bitmap = pendingPreview;
-        pendingPreview = null;
-        preview?.onReady(bitmap);
-      }
-      result = (exportPreparation?.complete(exportOptions) ?? exportCanvasBlob(exportOptions)).then(
+      return (exportPreparation?.complete(exportOptions) ?? exportCanvasBlob(exportOptions)).then(
         (blob): ExportResult => ({ blob }),
         (error): ExportResult => ({ error })
       );
-      return result;
     },
     cancel() {
-      if (activated || cancelled) return;
-      cancelled = true;
       exportPreparation?.cancel();
-      pendingPreview?.close();
-      pendingPreview = null;
     },
   };
 }
 
 export function prepareScreenshot(prepareExport: () => CanvasExportPreparation | null) {
-  if (activeScreenshotSave || performance.now() < nextScreenshotAllowedAt || preparedScreenshot) {
-    return;
-  }
+  if (activeScreenshotSave || performance.now() < nextScreenshotAllowedAt) return;
+  preparedScreenshot?.cancel();
   preparedScreenshot = createPreparedScreenshot(prepareExport());
 }
 
