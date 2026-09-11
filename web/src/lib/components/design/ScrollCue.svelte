@@ -13,11 +13,14 @@
      *  Set --scroll-cue-height above ScrollCue: the scroller is the fade's
      *  sibling, so it cannot pass that inherited property to the fade. */
     children?: Snippet<[Snippet]>;
+    /** Show immediately while the mounted or presented content is incomplete. */
+    contentPending?: boolean;
   }
 
-  let { children }: Props = $props();
+  let { children, contentPending = false }: Props = $props();
 
   let atEnd = $state(true);
+  const retired = $derived(atEnd && !contentPending);
 </script>
 
 {#snippet sentinel()}
@@ -33,14 +36,21 @@
     {@render children(sentinel)}
     <div
       class="scroll-cue overlay"
-      class:retired={atEnd}
+      class:retired
+      class:pending={contentPending}
       aria-hidden="true"
       use:excludeScrollportGutter
     ></div>
   </div>
 {:else}
   {@render sentinel()}
-  <div class="scroll-cue" class:retired={atEnd} aria-hidden="true" use:coverScrollportPadding></div>
+  <div
+    class="scroll-cue"
+    class:retired
+    class:pending={contentPending}
+    aria-hidden="true"
+    use:coverScrollportPadding
+  ></div>
 {/if}
 
 <style>
@@ -107,6 +117,9 @@
 
   .scroll-cue.overlay {
     position: absolute;
+    /* WebKit omits an uncomposited overlay above a scrolling pane while its
+       dialog transforms, then paints it abruptly when the fly-in ends. */
+    transform: translateZ(0);
     left: 0;
     right: 0;
     bottom: 0;
@@ -115,5 +128,9 @@
 
   .scroll-cue.retired {
     opacity: 0;
+  }
+
+  .scroll-cue.pending {
+    transition: none;
   }
 </style>

@@ -242,6 +242,10 @@
     while more remains under the fold, and absent again once the end is on screen.
   </p>
   <p class="sub-intro">
+    When content mounts or appears in stages, pass <code>contentPending</code> to show the fade immediately.
+    Clear it once the content is whole to resume the observed fit and scroll-end behavior.
+  </p>
+  <p class="sub-intro">
     For a bounded pane, wrap its scroller in <code>ScrollCue</code>. The <code>children</code>
     snippet receives an end-marker snippet to render as the scroller's last child. The fade paints beside
     the scroller as an overlay, covering its content edge while leaving scrollbar gutters clear. Its position

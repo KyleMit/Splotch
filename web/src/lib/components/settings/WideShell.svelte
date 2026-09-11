@@ -517,7 +517,7 @@
       onSelect={jumpToSection}
     />
   </div>
-  <ScrollCue>
+  <ScrollCue contentPending={!fullyMounted || presentedCount < SECTIONS.length}>
     {#snippet children(end)}
       <div
         class="settings-pane"
