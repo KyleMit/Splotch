@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { paintStrokeFootprint, strokeMotionBounds } from './inkMotionBounds';
+import { paintStrokeFootprint, strokeGhostReadsTiles, strokeMotionBounds } from './inkMotionBounds';
 import { AA_PAD_PX } from './opGeometry';
 import type { DotOp, StrokeGroupCommand } from './strokeOps';
 
@@ -123,5 +123,18 @@ describe('paintStrokeFootprint', () => {
     ]);
     expect(target_.lineCap).toBe('round');
     expect(target_.lineJoin).toBe('round');
+  });
+});
+
+describe('strokeGhostReadsTiles', () => {
+  it('reads the tiles for crayon and magic ink and replays plain pen ink', () => {
+    expect(strokeGhostReadsTiles({ wasEmpty: true, ops: [dot] })).toBe(false);
+    expect(strokeGhostReadsTiles({ wasEmpty: true, ops: [dot, { ...dot, crayon: true }] })).toBe(
+      true
+    );
+    expect(strokeGhostReadsTiles({ wasEmpty: true, ops: [{ ...dot, magic: true }] })).toBe(true);
+    expect(
+      strokeGhostReadsTiles({ wasEmpty: true, ops: [{ ...dot, crayon: true, erase: true }] })
+    ).toBe(false);
   });
 });
