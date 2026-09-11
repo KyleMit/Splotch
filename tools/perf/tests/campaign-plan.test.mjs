@@ -23,6 +23,7 @@ import {
   splitTransportIdentityProblem,
   splitUndoEvidenceProblem,
   commandReportsRefreshRegime,
+  DEVICE_CLASSES,
 } from '../lib/campaign-plan.mjs';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -374,9 +375,7 @@ describe('campaign device class', () => {
   // declaring what it is, so the vocabulary grows rather than the check narrowing.
   it('classes every target, so a new one cannot silently arrive without one', () => {
     for (const [id, target] of Object.entries(CAMPAIGN_TARGETS)) {
-      expect(['tablet', 'handset', 'desktop'], `${id} needs a deviceClass`).toContain(
-        target.deviceClass
-      );
+      expect(DEVICE_CLASSES, `${id} needs a deviceClass`).toContain(target.deviceClass);
     }
   });
 });

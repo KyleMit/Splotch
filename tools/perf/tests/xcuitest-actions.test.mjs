@@ -28,6 +28,7 @@ import {
   customColorSelectionEventTypes,
   largestNativeRect,
   nativeAccessibilityFallbackWarning,
+  parseDeviceClass,
   runScreenshotToggleAtAdvancedBaseline,
   runToggleRoundTrip,
   screenshotActivation,
@@ -41,6 +42,7 @@ import {
   validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
 } from '../ios/capture-xcuitest-actions.mjs';
+import { DEVICE_CLASSES } from '../lib/campaign-plan.mjs';
 import {
   desktopActionsArtifact,
   hasMinimumActionRepeats,
@@ -218,6 +220,9 @@ describe('actionGateAllowances', () => {
       requestedCapabilities: null,
       session: minimalPhysicalSafariSession,
     };
+    const physicalSafariSessionNamed = (deviceName) => ({
+      capabilities: { ...minimalPhysicalSafariSession.capabilities, deviceName },
+    });
 
     it('warns about an unclassified physical Safari capture that still records base gates', () => {
       expect(unclassifiedDeviceWarning(unclassified)).toBe(
@@ -227,8 +232,27 @@ describe('actionGateAllowances', () => {
     });
 
     it.each([
+      [
+        'a device name that names neither an iPad nor an iPhone',
+        { session: physicalSafariSessionNamed('My Device') },
+      ],
+      ['a device class outside the campaign vocabulary', { deviceClass: 'ipad' }],
+    ])('treats %s as unclassified', (_name, changes) => {
+      const classification = { ...unclassified, ...changes };
+      expect(unclassifiedDeviceWarning(classification)).toBe(
+        unclassifiedDeviceWarning(unclassified)
+      );
+      expect(actionGateAllowances(classification)).toEqual({});
+    });
+
+    it.each([
       ['an explicit tablet', { deviceClass: 'tablet' }, IOS_ACTION_GATE_ALLOWANCES],
       ['an explicit handset', { deviceClass: 'handset' }, {}],
+      [
+        'a session named as an iPhone',
+        { session: physicalSafariSessionNamed('Kyle’s iPhone') },
+        {},
+      ],
       ['a native-app capture', { nativeApp: true }, {}],
       [
         'a simulator capture',
@@ -355,6 +379,19 @@ describe('actionGateAllowances', () => {
         ...options,
       })
     ).toEqual({});
+  });
+});
+
+describe('parseDeviceClass', () => {
+  it('accepts an omitted flag and every class a campaign target may declare', () => {
+    expect(parseDeviceClass(undefined)).toBeUndefined();
+    for (const deviceClass of DEVICE_CLASSES) {
+      expect(parseDeviceClass(deviceClass)).toBe(deviceClass);
+    }
+  });
+
+  it('rejects a misspelled class instead of letting it record base gates', () => {
+    expect(() => parseDeviceClass('ipad')).toThrow('--device-class must be one of');
   });
 });
 

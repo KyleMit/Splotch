@@ -13,7 +13,7 @@ import {
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { captureRuntime } from '../lib/input-fidelity.mjs';
-import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import { DEVICE_CLASSES, NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
@@ -239,20 +239,33 @@ function physicalIosWebIdentity({ nativeApp, deviceId, requestedCapabilities, se
   ].some(isPhysicalAppleUdid);
   const isPhysicalIosWeb =
     !nativeApp && sessionPlatformName({ requestedCapabilities, session }) === 'ios' && physicalDevice;
-  return { deviceName, isPhysicalIosWeb };
+  return {
+    isPhysicalIosWeb,
+    namesIpad: deviceName.includes('ipad'),
+    namesIphone: deviceName.includes('iphone'),
+  };
+}
+
+export function parseDeviceClass(value) {
+  if (value === undefined || DEVICE_CLASSES.includes(value)) return value;
+  throw new Error(`--device-class must be one of ${DEVICE_CLASSES.join(', ')}`);
 }
 
 export function actionGateAllowances(classification) {
-  const { deviceName, isPhysicalIosWeb } = physicalIosWebIdentity(classification);
-  const isTablet = classification.deviceClass === 'tablet' || deviceName.includes('ipad');
+  const { isPhysicalIosWeb, namesIpad } = physicalIosWebIdentity(classification);
+  const isTablet = classification.deviceClass === 'tablet' || namesIpad;
   return isPhysicalIosWeb && isTablet ? IOS_ACTION_GATE_ALLOWANCES : {};
 }
 
 // Physical identity alone must not imply a tablet — an iPhone is a legitimate
 // capture on base gates — so an unclassified session is announced, not inferred.
+// A device name that names neither an iPad nor an iPhone classifies nothing: it
+// records base gates exactly as silently as no name at all.
 export function unclassifiedDeviceWarning(classification) {
-  const { deviceName, isPhysicalIosWeb } = physicalIosWebIdentity(classification);
-  if (!isPhysicalIosWeb || classification.deviceClass || deviceName) return null;
+  const { isPhysicalIosWeb, namesIpad, namesIphone } = physicalIosWebIdentity(classification);
+  const isClassified =
+    DEVICE_CLASSES.includes(classification.deviceClass) || namesIpad || namesIphone;
+  if (!isPhysicalIosWeb || isClassified) return null;
   return '[ipad-actions] Physical iOS Safari capture without --device-class: base gates will be recorded';
 }
 
@@ -1710,6 +1723,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
+  const deviceClass = parseDeviceClass(flag('device-class'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   let sessionId = flag('session-id');
   const capabilitiesFile = flag('capabilities-file');
@@ -1787,7 +1801,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const deviceClassification = {
       nativeApp,
       deviceId: flag('device-id'),
-      deviceClass: flag('device-class'),
+      deviceClass,
       requestedCapabilities: capabilities,
       session,
     };
