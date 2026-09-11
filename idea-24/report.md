@@ -68,8 +68,7 @@ findings). No normalizer pass needed. Neither page has eyes, so eye topology was
 | eye audit                                  | 0 cores (eyeless page) — ok/ok                                         | 0 cores — ok/ok                                                      |
 
 The pipeline's "eye-flavored redraw can refuse eyeless scenes" hazard (objects/house-wide precedent)
-was preempted by passing `--notes "This page has NO eyes and NO faces anywhere -
-that is expected…"`
+was preempted by passing `--notes "This page has NO eyes and NO faces anywhere - that is expected…"`
 to both chalk runs; both cleared in one attempt. Recommend the same for any future eyeless page.
 
 **API-call tally (12 total):** heart-wide = 2 pen + 1 chalk + 1 light + 1 night = **5**;

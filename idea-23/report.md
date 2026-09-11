@@ -109,8 +109,7 @@ raw's verdict. The *numeric movement* detection (lineWhite dropping 252->195) is
 catch — evidence that freezing raw scores, not just verdicts, is worth it.
 
 **First revert attempt was a miss worth documenting:**
-`git checkout a81be48 --
-fill-src/nature/ant-wide.light.raw.webp` (an older but different render)
+`git checkout a81be48 -- fill-src/nature/ant-wide.light.raw.webp` (an older but different render)
 diffed **clean** — the old raw scores keep=1.0000/localKeep=1.0000 and identical eye counts against
 the current outline. The famously drifted ant-wide flower predates that blob. Lesson: the golden set
 catches *score* regressions, not arbitrary byte changes — two valid renders can be score-identical

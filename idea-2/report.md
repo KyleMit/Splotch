@@ -60,10 +60,10 @@ legitimate composition difference). Top offenders:
 ## Motif findings (before evidence)
 
 * **Bubbles** (`before-bubbles-strip.webp`): CONFIRMED, the clearest outlier.
-  `shapes/rectangle-tall` = thin rings, night fill glows teal through them; `shapes/rectangle-wide`
-  = fat white donuts with dark cores — at night they read as giant eyeballs, not bubbles.
-  (IDEAS.md's "square-wide bubbles" is a misremembering — square-wide has clouds, not bubbles; the
-  ring sibling is rectangle-tall.)
+  `shapes/rectangle-tall` = thin rings, night fill glows teal through them;
+  `shapes/rectangle-wide` = fat white donuts with dark cores — at night they read as giant eyeballs,
+  not bubbles. (IDEAS.md's "square-wide bubbles" is a misremembering — square-wide has clouds, not
+  bubbles; the ring sibling is rectangle-tall.)
 * **Sun** (`before-sun-strip.webp`): `dinosaur/pterodactyl-tall`'s rayed sun is chalk-solid white
   (moon-like); `pterodactyl-wide`'s sun is a thin ring the night fill painted **gold**. So no, the
   wide sun does NOT match — but both read well; this is an art-direction call, not an obvious
