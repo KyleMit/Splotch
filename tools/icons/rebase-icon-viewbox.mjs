@@ -428,12 +428,27 @@ export async function rebaseIcon(file) {
   return { changed: true, bad };
 }
 
+// Icons live at the top level and in deferred/ (ADR-0164); a caller names an
+// icon by basename, so each name is resolved against the whole tree.
+function resolveIconFiles(names, allFiles) {
+  return names.map((name) => {
+    const matches = allFiles.filter((f) => f === `${name}.svg` || f.endsWith(`/${name}.svg`));
+    if (matches.length !== 1) {
+      throw new Error(
+        `[rebase-icon-viewbox] ${name}: expected one ${name}.svg under ${ICON_DIR}, found ${matches.length}`
+      );
+    }
+    return matches[0];
+  });
+}
+
 export async function rebaseIconViewboxes(names) {
+  const allFiles = (await readdir(ICON_DIR, { recursive: true }))
+    .filter((f) => f.endsWith('.svg'))
+    .sort();
   const files = names.length
-    ? names.map((n) => `${n}.svg`)
-    : (await readdir(ICON_DIR, { recursive: true }))
-        .filter((f) => f.endsWith('.svg') && !REBASE_EXEMPT.has(f))
-        .sort();
+    ? resolveIconFiles(names, allFiles)
+    : allFiles.filter((f) => !REBASE_EXEMPT.has(f));
 
   let changed = 0;
   for (const f of files) {
