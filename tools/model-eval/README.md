@@ -97,21 +97,33 @@ instead of paying twice.
   Pages serves it rendered: [`scrapbook/model-eval/report/`](../../scrapbook/model-eval/report/) →
   <https://kylemit.github.io/Splotch/model-eval/report/>. It's a folder — `index.html` plus an
   `assets/` folder of thumbnail files (referenced by relative path, not base64-inlined, so diffs
-  stay readable and unchanged thumbnails dedupe in git) and its `results.json` + `summary.json`.
+  stay readable and unchanged thumbnails dedupe in git). Earlier promoted bake-offs live beside
+  `report/` in dated folders such as `2026-08-14-gemini-vs-gpt-image/`; the scrapbook index lists
+  the stable latest report first, followed by those archives newest-first.
 
 The rest is gitignored: the regenerable local `inputs/` and every `output/<runId>/` run.
 
 ## Promoting a new run to `/scrapbook`
 
 A run writes its report bundle to a gitignored `output/<runId>/report/` (`index.html` + `assets/` +
-the JSON). To make a run the published reference, copy that whole folder into the scrapbook tree
-(ADR-0059) at the stable path so the URL never changes:
+the JSON). Before replacing a distinct promoted bake-off, preserve the current report under a dated,
+descriptive sibling path:
+
+```bash
+npm run scrapbook:publish -- scrapbook/model-eval/report model-eval/2026-09-10-gpt-image-2-vs-2-5
+```
+
+Then make the new run the published reference by copying it to the stable path (ADR-0059), so the
+main URL never changes:
 
 ```bash
 npm run scrapbook:publish -- tools/model-eval/output/<runId>/report model-eval/report
 ```
 
 then commit. The Pages deploy runs on merge to `main`.
+
+Archive one copy per paid result set when the compared candidates, prompt, or corpus changed enough
+to make the old decision evidence useful. Do not archive layout-only report rebuilds.
 
 ## The corpus
 

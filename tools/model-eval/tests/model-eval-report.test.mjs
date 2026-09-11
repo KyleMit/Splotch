@@ -1,4 +1,7 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ROOT } from '../../lib/proc.mjs';
 import { renderReportHtml, statsFor } from '../lib/model-eval-report.mjs';
 import { VARIANTS } from '../lib/model-eval.mjs';
 
@@ -145,5 +148,19 @@ describe('renderReportHtml', () => {
   it('drops the verdict block when no verdict is supplied', () => {
     expect(render()).not.toContain('class="verdict"');
     expect(render({ verdictHtml: '<div class="pick">x</div>' })).toContain('class="verdict"');
+  });
+});
+
+describe('committed model evaluation archive', () => {
+  it('keeps every historical report image alongside the page that references it', () => {
+    const archiveDir = join(ROOT, 'scrapbook/model-eval/2026-08-14-gemini-vs-gpt-image');
+    const html = readFileSync(join(archiveDir, 'index.html'), 'utf8');
+    const referencedAssets = [
+      ...new Set([...html.matchAll(/(?:src|href)="assets\/([^"]+)"/g)].map((match) => match[1])),
+    ].sort();
+    const committedAssets = readdirSync(join(archiveDir, 'assets')).sort();
+
+    expect(html).toContain('2026-08-14T03-49-18-372Z-bakeoff');
+    expect(referencedAssets).toEqual(committedAssets);
   });
 });

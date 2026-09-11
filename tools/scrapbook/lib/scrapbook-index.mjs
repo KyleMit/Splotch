@@ -227,6 +227,37 @@ function childReports(dir, type) {
     .filter(Boolean);
 }
 
+const MODEL_EVAL_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+function modelEvalReportLabel(name) {
+  if (name === 'report') return 'Latest bake-off';
+  if (name === 'prompt-adherence') return 'Prompt-adherence lab';
+
+  const match = name.match(/^(\d{4})-(\d{2})-(\d{2})-(.+)$/);
+  if (!match) return name;
+
+  const [, year, month, day, topic] = match;
+  const words = { bakeoff: 'bake-off', gemini: 'Gemini', gpt: 'GPT', image: 'Image', vs: 'vs' };
+  const title = topic
+    .split('-')
+    .map((word) => words[word] ?? `${word[0].toUpperCase()}${word.slice(1)}`)
+    .join(' ');
+  return `${MODEL_EVAL_MONTHS[Number(month) - 1]} ${Number(day)}, ${year} · ${title}`;
+}
+
 // Curated presentation for the known scrapbook types, keyed by folder path under
 // scrapbook/ (a nested key gives one page inside a type its own card). `entry` is
 // the page a card links to; `count` derives a short unit label from the folder;
@@ -319,11 +350,15 @@ const REGISTRY = {
       return n > 1 ? `${n} reports` : null;
     },
     inside: (dir) => {
-      const labels = { report: 'Bake-off report', 'prompt-adherence': 'Prompt-adherence lab' };
-      return childReports(dir, 'model-eval').map((r) => ({
-        ...r,
-        label: labels[r.label] ?? r.label,
-      }));
+      return childReports(dir, 'model-eval')
+        .sort((a, b) => {
+          if (a.label === 'report') return -1;
+          if (b.label === 'report') return 1;
+          if (a.label === 'prompt-adherence') return 1;
+          if (b.label === 'prompt-adherence') return -1;
+          return b.label.localeCompare(a.label);
+        })
+        .map((r) => ({ ...r, label: modelEvalReportLabel(r.label) }));
     },
   },
   'e2e-tuning': {
