@@ -11,7 +11,7 @@ const TAP_MOVEMENT_TOLERANCE_PX = 8;
 // arrived two tasks later (+2ms), which made a zero-delay timer clear too
 // early and double-fire the control — and legacy WebKit could delay synthesis
 // by its 350ms double-tap window, so the consume window must outlast both.
-const PRESS_CLICK_CONSUME_WINDOW_MS = 700;
+export const PRESS_CLICK_CONSUME_WINDOW_MS = 700;
 
 // iPadOS Scribble claims an Apple Pencil stroke that starts within ~450ms of a
 // pen TAP anywhere on the page: the stroke's pointer events still arrive, the

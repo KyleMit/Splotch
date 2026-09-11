@@ -182,6 +182,7 @@
       key: 'multi-finger',
       label: `${STROKES} five-finger drags (~${MULTI_FINGERS * MULTI_PER_FINGER} ops each)`,
       strokes: Array.from({ length: STROKES }, (_, i) => multiGesture(i)),
+      multi: true,
     },
     {
       key: 'crayon-squiggles',
@@ -279,13 +280,13 @@
     }
   };
 
-  async function scenario({ key, label, strokes, crayon }) {
+  async function scenario({ key, label, strokes, crayon, multi }) {
     await resetForScenario(label);
     if (E.setCrayonMode) E.setCrayonMode(!!crayon);
     const drawStart = performance.now();
     for (const s of strokes) {
-      if (Array.isArray(s)) E.strokeSync(s, 'touch');
-      else E.multiStrokeSync(s, 'touch');
+      if (multi) E.multiStrokeSync(s, 'touch');
+      else E.strokeSync(s, 'touch');
       await new Promise((r) => requestAnimationFrame(r)); // let each stroke paint
     }
     const drawEnd = performance.now();

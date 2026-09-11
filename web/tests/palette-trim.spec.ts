@@ -82,29 +82,10 @@ const LANDSCAPE_SINGLE_COLUMN: TrimCase[] = [
   { w: 1000, h: 850, kept: 10 },
   { w: 1000, h: 700, kept: 8 },
   { w: 1000, h: 620, kept: 7 },
-  { w: 1000, h: 550, kept: 6 },
-  { w: 1000, h: 480, kept: 5 },
 ];
 
 for (const trimCase of LANDSCAPE_SINGLE_COLUMN) {
   test(`landscape ${caseTitle(trimCase)}`, async ({ page }) => {
-    await loadAt(page, trimCase.w, trimCase.h);
-    await expectKept(page, trimCase.kept);
-  });
-}
-
-// ── Landscape two columns: below the 444px layout switch the palette becomes a
-// grid of full rows of two, which fits more swatches than the single column did
-// and drops them a pair at a time. ─────────────────────────────────────────
-const LANDSCAPE_TWO_COLUMN: TrimCase[] = [
-  { device: 'large iPhone landscape', w: 956, h: 440, kept: 9 },
-  { device: 'small iPhone landscape', w: 812, h: 375, kept: 9 },
-  { w: 1000, h: 350, kept: 7 },
-  { w: 1000, h: 250, kept: 5 },
-];
-
-for (const trimCase of LANDSCAPE_TWO_COLUMN) {
-  test(`short landscape ${caseTitle(trimCase)}`, async ({ page }) => {
     await loadAt(page, trimCase.w, trimCase.h);
     await expectKept(page, trimCase.kept);
   });

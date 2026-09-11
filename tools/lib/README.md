@@ -3,16 +3,17 @@
 `tools/lib/` is the dependency foundation for unrelated repository-automation capabilities. It may
 be imported by root tools and capability packages, but it never imports from a capability folder.
 
-| Module                     | Ownership                                                               |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `coloring-book-assets.mjs` | Shared web/native coloring catalog partitions                           |
-| `filesystem.mjs`           | Recursive directory traversal for repository artifacts                  |
-| `html.mjs`                 | HTML escaping and report-rendering primitives                           |
-| `net.mjs`                  | Local port allocation and network helpers                               |
-| `playwright.mjs`           | Browser launch and executable-resolution helpers                        |
-| `proc.mjs`                 | Repository root, subprocesses, main-entry detection, and failure output |
-| `smoke.mjs`                | Pass/fail reporting for smoke-test workflows                            |
-| `vite-server.mjs`          | Owned Vite server lifecycle for isolated checks                         |
+| Module                      | Ownership                                                               |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `build-instrumentation.mjs` | Shared instrumentation predicate for release-seam and bundle checks     |
+| `coloring-book-assets.mjs`  | Shared web/native coloring catalog partitions                           |
+| `filesystem.mjs`            | Recursive directory traversal for repository artifacts                  |
+| `html.mjs`                  | HTML escaping and report-rendering primitives                           |
+| `net.mjs`                   | Local port allocation and network helpers                               |
+| `playwright.mjs`            | Browser launch and executable-resolution helpers                        |
+| `proc.mjs`                  | Repository root, subprocesses, main-entry detection, and failure output |
+| `smoke.mjs`                 | Pass/fail reporting for smoke-test workflows                            |
+| `vite-server.mjs`           | Owned Vite server lifecycle for isolated checks                         |
 
 These modules have no public command of their own. Add a helper here only when unrelated
 capabilities share it and no narrower domain owns the concern. Preserve the existing exported

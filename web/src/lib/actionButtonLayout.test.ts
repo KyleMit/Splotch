@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { layout } from './state/layout.svelte';
 import { network } from './state/network.svelte';
 import { freeGenerations } from './state/freeGenerations.svelte';
@@ -17,10 +17,7 @@ import {
   ACTION_BUTTON_SCALE_MAX,
 } from './state/settings.svelte';
 import { selectBrush } from './state/tool.svelte';
-import {
-  landscapeSingleColumnMediaQuery,
-  PALETTE_LANDSCAPE_WIDTHS_PX,
-} from './design/trimGeometry';
+import { PALETTE_LANDSCAPE_WIDTH_PX } from './design/trimGeometry';
 import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from './breakpoints';
 import {
   ACTION_BUTTON_BASE_PX,
@@ -43,22 +40,6 @@ import {
   MAX_ACTION_BUTTON_COUNT,
 } from './actionButtonLayout';
 
-const originalMatchMedia = window.matchMedia;
-let singleColumnMediaMatches = false;
-
-function mediaQueryList(query: string, matches: boolean): MediaQueryList {
-  return {
-    matches,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(() => true),
-  };
-}
-
 function resetState() {
   setAdvancedControls(true);
   setStrokeWidthControl(true);
@@ -80,16 +61,10 @@ function resetState() {
   layout.paletteMeasurement = { width: 156, height: 76, orientation: 'landscape' };
   Object.assign(layout.safeArea, { top: 0, right: 0, bottom: 0, left: 0 });
 
-  singleColumnMediaMatches = false;
-  window.matchMedia = vi.fn((query: string) =>
-    mediaQueryList(query, query === landscapeSingleColumnMediaQuery() && singleColumnMediaMatches)
-  );
+  layout.phoneLandscape = false;
 }
 
 beforeEach(resetState);
-afterAll(() => {
-  window.matchMedia = originalMatchMedia;
-});
 
 describe('visibleActionButtonCount', () => {
   it.each([
@@ -170,17 +145,24 @@ describe('visibleActionButtonCount', () => {
 });
 
 describe('resolvedLandscapePaletteWidth', () => {
-  it('uses the two-column media-query geometry before the palette measures', () => {
+  it('uses the column geometry before the palette measures', () => {
     layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
     layout.viewportHeight = 768;
-    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns);
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
   });
 
-  it('uses the single-column media-query geometry instead of visible viewport height', () => {
+  it('removes the palette reserve on landscape phones', () => {
     layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
     layout.viewportHeight = 375;
-    singleColumnMediaMatches = true;
-    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn);
+    layout.phoneLandscape = true;
+    expect(resolvedLandscapePaletteWidth()).toBe(0);
+  });
+
+  it('keeps the palette reserve when visible height is phone-sized but CSS is tablet-sized', () => {
+    layout.viewportHeight = 550;
+    layout.phoneLandscape = false;
+    layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
   });
 
   it('keeps the measured width as the hydrated correction', () => {
@@ -190,7 +172,7 @@ describe('resolvedLandscapePaletteWidth', () => {
 
   it('ignores a portrait measurement after rotating to landscape', () => {
     layout.paletteMeasurement = { width: 375, height: 76, orientation: 'portrait' };
-    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns);
+    expect(resolvedLandscapePaletteWidth()).toBe(PALETTE_LANDSCAPE_WIDTH_PX);
   });
 });
 
@@ -216,17 +198,25 @@ describe('maxActionButtonScale', () => {
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
-  it('caps below 100% on a small landscape phone', () => {
+  it('keeps the row size ceiling when CSS is tablet-sized behind browser chrome', () => {
+    layout.viewportWidth = 650;
+    layout.viewportHeight = 550;
+    layout.phoneLandscape = false;
+    layout.paletteMeasurement = { width: 84, height: 600, orientation: 'landscape' };
+    expect(maxActionButtonScale()).toBe(116);
+  });
+
+  it('allows the full slider range on a landscape phone', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 600;
     layout.viewportHeight = 375;
-    // (600 − 156 − 64 − 124) / 6 = 42.67px per button → 79% of the phone base.
-    expect(maxActionButtonScale()).toBe(79);
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('never drops below the slider minimum', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 520;
-    layout.viewportHeight = 320;
-    // 29.33px per button would be 54% — clamped to the static minimum.
+    layout.viewportHeight = 160;
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 
@@ -260,28 +250,29 @@ describe('maxActionButtonScale', () => {
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
-  it('gains headroom when buttons are switched off', () => {
+  it('retains the full slider range when phone controls are switched off', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 600;
     layout.viewportHeight = 375;
     setScreenshot(false);
     setUndoButton(false);
-    // n=4: (600 − 156 − 64 − 100) / 4 = 70px per button → 129%.
-    expect(maxActionButtonScale()).toBe(129);
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('budgets for the free AI button without a credential', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 680;
     layout.viewportHeight = 360;
-    // n=6: (680 − 156 − 64 − 124) / 6 = 56px per button → 103%.
-    expect(maxActionButtonScale()).toBe(103);
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
   });
 
   it('subtracts safe-area insets from the budget', () => {
+    layout.phoneLandscape = true;
     layout.viewportWidth = 667;
     layout.viewportHeight = 375;
-    Object.assign(layout.safeArea, { left: 30, right: 30 });
-    // 60px of insets off the 323px budget: 263 / 6 = 43.83px → 81%.
-    expect(maxActionButtonScale()).toBe(81);
+    layout.viewportHeight = 250;
+    Object.assign(layout.safeArea, { top: 20, bottom: 20 });
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 });
 
@@ -405,10 +396,10 @@ const BUTTON_SIZE_FIXTURES = [
     budgetWins: false,
   },
   {
-    name: 'narrow landscape phone with every button',
+    name: 'narrow landscape tablet with every button',
     orientation: 'landscape',
-    viewportWidth: 568,
-    viewportHeight: 320,
+    viewportWidth: 650,
+    viewportHeight: 620,
     paletteWidth: 156,
     paletteHeight: 320,
     buttonCount: 6,

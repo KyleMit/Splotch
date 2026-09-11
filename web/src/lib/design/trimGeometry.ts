@@ -1,3 +1,5 @@
+import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+
 // Executable form of the responsive-trim ladders in ColorPalette.svelte and
 // ColorPicker.svelte (ADR-0048). Those components trim swatches/rows/columns
 // with pure CSS, so every breakpoint is a hand-evaluated arithmetic result
@@ -48,27 +50,13 @@ function stackExtentPx(
 // capacity below is a color count plus this.
 const GRADIENT_SLOTS = 1;
 
-/**
- * Slots the landscape single column holds on for before it gives up and falls
- * back to the roomier two-column grid. Five colors and the gradient swatch is
- * the narrowest rainbow worth keeping the one-bar layout — and the narrow bar's
- * extra canvas — for.
- */
-const LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS = 6;
-
-/** Columns in the fallback grid below that floor. */
-const LANDSCAPE_FALLBACK_COLUMNS = 2;
-
 /** The portrait row trims all the way down to the untrimmable gradient swatch. */
 const PORTRAIT_FLOOR_SLOTS = GRADIENT_SLOTS;
 
 // The landscape Color Palette and Actions Panel both need this inline extent
 // before hydration. app.css emits the values as a responsive custom property;
 // actionButtonLayout.fallback.test.ts guards that copy against this source.
-export const PALETTE_LANDSCAPE_WIDTHS_PX = {
-  singleColumn: stackExtentPx(1, PALETTE_COLUMN_GEOMETRY),
-  twoColumns: stackExtentPx(LANDSCAPE_FALLBACK_COLUMNS, PALETTE_COLUMN_GEOMETRY),
-} as const;
+export const PALETTE_LANDSCAPE_WIDTH_PX = stackExtentPx(1, PALETTE_COLUMN_GEOMETRY);
 
 /** One rule of a trim ladder: what it fires at, and what it takes away. */
 export interface TrimStep {
@@ -119,44 +107,14 @@ function stackRungs(
   return rungs;
 }
 
-/**
- * The two-column grid drops a whole row of two at a time. Rows and single-column
- * slots measure the same way, so its first rung lands exactly on the layout
- * switch: the height where the single column gives up is the height where that
- * row count stops fitting, and everything the taller single column showed above
- * the grid's own capacity goes in that one step.
- */
-function landscapeTwoColumnRungs(): TrimRung[] {
-  const rungs: TrimRung[] = [];
-  for (let rows = LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS; rows >= 1; rows--) {
-    rungs.push({
-      thresholdPx: justBelowPx(stackExtentPx(rows, PALETTE_COLUMN_GEOMETRY)),
-      remainingColors: Math.max(0, LANDSCAPE_FALLBACK_COLUMNS * (rows - 1) - GRADIENT_SLOTS),
-    });
-  }
-  return rungs;
-}
-
-/** Height below which the single column falls back to the two-column grid. */
-export function landscapeSingleColumnFloorPx(): number {
-  return stackExtentPx(LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS, PALETTE_COLUMN_GEOMETRY);
-}
-
-export function landscapeSingleColumnMediaQuery(): string {
-  return `(orientation: landscape) and (min-height: ${landscapeSingleColumnFloorPx()}px)`;
-}
-
 /** Heights below which the single column loses another swatch. */
 export function landscapeSingleColumnTrimSteps(colorCount: number): TrimStep[] {
   return trimSteps(
     colorCount,
-    stackRungs(colorCount, LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS, PALETTE_COLUMN_GEOMETRY)
+    stackRungs(colorCount, GRADIENT_SLOTS, PALETTE_COLUMN_GEOMETRY).filter(
+      ({ thresholdPx }) => thresholdPx >= TABLET_MIN_SIDE_PX
+    )
   );
-}
-
-/** Heights below which the landscape two-column grid loses a row of two. */
-export function landscapeTwoColumnTrimSteps(colorCount: number): TrimStep[] {
-  return trimSteps(colorCount, landscapeTwoColumnRungs());
 }
 
 /** Widths below which the portrait row loses another swatch. */

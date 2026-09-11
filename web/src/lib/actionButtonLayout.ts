@@ -15,10 +15,7 @@ import type { Orientation } from '$lib/platform';
 import { safeAreaLength } from '$lib/platform/safeArea';
 import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
-import {
-  landscapeSingleColumnMediaQuery,
-  PALETTE_LANDSCAPE_WIDTHS_PX,
-} from '$lib/design/trimGeometry';
+import { PALETTE_LANDSCAPE_WIDTH_PX } from '$lib/design/trimGeometry';
 import {
   actionButtonSizeClass,
   LARGE_TABLET_MIN_SIDE_PX,
@@ -93,6 +90,15 @@ const DRAWER_TOGGLE_MARGIN = 8;
 const DRAWER_TOGGLE_SIZE = 48;
 export const PANEL_FIXED_CHROME = PANEL_INSET + DRAWER_TOGGLE_MARGIN + DRAWER_TOGGLE_SIZE;
 
+// Leave the top-left corner control clear even at the largest button scale.
+export const PHONE_TOOLBAR_BUTTON_PX = 48;
+export const PHONE_TOOLBAR_LEG_SLOTS = 4;
+const PHONE_TOOLBAR_GAP_PX = 10;
+export const PHONE_TOOLBAR_VERTICAL_CHROME_PX =
+  2 * PANEL_INSET + DRAWER_TOGGLE_SIZE + 3 * PHONE_TOOLBAR_GAP_PX;
+export const PHONE_TOOLBAR_HORIZONTAL_CHROME_PX =
+  PANEL_INSET + DRAWER_TOGGLE_SIZE + SETTINGS_BUTTON_RESERVE + 4 * PHONE_TOOLBAR_GAP_PX;
+
 // Breathing room between the top of the portrait column and the palette bar.
 export const PALETTE_CLEARANCE = 8;
 
@@ -141,9 +147,10 @@ export function visibleActionButtonCount(): number {
 
 // ColorPalette publishes its measured width after hydration. Until then its
 // responsive CSS geometry is deterministic, so layout consumers use the same
-// two values app.css exposes through --palette-landscape-width instead of
+// width app.css exposes through --palette-landscape-width instead of
 // briefly treating the palette as zero-width.
 export function resolvedLandscapePaletteWidth(): number {
+  if (layout.phoneLandscape) return 0;
   const measurement = layout.paletteMeasurement;
   if (
     layout.orientation === 'landscape' &&
@@ -152,9 +159,7 @@ export function resolvedLandscapePaletteWidth(): number {
   ) {
     return measurement.width;
   }
-  return typeof matchMedia !== 'undefined' && matchMedia(landscapeSingleColumnMediaQuery()).matches
-    ? PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn
-    : PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns;
+  return PALETTE_LANDSCAPE_WIDTH_PX;
 }
 
 export function resolvedPortraitPaletteHeight(): number {
@@ -238,9 +243,24 @@ export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
 // parent can't pick a size that would flow off the screen. Clamped to the
 // slider's static range: on an absurdly small viewport the render cap (below)
 // still bounds the actual size.
+function phoneToolbarAvailablePerButton(): number {
+  const { safeArea } = layout;
+  return Math.min(
+    (layout.viewportHeight - safeArea.top - safeArea.bottom - PHONE_TOOLBAR_VERTICAL_CHROME_PX) /
+      PHONE_TOOLBAR_LEG_SLOTS,
+    (layout.viewportWidth - safeArea.left - safeArea.right - PHONE_TOOLBAR_HORIZONTAL_CHROME_PX) /
+      PHONE_TOOLBAR_LEG_SLOTS
+  );
+}
+
 export function maxActionButtonScale(): number {
-  const base = actionButtonBase(layout.orientation);
-  const pct = Math.floor((availablePerButton(visibleActionButtonCount()) / base) * 100);
+  const base = layout.phoneLandscape
+    ? PHONE_TOOLBAR_BUTTON_PX
+    : actionButtonBase(layout.orientation);
+  const available = layout.phoneLandscape
+    ? phoneToolbarAvailablePerButton()
+    : availablePerButton(visibleActionButtonCount());
+  const pct = Math.floor((available / base) * 100);
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
 }
 

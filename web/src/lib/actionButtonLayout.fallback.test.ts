@@ -3,10 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import actionsPanelSource from './components/ActionsPanel.svelte?raw';
 import colorPaletteSource from './components/ColorPalette.svelte?raw';
-import {
-  landscapeSingleColumnMediaQuery,
-  PALETTE_LANDSCAPE_WIDTHS_PX,
-} from './design/trimGeometry';
+import { PALETTE_LANDSCAPE_WIDTH_PX } from './design/trimGeometry';
 import {
   ACTION_BUTTON_BASE_PROPERTY,
   ACTION_BUTTON_BASE_PX,
@@ -114,11 +111,7 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     const widths = [...appCssSource.matchAll(/--palette-landscape-width:\s*(\d+)px/g)].map(
       (match) => Number(match[1])
     );
-    expect(widths).toEqual([
-      PALETTE_LANDSCAPE_WIDTHS_PX.twoColumns,
-      PALETTE_LANDSCAPE_WIDTHS_PX.singleColumn,
-    ]);
-    expect(appCssSource).toContain(landscapeSingleColumnMediaQuery());
+    expect(widths).toEqual([PALETTE_LANDSCAPE_WIDTH_PX, 0]);
     expect(colorPaletteSource).toContain('width: var(--palette-landscape-width)');
   });
 

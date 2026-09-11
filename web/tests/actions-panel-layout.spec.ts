@@ -3,8 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { gotoApp } from './helpers';
 
 const LANDSCAPE_VIEWPORTS = [
-  { name: 'narrow two-column', width: 568, height: 320, paletteWidth: 156 },
-  { name: 'common two-column', width: 667, height: 375, paletteWidth: 156 },
+  { name: 'narrow phone L', width: 568, height: 320, paletteWidth: 0 },
+  { name: 'common phone L', width: 667, height: 375, paletteWidth: 0 },
   { name: 'single-column', width: 1024, height: 768, paletteWidth: 84 },
 ] as const;
 
@@ -42,7 +42,7 @@ function actionPanelGeometry(page: Page): Promise<ActionPanelGeometry> {
     const panel = document.querySelector('.actions-panel');
     const drawer = document.querySelector('.actions-drawer-inner');
     const settingsButton = document.querySelector('button[aria-label="Settings"]');
-    const visibleButtons = [...document.querySelectorAll('.action-button')].filter(
+    const visibleButtons = [...document.querySelectorAll('.actions-drawer .action-button')].filter(
       (element): element is HTMLElement =>
         element instanceof HTMLElement &&
         getComputedStyle(element).display !== 'none' &&
@@ -89,7 +89,9 @@ for (const viewport of LANDSCAPE_VIEWPORTS) {
     });
     const preHydrationPage = await preHydrationContext.newPage();
     await preHydrationPage.goto('/');
-    await expect(preHydrationPage.locator('.color-palette')).toBeVisible();
+    await expect(preHydrationPage.locator('.color-palette')).toBeVisible({
+      visible: viewport.paletteWidth > 0,
+    });
     const preHydration = await actionPanelGeometry(preHydrationPage);
     await preHydrationContext.close();
 
@@ -118,7 +120,7 @@ for (const configuration of PERSISTED_VISIBILITY_CONFIGURATIONS) {
     await seedPersistedHiddenControls(firstPaintPage, configuration.hiddenKeys);
     await firstPaintPage.route('**/_app/immutable/**/*.js', (route) => route.abort());
     await firstPaintPage.goto('/');
-    await expect(firstPaintPage.locator('.color-palette')).toBeVisible();
+    await expect(firstPaintPage.locator('.color-palette')).toBeHidden();
     const firstPaint = await actionPanelGeometry(firstPaintPage);
     await firstPaintContext.close();
 

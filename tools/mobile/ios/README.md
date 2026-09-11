@@ -21,6 +21,12 @@ errors exit nonzero after cleanup. Pass `--skip-sync` only when an immediately p
 already synchronized the native projects; the tagged deploy workflow uses it after
 `ios:build:release` so its Release and Debug builds share one production web bundle.
 
+On a Maestro failure, the runner relaunches the same installed app briefly with its console
+attached, writing `~/.maestro/tests/ios-app-relaunch.log` before simulator teardown. This is
+diagnostic evidence from a second launch, not a retry of the assertion: the original failure still
+exits nonzero even if the relaunch works or log capture fails. Its time budget is owned by
+`lib/smoke-diagnostics.mjs`.
+
 `tests/ios-privacy-manifest.test.mjs` guards the committed native privacy declarations. Keep
 simulator and Xcode lifecycle behavior here, shared Maestro execution at `../lib/`, and all native
 project files under `ios/`. The release opener is intentionally specialized to the IPA output; add a

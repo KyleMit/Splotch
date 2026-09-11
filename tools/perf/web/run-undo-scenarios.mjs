@@ -16,6 +16,7 @@
 import { chromium, webkit } from '@playwright/test';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { release } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
 import { fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
@@ -314,7 +315,8 @@ const now = (page) => page.evaluate(() => performance.now());
 // Engine.* user-timing measures whose startTime falls in [from, to), aggregated
 // by name. Lets us attribute draw-phase vs undo-phase cost per scenario from the
 // same marks the trace records globally.
-function engineMeasuresIn(page, from, to) {
+// Exported so tests execute the browser-side collector with real measure entries.
+export function engineMeasuresIn(page, from, to) {
   return page.evaluate(
     ({ from, to }) => {
       const byName = {};
@@ -325,7 +327,7 @@ function engineMeasuresIn(page, from, to) {
         e.count++;
         e.total += m.duration;
         e.max = Math.max(e.max, m.duration);
-        if (m.name === 'engine.commit') (e.durationsMs ??= []).push(m.duration);
+        (e.durationsMs ??= []).push(m.duration);
       }
       return byName;
     },
@@ -577,6 +579,8 @@ export async function runUndoScenario(
     },
     undoSteps: steps,
     draw: {
+      harnessWallMs: drawEnd - drawStart,
+      measures: drawMarks,
       ops: draw.count,
       totalMs: draw.total,
       // Sample count, not just cost: zero commits measured across a whole run
@@ -590,6 +594,8 @@ export async function runUndoScenario(
       commitDurationsMs: commit.durationsMs,
     },
     undo: {
+      harnessWallMs: undoEnd - undoStart,
+      measures: undoMarks,
       steps: undoM.count,
       totalMs: undoM.total,
       avgMs: undoM.count ? undoM.total / undoM.count : 0,
@@ -616,10 +622,17 @@ export async function runUndoScenario(
   return result;
 }
 
-function buildUndoSettings({ throttle, build, t0 }) {
+function buildUndoSettings({ throttle, build, t0, browser }) {
   return {
     target: `web/dev-engine (${engine.label})`,
     engine: engineName,
+    browserVersion: browser.version(),
+    host: {
+      platform: process.platform,
+      arch: process.arch,
+      release: release(),
+      node: process.version,
+    },
     device: IPAD_PRO.label,
     viewport: IPAD_PRO,
     // WebKit exposes no CPU-throttling control, so a WebKit run is always
@@ -781,7 +794,7 @@ export async function runUndoScenarios() {
 
     // Standard trace artifacts (engine hot paths, frame health) via the shared
     // analyzer, plus the bespoke per-scenario undo summary.
-    const settings = buildUndoSettings({ throttle, build, t0 });
+    const settings = buildUndoSettings({ throttle, build, t0, browser });
     await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
     const metrics = buildMetrics({
       settings,
@@ -1163,7 +1176,15 @@ function historyStatus(scenario) {
   return `Completed; history unsettled after ${settle.elapsedMs} ms (${settle.samples} samples)`;
 }
 
-function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
+function renderPhaseAttributionRows(pass, phase, label, sample) {
+  return Object.entries(sample?.measures ?? {}).map(
+    ([name, measure]) =>
+      `| ${pass} | ${phase} | ${label} | ${f1(sample.harnessWallMs)} ms | ${name} | ${measure.count} | ` +
+      `${f1(measure.total)} ms | ${f1(measure.max)} ms |`
+  );
+}
+
+function renderUndoReport({ settings, scenarios, confirmations, gate, fastSetEvaluation }) {
   const out = [];
   out.push('# Undo scenario profile (tiled history, ADR-0085/ADR-0086)\n');
   out.push(
@@ -1182,8 +1203,9 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
   out.push(
     `> Note: strokes are dispatched synchronously (to land exact op counts), so the ` +
       `draw phase is one big task — its FPS/long-task numbers in report.md are a harness ` +
-      `artifact. The clean live-draw signal is **engine.draw avg** (per pointermove); the ` +
-      `commit and undo costs below don't depend on pacing.\n`
+      `artifact. Canvas copies can synchronously drain deferred renderer work, so commit ` +
+      `and undo timings can also depend on the burst. engine.draw counts queue drains, ` +
+      `not individual pointer moves.\n`
   );
   out.push('## Tiled history after drawing (getUndoDebug)\n');
   out.push(
@@ -1217,7 +1239,7 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
         'gate. Release and on-demand full runs use raw timing.\n'
     );
   }
-  out.push('| Scenario | draw() calls | draw total | commit p95 raw | **gate p95** | commit max |');
+  out.push('| Scenario | Queue drains | draw total | commit p95 raw | **gate p95** | commit max |');
   out.push('| --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     if (s.skipped) {
@@ -1232,6 +1254,28 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
         `${f1(s.draw.commitP95Ms)} ms | **${gateCell}** | ${f1(s.draw.commitMaxMs)} ms |`
     );
+  }
+  out.push('\n## Phase attribution\n');
+  out.push(
+    'These nested measures are diagnostic, not additive. Snapshot cropping is included in commit ' +
+      'during drawing and can also run during undo/repaint; a canvas API duration includes any ' +
+      'renderer work it waits for. Snapshot capture is not confined to engine.draw: clear-capture ' +
+      'callbacks and repaint can copy outside a queue drain. Harness wall includes Playwright round ' +
+      'trips, driver-side ' +
+      'payload serialization/transfer, input dispatch, and page execution. It is not page-only ' +
+      'latency or a presentation measurement. Every initial and confirmation draw/undo measure ' +
+      'distribution is retained in JSON. The gate still scores raw engine.commit P95.\n'
+  );
+  out.push('| Pass | Phase | Scenario | Harness wall | Measure | Count | Total | Max |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const [pass, samples] of [
+    ['Initial', scenarios],
+    ['Confirmation', confirmations],
+  ]) {
+    for (const s of samples) {
+      out.push(...renderPhaseAttributionRows(pass, 'Draw', s.label, s.draw));
+      out.push(...renderPhaseAttributionRows(pass, 'Undo', s.label, s.undo));
+    }
   }
   if (fastSetEvaluation) {
     out.push('\n## Fast-set drift\n');

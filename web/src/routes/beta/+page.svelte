@@ -215,17 +215,6 @@
   /* Touch-only hiding preserves content during desktop zoom.
      SHORT_PAGE_HEIGHT_PX; pageHeight.test.ts guards the CSS boundary. */
   @media (max-height: 500px) and (hover: none) and (pointer: coarse) {
-    .beta :global(.hero) {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-
-    .beta :global(.lede),
     .beta-platform-picker {
       display: none;
     }

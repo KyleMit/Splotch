@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { HEX_GRID_GEOMETRY, hexGridRowLadderPx } from '$lib/design/trimGeometry';
 import { CUSTOM_SWATCH_COLOR, swatch } from './helpers';
+import { isPhoneLandscape } from '$lib/breakpoints';
 
 // The hex color picker trims purely via CSS media queries (no JS measurement),
 // like the palette — see palette-trim.spec.ts. These tests pin the trim
@@ -23,8 +24,13 @@ interface VisibleGrid {
 async function openPickerAt(page: Page, width: number, height: number): Promise<VisibleGrid> {
   await page.setViewportSize({ width, height });
   await page.goto('/');
-  const customSwatch = swatch(page, CUSTOM_SWATCH_COLOR);
+  const phoneLandscape = isPhoneLandscape(width, height);
+  const customSwatch = phoneLandscape
+    ? page.locator('.color-menu').getByRole('button', { name: 'Custom Color' })
+    : swatch(page, CUSTOM_SWATCH_COLOR);
   await expect(async () => {
+    if (phoneLandscape && !(await customSwatch.isVisible()))
+      await page.locator('#colorButton').click();
     await customSwatch.click({ timeout: 1000 });
     await expect(page.locator('#color-picker')).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 10_000 });
