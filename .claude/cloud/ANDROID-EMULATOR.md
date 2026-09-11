@@ -65,8 +65,7 @@ F libc   : Fatal signal 5 (SIGTRAP), code 128 (SI_KERNEL) ... in art.splotch.app
 
 `SIGTRAP`/`SI_KERNEL` is Chromium's deliberate `IMMEDIATE_CRASH`, i.e. a failed internal check
 rather than an illegal instruction. The guest CPU that TCG presents is threadbare —
-`ssse3 sse4_2
-popcnt aes`, with no `avx`, `avx2`, `f16c`, `fma`, or `bmi*`, and the emulator logs
+`ssse3 sse4_2 popcnt aes`, with no `avx`, `avx2`, `f16c`, `fma`, or `bmi*`, and the emulator logs
 `TCG doesn't support requested feature: CPUID.01H:ECX.avx` at startup — which is the most likely
 reason a Chromium check fails here and does not on hardware. Lowering the panel to 720x1280, raising
 guest RAM to 4 GB, and switching between `swiftshader_indirect` and `guest` GL each changed how far

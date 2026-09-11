@@ -183,8 +183,7 @@ ngrok was our previous decision precisely because its control channel is "TLS on
 * **ALPN mismatch on re-origination (req. #1).** Even after pointing ngrok at the system store, the
   gateway terminates and re-originates to ngrok's edge using a *standard* HTTP ALPN. ngrok's edge
   speaks its own protocol/ALPN and rejects it (`NO_APPLICATION_PROTOCOL`), surfaced to the agent as
-  `failed to deserialize rpc
-  response`. The gateway is fundamentally an HTTP proxy; ngrok's edge
+  `failed to deserialize rpc response`. The gateway is fundamentally an HTTP proxy; ngrok's edge
   isn't an HTTP server.
 
 No combination of flags or paid features changes either wall.
@@ -236,8 +235,7 @@ Why this clears all three requirements where ngrok could not:
   automatically.
 
 Verified end-to-end: with the client connected, `curl https://<app>.fly.dev/` from inside the
-sandbox returns **HTTP 200** and the Splotch app HTML (`<title>Splotch - Drawing for
-Kids</title>`),
+sandbox returns **HTTP 200** and the Splotch app HTML (`<title>Splotch - Drawing for Kids</title>`),
 and the page loads in a phone browser. No `wstunnel` fallback was needed.
 
 The earlier `dev:tunnel` (Cloudflare) and `dev:tunnel:ngrok` scripts — and their `cloudflared` /
@@ -456,7 +454,6 @@ awk '/BEGIN CERT/{c=""} {c=c $0 "\n"} /END CERT/{ if (system("echo \""c"\" | ope
 
 Expected today: `L1` allow=upstream code / deny=`Host not in allowlist`; `L2`
 issuer=`Anthropic … Egress Gateway`; `L3` `h2`; `L4` `400 Bad Request`; `L5`
-`403
-proxy_ip_not_allowed`; `L6` `403`; `L7` `2 / …`; CA split ≥ 1. If `L2` ever stops showing an
+`403 proxy_ip_not_allowed`; `L6` `403`; `L7` `2 / …`; CA split ≥ 1. If `L2` ever stops showing an
 Anthropic issuer, or `L5` starts returning `200`, the gateway has changed and the simpler tunnels
 may be back on the table.

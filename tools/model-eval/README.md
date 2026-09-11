@@ -89,8 +89,7 @@ instead of paying twice.
   filled categories.
 
   To add one: author or capture into `inputs/`, then
-  `npm run vectorize -- <input> --out
-  tools/model-eval/samples/<id>.svg --production` and keep the
+  `npm run vectorize -- <input> --out tools/model-eval/samples/<id>.svg --production` and keep the
   SVG only if it is meaningfully smaller than the PNG — otherwise commit the PNG to `samples/`
   instead.
 * The **reference report** lives in the committed `/scrapbook` tree (ADR-0059), not here, so GitHub

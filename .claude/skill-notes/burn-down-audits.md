@@ -376,8 +376,7 @@ driver deletes the right entry for the wrong work.**
 
 Fixed by `briefIsStale(issueWrittenAtMs, briefMtimeMs)` in `lib/burndown-core.mjs`, checked between
 the `VALID` verdict and the implementer call; a stale or missing brief defers as
-`verifier gave no usable
-brief`.
+`verifier gave no usable brief`.
 
 **Why mtime rather than the identity check these notes originally proposed.** The obvious design —
 have the verifier write the finding's title into the brief and have the driver compare — needs the
@@ -645,8 +644,7 @@ Two smaller things from the same run, both recorded because they generalise:
   distinct way `-f`'s whole-command-line matching has bitten a supervising agent (after `pkill`
   killing its own shell, and the orphan check matching the supervising CLI), and the first where the
   failure is a silent hang rather than a wrong answer. The anchored
-  `'^node
-  tools/audit-burndown/run-burndown.mjs'` form fixes all three; it is now in the skill for
+  `'^node tools/audit-burndown/run-burndown.mjs'` form fixes all three; it is now in the skill for
   the wait loop as well as the liveness check.
 * **The verifier invalidated a finding the run itself had obsoleted, correctly and in 25 seconds.**
   An early P1 extracted the drawing shell's boot sequence into `lib/boot/`; a later P2 asked for
@@ -659,8 +657,7 @@ Two smaller things from the same run, both recorded because they generalise:
 ### A drop got the verdict right and the reason wrong — the same day the pattern above went well (2026-07-26)
 
 Sixth cloud run. The verifier dropped
-`[P4][maintainability] scheduleReset returns an id that no
-caller uses` as invalid, reasoning
+`[P4][maintainability] scheduleReset returns an id that no caller uses` as invalid, reasoning
 *"that's false at HEAD (and was already false at the pinned SHA f934d43 — the code is unchanged in
 this regard)."* Checked directly against the pin: it's wrong. `git show f934d43:…` shows the hold
 timer was a bare `setTimeout(...)` at the pin — no caller captured `scheduleReset`'s return value,
@@ -740,8 +737,7 @@ fourth smuggling shape, framed as a rate to measure rather than an instance to c
 
 **The reviewer's value continues to concentrate where no gate can reach.** The catches worth naming:
 a default parameter evaluating `canvas.getBoundingClientRect()` *before* its own
-`if (!canvas)
-return` guard, converting a no-op into a TypeError; a paired-marks change that would
+`if (!canvas) return` guard, converting a no-op into a TypeError; a paired-marks change that would
 have moved the two hottest ops onto WebKit's ~1 ms-clamped mark deltas and destroyed ADR-0066's
 commit-hitch attribution; an LRU eviction that freed tile canvases while `createPattern`'s bitmap
 copies stayed in the pattern cache, so the memory the finding targeted was still retained; and a

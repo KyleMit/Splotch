@@ -141,8 +141,7 @@ capture's is its own.
 ### 3. What did not change
 
 The iPad ledger, its five entries, and its reopen conditions are untouched. The
-`enable Night Mode
-in the compact shell` direction gets nothing: it reads a P95 of 16.7–16.9 in
+`enable Night Mode in the compact shell` direction gets nothing: it reads a P95 of 16.7–16.9 in
 twelve of thirteen committed captures and two beats once (d92ba50b, before the settings-shell
 treatment shipped); the one other base-gate failure (a9438fc7) is a first-frame P95 of 42.5 ms under
 tracing overhead, not a post-action frame. Both Android physical rows keep their drawing, undo,

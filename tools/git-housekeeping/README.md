@@ -21,8 +21,7 @@ npm run branches:prune -- --delete-branch=<name> --at=<commit>
 ```
 
 Every command is a **dry run by default** and prints one line per item —
-`<outcome>  <subject>
-<reason>` — so a run that takes a minute shows progress and a cancelled one
+`<outcome>  <subject> <reason>` — so a run that takes a minute shows progress and a cancelled one
 still says what it did. Pass `--apply` to act; pass `--json` for machine-readable rows. All four run
 on macOS and Linux.
 
@@ -41,8 +40,7 @@ it lists the ignored paths (`git status --ignored=matching`) and partitions them
 `SALVAGE_PREFIXES` allowlist in `lib/agent-worktrees.mjs`: raw performance captures under
 `perf-profiles/` and red-team material under `tools/redteam/{decrypted,output}/` and
 `web/tests/redteam/{decrypted,output}/` are moved to
-`~/Code/splotch-worktree-evidence/<worktree
-id>/<path>` (`--dest=<dir>` overrides); everything else
+`~/Code/splotch-worktree-evidence/<worktree id>/<path>` (`--dest=<dir>` overrides); everything else
 ignored is reported as `leave` for the prune to delete. A destination that already exists is a
 `conflict` and is not overwritten. Moves fall back to copy-then-delete across filesystems.
 

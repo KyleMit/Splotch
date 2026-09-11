@@ -72,8 +72,7 @@ comment (per the per-item loop), don't force a shaky fix.
    create `claude/audit-sweep-<YYYY-MM-DD>` (or reuse the session's designated working branch if one
    is set), and push it with `git push -u origin <branch>`. Then, **in Draft-PR mode only**, open a
    **draft PR** titled "Audit sweep: <date>" with a body noting the run is in progress (final
-   summary comes at the end). Create it with `gh pr create
-   --draft` where `gh` is available,
+   summary comes at the end). Create it with `gh pr create --draft` where `gh` is available,
    otherwise the GitHub MCP `create_pull_request` tool with `draft: true`.
 
 ## Per-item loop

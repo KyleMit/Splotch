@@ -1,8 +1,7 @@
 # ADR-0070: Netlify Build-Minute Reduction — Inverted Dependency Split + Build Ignore Rule
 
 **Status:** Active (install flags amended by [ADR-0119](0119-pnpm-as-package-manager.md) — the split
-and its rationale are unchanged, but the manager is pnpm, so the flag is `PNPM_FLAGS =
-"--prod"`)\
+and its rationale are unchanged, but the manager is pnpm, so the flag is `PNPM_FLAGS = "--prod"`)\
 **Date:** 2026-07
 
 ## Context

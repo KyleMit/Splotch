@@ -42,8 +42,7 @@ Not `'100%'`, and not a percentage at all. A percentage silently means something
 2-core CI runner than on a 16-core laptop, and the measured curve does not transfer between them.
 
 The split is not arbitrary — it falls out of an expected-cost model,
-`wall + P(red) × cost of a red
-run`:
+`wall + P(red) × cost of a red run`:
 
 * **Locally** (`retries: 0`) a red run costs a re-run plus the attention to notice and triage it.
   The break-even is only **~15 seconds of attention** on top of the re-run, which triage always
@@ -265,8 +264,7 @@ inherited the previous rep's spent budget and its guard tests took a 429 where t
 a 413. Nothing to do with the app or the specs: the sweep protocol alone.
 
 **It is not a rounding error.** On `ubuntu-latest` at 4 workers,
-`throttles a managed token hammered
-in a burst` failed in **12 of 12** reps. Locally at 4 workers
+`throttles a managed token hammered in a burst` failed in **12 of 12** reps. Locally at 4 workers
 the BYOK guard tests were 4 of 5 failures across 7 reps. Those are the same specs §2b's counts are
 made of.
 

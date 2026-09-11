@@ -30,10 +30,8 @@ front of these files, and they invalidate differently:
    and no revalidation directive, a browser that already fetched an asset **directly** may reuse it
    for up to a week without contacting the server.
 2. **The Workbox service-worker precache** (ADR-0022). `web/vite.config.ts` precaches these assets
-   via `globPatterns:
-   ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}']` (plus
-   `includeAssets:
-   ['sounds/*.mp3']`). For a client whose SW is controlling the page — the normal
+   via `globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}']` (plus
+   `includeAssets: ['sounds/*.mp3']`). For a client whose SW is controlling the page — the normal
    repeat-visit path — requests for these URLs are answered **from the precache**, so the HTTP
    header in layer 1 never applies to them.
 
@@ -71,9 +69,7 @@ assets a contributor does **nothing special**: change the file's content and dep
 path is:
 
 1. The build recomputes that file's revision (new md5) and injects it into a new `sw.js` precache
-   manifest. `sw.js` is served `no-cache, no-store,
-   must-revalidate`, so every client re-checks
-   it.
+   manifest. `sw.js` is served `no-cache, no-store, must-revalidate`, so every client re-checks it.
 2. On the next `registration.update()` (ADR-0022 runs these on load, on visibility/focus, and
    hourly), the browser sees the changed `sw.js`, and Workbox re-fetches **only** the entries whose
    revision changed. That fetch is sent with a cache-busting `?__WB_REVISION__=<hash>` query param,

@@ -38,8 +38,7 @@ Add a minimal local Capacitor plugin, **`DeviceLock`**, with a single method
   auto-discover plugin classes** — `registerPlugins()` only loads its built-ins plus the
   `packageClassList` that `cap sync` writes into `capacitor.config.json` from npm *packages*, so an
   app-local class is never registered and calls fail with
-  `"DeviceLock"
-  plugin is not implemented on ios`. We register it explicitly in
+  `"DeviceLock" plugin is not implemented on ios`. We register it explicitly in
   `MainViewController.swift` (a `CAPBridgeViewController` subclass) via `capacitorDidLoad()` →
   `bridge?.registerPluginInstance(DeviceLockPlugin())`, and point `Main.storyboard`'s root VC at
   `MainViewController`. Both files are added to Compile Sources by hand — the project uses classic

@@ -37,7 +37,7 @@ and encoded in both tools' configs:
 
 * `dprint.json` (repo root): markdown options above; `includes` is `**/*.md` only, with `excludes`
   mirroring the gitignored trees so dprint's scope is exactly the tracked Markdown files. The
-  `typescript`/`json` wasm plugins are loaded solely to format fenced `` ```js/ts/json `` blocks
+  `typescript`/`json` wasm plugins are loaded solely to format fenced ` ```js/ts/json ` blocks
   inside docs (`quoteStyle: preferSingle` to match Prettier's style for real source).
 * `markdown.wrapCodeSpans: false` keeps every code span on one source line. Spans here hold
   commands, paths, and flags that tests, agents, and people grep for and copy out of the raw

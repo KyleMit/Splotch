@@ -23,8 +23,7 @@ The five remaining groups hold 43: app correctness 12 · cross-file agreement 12
 
 **To continue: PR #830 has merged, so it cannot track further work.** Re-cut the branch from the
 current `main`
-(`git fetch origin main && git checkout -B claude/audit-burn-down-vf4iui
-origin/main`), relaunch
+(`git fetch origin main && git checkout -B claude/audit-burn-down-vf4iui origin/main`), relaunch
 with the command below, and open a **new** PR to post per-commit comments to. Do not stack new
 commits on the merged history.
 

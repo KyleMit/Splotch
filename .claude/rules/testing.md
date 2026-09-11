@@ -55,8 +55,7 @@ paths:
   source and confirm the test tracks it. If the source executes at import time, move the constant to
   a side-effect-free module.
 * **A test that cannot fail is a lint error**, not something a reviewer has to notice:
-  `npm run
-  lint` scopes `@vitest/eslint-plugin` and `eslint-plugin-playwright` onto the two test
+  `npm run lint` scopes `@vitest/eslint-plugin` and `eslint-plugin-playwright` onto the two test
   globs and rejects a body with no assertion, a committed `.only`, an unconditional skip, an
   `expect` that never reaches a matcher, a dropped retrying assertion (`expect.poll`, a web-first
   assertion), and an assertion reachable only through a branch. That last one shapes how a

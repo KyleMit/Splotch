@@ -68,8 +68,7 @@ command exits non-zero; do not report the rig released while that list is non-em
 Unless `--host-only`, the release undoes every write `perf:preflight --wake-android` and
 `--hold-android-awake` make, plus the rotation pair a crashed input check leaves pinned: stay-awake
 off, the stock screen timeout (the preflight never records what it replaced),
-`dumpsys battery
-reset` for the forced-plugged override, and auto-rotate on. The selected phone's
+`dumpsys battery reset` for the forced-plugged override, and auto-rotate on. The selected phone's
 adb forwards to Chrome and WebView devtools sockets are removed; another device's forwards, and any
 forward to some other socket, are listed and left. Every device-side step that fails is listed under
 `NOT RELEASED` and fails the command the same way a survivor does — a run that could not undo

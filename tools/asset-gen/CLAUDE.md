@@ -91,8 +91,7 @@ carve-out):
 * **sharp alpha gotcha:** never `joinChannel` an alpha plane and encode — sharp tags the 4th band as
   a generic extra channel, not alpha, so the webp/png encoder *silently* flattens it (output decodes
   `channels: 3, hasAlpha: false`, no error). Interleave an explicit RGBA buffer and construct
-  `sharp(rgba, { raw: { width,
-  height, channels: 4 } })` instead, and verify outputs with
+  `sharp(rgba, { raw: { width, height, channels: 4 } })` instead, and verify outputs with
   `sharp(out).metadata()` → `hasAlpha: true`. The runtime line-art overlays and the style-cover
   backdrop key intentionally use this explicit-RGBA path (`lib/overlay-alpha.mjs`,
   `lib/flat-background-punch.mjs`); the fill punch still inpaints instead of cutting holes
@@ -101,8 +100,8 @@ carve-out):
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
   commit the scratch dirs.
 * **`golden/` holds the committed regression fixtures — keep them in sync with the assets.** After
-  any pipeline or asset change, run `npm run check:coloring-golden-scores` (offline, ~1 min; exit 1
-  = a page regressed) and, when the change is intentional, adopt it with
+  any pipeline or asset change, run `npm run check:coloring-golden-scores` (offline, ~1 min; exit
+  1 = a page regressed) and, when the change is intentional, adopt it with
   `npm run update:coloring-golden-scores` + `npm run gen:assets:manifest` in the same commit — CI's
   `check:assets:manifest` fails on any asset byte that drifted from `golden/asset-manifest.sha256`.
   The pair is deliberate: the golden scores catch quality drift, the sha256 manifest catches byte

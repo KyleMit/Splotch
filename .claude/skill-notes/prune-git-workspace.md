@@ -19,8 +19,7 @@ in which to run them plus the judgment the scripts hand back.
 The old skill's `gather.mjs` moved out of the skill package for the same reason the
 `vectorize-image` note gives: once a skill ships a real program, triplicating it through Ruler is
 cost without benefit, and the local pass needed the same `ahead`/`inbase` facts anyway.
-`%(ahead-
-behind:origin/main)` in `for-each-ref` (git 2.41+) replaced the two `rev-list` calls per
+`%(ahead- behind:origin/main)` in `for-each-ref` (git 2.41+) replaced the two `rev-list` calls per
 branch the old helper made — 709 branches classify in about 27 s on the 2026-09-04 checkout, most of
 it the per-branch `cherry` on the unmerged remainder.
 

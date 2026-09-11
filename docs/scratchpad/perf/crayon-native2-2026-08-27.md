@@ -289,8 +289,8 @@ overlapping ops of a single pass. Applied twice it yields `(1−m)S + m(1−m)S 
 applied exactly once per pass is *why* an accumulation surface has to exist at all.
 
 At **m = 1** it collapses to `min(S,D)`, and min is idempotent: `min(S, min(S,D)) = min(S,D)`. The
-mix can then be painted per op straight onto the tile, because painting it again changes nothing. m
-= 1 is the only mix strength with that property — there is no idempotent form of the shipped 0.55.
+mix can then be painted per op straight onto the tile, because painting it again changes nothing.
+m = 1 is the only mix strength with that property — there is no idempotent form of the shipped 0.55.
 
 | Cell                 | lost %             | median | paint p50/p95 |
 | -------------------- | ------------------ | ------ | ------------- |

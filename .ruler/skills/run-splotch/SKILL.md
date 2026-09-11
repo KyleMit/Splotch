@@ -142,8 +142,7 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these 
 `applyFarmPage` helper in `web/tests/flows-harness.ts`, which the magic-brush E2E spec
 (`web/tests/flows-magic-brush.spec.ts`) drives.
 
-> **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite',
-> 'dev', …])` +
+> **Never hand-roll the dev server in a throwaway script.** `spawn('npx', ['vite', 'dev', …])` +
 > `server.kill('SIGTERM')` does **not** work: `npx` exits but the real `vite` keeps running, and
 > because its stdout is piped to your script the Node event loop never drains — the script hangs on
 > exit and leaves an **orphaned `vite dev` holding the port for hours**. Instead, pick one:
