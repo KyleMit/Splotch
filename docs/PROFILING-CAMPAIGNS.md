@@ -291,7 +291,9 @@ canvas centre actually hits the canvas.
 can omit `deviceName`, and a minimal file that reuses `webDriverAgentUrl` need not supply it either.
 Pass `--device-class=tablet` on physical-iPad action captures and inspect the resulting
 `gateAllowances` before interpreting Settings results. Without tablet classification the runner
-records base gates, even when its device-ID and runtime checks prove a physical iOS Safari session.
+records base gates, even when its device-ID and runtime checks prove a physical iOS Safari session;
+it warns before measuring when neither `--device-class` nor a `deviceName` naming an iPad or iPhone
+classifies that session, and it rejects a `--device-class` outside the campaign's `DEVICE_CLASSES`.
 This affects the capture-time verdict of every action in the ADR-0090/ADR-0160 ledger, not the
 rotation max gate or any drawing gate. Keep an earlier artifact's recorded ledger unchanged;
 distinguish its base-gate verdict from a read-only comparison with the declared physical policy. A

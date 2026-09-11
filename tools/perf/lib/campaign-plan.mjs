@@ -59,6 +59,10 @@ export function actionsTransportFor(target) {
 }
 const ACTIONS_CDP_COMMAND = 'perf:android:browser:actions';
 
+// Every class a target may declare. The Appium action runner rejects any other
+// `--device-class`, so a misspelled class fails loudly instead of recording base gates.
+export const DEVICE_CLASSES = ['tablet', 'handset', 'desktop'];
+
 // `captureRuntime` names which runtime's input-fidelity expectations a cell is
 // judged against — see tools/perf/lib/input-fidelity.mjs. It is stated per target
 // rather than derived from `runtime` plus the id, because the derivation would have

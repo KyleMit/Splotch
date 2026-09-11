@@ -13,7 +13,7 @@ import {
   summarizeActions,
 } from '../lib/action-stats.mjs';
 import { captureRuntime } from '../lib/input-fidelity.mjs';
-import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
+import { DEVICE_CLASSES, NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { frameStampEpochOf } from '../lib/frame-stamps.mjs';
 import {
@@ -225,15 +225,8 @@ export function sessionPlatformName({ requestedCapabilities, session }) {
   ).toLowerCase();
 }
 
-export function actionGateAllowances({
-  nativeApp,
-  deviceId,
-  deviceClass,
-  requestedCapabilities,
-  session,
-}) {
+function physicalIosWebIdentity({ nativeApp, deviceId, requestedCapabilities, session }) {
   const sessionCapabilities = resolvedSessionCapabilities(session);
-  const platformName = sessionPlatformName({ requestedCapabilities, session });
   const deviceName = String(
     capabilityValue(sessionCapabilities, 'deviceName') ??
       capabilityValue(requestedCapabilities, 'deviceName') ??
@@ -244,10 +237,36 @@ export function actionGateAllowances({
     capabilityValue(sessionCapabilities, 'udid'),
     capabilityValue(requestedCapabilities, 'udid'),
   ].some(isPhysicalAppleUdid);
-  const isTablet = deviceClass === 'tablet' || deviceName.includes('ipad');
-  const isCalibratedPhysicalIpadWeb =
-    !nativeApp && platformName === 'ios' && isTablet && physicalDevice;
-  return isCalibratedPhysicalIpadWeb ? IOS_ACTION_GATE_ALLOWANCES : {};
+  const isPhysicalIosWeb =
+    !nativeApp && sessionPlatformName({ requestedCapabilities, session }) === 'ios' && physicalDevice;
+  return {
+    isPhysicalIosWeb,
+    namesIpad: deviceName.includes('ipad'),
+    namesIphone: deviceName.includes('iphone'),
+  };
+}
+
+export function parseDeviceClass(value) {
+  if (value === undefined || DEVICE_CLASSES.includes(value)) return value;
+  throw new Error(`--device-class must be one of ${DEVICE_CLASSES.join(', ')}`);
+}
+
+export function actionGateAllowances(classification) {
+  const { isPhysicalIosWeb, namesIpad } = physicalIosWebIdentity(classification);
+  const isTablet = classification.deviceClass === 'tablet' || namesIpad;
+  return isPhysicalIosWeb && isTablet ? IOS_ACTION_GATE_ALLOWANCES : {};
+}
+
+// Physical identity alone must not imply a tablet — an iPhone is a legitimate
+// capture on base gates — so an unclassified session is announced, not inferred.
+// A device name that names neither an iPad nor an iPhone classifies nothing: it
+// records base gates exactly as silently as no name at all.
+export function unclassifiedDeviceWarning(classification) {
+  const { isPhysicalIosWeb, namesIpad, namesIphone } = physicalIosWebIdentity(classification);
+  const isClassified =
+    DEVICE_CLASSES.includes(classification.deviceClass) || namesIpad || namesIphone;
+  if (!isPhysicalIosWeb || isClassified) return null;
+  return '[ipad-actions] Physical iOS Safari capture without --device-class: base gates will be recorded';
 }
 
 export function settingsSectionMeasurement(section, label, settingsModalUsesSidebar) {
@@ -1704,6 +1723,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
+  const deviceClass = parseDeviceClass(flag('device-class'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   let sessionId = flag('session-id');
   const capabilitiesFile = flag('capabilities-file');
@@ -1778,6 +1798,15 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       sessionId = session.sessionId;
       ownsSession = true;
     }
+    const deviceClassification = {
+      nativeApp,
+      deviceId: flag('device-id'),
+      deviceClass,
+      requestedCapabilities: capabilities,
+      session,
+    };
+    const classificationWarning = unclassifiedDeviceWarning(deviceClassification);
+    if (classificationWarning) console.warn(classificationWarning);
     client.platformName =
       session.capabilities?.platformName ??
       session.capabilities?.['appium:platformName'] ??
@@ -1932,13 +1961,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       );
     }
 
-    const gateAllowances = actionGateAllowances({
-      nativeApp,
-      deviceId: flag('device-id'),
-      deviceClass: flag('device-class'),
-      requestedCapabilities: capabilities,
-      session,
-    });
+    const gateAllowances = actionGateAllowances(deviceClassification);
     const transport = nativeApp ? NATIVE_TRANSPORT : 'browser';
     // `transport` names how the session was driven; the runtime names which
     // engine ran the page, and only the runtime decides rotation first-frame
