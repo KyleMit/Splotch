@@ -9,6 +9,9 @@ import type { RequestHandler } from './$types';
 
 export type VerifyKeyResponse = { ok: true } | { ok: false; error: string } | KeyCheckUnavailable;
 
+// Provider keys are short strings; the remainder is JSON framing headroom.
+const MAX_VERIFY_KEY_BODY_BYTES = 8 * 1024;
+
 /**
  * Confirm a parent-supplied OpenAI API key actually works by making a tiny
  * live call. Body: { apiKey }. Returns { ok: true } on success, or
@@ -23,7 +26,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   );
   if (limited) return throttled(retryAfter);
 
-  const parsed = await readJsonBody(request);
+  const parsed = await readJsonBody(request, MAX_VERIFY_KEY_BODY_BYTES);
   if (!parsed.ok) return parsed.response;
   const body = asRecord(parsed.body);
   const apiKey = typeof body?.apiKey === 'string' ? body.apiKey.trim() : '';

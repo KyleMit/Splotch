@@ -9,6 +9,9 @@ import type { RequestHandler } from './$types';
 export type VerifyAccessCodeResponse =
   { ok: true; accessCode: string } | { ok: false; error: string };
 
+// Access codes are short strings; the remainder is JSON framing headroom.
+const MAX_VERIFY_ACCESS_CODE_BODY_BYTES = 8 * 1024;
+
 /**
  * Verify a secret access code against the managed allowlist. This is the
  * "special access" path that lets a parent use AI on our own key instead of
@@ -26,7 +29,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   const guess = peekRateLimit(key, rateLimitPolicy.verifyAccessCode);
   if (guess.limited) return throttled(guess.retryAfter);
 
-  const parsed = await readJsonBody(request);
+  const parsed = await readJsonBody(request, MAX_VERIFY_ACCESS_CODE_BODY_BYTES);
   if (!parsed.ok) return parsed.response;
   const body = asRecord(parsed.body);
   const code = typeof body?.code === 'string' ? body.code.trim() : '';

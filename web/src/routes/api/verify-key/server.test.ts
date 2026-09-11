@@ -42,6 +42,17 @@ describe('POST /api/verify-key', () => {
     expect(verifyKey).not.toHaveBeenCalled();
   });
 
+  it('rejects oversized JSON before invoking the provider', async () => {
+    const response = await post({ apiKey: 'x'.repeat(128 * 1024) });
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Request body is too large',
+    });
+    expect(verifyKey).not.toHaveBeenCalled();
+  });
+
   it('returns an ordinary verification failure for a present rejected key', async () => {
     verifyKey.mockResolvedValue({ ok: false, kind: 'rejected', reason: 'invalid key' });
 

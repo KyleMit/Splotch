@@ -154,6 +154,20 @@ async function checkTokensCrud(admin, auth) {
     badJson.status === 400 && badJsonBody?.ok === false && typeof badJsonBody?.error === 'string',
     `got ${badJson.status} ${JSON.stringify(badJsonBody)}`
   );
+
+  const oversizedJson = await fetch(`${BASE}/api/admin/tokens`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...auth },
+    body: JSON.stringify({ token: 'x'.repeat(16 * 1024) }),
+  });
+  const oversizedJsonBody = await json(oversizedJson);
+  check(
+    'tokens POST oversized body → 413 {ok:false, error}',
+    oversizedJson.status === 413 &&
+      oversizedJsonBody?.ok === false &&
+      oversizedJsonBody?.error === 'Request body is too large',
+    `got ${oversizedJson.status} ${JSON.stringify(oversizedJsonBody)}`
+  );
 }
 
 // --- public oracle: verify-access-code against the seeded allowlist ---

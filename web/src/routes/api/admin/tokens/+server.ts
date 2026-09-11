@@ -30,6 +30,9 @@ export type TokenSnapshot = {
 
 export type TokenMutationError = { ok: false; error: string };
 
+// Token mutations carry one short token; the remainder is framing headroom.
+const MAX_TOKEN_MUTATION_BODY_BYTES = 8 * 1024;
+
 /**
  * Every method requires `Authorization: Bearer <session>`, where <session> is
  * the derived token from POST /api/admin/login (identical to the value the
@@ -82,7 +85,7 @@ export const GET: RequestHandler = apiHandler(async ({ request, url }) => {
 export const POST: RequestHandler = apiHandler(async ({ request, url }) => {
   requireSession(request);
 
-  const parsed = await readJsonBody(request);
+  const parsed = await readJsonBody(request, MAX_TOKEN_MUTATION_BODY_BYTES);
   if (!parsed.ok) return parsed.response;
   const result = await addToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
@@ -93,7 +96,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, url }) => {
 export const DELETE: RequestHandler = apiHandler(async ({ request, url }) => {
   requireSession(request);
 
-  const parsed = await readJsonBody(request);
+  const parsed = await readJsonBody(request, MAX_TOKEN_MUTATION_BODY_BYTES);
   if (!parsed.ok) return parsed.response;
   const result = await removeToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);

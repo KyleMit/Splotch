@@ -88,13 +88,19 @@ describe('POST /api/report-image', () => {
   // raw-body cap a caller could push arbitrary bytes through an effectively
   // public ingestion path by hiding them in a field the parser discards.
   it('rejects an oversized payload hidden in an unused form field', async () => {
-    const body = new FormData();
-    body.set('drawing', new Blob(['drawing'], { type: 'image/png' }));
-    body.set('output', new Blob(['output'], { type: 'image/jpeg' }));
-    body.set('style', 'Magical');
-    body.set('padding', 'x'.repeat(MAX_REPORT_REQUEST_BYTES + 1));
+    const boundary = 'splotch-report-test-boundary';
+    const body = [
+      `--${boundary}\r\nContent-Disposition: form-data; name="drawing"; filename="drawing.png"\r\nContent-Type: image/png\r\n\r\ndrawing\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="output"; filename="output.jpg"\r\nContent-Type: image/jpeg\r\n\r\noutput\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="style"\r\n\r\nMagical\r\n`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="padding"\r\n\r\n`,
+      'x'.repeat(MAX_REPORT_REQUEST_BYTES + 1),
+      `\r\n--${boundary}--\r\n`,
+    ].join('');
 
-    const response = await post(body);
+    const response = await post(body, {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    });
 
     expect(response.status).toBe(413);
     expect(await response.json()).toEqual({

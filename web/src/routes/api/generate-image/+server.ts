@@ -77,6 +77,10 @@ function assertAllowedImageType(mimeType: string): void {
 const asString = (value: FormDataEntryValue | null): string | null =>
   typeof value === 'string' ? value : null;
 
+// Covers legacy credential/style fields plus multipart headers and boundaries.
+const LEGACY_MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+const MAX_LEGACY_GENERATION_REQUEST_BYTES = MAX_IMAGE_BYTES + LEGACY_MULTIPART_OVERHEAD_BYTES;
+
 interface GenerationRequest {
   token: string | null;
   apiKey: string | null;
@@ -101,9 +105,17 @@ interface GenerationRequest {
 //                 sends the raw body.
 async function readGenerationRequest(request: Request, url: URL): Promise<GenerationRequest> {
   if (contentTypeOf(request) === 'multipart/form-data') {
-    // Credentials live in the body here, so the whole envelope is buffered and
-    // parsed up front — the cost the raw path exists to skip.
-    const form = await request.formData();
+    const body = await readBodyWithinLimit(request, MAX_LEGACY_GENERATION_REQUEST_BYTES);
+    if (!body.ok) throw error(413, 'Image is too large');
+
+    let form: FormData;
+    try {
+      form = await new Response(new Blob([new Uint8Array(body.bytes)]), {
+        headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
+      }).formData();
+    } catch {
+      throw error(400, 'Expected multipart form data');
+    }
     const imageFile = form.get('image');
     return {
       token: asString(form.get('token')),
