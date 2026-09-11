@@ -147,13 +147,18 @@ function by hand as the 1750 experiments had to.
 (`strokeGhostReadsTiles`), it paints the command's footprint (each ink op at its padded width, the
 same AA bleed the renderer's dirty rects carry) onto a mask canvas, composites the visible live
 tiles onto the overlay through the tile painter the clear cue already used, and applies the mask
-once with `destination-in`. The tiles already hold the undone pixels at that moment, so the ghost is
-the true crayon texture rather than a replay, the cost is one path stroke plus a bounded number of
-tile blits, and the crayon pipeline never sees the overlay canvas. A plain pen command keeps the
-replay: it is exact, it costs a few milliseconds at most per undo on every browser measured here,
-and a five-finger drag's footprint covers most of the paper, where the tile copy is the dearer path.
-The pixels under the ghost, undo/redo, retained depth and the byte budget are untouched: the change
-reads the tiles and writes nothing but the overlay.
+once with `destination-in`. Once the engine has applied the undo and the tiles hold the paper
+without the command, `subtractRemainingInk()` paints the tiles onto the ghost again with
+`destination-out`, so older ink inside the footprint (a yellow stroke the undone blue crossed) stays
+pinned on the paper instead of shrinking with the ghost; the revision reviewed on PR 1771 skipped
+that pass and visibly dragged crossing ink along. The ghost is therefore the pixels the command
+owned, the cost is one path stroke plus two bounded sets of tile blits, and the crayon pipeline
+never sees the overlay canvas. `engine.undoInkMotion` brackets both phases, so a tile-read undo
+contributes two entries to that measure. A plain pen command keeps the replay: it is exact, it costs
+a few milliseconds at most per undo on every browser measured here, and a five-finger drag's
+footprint covers most of the paper, where the tile copy is the dearer path. The pixels under the
+ghost, undo/redo, retained depth and the byte budget are untouched: the change reads the tiles and
+writes nothing but the overlay.
 
 The first revision read the tiles for every command. Its macOS dispatch
 ([run 34597294730](https://github.com/KyleMit/Splotch/actions/runs/34597294730), de8799b875a3)
