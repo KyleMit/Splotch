@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { LANDSCAPE_COLORS, needsInkOutline } from './landscapeToolbar';
+import {
+  COLOR_MENU_GAP_PX,
+  COLOR_MENU_PADDING_PX,
+  COLOR_MENU_SWATCH_PX,
+  LANDSCAPE_COLORS,
+  landscapeMenuColors,
+  needsInkOutline,
+} from './landscapeToolbar';
 import { PHONE_LANDSCAPE_QUERY, isPhoneLandscape } from './breakpoints';
 import {
   PHONE_TOOLBAR_BUTTON_PX,
@@ -10,6 +17,30 @@ import {
 } from './actionButtonLayout';
 
 describe('phone landscape toolbar', () => {
+  it('reserves the picker and trims bonus hues before the core rainbow', () => {
+    expect(landscapeMenuColors(556).map(({ label }) => label)).toEqual([
+      'Purple',
+      'Blue',
+      'Green',
+      'Yellow',
+      'Orange',
+      'Red',
+      'Black',
+    ]);
+  });
+
+  it.each([1, 2, 5, 8, 12])('adds a complete swatch at the %s-slot boundary', (slots) => {
+    const width =
+      slots * COLOR_MENU_SWATCH_PX + (slots - 1) * COLOR_MENU_GAP_PX + 2 * COLOR_MENU_PADDING_PX;
+    expect(landscapeMenuColors(width)).toHaveLength(slots - 1);
+    expect(landscapeMenuColors(width - 0.01)).toHaveLength(Math.max(0, slots - 2));
+  });
+
+  it('caps the menu at its palette and handles an unmeasured width', () => {
+    expect(landscapeMenuColors(2000)).toEqual(LANDSCAPE_COLORS);
+    expect(landscapeMenuColors(0)).toEqual([]);
+  });
+
   it('keeps eleven hues in palette order', () => {
     expect(LANDSCAPE_COLORS.map(({ label }) => label)).toEqual([
       'Purple',

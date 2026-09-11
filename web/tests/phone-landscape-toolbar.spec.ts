@@ -241,19 +241,48 @@ test.describe('phone landscape interactions', () => {
     await expect(page.locator('#brushButton')).toBeHidden();
   });
 
-  test('narrow phones retain full swatch targets and can scroll to custom colors', async ({
+  test('narrow phones show only whole swatches and keep custom colors in view', async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 568, height: 320 });
+    await page.setViewportSize({ width: 628, height: 368 });
     await gotoApp(page);
     await page.locator('#colorButton').click();
     const menu = page.locator('.color-menu');
     await expect(menu.getByRole('button').first()).toHaveCSS('width', '56px');
     await settleToolbar(page);
     const box = await menu.boundingBox();
-    expect(box && box.x + box.width).toBeLessThanOrEqual(560);
+    expect(box && box.x + box.width).toBeLessThanOrEqual(620);
+    await expect(menu.getByRole('button')).toHaveCount(8);
+    expect(await menu.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    const customBox = await menu.getByRole('button', { name: 'Custom Color' }).boundingBox();
+    expect(customBox && customBox.x + customBox.width).toBeLessThanOrEqual(614);
     await menu.getByRole('button', { name: 'Custom Color' }).click();
     await expect(page.locator('dialog[open]')).toBeVisible();
+  });
+
+  test('an open color menu adapts to width, safe areas, and enlarged controls', async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, '130'),
+      STORAGE_KEYS.actionButtonScale
+    );
+    await gotoApp(page);
+    await page.locator('#colorButton').click();
+    const menu = page.locator('.color-menu');
+    await expect(menu.getByRole('button')).toHaveCount(12);
+    await page.setViewportSize({ width: 568, height: 320 });
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--safe-area-left', '24px');
+      document.documentElement.style.setProperty('--safe-area-right', '24px');
+    });
+    await expect(menu.getByRole('button')).toHaveCount(6);
+    await settleToolbar(page);
+    const bounds = await menu.boundingBox();
+    expect(bounds && bounds.x + bounds.width).toBeLessThanOrEqual(536);
+    expect(await menu.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.setViewportSize({ width: 906, height: 328 });
+    await expect(menu.getByRole('button')).toHaveCount(12);
   });
 });
 
