@@ -138,13 +138,18 @@ function javascriptFiles(dir) {
   });
 }
 
+// A token is matched whole: `engine.undo` must not report itself for
+// `engine.undoInkMotion`, which is its own entry in the list.
+const tokenPattern = (token) =>
+  new RegExp(`${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`);
+
 export function releaseSeamProblems(dir) {
   if (!existsSync(dir)) return [`Client bundle directory does not exist: ${dir}`];
   const problems = [];
   for (const path of javascriptFiles(dir)) {
     const source = readFileSync(path, 'utf8');
     for (const token of RELEASE_ONLY_TOKENS) {
-      if (source.includes(token)) problems.push(`${token} remains in ${path}`);
+      if (tokenPattern(token).test(source)) problems.push(`${token} remains in ${path}`);
     }
   }
   return problems;
