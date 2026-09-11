@@ -39,8 +39,14 @@ export interface DragToClearOptions {
   onDragEnd?: () => void;
 }
 
+interface ActiveDrag {
+  pointerId: number;
+  options: DragToClearOptions;
+  acceptRadius: number;
+}
+
 export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToClearOptions) {
-  let activePointerId: number | null = null;
+  let activeDrag: ActiveDrag | null = null;
   let startPointerX = 0;
   let startPointerY = 0;
   let clearReady = false;
@@ -98,7 +104,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerDown(e: PointerEvent) {
-    if (activePointerId !== null) return;
+    if (activeDrag !== null) return;
 
     const o = getOptions();
     if (registerTap(Date.now(), o)) return;
@@ -107,7 +113,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     const clientY = e.clientY;
     holdTimer = scheduleReset(o.onTutorialShow, HOLD_DURATION_MS);
 
-    activePointerId = e.pointerId;
+    const acceptRadius = getAcceptRadius();
+    activeDrag = { pointerId: e.pointerId, options: o, acceptRadius };
     capturePointer(node, e.pointerId);
     startPointerX = clientX;
     startPointerY = clientY;
@@ -126,7 +133,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.containerEl.classList.add('dragging-active');
     node.classList.add('dragging');
 
-    armAcceptZone(o, center, getAcceptRadius());
+    armAcceptZone(o, center, acceptRadius);
 
     o.onDragStart?.();
 
@@ -134,9 +141,9 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerMove(e: PointerEvent) {
-    if (activePointerId === null || e.pointerId !== activePointerId) return;
+    if (activeDrag === null || e.pointerId !== activeDrag.pointerId) return;
 
-    const o = getOptions();
+    const { options: o, acceptRadius } = activeDrag;
     const clientX = e.clientX;
     const clientY = e.clientY;
 
@@ -157,16 +164,15 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     o.containerEl.style.transform = `translate(${dx}px, ${dy}px)`;
 
     const distance = dragDistance(clientX, clientY);
-    const threshold = getAcceptRadius();
 
     // Continuous 0→1 drag progress drives the radial paper wash that previews
     // the clear (see .clear-preview). Inherited from :root so any element can read it.
-    const normalizedDistance = distance / threshold;
+    const normalizedDistance = distance / acceptRadius;
     const progress = Math.min(normalizedDistance, 1);
     document.documentElement.style.setProperty('--clear-progress', `${progress}`);
     updateClearSound(normalizedDistance);
 
-    if (distance >= threshold) {
+    if (distance >= acceptRadius) {
       node.classList.add('delete-ready');
       o.acceptZoneEl.classList.add('threshold-reached');
       o.clearPreviewEl.classList.add('committed');
@@ -185,7 +191,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     suppress(e);
   }
 
-  function finishDrag(o: DragToClearOptions, pointerId: number) {
+  function finishDrag(drag: ActiveDrag) {
+    const { options: o, pointerId } = drag;
     if (holdTimer !== null) {
       resetTimers.delete(holdTimer);
       clearTimeout(holdTimer);
@@ -195,13 +202,13 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       cancelAnimationFrame(acceptZoneFrame);
       acceptZoneFrame = null;
     }
-    activePointerId = null;
+    activeDrag = null;
     releasePointer(node, pointerId);
 
     o.acceptZoneEl.classList.remove('visible');
     o.acceptZoneEl.classList.remove('threshold-reached');
     scheduleReset(() => {
-      if (activePointerId === null) o.acceptZoneEl.style.display = 'none';
+      if (activeDrag === null) o.acceptZoneEl.style.display = 'none';
     }, ACCEPT_ZONE_HIDE_DELAY_MS);
 
     clearReady = false;
@@ -260,18 +267,18 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   }
 
   function onPointerUp(e: PointerEvent) {
-    if (activePointerId === null || e.pointerId !== activePointerId) return;
+    if (activeDrag === null || e.pointerId !== activeDrag.pointerId) return;
 
-    const o = getOptions();
+    const drag = activeDrag;
+    const o = drag.options;
 
     const clientX = e.clientX;
     const clientY = e.clientY;
     const distance = dragDistance(clientX, clientY);
-    const threshold = getAcceptRadius();
 
-    finishDrag(o, e.pointerId);
+    finishDrag(drag);
 
-    if (distance >= threshold) {
+    if (distance >= drag.acceptRadius) {
       commitClear(o);
     } else {
       cancelClearSound();
@@ -286,17 +293,18 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   // detail 0 is keyboard/desktop-AT activation and stays outside toddler pointer input.
   // Mobile screen readers synthesize touch/pointer activation, so this path does not cover them.
   function onClick(e: MouseEvent) {
-    if (e.detail !== 0 || activePointerId !== null || node.classList.contains('clearing')) return;
+    if (e.detail !== 0 || activeDrag !== null || node.classList.contains('clearing')) return;
     releaseAllPointers();
     startClearSound();
     commitClear(getOptions());
   }
 
   function onPointerCancel(e: PointerEvent) {
-    if (activePointerId === null || e.pointerId !== activePointerId) return;
+    if (activeDrag === null || e.pointerId !== activeDrag.pointerId) return;
 
-    const o = getOptions();
-    finishDrag(o, e.pointerId);
+    const drag = activeDrag;
+    const o = drag.options;
+    finishDrag(drag);
 
     resetDragVisuals(o);
     // A drag can start as soon as the button begins its return leg, so cancelling
@@ -319,9 +327,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
   return {
     destroy() {
-      if (activePointerId !== null) {
-        const o = getOptions();
-        finishDrag(o, activePointerId);
+      if (activeDrag !== null) {
+        const drag = activeDrag;
+        const o = drag.options;
+        finishDrag(drag);
         cancelClearSound();
         resetDragVisuals(o);
         // finishDrag only hides the zone on a delayed timer, and the resetTimers
