@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 import { GENERATION_JOB_STORE_NAME } from './generationJobStoreName';
+import { settleWithRetentionConcurrency } from './retentionSweep';
 // Relative, not `$lib`: the background worker imports this module and is built
 // without SvelteKit's aliases.
 import { GENERATION_JOB_TTL_MS } from '../ai/limits';
@@ -222,30 +223,64 @@ export async function discardJob(jobId: string): Promise<void> {
  * gone — never a job still being started.
  */
 export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
+  attemptedJobs: number;
   purgedJobs: number;
+  failedJobs: number;
+  retainedJobs: number;
   deletedBlobs: number;
+  failedBlobDeletes: number;
 }> {
-  const jobIds = new Set<string>();
-  for await (const page of store().list({ paginate: true })) {
-    for (const { key } of page.blobs) {
-      const slash = key.indexOf('/');
-      if (slash > 0) jobIds.add(key.slice(0, slash));
+  const jobStore = store();
+  let attemptedJobs = 0;
+  let purgedJobs = 0;
+  let failedJobs = 0;
+  let retainedJobs = 0;
+  let deletedBlobs = 0;
+  let failedBlobDeletes = 0;
+
+  for await (const page of jobStore.list({ paginate: true, directories: true })) {
+    attemptedJobs += page.directories.length;
+    const outcomes = await settleWithRetentionConcurrency(page.directories, async (jobId) => {
+      const record = (await jobStore.get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+      if (record && record.expiresAt >= now) return { status: 'retained' as const };
+
+      let jobDeletedBlobs = 0;
+      let jobFailedBlobDeletes = 0;
+      for (const key of [inputKey(jobId), imageKey(jobId), statusKey(jobId)]) {
+        try {
+          await jobStore.delete(key);
+          jobDeletedBlobs++;
+        } catch {
+          jobFailedBlobDeletes++;
+        }
+      }
+      return {
+        status: jobFailedBlobDeletes === 0 ? ('purged' as const) : ('failed' as const),
+        deletedBlobs: jobDeletedBlobs,
+        failedBlobDeletes: jobFailedBlobDeletes,
+      };
+    });
+
+    for (const outcome of outcomes) {
+      if (outcome.status === 'rejected') {
+        failedJobs++;
+      } else if (outcome.value.status === 'retained') {
+        retainedJobs++;
+      } else {
+        deletedBlobs += outcome.value.deletedBlobs;
+        failedBlobDeletes += outcome.value.failedBlobDeletes;
+        if (outcome.value.status === 'purged') purgedJobs++;
+        else failedJobs++;
+      }
     }
   }
 
-  let purgedJobs = 0;
-  let deletedBlobs = 0;
-  for (const jobId of jobIds) {
-    const record = (await store().get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
-    if (record && record.expiresAt >= now) continue;
-    const outcomes = await Promise.allSettled([
-      store().delete(inputKey(jobId)),
-      store().delete(imageKey(jobId)),
-      store().delete(statusKey(jobId)),
-    ]);
-    purgedJobs++;
-    deletedBlobs += outcomes.filter(({ status }) => status === 'fulfilled').length;
-  }
-
-  return { purgedJobs, deletedBlobs };
+  return {
+    attemptedJobs,
+    purgedJobs,
+    failedJobs,
+    retainedJobs,
+    deletedBlobs,
+    failedBlobDeletes,
+  };
 }

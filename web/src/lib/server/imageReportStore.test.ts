@@ -25,6 +25,14 @@ beforeEach(() => {
   store.delete.mockReset().mockResolvedValue(undefined);
 });
 
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve!: () => void;
+  const promise = new Promise<void>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+  return { promise, resolve };
+}
+
 describe('saveImageReport', () => {
   it('stores the drawing, prompt, output, and retention metadata under one report key', async () => {
     const saved = await saveImageReport({
@@ -133,12 +141,64 @@ describe('purgeExpiredImageReports', () => {
     );
 
     await expect(purgeExpiredImageReports()).resolves.toEqual({
+      attemptedBlobs: 4,
       deletedBlobs: 2,
       expiredReports: 1,
+      failedBlobs: 0,
+      retainedBlobs: 2,
     });
     expect(store.delete.mock.calls.map(([key]) => key)).toEqual([
       `${expired}/input.png`,
       `${expired}/metadata.json`,
     ]);
+  });
+
+  it('continues later pages after isolated deletes fail and deduplicates report counts', async () => {
+    const dayMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const expiredA = `${now - (IMAGE_REPORT_RETENTION_DAYS + 1) * dayMs}-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`;
+    const expiredB = `${now - (IMAGE_REPORT_RETENTION_DAYS + 1) * dayMs}-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb`;
+    const expiredC = `${now - (IMAGE_REPORT_RETENTION_DAYS + 1) * dayMs}-cccccccc-cccc-cccc-cccc-cccccccccccc`;
+    const current = `${now}-dddddddd-dddd-dddd-dddd-dddddddddddd/input.png`;
+    const firstPage = [
+      `${expiredA}/input.png`,
+      `${expiredA}/metadata.json`,
+      `${expiredB}/input.png`,
+      `${expiredB}/metadata.json`,
+      `${expiredC}/input.png`,
+      `${expiredC}/metadata.json`,
+      current,
+    ];
+    const laterKey = `${expiredA}/prompt.txt`;
+    store.list.mockReturnValue(
+      (async function* () {
+        yield { blobs: firstPage.map((key) => ({ key })) };
+        yield { blobs: [{ key: laterKey }] };
+      })()
+    );
+    const deletesMayFinish = deferred();
+    let activeDeletes = 0;
+    let peakDeletes = 0;
+    store.delete.mockImplementation(async (key: string) => {
+      activeDeletes++;
+      peakDeletes = Math.max(peakDeletes, activeDeletes);
+      await deletesMayFinish.promise;
+      activeDeletes--;
+      if (key === `${expiredB}/input.png`) throw new Error('delete failed');
+    });
+
+    const purging = purgeExpiredImageReports();
+    await vi.waitFor(() => expect(activeDeletes).toBe(4));
+    expect(peakDeletes).toBe(4);
+    deletesMayFinish.resolve();
+
+    await expect(purging).resolves.toEqual({
+      attemptedBlobs: 8,
+      deletedBlobs: 6,
+      expiredReports: 3,
+      failedBlobs: 1,
+      retainedBlobs: 1,
+    });
+    expect(store.delete).toHaveBeenCalledWith(laterKey);
   });
 });

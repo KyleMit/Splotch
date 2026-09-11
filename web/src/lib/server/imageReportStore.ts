@@ -2,6 +2,7 @@ import { getStore } from '@netlify/blobs';
 import type { StyleName } from '../ai/styles';
 import { IMAGE_REPORT_RETENTION_DAYS, type AiReportKind } from '../imageReport';
 import { IMAGE_REPORT_STORE_NAME } from './imageReportStoreName';
+import { settleWithRetentionConcurrency } from './retentionSweep';
 
 export { IMAGE_REPORT_STORE_NAME };
 export { IMAGE_REPORT_RETENTION_DAYS } from '../imageReport';
@@ -115,24 +116,43 @@ export async function saveImageReport(input: SaveImageReportInput): Promise<Save
 }
 
 export async function purgeExpiredImageReports(): Promise<{
+  attemptedBlobs: number;
   deletedBlobs: number;
   expiredReports: number;
+  failedBlobs: number;
+  retainedBlobs: number;
 }> {
   const cutoff = Date.now() - REPORT_RETENTION_MS;
   const store = getStore(IMAGE_REPORT_STORE_NAME);
   const expiredReportIds = new Set<string>();
+  let attemptedBlobs = 0;
   let deletedBlobs = 0;
+  let failedBlobs = 0;
+  let retainedBlobs = 0;
 
   for await (const page of store.list({ paginate: true })) {
+    attemptedBlobs += page.blobs.length;
     const expiredKeys = page.blobs.filter(({ key }) => {
       const match = REPORT_ID_PATTERN.exec(key);
-      if (!match || Number(match[1]) > cutoff) return false;
+      if (!match || Number(match[1]) > cutoff) {
+        retainedBlobs++;
+        return false;
+      }
       expiredReportIds.add(key.slice(0, key.indexOf('/')));
       return true;
     });
-    await Promise.all(expiredKeys.map(({ key }) => store.delete(key)));
-    deletedBlobs += expiredKeys.length;
+    const outcomes = await settleWithRetentionConcurrency(expiredKeys, ({ key }) =>
+      store.delete(key)
+    );
+    deletedBlobs += outcomes.filter(({ status }) => status === 'fulfilled').length;
+    failedBlobs += outcomes.filter(({ status }) => status === 'rejected').length;
   }
 
-  return { deletedBlobs, expiredReports: expiredReportIds.size };
+  return {
+    attemptedBlobs,
+    deletedBlobs,
+    expiredReports: expiredReportIds.size,
+    failedBlobs,
+    retainedBlobs,
+  };
 }
